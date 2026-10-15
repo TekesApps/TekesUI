@@ -35,9 +35,14 @@
 //! 重建，渲染层只负责画。
 
 mod geometry;
+mod glyph;
 mod quad;
 mod scene;
 
 pub use geometry::{Point, Rect, Size};
+pub use glyph::{
+    AtlasGlyph, FontKey, GlyphKey, GlyphRun, ImageId, ImageQuad, PositionedGlyph, RasterFormat,
+    RasterGlyph,
+};
 pub use quad::{CornerRadii, Quad};
 pub use scene::{Primitive, Scene};

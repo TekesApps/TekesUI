@@ -1,5 +1,6 @@
 //! 场景：有序的图元列表。
 
+use crate::glyph::{GlyphRun, ImageQuad};
 use crate::quad::Quad;
 
 /// 一个绘制图元。见 crate 文档里关于扩展方式的说明。
@@ -7,6 +8,10 @@ use crate::quad::Quad;
 #[non_exhaustive]
 pub enum Primitive {
     Quad(Quad),
+    /// 一串同色字形，引用 [`crate::GlyphAtlas`] 里的位图。
+    Glyphs(GlyphRun),
+    /// 渲染层登记过的图像，画进矩形。
+    Image(ImageQuad),
 }
 
 /// 一帧要画的内容，按 painter's order 排列：先加入的在下，后加入的在上。
@@ -31,6 +36,14 @@ impl Scene {
 
     pub fn push_quad(&mut self, quad: Quad) {
         self.primitives.push(Primitive::Quad(quad));
+    }
+
+    pub fn push_glyphs(&mut self, run: GlyphRun) {
+        self.primitives.push(Primitive::Glyphs(run));
+    }
+
+    pub fn push_image(&mut self, image: ImageQuad) {
+        self.primitives.push(Primitive::Image(image));
     }
 
     pub fn primitives(&self) -> &[Primitive] {
