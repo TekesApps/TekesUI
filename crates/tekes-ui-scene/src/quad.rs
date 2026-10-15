@@ -5,8 +5,8 @@ use tekes_ui_tokens::Rgba;
 
 /// 四个角的圆角半径，单位 pt。
 ///
-/// 半径超过矩形短边的一半时，渲染层会钳到短边的一半（相邻的两个角按比例
-/// 缩小以保持不重叠）。
+/// 半径超过矩形短边的一半时，渲染层把每个角各自钳到短边的一半；
+/// 这样同一条边上两个角的半径之和不会超过这条边的长度，圆角不会重叠。负值按 0 处理。
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct CornerRadii {
     pub top_left: f32,

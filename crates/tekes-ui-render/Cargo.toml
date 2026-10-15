@@ -24,7 +24,7 @@ png.workspace = true
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 objc2 = { version = "0.6.5", default-features = false, features = ["std"] }
-objc2-core-foundation = { version = "0.3.2", default-features = false, features = ["std", "CFCGTypes"] }
+objc2-core-foundation = { version = "0.3.2", default-features = false, features = ["std", "CFCGTypes", "CFString"] }
 
 [lints]
 workspace = true
