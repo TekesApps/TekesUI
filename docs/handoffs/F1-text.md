@@ -122,3 +122,10 @@
 - 120Hz 帧时间、空闲 CPU：本层没有测，归 render 与 Gallery。
 - RTL、竖排：只在 `font_runs` 里出现了阿拉伯文字体，没有写断行和字形顺序的断言；夹具在 `fixtures/text/`。
 - 字重（`weight != 400`）只验证了会得到不同的字体身份，没有对比渲染。
+
+## 主控的决定（第二阶段）
+
+- 对比条件取参照实现的条件：段落原点 (0, 0)，无 `verticalOffset`，无 backing 相位；Gallery 把段落放在整数 pt 原点。
+- `Placement::Line` 保留，作测量工具。
+- 对比报告必须记录系统语言列表和实际解析出的回退字体名（`tekes-ui-compare` 的报告已记录）。
+- 与参照实现的真实对比结果见 [F1-compare.md](F1-compare.md)。
