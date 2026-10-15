@@ -103,7 +103,7 @@
 根因（实测定位，不是猜的）：
 
 1. **字形位置**。`CTLineDraw` 里字形落在 CoreGraphics 自己的亚像素网格上（不论 `setShouldSubpixelPositionFonts` 开关），每个字形最多偏半个像素；本项目和参照实现都把每个字形原点取整到设备像素（键里没有亚像素 bin）。同样用 `CTFontDrawGlyphs` 逐字形画，放在小数位置与放在整数位置也相差 7% 到 15%（超阈值）。基线 y 和整体包围盒对得上（x0、x1、y0、y1 相差不超过 1 到 2 像素），所以不是基线或 left/top 的错。
-2. **字重**。同样关闭字体平滑，`CTLineDraw` 的总墨量比 `CTFontDrawGlyphs` 重约 13%（1x、2x 都是 12.8% 左右），与是否亚像素无关；逐字形 `CTFontDrawGlyphs` 放在小数位置的总墨量与 atlas 路径相差不到 0.3%。也就是说 `CTLineDraw` 有自己的加粗，`setShouldSmoothFonts(false)` 管不住。
+2. **字重**。同样关闭字体平滑，`CTLineDraw` 的总墨量比 `CTFontDrawGlyphs` 重约 13%（1x、2x 都是 12.8% 左右），与是否亚像素无关；逐字形 `CTFontDrawGlyphs` 放在小数位置的总墨量与 atlas 路径相差不到 0.4%。也就是说 `CTLineDraw` 有自己的加粗，`setShouldSmoothFonts(false)` 管不住。
 
 这两项都是 CoreGraphics 绘制路径的属性，而不是 atlas 路径的缺陷：参照实现用的就是逐字形 `CTFontDrawGlyphs` 加整数原点（调研笔记第 5 节）。因此：对参照实现的像素对比（私有伴随仓库）应当拿参照实现自己的输出，不是 `CTLineDraw`；公开仓库里的自测用 `GlyphsRounded` 对照图。`CTLineDraw` 对照图保留在 `render_oracle` 里（`Placement::Line`），测试 `ctlinedraw_differs_only_by_glyph_position_not_baseline_or_rasterization` 记录并断言了上面的结论，防止以后有人拿它当门禁。
 
