@@ -15,8 +15,12 @@ serde_json.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2-core-foundation = { workspace = true, features = ["CFString", "CFAttributedString", "CFDictionary", "CFNumber", "CFArray", "CFCGTypes", "CFBase", "CFCharacterSet", "CFData"] }
-objc2-core-graphics = { workspace = true, features = ["CGColorSpace", "CGBitmapContext", "CGContext", "CGAffineTransform", "CGGeometry", "CGImage"] }
+objc2-core-graphics = { workspace = true, features = ["CGColorSpace", "CGBitmapContext", "CGContext", "CGAffineTransform", "CGGeometry", "CGImage", "CGPath"] }
 objc2-core-text = { workspace = true, features = ["CTFont", "CTFontDescriptor", "CTLine", "CTRun", "CTTypesetter", "CTStringAttributes", "CTFontTraits", "CTFrame", "CTFramesetter", "objc2-core-graphics"] }
+
+[dev-dependencies]
+tekes-ui-render.workspace = true
+png.workspace = true
 
 [lints]
 workspace = true

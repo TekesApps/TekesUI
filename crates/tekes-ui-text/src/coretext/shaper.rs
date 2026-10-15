@@ -27,9 +27,7 @@ use objc2_core_foundation::{
 use objc2_core_text::{CTFont, CTLine, CTRun, CTTypesetter, kCTFontAttributeName};
 
 use super::fonts::CoreTextFonts;
-use crate::model::{
-    FontInfo, FontRun, Line, Paragraph, ShapeOptions, ShapedGlyph, ShapedRun,
-};
+use crate::model::{FontInfo, FontRun, Line, Paragraph, ShapeOptions, ShapedGlyph, ShapedRun};
 use crate::style::TextStyle;
 use crate::traits::{FontFallback, Shaper};
 use crate::utf16::Utf16Map;
@@ -59,6 +57,7 @@ impl CoreTextShaper {
 /// 一个属性字符串和它的排版器。
 pub(crate) struct Typeset {
     pub cf_text: CFRetained<CFString>,
+    pub attributed: CFRetained<CFMutableAttributedString>,
     pub typesetter: CFRetained<CTTypesetter>,
     pub utf16_len: usize,
 }
@@ -85,6 +84,7 @@ pub(crate) fn typeset(text: &str, font: &CTFont) -> Typeset {
     let typesetter = unsafe { CTTypesetter::with_attributed_string(&attributed) };
     Typeset {
         cf_text,
+        attributed,
         typesetter,
         utf16_len,
     }
@@ -174,7 +174,8 @@ impl CoreTextShaper {
         let mut out = Vec::new();
         for run in runs_of(line) {
             // SAFETY: 以下全是对有效 run 的只读查询，缓冲区大小与字形数一致。
-            let (glyph_count, string_range) = unsafe { (run.glyph_count() as usize, run.string_range()) };
+            let (glyph_count, string_range) =
+                unsafe { (run.glyph_count() as usize, run.string_range()) };
             let font_key = match run_font(&run) {
                 Some(f) => self.fonts.key_for(&f),
                 None => base_key,
@@ -190,7 +191,10 @@ impl CoreTextShaper {
             if glyph_count > 0 {
                 // SAFETY: 缓冲区各有 glyph_count 个元素；CFRange(0, 0) 表示整个 run。
                 unsafe {
-                    run.glyphs(CFRange::new(0, 0), NonNull::new(glyphs.as_mut_ptr()).unwrap());
+                    run.glyphs(
+                        CFRange::new(0, 0),
+                        NonNull::new(glyphs.as_mut_ptr()).unwrap(),
+                    );
                     run.positions(
                         CFRange::new(0, 0),
                         NonNull::new(positions.as_mut_ptr()).unwrap(),

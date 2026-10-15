@@ -41,21 +41,26 @@ pub(crate) fn bgra_bitmap_info() -> u32 {
 #[derive(Clone, Debug, Default)]
 pub struct CoreTextRasterizer {
     fonts: CoreTextFonts,
-    /// 彩色字形是否开启字体平滑。默认 true（参照实现的做法）；只用于对比测量。
-    smooth_color_fonts: Option<bool>,
+    /// 覆盖字体平滑开关：`(单色, 彩色)`。默认 `None`：单色关、彩色开（参照实现的做法）。
+    /// 只用于对比测量，见 docs/handoffs/F1.md。
+    smoothing_override: (Option<bool>, Option<bool>),
 }
 
 impl CoreTextRasterizer {
     pub fn new(fonts: CoreTextFonts) -> CoreTextRasterizer {
         CoreTextRasterizer {
             fonts,
-            smooth_color_fonts: None,
+            smoothing_override: (None, None),
         }
     }
 
-    /// 测量用：强制彩色字形的字体平滑开关。
-    pub fn with_color_font_smoothing(mut self, on: bool) -> CoreTextRasterizer {
-        self.smooth_color_fonts = Some(on);
+    /// 测量用：强制字体平滑开关（单色字形、彩色字形各一个），`None` 保持默认。
+    pub fn with_smoothing_override(
+        mut self,
+        mono: Option<bool>,
+        color: Option<bool>,
+    ) -> CoreTextRasterizer {
+        self.smoothing_override = (mono, color);
         self
     }
 
@@ -128,9 +133,9 @@ impl Rasterizer for CoreTextRasterizer {
         CGContext::set_allows_antialiasing(Some(&ctx), true);
         CGContext::set_should_antialias(Some(&ctx), true);
         let smooth = if is_color {
-            self.smooth_color_fonts.unwrap_or(true)
+            self.smoothing_override.1.unwrap_or(true)
         } else {
-            false
+            self.smoothing_override.0.unwrap_or(false)
         };
         CGContext::set_allows_font_smoothing(Some(&ctx), smooth);
         CGContext::set_should_smooth_fonts(Some(&ctx), smooth);
