@@ -1,0 +1,11 @@
+[package]
+name = "tekes-ui-scene"
+description = "TekesUI display list 与 glyph atlas，与 GPU API 无关"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true

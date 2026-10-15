@@ -1,0 +1,11 @@
+[package]
+name = "tekes-ui-tokens"
+description = "TekesUI 设计 token：颜色、间距、圆角、动效、文字角色"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
