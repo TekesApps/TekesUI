@@ -46,7 +46,7 @@ crates/
 
 ### tokens/tokens.json
 
-token 的唯一真源，格式即 artifact 的 `project/tokens.json`，原样导入，不再另立 schema（旧 `tekesui-tokens/0` 草案作废）。只能手改，或由新一轮 artifact 导出覆盖。结构：
+token 的唯一真源，格式即 artifact 的 `project/tokens.json`，原样导入，不再另定格式（旧 `tekesui-tokens/0` 草案作废）。只能手改，或由新一轮 artifact 导出覆盖。结构：
 
 - 除 `type` 外，每个 family 都是 `{"tokens":[{"name","value","usage"}]}` 列表。
 - `color` 带 `themes`，共四个：`light`、`dark`、`light-ic`、`dark-ic`。颜色值写成 `{"light":…,"dark":…,"light-ic":…,"dark-ic":…}`，或写成别名 `"{other-token}"`。

@@ -36,7 +36,7 @@ F7 依赖 F1 至 F5 的 trait 边界稳定
 - **依赖**：[icons-and-tokens-brief.md](design/icons-and-tokens-brief.md) 的结论决定 token 与图标的来源。
 - **退路**：若用户决定不做自有 token，则 tekes-ui-tokens 退化为对系统语义色、系统字体和 SF Symbols 的薄封装（mac 上直接读取系统值），控件外观跟随系统；自有 token 部分推迟，不阻塞后续阶段。
 - **对照对象**：现有 Swift 客户端对应控件及系统控件。
-- **通过标准**：每个控件的 Gallery 页覆盖完整状态矩阵（hover、pressed、disabled、focus、light/dark、increase contrast）并有参照并排；拖动分隔条时 CPU 显著低于 AppKit 视图树方案（数值门槛见对比方法文档）。导入一次真实的 Design 交付，并通过全部校验。
+- **通过标准**：每个控件的 Gallery 页覆盖完整状态矩阵（hover、pressed、disabled、focus、light/dark、increase contrast）并有参照并排；拖动分隔条时 CPU 显著低于 AppKit 视图树方案（数值门槛见对比方法文档）。导入一次真实的 TekesUI Design System artifact 导出，并通过全部校验。
 
 ## F3：只读虚拟文档、选择、复制、滚动
 
