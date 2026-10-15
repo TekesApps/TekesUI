@@ -4,7 +4,7 @@
 //! 没有 GPU 适配器时（例如没有 Metal 的环境）测试打印原因后跳过，不算失败。
 
 use tekes_ui_render::{RenderError, Renderer};
-use tekes_ui_scene::{CornerRadii, Quad, Rect, Scene};
+use tekes_ui_scene::{CornerRadii, GlyphAtlas, Quad, Rect, Scene};
 use tekes_ui_tokens::{ColorRole, Rgba, Theme};
 
 /// 创建无 surface 的渲染器；没有适配器就返回 `None`，调用方直接 return。
@@ -40,7 +40,9 @@ impl Image {
 }
 
 fn render(r: &mut Renderer, scene: &Scene, size: (u32, u32), scale: f32, clear: Rgba) -> Image {
-    let data = r.render_to_rgba8(scene, size, scale, clear).unwrap();
+    let data = r
+        .render_to_rgba8(scene, &mut GlyphAtlas::default(), size, scale, clear)
+        .unwrap();
     assert_eq!(data.len(), (size.0 * size.1 * 4) as usize);
     Image {
         w: size.0,
@@ -473,19 +475,22 @@ fn invalid_arguments_are_errors_not_panics() {
     let Some(mut r) = renderer() else { return };
     let s = Scene::new();
     assert!(matches!(
-        r.render_to_rgba8(&s, (0, 10), 1.0, WHITE),
+        r.render_to_rgba8(&s, &mut GlyphAtlas::default(), (0, 10), 1.0, WHITE),
         Err(RenderError::InvalidArgument(_))
     ));
     assert!(matches!(
-        r.render_to_rgba8(&s, (10, 10), 0.0, WHITE),
+        r.render_to_rgba8(&s, &mut GlyphAtlas::default(), (10, 10), 0.0, WHITE),
         Err(RenderError::InvalidArgument(_))
     ));
     assert!(matches!(
-        r.render_to_rgba8(&s, (10, 10), f32::NAN, WHITE),
+        r.render_to_rgba8(&s, &mut GlyphAtlas::default(), (10, 10), f32::NAN, WHITE),
         Err(RenderError::InvalidArgument(_))
     ));
     // 没有 surface 的渲染器不能 render。
-    assert!(matches!(r.render(&s, WHITE), Err(RenderError::Surface(_))));
+    assert!(matches!(
+        r.render(&s, &mut GlyphAtlas::default(), WHITE),
+        Err(RenderError::Surface(_))
+    ));
 }
 
 #[test]

@@ -7,7 +7,7 @@
 
 use std::{fs::File, io::BufWriter, path::Path};
 use tekes_ui_render::Renderer;
-use tekes_ui_scene::{CornerRadii, Quad, Rect, Scene};
+use tekes_ui_scene::{CornerRadii, GlyphAtlas, Quad, Rect, Scene};
 use tekes_ui_tokens::{ColorRole, Rgba, Theme};
 
 const W: u32 = 360;
@@ -115,7 +115,13 @@ fn main() {
     for scale in [1u32, 2] {
         let (w, h) = (W * scale, H * scale);
         let rgba = r
-            .render_to_rgba8(&scene, (w, h), scale as f32, clear)
+            .render_to_rgba8(
+                &scene,
+                &mut GlyphAtlas::default(),
+                (w, h),
+                scale as f32,
+                clear,
+            )
             .unwrap();
         write_png(&dir.join(format!("sample_{scale}x.png")), w, h, &rgba);
         // 放大后两张图的屏幕大小一样（1x 放大 6 倍，2x 放大 3 倍）。

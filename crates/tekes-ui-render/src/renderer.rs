@@ -1,10 +1,12 @@
 //! `Renderer`：持有 wgpu 设备与（可选的）surface，按调用驱动绘制。
 
+use crate::common::COLOR_FORMAT;
 use crate::error::RenderError;
-use crate::quad_pass::{COLOR_FORMAT, QuadPass};
+use crate::frame::{FrameCounts, Pipelines};
 use std::ffi::c_void;
 use std::ptr::NonNull;
-use tekes_ui_scene::Scene;
+use std::sync::atomic::{AtomicU64, Ordering};
+use tekes_ui_scene::{GlyphAtlas, ImageId, Scene};
 use tekes_ui_tokens::Rgba;
 
 /// 同时在途的帧数，用于 `desired_maximum_frame_latency`。
@@ -14,6 +16,9 @@ use tekes_ui_tokens::Rgba;
 /// 所以用最短的队列，鼠标拖动和打字的反馈少一帧。代价是 CPU 编码和 GPU 执行不能
 /// 重叠，帧很重时可能掉帧；F1 以后若文字很多、实测 120Hz 吃紧，再改成 2。
 const FRAME_LATENCY: u32 = 1;
+
+/// 渲染器编号。atlas 靠它区分是哪个渲染器取走了脏区（见 `GlyphAtlas::take_dirty`）。
+static NEXT_RENDERER_ID: AtomicU64 = AtomicU64::new(1);
 
 struct SurfaceState {
     surface: wgpu::Surface<'static>,
@@ -38,7 +43,9 @@ pub struct Renderer {
     instance: wgpu::Instance,
     device: wgpu::Device,
     queue: wgpu::Queue,
-    pass: QuadPass,
+    gpu: Pipelines,
+    /// 最近一帧各类图元的实例数，测试用。
+    last_frame: FrameCounts,
     surface: Option<SurfaceState>,
 }
 
@@ -46,7 +53,7 @@ impl std::fmt::Debug for Renderer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Renderer")
             .field("has_surface", &self.surface.is_some())
-            .field("instance_capacity", &self.pass.instance_capacity())
+            .field("instance_capacity", &self.gpu.quad.instances.capacity())
             .finish_non_exhaustive()
     }
 }
@@ -131,12 +138,14 @@ impl Renderer {
         }
         .map_err(|e| RenderError::Surface(e.to_string()))?;
         let (device, queue) = request_device(&instance, Some(&surface))?;
-        let pass = QuadPass::new(&device);
+        let id = NEXT_RENDERER_ID.fetch_add(1, Ordering::Relaxed);
+        let gpu = Pipelines::new(&device, id);
         let mut r = Renderer {
             instance,
             device,
             queue,
-            pass,
+            gpu,
+            last_frame: FrameCounts::default(),
             surface: Some(SurfaceState {
                 surface,
                 layer,
@@ -154,12 +163,14 @@ impl Renderer {
     pub fn new_headless() -> Result<Renderer, RenderError> {
         let instance = new_instance();
         let (device, queue) = request_device(&instance, None)?;
-        let pass = QuadPass::new(&device);
+        let id = NEXT_RENDERER_ID.fetch_add(1, Ordering::Relaxed);
+        let gpu = Pipelines::new(&device, id);
         Ok(Renderer {
             instance,
             device,
             queue,
-            pass,
+            gpu,
+            last_frame: FrameCounts::default(),
             surface: None,
         })
     }
@@ -226,8 +237,16 @@ impl Renderer {
     /// surface 丢失（`Lost`）会重建 surface 后重试。
     /// 窗口被遮挡、或尺寸为 0 时跳过这一帧并返回 `Ok`；窗口重新可见时平台层应触发一次重绘。
     ///
+    /// `atlas` 是 scene 里字形所引用的 atlas：画之前先把它的脏区上传到 GPU。
+    /// scene 必须是在该 atlas 当前这一帧（最近一次 `begin_frame` 之后）编出来的。
+    ///
     /// 没有 surface 的渲染器返回 `RenderError::Surface`。
-    pub fn render(&mut self, scene: &Scene, clear: Rgba) -> Result<(), RenderError> {
+    pub fn render(
+        &mut self,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        clear: Rgba,
+    ) -> Result<(), RenderError> {
         let Some(s) = &self.surface else {
             return Err(RenderError::Surface("这个渲染器没有 surface".into()));
         };
@@ -267,7 +286,7 @@ impl Renderer {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("tekes frame"),
                 });
-            self.pass.encode(
+            self.last_frame = self.gpu.encode(
                 &self.device,
                 &self.queue,
                 &mut encoder,
@@ -275,6 +294,7 @@ impl Renderer {
                 size_px,
                 scale,
                 scene,
+                atlas,
                 clear,
             );
             self.queue.submit([encoder.finish()]);
@@ -319,6 +339,7 @@ impl Renderer {
     pub fn render_to_rgba8(
         &mut self,
         scene: &Scene,
+        atlas: &mut GlyphAtlas,
         size_px: (u32, u32),
         scale: f32,
         clear: Rgba,
@@ -357,7 +378,7 @@ impl Renderer {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("tekes offscreen"),
             });
-        self.pass.encode(
+        self.last_frame = self.gpu.encode(
             &self.device,
             &self.queue,
             &mut encoder,
@@ -365,6 +386,7 @@ impl Renderer {
             size_px,
             scale,
             scene,
+            atlas,
             clear,
         );
         encoder.copy_texture_to_buffer(
@@ -421,13 +443,51 @@ impl Renderer {
 
     /// 实例缓冲当前能放多少个 quad。
     pub fn instance_capacity(&self) -> usize {
-        self.pass.instance_capacity()
+        self.gpu.quad.instances.capacity()
     }
 
     /// 实例缓冲到目前为止分配过几次（含创建时的第一次）。
     /// 容量够用时不会增加：这是"跨帧复用缓冲"的可观测证据。
     pub fn instance_buffer_allocations(&self) -> usize {
-        self.pass.buffer_allocations()
+        self.gpu.quad.instances.allocations()
+    }
+
+    /// 登记一张图像，供 [`tekes_ui_scene::Primitive::Image`] 引用。
+    ///
+    /// `rgba8_premul` 是 RGBA 顺序、**预乘 alpha**、行紧密排列的 8 位像素，长度 `width * height * 4`，
+    /// 数值原样当作 sRGB 编码值（不做颜色转换）。图像画进矩形时线性采样、缩放到矩形大小。
+    /// 登记后图像常驻 GPU，直到 [`unregister_image`](Renderer::unregister_image)。
+    pub fn register_image(
+        &mut self,
+        rgba8_premul: &[u8],
+        width: u32,
+        height: u32,
+    ) -> Result<ImageId, RenderError> {
+        self.gpu
+            .register_image(&self.device, &self.queue, rgba8_premul, width, height)
+    }
+
+    /// 注销图像并释放它的 GPU 内存。返回 `false` 表示这个 id 没有登记（或已注销）。
+    /// 之后 scene 里仍引用该 id 的 `Image` 图元被跳过，不画。
+    pub fn unregister_image(&mut self, id: ImageId) -> bool {
+        self.gpu.image.unregister(id)
+    }
+
+    /// 当前登记着多少张图像。
+    pub fn image_count(&self) -> usize {
+        self.gpu.image.len()
+    }
+
+    /// atlas 的 GPU 数组纹理到目前为止建过几次（首次、换 atlas、页数超过层数时重建）。
+    pub fn atlas_texture_creations(&self) -> usize {
+        self.gpu.glyph.texture_creations()
+    }
+
+    /// 最近一帧的绘制统计：（quad 数，字形数，图像数，draw 数）。
+    /// 用来验证批处理：交错的图元种类各自成批，同类相邻的并成一次 draw。
+    pub fn last_frame_counts(&self) -> (usize, usize, usize, usize) {
+        let c = self.last_frame;
+        (c.quads, c.glyphs, c.images, c.draws)
     }
 }
 

@@ -8,7 +8,7 @@ use std::time::Instant;
 
 use tekes_ui_platform_macos::{Event, Window, WindowHandler};
 use tekes_ui_render::Renderer;
-use tekes_ui_scene::Scene;
+use tekes_ui_scene::{GlyphAtlas, Scene};
 use tekes_ui_tokens::{Appearance, Contrast, Theme};
 
 use crate::gallery::{Change, Command, Gallery};
@@ -17,6 +17,8 @@ use crate::gallery::{Change, Command, Gallery};
 pub struct Host {
     gallery: Gallery,
     scene: Scene,
+    /// 字形 atlas。每次重绘开头 `begin_frame`，渲染时由渲染器上传脏区。
+    atlas: GlyphAtlas,
     renderer: Option<Renderer>,
     /// `TEKES_LOG_EVENTS` 设了就把事件和重绘次数打到 stderr，用来核对空闲时不重绘。
     log: bool,
@@ -31,6 +33,7 @@ impl Host {
         Host {
             gallery,
             scene: Scene::new(),
+            atlas: GlyphAtlas::default(),
             renderer: None,
             log: std::env::var("TEKES_LOG_EVENTS").is_ok()
                 || std::env::var("TEKES_SELFTEST").is_ok(),
@@ -68,6 +71,7 @@ impl Host {
         self.redraws += 1;
         let size = window.size();
         let theme = self.gallery.theme();
+        self.atlas.begin_frame();
         self.scene.clear();
         self.gallery.build_scene(&mut self.scene);
         let clear = Gallery::background(theme);
@@ -80,7 +84,7 @@ impl Host {
             self.scene.len()
         ));
         if let Some(r) = &mut self.renderer
-            && let Err(e) = r.render(&self.scene, clear)
+            && let Err(e) = r.render(&self.scene, &mut self.atlas, clear)
         {
             eprintln!("渲染失败：{e}");
         }

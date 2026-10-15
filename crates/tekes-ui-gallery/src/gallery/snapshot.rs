@@ -8,7 +8,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use tekes_ui_render::{RenderError, Renderer};
-use tekes_ui_scene::Scene;
+use tekes_ui_scene::{GlyphAtlas, Scene};
 use tekes_ui_tokens::Theme;
 
 use super::layout::{FRAME_H, FRAME_W};
@@ -60,14 +60,22 @@ pub fn file_name(page: Page, theme: Theme, scale: u32) -> String {
 /// 渲染一页，返回 PNG 字节。
 pub fn render_png(
     renderer: &mut Renderer,
+    atlas: &mut GlyphAtlas,
     page: Page,
     theme: Theme,
     scale: u32,
 ) -> Result<Vec<u8>, SnapshotError> {
+    atlas.begin_frame();
     let mut scene = Scene::new();
     compose(page, None, theme, &mut scene);
     let size = (FRAME_W as u32 * scale, FRAME_H as u32 * scale);
-    let rgba = renderer.render_to_rgba8(&scene, size, scale as f32, Gallery::background(theme))?;
+    let rgba = renderer.render_to_rgba8(
+        &scene,
+        atlas,
+        size,
+        scale as f32,
+        Gallery::background(theme),
+    )?;
     encode_png(&rgba, size.0, size.1)
 }
 
@@ -87,11 +95,12 @@ fn encode_png(rgba: &[u8], w: u32, h: u32) -> Result<Vec<u8>, SnapshotError> {
 pub fn write_all(dir: &Path) -> Result<Vec<PathBuf>, SnapshotError> {
     fs::create_dir_all(dir)?;
     let mut renderer = Renderer::new_headless()?;
+    let mut atlas = GlyphAtlas::default();
     let mut written = Vec::new();
     for page in Page::ALL {
         for theme in Theme::ALL {
             for scale in SCALES {
-                let png = render_png(&mut renderer, page, theme, scale)?;
+                let png = render_png(&mut renderer, &mut atlas, page, theme, scale)?;
                 let path = dir.join(file_name(page, theme, scale));
                 fs::write(&path, png)?;
                 written.push(path);
@@ -124,16 +133,17 @@ mod tests {
             eprintln!("没有可用的 GPU 适配器，跳过");
             return;
         };
+        let mut atlas = GlyphAtlas::default();
         for (page, theme, scale) in [
             (Page::Primitives, Theme::LIGHT, 2),
             (Page::Tokens, Theme::DARK_INCREASED, 1),
         ] {
-            let a = render_png(&mut renderer, page, theme, scale).unwrap();
-            let b = render_png(&mut renderer, page, theme, scale).unwrap();
+            let a = render_png(&mut renderer, &mut atlas, page, theme, scale).unwrap();
+            let b = render_png(&mut renderer, &mut atlas, page, theme, scale).unwrap();
             assert_eq!(a, b, "{page:?} {theme:?} {scale}x");
             // 用新的渲染器再来一次，排除渲染器内部状态的影响。
             let mut fresh = Renderer::new_headless().unwrap();
-            let c = render_png(&mut fresh, page, theme, scale).unwrap();
+            let c = render_png(&mut fresh, &mut GlyphAtlas::default(), page, theme, scale).unwrap();
             assert_eq!(a, c, "{page:?} {theme:?} {scale}x（新渲染器）");
         }
     }
@@ -143,7 +153,14 @@ mod tests {
         let Ok(mut renderer) = Renderer::new_headless() else {
             return;
         };
-        let bytes = render_png(&mut renderer, Page::Tokens, Theme::LIGHT, 1).unwrap();
+        let bytes = render_png(
+            &mut renderer,
+            &mut GlyphAtlas::default(),
+            Page::Tokens,
+            Theme::LIGHT,
+            1,
+        )
+        .unwrap();
         let decoder = png::Decoder::new(std::io::Cursor::new(bytes));
         let reader = decoder.read_info().unwrap();
         let info = reader.info();

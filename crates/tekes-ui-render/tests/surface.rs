@@ -11,7 +11,7 @@ use objc2_core_graphics::CGColorSpace;
 use objc2_quartz_core::CAMetalLayer;
 use std::{ffi::c_void, ptr::NonNull};
 use tekes_ui_render::{RenderError, Renderer};
-use tekes_ui_scene::{Quad, Rect, Scene};
+use tekes_ui_scene::{GlyphAtlas, Quad, Rect, Scene};
 use tekes_ui_tokens::Rgba;
 
 fn make_layer(w: f64, h: f64, scale: f64) -> Retained<CAMetalLayer> {
@@ -86,7 +86,8 @@ fn configures_the_layer_and_keeps_srgb_colorspace_across_resizes() {
 
     let s = scene();
     for _ in 0..3 {
-        r.render(&s, Rgba::gray(1.0)).unwrap();
+        r.render(&s, &mut GlyphAtlas::default(), Rgba::gray(1.0))
+            .unwrap();
     }
 
     // resize：drawableSize 跟着变；wgpu 每次配置都会把 colorspace 重置为 nil，
@@ -102,7 +103,8 @@ fn configures_the_layer_and_keeps_srgb_colorspace_across_resizes() {
         colorspace_name(&layer).as_deref(),
         Some("kCGColorSpaceSRGB")
     );
-    r.render(&s, Rgba::gray(1.0)).unwrap();
+    r.render(&s, &mut GlyphAtlas::default(), Rgba::gray(1.0))
+        .unwrap();
 
     // scale 变化（换到 1x 屏幕）。
     layer.setContentsScale(1.0);
@@ -113,7 +115,8 @@ fn configures_the_layer_and_keeps_srgb_colorspace_across_resizes() {
         colorspace_name(&layer).as_deref(),
         Some("kCGColorSpaceSRGB")
     );
-    r.render(&s, Rgba::gray(1.0)).unwrap();
+    r.render(&s, &mut GlyphAtlas::default(), Rgba::gray(1.0))
+        .unwrap();
 }
 
 #[test]
@@ -124,18 +127,22 @@ fn zero_size_pauses_rendering_and_recovers() {
     };
     let s = scene();
     // 尺寸为 0：空操作，不报错。
-    r.render(&s, Rgba::gray(1.0)).unwrap();
+    r.render(&s, &mut GlyphAtlas::default(), Rgba::gray(1.0))
+        .unwrap();
     r.resize((200, 160), 2.0);
-    r.render(&s, Rgba::gray(1.0)).unwrap();
+    r.render(&s, &mut GlyphAtlas::default(), Rgba::gray(1.0))
+        .unwrap();
     assert_eq!(
         colorspace_name(&layer).as_deref(),
         Some("kCGColorSpaceSRGB")
     );
     // 缩到 0 再恢复。
     r.resize((0, 0), 2.0);
-    r.render(&s, Rgba::gray(1.0)).unwrap();
+    r.render(&s, &mut GlyphAtlas::default(), Rgba::gray(1.0))
+        .unwrap();
     r.resize((220, 180), 2.0);
-    r.render(&s, Rgba::gray(1.0)).unwrap();
+    r.render(&s, &mut GlyphAtlas::default(), Rgba::gray(1.0))
+        .unwrap();
 }
 
 #[test]
@@ -150,11 +157,13 @@ fn presents_with_transaction_when_the_layer_asks_for_it() {
     // 并且渲染器没有把属性改回去。
     layer.setPresentsWithTransaction(true);
     for _ in 0..3 {
-        r.render(&s, Rgba::gray(1.0)).unwrap();
+        r.render(&s, &mut GlyphAtlas::default(), Rgba::gray(1.0))
+            .unwrap();
     }
     assert!(layer.presentsWithTransaction());
     layer.setPresentsWithTransaction(false);
-    r.render(&s, Rgba::gray(1.0)).unwrap();
+    r.render(&s, &mut GlyphAtlas::default(), Rgba::gray(1.0))
+        .unwrap();
     r.resize((240, 180), 2.0);
     assert!(!layer.presentsWithTransaction());
 }

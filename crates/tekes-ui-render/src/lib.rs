@@ -81,7 +81,11 @@
 //!   （`NSWindowDidChangeOcclusionState`），否则会一直停留在旧画面。
 //! - 所有调用都在主线程。
 
+mod common;
 mod error;
+mod frame;
+mod glyph_pass;
+mod image_pass;
 mod instance;
 mod quad_pass;
 mod renderer;
