@@ -370,3 +370,29 @@ impl FontFallback for CoreTextShaper {
         merged
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn len_at(text: &str, utf16: usize) -> usize {
+        grapheme_len_at(&CFString::from_str(text), utf16)
+    }
+
+    #[test]
+    fn forced_progress_advances_by_a_whole_grapheme() {
+        // 参照实现这里前进 1 个 UTF-16 单元，会切开代理对和组合字符；我们前进整个字素簇。
+        assert_eq!(len_at("ab", 0), 1);
+        assert_eq!(len_at("😀x", 0), 2);
+        assert_eq!(len_at("e\u{301}x", 0), 2);
+        assert_eq!(len_at("🇨🇳x", 0), 4);
+        assert_eq!(len_at("👨\u{200D}👩\u{200D}👧x", 0), 8);
+        assert_eq!(len_at("a😀", 1), 2);
+    }
+
+    #[test]
+    fn forced_progress_is_at_least_one() {
+        // 即使 CoreText 返回 0 长度，也要保证前进。
+        assert!(len_at("a", 0) >= 1);
+    }
+}
