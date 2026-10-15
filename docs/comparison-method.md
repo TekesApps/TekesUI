@@ -12,10 +12,10 @@ TekesUI 的验收参照是 Swift 栈 TekesMetalTextKit（私有仓库，Metal + 
 
 | 名称 | 是什么 | 核实结果 | 用于阶段 |
 |---|---|---|---|
-| `MetalTextView` | 静态文字渲染的对照对象 | 存在（Engine 目录） | F1 |
-| `MetalDocumentView` | 只读文档渲染的对照对象 | 存在（API 目录） | F3 |
-| `HarnessStubSentences` | 一组句子文本夹具，分 A、B 两半（`HarnessStubSentencesA.txt` / `HarnessStubSentencesB.txt`），在测试的 `Fixtures` 目录里，多个测试按名字读取 | 存在 | F1 起 |
-| `markdown-style.json` | Markdown 样式配置，只含与默认样式不同的键；位于仓库 `docs/markdown-style-handoff/` | 存在 | F3 |
+| `MetalTextView` | 静态文字渲染的对照对象 | 存在 | F1 |
+| `MetalDocumentView` | 只读文档渲染的对照对象 | 存在 | F3 |
+| `HarnessStubSentences` | 一组句子文本夹具，分 A、B 两半，测试按名字读取 | 存在 | F1 起 |
+| `markdown-style.json` | Markdown 样式配置，只含与默认样式不同的键 | 存在 | F3 |
 | diff 测试用例 | 以 `MetalDiffDocumentViewTests`、`DiffBandProbeTests` 为代表 | 存在；具体取哪些用例作夹具，待与用户确认 | F3 |
 | Markdown 投影测试用例 | 以 `MetalMarkdownInlineProjectionTests`、`MetalMarkdownStructuredProjectionTests` 为代表 | 存在；具体取哪些用例作夹具，待与用户确认 | F3 |
 | `HarnessStubProfiler`、`HarnessStubNativeProfileTests` | 已有的性能剖析入口，可参考其指标口径 | 存在 | F1 性能 |

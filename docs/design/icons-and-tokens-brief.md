@@ -232,7 +232,7 @@ Alpha：faint .07、soft .14、wash .45。Increase Contrast 下 faint 提升为 
   "schema": "tekesui-tokens/0",
   "color": {
     "row-selection": {
-      "light": "#EEEFEF",
+      "light": "#EEF0F0",
       "dark": "#...",
       "increase-contrast-light": "#...",
       "increase-contrast-dark": "#...",

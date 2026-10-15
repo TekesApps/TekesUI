@@ -132,7 +132,7 @@ TekesUI 仍然押注单 surface（整个内容区一个绘制面，自己管布�
 | display list、glyph atlas、渲染 | 输入法协议实现（NSTextInputClient / TSF）并转成规整事件 |
 | 无障碍树的构造（AccessKit） | 无障碍树向系统的挂接 |
 | 滚动的物理参数与手势识别后的行为 | 惯性滚动本身（mac 用系统 momentum phase） |
-| 文本 trait 的使用方 | 文本 trait 的实现（CoreText / DirectWrite / Parley） |
+| 文本 trait 的定义与使用方 | 文本 trait 的各平台实现（CoreText / DirectWrite / Parley，在 tekes-ui-text 内按平台条件编译） |
 
 - mac 优先：objc2 + CoreText + wgpu（Metal 后端）。
 - Windows 在后：Win32 + TSF + DirectWrite，见 roadmap F7。
