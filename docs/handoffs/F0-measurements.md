@@ -148,3 +148,37 @@ scripts/analyze-capture.py /path/to/out/s1_800x600.png 800 600
 - **真实触控板与真实键鼠输入**：没有测，自测用 AppKit 入口合成事件，见 platform-boundary.md。
 - **多窗口、菜单的真实点击**：菜单命令通过 `sendAction` 验证，没有真实鼠标点菜单。
 - **Gallery 本身**：这一阶段只有最小宿主，light/dark/increase contrast 切换页、并排参照图槽位、导航都没做，不属于本文的测量范围。
+
+## 6. Gallery 骨架实测（真实 Gallery，空闲与交互）
+
+对象：带固定布局、目录、两页（Primitives、Token Swatches）、Pages 与 Appearance 菜单的 Gallery（用法见 [../gallery.md](../gallery.md)），release 构建，窗口摆放 Auto：外接屏 U2790B（外接屏优先）。时间：2026-10-15。
+
+### 交互自测（`TEKES_SELFTEST=gallery`）
+
+脚本通过 AppKit 入口触发菜单命令（`sendAction`）、合成窗口内的 NSEvent（点击经 `sendEvent`，鼠标移动与移出直接送内容视图），不合成全局事件。日志核对结果：
+
+- 菜单切页、切外观、切对比度、方向键、点击目录，每次状态变化恰好一次 Redraw，窗口标题随之变成 `TekesUI Gallery — <页> — <主题>`；
+- 重复动作不重绘：到头后再按 ↑ 没有 Redraw；
+- hover：鼠标进入第 0 行重绘一次（#15），在同一行内再移动三次零次重绘，移到第 1 行重绘一次，移出重绘一次；
+- 跟随系统：把窗口外观设为深色（`NSWindow.appearance`，不碰系统设置）后收到 `SystemAppearanceChanged`，主题变深并重绘；设回后变浅。固定为浅/深时，系统外观变化不影响。
+- 截图（`screencapture -o -l`）13 张逐张目测：两页在 light、dark、light+IC、dark+IC 下都明显不同，hover/选中底色、状态矩阵五列、参照槽三个窗格、27 个色块都在位。
+
+### 空闲门禁（真实 Gallery）
+
+`LOG_EVENTS=all scripts/f0-idle-gate.sh 3 60 <目录>`，窗口可见、静止，SETTLE 5 秒：
+
+| 次 | CPU 中位数 | CPU 最大值 | 空闲唤醒合计 | Redraw 计数（前 → 后） |
+|---|---|---|---|---|
+| 1 | 0.0% | 0.0% | 0 | 2 → 2 |
+| 2 | 0.0% | 0.0% | 0 | 2 → 2 |
+| 3 | 0.0% | 0.1% | 0 | 2 → 2 |
+
+3 次的中位数都是 0.0%，最大值 0.0%、0.0%、0.1%（3 次的中位数的中位数 0.0%，最大值的最大 0.1%）；Redraw 计数没有变化。只跑了 3 次（任务要求至少 3 次），没有重复第 2 节的 12 次规模；机器上同时有别的会话时的尖峰这次没有出现。
+
+### 未验证
+
+- 菜单没有被真实鼠标点过（用 `sendAction`）；快捷键没有用真实键盘按过，只测了菜单项的 action。
+- 窗口大于或小于 1200x800 时内容不重排、右下裁切：由布局不依赖窗口尺寸的单测和代码保证，这一版没有再做缩放截图。
+- 内建屏（120Hz）和 1x 屏上的 Gallery 没有跑。
+- 快照只在本机 GPU 上验证了逐字节可复现，没有跨机器比较。
+
