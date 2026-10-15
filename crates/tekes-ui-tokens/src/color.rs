@@ -7,7 +7,10 @@ use crate::theme::Theme;
 
 /// sRGB 颜色，**非预乘** alpha，各分量为 f32，范围 0..=1。
 ///
-/// 这不是线性空间。渲染器混合前需要用 [`Rgba::to_linear`] 转换。
+/// 这不是线性空间，也不应该在进入渲染器前转成线性：TekesUI 渲染器沿用
+/// AppKit / CoreAnimation 的做法，直接在 sRGB 编码空间（gamma 空间）里混合，
+/// token 的数值原样传给着色器，不做 sRGB 转换。详见 `tekes-ui-render` 的
+/// 模块文档。
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Rgba {
     pub r: f32,
@@ -42,6 +45,9 @@ impl Rgba {
     }
 
     /// 转成线性空间的 RGB，alpha 不变，仍然非预乘。
+    ///
+    /// 只用于需要线性光的颜色运算（例如按亮度做插值或对比度计算），
+    /// **不在 UI 混合路径上使用**：渲染器的混合发生在 sRGB 编码空间。
     pub fn to_linear(self) -> [f32; 4] {
         fn lin(c: f32) -> f32 {
             if c <= 0.040_45 {
