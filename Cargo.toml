@@ -14,6 +14,10 @@ rust-version = "1.95"
 tekes-ui-tokens = { path = "crates/tekes-ui-tokens" }
 tekes-ui-scene = { path = "crates/tekes-ui-scene" }
 tekes-ui-render = { path = "crates/tekes-ui-render" }
+wgpu = { version = "30.0.1", default-features = false, features = ["metal", "wgsl", "std"] }
+bytemuck = { version = "1", features = ["derive"] }
+pollster = "1"
+png = "0.17"
 tekes-ui-platform-macos = { path = "crates/tekes-ui-platform-macos" }
 
 [workspace.lints.rust]
