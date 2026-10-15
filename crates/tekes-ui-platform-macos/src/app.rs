@@ -77,7 +77,12 @@ define_class!(
         #[unsafe(method(windowWillClose:))]
         fn window_will_close(&self, _notification: &NSNotification) {
             // 之后不再投递事件。是否结束应用由 applicationShouldTerminateAfterLastWindowClosed: 决定。
-            self.ivars().shared.closed.set(true);
+            let shared = &self.ivars().shared;
+            shared.closed.set(true);
+            shared.animating.set(false);
+            if let Some(o) = shared.objects.get() {
+                o.view.invalidate_display_link();
+            }
         }
 
         /// 窗口重新可见（最小化后恢复、被盖住后露出来）时请求重绘。

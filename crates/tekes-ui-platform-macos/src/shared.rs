@@ -67,6 +67,12 @@ pub(crate) struct Shared {
     pub closed: Cell<bool>,
     /// 统计：用于示例和测试。
     pub redraw_count: Cell<u64>,
+    /// 持续动画模式是否开着（`Window::set_animating`）。
+    pub animating: Cell<bool>,
+    /// 显示链接回调被调用的总次数（不论动画模式开没开，用来验证关掉之后真的静默）。
+    pub link_callbacks: Cell<u64>,
+    /// 其中作为 `AnimationFrame` 投递给引擎的次数。
+    pub animation_frames: Cell<u64>,
 }
 
 impl std::fmt::Debug for Shared {
@@ -93,6 +99,9 @@ impl Shared {
             ready: Cell::new(false),
             closed: Cell::new(false),
             redraw_count: Cell::new(0),
+            animating: Cell::new(false),
+            link_callbacks: Cell::new(0),
+            animation_frames: Cell::new(0),
         })
     }
 
@@ -147,6 +156,10 @@ impl Shared {
     /// 应用结束时丢弃处理器，让它的 Drop 在 `run()` 返回之前执行。
     pub fn finish(&self) {
         self.closed.set(true);
+        self.animating.set(false);
+        if let Some(o) = self.objects.get() {
+            o.view.invalidate_display_link();
+        }
         let handler = self.handler.borrow_mut().take();
         drop(handler);
     }
@@ -191,6 +204,42 @@ impl Window {
     /// 在处理 `Redraw` 的过程中调用，表示“下一帧还要画”。
     pub fn request_redraw(&self) {
         self.shared.request_redraw();
+    }
+
+    /// 打开或关闭持续动画模式。
+    ///
+    /// 开着的时候，显示链接（`CADisplayLink`，随窗口所在屏幕的刷新率，ProMotion 上最高 120Hz）
+    /// 每次刷新回调一次，平台层投递一个 [`Event::AnimationFrame`]；引擎在里面推进动画并画一帧。
+    /// 关掉之后链接暂停，不再有任何回调，进程回到按需状态（空闲 0 CPU）。
+    /// 重复设置同一个值无效果。
+    ///
+    /// 返回设置之后动画模式是否真的开着：需要 macOS 14（`NSView.displayLink(target:selector:)`），
+    /// 系统不支持时开不起来，返回 false。关闭永远返回 false。
+    pub fn set_animating(&self, animating: bool) -> bool {
+        if self.shared.closed.get() {
+            return false;
+        }
+        let on = animating && self.view.set_display_link_running(true);
+        if !animating {
+            self.view.set_display_link_running(false);
+        }
+        self.shared.animating.set(on);
+        on
+    }
+
+    /// 持续动画模式现在是否开着。
+    pub fn is_animating(&self) -> bool {
+        self.shared.animating.get()
+    }
+
+    /// 显示链接回调被调用的总次数（含动画模式关着时的，理论上关着时不增加），诊断用。
+    pub fn display_link_callbacks(&self) -> u64 {
+        self.shared.link_callbacks.get()
+    }
+
+    /// 作为 `AnimationFrame` 投递给引擎的次数，诊断用。
+    pub fn animation_frame_count(&self) -> u64 {
+        self.shared.animation_frames.get()
     }
 
     pub fn set_title(&self, title: &str) {

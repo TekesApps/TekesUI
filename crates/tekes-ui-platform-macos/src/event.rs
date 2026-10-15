@@ -237,6 +237,53 @@ pub struct KeyEvent {
     pub is_repeat: bool,
 }
 
+/// 显示链接（`CADisplayLink`）一次回调携带的时间信息，随 [`Event::AnimationFrame`] 投递。
+///
+/// 所有时间都是秒（`f64`），基准是 `CACurrentMediaTime()`（Mach 绝对时间，休眠时不走），
+/// 四个字段在同一时间轴上，可以直接相减。
+///
+/// 掉帧检测靠 `target_timestamp`：连续两次回调的 `target_timestamp` 之差如果超过
+/// 1.5 个 `refresh_interval`，中间至少有一次显示刷新没有得到新帧（见 `tekes_ui_render::stats`）。
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct AnimationFrame {
+    /// `CADisplayLink.timestamp`：上一帧被显示（上一次刷新）的时刻。
+    pub timestamp: f64,
+    /// `CADisplayLink.targetTimestamp`：这次回调画出的帧预计被显示的时刻（下一次刷新）。
+    /// 动画应当按它推进，而不是按回调实际发生的时刻，这样回调抖动不会变成画面抖动。
+    pub target_timestamp: f64,
+    /// 平台层的回调入口实际被调用的时刻（进入回调后第一件事读取）。
+    /// `target_timestamp - callback_time` 是这一帧在上屏截止之前剩下的时间预算。
+    pub callback_time: f64,
+    /// 显示器当前的刷新间隔，`CADisplayLink.duration`；系统给出 0 或负数时退回
+    /// `target_timestamp - timestamp`，两者都不可用则为 0。
+    pub refresh_interval: f64,
+}
+
+impl AnimationFrame {
+    /// 从显示链接的原始读数构造，规整 `refresh_interval`。
+    pub fn new(timestamp: f64, target_timestamp: f64, callback_time: f64, duration: f64) -> Self {
+        let from_stamps = target_timestamp - timestamp;
+        let refresh_interval = if duration.is_finite() && duration > 0.0 {
+            duration
+        } else if from_stamps.is_finite() && from_stamps > 0.0 {
+            from_stamps
+        } else {
+            0.0
+        };
+        AnimationFrame {
+            timestamp,
+            target_timestamp,
+            callback_time,
+            refresh_interval,
+        }
+    }
+
+    /// 离上屏截止还剩多少秒；回调已经晚于目标时为负。
+    pub fn budget(&self) -> f64 {
+        self.target_timestamp - self.callback_time
+    }
+}
+
 /// 平台层向引擎投递的事件。
 ///
 /// 事件在主线程上、AppKit 回调里同步投递；同一时刻只有一个 `handle` 调用在运行，
@@ -270,6 +317,10 @@ pub enum Event {
     },
     /// 现在应该画一帧并呈现。
     Redraw,
+    /// 持续动画模式（[`Window::set_animating`](crate::Window::set_animating)）下，显示链接每次
+    /// 刷新的回调。引擎在这里推进动画并画一帧，不需要再调 `request_redraw`。
+    /// 只在动画模式开着的时候才会收到；关掉之后不再有回调，空闲时仍是 0 CPU。
+    AnimationFrame(AnimationFrame),
     Mouse(MouseEvent),
     Scroll(ScrollEvent),
     Key(KeyEvent),
@@ -292,6 +343,23 @@ pub enum Event {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn animation_frame_interval_is_sanitized() {
+        // 正常：用 duration。
+        let f = AnimationFrame::new(10.0, 10.008, 10.002, 1.0 / 120.0);
+        assert!((f.refresh_interval - 1.0 / 120.0).abs() < 1e-12);
+        assert!((f.budget() - 0.006).abs() < 1e-12);
+        // duration 为 0：退回 target - timestamp。
+        let f = AnimationFrame::new(10.0, 10.016, 10.010, 0.0);
+        assert!((f.refresh_interval - 0.016).abs() < 1e-12);
+        // 都不可用：0。
+        let f = AnimationFrame::new(10.0, 10.0, 10.0, f64::NAN);
+        assert_eq!(f.refresh_interval, 0.0);
+        // 晚于目标：预算为负。
+        let f = AnimationFrame::new(10.0, 10.008, 10.012, 1.0 / 120.0);
+        assert!(f.budget() < 0.0);
+    }
 
     #[test]
     fn modifiers_roundtrip() {

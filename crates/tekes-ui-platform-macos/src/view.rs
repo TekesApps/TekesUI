@@ -17,13 +17,15 @@ use objc2_app_kit::{
 use objc2_core_graphics::{CGColorSpace, kCGColorSpaceSRGB};
 use objc2_foundation::{
     MainThreadMarker, NSArray, NSObjectNSThreadPerformAdditions, NSObjectProtocol, NSRect,
-    NSRunLoopCommonModes, NSSize,
+    NSRunLoop, NSRunLoopCommonModes, NSSize,
 };
-use objc2_quartz_core::{CALayer, CAMetalLayer};
+use objc2_quartz_core::{
+    CACurrentMediaTime, CADisplayLink, CAFrameRateRange, CALayer, CAMetalLayer,
+};
 
 use crate::event::{
-    Event, KeyEvent, KeyEventKind, Modifiers, MouseButton, MouseEvent, MouseEventKind, Point,
-    ScrollEvent, ScrollPhase, Size, Vec2,
+    AnimationFrame, Event, KeyEvent, KeyEventKind, Modifiers, MouseButton, MouseEvent,
+    MouseEventKind, Point, ScrollEvent, ScrollPhase, Size, Vec2,
 };
 use crate::shared::{GeometryState, Shared};
 
@@ -32,6 +34,9 @@ pub(crate) struct ViewIvars {
     shared: Rc<Shared>,
     layer: RefCell<Option<Retained<CAMetalLayer>>>,
     tracking_area: RefCell<Option<Retained<NSTrackingArea>>>,
+    /// 按需创建的显示链接。创建后一直存在，不跑的时候是暂停状态（`isPaused`），
+    /// 窗口关闭或应用结束时 invalidate（它强引用 target，也就是这个视图）。
+    link: RefCell<Option<Retained<CADisplayLink>>>,
 }
 
 define_class!(
@@ -118,6 +123,28 @@ define_class!(
             if shared.ready.get() && shared.redraw_pending.replace(false) {
                 shared.dispatch(Event::Redraw);
             }
+        }
+
+        /// 显示链接的回调。第一件事是读时钟：`callback_time` 要尽量接近回调真正发生的时刻。
+        /// 动画模式关着时（暂停之前已经排队的最后一次回调）只计数，不投递。
+        #[unsafe(method(tekesDisplayLinkFired:))]
+        fn display_link_fired(&self, link: &CADisplayLink) {
+            let callback_time = CACurrentMediaTime();
+            let shared = &self.ivars().shared;
+            shared.link_callbacks.set(shared.link_callbacks.get() + 1);
+            if !shared.ready.get() || !shared.animating.get() {
+                return;
+            }
+            shared
+                .animation_frames
+                .set(shared.animation_frames.get() + 1);
+            let frame = AnimationFrame::new(
+                link.timestamp(),
+                link.targetTimestamp(),
+                callback_time,
+                link.duration(),
+            );
+            shared.dispatch(Event::AnimationFrame(frame));
         }
 
         // ---- 尺寸与缩放 ----
@@ -307,6 +334,7 @@ impl TekesView {
             shared,
             layer: RefCell::new(None),
             tracking_area: RefCell::new(None),
+            link: RefCell::new(None),
         });
         // SAFETY: NSView 的指定初始化方法 initWithFrame: 签名正确。
         let view: Retained<TekesView> = unsafe { msg_send![super(this), initWithFrame: frame] };
@@ -334,6 +362,50 @@ impl TekesView {
                 false,
                 Some(&modes),
             );
+        }
+    }
+
+    /// 启动或暂停显示链接。第一次启动时创建：`NSView.displayLink(target:selector:)`（macOS 14），
+    /// 自动跟随视图所在窗口的屏幕；加进主 runloop 的 common modes（实时缩放、菜单跟踪期间也能走）；
+    /// 帧率范围 60–120，首选 120，ProMotion 上给到 120Hz，只有 60Hz 的屏幕自然落到 60。
+    /// 返回启动之后链接是否在跑（系统不支持时为 false）；暂停永远返回 false。
+    pub(crate) fn set_display_link_running(&self, run: bool) -> bool {
+        let existing = self.ivars().link.borrow().clone();
+        if !run {
+            if let Some(link) = existing {
+                link.setPaused(true);
+            }
+            return false;
+        }
+        let link = match existing {
+            Some(link) => link,
+            None => {
+                if !self.respondsToSelector(sel!(displayLinkWithTarget:selector:)) {
+                    return false;
+                }
+                // SAFETY: target 是 self，selector 是上面 define_class 里定义的、接受一个
+                // CADisplayLink 参数的方法。
+                let link = unsafe {
+                    self.displayLinkWithTarget_selector(self, sel!(tekesDisplayLinkFired:))
+                };
+                link.setPreferredFrameRateRange(CAFrameRateRange::new(60.0, 120.0, 120.0));
+                link.setPaused(true);
+                // SAFETY: 主线程；common modes 是 Foundation 导出的全局常量。
+                unsafe {
+                    link.addToRunLoop_forMode(&NSRunLoop::mainRunLoop(), NSRunLoopCommonModes);
+                }
+                *self.ivars().link.borrow_mut() = Some(link.clone());
+                link
+            }
+        };
+        link.setPaused(false);
+        true
+    }
+
+    /// 窗口关闭或应用结束时调用：invalidate 显示链接，断开它对视图的强引用。
+    pub(crate) fn invalidate_display_link(&self) {
+        if let Some(link) = self.ivars().link.borrow_mut().take() {
+            link.invalidate();
         }
     }
 

@@ -15,8 +15,8 @@ pub mod placement;
 
 pub use config::{AppConfig, WindowConfig};
 pub use event::{
-    Event, KeyEvent, KeyEventKind, Modifiers, MouseButton, MouseEvent, MouseEventKind, Point,
-    ScrollEvent, ScrollPhase, Size, Vec2,
+    AnimationFrame, Event, KeyEvent, KeyEventKind, Modifiers, MouseButton, MouseEvent,
+    MouseEventKind, Point, ScrollEvent, ScrollPhase, Size, Vec2,
 };
 pub use menu::{CommandId, KeyEquivalent, Menu, MenuBar, MenuCommand, MenuError, MenuItem};
 pub use placement::{Layout, PlacementReport, Rect, ScreenChoice, ScreenInfo, WindowPlacement};
