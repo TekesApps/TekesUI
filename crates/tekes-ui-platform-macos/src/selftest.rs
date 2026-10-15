@@ -158,10 +158,21 @@ extern "C" fn run_step(ctx: *mut c_void) {
             }
         }
         Action::MouseExit => {
-            if let (Some(v), Some(e)) = (
-                w.contentView(),
-                mouse_event(&w, NSEventType::MouseExited, -1.0, -1.0, 0),
-            ) {
+            // SAFETY: 不带用户数据（null 指针）。
+            let e = unsafe {
+                NSEvent::enterExitEventWithType_location_modifierFlags_timestamp_windowNumber_context_eventNumber_trackingNumber_userData(
+                    NSEventType::MouseExited,
+                    win_point(&w, -1.0, -1.0),
+                    NSEventModifierFlags::empty(),
+                    0.0,
+                    w.windowNumber(),
+                    None,
+                    0,
+                    0,
+                    std::ptr::null_mut(),
+                )
+            };
+            if let (Some(v), Some(e)) = (w.contentView(), e) {
                 v.mouseExited(&e);
             }
         }
