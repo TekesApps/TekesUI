@@ -30,6 +30,9 @@ mod menu_build;
 #[cfg(target_os = "macos")]
 mod screens;
 #[cfg(target_os = "macos")]
+#[doc(hidden)]
+pub mod selftest;
+#[cfg(target_os = "macos")]
 mod shared;
 #[cfg(target_os = "macos")]
 mod view;

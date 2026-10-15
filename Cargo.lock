@@ -640,6 +640,12 @@ dependencies = [
 [[package]]
 name = "tekes-ui-gallery"
 version = "0.1.0"
+dependencies = [
+ "tekes-ui-platform-macos",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-tokens",
+]
 
 [[package]]
 name = "tekes-ui-platform-macos"
