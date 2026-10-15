@@ -1,0 +1,30 @@
+这个版本是 v1.4.2，发布于 2026 年 3 月，比 v1.3.9 快了大约 12%。
+请在浏览器里打开 http://example.com/docs/intro，然后点击 Download 按钮。
+函数 fn main() 是程序的入口，运行 cargo build --release 之后会生成可执行文件。
+这台 server 有 16GB 内存，磁盘剩余 240 GB，CPU 占用率常年低于 35%。
+先把文件复制到 /usr/local/share/demo 目录，再检查权限是不是 rw-r--r--。
+他说“OK，没问题”，然后把 "config.toml" 里的 timeout 改成了 30s。
+今天的会议记录（meeting notes）已经放到 https://example.com/notes/0420 了。
+参数 --width=700 和 --scale=2 都是必填项（required），别忘了写。
+新手常犯的错误之一，是把 let x = 5; 写成了 let x == 5;，结果编译不过。
+室温 21.5°C，湿度 48%，气压 1013 hPa，一切正常 (all good)。
+我们用 Rust 写了这个小工具，代码大约 2400 行，测试覆盖率 87.5%。
+这家店的 Wi-Fi 密码是公开的，网络名叫 guest-net，速度约 50 Mbps。
+“Hello, world!” 是几乎所有语言教程的第一个例子，你也可以试试。
+请把 README.md 和 LICENSE 一起放进压缩包，文件名写成 demo-0.3.1.zip。
+按下 Ctrl+C 可以中断任务，按 Ctrl+Z 则是暂停，别搞混了。
+报告第 3 章（Results）列出了 5 组数据，其中 group-B 的误差最小。
+他的邮箱是 someone@example.com，不过最近很少回复，建议先打电话。
+这个 API 返回 JSON：{"ok": true, "count": 3}，字段名区分大小写。
+我把窗口宽度从 700px 缩到 320px，换行位置就变了，这正是要测试的。
+在 shell 里输入 ls -la ~/Documents | head -n 5，可以看到前五个条目。
+Release notes（发布说明）里写着：修复了 3 个 crash，优化了 startup 时间。
+时间戳 2026-10-15T08:30:00Z 表示协调世界时 8 点 30 分，别当成本地时间。
+她的笔记本分辨率是 2560×1600，缩放 200%，所以看起来和 1280×800 差不多。
+“差不多”不等于“一样”，所以我们才要逐项对比，而不是凭感觉。
+一杯 latte 要 28 元，加一份 extra shot 再加 6 元，我还是点了美式 (Americano)。
+变量名 user_name、userName 和 UserName 在不同语言里各有各的习惯。
+网址 https://example.org/a/b?x=1&y=2#top 里的 ? 和 # 都有特别的含义。
+这段 Python 很短：for i in range(3): print(i)，输出 0、1、2 三个数字。
+他在 3F 的 meeting room 等了 15 分钟，白板上还留着昨天画的 flow chart。
+价格从 $9.99 涨到了 $12.50，折合人民币大约 90 元，我决定再等等看。
