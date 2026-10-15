@@ -6,7 +6,13 @@
 
 ## 当前状态
 
-只有文档，尚无代码。先把定位、分层、路线和对比验收方法定下来，再按路线图逐阶段落地。
+F0（平台层、窗口、wgpu、Gallery 骨架）已实现，待人工检查项确认，见 [docs/handoffs/F0.md](docs/handoffs/F0.md)。token 是临时占位值。
+
+运行 Gallery：
+
+```bash
+cargo run -p tekes-ui-gallery --release
+```
 
 ## 验收方式
 
@@ -19,6 +25,10 @@
 - [docs/charter.md](docs/charter.md)：定位、原则、crate 分层、平台边界
 - [docs/roadmap.md](docs/roadmap.md)：F0 到 F7 各阶段的范围、对照对象与通过标准
 - [docs/comparison-method.md](docs/comparison-method.md)：与参照实现对比的方法与容差
+- [docs/dependencies.md](docs/dependencies.md)：外部依赖版本与许可证复核
+- [docs/platform-boundary.md](docs/platform-boundary.md)：引擎与 mac 平台层的接口、帧节奏、窗口摆放
+- [docs/gallery.md](docs/gallery.md)：Gallery 的布局、页面、菜单与快照
+- [docs/handoffs/](docs/handoffs/)：各阶段交接与测量记录
 - [docs/design/icons-and-tokens-brief.md](docs/design/icons-and-tokens-brief.md)：图标与设计 token 的调研任务书
 
 ## 许可
