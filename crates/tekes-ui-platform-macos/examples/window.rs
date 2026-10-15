@@ -31,7 +31,7 @@ mod mac {
     use objc2_quartz_core::{CALayer, CATransaction};
     use tekes_ui_platform_macos::{
         App, AppConfig, CommandId, Event, KeyEquivalent, Menu, MenuBar, MenuCommand, MenuItem,
-        Modifiers, MouseEventKind, Point, Window, WindowConfig, WindowHandler,
+        Modifiers, MouseEventKind, Point, Window, WindowConfig, WindowHandler, WindowPlacement,
     };
 
     const CMD_LIGHT: CommandId = CommandId(1);
@@ -39,6 +39,7 @@ mod mac {
     const CMD_CONTRAST: CommandId = CommandId(3);
     const CMD_REDRAW: CommandId = CommandId(10);
     const CMD_TWICE: CommandId = CommandId(11);
+    const CMD_GROW: CommandId = CommandId(12);
 
     struct Logger {
         start: Instant,
@@ -48,6 +49,8 @@ mod mac {
         log_moves: bool,
         dark: bool,
         contrast: bool,
+        /// 正在 handle 里。用来断言平台层没有重入调用 handle。
+        busy: bool,
     }
 
     impl Logger {
@@ -85,6 +88,15 @@ mod mac {
 
     impl WindowHandler for Logger {
         fn handle(&mut self, event: Event, window: &mut Window) {
+            assert!(!self.busy, "handle 被重入调用：平台层的排队机制失效");
+            self.busy = true;
+            self.handle_inner(event, window);
+            self.busy = false;
+        }
+    }
+
+    impl Logger {
+        fn handle_inner(&mut self, event: Event, window: &mut Window) {
             match &event {
                 Event::Redraw => {
                     self.redraws += 1;
@@ -124,6 +136,25 @@ mod mac {
                         window.metal_layer(),
                         window.native_window_number()
                     ));
+                    if let Some(r) = window.placement_report() {
+                        for (i, s) in r.all_screens.iter().enumerate() {
+                            self.log(&format!(
+                                "  screen[{i}] {:?} builtin={} scale={} max_fps={} frame={:?}",
+                                s.name, s.builtin, s.scale, s.max_fps, s.frame
+                            ));
+                        }
+                        let s = &r.screen;
+                        self.log(&format!(
+                            "  placement: screen[{}] {:?} (builtin={}, scale={}, max_fps={}) layout={:?}；{}",
+                            r.screen_index, s.name, s.builtin, s.scale, s.max_fps, r.layout, r.reason
+                        ));
+                    }
+                    if let Some(s) = window.screen_info() {
+                        self.log(&format!(
+                            "  window is on {:?} builtin={} scale={} max_fps={}",
+                            s.name, s.builtin, s.scale, s.max_fps
+                        ));
+                    }
                 }
                 Event::Command(id) => {
                     self.log(&format!("{event:?}"));
@@ -140,6 +171,17 @@ mod mac {
                             window.request_redraw();
                         }
                         CMD_REDRAW => window.request_redraw(),
+                        CMD_GROW => {
+                            // 在 handle 里改窗口尺寸：AppKit 会同步回调 setFrameSize:，
+                            // 平台层把 Resized/Redraw 排队，等本次 handle 返回后再投递。
+                            let s = window.size();
+                            self.log("  CMD_GROW：调用 set_content_size 之前");
+                            window.set_content_size(tekes_ui_platform_macos::Size {
+                                width: s.width + 20.0,
+                                height: s.height + 10.0,
+                            });
+                            self.log("  CMD_GROW：set_content_size 已返回，Resized 应该排在后面");
+                        }
                         CMD_TWICE => {
                             // 合并：连续两次请求只产生一次 Redraw。
                             window.request_redraw();
@@ -208,6 +250,7 @@ mod mac {
                     MenuCommand::new("Request Redraw", CMD_REDRAW).key(KeyEquivalent::command('r')),
                 ),
                 MenuItem::Command(MenuCommand::new("Request Redraw Twice", CMD_TWICE)),
+                MenuItem::Command(MenuCommand::new("Grow Window (reentrancy)", CMD_GROW)),
             ],
         );
         MenuBar {
@@ -217,7 +260,13 @@ mod mac {
 
     pub fn main() {
         let selftest = std::env::var("TEKES_SELFTEST").ok();
+        // 摆放规则（开发规则）：有外接显示器放外接屏；否则放内建屏右半边；
+        // 自测会缩放窗口，属于尺寸类检查，免除右半边规则。可用环境变量覆盖，见 placement 模块。
         let window_config = WindowConfig {
+            placement: WindowPlacement::Auto {
+                need_120hz: false,
+                size_check: selftest.is_some(),
+            },
             title: "TekesUI window example".into(),
             min_size: Some(tekes_ui_platform_macos::Size {
                 width: 320.0,
@@ -236,6 +285,7 @@ mod mac {
             log_moves: std::env::var("TEKES_LOG_MOVES").is_ok(),
             dark: false,
             contrast: false,
+            busy: false,
         };
         eprintln!("pid {}", std::process::id());
         if let Some(mode) = selftest {
@@ -550,6 +600,7 @@ mod mac {
                     },
                 ),
                 (3300, Step::Menu { tag: 11 }),
+                (3500, Step::Menu { tag: 12 }),
                 (3700, Step::Resize { w: 700.0, h: 450.0 }),
             ];
             // 模拟实时缩放：每 20ms 一步，共 20 步。

@@ -11,6 +11,7 @@
 pub mod config;
 pub mod event;
 pub mod menu;
+pub mod placement;
 
 pub use config::{AppConfig, WindowConfig};
 pub use event::{
@@ -18,6 +19,7 @@ pub use event::{
     ScrollEvent, ScrollPhase, Size, Vec2,
 };
 pub use menu::{CommandId, KeyEquivalent, Menu, MenuBar, MenuCommand, MenuError, MenuItem};
+pub use placement::{Layout, PlacementReport, Rect, ScreenChoice, ScreenInfo, WindowPlacement};
 
 #[cfg(target_os = "macos")]
 mod app;
@@ -25,6 +27,8 @@ mod app;
 mod appearance;
 #[cfg(target_os = "macos")]
 mod menu_build;
+#[cfg(target_os = "macos")]
+mod screens;
 #[cfg(target_os = "macos")]
 mod shared;
 #[cfg(target_os = "macos")]

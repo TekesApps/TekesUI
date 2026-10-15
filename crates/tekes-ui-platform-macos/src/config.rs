@@ -1,6 +1,7 @@
 //! 应用与窗口的启动配置。纯数据。
 
 use crate::event::Size;
+use crate::placement::WindowPlacement;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AppConfig {
@@ -26,8 +27,10 @@ pub struct WindowConfig {
     /// 内容区（视图）的初始尺寸，单位 pt。
     pub size: Size,
     pub min_size: Option<Size>,
-    /// 是否居中。已经从 autosave 恢复出位置时不再居中。默认 true。
-    pub center: bool,
+    /// 初始位置。已经从 autosave 恢复出位置时不再摆放。
+    /// 默认 `Centered`（AppKit 居中）；开发时的示例和 Gallery 用 `Auto`，
+    /// 并可以用环境变量 `TEKESUI_WINDOW_PLACEMENT` 覆盖，见 [`crate::placement`]。
+    pub placement: WindowPlacement,
     /// 窗口位置与尺寸的自动保存名。默认 `None`（关闭）：
     /// Gallery 需要固定、可复现的窗口尺寸，不能被上次的拖动改变。
     pub frame_autosave_name: Option<String>,
@@ -42,7 +45,7 @@ impl Default for WindowConfig {
                 height: 640.0,
             },
             min_size: None,
-            center: true,
+            placement: WindowPlacement::Centered,
             frame_autosave_name: None,
         }
     }

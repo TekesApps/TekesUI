@@ -30,6 +30,7 @@ use objc2_foundation::{MainThreadMarker, NSSize, NSString};
 
 use crate::event::{Event, Size};
 use crate::menu::CommandId;
+use crate::placement::{PlacementReport, ScreenInfo};
 use crate::view::TekesView;
 
 /// 引擎实现的处理器。平台层在主线程上同步调用，一次只有一个调用在运行。
@@ -59,6 +60,8 @@ pub(crate) struct Shared {
     pub last_geometry: Cell<Option<GeometryState>>,
     pub last_appearance: Cell<Option<(bool, bool)>>,
     pub objects: OnceCell<Objects>,
+    /// 窗口摆放的选择结果（autosave 恢复了位置时为 None）。
+    pub placement: RefCell<Option<PlacementReport>>,
     /// `Created` 已经投递。在此之前视图收到的回调（初始 setFrameSize 等）不投递事件。
     pub ready: Cell<bool>,
     pub closed: Cell<bool>,
@@ -86,6 +89,7 @@ impl Shared {
             last_geometry: Cell::new(None),
             last_appearance: Cell::new(None),
             objects: OnceCell::new(),
+            placement: RefCell::new(None),
             ready: Cell::new(false),
             closed: Cell::new(false),
             redraw_count: Cell::new(0),
@@ -245,6 +249,17 @@ impl Window {
     /// 否则会卡顿。是否启用留给渲染层集成时按实测决定。
     pub fn set_presents_with_transaction(&self, on: bool) {
         self.view.metal_layer().setPresentsWithTransaction(on);
+    }
+
+    /// 启动时窗口摆放的选择结果：选了哪块屏幕、为什么，以及当时看到的全部屏幕。
+    /// 位置由 autosave 恢复时为 `None`。
+    pub fn placement_report(&self) -> Option<PlacementReport> {
+        self.shared.placement.borrow().clone()
+    }
+
+    /// 窗口当前所在屏幕的信息。
+    pub fn screen_info(&self) -> Option<ScreenInfo> {
+        crate::screens::current(&self.window)
     }
 
     /// `NSWindow.windowNumber`，仅用于诊断（例如 `screencapture -l`）。

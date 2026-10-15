@@ -184,8 +184,9 @@ impl AppDelegate {
             restored = window.setFrameUsingName(&name);
             window.setFrameAutosaveName(&name);
         }
-        if wc.center && !restored {
-            window.center();
+        let mut report = None;
+        if !restored {
+            report = crate::screens::place(mtm, &window, wc.placement);
         }
 
         let _ = shared.objects.set(Objects {
@@ -208,6 +209,7 @@ impl AppDelegate {
                 );
         }
 
+        *shared.placement.borrow_mut() = report;
         shared.ready.set(true);
         shared.dispatch(Event::Created);
         shared.check_appearance(true);
