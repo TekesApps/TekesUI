@@ -1,20 +1,22 @@
 //! 平台层与渲染层的接线：窗口事件 → Renderer，主题跟随系统外观。
 //!
-//! Gallery 的内容不在这里，见 `gallery.rs`。
+//! Gallery 的内容与状态不在这里，见 `gallery/`。
+//! 这里只做三件事：把平台层事件交给 `Gallery`，按它返回的 `Change` 请求重绘、同步窗口标题与菜单勾选，
+//! 以及把编好的场景交给渲染器。
 
 use std::time::Instant;
 
 use tekes_ui_platform_macos::{Event, Window, WindowHandler};
 use tekes_ui_render::Renderer;
-use tekes_ui_scene::{Scene, Size};
+use tekes_ui_scene::Scene;
 use tekes_ui_tokens::{Appearance, Contrast, Theme};
 
-use crate::gallery::Gallery;
+use crate::gallery::{Change, Command, Gallery};
 
+#[derive(Debug)]
 pub struct Host {
     gallery: Gallery,
     scene: Scene,
-    theme: Theme,
     renderer: Option<Renderer>,
     /// `TEKES_LOG_EVENTS` 设了就把事件和重绘次数打到 stderr，用来核对空闲时不重绘。
     log: bool,
@@ -25,11 +27,10 @@ pub struct Host {
 }
 
 impl Host {
-    pub fn new() -> Host {
+    pub fn new(gallery: Gallery) -> Host {
         Host {
-            gallery: Gallery::new(),
+            gallery,
             scene: Scene::new(),
-            theme: Theme::default(),
             renderer: None,
             log: std::env::var("TEKES_LOG_EVENTS").is_ok()
                 || std::env::var("TEKES_SELFTEST").is_ok(),
@@ -45,13 +46,31 @@ impl Host {
         }
     }
 
+    /// 窗口标题与菜单勾选跟随 Gallery 状态。
+    fn sync_chrome(&self, window: &Window) {
+        window.set_title(&self.gallery.title());
+        for c in Command::all() {
+            window.set_command_checked(c.id(), self.gallery.is_checked(c));
+        }
+    }
+
+    fn apply_change(&self, change: Change, window: &Window) {
+        if change.chrome {
+            self.sync_chrome(window);
+            self.log(format_args!("{}", self.gallery.title()));
+        }
+        if change.redraw {
+            window.request_redraw();
+        }
+    }
+
     fn redraw(&mut self, window: &Window) {
         self.redraws += 1;
         let size = window.size();
-        let size = Size::new(size.width as f32, size.height as f32);
+        let theme = self.gallery.theme();
         self.scene.clear();
-        self.gallery.build_scene(size, self.theme, &mut self.scene);
-        let clear = self.gallery.background(self.theme);
+        self.gallery.build_scene(&mut self.scene);
+        let clear = Gallery::background(theme);
         self.log(format_args!(
             "Redraw #{} size {}x{} drawable {:?} quads {}",
             self.redraws,
@@ -93,6 +112,7 @@ impl WindowHandler for Host {
                     Ok(r) => self.renderer = Some(r),
                     Err(e) => eprintln!("创建渲染器失败：{e}"),
                 }
+                self.sync_chrome(window);
                 self.log(format_args!(
                     "Created: size {:?} scale {} drawable {:?} windowNumber {}",
                     window.size(),
@@ -125,7 +145,7 @@ impl WindowHandler for Host {
                 dark,
                 increase_contrast,
             } => {
-                self.theme = Theme {
+                let system = Theme {
                     appearance: if *dark {
                         Appearance::Dark
                     } else {
@@ -137,8 +157,16 @@ impl WindowHandler for Host {
                         Contrast::Standard
                     },
                 };
-                self.log(format_args!("theme {:?}", self.theme));
-                window.request_redraw();
+                self.log(format_args!("system theme {system:?}"));
+                let change = self.gallery.set_system_theme(system);
+                self.apply_change(change, window);
+            }
+            Event::Command(id) => {
+                if let Some(command) = Command::from_id(*id) {
+                    self.log(format_args!("command {command:?}"));
+                    let change = self.gallery.apply(command);
+                    self.apply_change(change, window);
+                }
             }
             Event::CloseRequested => {
                 self.log(format_args!(
@@ -147,11 +175,14 @@ impl WindowHandler for Host {
                 ));
                 window.close();
             }
-            // handle_input 返回是否需要重绘。
-            Event::Mouse(_) | Event::Scroll(_) | Event::Key(_)
-                if self.gallery.handle_input(&event) =>
-            {
-                window.request_redraw();
+            // handle_input 返回哪些状态变了；没变就什么都不做（不请求重绘）。
+            Event::Mouse(_) | Event::Key(_) => {
+                let hover = self.gallery.hover();
+                let change = self.gallery.handle_input(&event);
+                if self.gallery.hover() != hover {
+                    self.log(format_args!("hover {:?}", self.gallery.hover()));
+                }
+                self.apply_change(change, window);
             }
             _ => {}
         }

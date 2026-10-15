@@ -13,6 +13,7 @@ tekes-ui-tokens.workspace = true
 tekes-ui-scene.workspace = true
 tekes-ui-platform-macos.workspace = true
 tekes-ui-render.workspace = true
+png.workspace = true
 
 [lints]
 workspace = true
