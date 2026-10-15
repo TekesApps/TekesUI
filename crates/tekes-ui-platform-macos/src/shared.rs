@@ -207,7 +207,7 @@ impl Window {
         self.view.scale_factor()
     }
 
-    /// 当前 CAMetalLayer 的 drawableSize，单位像素。
+    /// drawable 的像素尺寸，等于 `size() * scale()` 取整（与 `Resized` 里的值一致）。
     pub fn drawable_size(&self) -> (u32, u32) {
         self.view.drawable_size_px()
     }
@@ -240,15 +240,6 @@ impl Window {
     /// 读取菜单项的勾选状态，命令不存在时返回 `None`。
     pub fn is_command_checked(&self, command: CommandId) -> Option<bool> {
         crate::menu_build::is_command_checked(self.shared.mtm, command)
-    }
-
-    /// 设置 CAMetalLayer 的 `presentsWithTransaction`。默认关闭。
-    ///
-    /// 打开后，实时缩放时窗口边框与内容在同一个 Core Animation 事务里更新，边缘不会抖动，
-    /// 代价是呈现路径必须在主线程上 `waitUntilScheduled` 再 `present`，
-    /// 否则会卡顿。是否启用留给渲染层集成时按实测决定。
-    pub fn set_presents_with_transaction(&self, on: bool) {
-        self.view.metal_layer().setPresentsWithTransaction(on);
     }
 
     /// 启动时窗口摆放的选择结果：选了哪块屏幕、为什么，以及当时看到的全部屏幕。

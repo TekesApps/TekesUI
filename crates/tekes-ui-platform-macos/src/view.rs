@@ -14,7 +14,6 @@ use objc2_app_kit::{
     NSEvent, NSTrackingArea, NSTrackingAreaOptions, NSView, NSViewLayerContentsPlacement,
     NSViewLayerContentsRedrawPolicy,
 };
-use objc2_core_foundation::CGSize;
 use objc2_core_graphics::{CGColorSpace, kCGColorSpaceSRGB};
 use objc2_foundation::{
     MainThreadMarker, NSArray, NSObjectNSThreadPerformAdditions, NSObjectProtocol, NSRect,
@@ -88,15 +87,9 @@ define_class!(
             let srgb = CGColorSpace::with_name(Some(unsafe { kCGColorSpaceSRGB }));
             layer.setColorspace(srgb.as_deref());
             layer.setOpaque(true);
-            let scale = self.scale_factor();
-            layer.setContentsScale(scale);
-            let b = self.bounds().size;
-            let (w, h) = Size {
-                width: b.width,
-                height: b.height,
-            }
-            .to_drawable(scale);
-            layer.setDrawableSize(CGSize::new(w as f64, h as f64));
+            // drawableSize 归渲染器管（wgpu 配置 surface 时设置），平台层不碰；
+            // 在渲染器接管之前，CAMetalLayer 自己按 bounds * contentsScale 算。
+            layer.setContentsScale(self.scale_factor());
             *self.ivars().layer.borrow_mut() = Some(layer.clone());
             layer.into_super()
         }
@@ -148,6 +141,27 @@ define_class!(
             // SAFETY: 调用父类实现，签名一致。
             let () = unsafe { msg_send![super(self), viewDidMoveToWindow] };
             self.sync_geometry(false);
+        }
+
+        // ---- 实时缩放 ----
+        //
+        // 实时缩放期间打开 presentsWithTransaction：渲染层在主线程同步呈现
+        // （commit + waitUntilScheduled + present），内容与窗口边框在同一个 Core Animation
+        // 事务里更新，边缘不会错位。结束后关掉，回到普通的异步呈现。
+        // wgpu 在每次取 drawable 时读取这个属性，所以渲染层不需要额外配合。
+
+        #[unsafe(method(viewWillStartLiveResize))]
+        fn view_will_start_live_resize(&self) {
+            // SAFETY: 调用父类实现，签名一致。
+            let () = unsafe { msg_send![super(self), viewWillStartLiveResize] };
+            self.metal_layer().setPresentsWithTransaction(true);
+        }
+
+        #[unsafe(method(viewDidEndLiveResize))]
+        fn view_did_end_live_resize(&self) {
+            // SAFETY: 调用父类实现，签名一致。
+            let () = unsafe { msg_send![super(self), viewDidEndLiveResize] };
+            self.metal_layer().setPresentsWithTransaction(false);
         }
 
         // ---- 外观 ----
@@ -355,8 +369,7 @@ impl TekesView {
     }
 
     pub(crate) fn drawable_size_px(&self) -> (u32, u32) {
-        let d = self.metal_layer().drawableSize();
-        (d.width as u32, d.height as u32)
+        self.size_points().to_drawable(self.scale_factor())
     }
 
     /// NSEvent 的窗口坐标 → 视图坐标（左上角为原点，因为 isFlipped）。
@@ -411,7 +424,7 @@ impl TekesView {
         self.ivars().shared.dispatch(Event::Key(ev));
     }
 
-    /// 把层的 contentsScale 与 drawableSize 对齐到视图当前的 bounds 和窗口缩放因子。
+    /// 把层的 contentsScale 对齐到窗口缩放因子，算出新的 drawable 像素尺寸。
     /// 几何信息相对上一次投递有变化（或 `force`）时，同步投递 `Resized`，紧接着同步投递 `Redraw`。
     ///
     /// 层的更新总是做，投递才需要 `ready`：`Created` 之前 AppKit 的初始回调只更新层。
@@ -423,10 +436,6 @@ impl TekesView {
         let layer = self.metal_layer();
         if layer.contentsScale() != scale {
             layer.setContentsScale(scale);
-        }
-        let current = layer.drawableSize();
-        if current.width as u32 != drawable.0 || current.height as u32 != drawable.1 {
-            layer.setDrawableSize(CGSize::new(drawable.0 as f64, drawable.1 as f64));
         }
         if !shared.ready.get() {
             return;

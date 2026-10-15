@@ -8,8 +8,8 @@ use objc2::{DefinedClass, MainThreadOnly, define_class, msg_send, sel};
 use objc2_app_kit::{
     NSApplication, NSApplicationActivationPolicy, NSApplicationDelegate,
     NSApplicationTerminateReply, NSBackingStoreType, NSEvent, NSEventModifierFlags, NSEventType,
-    NSMenuItem, NSWindow, NSWindowCollectionBehavior, NSWindowDelegate, NSWindowStyleMask,
-    NSWorkspace, NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification,
+    NSMenuItem, NSWindow, NSWindowCollectionBehavior, NSWindowDelegate, NSWindowOcclusionState,
+    NSWindowStyleMask, NSWorkspace, NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification,
 };
 use objc2_foundation::{
     MainThreadMarker, NSNotification, NSObject, NSObjectProtocol, NSPoint, NSProcessInfo, NSRect,
@@ -78,6 +78,19 @@ define_class!(
         fn window_will_close(&self, _notification: &NSNotification) {
             // 之后不再投递事件。是否结束应用由 applicationShouldTerminateAfterLastWindowClosed: 决定。
             self.ivars().shared.closed.set(true);
+        }
+
+        /// 窗口重新可见（最小化后恢复、被盖住后露出来）时请求重绘。
+        /// 不可见期间渲染层的取 drawable 会返回 Occluded 并跳过帧，不补这一帧会停在旧画面。
+        #[unsafe(method(windowDidChangeOcclusionState:))]
+        fn window_did_change_occlusion_state(&self, notification: &NSNotification) {
+            let visible = notification
+                .object()
+                .and_then(|o| o.downcast::<NSWindow>().ok())
+                .is_some_and(|w| w.occlusionState().contains(NSWindowOcclusionState::Visible));
+            if visible {
+                self.ivars().shared.request_redraw();
+            }
         }
 
         #[unsafe(method(windowDidBecomeKey:))]
