@@ -319,6 +319,7 @@ impl Renderer {
             {
                 let end = Instant::now();
                 t.finish_frame(
+                    &self.queue,
                     FrameTiming {
                         frame: 0,
                         acquire: tb - ta,
@@ -331,7 +332,7 @@ impl Renderer {
                 );
                 // 非阻塞地推进回调，把已完成的 GPU 结果收进来。
                 let _ = self.device.poll(wgpu::PollType::Poll);
-                t.collect();
+                t.collect(&self.device, &self.queue);
             }
             if suboptimal {
                 self.configure_surface()?;
@@ -369,7 +370,6 @@ impl Renderer {
                 clear,
                 Some(writes),
             );
-            t.resolve(encoder, &ticket);
             return Some(ticket);
         }
         self.last_frame = self.gpu.encode(
@@ -487,6 +487,7 @@ impl Renderer {
             // 离屏没有 drawable，acquire 为 0；total 到提交为止（不含读回等待）。
             let end = Instant::now();
             t.finish_frame(
+                &self.queue,
                 FrameTiming {
                     frame: 0,
                     acquire: Duration::ZERO,
@@ -559,12 +560,18 @@ impl Renderer {
     /// `wait` 为 true 时先阻塞到所有已提交的工作完成，用于收尾。
     pub fn drain_frame_timings(&mut self, out: &mut Vec<FrameTiming>, wait: bool) {
         let Some(t) = &mut self.timing else { return };
-        let _ = self.device.poll(if wait {
-            wgpu::PollType::wait_indefinitely()
-        } else {
-            wgpu::PollType::Poll
-        });
-        t.collect();
+        // 等待时最多循环几轮：第一轮等帧做完并提交解析，第二轮等映射完成。
+        for _ in 0..if wait { 4 } else { 1 } {
+            let _ = self.device.poll(if wait {
+                wgpu::PollType::wait_indefinitely()
+            } else {
+                wgpu::PollType::Poll
+            });
+            t.collect(&self.device, &self.queue);
+            if t.pending() == 0 {
+                break;
+            }
+        }
         t.take_done(out);
     }
 

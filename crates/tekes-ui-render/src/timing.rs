@@ -9,9 +9,14 @@
 //! # GPU 部分
 //!
 //! 用 wgpu 的 `TIMESTAMP_QUERY`（Metal 的 stage boundary 计数器采样）：render pass 的
-//! `timestamp_writes` 在 pass 开始和结束各写一个时间戳，`resolve_query_set` 解析到缓冲，
-//! 拷到可映射的回读缓冲，提交后 `map_async`；之后每帧非阻塞地 `poll`，结果到了就取。
-//! 所以 GPU 时间比 CPU 时间晚一两帧才到，由 [`Renderer::drain_frame_timings`] 交出。
+//! `timestamp_writes` 在 pass 开始（vertex 阶段起点）和结束（fragment 阶段终点）各写一个时间戳。
+//!
+//! **解析不能和 pass 放在同一个命令缓冲里。** 实测：上屏路径里 drawable 不能被后面的 blit 读，
+//! blit（`resolveCounters`）与 render pass 之间没有任何资源依赖，Apple GPU 会让 blit 先于
+//! fragment 阶段结束执行，读到的结束时间戳是这个槽上一轮留下的旧值（约 95% 的帧是负的区间）。
+//! 所以改成：帧提交后登记 `on_submitted_work_done`；工作完成后，下一次 `poll` 里单独提交一个只做
+//! `resolve_query_set` 加拷贝的命令缓冲，再 `map_async` 读回。GPU 时间因此比 CPU 时间晚一两帧到，
+//! 由 [`Renderer::drain_frame_timings`] 交出。
 //!
 //! 它量的是**我们这一个 render pass 在 GPU 上的执行时间**（顶点加片元加 tile 写回），
 //! 不含合成器（WindowServer）、不含 drawable 等待、不含显示扫描。回读缓冲一共 8 个槽，
@@ -32,9 +37,14 @@ use std::time::Duration;
 const SLOTS: usize = 8;
 
 const FREE: u8 = 0;
-const PENDING: u8 = 1;
+/// 已发起映射，等映射完成。
+const MAPPING: u8 = 1;
 const READY: u8 = 2;
 const FAILED: u8 = 3;
+/// 帧已提交，等 GPU 做完。
+const SUBMITTED: u8 = 4;
+/// GPU 做完了，还没解析。
+const WORK_DONE: u8 = 5;
 
 /// 渲染器量到的一帧时间。
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -148,22 +158,13 @@ impl Timing {
         ))
     }
 
-    /// pass 结束之后：把这个槽的两个时间戳解析并拷到回读缓冲。
-    pub fn resolve(&self, encoder: &mut wgpu::CommandEncoder, ticket: &SlotTicket) {
-        let Some(g) = &self.gpu else { return };
-        let i = ticket.0;
-        let slot = &g.slots[i];
-        encoder.resolve_query_set(
-            &g.query_set,
-            2 * i as u32..2 * i as u32 + 2,
-            &slot.resolve,
-            0,
-        );
-        encoder.copy_buffer_to_buffer(&slot.resolve, 0, &slot.readback, 0, 16);
-    }
-
-    /// `submit` 之后：发起映射，帧进入等待队列。`ticket` 为 `None` 表示这一帧没有 GPU 计时。
-    pub fn finish_frame(&mut self, mut timing: FrameTiming, ticket: Option<SlotTicket>) {
+    /// `submit` 之后：登记工作完成回调，帧进入等待队列。`ticket` 为 `None` 表示这一帧没有 GPU 计时。
+    pub fn finish_frame(
+        &mut self,
+        queue: &wgpu::Queue,
+        mut timing: FrameTiming,
+        ticket: Option<SlotTicket>,
+    ) {
         timing.frame = self.next_frame;
         self.next_frame += 1;
         self.last_frame = Some(timing.frame);
@@ -171,20 +172,47 @@ impl Timing {
             self.done.push(timing);
             return;
         };
-        let slot = &g.slots[t.0];
-        slot.state.store(PENDING, Ordering::Release);
-        let state = slot.state.clone();
-        slot.readback
-            .slice(..)
-            .map_async(wgpu::MapMode::Read, move |r| {
-                state.store(if r.is_ok() { READY } else { FAILED }, Ordering::Release);
-            });
+        let state = g.slots[t.0].state.clone();
+        state.store(SUBMITTED, Ordering::Release);
+        queue.on_submitted_work_done(move || state.store(WORK_DONE, Ordering::Release));
         self.waiting.push_back(Waiting { timing, slot: t.0 });
     }
 
-    /// 收取映射已完成的槽，转成 GPU 时间。按帧顺序，遇到还没好的就停。
-    pub fn collect(&mut self) {
+    /// 推进等待中的帧：GPU 做完的，单独提交解析并发起映射；映射完成的，转成 GPU 时间。
+    /// 按帧顺序交出，遇到还没好的就停。调用前应先 `poll`。
+    pub fn collect(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
         let Some(g) = &self.gpu else { return };
+        // 第一步：所有已完成的帧一起解析，一个命令缓冲。
+        let mut encoder: Option<wgpu::CommandEncoder> = None;
+        let mut resolved: Vec<usize> = Vec::new();
+        for w in &self.waiting {
+            let slot = &g.slots[w.slot];
+            if slot.state.load(Ordering::Acquire) == WORK_DONE {
+                let i = w.slot as u32;
+                let enc = encoder.get_or_insert_with(|| {
+                    device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("tekes timing resolve"),
+                    })
+                });
+                enc.resolve_query_set(&g.query_set, 2 * i..2 * i + 2, &slot.resolve, 0);
+                enc.copy_buffer_to_buffer(&slot.resolve, 0, &slot.readback, 0, 16);
+                resolved.push(w.slot);
+            }
+        }
+        if let Some(enc) = encoder {
+            queue.submit([enc.finish()]);
+            for i in resolved {
+                let slot = &g.slots[i];
+                slot.state.store(MAPPING, Ordering::Release);
+                let state = slot.state.clone();
+                slot.readback
+                    .slice(..)
+                    .map_async(wgpu::MapMode::Read, move |r| {
+                        state.store(if r.is_ok() { READY } else { FAILED }, Ordering::Release);
+                    });
+            }
+        }
+        // 第二步：交出映射完成的。
         while let Some(front) = self.waiting.front() {
             let slot = &g.slots[front.slot];
             let gpu = match slot.state.load(Ordering::Acquire) {
@@ -202,8 +230,8 @@ impl Timing {
                         }
                     };
                     slot.readback.unmap();
+                    // 时间戳不单调（计数器回绕、驱动返回 0）时丢弃这一帧的 GPU 时间。
                     ticks.and_then(|(begin, end)| {
-                        // 时间戳不单调（计数器回绕、驱动返回 0）时丢弃这一帧的 GPU 时间。
                         (end > begin).then(|| {
                             Duration::from_nanos(((end - begin) as f64 * g.period_ns) as u64)
                         })

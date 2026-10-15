@@ -63,6 +63,11 @@ fn cpu_segments_are_consistent_and_frames_are_numbered() {
     for (i, t) in out.iter().enumerate() {
         assert_eq!(t.frame, i as u64, "按帧顺序");
         assert!(t.acquire.is_zero(), "离屏没有 drawable");
+        assert_eq!(
+            t.gpu.is_some(),
+            r.gpu_timing_supported(),
+            "帧 {i} 的 GPU 时间"
+        );
         assert!(t.encode + t.submit <= t.total + std::time::Duration::from_micros(50));
     }
     // 再取一次什么都没有。
