@@ -256,6 +256,37 @@ fn selftest_gallery_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Act
     at(100, kq("4", 21, true, false, false));
     at(100, log("旧键 ⌥⌘D：应 handled=false"));
     at(100, kq("d", 2, false, true, false));
+    // 静态文字页（⌘3，命令 102）：固定浅色，选夹具与宽度（点击选择器按钮），再切深色。
+    // 设了 TEKESUI_REFERENCE_DIR 时，参照窗格和差异窗格里是参照图和热图。
+    let content = gallery::layout::PAGE_CONTENT;
+    let btn = |r: tekes_ui_scene::Rect| {
+        let c = r.center();
+        (f64::from(c.x), f64::from(c.y))
+    };
+    let fixture_at = |i: usize| btn(gallery::pages::static_text::fixture_button(content, i));
+    let width_at = |j: usize| btn(gallery::pages::static_text::width_button(content, j));
+    at(300, MenuCommand(201));
+    at(100, MenuCommand(302));
+    at(100, MenuCommand(102));
+    at(1500, cap("t01_text_sentences_a_light"));
+    at(100, MenuCommand(202));
+    at(1500, cap("t02_text_sentences_a_dark"));
+    at(100, MenuCommand(201));
+    let (x, y) = fixture_at(1);
+    at(300, Click { x, y });
+    at(1500, cap("t03_text_mixed_w700_light"));
+    let (x, y) = width_at(1);
+    at(100, Click { x, y });
+    at(1500, cap("t04_text_mixed_w500_light"));
+    let (x, y) = width_at(2);
+    at(100, Click { x, y });
+    at(1500, cap("t05_text_mixed_w320_light"));
+    let (x, y) = fixture_at(3);
+    at(100, Click { x, y });
+    at(1500, cap("t06_text_emoji_w320_light"));
+    let (x, y) = fixture_at(0);
+    at(100, Click { x, y });
+    at(1500, cap("t07_text_sentences_a_light_again"));
     at(100, Close);
     steps
 }

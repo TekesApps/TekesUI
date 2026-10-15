@@ -35,14 +35,14 @@ pub const ROW_GAP: f32 = Spacing::Micro.value();
 pub const CATALOG_TOP: f32 = Spacing::Loose.value();
 /// 行距目录列左右边缘。
 pub const ROW_INSET_X: f32 = Spacing::Regular.value();
-/// 行内文字槽距行左缘（F1 放页面名）。
+/// 行内文字槽距行左缘（放页面名）。
 pub const ROW_PAD_X: f32 = Spacing::Relaxed.value();
-/// 行内标签槽的尺寸；F1 起页面名排进这个槽，现在画一条固定大小的占位条。
+/// 行内标签槽的尺寸；页面名排进这个槽。
 pub const ROW_LABEL_SLOT: Size = Size::new(ControlSize::TruncationSlot.value(), 16.0);
 
 /// 页面区左缘（目录列右侧再留 `Section`）。
 pub const PAGE_X: f32 = CATALOG_W + Spacing::Section.value();
-/// 页面标题槽（F1 放页面标题）。
+/// 页面标题槽（放页面名）。
 pub const PAGE_TITLE_SLOT: Rect = Rect::new(PAGE_X, Spacing::Section.value(), 160.0, 14.0);
 /// 页面内容区。页面内部再按自己的栅格排版。
 pub const PAGE_CONTENT: Rect = Rect::new(

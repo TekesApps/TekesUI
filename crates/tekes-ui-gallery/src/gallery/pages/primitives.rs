@@ -15,8 +15,9 @@ use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{Alpha, ColorRole, CornerRadius, Rgba, Spacing, Stroke, Theme};
 
 use crate::gallery::containers::{
-    ComponentState, ReferenceSlot, SECTION_HEADER_H, StateMatrix, draw_section_header,
+    ComponentState, PANE_TITLES, ReferenceSlot, SECTION_HEADER_H, StateMatrix, draw_section_header,
 };
+use crate::gallery::pages::PageCtx;
 
 /// 圆角一排：直角加七档 token（badge、row、panel、floating、input、column、control）。
 pub const RADII: [(&str, f32); 8] = [
@@ -93,12 +94,14 @@ pub fn button_sample(scene: &mut Scene, cell: Rect, state: ComponentState, theme
     );
 }
 
-pub fn build(theme: Theme, content: Rect, scene: &mut Scene) {
+pub fn build(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
+    let theme = ctx.theme;
+    let text = &mut *ctx.text;
     let x = content.min_x();
     let mut y = content.min_y();
 
     // 1. 圆角。
-    draw_section_header(scene, theme, x, y);
+    draw_section_header(scene, theme, text, x, y, "圆角");
     for (i, (_, radius)) in RADII.iter().enumerate() {
         let r = Rect::new(
             x + i as f32 * (ITEM.width + GAP),
@@ -115,7 +118,7 @@ pub fn build(theme: Theme, content: Rect, scene: &mut Scene) {
     y += SECTION_HEADER_H + ITEM.height + SECTION_GAP;
 
     // 2. 描边三档，然后是三档 alpha 叠放。
-    draw_section_header(scene, theme, x, y);
+    draw_section_header(scene, theme, text, x, y, "描边与 alpha 叠放");
     let top = y + SECTION_HEADER_H;
     for (i, stroke) in [Stroke::Hairline, Stroke::Rule, Stroke::Emphasis]
         .iter()
@@ -155,17 +158,30 @@ pub fn build(theme: Theme, content: Rect, scene: &mut Scene) {
     y += SECTION_HEADER_H + ITEM.height + SECTION_GAP;
 
     // 3. 状态矩阵，一行。
-    draw_section_header(scene, theme, x, y);
+    draw_section_header(scene, theme, text, x, y, "状态矩阵");
     let matrix = StateMatrix::new(Point::new(x, y + SECTION_HEADER_H), 1);
-    matrix.draw(scene, theme, |scene, _row, cell, state| {
-        button_sample(scene, cell, state, theme);
-    });
+    matrix.draw(
+        scene,
+        theme,
+        text,
+        &["类按钮"],
+        |scene, _row, cell, state| {
+            button_sample(scene, cell, state, theme);
+        },
+    );
     y += SECTION_HEADER_H + matrix.size().height + SECTION_GAP;
 
     // 4. 并排参照槽：live 窗格里画同一个样本（rest）。
-    draw_section_header(scene, theme, x, y);
+    draw_section_header(
+        scene,
+        theme,
+        text,
+        x,
+        y,
+        "参照槽：TekesUI 实时 | 参照图 | 差异热图",
+    );
     let slot = ReferenceSlot::new(Point::new(x, y + SECTION_HEADER_H), true);
-    slot.draw(scene, theme, |scene, pane| {
+    slot.draw(scene, theme, text, &PANE_TITLES, |scene, _, pane| {
         button_sample(scene, pane, ComponentState::Rest, theme);
     });
 }
@@ -173,18 +189,34 @@ pub fn build(theme: Theme, content: Rect, scene: &mut Scene) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::gallery::static_text::StaticText;
+    use crate::gallery::text::TextEngine;
+
+    fn build_page(theme: Theme, text: &mut TextEngine) -> Scene {
+        let mut st = StaticText::new(None);
+        let mut ctx = PageCtx {
+            theme,
+            text,
+            static_text: &mut st,
+        };
+        let mut s = Scene::new();
+        text_begin(&mut ctx);
+        build(&mut ctx, crate::gallery::layout::PAGE_CONTENT, &mut s);
+        s
+    }
+
+    fn text_begin(ctx: &mut PageCtx<'_>) {
+        ctx.text.begin_frame();
+    }
 
     fn count_quads(theme: Theme) -> usize {
-        let mut s = Scene::new();
-        build(theme, crate::gallery::layout::PAGE_CONTENT, &mut s);
-        s.len()
+        build_page(theme, &mut TextEngine::new()).len()
     }
 
     #[test]
     fn page_builds_and_fits_in_content() {
         use crate::gallery::layout::PAGE_CONTENT;
-        let mut s = Scene::new();
-        build(Theme::LIGHT, PAGE_CONTENT, &mut s);
+        let s = build_page(Theme::LIGHT, &mut TextEngine::new());
         assert!(s.len() > 40);
         for p in s.primitives() {
             let tekes_ui_scene::Primitive::Quad(q) = p else {

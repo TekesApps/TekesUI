@@ -786,9 +786,11 @@ name = "tekes-ui-gallery"
 version = "0.1.0"
 dependencies = [
  "png",
+ "serde_json",
  "tekes-ui-platform-macos",
  "tekes-ui-render",
  "tekes-ui-scene",
+ "tekes-ui-text",
  "tekes-ui-tokens",
 ]
 

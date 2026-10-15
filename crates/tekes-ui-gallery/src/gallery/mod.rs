@@ -6,8 +6,10 @@
 //! 模块：
 //! - `layout`：固定 1200x800 框、目录列几何、命中测试；
 //! - `chrome`：目录列等外壳的绘制；
-//! - `containers`：`StateMatrix`、`ReferenceSlot`、占位标签条；
-//! - `pages`：各页（`primitives`、`tokens`）；
+//! - `containers`：`StateMatrix`、`ReferenceSlot` 和它们的标题文字；
+//! - `text`：文字引擎（排版器、光栅化器、字体登记表、`GlyphAtlas`）和标签缓存；
+//! - `static_text`：静态文字页的状态（夹具、宽度、参照图、差异缓存）；
+//! - `pages`：各页（`primitives`、`tokens`、`static_text`）；
 //! - `commands`：菜单命令 ↔ 编号 ↔ 菜单栏描述；
 //! - `theme`：外观与对比度的选择；
 //! - `snapshot`：无头渲染所有页 x 主题 x 缩放，写 PNG。
@@ -21,17 +23,22 @@ pub mod containers;
 pub mod layout;
 pub mod pages;
 pub mod snapshot;
+pub mod static_text;
+pub mod text;
 pub mod theme;
 
 use tekes_ui_platform_macos::{
     Event, KeyEventKind, MenuBar, MouseButton, MouseEventKind, Point as PlatformPoint,
 };
-use tekes_ui_scene::{Point, Scene};
+use tekes_ui_render::Renderer;
+use tekes_ui_scene::{GlyphAtlas, Point, Scene};
 use tekes_ui_tokens::{ColorRole, Rgba, Theme};
 
 pub use commands::Command;
 pub use layout::{FRAME_H as CONTENT_HEIGHT, FRAME_W as CONTENT_WIDTH};
-pub use pages::Page;
+pub use pages::{Page, PageCtx};
+use static_text::StaticText;
+use text::TextEngine;
 #[cfg(test)]
 use theme::{AppearanceChoice, ContrastChoice};
 pub use theme::{ThemeState, theme_label};
@@ -69,6 +76,9 @@ pub struct Gallery {
     page: Page,
     hover: Option<usize>,
     theme: ThemeState,
+    /// 文字引擎与窗口用的 atlas（主线程）。
+    text: TextEngine,
+    static_text: StaticText,
 }
 
 impl Default for Gallery {
@@ -78,12 +88,39 @@ impl Default for Gallery {
 }
 
 impl Gallery {
+    /// 参照目录取自环境变量 `TEKESUI_REFERENCE_DIR`。
     pub fn new() -> Gallery {
+        Gallery::with_static_text(StaticText::from_env())
+    }
+
+    pub fn with_static_text(static_text: StaticText) -> Gallery {
         Gallery {
             page: Page::Primitives,
             hover: None,
             theme: ThemeState::default(),
+            text: TextEngine::new(),
+            static_text,
         }
+    }
+
+    /// 窗口用的 atlas：渲染器画之前上传它的脏区。
+    pub fn atlas_mut(&mut self) -> &mut GlyphAtlas {
+        self.text.atlas_mut()
+    }
+
+    /// 每次重绘之前调用：记下窗口倍率，给静态文字页备好参照图和差异（状态没变时什么都不做）。
+    pub fn prepare(&mut self, renderer: &mut Renderer, scale: f32) {
+        self.text.set_scale(scale);
+        if self.page == Page::StaticText {
+            let theme = self.theme();
+            self.static_text
+                .prepare(&mut self.text, renderer, theme, scale);
+        }
+    }
+
+    #[cfg(test)]
+    pub fn static_text(&self) -> &StaticText {
+        &self.static_text
     }
 
     #[cfg(test)]
@@ -129,8 +166,16 @@ impl Gallery {
     }
 
     /// 编译当前内容。内容永远排在固定的 1200x800 框里，与窗口尺寸无关。
-    pub fn build_scene(&self, scene: &mut Scene) {
-        compose(self.page, self.hover, self.theme(), scene);
+    ///
+    /// 先 `begin_frame`（一帧一次），再整个重编：scene 里的 `AtlasGlyph` 只在这一帧有效。
+    pub fn build_scene(&mut self, scene: &mut Scene) {
+        self.text.begin_frame();
+        let mut ctx = PageCtx {
+            theme: self.theme.effective(),
+            text: &mut self.text,
+            static_text: &mut self.static_text,
+        };
+        compose(self.page, self.hover, &mut ctx, scene);
     }
 
     /// 平台层投来系统外观变化。生效主题变了才需要重绘。
@@ -210,7 +255,7 @@ impl Gallery {
                         let hover_changed = self.set_hover(hit());
                         let mut change = match hit() {
                             Some(i) => self.apply(Command::Page(Page::ALL[i])),
-                            None => Change::NONE,
+                            None => self.click_in_page(m.position),
                         };
                         change.redraw |= hover_changed;
                         change
@@ -234,6 +279,23 @@ impl Gallery {
     }
 }
 
+impl Gallery {
+    /// 页面区里的点击：目前只有静态文字页的夹具与宽度选择器。
+    fn click_in_page(&mut self, position: PlatformPoint) -> Change {
+        if self.page != Page::StaticText {
+            return Change::NONE;
+        }
+        match pages::static_text::hit_test(
+            layout::PAGE_CONTENT,
+            &self.static_text,
+            to_point(position),
+        ) {
+            Some(pick) => redraw_if(self.static_text.apply(pick)),
+            None => Change::NONE,
+        }
+    }
+}
+
 fn redraw_if(changed: bool) -> Change {
     if changed {
         Change::REDRAW
@@ -247,9 +309,10 @@ fn to_point(p: PlatformPoint) -> Point {
 }
 
 /// 编译 `page` 在 `theme` 下的完整内容。快照和窗口共用它。
-pub fn compose(page: Page, hover: Option<usize>, theme: Theme, scene: &mut Scene) {
-    chrome::draw(scene, theme, page, hover);
-    page.build(theme, layout::PAGE_CONTENT, scene);
+/// 调用方保证这一帧已经 `begin_frame` 过。
+pub fn compose(page: Page, hover: Option<usize>, ctx: &mut PageCtx<'_>, scene: &mut Scene) {
+    chrome::draw(scene, ctx.theme, ctx.text, page, hover);
+    page.build(ctx, layout::PAGE_CONTENT, scene);
 }
 
 #[cfg(test)]
@@ -367,15 +430,19 @@ mod tests {
     fn arrow_keys_switch_pages_without_wrapping() {
         let mut g = Gallery::new();
         assert_eq!(g.handle_input(&key(KEY_UP, Modifiers::NONE)), Change::NONE);
-        assert_eq!(
-            g.handle_input(&key(KEY_DOWN, Modifiers::NONE)),
-            Change::BOTH
-        );
-        assert_eq!(g.page(), Page::Tokens);
+        for expected in [Page::Tokens, Page::StaticText] {
+            assert_eq!(
+                g.handle_input(&key(KEY_DOWN, Modifiers::NONE)),
+                Change::BOTH
+            );
+            assert_eq!(g.page(), expected);
+        }
         assert_eq!(
             g.handle_input(&key(KEY_DOWN, Modifiers::NONE)),
             Change::NONE
         );
+        assert_eq!(g.handle_input(&key(KEY_UP, Modifiers::NONE)), Change::BOTH);
+        assert_eq!(g.page(), Page::Tokens);
         assert_eq!(g.handle_input(&key(KEY_UP, Modifiers::NONE)), Change::BOTH);
         assert_eq!(g.page(), Page::Primitives);
         // 带修饰键的方向键不处理。
@@ -467,18 +534,98 @@ mod tests {
         assert_eq!(checked(300..400), 1);
     }
 
+    /// 用一个全新的文字引擎和静态文字页状态编一页（像一次新启动）。
+    fn fresh_scene(page: Page, hover: Option<usize>, theme: Theme, scale: f32) -> Scene {
+        let mut text = TextEngine::new();
+        text.set_scale(scale);
+        let mut st = StaticText::new(None);
+        let mut ctx = PageCtx {
+            theme,
+            text: &mut text,
+            static_text: &mut st,
+        };
+        let mut s = Scene::new();
+        ctx.text.begin_frame();
+        compose(page, hover, &mut ctx, &mut s);
+        s
+    }
+
     #[test]
     fn scene_is_deterministic() {
         for page in Page::ALL {
             for theme in Theme::ALL {
-                let mut a = Scene::new();
-                let mut b = Scene::new();
-                compose(page, None, theme, &mut a);
-                compose(page, None, theme, &mut b);
-                assert!(!a.is_empty());
-                assert_eq!(a, b, "{page:?} {theme:?}");
+                for scale in [1.0, 2.0] {
+                    let a = fresh_scene(page, None, theme, scale);
+                    let b = fresh_scene(page, None, theme, scale);
+                    assert!(!a.is_empty());
+                    assert_eq!(a, b, "{page:?} {theme:?} {scale}x");
+                }
             }
         }
+    }
+
+    /// 同一个引擎连续编两次（第二次全部走缓存）与新引擎编的一样：标签只排一次版。
+    #[test]
+    fn labels_are_laid_out_deterministically_and_shaped_once() {
+        for page in Page::ALL {
+            let mut text = TextEngine::new();
+            let mut st = StaticText::new(None);
+            let mut scenes = Vec::new();
+            let mut shapes = Vec::new();
+            for _ in 0..3 {
+                let mut ctx = PageCtx {
+                    theme: Theme::LIGHT,
+                    text: &mut text,
+                    static_text: &mut st,
+                };
+                let mut s = Scene::new();
+                ctx.text.begin_frame();
+                compose(page, None, &mut ctx, &mut s);
+                scenes.push(s);
+                shapes.push(text.shape_count());
+            }
+            assert_eq!(scenes[0], scenes[1], "{page:?}");
+            assert_eq!(scenes[0], scenes[2], "{page:?}");
+            assert_eq!(
+                scenes[0],
+                fresh_scene(page, None, Theme::LIGHT, 2.0),
+                "{page:?}"
+            );
+            // 第一帧之后不再排版。
+            assert_eq!(shapes[0], shapes[1], "{page:?}");
+            assert_eq!(shapes[0], shapes[2], "{page:?}");
+        }
+    }
+
+    /// 所有字形原点：x 落在整数 pt 加上字形自己的小数偏移里，整行的原点是整数；
+    /// 这里查段落原点的整数性：每个标签的第一个字形行 y 基线与整数原点之差等于 ascent（小数）。
+    #[test]
+    fn label_origins_are_integer_points() {
+        let mut text = TextEngine::new();
+        let mut scene = Scene::new();
+        let slot = tekes_ui_scene::Rect::new(20.3, 31.6, 180.0, 16.0);
+        let p = text.label("Primitives", tekes_ui_tokens::TextRole::Body, None);
+        let o = text::label_origin(slot, &p, text::HAlign::Left);
+        assert_eq!(
+            (o.x, o.y),
+            (20.0, (31.6_f32 + (16.0 - p.height as f32) / 2.0).round())
+        );
+        text.begin_frame();
+        text.label_in(
+            &mut scene,
+            Theme::LIGHT,
+            slot,
+            "Primitives",
+            chrome::CATALOG_STYLE,
+        );
+        let tekes_ui_scene::Primitive::Glyphs(run) = &scene.primitives()[0] else {
+            panic!("应该是字形图元");
+        };
+        let first = run.glyphs[0].origin;
+        // 第一个字形的 x 是整数起点加字形自己的 x（P 的原点 0）。
+        assert_eq!(first.x, 20.0);
+        let baseline = p.lines[0].baseline_y as f32;
+        assert!((first.y - (o.y + baseline)).abs() < 1e-4);
     }
 
     #[test]
@@ -501,14 +648,14 @@ mod tests {
 
     #[test]
     fn pages_differ_and_themes_differ() {
-        let build = |p, t| {
-            let mut s = Scene::new();
-            compose(p, None, t, &mut s);
-            s
-        };
+        let build = |p, t| fresh_scene(p, None, t, 2.0);
         assert_ne!(
             build(Page::Primitives, Theme::LIGHT),
             build(Page::Tokens, Theme::LIGHT)
+        );
+        assert_ne!(
+            build(Page::Tokens, Theme::LIGHT),
+            build(Page::StaticText, Theme::LIGHT)
         );
         for page in Page::ALL {
             for i in 0..4 {
@@ -521,5 +668,69 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn static_text_pickers_respond_to_clicks() {
+        use pages::static_text::{fixture_button, width_button};
+        let mut g = Gallery::with_static_text(StaticText::new(None));
+        g.apply(Command::Page(Page::StaticText));
+        let content = layout::PAGE_CONTENT;
+        let center = |r: tekes_ui_scene::Rect| {
+            let c = r.center();
+            (c.x as f64, c.y as f64)
+        };
+        // 选 mixed-cjk-latin：重绘，页和菜单不变。
+        let (x, y) = center(fixture_button(content, 1));
+        let c = g.handle_input(&click(x, y));
+        assert_eq!(c, Change::REDRAW);
+        assert_eq!(g.static_text().fixture(), 1);
+        // 再点同一个按钮：什么都不变，不重绘。
+        let hover_before = g.hover();
+        let c = g.handle_input(&click(x, y));
+        assert!(!c.redraw && !c.chrome);
+        assert_eq!(g.hover(), hover_before);
+        // 选宽度 500、320。
+        let (x, y) = center(width_button(content, 1));
+        assert_eq!(g.handle_input(&click(x, y)), Change::REDRAW);
+        assert_eq!(g.static_text().width(), 500);
+        // sentences-a 只有 700：第 1 个宽度按钮不存在，点同样位置没有效果。
+        let (fx, fy) = center(fixture_button(content, 0));
+        g.handle_input(&click(fx, fy));
+        assert_eq!(g.static_text().width(), 700);
+        assert_eq!(g.handle_input(&click(x, y)), Change::NONE);
+        // 其它页上同一位置的点击没有效果。
+        g.apply(Command::Page(Page::Tokens));
+        let (x, y) = center(fixture_button(content, 2));
+        assert_eq!(g.handle_input(&click(x, y)), Change::NONE);
+        assert_eq!(g.static_text().fixture(), 0);
+    }
+
+    #[test]
+    fn static_text_page_changes_with_fixture_width_and_scale() {
+        let mut text = TextEngine::new();
+        let mut st = StaticText::new(None);
+        let build = |text: &mut TextEngine, st: &mut StaticText, scale: f32| {
+            text.set_scale(scale);
+            let mut ctx = PageCtx {
+                theme: Theme::LIGHT,
+                text,
+                static_text: st,
+            };
+            let mut s = Scene::new();
+            ctx.text.begin_frame();
+            compose(Page::StaticText, None, &mut ctx, &mut s);
+            s
+        };
+        let a = build(&mut text, &mut st, 2.0);
+        st.select_fixture(1);
+        let b = build(&mut text, &mut st, 2.0);
+        assert_ne!(a, b);
+        st.select_width(320);
+        let c = build(&mut text, &mut st, 2.0);
+        assert_ne!(b, c);
+        // 同一状态再编一次：相同；倍率变了，图元里的位图键变，所以不同。
+        assert_eq!(c, build(&mut text, &mut st, 2.0));
+        assert_ne!(c, build(&mut text, &mut st, 1.0));
     }
 }
