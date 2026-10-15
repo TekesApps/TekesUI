@@ -1,0 +1,162 @@
+{
+  "schema": "tekesui-fixtures/0",
+  "license": "MIT",
+  "fixtures": [
+    {
+      "name": "sentences-a",
+      "file": "sentences-a.txt",
+      "category": "sentence-list",
+      "style": {
+        "font": "system-ui",
+        "size": 14,
+        "line_spacing": 0
+      },
+      "widths": [
+        700
+      ],
+      "scales": [
+        1,
+        2
+      ],
+      "notes": "100 行中文单句，每行 35–48 个码点；与 sentences-b 合计 200 行，各不相同。每行一个段落。"
+    },
+    {
+      "name": "sentences-b",
+      "file": "sentences-b.txt",
+      "category": "sentence-list",
+      "style": {
+        "font": "system-ui",
+        "size": 14,
+        "line_spacing": 0
+      },
+      "widths": [
+        700
+      ],
+      "scales": [
+        1,
+        2
+      ],
+      "notes": "同 sentences-a，另一半；结构对应私有参照夹具的 A、B 两半，内容原创。"
+    },
+    {
+      "name": "mixed-cjk-latin",
+      "file": "mixed-cjk-latin.txt",
+      "category": "mixed-cjk-latin",
+      "style": {
+        "font": "system-ui",
+        "size": 14,
+        "line_spacing": 0
+      },
+      "widths": [
+        700,
+        500,
+        320
+      ],
+      "scales": [
+        1,
+        2
+      ],
+      "notes": "中文夹英文单词、版本号、单位、示例网址、全角与半角括号、引号、代码片段。每行一个段落。"
+    },
+    {
+      "name": "kinsoku",
+      "file": "kinsoku.txt",
+      "category": "kinsoku",
+      "style": {
+        "font": "system-ui",
+        "size": 14,
+        "line_spacing": 0
+      },
+      "widths": [
+        700,
+        500,
+        320
+      ],
+      "scales": [
+        1,
+        2
+      ],
+      "notes": "CJK 避头尾：行首禁则、行尾禁则、省略号与破折号、日文小假名。分组说明见 kinsoku.md。"
+    },
+    {
+      "name": "emoji",
+      "file": "emoji.txt",
+      "category": "emoji",
+      "style": {
+        "font": "system-ui",
+        "size": 14,
+        "line_spacing": 0
+      },
+      "widths": [
+        700,
+        500,
+        320
+      ],
+      "scales": [
+        1,
+        2
+      ],
+      "notes": "简单 emoji、肤色修饰符、ZWJ 序列、国旗、keycap、VS16。码点说明见 README.md。"
+    },
+    {
+      "name": "combining",
+      "file": "combining.txt",
+      "category": "combining",
+      "style": {
+        "font": "system-ui",
+        "size": 14,
+        "line_spacing": 0
+      },
+      "widths": [
+        700,
+        500,
+        320
+      ],
+      "scales": [
+        1,
+        2
+      ],
+      "notes": "组合字符：叠加变音符、预组合与分解、越南语、天城文连字、泰文。部分行是非 NFC 的分解形式，请勿规范化。"
+    },
+    {
+      "name": "rtl",
+      "file": "rtl.txt",
+      "category": "rtl",
+      "style": {
+        "font": "system-ui",
+        "size": 14,
+        "line_spacing": 0
+      },
+      "widths": [
+        700,
+        500,
+        320
+      ],
+      "scales": [
+        1,
+        2
+      ],
+      "notes": "阿拉伯文与希伯来文短句，与中文、英文、数字混排。"
+    },
+    {
+      "name": "long-paragraph",
+      "file": "long-paragraph.txt",
+      "category": "long-paragraph",
+      "style": {
+        "font": "system-ui",
+        "size": 14,
+        "line_spacing": 0
+      },
+      "widths": [
+        700,
+        500,
+        320
+      ],
+      "scales": [
+        1,
+        2
+      ],
+      "notes": "单行长段落，约 1100 个字符，无硬换行，用于不同宽度下的折行。"
+    }
+  ]
+}
