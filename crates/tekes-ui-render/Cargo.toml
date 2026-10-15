@@ -15,16 +15,15 @@ bytemuck.workspace = true
 pollster.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
-# 版本与根 Cargo.toml 里平台层用的一致；待 workspace.dependencies 稳定后可改为 workspace = true。
-objc2-core-graphics = { version = "0.3.2", default-features = false, features = ["std", "CGColorSpace"] }
-objc2-quartz-core = { version = "0.3.2", default-features = false, features = ["std", "CALayer", "CAMetalLayer"] }
+objc2-core-graphics = { workspace = true, features = ["CGColorSpace"] }
+objc2-quartz-core = { workspace = true, features = ["CALayer", "CAMetalLayer"] }
 
 [dev-dependencies]
 png.workspace = true
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
-objc2 = { version = "0.6.5", default-features = false, features = ["std"] }
-objc2-core-foundation = { version = "0.3.2", default-features = false, features = ["std", "CFCGTypes", "CFString"] }
+objc2.workspace = true
+objc2-core-foundation = { workspace = true, features = ["CFCGTypes", "CFString"] }
 
 [lints]
 workspace = true
