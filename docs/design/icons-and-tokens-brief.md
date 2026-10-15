@@ -16,8 +16,10 @@ TekesUI 是 MIT 公开的纯 Rust UI 组件库，其 Gallery 要长期稳定。�
 
 图标：
 
-- `IconRole` 共 148 个槽位。133 个已映射到自绘 `tekes-*` 资源（引用 127 个不同资源）。资产目录 TekesIcons 下 138 个 imageset、414 个 SVG，全部 viewBox 0 0 24 24、stroke-width 1.5。
-- **15 个仍是 SF-only 回退，需要补画**：listRemove、zoomIn、zoomOut、settings、openExternal、authorized、missedRun、diffAnnotation、fileLink、attach、gitAhead、gitBehind、settingsMarkdownFormat、cron、timezone。其中 settings 的自绘定稿在小尺寸下读成准星而被否决，临时回退 SF，等第二版。
+- `IconRole` 共 148 个槽位。129 个已映射到可作参照的自绘 `tekes-*` 资源（引用 123 个不同资源）。资产目录 TekesIcons 下可交付的 imageset 为 133 个、399 个 SVG，全部 viewBox 0 0 24 24、stroke-width 1.5。
+- **需要从零设计的共 20 个**：19 个 IconRole 槽位，外加 1 个非槽位资源。
+  - (a) 15 个只有 SF-only 回退：listRemove、zoomIn、zoomOut、settings、openExternal、authorized、missedRun、diffAnnotation、fileLink、attach、gitAhead、gitBehind、settingsMarkdownFormat、cron、timezone。其中 settings 的自绘定稿在小尺寸下读成准星而被否决，临时回退 SF，等第二版。
+  - (b) 5 个原稿已作废：`annotation`（资源 `tekes-annotation`）、`permissionReadOnly`（`tekes-perm-read-only`）、`permissionWorkspaceWrite`（`tekes-perm-workspace-write`）、`permissionFullAccess`（`tekes-perm-full-access`），以及非槽位资源 `tekes-computer-use`（Settings 的 Computer Use 页按名字直接加载）。原因：原稿含来源不明的 C2PA 内容出处元数据，已从 base 和交付范围移除。这 5 个由 Design 从零设计，不参照原稿，也不会收到原稿。
 - 另有 SourceControl 下约 30 个文件类型图标（FileIconC 等），以及品牌/provider logo。**品牌 logo 是第三方商标，不得进 MIT 仓库，本委托明确排除。**
 - 不一致项：设计页《Tekes Icon Set》文字写"2pt 圆头描边"，而 `Icon Tokens.md` 与实际 SVG 都是 1.5pt。需要 Design 统一说明：以实际 SVG（1.5pt）为准，还是重定。
 
@@ -35,10 +37,10 @@ TekesUI 是 MIT 公开的纯 Rust UI 组件库，其 Gallery 要长期稳定。�
 
 ### 结论
 
-- **工作量**：补画 15 个图标；统一笔法规范；约 24 个颜色角色在 dark / Increase Contrast 下给定值（外加 accent、textSelection 的策略决定）；文本角色表；对现有 133 个自绘图标逐个做原创声明；映射表。体量属于一轮到两轮设计委托，不是大工程；最耗时的是图标原创性核查。
+- **工作量**：从零设计 20 个图标（15 个 SF 回退 + 5 个原稿作废）；统一笔法规范；约 24 个颜色角色在 dark / Increase Contrast 下给定值（外加 accent、textSelection 的策略决定）；文本角色表；对现有 129 个自绘图标逐个做原创声明；映射表。体量属于一轮到两轮设计委托，不是大工程；最耗时的是图标原创性核查。
 - **收益**：Gallery 的视觉输入稳定且不依赖系统资源；跨平台（Windows、Linux）可用同一套值；可随 MIT 仓库公开；token 真源脱离 Swift，Rust 与 Swift 两边可以从同一文件生成。
 - **风险**：与 Tekes 现有视觉漂移（两套 token 并存，需要映射表与回归比对来约束）；版权核查成本（现有图标是否有参照 SF 形、重画量未知）；dark / Increase Contrast 新定值要重新做对比度验证。
-- **建议**：值得做，但分两步：先发"token 与笔法规范 + 15 个补画"，图标原创声明与重画作为同一委托的第二阶段；F1 阶段 Gallery 可先用临时占位 token，不阻塞组件开发。**是否发出、何时发出，由用户决定。**
+- **建议**：值得做，但分两步：先发"token 与笔法规范 + 20 个从零设计"，图标原创声明与重画作为同一委托的第二阶段；F1 阶段 Gallery 可先用临时占位 token，不阻塞组件开发。**是否发出、何时发出，由用户决定。**
 
 ---
 
@@ -176,30 +178,44 @@ Alpha：faint .07、soft .14、wash .45。Increase Contrast 下 faint 提升为 
 
 - 画布 24×24，描边 1.5pt，圆头圆角，单色，着色走 ColorRole。资源命名 `tekes-*`。
 - 尺寸档：标准 16、辅助 12；自绘资源保留 24 画布和原始描边，不对单个图标额外加粗。
-- 数量：槽位 148；已有自绘映射 133（127 个不同资源）；SF-only 回退 15 个，需补画：
+- 数量：槽位 148；已有可作参照的自绘映射 129（123 个不同资源）；需要从零设计的共 20 个（19 个槽位 + 1 个非槽位资源）。
+
+  (a) 只有 SF-only 回退的 15 个：
 
   listRemove、zoomIn、zoomOut、settings、openExternal、authorized、missedRun、diffAnnotation、fileLink、attach、gitAhead、gitBehind、settingsMarkdownFormat、cron、timezone
 
   settings 的说明：之前的自绘定稿在小尺寸下读成准星，被否决；请给出在 12 与 16 下可读的新稿。
+
+  (b) 原稿已作废的 5 个：
+
+  | 槽位 | 资源名 |
+  |---|---|
+  | annotation | tekes-annotation |
+  | permissionReadOnly | tekes-perm-read-only |
+  | permissionWorkspaceWrite | tekes-perm-workspace-write |
+  | permissionFullAccess | tekes-perm-full-access |
+  | （非槽位，Settings 的 Computer Use 页直接按名字加载） | tekes-computer-use |
+
+  原因：原稿含来源不明的 C2PA 内容出处元数据，已从 base 移除。请从零设计，**不得参照原稿**，也不会收到原稿。
 - 文件类型图标（约 30 个，如 C 语言文件图标）：范围待定，见第 6 节。
 - 描边宽度不一致：设计页写 2pt，Icon Tokens.md 与 SVG 是 1.5pt。**请明确说明以哪个为准并给理由；如果重定，需要列出所有受影响图标的处理方式。**
 
 ### 4. 要回答的问题
 
 1. 笔法规范：1.5pt 还是 2pt；端点、拐角、间距、最小笔画、关键线（keyline）；小尺寸（12pt）下的简化规则。
-2. 补画 15 个图标：每个给 SVG，并给 12 与 16 两种渲染下的可读性说明。
+2. 从零设计 20 个图标（(a) 15 个 SF 回退 + (b) 5 个原稿作废）：每个给 SVG，并给 12 与 16 两种渲染下的可读性说明。
 3. 颜色：第 3.2 节的全部缺口；accent 与 textSelection 的策略；三种外观的对比度验算表。
 4. 文字：平台中立字号表与动态字号策略。
 5. 命名：图标用 kebab-case；是否保留 `tekes-` 前缀（保留利于与私有资产区分且避免与其他库冲突，去掉利于公开库的简洁与通用）。请给出推荐与理由。token 名同理（如 `color.row-selection`）。
-6. 对现有 133 个自绘图标：逐个声明是否原创（见第 5 节）。
+6. 对现有 129 个自绘图标：逐个声明是否原创（见第 5 节）。
 7. 与 Tekes 现有 token 的映射表（见第 7 节）。
 8. 跨平台差异：Windows、Linux 上哪些 token 允许平台覆盖（如 accent、字体），哪些必须保持一致。
 
 ### 5. 版权与原创性（硬要求）
 
 - 所有交付的图标必须是**原创或 Tekes 自有作品**，才能随 MIT 公开。
-- **不得描摹或派生 SF Symbols**。SF-only 回退的 15 个必须从零原创，不参考 SF 的具体形状。
-- 现有 133 个自绘图标在公开前，请逐个声明："原创"或"曾参照 SF 形"。凡曾参照 SF 形的，标出并**重画**，交付重画稿。声明格式见第 7 节。
+- **不得描摹或派生 SF Symbols**。SF-only 回退的 15 个必须从零原创，不参考 SF 的具体形状；原稿作废的 5 个同样从零设计，不得参照原稿。
+- 现有 129 个自绘图标在公开前，请逐个声明："原创"或"曾参照 SF 形"。凡曾参照 SF 形的，标出并**重画**，交付重画稿。声明格式见第 7 节。
 - 不得引入第三方图标库、字体图标、商标形状。
 - 品牌 / provider logo（如 Anthropic、OpenAI 等）是第三方商标，**一律不在范围内，也不得放进交付物**。
 
@@ -207,7 +223,7 @@ Alpha：faint .07、soft .14、wash .45。Increase Contrast 下 faint 提升为 
 
 在范围内：
 
-- 通用界面图标集（148 个槽位对应的图标，含补画的 15 个）。
+- 通用界面图标集（148 个槽位对应的图标，含从零设计的 20 个）。
 - 全部 token：颜色、文字、间距、圆角、描边、动效、控件尺寸、alpha。
 - 笔法规范与命名规范。
 - 映射表与原创性声明。
