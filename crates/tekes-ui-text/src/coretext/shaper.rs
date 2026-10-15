@@ -180,10 +180,10 @@ impl CoreTextShaper {
                 Some(f) => self.fonts.key_for(&f),
                 None => base_key,
             };
-            if !fonts_used.iter().any(|f| f.key == font_key) {
-                if let Some(info) = self.fonts.info(font_key) {
-                    fonts_used.push(info);
-                }
+            if !fonts_used.iter().any(|f| f.key == font_key)
+                && let Some(info) = self.fonts.info(font_key)
+            {
+                fonts_used.push(info);
             }
             let mut glyphs = vec![0u16; glyph_count];
             let mut positions = vec![CGPoint { x: 0.0, y: 0.0 }; glyph_count];
@@ -341,12 +341,13 @@ impl FontFallback for CoreTextShaper {
             let range = sr.location as usize..(sr.location + sr.length) as usize;
             let key = run_font(&run).map_or(base_key, |f| self.fonts.key_for(&f));
             let info = self.fonts.info(key).expect("字体已登记");
-            if let Some(last) = out.last_mut() {
-                if last.font.key == key && last.utf16.end == range.start {
-                    last.utf16.end = range.end;
-                    last.bytes.end = map.byte_of(range.end);
-                    continue;
-                }
+            if let Some(last) = out.last_mut()
+                && last.font.key == key
+                && last.utf16.end == range.start
+            {
+                last.utf16.end = range.end;
+                last.bytes.end = map.byte_of(range.end);
+                continue;
             }
             out.push(FontRun {
                 bytes: map.byte_range(range.clone()),
@@ -358,12 +359,13 @@ impl FontFallback for CoreTextShaper {
         out.sort_by_key(|r| r.utf16.start);
         let mut merged: Vec<FontRun> = Vec::new();
         for r in out {
-            if let Some(last) = merged.last_mut() {
-                if last.font.key == r.font.key && last.utf16.end == r.utf16.start {
-                    last.utf16.end = r.utf16.end;
-                    last.bytes.end = r.bytes.end;
-                    continue;
-                }
+            if let Some(last) = merged.last_mut()
+                && last.font.key == r.font.key
+                && last.utf16.end == r.utf16.start
+            {
+                last.utf16.end = r.utf16.end;
+                last.bytes.end = r.bytes.end;
+                continue;
             }
             merged.push(r);
         }

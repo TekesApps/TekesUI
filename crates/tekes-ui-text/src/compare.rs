@@ -335,7 +335,7 @@ mod tests {
         set(&mut a, 4, 1, 1, [0, 0, 0, 255]);
         let r = diff_rgba8(&a, &b, 4, 4, opts());
         assert_eq!(r.heatmap.len(), 4 * 4 * 4);
-        let hot = &r.heatmap[(1 * 4 + 1) * 4..(1 * 4 + 1) * 4 + 4];
+        let hot = &r.heatmap[20..24]; // 第 1 行第 1 列：(4 + 1) * 4
         assert_eq!(hot[0], 255);
         assert_eq!(hot[3], 255);
         assert_eq!(&r.heatmap[0..4], &[28, 28, 32, 255]);
