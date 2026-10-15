@@ -108,6 +108,11 @@ impl Gallery {
         self.text.atlas_mut()
     }
 
+    /// 文字引擎（排版、光栅化、窗口 atlas）。性能 harness 用它往同一个 atlas 里编文字段。
+    pub fn text_mut(&mut self) -> &mut TextEngine {
+        &mut self.text
+    }
+
     /// 每次重绘之前调用：记下窗口倍率，给静态文字页备好参照图和差异（状态没变时什么都不做）。
     pub fn prepare(&mut self, renderer: &mut Renderer, scale: f32) {
         self.text.set_scale(scale);

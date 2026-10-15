@@ -12,6 +12,7 @@ use tekes_ui_scene::Scene;
 use tekes_ui_tokens::{Appearance, Contrast, Theme};
 
 use crate::gallery::{Change, Command, Gallery};
+use crate::perf::{FrameCtx, Perf};
 
 #[derive(Debug)]
 pub struct Host {
@@ -24,6 +25,8 @@ pub struct Host {
     log_all: bool,
     start: Instant,
     redraws: u64,
+    /// `TEKES_PERF` 开着时的性能 harness（见 `perf.rs`）。
+    perf: Option<Perf>,
 }
 
 impl Host {
@@ -37,7 +40,14 @@ impl Host {
             log_all: std::env::var("TEKES_LOG_EVENTS").is_ok_and(|v| v == "all"),
             start: Instant::now(),
             redraws: 0,
+            perf: None,
         }
+    }
+
+    /// 挂上性能 harness：窗口创建后它接管动画和渲染，直到写完报告。
+    pub fn with_perf(mut self, perf: Option<Perf>) -> Host {
+        self.perf = perf;
+        self
     }
 
     fn log(&self, what: std::fmt::Arguments<'_>) {
@@ -117,6 +127,9 @@ impl WindowHandler for Host {
                     Ok(r) => self.renderer = Some(r),
                     Err(e) => eprintln!("创建渲染器失败：{e}"),
                 }
+                if let (Some(p), Some(r)) = (self.perf.as_mut(), self.renderer.as_mut()) {
+                    p.begin(window, r);
+                }
                 self.sync_chrome(window);
                 self.log(format_args!(
                     "Created: size {:?} scale {} drawable {:?} windowNumber {}",
@@ -146,6 +159,17 @@ impl WindowHandler for Host {
                 }
             }
             Event::Redraw => self.redraw(window),
+            Event::AnimationFrame(f) => {
+                if let (Some(p), Some(r)) = (self.perf.as_mut(), self.renderer.as_mut()) {
+                    let mut ctx = FrameCtx {
+                        scene: &mut self.scene,
+                        renderer: r,
+                        window: &mut *window,
+                        theme: self.gallery.theme(),
+                    };
+                    p.frame(*f, &mut ctx);
+                }
+            }
             Event::SystemAppearanceChanged {
                 dark,
                 increase_contrast,
@@ -171,6 +195,13 @@ impl WindowHandler for Host {
                     self.log(format_args!("command {command:?}"));
                     let change = self.gallery.apply(command);
                     self.apply_change(change, window);
+                }
+            }
+            Event::CloseRequested if self.perf.as_ref().is_some_and(Perf::is_active) => {
+                if let (Some(p), Some(r)) = (self.perf.as_mut(), self.renderer.as_mut()) {
+                    p.on_close_requested(window, r);
+                } else {
+                    window.close();
                 }
             }
             Event::CloseRequested => {

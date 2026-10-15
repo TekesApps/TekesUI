@@ -9,6 +9,8 @@
 //! - 无参数：打开窗口；
 //! - `--snapshot <目录>`：不开窗口，无头渲染每页 x 每个主题 x 缩放 2 和 1，写 PNG。
 //!
+//! 性能 harness：`TEKES_PERF=scroll[:秒数]` 开启，见 `perf.rs`；报告写到 `TEKES_PERF_OUT`。
+//!
 //! 自测模式（后台线程按时间表向主线程投递 AppKit 级动作，不合成全局输入事件）：
 //! - `TEKES_SELFTEST=1`：缩放窗口、截图、最小化再恢复，见 docs/handoffs/F0-measurements.md；
 //! - `TEKES_SELFTEST=gallery`：切页、切主题、hover、点击、方向键，每步截图，见 docs/gallery.md。
@@ -19,6 +21,8 @@
 mod gallery;
 #[cfg(target_os = "macos")]
 mod host;
+#[cfg(target_os = "macos")]
+mod perf;
 
 #[cfg(not(target_os = "macos"))]
 fn main() {
@@ -59,6 +63,7 @@ fn main() {
     }
 
     let mode = std::env::var("TEKES_SELFTEST").ok();
+    let perf_config = perf::PerfConfig::from_env();
     let gallery_state = gallery::Gallery::new();
     let menu_bar = gallery_state.menu_bar();
     let window_config = WindowConfig {
@@ -75,7 +80,8 @@ fn main() {
         // 窗口摆放的开发规则：外接屏优先，否则内建屏右半边。缩放窗口的自测属于尺寸类检查。
         // 可用环境变量 TEKESUI_WINDOW_PLACEMENT 覆盖。
         placement: WindowPlacement::Auto {
-            need_120hz: false,
+            // 性能测量要 120Hz（只有内建 ProMotion 屏有），摆放规则会选内建屏。
+            need_120hz: perf_config.is_some(),
             size_check: mode.as_deref() == Some("1"),
         },
         // 不保存窗口位置与尺寸：需要固定、可复现的尺寸。
@@ -90,7 +96,15 @@ fn main() {
         name: Some("TekesUI Gallery".into()),
         ..AppConfig::default()
     })
-    .run(window_config, menu_bar, host::Host::new(gallery_state));
+    .run(
+        window_config,
+        menu_bar,
+        host::Host::new(gallery_state).with_perf(perf_config.map(perf::Perf::new)),
+    );
+    if std::env::var_os("TEKES_PERF").is_some() {
+        // 0：完整跑完且空闲确认通过；2：中途被关、没跑起来或空闲确认失败。
+        std::process::exit(perf::exit_code());
+    }
 }
 
 /// 自测时间表：初始截图；缩放到几个尺寸各截一张；最小化再恢复，截图确认内容还在。
