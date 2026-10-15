@@ -21,7 +21,7 @@
 
 ### 方法
 
-- 内容：Gallery 占位页，静止，无动画；窗口可见，位于外接屏；应用在后台时由别的前台应用占着焦点，与实际使用一致。
+- 内容：Gallery 占位页，静止，无动画；窗口可见，位于外接屏，启动后成为 key window。
 - 每次：启动 → 等 SETTLE 秒 → `scripts/measure-idle-cpu.sh <pid> 60`（`top -l 61 -s 1 -pid <pid> -stats pid,cpu,idlew`，丢弃第一个样本，因为它是进程启动以来的平均值）→ 结束进程。comparison-method 第 2.3 节要求 60 秒、至少 5 次；这里共 12 次，分三组：
   - 第一组 5 次，SETTLE = 5 秒；
   - 第二组 3 次，SETTLE = 30 秒；
