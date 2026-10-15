@@ -9,13 +9,16 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use objc2::rc::Retained;
-use objc2::{AllocAnyThread, DefinedClass, MainThreadOnly, define_class, msg_send};
+use objc2::{AllocAnyThread, DefinedClass, MainThreadOnly, define_class, msg_send, sel};
 use objc2_app_kit::{
     NSEvent, NSTrackingArea, NSTrackingAreaOptions, NSView, NSViewLayerContentsRedrawPolicy,
 };
 use objc2_core_foundation::CGSize;
 use objc2_core_graphics::{CGColorSpace, kCGColorSpaceSRGB};
-use objc2_foundation::{MainThreadMarker, NSObjectProtocol, NSRect, NSSize};
+use objc2_foundation::{
+    MainThreadMarker, NSArray, NSObjectNSThreadPerformAdditions, NSObjectProtocol, NSRect,
+    NSRunLoopCommonModes, NSSize,
+};
 use objc2_quartz_core::{CALayer, CAMetalLayer, kCAGravityTopLeft};
 
 use crate::event::{
@@ -99,8 +102,11 @@ define_class!(
             layer.into_super()
         }
 
-        /// 只有 `request_redraw` 引起的 `setNeedsDisplay`，或 AppKit 自己要求（首次显示、
-        /// 窗口从遮挡恢复）才会走到这里。
+        /// 实测（macOS 26）：背衬层是 CAMetalLayer 时，`setNeedsDisplay:` 会被转成层的 needsDisplay，
+        /// 但 CAMetalLayer 从不执行 display，AppKit 也就不会调用 `updateLayer`，连同步的
+        /// `display` 也不会。所以按需重绘不走这条路，而是 `request_redraw` 自己在主 runloop 上排一次
+        /// 性的 `tekesPerformRedraw`（见下）。这里保留实现：万一 AppKit 因别的原因调用，
+        /// 照样投递 `Redraw`。
         #[unsafe(method(updateLayer))]
         fn update_layer(&self) {
             let shared = &self.ivars().shared;
@@ -109,6 +115,17 @@ define_class!(
             }
             shared.redraw_pending.set(false);
             shared.dispatch(Event::Redraw);
+        }
+
+        /// `request_redraw` 排进主 runloop（common modes）的一次性回调，合并后只投递一次 `Redraw`。
+        /// 没有定时器，也没有 display link：runloop 在没有排队回调时停在 `mach_msg`。
+        #[unsafe(method(tekesPerformRedraw))]
+        fn perform_redraw(&self) {
+            let shared = &self.ivars().shared;
+            // 已经被同步重绘（缩放路径）满足的请求，这里不再重复。
+            if shared.ready.get() && shared.redraw_pending.replace(false) {
+                shared.dispatch(Event::Redraw);
+            }
         }
 
         // ---- 尺寸与缩放 ----
@@ -280,13 +297,27 @@ impl TekesView {
         });
         // SAFETY: NSView 的指定初始化方法 initWithFrame: 签名正确。
         let view: Retained<TekesView> = unsafe { msg_send![super(this), initWithFrame: frame] };
-        // 必须在 wantsLayer 之前设置：我们自己决定重绘时机。
-        // OnSetNeedsDisplay：只有 setNeedsDisplay 才触发 updateLayer。缩放时的重绘由
-        // setFrameSize: 同步投递，如果用默认的 DuringViewResize，AppKit 会在同步重绘之后
-        // 再触发一次 updateLayer，同一次缩放画两帧。
-        view.setLayerContentsRedrawPolicy(NSViewLayerContentsRedrawPolicy::OnSetNeedsDisplay);
+        // 注意：`setWantsLayer(true)` 会把重绘策略重置成 Never，所以策略必须在它之后设置
+        // （实测）。OnSetNeedsDisplay：AppKit 不因缩放自动重绘层内容。缩放时的重绘由
+        // `setFrameSize:` 同步投递；如果用 DuringViewResize，AppKit 会在缩放时再自己重绘一次，
+        // 同一次缩放画两帧，还会与渲染层写入 drawable 的内容冲突。
         view.setWantsLayer(true);
+        view.setLayerContentsRedrawPolicy(NSViewLayerContentsRedrawPolicy::OnSetNeedsDisplay);
         view
+    }
+
+    /// 在主 runloop 上排一次 `tekesPerformRedraw`。同一时刻是否已排由调用方用 `redraw_pending` 保证。
+    pub(crate) fn schedule_redraw(&self) {
+        // SAFETY: selector 是上面定义的无参方法；modes 数组里是 AppKit 导出的全局常量。
+        unsafe {
+            let modes = NSArray::from_slice(&[NSRunLoopCommonModes]);
+            self.performSelectorOnMainThread_withObject_waitUntilDone_modes(
+                sel!(tekesPerformRedraw),
+                None,
+                false,
+                Some(&modes),
+            );
+        }
     }
 
     /// 确保背衬层已经创建并返回它。
@@ -411,11 +442,10 @@ impl TekesView {
             scale,
             drawable_size: drawable,
         });
-        // 同步重绘：不等下一个显示周期，否则实时缩放时窗口已经变了而内容还是旧尺寸。
-        // 这一帧已经满足了此前挂起的重绘请求，取消 AppKit 那边的 needsDisplay，避免再来一帧。
-        if shared.redraw_pending.replace(false) {
-            self.setNeedsDisplay(false);
-        }
+        // 同步重绘：不等下一轮 runloop，否则实时缩放时窗口已经变了而内容还是旧尺寸。
+        // 这一帧同时满足此前挂起的重绘请求；runloop 里已排的 `tekesPerformRedraw` 到点时
+        // 看到标志已清，什么也不做。
+        shared.redraw_pending.set(false);
         shared.dispatch(Event::Redraw);
     }
 }

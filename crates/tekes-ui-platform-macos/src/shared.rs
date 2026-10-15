@@ -155,7 +155,7 @@ impl Shared {
         if !self.redraw_pending.replace(true)
             && let Some(o) = self.objects.get()
         {
-            o.view.setNeedsDisplay(true);
+            o.view.schedule_redraw();
         }
     }
 }
