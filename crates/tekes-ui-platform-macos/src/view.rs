@@ -11,7 +11,8 @@ use std::rc::Rc;
 use objc2::rc::Retained;
 use objc2::{AllocAnyThread, DefinedClass, MainThreadOnly, define_class, msg_send, sel};
 use objc2_app_kit::{
-    NSEvent, NSTrackingArea, NSTrackingAreaOptions, NSView, NSViewLayerContentsRedrawPolicy,
+    NSEvent, NSTrackingArea, NSTrackingAreaOptions, NSView, NSViewLayerContentsPlacement,
+    NSViewLayerContentsRedrawPolicy,
 };
 use objc2_core_foundation::CGSize;
 use objc2_core_graphics::{CGColorSpace, kCGColorSpaceSRGB};
@@ -19,7 +20,7 @@ use objc2_foundation::{
     MainThreadMarker, NSArray, NSObjectNSThreadPerformAdditions, NSObjectProtocol, NSRect,
     NSRunLoopCommonModes, NSSize,
 };
-use objc2_quartz_core::{CALayer, CAMetalLayer, kCAGravityTopLeft};
+use objc2_quartz_core::{CALayer, CAMetalLayer};
 
 use crate::event::{
     Event, KeyEvent, KeyEventKind, Modifiers, MouseButton, MouseEvent, MouseEventKind, Point,
@@ -87,8 +88,6 @@ define_class!(
             let srgb = CGColorSpace::with_name(Some(unsafe { kCGColorSpaceSRGB }));
             layer.setColorspace(srgb.as_deref());
             layer.setOpaque(true);
-            // 新 drawable 还没来时，旧内容按原尺寸钉在左上角，不拉伸。
-            layer.setContentsGravity(unsafe { kCAGravityTopLeft });
             let scale = self.scale_factor();
             layer.setContentsScale(scale);
             let b = self.bounds().size;
@@ -303,6 +302,10 @@ impl TekesView {
         // 同一次缩放画两帧，还会与渲染层写入 drawable 的内容冲突。
         view.setWantsLayer(true);
         view.setLayerContentsRedrawPolicy(NSViewLayerContentsRedrawPolicy::OnSetNeedsDisplay);
+        // 新 drawable 还没来时，旧内容按原尺寸钉在左上角，不拉伸。
+        // 不能直接设层的 contentsGravity：AppKit 管着背衬层，会按视图的 layerContentsPlacement
+        // 把它改回 resize（实测）。TopLeft 是对视图而言的“左上”，AppKit 会处理翻转。
+        view.setLayerContentsPlacement(NSViewLayerContentsPlacement::TopLeft);
         view
     }
 

@@ -346,6 +346,9 @@ mod mac {
                 h: f64,
             },
             Dark(bool),
+            /// 给层塞一张 200x200 像素的图（上半红、下半蓝），验证 contentsGravity：
+            /// 窗口放大后图应钉在左上角、不拉伸、上红下蓝。
+            StaleImage,
             Close,
             #[allow(dead_code)]
             Note(&'static str),
@@ -512,7 +515,72 @@ mod mac {
                     };
                     w.setAppearance(a.as_deref());
                 }
+                Step::StaleImage => stale_image(&w),
                 Step::Close => w.performClose(None),
+            }
+        }
+
+        unsafe extern "C" {
+            fn CGBitmapContextCreate(
+                data: *mut c_void,
+                width: usize,
+                height: usize,
+                bits_per_component: usize,
+                bytes_per_row: usize,
+                space: *const c_void,
+                bitmap_info: u32,
+            ) -> *mut c_void;
+        }
+
+        fn stale_image(w: &NSWindow) {
+            use objc2::runtime::AnyObject;
+            use objc2_core_foundation::{CGPoint, CGRect, CGSize};
+            use objc2_core_graphics::{
+                CGBitmapContextCreateImage, CGColorSpace, CGContext, kCGColorSpaceSRGB,
+            };
+            let Some(layer) = w.contentView().and_then(|v| v.layer()) else {
+                return;
+            };
+            let Some(space) = CGColorSpace::with_name(Some(unsafe { kCGColorSpaceSRGB })) else {
+                return;
+            };
+            // SAFETY: 参数合法；data 为空表示由 CG 分配；返回的 CGContext 在本函数内用完后泄漏一次，
+            // 仅自测用，不影响结论。
+            let ctx = unsafe {
+                CGBitmapContextCreate(
+                    std::ptr::null_mut(),
+                    200,
+                    200,
+                    8,
+                    0,
+                    (&*space as *const CGColorSpace).cast(),
+                    0x2002, // premultipliedFirst | byteOrder32Little（BGRA）
+                )
+            };
+            // SAFETY: 上面创建成功的 CGContext。
+            let Some(ctx) = (unsafe { ctx.cast::<CGContext>().as_ref() }) else {
+                return;
+            };
+            // CG 坐标原点在左下：y 100..200 是图的上半。
+            CGContext::set_rgb_fill_color(Some(ctx), 0.9, 0.1, 0.1, 1.0);
+            CGContext::fill_rect(
+                Some(ctx),
+                CGRect::new(CGPoint::new(0.0, 100.0), CGSize::new(200.0, 100.0)),
+            );
+            CGContext::set_rgb_fill_color(Some(ctx), 0.1, 0.2, 0.9, 1.0);
+            CGContext::fill_rect(
+                Some(ctx),
+                CGRect::new(CGPoint::new(0.0, 0.0), CGSize::new(200.0, 100.0)),
+            );
+            if let Some(img) = CGBitmapContextCreateImage(Some(ctx)) {
+                let obj: &AnyObject = unsafe { &*(&*img as *const _ as *const AnyObject) };
+                eprintln!(
+                    "    layer.isGeometryFlipped={} contentsGravity={}",
+                    layer.isGeometryFlipped(),
+                    layer.contentsGravity()
+                );
+                // SAFETY: CGImage 是合法的 CALayer contents。
+                unsafe { layer.setContents(Some(obj)) };
             }
         }
 
@@ -601,6 +669,7 @@ mod mac {
                 ),
                 (3300, Step::Menu { tag: 11 }),
                 (3500, Step::Menu { tag: 12 }),
+                (3600, Step::StaleImage),
                 (3700, Step::Resize { w: 700.0, h: 450.0 }),
             ];
             // 模拟实时缩放：每 20ms 一步，共 20 步。
