@@ -28,7 +28,7 @@ objc2-core-foundation = { version = "0.3.2", default-features = false, features 
 objc2-core-graphics = { version = "0.3.2", default-features = false, features = ["std"] }
 objc2-core-text = { version = "0.3.2", default-features = false, features = ["std"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["float_roundtrip"] }
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "warn"

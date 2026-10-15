@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tekesui-layout/0",
+  "title": "tekesui-layout/0",
+  "description": "排版数据导出格式。说明见 docs/schemas/layout-export.md。",
+  "type": "object",
+  "required": [
+    "schema", "fixture", "font", "width", "scale", "line_spacing", "exporter",
+    "units", "text_utf16_len", "height", "lines"
+  ],
+  "properties": {
+    "schema": { "const": "tekesui-layout/0" },
+    "fixture": { "type": "string" },
+    "font": {
+      "type": "object",
+      "required": ["family", "post_script_name", "size", "weight"],
+      "properties": {
+        "family": { "type": "string" },
+        "post_script_name": { "type": "string" },
+        "size": { "type": "number", "exclusiveMinimum": 0 },
+        "weight": { "type": "integer", "minimum": 1, "maximum": 1000 }
+      }
+    },
+    "width": { "type": ["number", "null"] },
+    "scale": { "type": "number", "exclusiveMinimum": 0 },
+    "line_spacing": { "type": "number", "minimum": 0 },
+    "exporter": {
+      "type": "object",
+      "required": ["id", "version", "commit"],
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "string" },
+        "commit": { "type": ["string", "null"] }
+      }
+    },
+    "units": {
+      "type": "object",
+      "required": ["length", "text_offsets", "y_axis", "glyph_origin"],
+      "properties": {
+        "length": { "const": "pt" },
+        "text_offsets": { "const": "utf16" },
+        "y_axis": { "const": "down" },
+        "glyph_origin": { "const": "paragraph-top-left" }
+      }
+    },
+    "text_utf16_len": { "type": "integer", "minimum": 0 },
+    "height": { "type": "number", "minimum": 0 },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "index", "utf16", "ascent", "descent", "leading", "height",
+          "baseline_y", "width", "width_trimmed", "glyphs"
+        ],
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "utf16": { "$ref": "#/$defs/range" },
+          "ascent": { "type": "number" },
+          "descent": { "type": "number" },
+          "leading": { "type": "number" },
+          "height": { "type": "number" },
+          "baseline_y": { "type": "number" },
+          "width": { "type": "number" },
+          "width_trimmed": { "type": "number" },
+          "glyphs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "font", "x", "y", "cluster"],
+              "properties": {
+                "id": { "type": "integer", "minimum": 0, "maximum": 65535 },
+                "font": { "type": "string" },
+                "x": { "type": "number" },
+                "y": { "type": "number" },
+                "cluster": { "$ref": "#/$defs/range" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "range": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 },
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}

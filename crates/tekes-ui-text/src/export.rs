@@ -53,8 +53,10 @@ pub struct LayoutMeta {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct FontSpec {
-    /// `system-ui` 或字体名。
+    /// `system-ui` 或请求的字体名。
     pub family: String,
+    /// 实际解析出的基础字体的 PostScript 名，如 `.SFNS-Regular`。
+    pub post_script_name: String,
     pub size: f64,
     pub weight: u16,
 }
@@ -170,6 +172,11 @@ pub fn layout_export(meta: &LayoutMeta, paragraph: &Paragraph) -> LayoutExport {
                 FontFamily::SystemUi => "system-ui".to_owned(),
                 FontFamily::Named(n) => n.clone(),
             },
+            post_script_name: paragraph
+                .fonts
+                .first()
+                .map(|f| f.post_script_name.clone())
+                .unwrap_or_default(),
             size: f64::from(meta.style.size),
             weight: meta.style.weight,
         },
