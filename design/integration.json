@@ -1,0 +1,93 @@
+{
+  "format": "tekesui-proposal-integration/1",
+  "package_version": "v0.3.0-proposal1",
+  "repository_release": false,
+  "authorization": "Package-present definitions win; existing absent definitions survive. Store all supplied code and documentation in Git.",
+  "archive": {
+    "$ref": "./imports/v0.3.0-proposal1/import.json"
+  },
+  "effective_specifications": {
+    "full_spec": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/SPEC.md"
+    },
+    "components": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json"
+    },
+    "component_contracts": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json"
+    },
+    "recipes": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/recipes.json"
+    },
+    "pages": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/pages.json"
+    },
+    "states": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json"
+    },
+    "layout": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/layout.json"
+    },
+    "interaction": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/interaction-contracts.json"
+    },
+    "brand": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/gallery.json"
+    },
+    "quality": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/quality/gates.json"
+    },
+    "research": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/research/sources.json"
+    },
+    "adapters": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/adapters/contract.json"
+    }
+  },
+  "tools": {
+    "brand": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py"
+    },
+    "brand_color": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py"
+    },
+    "context": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/context.py"
+    },
+    "generate": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/generate.py"
+    },
+    "seal": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/seal.py"
+    },
+    "test_brand": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/test_brand.py"
+    },
+    "validate": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py"
+    }
+  },
+  "supplement": {
+    "history": {
+      "$ref": "./history/pre-proposal1/system.json"
+    },
+    "existing_implementation": [
+      "primitives",
+      "tokens",
+      "static-text",
+      "mixed automatic bidirectional scroll"
+    ],
+    "policy": "Retain unmatched existing values/fixtures with explicit mapping, not by dropping incoming definitions."
+  },
+  "acceptance": {
+    "archive_integrity": "pass",
+    "static_package_validation": "pass",
+    "native_scope": "Existing Gallery pages only; new component/recipe specifications are not all implemented.",
+    "visual_review": "reviewed-integration-candidate; see reviews/proposal1/verification.json",
+    "user_visual_approval": "not-claimed",
+    "release": "not-requested",
+    "evidence": {
+      "$ref": "./reviews/proposal1/verification.json"
+    }
+  }
+}

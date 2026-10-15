@@ -1,6 +1,6 @@
-//! **临时占位：数值取自 Tekes 现有 Spacing / CornerRadius / Stroke / Motion / ControlSize / Alpha / ColorRole / TextRole，等 Design 交付的 tokens.json 生成后替换。**
-//!
-//! 文字角色。这里只有数据，文字渲染以后再做。
+//! Text metrics generated from design/tokens.json; system fonts are a platform strategy.
+
+pub use crate::generated::TextRole;
 
 /// 文字样式。
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -11,64 +11,6 @@ pub struct TextStyle {
     pub line_height: f32,
     /// 字重，100..=900。
     pub weight: u16,
-}
-
-/// 文字角色。
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum TextRole {
-    Body,
-    BodyEmphasized,
-    RowMeta,
-    SectionHeader,
-    IdentityBadge,
-    Brand,
-}
-
-impl TextRole {
-    pub const ALL: [TextRole; 6] = [
-        TextRole::Body,
-        TextRole::BodyEmphasized,
-        TextRole::RowMeta,
-        TextRole::SectionHeader,
-        TextRole::IdentityBadge,
-        TextRole::Brand,
-    ];
-
-    pub const fn style(self) -> TextStyle {
-        match self {
-            TextRole::Body => TextStyle {
-                size: 13.0,
-                line_height: 16.0,
-                weight: 400,
-            },
-            TextRole::BodyEmphasized => TextStyle {
-                size: 13.0,
-                line_height: 16.0,
-                weight: 600,
-            },
-            TextRole::RowMeta => TextStyle {
-                size: 11.0,
-                line_height: 16.0,
-                weight: 400,
-            },
-            TextRole::SectionHeader => TextStyle {
-                size: 11.0,
-                line_height: 16.0,
-                weight: 700,
-            },
-            TextRole::IdentityBadge => TextStyle {
-                size: 10.0,
-                line_height: 16.0,
-                weight: 600,
-            },
-            // 占位：现状是随系统的 title2，字号待核实。
-            TextRole::Brand => TextStyle {
-                size: 17.0,
-                line_height: 22.0,
-                weight: 700,
-            },
-        }
-    }
 }
 
 #[cfg(test)]

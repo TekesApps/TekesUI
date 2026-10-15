@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TekesUI consumer recipe registry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "scope",
+    "recipes"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "recipes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/recipe"
+      }
+    }
+  },
+  "$defs": {
+    "recipe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "category",
+        "owner_role",
+        "owner_handle",
+        "crate",
+        "status",
+        "optional",
+        "component_ids",
+        "spec",
+        "api",
+        "usage",
+        "prohibited",
+        "states",
+        "themes",
+        "fixtures",
+        "source_ids",
+        "gallery_slug",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^agent\\.[a-z][a-z0-9-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "crate": {
+          "type": "string",
+          "minLength": 1
+        },
+        "spec": {
+          "type": "string",
+          "minLength": 1
+        },
+        "api": {
+          "type": "string",
+          "minLength": 1
+        },
+        "usage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prohibited": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gallery_slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_handle": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "planned",
+            "experimental",
+            "beta",
+            "stable",
+            "deprecated"
+          ]
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "component_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "states": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "themes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "fixtures": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "source_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "component",
+            "application",
+            "real_environment"
+          ],
+          "properties": {
+            "component": {
+              "enum": [
+                "pass",
+                "fail",
+                "unverified",
+                "not-applicable"
+              ]
+            },
+            "application": {
+              "enum": [
+                "pass",
+                "fail",
+                "unverified",
+                "not-applicable"
+              ]
+            },
+            "real_environment": {
+              "enum": [
+                "pass",
+                "fail",
+                "unverified",
+                "not-applicable"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

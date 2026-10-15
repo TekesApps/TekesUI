@@ -1,0 +1,57 @@
+{
+  "drag": {
+    "activation": "distance_from_pointer_down >= dead_zone",
+    "cancel": "Escape/lost capture/window deactivation restore initial ratio and release capture",
+    "clamp_rule": "apply content minima first; if infeasible collapse into switchable panels; never produce minRatio > maxRatio",
+    "dead_zone": 4,
+    "direct_tracking": true,
+    "double_click_ratio": 0.5,
+    "drag_alternative_required": true
+  },
+  "ime": {
+    "blocks_all_submit_paths": true,
+    "escape_during_composition": "IME handles first; do not dismiss ancestor dialog",
+    "preserve_original_payload": true,
+    "priority": [
+      "platform-marked-text",
+      "completion-menu",
+      "editor",
+      "application-command"
+    ],
+    "send_ack_rule": "persist immutable draft/outbox entry before submission; clear the matching draft only after durable acceptance; idempotency key required for retry"
+  },
+  "keyboard": {
+    "focus_restore_required": true,
+    "popover_not_modal_by_default": true,
+    "roving_focus": true
+  },
+  "native": {
+    "auto_focus_background_window": false,
+    "simulate_browser_keycode_229": false,
+    "use_operating_system_momentum": true
+  },
+  "runtime_status": "unverified",
+  "scroll": {
+    "bottom_tolerance": 40,
+    "cooldown": 0.15,
+    "jump_control_threshold": 120,
+    "pin_states": [
+      "following",
+      "reading-history"
+    ],
+    "reading_history_latched": true,
+    "repin": "explicit jump-to-latest or user intentionally returns to bottom; never by timer alone",
+    "retain_stable_anchor": true,
+    "stream_reveal": "append without blur or glyph motion",
+    "unpin": "any user upward intent immediately enters reading-history, even within tolerance"
+  },
+  "source_ids": [
+    "OCUI-04",
+    "OCUI-05",
+    "OCUI-06",
+    "OCUI-07"
+  ],
+  "time_unit": "seconds",
+  "unit": "logical-pt",
+  "version": "0.2.0-proposal.1"
+}

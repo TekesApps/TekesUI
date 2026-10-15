@@ -1,0 +1,2372 @@
+{
+  "version": "0.3.0-proposal.1",
+  "scope": "public TekesUI generic components; planned catalog, NOT an inventory of implemented Rust symbols",
+  "components": [
+    {
+      "id": "tui.text",
+      "name": "Text",
+      "category": "foundation",
+      "owner_role": "text-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-text",
+      "crate_is_proposed_addition": false,
+      "status": "planned",
+      "spec": "docs/components/text.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Text(content, style)",
+      "usage": "显示短标签；可选文本能力由 SelectionSurface 提供",
+      "prohibited": "不要把业务状态或截断逻辑埋在字形层",
+      "state_profile": "static",
+      "states": [
+        "rest"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "loading": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "error": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "text",
+      "gallery_route": "tekes-gallery://component/text",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.icon",
+      "name": "Icon",
+      "category": "foundation",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-scene",
+      "crate_is_proposed_addition": false,
+      "status": "planned",
+      "spec": "docs/components/icon.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Icon(role, size, color_role)",
+      "usage": "显示已获许可的单色图标",
+      "prohibited": "不要以 emoji 或系统图标截图代替资产",
+      "state_profile": "static",
+      "states": [
+        "rest"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "loading": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "error": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "icon",
+      "gallery_route": "tekes-gallery://component/icon",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.separator",
+      "name": "Separator",
+      "category": "foundation",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/separator.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Separator(axis, importance)",
+      "usage": "装饰性分组；必要边界用 border",
+      "prohibited": "不能以低对比度 separator 作为唯一交互边界",
+      "state_profile": "static",
+      "states": [
+        "rest"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "loading": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "error": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "separator",
+      "gallery_route": "tekes-gallery://component/separator",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.stack",
+      "name": "Stack",
+      "category": "layout",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-layout",
+      "crate_is_proposed_addition": false,
+      "status": "planned",
+      "spec": "docs/components/stack.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Stack(axis, gap, alignment, children)",
+      "usage": "一维布局",
+      "prohibited": "不要用空白字符实现间距",
+      "state_profile": "static",
+      "states": [
+        "rest"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "loading": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "error": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "stack",
+      "gallery_route": "tekes-gallery://component/stack",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.grid",
+      "name": "Grid",
+      "category": "layout",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-layout",
+      "crate_is_proposed_addition": false,
+      "status": "planned",
+      "spec": "docs/components/grid.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Grid(columns, gaps, children)",
+      "usage": "设置页与表单栅格",
+      "prohibited": "不要把固定截图宽度当作运行时固定宽度",
+      "state_profile": "static",
+      "states": [
+        "rest"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "loading": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "error": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "grid",
+      "gallery_route": "tekes-gallery://component/grid",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.split-view",
+      "name": "SplitView",
+      "category": "layout",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/split-view.md",
+      "api_status": "proposed-not-compiled",
+      "api": "SplitView(panes, constraints, on_resize)",
+      "usage": "多面板工作台；提供菜单和按钮替代拖动",
+      "prohibited": "不可仅支持拖动分隔条",
+      "state_profile": "split",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "dragging"
+      ],
+      "state_combinations": [
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。",
+        "loading": "该组件不承载此种值或异步语义。",
+        "error": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "split-view",
+      "gallery_route": "tekes-gallery://component/split-view",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.scroll-area",
+      "name": "ScrollArea",
+      "category": "layout",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/scroll-area.md",
+      "api_status": "proposed-not-compiled",
+      "api": "ScrollArea(content, axis, anchor_policy)",
+      "usage": "长文、表格、虚拟列表",
+      "prohibited": "不得抢夺另一可滚动区域的方向键",
+      "state_profile": "scroll",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "scrolling",
+        "at-start",
+        "at-end"
+      ],
+      "state_combinations": [
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。",
+        "loading": "该组件不承载此种值或异步语义。",
+        "error": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "scroll-area",
+      "gallery_route": "tekes-gallery://component/scroll-area",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.button",
+      "name": "Button",
+      "category": "action",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/button.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Button(label, variant, enabled, busy, on_activate)",
+      "usage": "提交单个显式动作",
+      "prohibited": "不以按钮 click 状态代替持久 selected",
+      "state_profile": "button",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "loading"
+      ],
+      "state_combinations": [
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。",
+        "error": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "button",
+      "gallery_route": "tekes-gallery://component/button",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.icon-button",
+      "name": "IconButton",
+      "category": "action",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/icon-button.md",
+      "api_status": "proposed-not-compiled",
+      "api": "IconButton(icon, accessible_name, enabled, on_activate)",
+      "usage": "紧凑工具栏操作",
+      "prohibited": "accessible_name 必填；不能只有 tooltip",
+      "state_profile": "button",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "loading"
+      ],
+      "state_combinations": [
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。",
+        "error": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "icon-button",
+      "gallery_route": "tekes-gallery://component/icon-button",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.link",
+      "name": "Link",
+      "category": "action",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/link.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Link(label, destination, on_open)",
+      "usage": "导航到明示目标",
+      "prohibited": "不能让 Markdown 链接触发未授权命令",
+      "state_profile": "link",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled"
+      ],
+      "state_combinations": [
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。",
+        "loading": "该组件不承载此种值或异步语义。",
+        "error": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "link",
+      "gallery_route": "tekes-gallery://component/link",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.checkbox",
+      "name": "Checkbox",
+      "category": "input",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/checkbox.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Checkbox(value: Off|On|Mixed, label, on_change)",
+      "usage": "独立选择，可混合态",
+      "prohibited": "不能把 checked 和 selected 混用",
+      "state_profile": "check",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "checked",
+        "error",
+        "mixed"
+      ],
+      "state_combinations": [
+        "checked+hover",
+        "checked+focus",
+        "checked+disabled",
+        "error+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "loading": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "checkbox",
+      "gallery_route": "tekes-gallery://component/checkbox",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.radio-group",
+      "name": "RadioGroup",
+      "category": "input",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/radio-group.md",
+      "api_status": "proposed-not-compiled",
+      "api": "RadioGroup(options, value, on_change)",
+      "usage": "一组选一项",
+      "prohibited": "不要允许全部 checked",
+      "state_profile": "radio",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "checked",
+        "error"
+      ],
+      "state_combinations": [
+        "checked+hover",
+        "checked+focus",
+        "checked+disabled",
+        "error+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "loading": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "radio-group",
+      "gallery_route": "tekes-gallery://component/radio-group",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.switch",
+      "name": "Switch",
+      "category": "input",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/switch.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Switch(value: bool, label, on_change)",
+      "usage": "立即生效的布尔设置",
+      "prohibited": "不使用 mixed 值；确认型任务改用按钮",
+      "state_profile": "check",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "checked",
+        "error"
+      ],
+      "state_combinations": [
+        "checked+hover",
+        "checked+focus",
+        "checked+disabled",
+        "error+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "loading": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "switch",
+      "gallery_route": "tekes-gallery://component/switch",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.text-field",
+      "name": "TextField",
+      "category": "input",
+      "owner_role": "text-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-edit",
+      "crate_is_proposed_addition": false,
+      "status": "planned",
+      "spec": "docs/components/text-field.md",
+      "api_status": "proposed-not-compiled",
+      "api": "TextField(value, label, validation, read_only, on_edit)",
+      "usage": "单行字段、路径和名称",
+      "prohibited": "placeholder 不能代替 label",
+      "state_profile": "input",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "error",
+        "read-only",
+        "composing",
+        "selection"
+      ],
+      "state_combinations": [
+        "error+focus",
+        "pressed+focus",
+        "hover+focus",
+        "composing+focus",
+        "error+composing+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。",
+        "loading": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty",
+        "ime"
+      ],
+      "gallery_slug": "text-field",
+      "gallery_route": "tekes-gallery://component/text-field",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.text-area",
+      "name": "TextArea",
+      "category": "input",
+      "owner_role": "text-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-edit",
+      "crate_is_proposed_addition": false,
+      "status": "planned",
+      "spec": "docs/components/text-area.md",
+      "api_status": "proposed-not-compiled",
+      "api": "TextArea(document, label, validation, on_edit)",
+      "usage": "多行编辑；Enter 换行",
+      "prohibited": "不得默认把 Enter 作为提交业务动作",
+      "state_profile": "input",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "error",
+        "read-only",
+        "composing",
+        "selection"
+      ],
+      "state_combinations": [
+        "error+focus",
+        "pressed+focus",
+        "hover+focus",
+        "composing+focus",
+        "error+composing+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。",
+        "loading": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty",
+        "ime"
+      ],
+      "gallery_slug": "text-area",
+      "gallery_route": "tekes-gallery://component/text-area",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.search-field",
+      "name": "SearchField",
+      "category": "input",
+      "owner_role": "text-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-edit",
+      "crate_is_proposed_addition": false,
+      "status": "planned",
+      "spec": "docs/components/search-field.md",
+      "api_status": "proposed-not-compiled",
+      "api": "SearchField(query, label, on_query, on_clear)",
+      "usage": "搜索和过滤",
+      "prohibited": "不得在组字未完成时执行全局快捷键",
+      "state_profile": "input",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "error",
+        "read-only",
+        "composing",
+        "selection"
+      ],
+      "state_combinations": [
+        "error+focus",
+        "pressed+focus",
+        "hover+focus",
+        "composing+focus",
+        "error+composing+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。",
+        "loading": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty",
+        "ime"
+      ],
+      "gallery_slug": "search-field",
+      "gallery_route": "tekes-gallery://component/search-field",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.combo-box",
+      "name": "ComboBox",
+      "category": "input",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/combo-box.md",
+      "api_status": "proposed-not-compiled",
+      "api": "ComboBox(options, value, query, on_select)",
+      "usage": "可搜索选项；箭头导航",
+      "prohibited": "视觉高亮不等于已提交选择",
+      "state_profile": "choice",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "selected",
+        "loading",
+        "error",
+        "open",
+        "empty"
+      ],
+      "state_combinations": [
+        "selected+hover",
+        "selected+focus",
+        "error+focus",
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "checked": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "combo-box",
+      "gallery_route": "tekes-gallery://component/combo-box",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.slider",
+      "name": "Slider",
+      "category": "input",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/slider.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Slider(value, range, step, label, on_change)",
+      "usage": "有界数值；同时提供数值输入",
+      "prohibited": "不能只支持拖动",
+      "state_profile": "split",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "dragging"
+      ],
+      "state_combinations": [
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。",
+        "loading": "该组件不承载此种值或异步语义。",
+        "error": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "slider",
+      "gallery_route": "tekes-gallery://component/slider",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.tabs",
+      "name": "Tabs",
+      "category": "navigation",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/tabs.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Tabs(items, selected_id, activation, on_select)",
+      "usage": "同级内容切换",
+      "prohibited": "异步昂贵面板默认显式激活，不随焦点请求",
+      "state_profile": "select",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "selected",
+        "loading",
+        "error",
+        "empty"
+      ],
+      "state_combinations": [
+        "selected+hover",
+        "selected+focus",
+        "error+focus",
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "checked": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "tabs",
+      "gallery_route": "tekes-gallery://component/tabs",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.list",
+      "name": "List",
+      "category": "navigation",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/list.md",
+      "api_status": "proposed-not-compiled",
+      "api": "List(items, selection, on_select, on_activate)",
+      "usage": "虚拟行列表；选择与打开可分离",
+      "prohibited": "禁止整行按钮内再嵌套语义按钮",
+      "state_profile": "select",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "selected",
+        "loading",
+        "error",
+        "empty"
+      ],
+      "state_combinations": [
+        "selected+hover",
+        "selected+focus",
+        "error+focus",
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "checked": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "list",
+      "gallery_route": "tekes-gallery://component/list",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.tree",
+      "name": "Tree",
+      "category": "navigation",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/tree.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Tree(nodes, expanded, selection, on_toggle)",
+      "usage": "层级文件/目录",
+      "prohibited": "不能把 collapsed 与 empty 混为一态",
+      "state_profile": "tree",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "selected",
+        "loading",
+        "error",
+        "empty",
+        "expanded"
+      ],
+      "state_combinations": [
+        "selected+hover",
+        "selected+focus",
+        "error+focus",
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "checked": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "tree",
+      "gallery_route": "tekes-gallery://component/tree",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.breadcrumb",
+      "name": "Breadcrumb",
+      "category": "navigation",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/breadcrumb.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Breadcrumb(items, on_navigate)",
+      "usage": "定位当前层级",
+      "prohibited": "不能完全截断当前路径末段",
+      "state_profile": "link",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled"
+      ],
+      "state_combinations": [
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。",
+        "loading": "该组件不承载此种值或异步语义。",
+        "error": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "breadcrumb",
+      "gallery_route": "tekes-gallery://component/breadcrumb",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.menu",
+      "name": "Menu",
+      "category": "overlay",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/menu.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Menu(items, anchor, on_action, on_close)",
+      "usage": "选项、上下文动作",
+      "prohibited": "不可超出窗口可见区，嵌套菜单需完整键盘策略",
+      "state_profile": "choice",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "selected",
+        "loading",
+        "error",
+        "open",
+        "empty"
+      ],
+      "state_combinations": [
+        "selected+hover",
+        "selected+focus",
+        "error+focus",
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "checked": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "menu",
+      "gallery_route": "tekes-gallery://component/menu",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.tooltip",
+      "name": "Tooltip",
+      "category": "overlay",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/tooltip.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Tooltip(content, anchor)",
+      "usage": "补充短说明；trigger 提供 focus/hover",
+      "prohibited": "不能放按钮或关键错误；交互内容改 Popover",
+      "state_profile": "tooltip",
+      "states": [
+        "rest",
+        "open"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "loading": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "error": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "tooltip",
+      "gallery_route": "tekes-gallery://component/tooltip",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.popover",
+      "name": "Popover",
+      "category": "overlay",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/popover.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Popover(content, anchor, dismiss_policy)",
+      "usage": "轻量交互内容",
+      "prohibited": "不得默认使用模态焦点陷阱",
+      "state_profile": "overlay",
+      "states": [
+        "rest",
+        "open",
+        "closing"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "loading": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "error": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "popover",
+      "gallery_route": "tekes-gallery://component/popover",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.dialog",
+      "name": "Dialog",
+      "category": "overlay",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/dialog.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Dialog(title, body, actions, on_close)",
+      "usage": "需要集中决策的模态内容",
+      "prohibited": "不可让焦点逃到背后或默认激活破坏性操作",
+      "state_profile": "overlay",
+      "states": [
+        "rest",
+        "open",
+        "closing"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "loading": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "error": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "dialog",
+      "gallery_route": "tekes-gallery://component/dialog",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.toast",
+      "name": "Toast",
+      "category": "feedback",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/toast.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Toast(message, action?, priority, timeout)",
+      "usage": "短暂成功提示与可撤销操作",
+      "prohibited": "有未处理错误或关键操作时不自动消失",
+      "state_profile": "feedback",
+      "states": [
+        "rest",
+        "loading",
+        "error",
+        "success",
+        "restricted"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "toast",
+      "gallery_route": "tekes-gallery://component/toast",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.banner",
+      "name": "Banner",
+      "category": "feedback",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/banner.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Banner(severity, title, description, actions)",
+      "usage": "页面级离线、权限或持续错误",
+      "prohibited": "不能只有颜色或图标",
+      "state_profile": "feedback",
+      "states": [
+        "rest",
+        "loading",
+        "error",
+        "success",
+        "restricted"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "banner",
+      "gallery_route": "tekes-gallery://component/banner",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.status-badge",
+      "name": "StatusBadge",
+      "category": "feedback",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/status-badge.md",
+      "api_status": "proposed-not-compiled",
+      "api": "StatusBadge(status, label)",
+      "usage": "只读状态：未验证与成功不同",
+      "prohibited": "非交互徽标没有 hover/pressed/focus",
+      "state_profile": "status",
+      "states": [
+        "rest",
+        "loading",
+        "error",
+        "success",
+        "unverified",
+        "cancelled"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "status-badge",
+      "gallery_route": "tekes-gallery://component/status-badge",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.progress",
+      "name": "Progress",
+      "category": "feedback",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/progress.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Progress(value: Known|Unknown, label)",
+      "usage": "可信进度或不确定加载",
+      "prohibited": "无可测分母时不得显示假百分比",
+      "state_profile": "progress",
+      "states": [
+        "rest",
+        "loading",
+        "error",
+        "success",
+        "indeterminate"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "progress",
+      "gallery_route": "tekes-gallery://component/progress",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.empty-state",
+      "name": "EmptyState",
+      "category": "feedback",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/empty-state.md",
+      "api_status": "proposed-not-compiled",
+      "api": "EmptyState(title, description, action?)",
+      "usage": "引导第一步，区分无数据/过滤无结果/无权限",
+      "prohibited": "不显示虚构的任务、文件或统计",
+      "state_profile": "feedback",
+      "states": [
+        "rest",
+        "loading",
+        "error",
+        "success",
+        "restricted"
+      ],
+      "state_combinations": [],
+      "not_applicable": {
+        "hover": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "pressed": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "focus": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "disabled": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "selected": "只读/容器本体不处理此状态；可操作子组件独立登记。",
+        "checked": "只读/容器本体不处理此状态；可操作子组件独立登记。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "empty-state",
+      "gallery_route": "tekes-gallery://component/empty-state",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.selection-surface",
+      "name": "SelectionSurface",
+      "category": "document",
+      "owner_role": "text-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-doc",
+      "crate_is_proposed_addition": false,
+      "status": "planned",
+      "spec": "docs/components/selection-surface.md",
+      "api_status": "proposed-not-compiled",
+      "api": "SelectionSurface(document, selection, on_copy)",
+      "usage": "跨节点文本选择、复制",
+      "prohibited": "不可选择装饰性行号或凭空改写 Unicode",
+      "state_profile": "document",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "loading",
+        "error",
+        "selection",
+        "empty"
+      ],
+      "state_combinations": [
+        "error+focus",
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "disabled": "该组件不承载此种值或异步语义。",
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty",
+        "code-diff"
+      ],
+      "gallery_slug": "selection-surface",
+      "gallery_route": "tekes-gallery://component/selection-surface",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.markdown",
+      "name": "MarkdownView",
+      "category": "document",
+      "owner_role": "text-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-doc",
+      "crate_is_proposed_addition": false,
+      "status": "planned",
+      "spec": "docs/components/markdown.md",
+      "api_status": "proposed-not-compiled",
+      "api": "MarkdownView(document, style, link_policy)",
+      "usage": "标题、列表、代码、表格与图片替代文本",
+      "prohibited": "HTML 和危险协议不能默认执行",
+      "state_profile": "document",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "loading",
+        "error",
+        "selection",
+        "empty"
+      ],
+      "state_combinations": [
+        "error+focus",
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "disabled": "该组件不承载此种值或异步语义。",
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty",
+        "code-diff"
+      ],
+      "gallery_slug": "markdown",
+      "gallery_route": "tekes-gallery://component/markdown",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.code-block",
+      "name": "CodeBlock",
+      "category": "document",
+      "owner_role": "text-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-doc",
+      "crate_is_proposed_addition": false,
+      "status": "planned",
+      "spec": "docs/components/code-block.md",
+      "api_status": "proposed-not-compiled",
+      "api": "CodeBlock(source, language, wrap, on_copy)",
+      "usage": "等宽代码、独立横向滚动、复制源文本",
+      "prohibited": "不能把渲染高亮或行号写进剪贴板",
+      "state_profile": "document",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "loading",
+        "error",
+        "selection",
+        "empty"
+      ],
+      "state_combinations": [
+        "error+focus",
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "disabled": "该组件不承载此种值或异步语义。",
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty",
+        "code-diff"
+      ],
+      "gallery_slug": "code-block",
+      "gallery_route": "tekes-gallery://component/code-block",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.diff-view",
+      "name": "DiffView",
+      "category": "document",
+      "owner_role": "text-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-doc",
+      "crate_is_proposed_addition": false,
+      "status": "planned",
+      "spec": "docs/components/diff-view.md",
+      "api_status": "proposed-not-compiled",
+      "api": "DiffView(diff, mode, selection, on_navigate)",
+      "usage": "新增/删除有 +/−、字形和底色",
+      "prohibited": "禁止仅靠红绿区分；不静默应用更改",
+      "state_profile": "document",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "loading",
+        "error",
+        "selection",
+        "empty"
+      ],
+      "state_combinations": [
+        "error+focus",
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "disabled": "该组件不承载此种值或异步语义。",
+        "selected": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty",
+        "code-diff"
+      ],
+      "gallery_slug": "diff-view",
+      "gallery_route": "tekes-gallery://component/diff-view",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.data-table",
+      "name": "DataTable",
+      "category": "data",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/data-table.md",
+      "api_status": "proposed-not-compiled",
+      "api": "DataTable(columns, rows, sort, selection, on_sort)",
+      "usage": "表头、数值对齐、排序与虚拟化",
+      "prohibited": "不把未知值显示成零",
+      "state_profile": "select",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "selected",
+        "loading",
+        "error",
+        "empty"
+      ],
+      "state_combinations": [
+        "selected+hover",
+        "selected+focus",
+        "error+focus",
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "checked": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty",
+        "table"
+      ],
+      "gallery_slug": "data-table",
+      "gallery_route": "tekes-gallery://component/data-table",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.chart",
+      "name": "Chart",
+      "category": "data",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/chart.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Chart(series, axes, selection, accessible_table)",
+      "usage": "图表配数据表、线型/点型和描述",
+      "prohibited": "不能仅用色相区分数据系列",
+      "state_profile": "chart",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "selected",
+        "loading",
+        "error",
+        "empty"
+      ],
+      "state_combinations": [
+        "selected+hover",
+        "selected+focus",
+        "error+focus",
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "disabled": "该组件不承载此种值或异步语义。",
+        "checked": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty",
+        "table"
+      ],
+      "gallery_slug": "chart",
+      "gallery_route": "tekes-gallery://component/chart",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.command-palette",
+      "name": "CommandPalette",
+      "category": "navigation",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/command-palette.md",
+      "api_status": "proposed-not-compiled",
+      "api": "CommandPalette(commands, query, on_execute)",
+      "usage": "统一命令查找，显示作用域和快捷键",
+      "prohibited": "不得在输入法组字时抢键或执行隐藏危险命令",
+      "state_profile": "choice",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "selected",
+        "loading",
+        "error",
+        "open",
+        "empty"
+      ],
+      "state_combinations": [
+        "selected+hover",
+        "selected+focus",
+        "error+focus",
+        "loading+focus",
+        "pressed+focus",
+        "hover+focus"
+      ],
+      "not_applicable": {
+        "checked": "该组件不承载此种值或异步语义。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "graphemes",
+        "empty"
+      ],
+      "gallery_slug": "command-palette",
+      "gallery_route": "tekes-gallery://component/command-palette",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.segmented-control",
+      "name": "SegmentedControl",
+      "category": "navigation",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/segmented-control.md",
+      "api_status": "proposed-not-compiled",
+      "api": "SegmentedControl(value, options, on_change, enabled)",
+      "usage": "在一组互斥值之间切换；UI radio-group 语义",
+      "prohibited": "不能将页面导航tabs、按钮组和业务权限选项混成同一种语义",
+      "state_profile": "segmented",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "selected"
+      ],
+      "state_combinations": [
+        "selected+hover",
+        "selected+focus",
+        "selected+disabled"
+      ],
+      "not_applicable": {
+        "checked": "该语义不适用于此组件；可操作子组件单独验收。",
+        "loading": "该语义不适用于此组件；可操作子组件单独验收。",
+        "error": "该语义不适用于此组件；可操作子组件单独验收。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "empty"
+      ],
+      "gallery_slug": "segmented-control",
+      "gallery_route": "tekes-gallery://component/segmented-control",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    },
+    {
+      "id": "tui.disclosure",
+      "name": "Disclosure",
+      "category": "layout",
+      "owner_role": "controls-maintainer",
+      "owner_handle": null,
+      "crate": "tekes-ui-controls",
+      "crate_is_proposed_addition": true,
+      "status": "planned",
+      "spec": "docs/components/disclosure.md",
+      "api_status": "proposed-not-compiled",
+      "api": "Disclosure(expanded, on_expanded_change, summary, content, status)",
+      "usage": "可键盘操作的可折叠区域；承载工具详情与公开的推理摘要",
+      "prohibited": "不能为流式生成强制展开；不能把隐藏内容冒充可访问；不能索取或伪造模型未提供的内部思维链",
+      "state_profile": "disclosure",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "expanded",
+        "loading",
+        "error",
+        "empty"
+      ],
+      "state_combinations": [
+        "expanded+focus",
+        "loading+focus",
+        "error+focus"
+      ],
+      "not_applicable": {
+        "selected": "该语义不适用于此组件；可操作子组件单独验收。",
+        "checked": "该语义不适用于此组件；可操作子组件单独验收。"
+      },
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "empty"
+      ],
+      "gallery_slug": "disclosure",
+      "gallery_route": "tekes-gallery://component/disclosure",
+      "gallery_implementation": null,
+      "code_symbol": null,
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      },
+      "deprecated_since": null,
+      "replacement": null
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+# A proposal, not measured native performance. Parameters use normalized UI units.
+version = "0.2.0-proposal.1"
+[duration]
+instant = 0.0
+press = 0.07
+stateChange = 0.15
+geometry = 0.12
+listExpansion = 0.3
+expansion = 0.5
+[easing]
+standard = [0.16, 1.0, 0.3, 1.0]
+[accessibility]
+reduce_motion = "all-durations-zero; bypass spring simulation; no spinner rotation, shimmer or typewriter"
+[spring.micro]
+stiffness = 600.0
+damping = 30.0
+mass = 1.0
+source = "OCUI-03 SPRING_BOUNCY"
+[spring.reveal]
+stiffness = 320.0
+damping = 28.0
+mass = 1.0
+source = "OCUI-03 SPRING_SNAPPY"
+[spring.feedback]
+stiffness = 380.0
+damping = 18.0
+mass = 1.0
+source = "OCUI-03 SPRING_GENTLE; opt-in, not for reading or approvals"
+[spring.panel]
+stiffness = 1200.0
+damping = 80.0
+mass = 0.1
+source = "OCUI-03 SPRING_HEAVY_SNAP"
+[policy]
+press_scale = 1.0
+hover_translation = 0.0
+idle_animation = false
+text_blur = false
+shadow = false
+vibrancy = false
+spring_use = "selection thumb, bounded disclosure reveal, panel snap only; no pointer tracking lag"

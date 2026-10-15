@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "fixture_license": "original-test-content",
+  "fixtures": [
+    {
+      "id": "short",
+      "text": "保存更改 Save changes",
+      "purpose": "普通短文本"
+    },
+    {
+      "id": "long-title",
+      "text": "跨平台渲染与输入法边界回归测试 — a-very-long-workspace-name-without-a-useful-breakpoint-0123456789",
+      "purpose": "长标题和截断"
+    },
+    {
+      "id": "cjk",
+      "text": "中文标点不要落在错误的位置。（括号、引号与 English 123 混排。）日本語の入力を確認します。",
+      "purpose": "中英日混排与禁则"
+    },
+    {
+      "id": "graphemes",
+      "text": "é é 👩🏽‍💻 👨‍👩‍👧‍👦 🇯🇵 🏳️‍🌈 𠮷",
+      "purpose": "NFC/NFD、ZWJ、修饰符、代理对；不得把字素切开"
+    },
+    {
+      "id": "rtl",
+      "text": "المجلد ⁦src/main.rs⁩ — שָׁלוֹם 123",
+      "purpose": "双向文本和路径隔离"
+    },
+    {
+      "id": "empty",
+      "text": "",
+      "purpose": "空内容，不生成假数据"
+    },
+    {
+      "id": "growth",
+      "generator": {
+        "repeat": "第 000001 行：Rust + 中文 + 👩🏽‍💻 + á\n",
+        "count": 10000
+      },
+      "purpose": "虚拟化、流式增长、内存和滚动"
+    },
+    {
+      "id": "code-diff",
+      "text": "```rust\nlet message = \"你好\"; // comment\n```\n\n- old value\n+ 新しい値\n",
+      "purpose": "代码和 diff 选区、复制，不复制行号和 diff 装饰"
+    },
+    {
+      "id": "table",
+      "text": "名称\t状态\t数值\n构建\t成功\t1234.50\n检查\t未验证\t—",
+      "purpose": "表头、数值对齐和空值"
+    },
+    {
+      "id": "error",
+      "text": "未能保存更改。连接已断开；内容仍保留在编辑器中。",
+      "purpose": "错误、重试、保留上下文"
+    },
+    {
+      "id": "ime",
+      "text": "在文中间组字：東京に行きたい / 输入法候选翻页 / é👩🏽‍💻",
+      "purpose": "人工 IME 脚本的起始文本；不是输入法验证结果"
+    }
+  ]
+}

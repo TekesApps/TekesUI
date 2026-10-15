@@ -1,0 +1,357 @@
+[
+  {
+    "name": "reject missing dark-ic",
+    "status": "pass"
+  },
+  {
+    "name": "reject alias cycle",
+    "status": "pass"
+  },
+  {
+    "name": "reject orphan alias",
+    "status": "pass"
+  },
+  {
+    "name": "reject wrong numeric type",
+    "status": "pass"
+  },
+  {
+    "name": "reject negative dimension",
+    "status": "pass"
+  },
+  {
+    "name": "reject duplicate name",
+    "status": "pass"
+  },
+  {
+    "name": "reject missing component theme",
+    "status": "pass"
+  },
+  {
+    "name": "reject low contrast",
+    "status": "pass"
+  },
+  {
+    "name": "reject invalid layout unit",
+    "status": "pass"
+  },
+  {
+    "name": "reject fractional layer",
+    "status": "pass"
+  },
+  {
+    "name": "reject invalid easing control point",
+    "status": "pass"
+  },
+  {
+    "name": "reject unknown recipe component",
+    "status": "pass"
+  },
+  {
+    "name": "reject missing recipe theme",
+    "status": "pass"
+  },
+  {
+    "name": "reject missing typed component token",
+    "status": "pass"
+  },
+  {
+    "name": "reject removed composition guard",
+    "status": "pass"
+  },
+  {
+    "name": "reject removed history latch",
+    "status": "pass"
+  },
+  {
+    "name": "reject floating reference",
+    "status": "pass"
+  },
+  {
+    "name": "reject unknown source in reference adoption",
+    "status": "pass"
+  },
+  {
+    "name": "reject source adoption path escaping bundle",
+    "status": "pass"
+  },
+  {
+    "name": "reject stale generated handoff context",
+    "status": "pass"
+  },
+  {
+    "name": "sRGB black/white contrast equals 21",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "Oklab red conversion reference",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "quantized Oklab round trip",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "same seed/policy generates identical bytes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "all four themes have all generated roles",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "brand decoration preserves exact consumer seed",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "blue vs clay changes all hue-bearing generated roles",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "nonbrand roles are independent across blue/clay",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "all non-color families unchanged across brands",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "legacy clay name is an explicit seed-following alias",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject missing seed",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject alpha-bearing seed",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject invalid hex seed",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject numeric seed",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject named color seed",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject path traversal brand id",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject unknown consumer field",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject incomplete brand version",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject unknown override role",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject incomplete four-theme override",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject undocumented override",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject blank override justification",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject low-contrast override after generation",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject collapsed primary interaction states",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject non-neutral on-solid foreground",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "valid explicit four-theme override is accepted",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject hardcoded brand primitive in base",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject status accidentally rebound to brand",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject infeasible mixed-surface IC contract",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject weakened contrast policy",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "reject stale generated token bytes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "edge seed #FFFFFF compiles all four themes with full contrast checks",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "edge seed #000000 compiles all four themes with full contrast checks",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "edge seed #FFFF00 compiles all four themes with full contrast checks",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "edge seed #00FF00 compiles all four themes with full contrast checks",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "edge seed #FF0000 compiles all four themes with full contrast checks",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "edge seed #0000FF compiles all four themes with full contrast checks",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "edge seed #00FFFF compiles all four themes with full contrast checks",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "edge seed #FF00FF compiles all four themes with full contrast checks",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "edge seed #EEEEFF compiles all four themes with full contrast checks",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "edge seed #808080 compiles all four themes with full contrast checks",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "edge seed #FFFDF0 compiles all four themes with full contrast checks",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "edge seed #040406 compiles all four themes with full contrast checks",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "fixed-sample seed #95E34A compiles all four themes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "fixed-sample seed #B47C90 compiles all four themes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "fixed-sample seed #B7AAF3 compiles all four themes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "fixed-sample seed #91C4BC compiles all four themes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "fixed-sample seed #6C2D0E compiles all four themes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "fixed-sample seed #0CE0E2 compiles all four themes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "fixed-sample seed #5B85D2 compiles all four themes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "fixed-sample seed #E6D907 compiles all four themes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "fixed-sample seed #AEFB65 compiles all four themes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "fixed-sample seed #AB85B7 compiles all four themes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "fixed-sample seed #54BFD8 compiles all four themes",
+    "status": "pass",
+    "scope": "brand-static"
+  },
+  {
+    "name": "fixed-sample seed #332B96 compiles all four themes",
+    "status": "pass",
+    "scope": "brand-static"
+  }
+]

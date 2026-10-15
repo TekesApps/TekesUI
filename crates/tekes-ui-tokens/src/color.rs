@@ -1,8 +1,7 @@
-//! **临时占位：数值取自 Tekes 现有 Spacing / CornerRadius / Stroke / Motion / ControlSize / Alpha / ColorRole / TextRole，等 Design 交付的 tokens.json 生成后替换。**
-//!
-//! 颜色与颜色角色。标 `// 占位` 的分支是猜的，没有标的来自 Tekes 现状。
+//! Encoded, non-premultiplied sRGB tokens generated from design/tokens.json.
 
-use crate::alpha::{Alpha, TEXT_SELECTION_INCREASED};
+pub use crate::generated::ColorRole;
+#[cfg(test)]
 use crate::theme::Theme;
 
 /// sRGB 颜色，**非预乘** alpha，各分量为 f32，范围 0..=1。
@@ -67,191 +66,8 @@ impl Rgba {
     }
 }
 
+#[cfg(test)]
 const BLACK: Rgba = Rgba::gray(0.0);
-const WHITE: Rgba = Rgba::gray(1.0);
-
-/// 颜色角色，共 27 个。
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum ColorRole {
-    // 第 1 组：完全中立
-    Scrim,
-    WarningText,
-    WarningForeground,
-    // 第 2 组：半中立
-    RowSelection,
-    ButtonHover,
-    TranscriptInput,
-    Border,
-    FloatingPanelBorder,
-    FloatingPanelDivider,
-    BorderFocused,
-    // 第 3 组：系统依赖
-    PrimaryText,
-    SecondaryText,
-    TertiaryText,
-    SelectedText,
-    DocumentCanvas,
-    TextSelection,
-    Accent,
-    StatusRunning,
-    Warning,
-    StatusFailed,
-    StatusSucceeded,
-    DiffAddedMarker,
-    DiffRemovedMarker,
-    HoverWash,
-    Separator,
-    DiffAddedSurface,
-    DiffRemovedSurface,
-}
-
-impl ColorRole {
-    pub const ALL: [ColorRole; 27] = [
-        ColorRole::Scrim,
-        ColorRole::WarningText,
-        ColorRole::WarningForeground,
-        ColorRole::RowSelection,
-        ColorRole::ButtonHover,
-        ColorRole::TranscriptInput,
-        ColorRole::Border,
-        ColorRole::FloatingPanelBorder,
-        ColorRole::FloatingPanelDivider,
-        ColorRole::BorderFocused,
-        ColorRole::PrimaryText,
-        ColorRole::SecondaryText,
-        ColorRole::TertiaryText,
-        ColorRole::SelectedText,
-        ColorRole::DocumentCanvas,
-        ColorRole::TextSelection,
-        ColorRole::Accent,
-        ColorRole::StatusRunning,
-        ColorRole::Warning,
-        ColorRole::StatusFailed,
-        ColorRole::StatusSucceeded,
-        ColorRole::DiffAddedMarker,
-        ColorRole::DiffRemovedMarker,
-        ColorRole::HoverWash,
-        ColorRole::Separator,
-        ColorRole::DiffAddedSurface,
-        ColorRole::DiffRemovedSurface,
-    ];
-
-    /// 在给定主题下解析为 sRGB 颜色。
-    pub fn resolve(self, theme: Theme) -> Rgba {
-        let dark = theme.is_dark();
-        let ic = theme.is_increased();
-        // 按 (light, dark) 选值的小助手。
-        let pick = |l: Rgba, d: Rgba| if dark { d } else { l };
-        match self {
-            ColorRole::Scrim => BLACK,
-            ColorRole::WarningText => BLACK,
-            ColorRole::WarningForeground => {
-                pick(Rgba::rgb8(0xA0, 0x3C, 0x00), Rgba::rgb8(0xFF, 0xA8, 0x5C))
-            }
-
-            ColorRole::RowSelection => {
-                // light 来自 Tekes；dark、IC 为占位。
-                if ic {
-                    pick(Rgba::gray(0.88), Rgba::gray(0.30)) // 占位
-                } else {
-                    pick(Rgba::new(0.935, 0.941, 0.941, 1.0), Rgba::gray(0.22)) // dark 占位
-                }
-            }
-            ColorRole::ButtonHover => {
-                if ic {
-                    pick(Rgba::gray(0.84), Rgba::gray(0.34)) // 占位
-                } else {
-                    pick(Rgba::gray(0.90), Rgba::gray(0.26)) // dark 占位
-                }
-            }
-            // 占位
-            ColorRole::TranscriptInput => match (dark, ic) {
-                (false, false) => Rgba::gray(0.97),
-                (false, true) => Rgba::gray(1.0),
-                (true, false) => Rgba::gray(0.17),
-                (true, true) => Rgba::gray(0.10),
-            },
-            // 占位
-            ColorRole::Border => match (dark, ic) {
-                (false, false) => BLACK.with_alpha(0.12),
-                (false, true) => BLACK.with_alpha(0.45),
-                (true, false) => WHITE.with_alpha(0.15),
-                (true, true) => WHITE.with_alpha(0.55),
-            },
-            // 占位
-            ColorRole::FloatingPanelBorder => match (dark, ic) {
-                (false, false) => BLACK.with_alpha(0.16),
-                (false, true) => BLACK.with_alpha(0.50),
-                (true, false) => WHITE.with_alpha(0.20),
-                (true, true) => WHITE.with_alpha(0.60),
-            },
-            // 占位
-            ColorRole::FloatingPanelDivider => match (dark, ic) {
-                (false, false) => BLACK.with_alpha(0.08),
-                (false, true) => BLACK.with_alpha(0.35),
-                (true, false) => WHITE.with_alpha(0.10),
-                (true, true) => WHITE.with_alpha(0.45),
-            },
-            // 占位：比 border 更强的中性轮廓。
-            ColorRole::BorderFocused => match (dark, ic) {
-                (false, false) => BLACK.with_alpha(0.35),
-                (false, true) => BLACK.with_alpha(0.75),
-                (true, false) => WHITE.with_alpha(0.40),
-                (true, true) => WHITE.with_alpha(0.80),
-            },
-
-            // 占位：系统 label 色系的近似。
-            ColorRole::PrimaryText => pick(BLACK, WHITE).with_alpha(0.85),
-            ColorRole::SecondaryText => pick(BLACK, WHITE).with_alpha(if ic { 0.70 } else { 0.50 }),
-            ColorRole::TertiaryText => pick(BLACK, WHITE).with_alpha(if ic { 0.50 } else { 0.26 }),
-            // 占位：选中控件文本色。
-            ColorRole::SelectedText => WHITE,
-            // 占位：系统文本背景色。
-            ColorRole::DocumentCanvas => pick(WHITE, Rgba::rgb8(0x1E, 0x1E, 0x1E)),
-            // 占位：accent 的浅色版本；IC 下 alpha 为 .75（来自 Tekes）。
-            ColorRole::TextSelection => {
-                let base = pick(Rgba::rgb8(0xB3, 0xD7, 0xFF), Rgba::rgb8(0x3F, 0x63, 0x8B));
-                if ic {
-                    base.with_alpha(TEXT_SELECTION_INCREASED)
-                } else {
-                    base
-                }
-            }
-            // 占位：systemBlue。
-            ColorRole::Accent => pick(Rgba::rgb8(0x00, 0x7A, 0xFF), Rgba::rgb8(0x0A, 0x84, 0xFF)),
-            // 占位：systemOrange。
-            ColorRole::StatusRunning => {
-                pick(Rgba::rgb8(0xFF, 0x95, 0x00), Rgba::rgb8(0xFF, 0x9F, 0x0A))
-            }
-            // 占位：systemYellow。
-            ColorRole::Warning => pick(Rgba::rgb8(0xFF, 0xCC, 0x00), Rgba::rgb8(0xFF, 0xD6, 0x0A)),
-            // 占位：systemRed。
-            ColorRole::StatusFailed => {
-                pick(Rgba::rgb8(0xFF, 0x3B, 0x30), Rgba::rgb8(0xFF, 0x45, 0x3A))
-            }
-            // 占位：systemGreen。
-            ColorRole::StatusSucceeded => {
-                pick(Rgba::rgb8(0x34, 0xC7, 0x59), Rgba::rgb8(0x30, 0xD1, 0x58))
-            }
-            ColorRole::DiffAddedMarker => ColorRole::StatusSucceeded.resolve(theme),
-            ColorRole::DiffRemovedMarker => ColorRole::StatusFailed.resolve(theme),
-
-            // 以下为派生色，规则来自 Tekes；faint 在 IC 下提升为 soft。
-            ColorRole::HoverWash => ColorRole::PrimaryText
-                .resolve(theme)
-                .with_alpha(Alpha::Faint.resolve(theme.contrast)),
-            ColorRole::Separator => ColorRole::SecondaryText
-                .resolve(theme)
-                .with_alpha(Alpha::Soft.resolve(theme.contrast)),
-            ColorRole::DiffAddedSurface => ColorRole::DiffAddedMarker
-                .resolve(theme)
-                .with_alpha(Alpha::Faint.resolve(theme.contrast)),
-            ColorRole::DiffRemovedSurface => ColorRole::DiffRemovedMarker
-                .resolve(theme)
-                .with_alpha(Alpha::Faint.resolve(theme.contrast)),
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -278,22 +94,26 @@ mod tests {
     }
 
     #[test]
-    fn fixed_values_from_brief() {
-        let c = ColorRole::WarningForeground.resolve(Theme::LIGHT);
-        assert_eq!(c, Rgba::rgb8(0xA0, 0x3C, 0x00));
-        let c = ColorRole::WarningForeground.resolve(Theme::DARK);
-        assert_eq!(c, Rgba::rgb8(0xFF, 0xA8, 0x5C));
+    fn existing_roles_consume_adopted_proposal_colors() {
+        for (role, id) in [
+            (ColorRole::WarningForeground, "warning-foreground"),
+            (ColorRole::RowSelection, "row-selection"),
+            (ColorRole::ButtonHover, "button-hover"),
+            (ColorRole::Separator, "separator"),
+            (ColorRole::DiffAddedSurface, "diff-added-surface"),
+        ] {
+            for theme in Theme::ALL {
+                assert_eq!(
+                    role.resolve(theme),
+                    crate::proposal::color(id, theme).unwrap()
+                );
+            }
+        }
         assert_eq!(
-            ColorRole::RowSelection.resolve(Theme::LIGHT),
-            Rgba::new(0.935, 0.941, 0.941, 1.0)
+            ColorRole::Scrim.resolve(Theme::DARK),
+            BLACK.with_alpha(crate::Alpha::Wash.value())
         );
-        assert_eq!(
-            ColorRole::ButtonHover.resolve(Theme::LIGHT),
-            Rgba::gray(0.90)
-        );
-        assert_eq!(ColorRole::Scrim.resolve(Theme::DARK), BLACK);
     }
-
     #[test]
     fn derived_hover_wash_follows_ic_rule() {
         assert_eq!(ColorRole::HoverWash.resolve(Theme::LIGHT).a, 0.07);

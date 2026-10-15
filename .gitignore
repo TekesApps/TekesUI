@@ -1,1 +1,5 @@
 /target
+
+# Offline design tooling caches
+__pycache__/
+*.pyc

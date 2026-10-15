@@ -1,0 +1,11 @@
+{
+  "profiles": [
+    "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-neutral.json",
+    "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
+    "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json"
+  ],
+  "reference_brand": "example-neutral",
+  "runtime_status": "unverified",
+  "schema_version": "1.0",
+  "selection": "explicit-reference-fixture; no framework-owned brand default"
+}

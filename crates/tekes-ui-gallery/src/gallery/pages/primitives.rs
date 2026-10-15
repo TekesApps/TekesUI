@@ -6,13 +6,12 @@
 //! 3. 状态矩阵：一个“类按钮”的 quad 在 rest / hover / pressed / disabled / focus 下的样子；
 //! 4. 并排参照槽：同一个样本，左边是 TekesUI 实时渲染，右边是参照图的空占位。
 //!
-//! 类按钮样本按 brief 的决定画：rest 透明，hover 用 `ButtonHover`，pressed 用 `HoverWash`
-//! 取 `Alpha::Soft`，disabled 整体 45% 不透明度（`Alpha::Wash`），focus 是 1pt 的 `BorderFocused`
-//! 轮廓；没有系统焦点环，没有阴影。样本带一圈 hairline `Border`（brief 没规定，Gallery 自己加的，
-//! 否则 rest 和 disabled 是看不见的），focus 时这圈换成 `BorderFocused`。样本里的短条是文字占位。
+//! 类按钮样本采用提案的 ButtonHover / button-pressed 语义状态底；disabled 保留
+//! Alpha::Wash 的校准夹具；必要控件边界与中性焦点使用 Stroke::Rule，不用装饰 hairline。
+//! 样本仍是渲染验证 quad，不冒充已完成键盘/无障碍验收的真实按钮。
 
 use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
-use tekes_ui_tokens::{Alpha, ColorRole, CornerRadius, Rgba, Spacing, Stroke, Theme};
+use tekes_ui_tokens::{Alpha, ColorRole, CornerRadius, Rgba, Spacing, Stroke, Theme, proposal};
 
 use crate::gallery::containers::{
     ComponentState, PANE_TITLES, ReferenceSlot, SECTION_HEADER_H, StateMatrix, draw_section_header,
@@ -53,9 +52,9 @@ pub fn button_sample(scene: &mut Scene, cell: Rect, state: ComponentState, theme
     );
     let fill = match state {
         ComponentState::Hover => ColorRole::ButtonHover.resolve(theme),
-        ComponentState::Pressed => ColorRole::HoverWash
-            .resolve(theme)
-            .with_alpha(Alpha::Soft.value()),
+        ComponentState::Pressed => {
+            proposal::color("button-pressed", theme).expect("validated proposal pressed role")
+        }
         _ => Rgba::new(0.0, 0.0, 0.0, 0.0),
     };
     let (border_w, border) = if state == ComponentState::Focus {
@@ -64,7 +63,7 @@ pub fn button_sample(scene: &mut Scene, cell: Rect, state: ComponentState, theme
             ColorRole::BorderFocused.resolve(theme),
         )
     } else {
-        (Stroke::Hairline.value(), ColorRole::Border.resolve(theme))
+        (Stroke::Rule.value(), ColorRole::Border.resolve(theme))
     };
     let mut ink = ColorRole::PrimaryText.resolve(theme);
     let (mut fill, mut border) = (fill, border);
@@ -254,7 +253,7 @@ mod tests {
         let dis = quads(ComponentState::Disabled);
         assert_eq!(dis[1].fill.a, rest[1].fill.a * 0.45);
         assert_eq!(dis[0].border_color.a, rest[0].border_color.a * 0.45);
-        assert_eq!(dis[0].border_width, Stroke::Hairline.value());
+        assert_eq!(dis[0].border_width, Stroke::Rule.value());
     }
 
     #[test]
@@ -288,7 +287,10 @@ mod tests {
             fill(ComponentState::Hover),
             ColorRole::ButtonHover.resolve(Theme::LIGHT)
         );
-        assert_eq!(fill(ComponentState::Pressed).a, 0.14);
+        assert_eq!(
+            fill(ComponentState::Pressed),
+            proposal::color("button-pressed", Theme::LIGHT).unwrap()
+        );
         assert_eq!(fill(ComponentState::Rest).a, 0.0);
     }
 }

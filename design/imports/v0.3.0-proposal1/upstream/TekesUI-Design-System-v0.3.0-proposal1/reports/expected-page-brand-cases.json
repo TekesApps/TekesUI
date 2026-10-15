@@ -1,0 +1,725 @@
+{
+  "scope": "minimum real-page brand/theme coverage, not runtime evidence",
+  "cases": [
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.workspace",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.workspace",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.workspace",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.workspace",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.settings",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.settings",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.settings",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.settings",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.review",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.review",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.review",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.review",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.approval",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.approval",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.approval",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.approval",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.inspection",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.inspection",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.inspection",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.inspection",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.metrics",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.metrics",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.metrics",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-neutral",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "page": "agent.metrics",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.workspace",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.workspace",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.workspace",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.workspace",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.settings",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.settings",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.settings",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.settings",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.review",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.review",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.review",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.review",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.approval",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.approval",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.approval",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.approval",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.inspection",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.inspection",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.inspection",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.inspection",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.metrics",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.metrics",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.metrics",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-blue",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "page": "agent.metrics",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.workspace",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.workspace",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.workspace",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.workspace",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.settings",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.settings",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.settings",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.settings",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.review",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.review",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.review",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.review",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.approval",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.approval",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.approval",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.approval",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.inspection",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.inspection",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.inspection",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.inspection",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.metrics",
+      "theme": "light",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.metrics",
+      "theme": "dark",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.metrics",
+      "theme": "light-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    },
+    {
+      "brand_id": "example-clay",
+      "brand_version": "1.0.0",
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "page": "agent.metrics",
+      "theme": "dark-ic",
+      "status": "unverified",
+      "required_evidence": "real-consumer-page",
+      "note": "plus applicable page states and scales from page contract"
+    }
+  ]
+}

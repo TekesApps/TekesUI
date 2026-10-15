@@ -1,0 +1,135 @@
+{
+  "version": "0.3.0-proposal.1",
+  "results": [
+    "pass",
+    "fail",
+    "unverified",
+    "not-applicable"
+  ],
+  "required_unverified_blocks_release": true,
+  "gates": [
+    {
+      "id": "token-structure",
+      "scope": "Static schema, units, tiers, unique names and reference graph",
+      "implementation_status": "implemented-static",
+      "acceptance": "all candidate token checks pass"
+    },
+    {
+      "id": "token-contrast",
+      "scope": "Declared foreground/background and overlay recipes",
+      "implementation_status": "implemented-numerical-only",
+      "acceptance": "all declared pairs meet their unrounded threshold; native pixels separately required"
+    },
+    {
+      "id": "source-integrity",
+      "scope": "Source-file SHA-256 and aggregate integrity",
+      "implementation_status": "implemented-local-only",
+      "acceptance": "local hashes match; approved artifact source provenance separately required"
+    },
+    {
+      "id": "generated-freshness",
+      "scope": "Registry-derived documentation and future Rust output",
+      "implementation_status": "implemented-documents-and-brand-tokens; Rust-generator-unverified",
+      "acceptance": "generated documentation matches; native generator remains unverified"
+    },
+    {
+      "id": "component-coverage",
+      "scope": "Export manifest ↔ registry ↔ actual Gallery factories",
+      "implementation_status": "registry-only",
+      "acceptance": "native bidirectional symbol and factory audit required"
+    },
+    {
+      "id": "theme-state-coverage",
+      "scope": "Applicable states, combinations and four themes",
+      "implementation_status": "declarations-only",
+      "acceptance": "each required native test produces version-bound evidence"
+    },
+    {
+      "id": "orphan-pages-assets",
+      "scope": "Missing/unregistered documentation and actual assets",
+      "implementation_status": "documentation-only",
+      "acceptance": "documentation sets match; asset verification remains unverified"
+    },
+    {
+      "id": "hardcoding",
+      "scope": "Typed-token bypasses in consuming Rust syntax trees",
+      "implementation_status": "not-implemented",
+      "acceptance": "AST scanner with scoped reviewed exceptions required"
+    },
+    {
+      "id": "layout",
+      "scope": "Layout bounds, text clipping, focus visibility and overlapping hit targets",
+      "implementation_status": "not-implemented",
+      "acceptance": "native geometry probe and actual resize tests required"
+    },
+    {
+      "id": "snapshots",
+      "scope": "Expected versus actual screenshot manifest",
+      "implementation_status": "expectations-only",
+      "acceptance": "file hashes and semantic cases match on actual native output"
+    },
+    {
+      "id": "interactions-a11y",
+      "scope": "Reducer and real keyboard/mouse/IME/assistive tech behavior",
+      "implementation_status": "not-implemented",
+      "acceptance": "real environment evidence required"
+    },
+    {
+      "id": "consumer-behavior-performance",
+      "scope": "Actual application integration and performance",
+      "implementation_status": "not-implemented",
+      "acceptance": "all declared consumer and hardware checks pass"
+    },
+    {
+      "id": "brand-config-schema",
+      "scope": "Strict seed format, profile id/version, four-theme override values and reason",
+      "implementation_status": "implemented-static",
+      "acceptance": "unknown roles, missing theme or malformed color fails"
+    },
+    {
+      "id": "brand-derivation",
+      "scope": "Constrained four-theme pairs, on-solid, state order/delta and independent roles",
+      "implementation_status": "implemented-numerical-only",
+      "acceptance": "all examples and stress fixtures pass; native pixels still required"
+    },
+    {
+      "id": "brand-generated-freshness",
+      "scope": "base/config/policy/schema/compiler receipts and output bytes",
+      "implementation_status": "implemented-static",
+      "acceptance": "recompile without diff; stale receipt, output or extra profile fails"
+    },
+    {
+      "id": "brand-gallery-coverage",
+      "scope": "registered brand × theme × state/fixture expected matrix",
+      "implementation_status": "expectations-only",
+      "acceptance": "all native screenshots and real theme-switch evidence still required"
+    },
+    {
+      "id": "design-context-freshness",
+      "scope": "reference traceability, token aliases, variable-plan and component/API context",
+      "implementation_status": "implemented-local-only",
+      "acceptance": "local projections match inputs and keep explicit unknowns; real tool roundtrips separately unverified"
+    },
+    {
+      "id": "craft-review",
+      "scope": "Real interaction quality, content uncertainty and essential disclosure",
+      "implementation_status": "contract-and-release-blocker-only",
+      "acceptance": "all 7 documented checks require reviewer and actual layer-specific evidence; current state unverified"
+    }
+  ],
+  "exception_contract": {
+    "required_fields": [
+      "rule_id",
+      "precise_scope",
+      "reason",
+      "issue",
+      "reviewer",
+      "approved_at",
+      "expires_at"
+    ],
+    "blanket_directory_exemption": false,
+    "expired_exception_result": "fail",
+    "source_provenance_exception_allowed": false
+  },
+  "exception_enforcement": "contract-only; native CI integration not implemented"
+}

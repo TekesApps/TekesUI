@@ -1,0 +1,190 @@
+{
+  "channels": [
+    "ground",
+    "foreground",
+    "outline",
+    "marker"
+  ],
+  "profiles": {
+    "static": [
+      "rest"
+    ],
+    "button": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "loading"
+    ],
+    "link": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled"
+    ],
+    "check": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "checked",
+      "error"
+    ],
+    "radio": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "checked",
+      "error"
+    ],
+    "input": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "error",
+      "read-only",
+      "composing",
+      "selection"
+    ],
+    "choice": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "selected",
+      "loading",
+      "error",
+      "open",
+      "empty"
+    ],
+    "select": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "selected",
+      "loading",
+      "error",
+      "empty"
+    ],
+    "tree": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "selected",
+      "loading",
+      "error",
+      "empty",
+      "expanded"
+    ],
+    "split": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "dragging"
+    ],
+    "scroll": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "scrolling",
+      "at-start",
+      "at-end"
+    ],
+    "overlay": [
+      "rest",
+      "open",
+      "closing"
+    ],
+    "tooltip": [
+      "rest",
+      "open"
+    ],
+    "feedback": [
+      "rest",
+      "loading",
+      "error",
+      "success",
+      "restricted"
+    ],
+    "status": [
+      "rest",
+      "loading",
+      "error",
+      "success",
+      "unverified",
+      "cancelled"
+    ],
+    "progress": [
+      "rest",
+      "loading",
+      "error",
+      "success",
+      "indeterminate"
+    ],
+    "document": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "loading",
+      "error",
+      "selection",
+      "empty"
+    ],
+    "chart": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "selected",
+      "loading",
+      "error",
+      "empty"
+    ],
+    "segmented": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "selected"
+    ],
+    "disclosure": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "expanded",
+      "loading",
+      "error",
+      "empty"
+    ]
+  },
+  "invariants": [
+    "click is an event, never a persistent state",
+    "disabled suppresses hover and pressed; move stale focus deliberately",
+    "selected and checked survive focus changes",
+    "focus outline is neutral; error persists through marker and message",
+    "loading prevents duplicate activation but retains focus; cancellation is a separate action",
+    "pointer_up outside/cancel/window_deactivate must clear pressed",
+    "read-only permits selection/copy; disabled does not imply read-only"
+  ],
+  "combination_policy": "Every declared state in four themes plus listed risk combinations; also run reducer property tests and pairwise combinations of valid orthogonal states."
+}

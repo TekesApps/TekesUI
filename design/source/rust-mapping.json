@@ -1,0 +1,1320 @@
+{
+  "bindings": [
+    {
+      "decision": "exact-semantic-id",
+      "family": "spacing",
+      "kind": "metric",
+      "legacy": "/tokens/spacing/none",
+      "target": "space-none"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "spacing",
+      "kind": "metric",
+      "legacy": "/tokens/spacing/micro",
+      "target": "space-micro"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "spacing",
+      "kind": "metric",
+      "legacy": "/tokens/spacing/tight",
+      "target": "space-tight"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "spacing",
+      "kind": "metric",
+      "legacy": "/tokens/spacing/snug",
+      "target": "space-snug"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "spacing",
+      "kind": "metric",
+      "legacy": "/tokens/spacing/regular",
+      "target": "space-regular"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "spacing",
+      "kind": "metric",
+      "legacy": "/tokens/spacing/relaxed",
+      "target": "space-relaxed"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "spacing",
+      "kind": "metric",
+      "legacy": "/tokens/spacing/loose",
+      "target": "space-loose"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "spacing",
+      "kind": "metric",
+      "legacy": "/tokens/spacing/section",
+      "target": "space-section"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "radius",
+      "kind": "metric",
+      "legacy": "/tokens/radius/square",
+      "target": "radius-square"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "radius",
+      "kind": "metric",
+      "legacy": "/tokens/radius/agent-marker",
+      "target": "radius-agent-marker"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "radius",
+      "kind": "metric",
+      "legacy": "/tokens/radius/badge",
+      "target": "radius-badge"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "radius",
+      "kind": "metric",
+      "legacy": "/tokens/radius/row",
+      "target": "radius-row"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "radius",
+      "kind": "metric",
+      "legacy": "/tokens/radius/control",
+      "target": "radius-control"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "radius",
+      "kind": "metric",
+      "legacy": "/tokens/radius/input",
+      "target": "radius-input"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "radius",
+      "kind": "metric",
+      "legacy": "/tokens/radius/panel",
+      "target": "radius-panel"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "radius",
+      "kind": "metric",
+      "legacy": "/tokens/radius/column",
+      "target": "radius-column"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "radius",
+      "kind": "metric",
+      "legacy": "/tokens/radius/floating",
+      "target": "radius-floating"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "stroke",
+      "kind": "metric",
+      "legacy": "/tokens/stroke/hairline",
+      "target": "stroke-hairline"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "stroke",
+      "kind": "metric",
+      "legacy": "/tokens/stroke/rule",
+      "target": "stroke-rule"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "stroke",
+      "kind": "metric",
+      "legacy": "/tokens/stroke/emphasis",
+      "target": "stroke-emphasis"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/focus-bar",
+      "target": "size-focus-bar"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/dot",
+      "target": "size-dot"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/agent-marker-width",
+      "target": "size-agent-marker-width"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/agent-marker-height",
+      "target": "size-agent-marker-height"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/inline-badge",
+      "target": "size-inline-badge"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/selector-track",
+      "target": "size-selector-track"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/inline-action",
+      "target": "size-inline-action"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/compact-row",
+      "target": "size-compact-row"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/selector-knob",
+      "target": "size-selector-knob"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/action-button",
+      "target": "size-action-button"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/icon-button",
+      "target": "size-icon-button"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/pill-height",
+      "target": "size-pill-height"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/row-height",
+      "target": "size-row-height"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/truncation-slot",
+      "target": "size-truncation-slot"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "size",
+      "kind": "metric",
+      "legacy": "/tokens/size/truncation-slot-wide",
+      "target": "size-truncation-slot-wide"
+    },
+    {
+      "decision": "exact semantic ID plus proposal explicit final-alpha usage",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/scrim",
+      "target": "scrim",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/warning-text",
+      "target": "warning-text",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/warning-foreground",
+      "target": "warning-foreground",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/row-selection",
+      "target": "row-selection",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/button-hover",
+      "target": "button-hover",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/transcript-input",
+      "target": "transcript-input",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/border",
+      "target": "border",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/floating-panel-border",
+      "target": "floating-panel-border",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/floating-panel-divider",
+      "target": "floating-panel-divider",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/border-focused",
+      "target": "border-focused",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/primary-text",
+      "target": "primary-text",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/secondary-text",
+      "target": "secondary-text",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/tertiary-text",
+      "target": "tertiary-text",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/selected-text",
+      "target": "selected-text",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/document-canvas",
+      "target": "document-canvas",
+      "theme": "light"
+    },
+    {
+      "decision": "exact semantic ID plus proposal explicit final-alpha usage",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/text-selection",
+      "target": "text-selection",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/accent",
+      "target": "accent",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/status-running",
+      "target": "status-running",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/warning",
+      "target": "warning",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/status-failed",
+      "target": "status-failed",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/status-succeeded",
+      "target": "status-succeeded",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/diff-added-marker",
+      "target": "diff-added-marker",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/diff-removed-marker",
+      "target": "diff-removed-marker",
+      "theme": "light"
+    },
+    {
+      "decision": "exact semantic ID plus proposal explicit final-alpha usage",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/hover-wash",
+      "target": "hover-wash",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/separator",
+      "target": "separator",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/diff-added-surface",
+      "target": "diff-added-surface",
+      "theme": "light"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light/color/diff-removed-surface",
+      "target": "diff-removed-surface",
+      "theme": "light"
+    },
+    {
+      "decision": "existing contrast API; proposal hover-wash IC rule",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/sets/light/opacity/faint",
+      "target": "alpha-faint",
+      "theme": "light"
+    },
+    {
+      "decision": "existing contrast API; proposal hover-wash IC rule",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/sets/light/opacity/soft",
+      "target": "alpha-soft",
+      "theme": "light"
+    },
+    {
+      "decision": "existing contrast API; proposal hover-wash IC rule",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/sets/light/opacity/wash",
+      "target": "alpha-wash",
+      "theme": "light"
+    },
+    {
+      "decision": "exact semantic ID plus proposal explicit final-alpha usage",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/scrim",
+      "target": "scrim",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/warning-text",
+      "target": "warning-text",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/warning-foreground",
+      "target": "warning-foreground",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/row-selection",
+      "target": "row-selection",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/button-hover",
+      "target": "button-hover",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/transcript-input",
+      "target": "transcript-input",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/border",
+      "target": "border",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/floating-panel-border",
+      "target": "floating-panel-border",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/floating-panel-divider",
+      "target": "floating-panel-divider",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/border-focused",
+      "target": "border-focused",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/primary-text",
+      "target": "primary-text",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/secondary-text",
+      "target": "secondary-text",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/tertiary-text",
+      "target": "tertiary-text",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/selected-text",
+      "target": "selected-text",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/document-canvas",
+      "target": "document-canvas",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact semantic ID plus proposal explicit final-alpha usage",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/text-selection",
+      "target": "text-selection",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/accent",
+      "target": "accent",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/status-running",
+      "target": "status-running",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/warning",
+      "target": "warning",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/status-failed",
+      "target": "status-failed",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/status-succeeded",
+      "target": "status-succeeded",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/diff-added-marker",
+      "target": "diff-added-marker",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/diff-removed-marker",
+      "target": "diff-removed-marker",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact semantic ID plus proposal explicit final-alpha usage",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/hover-wash",
+      "target": "hover-wash",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/separator",
+      "target": "separator",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/diff-added-surface",
+      "target": "diff-added-surface",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark/color/diff-removed-surface",
+      "target": "diff-removed-surface",
+      "theme": "dark"
+    },
+    {
+      "decision": "existing contrast API; proposal hover-wash IC rule",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/sets/dark/opacity/faint",
+      "target": "alpha-faint",
+      "theme": "dark"
+    },
+    {
+      "decision": "existing contrast API; proposal hover-wash IC rule",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/sets/dark/opacity/soft",
+      "target": "alpha-soft",
+      "theme": "dark"
+    },
+    {
+      "decision": "existing contrast API; proposal hover-wash IC rule",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/sets/dark/opacity/wash",
+      "target": "alpha-wash",
+      "theme": "dark"
+    },
+    {
+      "decision": "exact semantic ID plus proposal explicit final-alpha usage",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/scrim",
+      "target": "scrim",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/warning-text",
+      "target": "warning-text",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/warning-foreground",
+      "target": "warning-foreground",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/row-selection",
+      "target": "row-selection",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/button-hover",
+      "target": "button-hover",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/transcript-input",
+      "target": "transcript-input",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/border",
+      "target": "border",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/floating-panel-border",
+      "target": "floating-panel-border",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/floating-panel-divider",
+      "target": "floating-panel-divider",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/border-focused",
+      "target": "border-focused",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/primary-text",
+      "target": "primary-text",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/secondary-text",
+      "target": "secondary-text",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/tertiary-text",
+      "target": "tertiary-text",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/selected-text",
+      "target": "selected-text",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/document-canvas",
+      "target": "document-canvas",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact semantic ID plus proposal explicit final-alpha usage",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/text-selection",
+      "target": "text-selection",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/accent",
+      "target": "accent",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/status-running",
+      "target": "status-running",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/warning",
+      "target": "warning",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/status-failed",
+      "target": "status-failed",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/status-succeeded",
+      "target": "status-succeeded",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/diff-added-marker",
+      "target": "diff-added-marker",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/diff-removed-marker",
+      "target": "diff-removed-marker",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact semantic ID plus proposal explicit final-alpha usage",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/hover-wash",
+      "target": "hover-wash",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/separator",
+      "target": "separator",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/diff-added-surface",
+      "target": "diff-added-surface",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/light-ic/color/diff-removed-surface",
+      "target": "diff-removed-surface",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "existing contrast API; proposal hover-wash IC rule",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/sets/light-ic/opacity/faint",
+      "target": "alpha-soft",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "existing contrast API; proposal hover-wash IC rule",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/sets/light-ic/opacity/soft",
+      "target": "alpha-soft",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "existing contrast API; proposal hover-wash IC rule",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/sets/light-ic/opacity/wash",
+      "target": "alpha-wash",
+      "theme": "light-ic"
+    },
+    {
+      "decision": "exact semantic ID plus proposal explicit final-alpha usage",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/scrim",
+      "target": "scrim",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/warning-text",
+      "target": "warning-text",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/warning-foreground",
+      "target": "warning-foreground",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/row-selection",
+      "target": "row-selection",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/button-hover",
+      "target": "button-hover",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/transcript-input",
+      "target": "transcript-input",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/border",
+      "target": "border",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/floating-panel-border",
+      "target": "floating-panel-border",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/floating-panel-divider",
+      "target": "floating-panel-divider",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/border-focused",
+      "target": "border-focused",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/primary-text",
+      "target": "primary-text",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/secondary-text",
+      "target": "secondary-text",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/tertiary-text",
+      "target": "tertiary-text",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/selected-text",
+      "target": "selected-text",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/document-canvas",
+      "target": "document-canvas",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact semantic ID plus proposal explicit final-alpha usage",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/text-selection",
+      "target": "text-selection",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/accent",
+      "target": "accent",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/status-running",
+      "target": "status-running",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/warning",
+      "target": "warning",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/status-failed",
+      "target": "status-failed",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/status-succeeded",
+      "target": "status-succeeded",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/diff-added-marker",
+      "target": "diff-added-marker",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/diff-removed-marker",
+      "target": "diff-removed-marker",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact semantic ID plus proposal explicit final-alpha usage",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/hover-wash",
+      "target": "hover-wash",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/separator",
+      "target": "separator",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/diff-added-surface",
+      "target": "diff-added-surface",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "exact-semantic-id",
+      "family": "color",
+      "kind": "color",
+      "legacy": "/sets/dark-ic/color/diff-removed-surface",
+      "target": "diff-removed-surface",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "existing contrast API; proposal hover-wash IC rule",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/sets/dark-ic/opacity/faint",
+      "target": "alpha-soft",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "existing contrast API; proposal hover-wash IC rule",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/sets/dark-ic/opacity/soft",
+      "target": "alpha-soft",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "existing contrast API; proposal hover-wash IC rule",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/sets/dark-ic/opacity/wash",
+      "target": "alpha-wash",
+      "theme": "dark-ic"
+    },
+    {
+      "decision": "proposal duration; reduced-motion hard cut",
+      "kind": "motion",
+      "legacy": "/tokens/motion/standard/instant",
+      "target": "instant"
+    },
+    {
+      "decision": "proposal duration; reduced-motion hard cut",
+      "kind": "motion",
+      "legacy": "/tokens/motion/reduced-motion/instant",
+      "target": "instant"
+    },
+    {
+      "decision": "proposal duration; reduced-motion hard cut",
+      "kind": "motion",
+      "legacy": "/tokens/motion/standard/state-change",
+      "target": "stateChange"
+    },
+    {
+      "decision": "proposal duration; reduced-motion hard cut",
+      "kind": "motion",
+      "legacy": "/tokens/motion/reduced-motion/state-change",
+      "target": "instant"
+    },
+    {
+      "decision": "proposal duration; reduced-motion hard cut",
+      "kind": "motion",
+      "legacy": "/tokens/motion/standard/geometry",
+      "target": "geometry"
+    },
+    {
+      "decision": "proposal duration; reduced-motion hard cut",
+      "kind": "motion",
+      "legacy": "/tokens/motion/reduced-motion/geometry",
+      "target": "instant"
+    },
+    {
+      "decision": "proposal duration; reduced-motion hard cut",
+      "kind": "motion",
+      "legacy": "/tokens/motion/standard/list-expansion",
+      "target": "listExpansion"
+    },
+    {
+      "decision": "proposal duration; reduced-motion hard cut",
+      "kind": "motion",
+      "legacy": "/tokens/motion/reduced-motion/list-expansion",
+      "target": "instant"
+    },
+    {
+      "decision": "proposal duration; reduced-motion hard cut",
+      "kind": "motion",
+      "legacy": "/tokens/motion/standard/expansion",
+      "target": "expansion"
+    },
+    {
+      "decision": "proposal duration; reduced-motion hard cut",
+      "kind": "motion",
+      "legacy": "/tokens/motion/reduced-motion/expansion",
+      "target": "instant"
+    },
+    {
+      "decision": "exact legacy constant semantic",
+      "family": "opacity",
+      "kind": "opacity",
+      "legacy": "/tokens/opacity/text-selection-increased",
+      "target": "alpha-selection-ic"
+    },
+    {
+      "decision": "explicit Body→ui-body",
+      "field": "fontSize",
+      "kind": "text",
+      "legacy": "/tokens/text/body/font-size",
+      "target": "ui-body"
+    },
+    {
+      "decision": "explicit Body→ui-body",
+      "field": "lineHeight",
+      "kind": "text",
+      "legacy": "/tokens/text/body/line-height",
+      "target": "ui-body"
+    },
+    {
+      "decision": "explicit Body→ui-body",
+      "field": "fontWeight",
+      "kind": "text",
+      "legacy": "/tokens/text/body/weight",
+      "target": "ui-body"
+    }
+  ],
+  "priority": "proposal-overlap-wins; legacy-only-kept",
+  "render_opacity": {
+    "hover-wash": {
+      "default": "alpha-faint",
+      "increased": "alpha-soft"
+    },
+    "scrim": {
+      "default": "alpha-wash",
+      "increased": "alpha-wash"
+    },
+    "text-selection": {
+      "default": "alpha-solid",
+      "increased": "alpha-selection-ic"
+    }
+  },
+  "unmatched_text_roles": [
+    "body-emphasized",
+    "row-meta",
+    "section-header",
+    "identity-badge",
+    "brand"
+  ],
+  "version": 1
+}

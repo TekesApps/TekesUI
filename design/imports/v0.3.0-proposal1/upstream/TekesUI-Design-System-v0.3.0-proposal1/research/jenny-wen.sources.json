@@ -1,0 +1,216 @@
+{
+  "version": "1.0",
+  "retrieved_on": "2026-10-15",
+  "scope": "curated relevant original posts and publisher interviews; not exhaustive social archive",
+  "identity_resolution": {
+    "likely_person": "Jenny Wen",
+    "verified_historical_roles": [
+      "Figma Director of Design",
+      "Anthropic Claude and Cowork design lead"
+    ],
+    "career_update": "own X announcement says left Anthropic and joining Cursor as Head of Design",
+    "claude_design_product_lead": "not established by reviewed sources",
+    "employment_start_and_end_dates": "not inferred from announcement date"
+  },
+  "sources": [
+    {
+      "id": "JW-00",
+      "title": "Jenny Wen — personal portfolio",
+      "url": "https://jennywen.ca/",
+      "publisher": "Jenny Wen",
+      "published": null,
+      "access": "own biography and dated portfolio entries read",
+      "finding": "本人记录曾任 Figma Director of Design，之后负责 Claude 与 Cowork 设计；2025-03 主导 Claude.ai 视觉更新。",
+      "adopt": "历史职责依据；不能据此称她为 Claude Design 产品负责人或当前 Anthropic 员工。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-X00",
+      "title": "Career update: leaving Anthropic and joining Cursor",
+      "url": "https://x.com/jenny_wen/status/2076679443754475919",
+      "publisher": "Jenny Wen / X",
+      "published": "2026-07-13",
+      "access": "own post public search-index excerpts; displayed index date; direct page restricted; replies not read",
+      "finding": "本人宣布离开 Anthropic，加入 Cursor 担任 Head of Design。",
+      "adopt": "只用于校正人物归属；不把公告日推断成实际任职起止日。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-01",
+      "title": "What we don't talk about when we talk about quality…",
+      "url": "https://jennywen.substack.com/p/were-not-great-at-talking-about-quality",
+      "publisher": "Jenny Wen",
+      "published": "2023-12-24",
+      "access": "own article body read",
+      "finding": "精准可预测的交互、视觉细节与响应速度都是产品价值的一部分；质量不能由单一指标概括。",
+      "adopt": "把真实交互与体验审查保留为独立证据，不以 token 数量或文档完成度代替。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-02",
+      "title": "New year, new templates",
+      "url": "https://jennywen.substack.com/p/new-year-new-templates",
+      "publisher": "Jenny Wen",
+      "published": "2024-01-03",
+      "access": "own article body read",
+      "finding": "公开 FigJam 策略与会议模板，区分设计保真度和紧迫性，不要求每个探索阶段都高保真。",
+      "adopt": "探索可用轻量草图/原型；发布仍需确定来源、实际实现和验收。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-03",
+      "title": "Don't trust the (design) process",
+      "url": "https://jennywen.ca/notes/dont-trust-the-design-process",
+      "publisher": "Jenny Wen",
+      "published": "2024-06-30",
+      "access": "own article body read",
+      "finding": "反对把固定流程产物当成设计成果，强调实际产品体验；可以调整步骤顺序并在交接后继续改进。",
+      "adopt": "探索顺序可变；批准设计真源、行为与无障碍门禁不因此放松。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-X01",
+      "title": "Visual design early in the design process",
+      "url": "https://x.com/jenny_wen/status/1879404599393845273",
+      "publisher": "Jenny Wen / X",
+      "published": null,
+      "access": "public search-index excerpt only; direct page restricted; thread and exact date not verified",
+      "finding": "本人认为早期视觉探索有助于理解概念的布局和层级。",
+      "adopt": "允许提前试验真实布局，而非强制先完成全部流程文档。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-X02",
+      "title": "Using Claude to clarify concepts and prototype",
+      "url": "https://x.com/jenny_wen/status/1894597053516587413",
+      "publisher": "Jenny Wen / X",
+      "published": null,
+      "access": "public search-index excerpt only; direct page unavailable; thread and exact date not verified",
+      "finding": "提及用 Claude 理清概念、写示例文案和生成原型。",
+      "adopt": "AI 产物是待评审候选，不是自动批准的品牌或组件真源。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-X03",
+      "title": "Design leaders: craft products and teams",
+      "url": "https://x.com/jenny_wen/status/1882462620881650023",
+      "publisher": "Jenny Wen / X",
+      "published": null,
+      "access": "public search-index excerpt only; direct page restricted; thread and exact date not verified",
+      "finding": "设计领导工作同时涉及产品与团队。",
+      "adopt": "组件 owner 和设计评审责任需要明确；不以 AI 工具取代负责人。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-X04",
+      "title": "Build good products rather than fixating on role definitions",
+      "url": "https://x.com/jenny_wen/status/2060117034982130035",
+      "publisher": "Jenny Wen / X",
+      "published": null,
+      "access": "public search-index excerpt only; direct page unavailable; thread and exact date not verified",
+      "finding": "不要只纠结设计角色应该是什么样，重点是使用新工具做出好产品。",
+      "adopt": "设计/工程可协作迭代，但代码改动仍通过规范化回写和发布链路。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-04",
+      "title": "The design process is dead. Here's what's replacing it.",
+      "url": "https://www.lennysnewsletter.com/p/the-design-process-is-dead",
+      "publisher": "Lenny's Newsletter / Jenny Wen interview",
+      "published": "2026-03-01",
+      "access": "publisher public introduction and topics read; paid takeaways not read; recording not watched",
+      "finding": "访谈讨论 AI 时代设计工作的变化、设计判断与工程协作。",
+      "adopt": "仅采纳公开可核实主题；标题不解释为可以省略研究或测试。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-05",
+      "title": "Jenny Wen — Design Lead at Anthropic",
+      "url": "https://doublediamondnyc.substack.com/p/jenny-wen-design-lead-at-anthropic",
+      "publisher": "Double Diamond / Jenny Wen interview",
+      "published": "2026-03-17",
+      "access": "publisher article, summaries and attributed quotes read; recording not watched",
+      "finding": "LLM 输出无法穷举；围绕交互原语、状态和实际用例设计。技术详情可渐进披露，长任务的计划/批准仍需可见。",
+      "adopt": "固定控件状态与事件契约，用不同生成内容做场景夹具；保留审批、错误和证据。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-06",
+      "title": "The New Designers Superpower (Code + AI)",
+      "url": "https://www.uxtools.co/episodes/the-new-designers-superpower-code-ai",
+      "publisher": "UX Tools / Jenny Wen interview",
+      "published": "2026-03-24",
+      "access": "publisher public introduction and chapter timestamps read; recording not watched",
+      "finding": "公开目录覆盖模型复杂度、原型、对话界面与执行质量。",
+      "adopt": "设计师应能检查实际实现；工具复杂度不能变成界面信息噪声。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-07",
+      "title": "Inside Anthropic: Claude Cowork tutorial with Jenny Wen",
+      "url": "https://creatoreconomy.so/p/inside-anthropic-claude-cowork-tutorial-jenny-wen",
+      "publisher": "Peter Yang / Behind the Craft",
+      "published": "2026-03-29",
+      "access": "public introduction, chapter timestamps and first takeaway read; paywalled remainder not read; recording not watched",
+      "finding": "公开介绍以用户反馈和资料辅助提出产品方向与原型。",
+      "adopt": "反馈来源与观察分离于设计决定，自动生成建议须评审后采纳。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-08",
+      "title": "Config 2023: Putting joy on the roadmap announcement",
+      "url": "https://www.linkedin.com/posts/jennywen_config2023-activity-7057395676942348288-ilMs",
+      "publisher": "Jenny Wen / LinkedIn",
+      "published": null,
+      "access": "own public post indexed; exact publication date not asserted; talk identity also on own portfolio",
+      "finding": "本人预告与 Mihika Kapoor、Keeyen Yeo 在 Config 2023 讨论产品中的愉悦体验。",
+      "adopt": "允许有任务价值的反馈与文案；不把愉悦误解为持续装饰动画。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-09",
+      "title": "Don't trust the process — Hatch talk",
+      "url": "https://www.youtube.com/watch?v=4u94juYwLLM",
+      "publisher": "Hatch / Jenny Wen talk",
+      "published": "2025-09",
+      "access": "linked from own dated portfolio; video landing page only; recording not watched",
+      "finding": "本人作品集将其列为关于 AI 工具变化和设计团队工作方式的分享。",
+      "adopt": "作为延伸观看入口；未从未观看的录像提炼具体参数。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-10",
+      "title": "The art of designing for delight",
+      "url": "https://www.dive.club/deep-dives/jenny-wen",
+      "publisher": "Dive Club / Jenny Wen interview",
+      "published": "2024-02-29",
+      "access": "publisher search-index episode description; own portfolio corroborates participation; recording not watched",
+      "finding": "对谈涉及 FigJam、设计愉悦感与产品策略。",
+      "adopt": "仅作为延伸观看来源，不把片段当成完整 Design System 技术规范。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "REVIEW-01",
+      "title": "Design Process Isn’t Dead, It’s Compressed",
+      "url": "https://www.nngroup.com/articles/design-process-isnt-dead/",
+      "publisher": "Nielsen Norman Group",
+      "published": "2026-03-13",
+      "access": "original article introduction and section headings read",
+      "finding": "回应设计流程之争，区分流程被压缩与必要设计思考被消除。",
+      "adopt": "作为制衡观点：允许探索提速，但不删来源、风险和真实验证。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "JW-11",
+      "title": "Craft is Counter-Intuitive",
+      "url": "https://designx.community/talks/jenny-wen-(design-lead-anthropic)-craft-is-counter-intuitive",
+      "publisher": "DesignX / Jenny Wen talk",
+      "published": null,
+      "event_label": "Design Leadership Summit 2025",
+      "access": "organizer talk abstract read; recording not watched; page contains mixed historical role text and is not used for current employment",
+      "finding": "主办方演讲摘要强调早期高保真探索、直觉、深入细节的设计评审和领导者参与质量。",
+      "adopt": "探索可以从高保真开始；变更仍需评审与回归，不将临近发布的改变直接视为已批准。",
+      "retrieved_on": "2026-10-15"
+    }
+  ]
+}

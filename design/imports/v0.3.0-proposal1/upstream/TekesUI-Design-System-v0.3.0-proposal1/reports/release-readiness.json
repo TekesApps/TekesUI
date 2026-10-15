@@ -1,0 +1,150 @@
+{
+  "scope": "release-readiness",
+  "status": "fail",
+  "themes": [
+    "light",
+    "dark",
+    "light-ic",
+    "dark-ic"
+  ],
+  "token_count": 295,
+  "text_style_count": 16,
+  "component_count": 40,
+  "recipe_count": 10,
+  "declared_contrast_checks": 960,
+  "contrast_failures": 0,
+  "errors": [
+    "SOURCE_PROVENANCE_UNVERIFIED",
+    "ARTIFACT_EXPORT_COMPATIBILITY_UNVERIFIED",
+    "RUNTIME_IMPLEMENTATION_UNVERIFIED",
+    "GALLERY_NATIVE_RUNTIME_UNVERIFIED",
+    "REAL_ENVIRONMENT_UNVERIFIED",
+    "ICON_ORIGINALITY_REVIEW_UNVERIFIED",
+    "OWNER_ASSIGNMENTS_UNVERIFIED",
+    "CONSUMER_BRAND_APPROVAL_UNVERIFIED",
+    "NATIVE_THEME_SWITCH_UNVERIFIED",
+    "BRAND_GALLERY_EVIDENCE_UNVERIFIED",
+    "CRAFT_REVIEW_UNVERIFIED: CRAFT-01",
+    "CRAFT_REVIEW_UNVERIFIED: CRAFT-02",
+    "CRAFT_REVIEW_UNVERIFIED: CRAFT-03",
+    "CRAFT_REVIEW_UNVERIFIED: CRAFT-04",
+    "CRAFT_REVIEW_UNVERIFIED: CRAFT-05",
+    "CRAFT_REVIEW_UNVERIFIED: CRAFT-06",
+    "CRAFT_REVIEW_UNVERIFIED: CRAFT-07",
+    "COMPONENT_NOT_STABLE: tui.text",
+    "COMPONENT_NOT_STABLE: tui.icon",
+    "COMPONENT_NOT_STABLE: tui.separator",
+    "COMPONENT_NOT_STABLE: tui.stack",
+    "COMPONENT_NOT_STABLE: tui.grid",
+    "COMPONENT_NOT_STABLE: tui.split-view",
+    "COMPONENT_NOT_STABLE: tui.scroll-area",
+    "COMPONENT_NOT_STABLE: tui.button",
+    "COMPONENT_NOT_STABLE: tui.icon-button",
+    "COMPONENT_NOT_STABLE: tui.link",
+    "COMPONENT_NOT_STABLE: tui.checkbox",
+    "COMPONENT_NOT_STABLE: tui.radio-group",
+    "COMPONENT_NOT_STABLE: tui.switch",
+    "COMPONENT_NOT_STABLE: tui.text-field",
+    "COMPONENT_NOT_STABLE: tui.text-area",
+    "COMPONENT_NOT_STABLE: tui.search-field",
+    "COMPONENT_NOT_STABLE: tui.combo-box",
+    "COMPONENT_NOT_STABLE: tui.slider",
+    "COMPONENT_NOT_STABLE: tui.tabs",
+    "COMPONENT_NOT_STABLE: tui.list",
+    "COMPONENT_NOT_STABLE: tui.tree",
+    "COMPONENT_NOT_STABLE: tui.breadcrumb",
+    "COMPONENT_NOT_STABLE: tui.menu",
+    "COMPONENT_NOT_STABLE: tui.tooltip",
+    "COMPONENT_NOT_STABLE: tui.popover",
+    "COMPONENT_NOT_STABLE: tui.dialog",
+    "COMPONENT_NOT_STABLE: tui.toast",
+    "COMPONENT_NOT_STABLE: tui.banner",
+    "COMPONENT_NOT_STABLE: tui.status-badge",
+    "COMPONENT_NOT_STABLE: tui.progress",
+    "COMPONENT_NOT_STABLE: tui.empty-state",
+    "COMPONENT_NOT_STABLE: tui.selection-surface",
+    "COMPONENT_NOT_STABLE: tui.markdown",
+    "COMPONENT_NOT_STABLE: tui.code-block",
+    "COMPONENT_NOT_STABLE: tui.diff-view",
+    "COMPONENT_NOT_STABLE: tui.data-table",
+    "COMPONENT_NOT_STABLE: tui.chart",
+    "COMPONENT_NOT_STABLE: tui.command-palette",
+    "COMPONENT_NOT_STABLE: tui.segmented-control",
+    "COMPONENT_NOT_STABLE: tui.disclosure"
+  ],
+  "not_verified": [
+    "Private source artifact revision and original export",
+    "Rust APIs and native Gallery",
+    "actual rendered pixels and final compositing",
+    "real mouse/keyboard/IME/VoiceOver",
+    "actual application coverage and performance",
+    "icon originality, missing assets and licenses"
+  ],
+  "bundle_source_sha256": "60de2b338ebf7c4890158e537038d3f965c545155236c08532c26d97c93abe61",
+  "brand_validation": {
+    "scope": "brand-build-static",
+    "status": "pass",
+    "errors": [],
+    "profiles": [
+      {
+        "brand_id": "example-neutral",
+        "seed_srgb": "#767676",
+        "themes": [
+          "light",
+          "dark",
+          "light-ic",
+          "dark-ic"
+        ],
+        "contrast_checks": 960,
+        "contrast_failures": 0,
+        "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+        "native_evidence": "unverified"
+      },
+      {
+        "brand_id": "example-blue",
+        "seed_srgb": "#2563EB",
+        "themes": [
+          "light",
+          "dark",
+          "light-ic",
+          "dark-ic"
+        ],
+        "contrast_checks": 960,
+        "contrast_failures": 0,
+        "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+        "native_evidence": "unverified"
+      },
+      {
+        "brand_id": "example-clay",
+        "seed_srgb": "#D97757",
+        "themes": [
+          "light",
+          "dark",
+          "light-ic",
+          "dark-ic"
+        ],
+        "contrast_checks": 960,
+        "contrast_failures": 0,
+        "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+        "native_evidence": "unverified"
+      }
+    ],
+    "contrast_checks": 2880,
+    "brand_dependent_color_token_count": 55,
+    "independent_roles": "identical across all example brand bundles",
+    "renderer_validation": "unverified",
+    "consumer_acceptance": "unverified"
+  },
+  "context_validation": {
+    "scope": "local-context-and-reference-traceability",
+    "status": "pass",
+    "errors": [],
+    "generated_views": [
+      "design/adapters/generated/agent-context.json",
+      "design/adapters/generated/figma.variables-plan.json",
+      "docs/AGENT-HANDOFF.md"
+    ],
+    "online_roundtrip": "unverified",
+    "native_component_binding": "unverified"
+  }
+}

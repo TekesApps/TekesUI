@@ -1,0 +1,95 @@
+{
+  "breakpoints": {
+    "three_panes_min": 1200,
+    "two_panes_min": 960
+  },
+  "composer": {
+    "available_height_rule": "Clamp editor to available content height after toolbar/insets; never hide submit/stop. Expanded editor is opt-in and may require a larger window.",
+    "editor_max_token": "size-composer-editor-max",
+    "editor_min_token": "size-composer-editor-min",
+    "expanded_editor_max_token": "size-composer-expanded-editor-max",
+    "max_height": 384,
+    "min_height": 72
+  },
+  "container_adaptation": {
+    "expanded_min": 576,
+    "labels_compact_below": 480,
+    "rule": "content measurement wins; no essential action hidden, overflow remains keyboard accessible",
+    "secondary_actions_overflow_below": 384,
+    "single_action_row_below": 320,
+    "unit": "logical-pt"
+  },
+  "density": {
+    "comfortable_row_token": "size-comfortable-row",
+    "compact_row_token": "size-compact-row",
+    "normal_row_token": "size-row-height"
+  },
+  "document": {
+    "max_reading_width": 768,
+    "minimum_editor_width": 560
+  },
+  "gallery": {
+    "backing_scales": [
+      1,
+      2
+    ],
+    "brand_profiles": [
+      "example-neutral",
+      "example-blue",
+      "example-clay"
+    ],
+    "brand_reference": "example-neutral",
+    "capture_size": [
+      1440,
+      960
+    ],
+    "text_scales": [
+      1,
+      1.25,
+      1.5,
+      2
+    ]
+  },
+  "grid": 2,
+  "hairline_policy": {
+    "decorative": "1 / backing_scale logical pt",
+    "increased_contrast": "stroke-rule",
+    "note": "stroke-hairline=0.5 is retained for @2x compatibility only; not a universal width",
+    "required_boundary": "stroke-rule"
+  },
+  "inspector": {
+    "default": 320,
+    "max": 420,
+    "min": 280
+  },
+  "layers": {
+    "content": 0,
+    "dropdown": 20,
+    "modal": 50,
+    "modal_popover": 60,
+    "modal_scrim": 40,
+    "popover": 30,
+    "sticky": 10,
+    "tooltip": 70
+  },
+  "policy": "Controls grow with text; effective minimum constraints can collapse panes before nominal breakpoints. OS windows, IME candidates and menu surfaces have OS-owned stacking.",
+  "reference_layout": "OCUI proportion alignment, not a pixel-identical clone",
+  "shadow": "none",
+  "sidebar": {
+    "default": 288,
+    "max": 360,
+    "min": 224
+  },
+  "unit": "logical-pt",
+  "version": "0.2.0-proposal.1",
+  "window": {
+    "default": [
+      1360,
+      860
+    ],
+    "minimum": [
+      720,
+      480
+    ]
+  }
+}

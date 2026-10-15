@@ -7,5 +7,12 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+[build-dependencies]
+tekes-ui-design-export = { path = "../tekes-ui-design-export" }
+
+[dev-dependencies]
+tekes-ui-design-export = { path = "../tekes-ui-design-export" }
+serde_json.workspace = true
+
 [lints]
 workspace = true

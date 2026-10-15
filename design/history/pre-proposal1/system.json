@@ -1,0 +1,337 @@
+{
+  "$schema": "./system.schema.json",
+  "format": "tekesui-design-system/1",
+  "status": "approved-visual-baseline-with-json-token-authority",
+  "authority": {
+    "visual_baseline_commit": "a8ab9303ab2f528913f83cfc2c8da2a0eab8b8f3",
+    "policy": {
+      "$ref": "../DESIGN.md"
+    },
+    "baseline": {
+      "$ref": "./baseline/manifest.json"
+    },
+    "design_baseline_name": "DesignSystem v1",
+    "release_tag": null,
+    "change_policy": "Preserve the approved original appearance. Visible changes require old/new side-by-side evidence and explicit user approval; never regenerate golden files to hide differences."
+  },
+  "layers": {
+    "tokens": {
+      "$ref": "./tokens.json"
+    },
+    "layout_and_component_specs": {
+      "$ref": "#/specs"
+    },
+    "interaction": {
+      "$ref": "#/interaction"
+    },
+    "themes": {
+      "$ref": "#/themes"
+    },
+    "accessibility": {
+      "$ref": "#/accessibility"
+    },
+    "evidence": {
+      "$ref": "#/evidence"
+    }
+  },
+  "specs": {
+    "classification": "Calibration and component specifications, not additional global token families.",
+    "calibration_layout": {
+      "source": {
+        "$ref": "../crates/tekes-ui-gallery/src/gallery/layout.rs"
+      },
+      "logical_canvas": {
+        "width": 1200,
+        "height": 800,
+        "unit": "pt"
+      },
+      "catalog_width": {
+        "value": 220,
+        "unit": "pt"
+      },
+      "page_content": {
+        "x": 244,
+        "y": 62,
+        "width": 932,
+        "height": 714,
+        "unit": "pt"
+      },
+      "resize_behavior": "Anchor at top-left; a larger window reveals background and a smaller window clips. No responsive reflow.",
+      "token_dependencies": [
+        {
+          "$ref": "./tokens.json#/tokens/spacing"
+        },
+        {
+          "$ref": "./tokens.json#/tokens/size"
+        }
+      ],
+      "boundary": "These are measurements of the approved Gallery calibration canvas, not universal spacing or device breakpoints."
+    },
+    "typography_policy": {
+      "font_family": "System UI font selected through CoreText; fallback comes from the actual shaped run.",
+      "font_family_is_numeric_token": false,
+      "role_metrics": {
+        "$ref": "./tokens.json#/tokens/text"
+      },
+      "label_placement": "Fixed slots and integer logical-point origins; preserve approved hierarchy.",
+      "source": {
+        "$ref": "../crates/tekes-ui-gallery/src/gallery/text.rs"
+      }
+    },
+    "radius_derivation": {
+      "rule": "concentric(outer, inset) = max(outer - inset, Badge radius).",
+      "base_tokens": {
+        "$ref": "./tokens.json#/tokens/radius"
+      },
+      "source": {
+        "$ref": "../crates/tekes-ui-tokens/src/metrics.rs"
+      }
+    },
+    "components": [
+      {
+        "id": "gallery-shell",
+        "kind": "navigation-and-chrome",
+        "source": {
+          "$ref": "../crates/tekes-ui-gallery/src/gallery/chrome.rs"
+        },
+        "rules": [
+          "Preserve original sidebar, title slot and separators.",
+          "Selected row uses RowSelection; selected appearance takes priority over hover.",
+          "Unselected hovered row uses ButtonHover; rest has no row fill.",
+          "Catalog labels use Body/PrimaryText; page title uses BodyEmphasized/PrimaryText."
+        ],
+        "token_dependencies": [
+          {
+            "$ref": "./tokens.json#/tokens/text"
+          },
+          {
+            "$ref": "./tokens.json#/tokens/radius"
+          },
+          {
+            "$ref": "./tokens.json#/sets"
+          }
+        ]
+      },
+      {
+        "id": "primitives",
+        "kind": "rendering-verification-page",
+        "source": {
+          "$ref": "../crates/tekes-ui-gallery/src/gallery/pages/primitives.rs"
+        },
+        "rules": [
+          "Preserve original radius/stroke/opacity demonstration and button-like five-state samples.",
+          "The sample is a verification quad, not a finished accessible application control.",
+          "Rest/hover/pressed/disabled/focus semantics are taken from the original source, not redefined as a new component theme."
+        ],
+        "token_dependencies": [
+          {
+            "$ref": "./tokens.json#/tokens/radius"
+          },
+          {
+            "$ref": "./tokens.json#/tokens/stroke"
+          },
+          {
+            "$ref": "./tokens.json#/sets"
+          }
+        ]
+      },
+      {
+        "id": "tokens",
+        "kind": "token-calibration-page",
+        "source": {
+          "$ref": "../crates/tekes-ui-gallery/src/gallery/pages/tokens.rs"
+        },
+        "rules": [
+          "Preserve original ColorRole ordering and swatch layout.",
+          "Show existing spacing, radius and stroke roles without creating new design values."
+        ],
+        "token_dependencies": [
+          {
+            "$ref": "./tokens.json#/sets"
+          },
+          {
+            "$ref": "./tokens.json#/tokens"
+          }
+        ]
+      },
+      {
+        "id": "static-text",
+        "kind": "text-comparison-fixture",
+        "source": {
+          "$ref": "../crates/tekes-ui-gallery/src/gallery/static_text.rs"
+        },
+        "calibration_fixture": {
+          "font_size": {
+            "value": 14,
+            "unit": "pt"
+          },
+          "pane_height": {
+            "value": 170,
+            "unit": "pt"
+          },
+          "default_fixture": "sentences-a",
+          "default_width": {
+            "value": 700,
+            "unit": "pt"
+          },
+          "widths_source": {
+            "$ref": "../fixtures/text/manifest.json"
+          },
+          "boundary": "Fixture-only measurements, not a new global typography or size token."
+        },
+        "rules": [
+          "Preserve stacked live/reference/difference panes.",
+          "Clip display to whole visible lines; comparison covers the full text canvas.",
+          "Private references are optional runtime-only input; never include them in public baseline assets.",
+          "IC themes currently compare against standard light/dark references, so this does not establish IC visual equivalence."
+        ],
+        "token_dependencies": [
+          {
+            "$ref": "./tokens.json#/tokens/text"
+          },
+          {
+            "$ref": "./tokens.json#/sets"
+          }
+        ]
+      }
+    ]
+  },
+  "interaction": {
+    "source": {
+      "$ref": "../crates/tekes-ui-gallery/src/gallery/mod.rs"
+    },
+    "navigation": {
+      "pages": [
+        "primitives",
+        "tokens",
+        "static-text"
+      ],
+      "selection": [
+        "mouse click",
+        "Up/Down without wrapping",
+        "Pages menu shortcuts Command+1/2/3"
+      ],
+      "selection_changes_update": "Scene, title and menu check state only when actual state changes.",
+      "search": "Not part of the approved three-page baseline; future additions must preserve existing appearance."
+    },
+    "redraw_policy": [
+      "Hover entering or leaving a row can redraw.",
+      "Pointer movement within one row and repeated selection of the same item do not redraw."
+    ],
+    "static_text_pickers": "Mouse fixture/width selection; invalid width falls back to fixture default.",
+    "motion": {
+      "standard": {
+        "$ref": "./tokens.json#/tokens/motion/standard"
+      },
+      "reduced_motion": {
+        "$ref": "./tokens.json#/tokens/motion/reduced-motion"
+      },
+      "boundary": "Token resolution policy; not a claim that all app-level accessibility preferences are wired.",
+      "scroll_preview": "The mixed automatic bounce is a performance/visual harness, not the default product interaction."
+    }
+  },
+  "themes": [
+    {
+      "id": "light",
+      "tokens": {
+        "$ref": "./tokens.json#/sets/light"
+      },
+      "appearance": "light",
+      "increased_contrast": false
+    },
+    {
+      "id": "dark",
+      "tokens": {
+        "$ref": "./tokens.json#/sets/dark"
+      },
+      "appearance": "dark",
+      "increased_contrast": false
+    },
+    {
+      "id": "light-ic",
+      "tokens": {
+        "$ref": "./tokens.json#/sets/light-ic"
+      },
+      "appearance": "light",
+      "increased_contrast": true
+    },
+    {
+      "id": "dark-ic",
+      "tokens": {
+        "$ref": "./tokens.json#/sets/dark-ic"
+      },
+      "appearance": "dark",
+      "increased_contrast": true
+    }
+  ],
+  "accessibility": {
+    "status": "known-gaps",
+    "implemented_contracts": [
+      "Theme selection and follow-system appearance/contrast semantics.",
+      "Explicit five-state visual samples in the verification page."
+    ],
+    "not_claimed": [
+      "Full semantic accessibility tree",
+      "VoiceOver acceptance",
+      "IME/text editor interaction",
+      "Complete keyboard-accessible component catalog"
+    ],
+    "policy": "Visual sample or token coverage does not prove accessible control behavior."
+  },
+  "evidence": {
+    "manifest": {
+      "$ref": "./baseline/manifest.json"
+    },
+    "golden_directory": {
+      "$ref": "./baseline/screenshots/"
+    },
+    "matrix": "Original three pages x four themes x two scales.",
+    "checker": {
+      "$ref": "../scripts/check-design-baseline.py"
+    },
+    "handoff": {
+      "$ref": "../docs/handoffs/design-baseline.md"
+    },
+    "golden_policy": "Approved immutable evidence; updates require explicit visual review and user approval.",
+    "limits": [
+      "No private comparison images in the public golden directory.",
+      "CI metadata/source checks do not prove same-environment pixel acceptance.",
+      "A candidate must have independent actual build/source provenance."
+    ]
+  },
+  "known_gaps": [
+    {
+      "id": "full-component-system",
+      "status": "incomplete",
+      "detail": "The frozen Gallery and token vocabulary are not a complete production component library or icon system."
+    },
+    {
+      "id": "historical-performance",
+      "status": "failed-gate",
+      "detail": "Keep original F1 mixed scrolling gate failure; this export does not change that result."
+    },
+    {
+      "id": "physical-presentation",
+      "status": "unverified",
+      "detail": "Physical no-dropped-frame behavior and 60-second idle CPU remain unverified."
+    },
+    {
+      "id": "cross-platform",
+      "status": "unverified",
+      "detail": "Current rendering/font evidence is macOS-specific; other platforms have not been accepted."
+    }
+  ],
+  "token_source": {
+    "document": {
+      "$ref": "./tokens.json"
+    },
+    "schema": {
+      "$ref": "./tokens.schema.json"
+    },
+    "value_authority": "design/tokens.json is the sole production numeric token source.",
+    "status": "authoritative-build-input",
+    "unit_policy": "Logical pt is retained in this project schema. No CSS px/rem conversion is implied.",
+    "format_policy": "Project-owned schema using DTCG-inspired $type/$value spelling; not full DTCG compliance.",
+    "single_source_migration": "Normal Cargo builds compile JSON through the independent Rust generator into OUT_DIR/tokens.rs; no checked-in numeric Rust fallback. Source-only migration receipt binds the unchanged approved 508-channel f32 contract and original visual baseline."
+  }
+}

@@ -1,5 +1,10 @@
 # TekesUI 路线图
 
+> 2026-10-15 最新设计权威：用户提供的 v0.3.0-proposal1 有定义时优先，缺项保留现有补集。参见 [DESIGN.md](../DESIGN.md) 和完整导入索引；本文此前固定尺寸、旧值和原版优先约定仅在不冲突时适用。规范存在不等于原生实现已验收。
+
+
+> 当前优先级（2026-10-15）：用户已批准 `a8ab930` 原版 Gallery 作为当前 DesignSystem v1 视觉基线，见 [DESIGN.md](../DESIGN.md)。以下为阶段规划，不授权重画现有三页、自动替换 token 或采用旧 SF/Swift 退路；新增组件/搜索/registry 应小步融入原版，任何视觉变化须并排证据与用户确认。Design Agent 或私有 artifact 将来只可补充提案，不能自动推翻已批准外观。
+
 > 外部库版本均为 2026-10 调研时状态，开工前复核：wgpu 30、Parley 0.12、objc2 0.6、AccessKit 2026-09 版本、winit 0.31 beta。
 
 **不设日期，按通过标准推进。** 每个阶段的通过标准都包含对应的 Gallery 页面；对比方法（像素差容差、排版数值、性能、输入法验收矩阵、VoiceOver 清单）统一见 [comparison-method.md](comparison-method.md)，本文不重复定义。分层与原则见 [charter.md](charter.md)。

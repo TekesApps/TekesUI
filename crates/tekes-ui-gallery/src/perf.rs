@@ -49,7 +49,7 @@ pub const WARMUP_S: f64 = 1.5;
 /// 测量结束后等多久再确认显示链接已静默。
 pub const IDLE_WAIT_MS: u64 = 5000;
 /// 整屏的高度（pt），等于 Gallery 固定框。
-const SCREEN_H: f32 = 800.0;
+const SCREEN_H: f32 = crate::gallery::CONTENT_HEIGHT;
 /// 文字段的左边距和换行宽度（pt）。
 const TEXT_X: f32 = 50.0;
 const TEXT_WIDTH: f64 = 1100.0;

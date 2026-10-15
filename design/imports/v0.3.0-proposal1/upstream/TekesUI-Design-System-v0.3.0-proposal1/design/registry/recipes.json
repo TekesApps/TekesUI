@@ -1,0 +1,496 @@
+{
+  "version": "0.3.0-proposal.1",
+  "scope": "Consumer-layer recipes, not additional Rust core implementations",
+  "recipes": [
+    {
+      "id": "agent.composer",
+      "name": "Composer",
+      "category": "consumer-recipe",
+      "owner_role": "consumer-ui-maintainer",
+      "owner_handle": null,
+      "crate": "consumer-defined; resolve before beta",
+      "status": "planned",
+      "optional": false,
+      "component_ids": [
+        "tui.text-area",
+        "tui.button",
+        "tui.icon-button",
+        "tui.menu",
+        "tui.combo-box"
+      ],
+      "spec": "docs/recipes/composer.md",
+      "api": "Composer(draft, attachments, capabilities, on_submit, on_cancel)",
+      "usage": "以20pt外壳组织附件、编辑区、工具栏；/和@由能力表驱动",
+      "prohibited": "禁止硬编码模型清单、擅自trim代码/提示词、确认落盘前清空草稿",
+      "states": [
+        "draft",
+        "composing",
+        "suggesting",
+        "submitting",
+        "running",
+        "failed",
+        "offline"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "empty"
+      ],
+      "source_ids": [
+        "OCUI-04",
+        "OCUI-05"
+      ],
+      "gallery_slug": "recipe/composer",
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      }
+    },
+    {
+      "id": "agent.message",
+      "name": "Message",
+      "category": "consumer-recipe",
+      "owner_role": "consumer-ui-maintainer",
+      "owner_handle": null,
+      "crate": "consumer-defined; resolve before beta",
+      "status": "planned",
+      "optional": false,
+      "component_ids": [
+        "tui.markdown",
+        "tui.code-block",
+        "tui.icon-button",
+        "tui.selection-surface"
+      ],
+      "spec": "docs/recipes/message.md",
+      "api": "Message(role, content, delivery, actions)",
+      "usage": "用户18pt浅底气泡；助手透明文档流；键盘focus也能显示操作",
+      "prohibited": "不得仅hover可操作、正文逐字模糊、复制带UI装饰",
+      "states": [
+        "empty",
+        "streaming",
+        "complete",
+        "failed",
+        "selected"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "empty"
+      ],
+      "source_ids": [
+        "OCUI-10"
+      ],
+      "gallery_slug": "recipe/message",
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      }
+    },
+    {
+      "id": "agent.thinking",
+      "name": "ThinkingSummary",
+      "category": "consumer-recipe",
+      "owner_role": "consumer-ui-maintainer",
+      "owner_handle": null,
+      "crate": "consumer-defined; resolve before beta",
+      "status": "planned",
+      "optional": false,
+      "component_ids": [
+        "tui.disclosure",
+        "tui.text",
+        "tui.status-badge"
+      ],
+      "spec": "docs/recipes/thinking.md",
+      "api": "ThinkingSummary(expanded, public_summary, elapsed, status)",
+      "usage": "公开摘要与执行状态；默认折叠并尊重用户展开选择",
+      "prohibited": "不强制重新展开；不推导或伪造内部思维链",
+      "states": [
+        "empty",
+        "running",
+        "complete",
+        "error",
+        "expanded"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "empty"
+      ],
+      "source_ids": [
+        "OCUI-09"
+      ],
+      "gallery_slug": "recipe/thinking",
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      }
+    },
+    {
+      "id": "agent.attachment",
+      "name": "Attachment",
+      "category": "consumer-recipe",
+      "owner_role": "consumer-ui-maintainer",
+      "owner_handle": null,
+      "crate": "consumer-defined; resolve before beta",
+      "status": "planned",
+      "optional": false,
+      "component_ids": [
+        "tui.icon",
+        "tui.text",
+        "tui.button",
+        "tui.progress"
+      ],
+      "spec": "docs/recipes/attachment.md",
+      "api": "Attachment(file_ref, metadata, status, on_open, on_remove)",
+      "usage": "独立文件磁贴与Composer内无重复装饰框的chip",
+      "prohibited": "不把上传中当成功；不使用无许可缩略图；删除须单独可达",
+      "states": [
+        "uploading",
+        "ready",
+        "error",
+        "restricted",
+        "removing"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "empty"
+      ],
+      "source_ids": [
+        "OCUI-11"
+      ],
+      "gallery_slug": "recipe/attachment",
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      }
+    },
+    {
+      "id": "agent.tool-decision",
+      "name": "ToolDecision",
+      "category": "consumer-recipe",
+      "owner_role": "consumer-ui-maintainer",
+      "owner_handle": null,
+      "crate": "consumer-defined; resolve before beta",
+      "status": "planned",
+      "optional": false,
+      "component_ids": [
+        "tui.disclosure",
+        "tui.code-block",
+        "tui.button",
+        "tui.banner",
+        "tui.status-badge"
+      ],
+      "spec": "docs/recipes/tool-decision.md",
+      "api": "ToolDecision(request, scope, effects, server_status, on_decide)",
+      "usage": "动作/对象/权限/影响完整呈现，允许一次、持久规则、拒绝分离",
+      "prohibited": "不由动画完成改成功；不本地预设已授权；危险操作非默认回车",
+      "states": [
+        "pending-approval",
+        "running",
+        "success",
+        "error",
+        "denied",
+        "cancelled",
+        "expired"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "empty"
+      ],
+      "source_ids": [
+        "OCUI-12"
+      ],
+      "gallery_slug": "recipe/tool-decision",
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      }
+    },
+    {
+      "id": "agent.model-usage",
+      "name": "ModelAndUsage",
+      "category": "consumer-recipe",
+      "owner_role": "consumer-ui-maintainer",
+      "owner_handle": null,
+      "crate": "consumer-defined; resolve before beta",
+      "status": "planned",
+      "optional": false,
+      "component_ids": [
+        "tui.combo-box",
+        "tui.progress",
+        "tui.text",
+        "tui.popover"
+      ],
+      "spec": "docs/recipes/model-usage.md",
+      "api": "ModelAndUsage(capabilities, model, context, quota, on_select)",
+      "usage": "模型能力、上下文占用、账号配额是三个不同指标；无分母显示未知",
+      "prohibited": "不沿用参考的固定Claude型号；不用上下文占用冒充额度；锁定能力由后端提供",
+      "states": [
+        "ready",
+        "loading",
+        "unknown",
+        "restricted",
+        "stale"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "empty"
+      ],
+      "source_ids": [
+        "OCUI-13",
+        "OCUI-16"
+      ],
+      "gallery_slug": "recipe/model-usage",
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      }
+    },
+    {
+      "id": "agent.session-row",
+      "name": "SessionRow",
+      "category": "consumer-recipe",
+      "owner_role": "consumer-ui-maintainer",
+      "owner_handle": null,
+      "crate": "consumer-defined; resolve before beta",
+      "status": "planned",
+      "optional": false,
+      "component_ids": [
+        "tui.list",
+        "tui.icon-button",
+        "tui.menu",
+        "tui.status-badge"
+      ],
+      "spec": "docs/recipes/session-row.md",
+      "api": "SessionRow(id, title, group, selected, status, on_action)",
+      "usage": "稳定ID、持久选中、4pt拖拽门槛、取消回滚、分组可配置",
+      "prohibited": "不随视觉迁移默默合并文件夹；不让hover覆盖selected",
+      "states": [
+        "selected",
+        "running",
+        "unread",
+        "dragging",
+        "error"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "empty"
+      ],
+      "source_ids": [
+        "OCUI-14",
+        "OCUI-16"
+      ],
+      "gallery_slug": "recipe/session-row",
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      }
+    },
+    {
+      "id": "agent.artifact-preview",
+      "name": "ArtifactPreview",
+      "category": "consumer-recipe",
+      "owner_role": "consumer-ui-maintainer",
+      "owner_handle": null,
+      "crate": "consumer-defined; resolve before beta",
+      "status": "planned",
+      "optional": false,
+      "component_ids": [
+        "tui.split-view",
+        "tui.tabs",
+        "tui.code-block",
+        "tui.diff-view",
+        "tui.dialog"
+      ],
+      "spec": "docs/recipes/artifact-preview.md",
+      "api": "ArtifactPreview(resource, renderer, permissions, on_action)",
+      "usage": "代码/预览/差异切换；窗口不足时切成可切换面板",
+      "prohibited": "通用控件不执行不可信内容；WebView权限由消费者沙箱管理",
+      "states": [
+        "loading",
+        "ready",
+        "error",
+        "restricted",
+        "disconnected"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "empty"
+      ],
+      "source_ids": [
+        "OCUI-07",
+        "OCUI-15"
+      ],
+      "gallery_slug": "recipe/artifact-preview",
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      }
+    },
+    {
+      "id": "agent.popout",
+      "name": "PopoutWorkspace",
+      "category": "consumer-recipe",
+      "owner_role": "consumer-ui-maintainer",
+      "owner_handle": null,
+      "crate": "consumer-defined; resolve before beta",
+      "status": "planned",
+      "optional": true,
+      "component_ids": [
+        "tui.split-view",
+        "tui.tabs",
+        "tui.banner",
+        "tui.dialog"
+      ],
+      "spec": "docs/recipes/popout.md",
+      "api": "PopoutWorkspace(session_id, view_id, source_of_truth, on_close)",
+      "usage": "可选消费者能力；按稳定session共享状态，跨窗口恢复焦点和未发草稿",
+      "prohibited": "不建立第二份业务真源；后台窗口不抢焦点；不宣称已实现",
+      "states": [
+        "opening",
+        "ready",
+        "disconnected",
+        "closing",
+        "failed"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "empty"
+      ],
+      "source_ids": [
+        "OCUI-16"
+      ],
+      "gallery_slug": "recipe/popout",
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      }
+    },
+    {
+      "id": "agent.task-board",
+      "name": "AgentTaskBoard",
+      "category": "consumer-recipe",
+      "owner_role": "consumer-ui-maintainer",
+      "owner_handle": null,
+      "crate": "consumer-defined; resolve before beta",
+      "status": "planned",
+      "optional": true,
+      "component_ids": [
+        "tui.grid",
+        "tui.list",
+        "tui.status-badge",
+        "tui.disclosure"
+      ],
+      "spec": "docs/recipes/task-board.md",
+      "api": "AgentTaskBoard(tasks, artifacts, evidence, on_action)",
+      "usage": "可选消费者看板；任务、产物与验证结果分别呈现",
+      "prohibited": "不把执行完成显示为验证通过；不嵌入agent执行器到通用crate",
+      "states": [
+        "empty",
+        "running",
+        "complete",
+        "failed",
+        "unverified"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "fixtures": [
+        "short",
+        "long-title",
+        "cjk",
+        "empty"
+      ],
+      "source_ids": [
+        "OCUI-17"
+      ],
+      "gallery_slug": "recipe/task-board",
+      "evidence": {
+        "component": "unverified",
+        "application": "unverified",
+        "real_environment": "unverified"
+      }
+    }
+  ]
+}

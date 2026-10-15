@@ -1,0 +1,116 @@
+{
+  "version": "0.3.0-proposal.1",
+  "scope": "Tekes local review contract inspired by cited perspectives, not their verbatim requirements",
+  "authority": "approved Tekes design release; external posts are references only",
+  "release_required": true,
+  "evidence_status": "unverified",
+  "reviewer": null,
+  "checks": [
+    {
+      "id": "CRAFT-01",
+      "title": "实际体验而非流程完成度",
+      "criterion": "从导航到核心任务操作完整走查；组件/截图/文档数量不能替代任务完成质量。",
+      "source_ids": [
+        "JW-01",
+        "JW-03"
+      ],
+      "required_evidence_layer": "L2",
+      "status": "unverified",
+      "evidence_uri": null,
+      "reviewer": null
+    },
+    {
+      "id": "CRAFT-02",
+      "title": "探索与发布分离",
+      "criterion": "草图、AI原型和正式实现清楚标识；发布使用批准源与真实组件，探索顺序可以变化。",
+      "source_ids": [
+        "JW-02",
+        "JW-X01",
+        "REVIEW-01"
+      ],
+      "required_evidence_layer": "L1+L2",
+      "status": "unverified",
+      "evidence_uri": null,
+      "reviewer": null
+    },
+    {
+      "id": "CRAFT-03",
+      "title": "确定的控件状态与不确定的生成内容",
+      "criterion": "相同输入事件产生确定UI状态；空/长/畸形/延迟/中断/失败内容分别使用夹具，不要求穷举模型回答。",
+      "source_ids": [
+        "JW-05"
+      ],
+      "required_evidence_layer": "L1+L2",
+      "status": "unverified",
+      "evidence_uri": null,
+      "reviewer": null
+    },
+    {
+      "id": "CRAFT-04",
+      "title": "渐进披露不隐藏必要信息",
+      "criterion": "技术细节按需展开；待批准动作、权限范围、错误、取消与证据状态持续可达。",
+      "source_ids": [
+        "JW-05",
+        "JW-06"
+      ],
+      "required_evidence_layer": "L2+L3",
+      "status": "unverified",
+      "evidence_uri": null,
+      "reviewer": null
+    },
+    {
+      "id": "CRAFT-05",
+      "title": "品牌与反馈的任务价值",
+      "criterion": "品牌变化遵守语义边界；反馈不靠颜色独占表达，不以光晕、shimmer或无关动画制造活跃感。",
+      "source_ids": [
+        "JW-01",
+        "JW-08"
+      ],
+      "required_evidence_layer": "L1+L2+L3",
+      "status": "unverified",
+      "evidence_uri": null,
+      "reviewer": null
+    },
+    {
+      "id": "CRAFT-06",
+      "title": "真实行为和视觉细节一起审查",
+      "criterion": "焦点、IME、复制/撤销、滚动锚点与响应预算同基线回归，不只比较静态画面。",
+      "source_ids": [
+        "JW-01",
+        "JW-03"
+      ],
+      "required_evidence_layer": "L3",
+      "status": "unverified",
+      "evidence_uri": null,
+      "reviewer": null
+    },
+    {
+      "id": "CRAFT-07",
+      "title": "反馈驱动且可追溯",
+      "criterion": "区分用户观察、AI总结和设计决定；记录依据、负责人、批准版本与改动影响。",
+      "source_ids": [
+        "JW-07",
+        "JW-X03"
+      ],
+      "required_evidence_layer": "L2",
+      "status": "unverified",
+      "evidence_uri": null,
+      "reviewer": null
+    }
+  ],
+  "test_scenarios": [
+    "empty response",
+    "8x title length",
+    "CJK and emoji",
+    "partial tool result",
+    "malformed rich text",
+    "delayed stream",
+    "stream interrupted",
+    "approval denied",
+    "offline retry",
+    "consumer brand switch",
+    "reduced motion",
+    "increased contrast"
+  ],
+  "scenario_note": "Inputs are case specifications, not model behavior guarantees or completed tests."
+}

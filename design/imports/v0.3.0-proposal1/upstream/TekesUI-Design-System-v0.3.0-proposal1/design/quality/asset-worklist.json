@@ -1,0 +1,227 @@
+{
+  "source": "R4",
+  "delivery_status": "no SVG assets delivered",
+  "existing_asset_review": "133 historical assets mentioned by source; original files and originality review not inspected",
+  "items": [
+    {
+      "id": "list-remove",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "zoom-in",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "zoom-out",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "settings",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "open-external",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "authorized",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "missed-run",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "diff-annotation",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "file-link",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "attach",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "git-ahead",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "git-behind",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "settings-markdown-format",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "cron",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "timezone",
+      "status": "needs-original-design",
+      "reason": "system-symbol-only fallback",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "annotation",
+      "status": "needs-original-design",
+      "reason": "old source invalidated; do not use as reference",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "permission-read-only",
+      "status": "needs-original-design",
+      "reason": "old source invalidated; do not use as reference",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "permission-workspace-write",
+      "status": "needs-original-design",
+      "reason": "old source invalidated; do not use as reference",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "permission-full-access",
+      "status": "needs-original-design",
+      "reason": "old source invalidated; do not use as reference",
+      "is_role_slot": true,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    },
+    {
+      "id": "computer-use",
+      "status": "needs-original-design",
+      "reason": "old source invalidated; do not use as reference",
+      "is_role_slot": false,
+      "asset_file": null,
+      "sha256": null,
+      "originality_approval": null,
+      "readability_12": "unverified",
+      "readability_16": "unverified"
+    }
+  ]
+}

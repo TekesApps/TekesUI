@@ -782,6 +782,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tekes-ui-design-export"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "tekes-ui-gallery"
 version = "0.1.0"
 dependencies = [
@@ -847,6 +855,10 @@ dependencies = [
 [[package]]
 name = "tekes-ui-tokens"
 version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "tekes-ui-design-export",
+]
 
 [[package]]
 name = "thiserror"

@@ -1,0 +1,106 @@
+{
+  "algorithm": "tekes-oklch-constrained-v1",
+  "charts": "independent",
+  "control_backgrounds": [
+    "surface-0",
+    "surface-1",
+    "surface-2",
+    "surface-3",
+    "surface-popover"
+  ],
+  "fallback": "reject-invalid-build; runtime-keeps-last-validated-theme",
+  "focus": "neutral; on-solid neutral may change luminance, never hue",
+  "gamut_iterations": 20,
+  "marker_backgrounds": [
+    "row-selection",
+    "row-selection-hover"
+  ],
+  "max_chroma": 0.2,
+  "minimum_state_delta_ok": 0.012,
+  "output_space": "srgb-8bit-opaque",
+  "schema_version": "1.0",
+  "status": "independent",
+  "subtle_chroma": 0.055,
+  "subtle_chroma_factor": 0.35,
+  "syntax": "independent",
+  "targets": {
+    "dark": {
+      "action": 0.74,
+      "action_step": 0.045,
+      "link": 0.8,
+      "link_step": 0.035,
+      "outline": 0.76,
+      "subtle": [
+        0.22,
+        0.26,
+        0.3
+      ],
+      "subtle_text": 0.85
+    },
+    "dark-ic": {
+      "action": 0.83,
+      "action_step": 0.045,
+      "link": 0.88,
+      "link_step": 0.035,
+      "outline": 0.83,
+      "subtle": [
+        0.2,
+        0.25,
+        0.3
+      ],
+      "subtle_text": 0.92
+    },
+    "light": {
+      "action": 0.52,
+      "action_step": -0.045,
+      "link": 0.43,
+      "link_step": -0.035,
+      "outline": 0.5,
+      "subtle": [
+        0.97,
+        0.94,
+        0.91
+      ],
+      "subtle_text": 0.4
+    },
+    "light-ic": {
+      "action": 0.43,
+      "action_step": -0.045,
+      "link": 0.34,
+      "link_step": -0.035,
+      "outline": 0.43,
+      "subtle": [
+        0.96,
+        0.92,
+        0.88
+      ],
+      "subtle_text": 0.3
+    }
+  },
+  "text_backgrounds": [
+    "surface-0",
+    "surface-1",
+    "surface-2",
+    "surface-3",
+    "surface-popover",
+    "button-hover",
+    "user-message-surface",
+    "segmented-track",
+    "segmented-thumb",
+    "code-surface"
+  ],
+  "text_selection": "independent",
+  "themes": [
+    "light",
+    "dark",
+    "light-ic",
+    "dark-ic"
+  ],
+  "thresholds": {
+    "non_text": 3.0,
+    "text": 4.5,
+    "text_ic": 7.0
+  },
+  "tone_steps": 1000,
+  "version": "1.0.0"
+}

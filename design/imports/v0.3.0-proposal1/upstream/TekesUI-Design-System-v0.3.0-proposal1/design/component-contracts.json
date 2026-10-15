@@ -1,0 +1,242 @@
+{
+  "version": "0.3.0-proposal.1",
+  "contract_status": "planned-not-runtime",
+  "components": {
+    "tui.button": {
+      "source_ids": [
+        "OCUI-02"
+      ],
+      "sizes": {
+        "xs": {
+          "height": "size-button-xs",
+          "radius": "c-button-xs-radius",
+          "inline_inset": "space-button-xs-inset",
+          "text_style": "button-xs"
+        },
+        "sm": {
+          "height": "size-button-sm",
+          "radius": "c-button-sm-radius",
+          "inline_inset": "space-button-sm-inset",
+          "text_style": "button-sm"
+        },
+        "md": {
+          "height": "size-button-md",
+          "radius": "c-button-md-radius",
+          "inline_inset": "space-button-md-inset",
+          "text_style": "button-md"
+        },
+        "lg": {
+          "height": "size-button-lg",
+          "radius": "c-button-lg-radius",
+          "inline_inset": "space-button-lg-inset",
+          "text_style": "button-lg"
+        }
+      },
+      "variants": [
+        "primary",
+        "secondary",
+        "ghost",
+        "outline",
+        "danger"
+      ],
+      "default_variant": "secondary",
+      "default_size": "md",
+      "primary": {
+        "rest": "c-button-primary-ground",
+        "hover": "c-button-primary-hover",
+        "pressed": "c-button-primary-pressed",
+        "foreground": "c-button-primary-foreground",
+        "focus": "c-button-primary-focus-outline"
+      },
+      "focus_width": "c-focus-width",
+      "geometry_on_press": "unchanged",
+      "loading": "busy and deduplicated, keep focus and label; do not conflate with disabled",
+      "outline_rule": "allowed on flat canvas; nested decorative outlines discouraged, necessary control boundaries retained"
+    },
+    "tui.icon-button": {
+      "source_ids": [
+        "OCUI-02"
+      ],
+      "default_hit": "size-icon-button",
+      "compact_hit": "size-icon-button-compact",
+      "icon": "size-icon-standard",
+      "radius": "radius-control",
+      "accessible_name": "required"
+    },
+    "tui.segmented-control": {
+      "source_ids": [
+        "OCUI-08"
+      ],
+      "radius": "radius-pill",
+      "inset": "space-segmented-inset",
+      "track": "c-segmented-track",
+      "thumb": "c-segmented-thumb",
+      "semantics": "single-choice value uses radio-group; panel navigation uses Tabs, not the same role",
+      "persistent_marker": "check glyph plus selected label weight, not surface difference alone",
+      "motion": "spring.micro; reduced motion snaps"
+    },
+    "tui.disclosure": {
+      "source_ids": [
+        "OCUI-09"
+      ],
+      "radius": "radius-row",
+      "semantics": "button with expanded and controls relationships",
+      "streaming": "expansion remains user-controlled; status updates do not force reopen",
+      "motion": "spring.reveal; reduced motion snaps"
+    },
+    "tui.text-field": {
+      "radius": "c-input-radius",
+      "border": "border",
+      "focus": "c-input-focus-outline",
+      "inner_composer": "delegate boundary/focus to group, never remove accessible editor semantics"
+    },
+    "tui.dialog": {
+      "radius": "c-dialog-radius",
+      "surface": "surface-popover",
+      "outline": "floating-panel-border",
+      "shadow": "none",
+      "focus_trap": true
+    },
+    "tui.popover": {
+      "radius": "radius-floating",
+      "surface": "c-popover-ground",
+      "outline": "floating-panel-border",
+      "shadow": "none"
+    },
+    "tui.code-block": {
+      "radius": "c-code-radius",
+      "surface": "code-surface",
+      "header_separator": "separator",
+      "theme_rule": "no hardcoded black under light theme"
+    },
+    "tui.split-view": {
+      "source_ids": [
+        "OCUI-07"
+      ],
+      "behavior_contract": "design/interaction-contracts.json#drag",
+      "insufficient_width": "switchable panels instead of invalid clamp"
+    },
+    "tui.scroll-area": {
+      "source_ids": [
+        "OCUI-06"
+      ],
+      "behavior_contract": "design/interaction-contracts.json#scroll",
+      "mask": "off by default; never fade text, selected content, focused controls or IC content"
+    },
+    "tui.checkbox": {
+      "checked": {
+        "rest": "c-checkbox-checked-ground",
+        "hover": "control-checked-hover",
+        "pressed": "control-checked-pressed",
+        "foreground": "c-checkbox-checked-mark",
+        "focus": "action-primary-focus-outline"
+      },
+      "disabled": "neutral surface and disabled-text; keep value glyph; explanation uses secondary-text",
+      "mixed": "same checked roles with dash where applicable; never fake selected as checked"
+    },
+    "tui.radio-group": {
+      "checked": {
+        "rest": "c-radio-checked-ground",
+        "hover": "control-checked-hover",
+        "pressed": "control-checked-pressed",
+        "foreground": "c-radio-checked-mark",
+        "focus": "action-primary-focus-outline"
+      },
+      "disabled": "neutral surface and disabled-text; keep value glyph; explanation uses secondary-text",
+      "mixed": "same checked roles with dash where applicable; never fake selected as checked"
+    },
+    "tui.switch": {
+      "checked": {
+        "rest": "c-switch-on-ground",
+        "hover": "control-checked-hover",
+        "pressed": "control-checked-pressed",
+        "foreground": "c-switch-on-thumb",
+        "focus": "action-primary-focus-outline"
+      },
+      "disabled": "neutral surface and disabled-text; keep value glyph; explanation uses secondary-text",
+      "mixed": "same checked roles with dash where applicable; never fake selected as checked"
+    },
+    "tui.link": {
+      "rest": "c-link-foreground",
+      "hover": "c-link-hover",
+      "pressed": "c-link-pressed",
+      "focus": "border-focused",
+      "recognition": "underline plus accessible link semantics"
+    },
+    "tui.list": {
+      "selection_marker": "selection-accent-marker",
+      "default_selection_style": "neutral",
+      "selection_styles": {
+        "neutral": {
+          "surface": "row-selection",
+          "hover": "row-selection-hover",
+          "foreground": "primary-text"
+        },
+        "accent": {
+          "surface": "selection-accent-ground",
+          "foreground": "selection-accent-foreground"
+        }
+      },
+      "focus": "border-focused",
+      "brand_contract": "design/brand/policy.json"
+    },
+    "tui.tree": {
+      "selection_marker": "selection-accent-marker",
+      "default_selection_style": "neutral",
+      "selection_styles": {
+        "neutral": {
+          "surface": "row-selection",
+          "hover": "row-selection-hover",
+          "foreground": "primary-text"
+        },
+        "accent": {
+          "surface": "selection-accent-ground",
+          "foreground": "selection-accent-foreground"
+        }
+      },
+      "focus": "border-focused",
+      "brand_contract": "design/brand/policy.json"
+    },
+    "tui.tabs": {
+      "selection_marker": "selection-accent-marker",
+      "default_selection_style": "neutral",
+      "selection_styles": {
+        "neutral": {
+          "surface": "row-selection",
+          "hover": "row-selection-hover",
+          "foreground": "primary-text"
+        },
+        "accent": {
+          "surface": "selection-accent-ground",
+          "foreground": "selection-accent-foreground"
+        }
+      },
+      "focus": "border-focused",
+      "brand_contract": "design/brand/policy.json"
+    },
+    "tui.progress": {
+      "foreground": "c-progress-active",
+      "semantic_outcome": "status-succeeded/status-failed are independent; progress tint does not indicate validation success"
+    }
+  },
+  "single_boundary_rule": {
+    "scope": "decorative container boundaries only",
+    "exemptions": [
+      "necessary text-field/checkbox boundaries",
+      "focus/error indicators",
+      "independently interactive nested documents or sandboxes"
+    ],
+    "nested_action_defaults": [
+      "secondary",
+      "ghost"
+    ],
+    "runtime_probe": "unverified"
+  },
+  "brand_contract": {
+    "theme_context": "required at consumer root; all overlays inherit same resolved context",
+    "per_component_seed": false,
+    "raw_color_override": false,
+    "disabled_policy": "independent neutral",
+    "syntax_and_charts": "independent"
+  }
+}

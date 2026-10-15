@@ -1,31 +1,16 @@
-//! 固定布局：几何常量与目录命中测试。
-//!
-//! Gallery 的内容永远排在 1200x800 pt 的固定框里，框锚在窗口左上角，**不随窗口缩放重排**：
-//! 窗口更大就多露出背景，更小就裁掉右、下两侧。这样同一页每次长得一样，截图才能逐像素比较。
-//! 坐标一律是逻辑点，左上角为原点，y 向下。
-//!
-//! ```text
-//! 0                  220                                  1200
-//! +------------------+-------------------------------------+ 0
-//! | 目录列（固定宽） | 页面区                              |
-//! |  行 0            |  页面标题槽                         |
-//! |  行 1            |  页面内容 (244, 62) 932 x 714       |
-//! |  ...             |                                     |
-//! +------------------+-------------------------------------+ 800
-//! ```
+//! Fixed Gallery calibration frame from the active proposal layout contract.
+//! Larger windows expose background; smaller windows clip this reproducible frame.
+//! The three existing pages remain calibration fixtures inside the new capture size.
 
 use tekes_ui_scene::{Point, Rect, Size};
-use tekes_ui_tokens::{ControlSize, Spacing};
+use tekes_ui_tokens::{ControlSize, Spacing, TextRole, proposal};
 
 /// 固定内容框的尺寸（pt）。
-pub const FRAME_W: f32 = 1200.0;
-pub const FRAME_H: f32 = 800.0;
+pub const FRAME_W: f32 = proposal::CAPTURE_WIDTH;
+pub const FRAME_H: f32 = proposal::CAPTURE_HEIGHT;
 
-/// 目录列宽度：行内容 `TruncationSlot`（180）加列内边距（左右各 `Regular` 8）
-/// 和行内边距（左右各 `Relaxed` 12），共 220。
-pub const CATALOG_W: f32 = ControlSize::TruncationSlot.value()
-    + 2.0 * Spacing::Regular.value()
-    + 2.0 * Spacing::Relaxed.value();
+/// Sidebar default width from the proposal; truncation slots remain text fixtures.
+pub const CATALOG_W: f32 = proposal::SIDEBAR_WIDTH;
 
 /// 目录行高，等于 `ControlSize::RowHeight`。
 pub const ROW_H: f32 = ControlSize::RowHeight.value();
@@ -38,19 +23,31 @@ pub const ROW_INSET_X: f32 = Spacing::Regular.value();
 /// 行内文字槽距行左缘（放页面名）。
 pub const ROW_PAD_X: f32 = Spacing::Relaxed.value();
 /// 行内标签槽的尺寸；页面名排进这个槽。
-pub const ROW_LABEL_SLOT: Size = Size::new(ControlSize::TruncationSlot.value(), 16.0);
+pub const ROW_LABEL_SLOT: Size = Size::new(
+    ControlSize::TruncationSlot.value(),
+    TextRole::RowMeta.style().line_height,
+);
 
 /// 页面区左缘（目录列右侧再留 `Section`）。
 pub const PAGE_X: f32 = CATALOG_W + Spacing::Section.value();
 /// 页面标题槽（放页面名）。
-pub const PAGE_TITLE_SLOT: Rect = Rect::new(PAGE_X, Spacing::Section.value(), 160.0, 14.0);
+pub const PAGE_TITLE_SLOT: Rect = Rect::new(
+    PAGE_X,
+    Spacing::Section.value(),
+    ControlSize::TruncationSlot.value(),
+    proposal::TextRole::UiHeading.style().line_height,
+);
 /// 页面内容区。页面内部再按自己的栅格排版。
 pub const PAGE_CONTENT: Rect = Rect::new(
     PAGE_X,
-    Spacing::Section.value() + 14.0 + Spacing::Section.value(),
+    Spacing::Section.value()
+        + proposal::TextRole::UiHeading.style().line_height
+        + Spacing::Section.value(),
     FRAME_W - PAGE_X - Spacing::Section.value(),
     FRAME_H
-        - (Spacing::Section.value() + 14.0 + Spacing::Section.value())
+        - (Spacing::Section.value()
+            + proposal::TextRole::UiHeading.style().line_height
+            + Spacing::Section.value())
         - Spacing::Section.value(),
 );
 
@@ -91,13 +88,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn catalog_width_is_220() {
-        assert_eq!(CATALOG_W, 220.0);
+    fn catalog_width_uses_proposal_sidebar() {
+        assert_eq!(CATALOG_W, 288.0);
     }
 
     #[test]
     fn page_content_fits_in_frame() {
-        assert_eq!(PAGE_CONTENT.min_x(), 244.0);
+        assert_eq!(PAGE_CONTENT.min_x(), 312.0);
         assert!(PAGE_CONTENT.max_x() <= FRAME_W);
         assert!(PAGE_CONTENT.max_y() <= FRAME_H);
     }

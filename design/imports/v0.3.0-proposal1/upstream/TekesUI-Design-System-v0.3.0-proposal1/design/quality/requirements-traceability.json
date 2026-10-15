@@ -1,0 +1,284 @@
+{
+  "scope": "design documentation coverage, not implementation acceptance",
+  "requirements": [
+    {
+      "id": "DS-01",
+      "category": "定位与原则",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s1",
+        "docs/ALIGNMENT.md",
+        "docs/BRANDING.md",
+        "docs/REFERENCE-POSTS.md",
+        "docs/DESIGN-TOOL-ADAPTERS.md",
+        "design/quality/reference-adoption.json",
+        "docs/JENNY-WEN-POSTS.md",
+        "design/quality/craft-review.json"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-02",
+      "category": "唯一设计真源",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s2",
+        "manifest.json",
+        "design/quality/release-readiness.json",
+        "docs/ALIGNMENT.md",
+        "docs/BRANDING.md",
+        "design/brand/brand.schema.json",
+        "design/brand/policy.json",
+        "tools/brand.py",
+        "docs/REFERENCE-POSTS.md",
+        "docs/DESIGN-TOOL-ADAPTERS.md",
+        "design/quality/reference-adoption.json"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-03",
+      "category": "Token 体系",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s3",
+        "design/tokens/tokens.json",
+        "design/tokens/tokens.schema.json",
+        "design/tokens/token-metadata.json",
+        "docs/ALIGNMENT.md",
+        "design/component-contracts.json",
+        "docs/BRANDING.md",
+        "design/brand/brand.schema.json",
+        "design/brand/policy.json",
+        "tools/brand.py",
+        "docs/REFERENCE-POSTS.md",
+        "docs/DESIGN-TOOL-ADAPTERS.md",
+        "design/quality/reference-adoption.json"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-04",
+      "category": "完整主题",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s4",
+        "design/quality/contrast-pairs.json",
+        "docs/ALIGNMENT.md",
+        "docs/BRANDING.md",
+        "design/brand/brand.schema.json",
+        "design/brand/policy.json",
+        "tools/brand.py",
+        "docs/REFERENCE-POSTS.md",
+        "docs/DESIGN-TOOL-ADAPTERS.md",
+        "design/quality/reference-adoption.json"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-05",
+      "category": "文字系统",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s5",
+        "design/quality/fixtures.json",
+        "docs/ALIGNMENT.md"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-06",
+      "category": "布局系统",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s6",
+        "design/layout.json",
+        "docs/ALIGNMENT.md"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-07",
+      "category": "图标与资产",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s7",
+        "design/quality/asset-worklist.json",
+        "docs/ALIGNMENT.md"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-08",
+      "category": "组件目录",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s8",
+        "design/registry/components.json",
+        "docs/ALIGNMENT.md",
+        "design/registry/recipes.json",
+        "docs/BRANDING.md",
+        "docs/REFERENCE-POSTS.md",
+        "docs/DESIGN-TOOL-ADAPTERS.md",
+        "design/quality/reference-adoption.json"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-09",
+      "category": "完整状态",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s9",
+        "design/registry/state-profiles.json",
+        "docs/ALIGNMENT.md",
+        "design/component-contracts.json",
+        "docs/BRANDING.md",
+        "docs/JENNY-WEN-POSTS.md",
+        "design/quality/craft-review.json"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-10",
+      "category": "交互契约",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s10",
+        "design/quality/fixtures.json",
+        "docs/ALIGNMENT.md",
+        "design/interaction-contracts.json"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-11",
+      "category": "内容与反馈",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s11",
+        "design/registry/pages.json",
+        "docs/ALIGNMENT.md",
+        "docs/JENNY-WEN-POSTS.md",
+        "design/quality/craft-review.json"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-12",
+      "category": "无障碍",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s12",
+        "design/quality/release-readiness.json",
+        "docs/ALIGNMENT.md",
+        "docs/BRANDING.md"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-13",
+      "category": "Gallery",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s13",
+        "reports/expected-gallery-cases.json",
+        "docs/ALIGNMENT.md",
+        "design/registry/recipes.json",
+        "docs/BRANDING.md",
+        "docs/REFERENCE-POSTS.md",
+        "docs/DESIGN-TOOL-ADAPTERS.md",
+        "design/quality/reference-adoption.json",
+        "docs/JENNY-WEN-POSTS.md",
+        "design/quality/craft-review.json"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-14",
+      "category": "自动质量门禁",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s14",
+        "tools/validate.py",
+        "design/quality/gates.json",
+        "docs/ALIGNMENT.md",
+        "docs/BRANDING.md",
+        "design/brand/brand.schema.json",
+        "design/brand/policy.json",
+        "tools/brand.py",
+        "docs/REFERENCE-POSTS.md",
+        "docs/DESIGN-TOOL-ADAPTERS.md",
+        "design/quality/reference-adoption.json",
+        "docs/JENNY-WEN-POSTS.md",
+        "design/quality/craft-review.json"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-15",
+      "category": "实际应用验收",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s15",
+        "design/registry/pages.json",
+        "docs/ALIGNMENT.md",
+        "docs/BRANDING.md",
+        "docs/JENNY-WEN-POSTS.md",
+        "design/quality/craft-review.json"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    },
+    {
+      "id": "DS-16",
+      "category": "版本与维护",
+      "design_contract": "documented-proposal",
+      "artifacts": [
+        "SPEC.md#s16",
+        "manifest.json",
+        "docs/ALIGNMENT.md",
+        "design/migration-v0.1-to-v0.2.json",
+        "docs/BRANDING.md",
+        "design/migration-v0.2-to-v0.3.json",
+        "docs/REFERENCE-POSTS.md",
+        "docs/DESIGN-TOOL-ADAPTERS.md",
+        "design/quality/reference-adoption.json",
+        "docs/JENNY-WEN-POSTS.md",
+        "design/quality/craft-review.json"
+      ],
+      "implementation_acceptance": "unverified",
+      "alignment_status": "design-updated; runtime-unverified",
+      "brand_revision_status": "v0.3 design contract updated; native evidence unverified"
+    }
+  ]
+}

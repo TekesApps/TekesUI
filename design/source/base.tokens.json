@@ -1,0 +1,1775 @@
+{
+  "color": {
+    "themes": [
+      "light",
+      "dark",
+      "light-ic",
+      "dark-ic"
+    ],
+    "tokens": [
+      {
+        "name": "p-document-canvas",
+        "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
+        "value": "{p-surface-1}"
+      },
+      {
+        "name": "document-canvas",
+        "usage": "正文与文档的默认不透明底面",
+        "value": "{p-document-canvas}"
+      },
+      {
+        "name": "p-surface-panel",
+        "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
+        "value": "{p-surface-2}"
+      },
+      {
+        "name": "surface-panel",
+        "usage": "surface panel 语义角色",
+        "value": "{p-surface-panel}"
+      },
+      {
+        "name": "p-surface-sidebar",
+        "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
+        "value": "{p-surface-0}"
+      },
+      {
+        "name": "surface-sidebar",
+        "usage": "surface sidebar 语义角色",
+        "value": "{p-surface-sidebar}"
+      },
+      {
+        "name": "p-primary-text",
+        "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+        "value": {
+          "dark": "#F5F5F5",
+          "dark-ic": "#FFFFFF",
+          "light": "#151515",
+          "light-ic": "#141412"
+        }
+      },
+      {
+        "name": "primary-text",
+        "usage": "主要正文、标题、字段标签",
+        "value": "{p-primary-text}"
+      },
+      {
+        "name": "p-secondary-text",
+        "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+        "value": {
+          "dark": "#A3A3A3",
+          "dark-ic": "#F4EEE2",
+          "light": "#525252",
+          "light-ic": "#2F2D29"
+        }
+      },
+      {
+        "name": "secondary-text",
+        "usage": "说明、次要信息；仍须满足正文对比度",
+        "value": "{p-secondary-text}"
+      },
+      {
+        "name": "p-tertiary-text",
+        "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+        "value": {
+          "dark": "#B4B4B0",
+          "dark-ic": "#F4EEE2",
+          "light": "#606060",
+          "light-ic": "#37352F"
+        }
+      },
+      {
+        "name": "tertiary-text",
+        "usage": "时间戳和次级元信息；不得用降低透明度代替",
+        "value": "{p-tertiary-text}"
+      },
+      {
+        "name": "p-disabled-text",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#807A70",
+          "dark-ic": "#A09A90",
+          "light": "#918B81",
+          "light-ic": "#767066"
+        }
+      },
+      {
+        "name": "disabled-text",
+        "usage": "只用于确实不可操作的控件；禁用原因仍用 secondary-text",
+        "value": "{p-disabled-text}"
+      },
+      {
+        "name": "p-selected-text",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#FFFFFF",
+          "dark-ic": "#000000",
+          "light": "#151515",
+          "light-ic": "#000000"
+        }
+      },
+      {
+        "name": "selected-text",
+        "usage": "文本选区内统一前景，包括代码、链接和 diff 的被选中文字",
+        "value": "{p-selected-text}"
+      },
+      {
+        "name": "p-row-selection",
+        "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+        "value": {
+          "dark": "#2A2A29",
+          "dark-ic": "#414C4C",
+          "light": "#E6E6E4",
+          "light-ic": "#D8DEDE"
+        }
+      },
+      {
+        "name": "row-selection",
+        "usage": "持久选中底，不表示 hover、checked 或 keyboard focus",
+        "value": "{p-row-selection}"
+      },
+      {
+        "name": "p-row-selection-hover",
+        "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+        "value": {
+          "dark": "#343433",
+          "dark-ic": "#465151",
+          "light": "#DCDCD9",
+          "light-ic": "#CCD5D5"
+        }
+      },
+      {
+        "name": "row-selection-hover",
+        "usage": "已选中行的 hover，保留持久标记",
+        "value": "{p-row-selection-hover}"
+      },
+      {
+        "name": "p-button-hover",
+        "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+        "value": {
+          "dark": "#272726",
+          "dark-ic": "#36332D",
+          "light": "#E9E9E7",
+          "light-ic": "#DEDDD7"
+        }
+      },
+      {
+        "name": "button-hover",
+        "usage": "按钮或独立点击面的 hover 底",
+        "value": "{p-button-hover}"
+      },
+      {
+        "name": "p-button-pressed",
+        "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+        "value": {
+          "dark": "#323231",
+          "dark-ic": "#4C4740",
+          "light": "#DDDDDA",
+          "light-ic": "#D0CEC8"
+        }
+      },
+      {
+        "name": "button-pressed",
+        "usage": "按下期间的瞬时底；松开后由状态机回到 hover/rest",
+        "value": "{p-button-pressed}"
+      },
+      {
+        "name": "p-transcript-input",
+        "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
+        "value": "{p-surface-3}"
+      },
+      {
+        "name": "transcript-input",
+        "usage": "transcript input 语义角色",
+        "value": "{p-transcript-input}"
+      },
+      {
+        "name": "p-border",
+        "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+        "value": {
+          "dark": "#A3A39E",
+          "dark-ic": "#C8C0B4",
+          "light": "#737370",
+          "light-ic": "#4E4A41"
+        }
+      },
+      {
+        "name": "border",
+        "usage": "必要的控件边界，按实际相邻背景校验至少 3:1",
+        "value": "{p-border}"
+      },
+      {
+        "name": "p-border-focused",
+        "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+        "value": {
+          "dark": "#EEEEEA",
+          "dark-ic": "#FFFFFF",
+          "light": "#42423F",
+          "light-ic": "#111111"
+        }
+      },
+      {
+        "name": "border-focused",
+        "usage": "中性 1pt 自绘焦点轮廓，不偏移、不换品牌色",
+        "value": "{p-border-focused}"
+      },
+      {
+        "name": "p-separator",
+        "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+        "value": {
+          "dark": "#353533",
+          "dark-ic": "#9C9488",
+          "light": "#DFDFDD",
+          "light-ic": "#8C867D"
+        }
+      },
+      {
+        "name": "separator",
+        "usage": "非必要的分组装饰线，不能单独承担控件识别或选中标记",
+        "value": "{p-separator}"
+      },
+      {
+        "name": "accent",
+        "usage": "消费者品牌派生的可读强调/链接前景，不承诺任何固定色相",
+        "value": "{p-accent}"
+      },
+      {
+        "name": "p-warning-foreground",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#FFA85C",
+          "dark-ic": "#FFD29B",
+          "light": "#A03C00",
+          "light-ic": "#762B00"
+        }
+      },
+      {
+        "name": "warning-foreground",
+        "usage": "警告文字前景；限定在质量清单登记的背景上",
+        "value": "{p-warning-foreground}"
+      },
+      {
+        "name": "p-warning",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#E4B751",
+          "dark-ic": "#FFD65A",
+          "light": "#F3CE67",
+          "light-ic": "#F0C442"
+        }
+      },
+      {
+        "name": "warning",
+        "usage": "警告实体底，不能直接用于普通背景上的小字号文字",
+        "value": "{p-warning}"
+      },
+      {
+        "name": "p-warning-text",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#000000",
+          "dark-ic": "#000000",
+          "light": "#000000",
+          "light-ic": "#000000"
+        }
+      },
+      {
+        "name": "warning-text",
+        "usage": "只用于 warning 黄色面上的黑字",
+        "value": "{p-warning-text}"
+      },
+      {
+        "name": "p-status-running",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#F5BE74",
+          "dark-ic": "#FFE1B8",
+          "light": "#8A4B00",
+          "light-ic": "#663400"
+        }
+      },
+      {
+        "name": "status-running",
+        "usage": "status running 语义角色",
+        "value": "{p-status-running}"
+      },
+      {
+        "name": "p-status-failed",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#FFB1B1",
+          "dark-ic": "#FFD0D4",
+          "light": "#A42F35",
+          "light-ic": "#7D1421"
+        }
+      },
+      {
+        "name": "status-failed",
+        "usage": "status failed 语义角色",
+        "value": "{p-status-failed}"
+      },
+      {
+        "name": "p-status-succeeded",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#96D9AC",
+          "dark-ic": "#BDFFD2",
+          "light": "#21633F",
+          "light-ic": "#124C2B"
+        }
+      },
+      {
+        "name": "status-succeeded",
+        "usage": "status succeeded 语义角色",
+        "value": "{p-status-succeeded}"
+      },
+      {
+        "name": "p-status-info",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#A8D1FF",
+          "dark-ic": "#D1E7FF",
+          "light": "#285B8D",
+          "light-ic": "#143F6B"
+        }
+      },
+      {
+        "name": "status-info",
+        "usage": "status info 语义角色",
+        "value": "{p-status-info}"
+      },
+      {
+        "name": "p-diff-added-surface",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#23362A",
+          "dark-ic": "#233E2C",
+          "light": "#E5F0E8",
+          "light-ic": "#CDE6D4"
+        }
+      },
+      {
+        "name": "diff-added-surface",
+        "usage": "diff added surface 语义角色",
+        "value": "{p-diff-added-surface}"
+      },
+      {
+        "name": "p-diff-removed-surface",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#3B2729",
+          "dark-ic": "#45292E",
+          "light": "#F8E8E8",
+          "light-ic": "#F0D8DC"
+        }
+      },
+      {
+        "name": "diff-removed-surface",
+        "usage": "diff removed surface 语义角色",
+        "value": "{p-diff-removed-surface}"
+      },
+      {
+        "name": "p-code-surface",
+        "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
+        "value": "{p-surface-2}"
+      },
+      {
+        "name": "code-surface",
+        "usage": "代码/终端面；ANSI 和语法高亮须另映射语义角色",
+        "value": "{p-code-surface}"
+      },
+      {
+        "name": "p-text-selection",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#42566F",
+          "dark-ic": "#B5CEEF",
+          "light": "#C9D7EA",
+          "light-ic": "#A8BEDC"
+        }
+      },
+      {
+        "name": "text-selection",
+        "usage": "普通主题不透明；增强对比度使用 alpha-selection-ic 作为最终背景 alpha",
+        "value": "{p-text-selection}"
+      },
+      {
+        "name": "p-scrim",
+        "usage": "基础色值；仅语义层引用。",
+        "value": {
+          "dark": "#000000",
+          "dark-ic": "#000000",
+          "light": "#000000",
+          "light-ic": "#000000"
+        }
+      },
+      {
+        "name": "scrim",
+        "usage": "只为模态背景；最终 alpha 用 alpha-wash，禁止父子透明度相乘",
+        "value": "{p-scrim}"
+      },
+      {
+        "name": "floating-panel-border",
+        "usage": "浮层必需边界",
+        "value": "{border}"
+      },
+      {
+        "name": "floating-panel-divider",
+        "usage": "浮层非交互分隔线",
+        "value": "{separator}"
+      },
+      {
+        "name": "hover-wash",
+        "usage": "叠色源；使用 alpha-faint，IC 改用 alpha-soft，最终 alpha 不叠乘",
+        "value": "{primary-text}"
+      },
+      {
+        "name": "diff-added-marker",
+        "usage": "diff 新增标记；同时显示 +",
+        "value": "{status-succeeded}"
+      },
+      {
+        "name": "diff-removed-marker",
+        "usage": "diff 删除标记；同时显示 −",
+        "value": "{status-failed}"
+      },
+      {
+        "name": "c-button-primary-ground",
+        "usage": "组件专属语义绑定；四主题必须同时解析",
+        "value": "{action-primary-ground}"
+      },
+      {
+        "name": "c-button-primary-foreground",
+        "usage": "组件专属语义绑定；四主题必须同时解析",
+        "value": "{action-primary-foreground}"
+      },
+      {
+        "name": "c-button-quiet-hover",
+        "usage": "轻按钮 hover",
+        "value": "{button-hover}"
+      },
+      {
+        "name": "c-list-row-selected",
+        "usage": "列表选中底",
+        "value": "{row-selection}"
+      },
+      {
+        "name": "c-input-focus-outline",
+        "usage": "输入框焦点轮廓",
+        "value": "{border-focused}"
+      },
+      {
+        "name": "c-code-comment",
+        "usage": "代码注释",
+        "value": "{secondary-text}"
+      },
+      {
+        "name": "c-code-keyword",
+        "usage": "代码关键字",
+        "value": "{syntax-keyword}"
+      },
+      {
+        "name": "c-code-string",
+        "usage": "代码字符串",
+        "value": "{status-succeeded}"
+      },
+      {
+        "name": "c-code-number",
+        "usage": "代码数值",
+        "value": "{status-info}"
+      },
+      {
+        "name": "c-chart-series-1",
+        "usage": "图表系列 1：实线、圆形",
+        "value": "{status-info}"
+      },
+      {
+        "name": "c-chart-series-2",
+        "usage": "图表系列 2：虚线、方形",
+        "value": "{status-succeeded}"
+      },
+      {
+        "name": "c-chart-series-3",
+        "usage": "图表系列 3：点线、三角",
+        "value": "{data-series-3}"
+      },
+      {
+        "name": "c-chart-series-4",
+        "usage": "图表系列 4：点划线、菱形",
+        "value": "{status-running}"
+      },
+      {
+        "name": "c-button-primary-focus-outline",
+        "usage": "组件专属语义绑定；四主题必须同时解析",
+        "value": "{action-primary-focus-outline}"
+      },
+      {
+        "name": "p-surface-0",
+        "usage": "窗口基底/侧栏；普通主题取 OCUI CSS",
+        "value": {
+          "dark": "#0B0B0A",
+          "dark-ic": "#000000",
+          "light": "#F5F5F3",
+          "light-ic": "#F4F4F1"
+        }
+      },
+      {
+        "name": "surface-0",
+        "usage": "窗口基底/侧栏；普通主题取 OCUI CSS",
+        "value": "{p-surface-0}"
+      },
+      {
+        "name": "p-surface-1",
+        "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
+        "value": {
+          "dark": "#151515",
+          "dark-ic": "#111110",
+          "light": "#FCFCFB",
+          "light-ic": "#FFFFFF"
+        }
+      },
+      {
+        "name": "surface-1",
+        "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
+        "value": "{p-surface-1}"
+      },
+      {
+        "name": "p-surface-2",
+        "usage": "独立卡片/代码容器",
+        "value": {
+          "dark": "#1A1A19",
+          "dark-ic": "#171715",
+          "light": "#FFFFFF",
+          "light-ic": "#FFFFFF"
+        }
+      },
+      {
+        "name": "surface-2",
+        "usage": "独立卡片/代码容器",
+        "value": "{p-surface-2}"
+      },
+      {
+        "name": "p-surface-3",
+        "usage": "Composer 与高层表面",
+        "value": {
+          "dark": "#20201E",
+          "dark-ic": "#20201E",
+          "light": "#FFFFFF",
+          "light-ic": "#FFFFFF"
+        }
+      },
+      {
+        "name": "surface-3",
+        "usage": "Composer 与高层表面",
+        "value": "{p-surface-3}"
+      },
+      {
+        "name": "p-surface-popover",
+        "usage": "浮层实际表面；不是静态占位白色",
+        "value": {
+          "dark": "#222220",
+          "dark-ic": "#252523",
+          "light": "#FFFFFF",
+          "light-ic": "#FFFFFF"
+        }
+      },
+      {
+        "name": "surface-popover",
+        "usage": "浮层实际表面；不是静态占位白色",
+        "value": "{p-surface-popover}"
+      },
+      {
+        "name": "p-brand-clay",
+        "usage": "已废弃的色相命名；仅为迁移别名，不承诺陶土色；新调用使用 p-brand-seed",
+        "value": "{p-brand-seed}"
+      },
+      {
+        "name": "brand-clay",
+        "usage": "已废弃的色相命名；仅为迁移别名，不承诺陶土色；新调用使用 brand-decoration",
+        "value": "{brand-decoration}"
+      },
+      {
+        "name": "action-primary-ground",
+        "usage": "主按钮底；普通主题贴近参考，IC 使用专用高对比值",
+        "value": "{p-action-primary-ground}"
+      },
+      {
+        "name": "action-primary-hover",
+        "usage": "主按钮 hover；普通主题来自参考的 clay-hover",
+        "value": "{p-action-primary-hover}"
+      },
+      {
+        "name": "action-primary-pressed",
+        "usage": "主按钮 pressed；Tekes 补充的高对比配对",
+        "value": "{p-action-primary-pressed}"
+      },
+      {
+        "name": "action-primary-foreground",
+        "usage": "品牌按钮文字/图标；普通主题不用参考中的低对比白字",
+        "value": "{p-action-primary-foreground}"
+      },
+      {
+        "name": "p-user-message-surface",
+        "usage": "用户消息气泡；dark 为白色6%在 surface-1 上预合成取整",
+        "value": {
+          "dark": "#232322",
+          "dark-ic": "#252C34",
+          "light": "#F0F4F8",
+          "light-ic": "#E8EEF5"
+        }
+      },
+      {
+        "name": "user-message-surface",
+        "usage": "用户消息气泡；dark 为白色6%在 surface-1 上预合成取整",
+        "value": "{p-user-message-surface}"
+      },
+      {
+        "name": "p-segmented-track",
+        "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
+        "value": {
+          "dark": "#282827",
+          "dark-ic": "#252523",
+          "light": "#EDEDEC",
+          "light-ic": "#E3E3DE"
+        }
+      },
+      {
+        "name": "segmented-track",
+        "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
+        "value": "{p-segmented-track}"
+      },
+      {
+        "name": "p-segmented-thumb",
+        "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
+        "value": {
+          "dark": "#2C2C2A",
+          "dark-ic": "#3C3C37",
+          "light": "#FFFFFF",
+          "light-ic": "#FFFFFF"
+        }
+      },
+      {
+        "name": "segmented-thumb",
+        "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
+        "value": "{p-segmented-thumb}"
+      },
+      {
+        "name": "c-button-primary-hover",
+        "usage": "组件专属语义绑定；四主题必须同时解析",
+        "value": "{action-primary-hover}"
+      },
+      {
+        "name": "c-button-primary-pressed",
+        "usage": "组件专属语义绑定；四主题必须同时解析",
+        "value": "{action-primary-pressed}"
+      },
+      {
+        "name": "c-composer-ground",
+        "usage": "组件专属语义绑定；四主题必须同时解析",
+        "value": "{surface-3}"
+      },
+      {
+        "name": "c-popover-ground",
+        "usage": "组件专属语义绑定；四主题必须同时解析",
+        "value": "{surface-popover}"
+      },
+      {
+        "name": "c-user-message-ground",
+        "usage": "组件专属语义绑定；四主题必须同时解析",
+        "value": "{user-message-surface}"
+      },
+      {
+        "name": "c-segmented-track",
+        "usage": "组件专属语义绑定；四主题必须同时解析",
+        "value": "{segmented-track}"
+      },
+      {
+        "name": "c-segmented-thumb",
+        "usage": "组件专属语义绑定；四主题必须同时解析",
+        "value": "{segmented-thumb}"
+      },
+      {
+        "name": "p-syntax-keyword",
+        "usage": "独立的语法/数据色角色；不随消费者品牌改变",
+        "value": {
+          "dark": "#F2AD91",
+          "dark-ic": "#FFD8C4",
+          "light": "#8D3B22",
+          "light-ic": "#6B230E"
+        }
+      },
+      {
+        "name": "syntax-keyword",
+        "usage": "独立的语法/数据色角色；不随消费者品牌改变",
+        "value": "{p-syntax-keyword}"
+      },
+      {
+        "name": "p-data-series-3",
+        "usage": "独立的语法/数据色角色；不随消费者品牌改变",
+        "value": {
+          "dark": "#F2AD91",
+          "dark-ic": "#FFD8C4",
+          "light": "#8D3B22",
+          "light-ic": "#6B230E"
+        }
+      },
+      {
+        "name": "data-series-3",
+        "usage": "独立的语法/数据色角色；不随消费者品牌改变",
+        "value": "{p-data-series-3}"
+      },
+      {
+        "name": "accent-hover",
+        "usage": "由消费者品牌配置派生的 accent-hover；限定在已验证背景使用",
+        "value": "{p-accent-hover}"
+      },
+      {
+        "name": "accent-pressed",
+        "usage": "由消费者品牌配置派生的 accent-pressed；限定在已验证背景使用",
+        "value": "{p-accent-pressed}"
+      },
+      {
+        "name": "accent-subtle-ground",
+        "usage": "由消费者品牌配置派生的 accent-subtle-ground；限定在已验证背景使用",
+        "value": "{p-accent-subtle-ground}"
+      },
+      {
+        "name": "accent-subtle-hover",
+        "usage": "由消费者品牌配置派生的 accent-subtle-hover；限定在已验证背景使用",
+        "value": "{p-accent-subtle-hover}"
+      },
+      {
+        "name": "accent-subtle-pressed",
+        "usage": "由消费者品牌配置派生的 accent-subtle-pressed；限定在已验证背景使用",
+        "value": "{p-accent-subtle-pressed}"
+      },
+      {
+        "name": "accent-subtle-foreground",
+        "usage": "由消费者品牌配置派生的 accent-subtle-foreground；限定在已验证背景使用",
+        "value": "{p-accent-subtle-foreground}"
+      },
+      {
+        "name": "accent-outline",
+        "usage": "由消费者品牌配置派生的 accent-outline；限定在已验证背景使用",
+        "value": "{p-accent-outline}"
+      },
+      {
+        "name": "action-primary-focus-outline",
+        "usage": "由消费者品牌配置派生的 action-primary-focus-outline；限定在已验证背景使用",
+        "value": "{p-action-primary-focus-outline}"
+      },
+      {
+        "name": "brand-decoration",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{p-brand-seed}"
+      },
+      {
+        "name": "selection-accent-ground",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{accent-subtle-hover}"
+      },
+      {
+        "name": "selection-accent-foreground",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{accent-subtle-foreground}"
+      },
+      {
+        "name": "selection-accent-marker",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{accent-outline}"
+      },
+      {
+        "name": "control-checked-ground",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{action-primary-ground}"
+      },
+      {
+        "name": "control-checked-hover",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{action-primary-hover}"
+      },
+      {
+        "name": "control-checked-pressed",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{action-primary-pressed}"
+      },
+      {
+        "name": "control-checked-mark",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{action-primary-foreground}"
+      },
+      {
+        "name": "progress-active",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{accent-outline}"
+      },
+      {
+        "name": "c-link-foreground",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{accent}"
+      },
+      {
+        "name": "c-link-hover",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{accent-hover}"
+      },
+      {
+        "name": "c-link-pressed",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{accent-pressed}"
+      },
+      {
+        "name": "c-list-selection-marker",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{selection-accent-marker}"
+      },
+      {
+        "name": "c-checkbox-checked-ground",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{control-checked-ground}"
+      },
+      {
+        "name": "c-checkbox-checked-mark",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{control-checked-mark}"
+      },
+      {
+        "name": "c-radio-checked-ground",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{control-checked-ground}"
+      },
+      {
+        "name": "c-radio-checked-mark",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{control-checked-mark}"
+      },
+      {
+        "name": "c-switch-on-ground",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{control-checked-ground}"
+      },
+      {
+        "name": "c-switch-on-thumb",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{control-checked-mark}"
+      },
+      {
+        "name": "c-progress-active",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{progress-active}"
+      },
+      {
+        "name": "c-tabs-selected-marker",
+        "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
+        "value": "{selection-accent-marker}"
+      }
+    ]
+  },
+  "opacity": {
+    "tokens": [
+      {
+        "name": "p-opacity-0",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 0
+      },
+      {
+        "name": "p-opacity-0_07",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 0.07
+      },
+      {
+        "name": "p-opacity-0_14",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 0.14
+      },
+      {
+        "name": "p-opacity-0_45",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 0.45
+      },
+      {
+        "name": "p-opacity-0_75",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 0.75
+      },
+      {
+        "name": "p-opacity-1",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 1
+      },
+      {
+        "name": "alpha-none",
+        "usage": "alpha-none",
+        "value": "{p-opacity-0}"
+      },
+      {
+        "name": "alpha-faint",
+        "usage": "alpha-faint",
+        "value": "{p-opacity-0_07}"
+      },
+      {
+        "name": "alpha-soft",
+        "usage": "alpha-soft",
+        "value": "{p-opacity-0_14}"
+      },
+      {
+        "name": "alpha-wash",
+        "usage": "alpha-wash",
+        "value": "{p-opacity-0_45}"
+      },
+      {
+        "name": "alpha-selection-ic",
+        "usage": "alpha-selection-ic",
+        "value": "{p-opacity-0_75}"
+      },
+      {
+        "name": "alpha-solid",
+        "usage": "alpha-solid",
+        "value": "{p-opacity-1}"
+      }
+    ]
+  },
+  "radius": {
+    "tokens": [
+      {
+        "name": "p-radius-0",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 0
+      },
+      {
+        "name": "p-radius-3",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 3
+      },
+      {
+        "name": "p-radius-4",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 4
+      },
+      {
+        "name": "p-radius-6",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 6
+      },
+      {
+        "name": "p-radius-12",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 12
+      },
+      {
+        "name": "p-radius-14",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 14
+      },
+      {
+        "name": "p-radius-16",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 16
+      },
+      {
+        "name": "p-radius-18",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 18
+      },
+      {
+        "name": "p-radius-28",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 28
+      },
+      {
+        "name": "radius-square",
+        "usage": "radius-square",
+        "value": "{p-radius-0}"
+      },
+      {
+        "name": "radius-agent-marker",
+        "usage": "radius-agent-marker",
+        "value": "{p-radius-3}"
+      },
+      {
+        "name": "radius-badge",
+        "usage": "radius-badge",
+        "value": "{p-radius-4}"
+      },
+      {
+        "name": "radius-row",
+        "usage": "radius-row",
+        "value": "{p-radius-6}"
+      },
+      {
+        "name": "radius-control",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-8}"
+      },
+      {
+        "name": "radius-input",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-8}"
+      },
+      {
+        "name": "radius-panel",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-10}"
+      },
+      {
+        "name": "radius-column",
+        "usage": "radius-column",
+        "value": "{p-radius-18}"
+      },
+      {
+        "name": "radius-floating",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-12}"
+      },
+      {
+        "name": "c-input-radius",
+        "usage": "c-input-radius",
+        "value": "{radius-input}"
+      },
+      {
+        "name": "p-radius-2",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 2
+      },
+      {
+        "name": "p-radius-8",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 8
+      },
+      {
+        "name": "p-radius-10",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 10
+      },
+      {
+        "name": "p-radius-20",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 20
+      },
+      {
+        "name": "p-radius-999",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 999
+      },
+      {
+        "name": "radius-button-xs",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-6}"
+      },
+      {
+        "name": "radius-button-sm",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-8}"
+      },
+      {
+        "name": "radius-button-md",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-8}"
+      },
+      {
+        "name": "radius-button-lg",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-12}"
+      },
+      {
+        "name": "radius-code",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-12}"
+      },
+      {
+        "name": "radius-dialog",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-16}"
+      },
+      {
+        "name": "radius-message",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-18}"
+      },
+      {
+        "name": "radius-composer",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-20}"
+      },
+      {
+        "name": "radius-pill",
+        "usage": "明确的形态角色；pill 才允许半短边钳制",
+        "value": "{p-radius-999}"
+      },
+      {
+        "name": "c-button-xs-radius",
+        "usage": "组件圆角；禁止从同数值的无关角色借用",
+        "value": "{radius-button-xs}"
+      },
+      {
+        "name": "c-button-sm-radius",
+        "usage": "组件圆角；禁止从同数值的无关角色借用",
+        "value": "{radius-button-sm}"
+      },
+      {
+        "name": "c-button-md-radius",
+        "usage": "组件圆角；禁止从同数值的无关角色借用",
+        "value": "{radius-button-md}"
+      },
+      {
+        "name": "c-button-lg-radius",
+        "usage": "组件圆角；禁止从同数值的无关角色借用",
+        "value": "{radius-button-lg}"
+      },
+      {
+        "name": "c-composer-radius",
+        "usage": "组件圆角；禁止从同数值的无关角色借用",
+        "value": "{radius-composer}"
+      },
+      {
+        "name": "c-user-message-radius",
+        "usage": "组件圆角；禁止从同数值的无关角色借用",
+        "value": "{radius-message}"
+      },
+      {
+        "name": "c-code-radius",
+        "usage": "组件圆角；禁止从同数值的无关角色借用",
+        "value": "{radius-code}"
+      },
+      {
+        "name": "c-dialog-radius",
+        "usage": "组件圆角；禁止从同数值的无关角色借用",
+        "value": "{radius-dialog}"
+      },
+      {
+        "name": "c-segmented-radius",
+        "usage": "组件圆角；禁止从同数值的无关角色借用",
+        "value": "{radius-pill}"
+      }
+    ]
+  },
+  "size": {
+    "tokens": [
+      {
+        "name": "p-size-1_5",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 1.5
+      },
+      {
+        "name": "p-size-2",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 2
+      },
+      {
+        "name": "p-size-6",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 6
+      },
+      {
+        "name": "p-size-8",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 8
+      },
+      {
+        "name": "p-size-12",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 12
+      },
+      {
+        "name": "p-size-14",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 14
+      },
+      {
+        "name": "p-size-16",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 16
+      },
+      {
+        "name": "p-size-20",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 20
+      },
+      {
+        "name": "p-size-24",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 24
+      },
+      {
+        "name": "p-size-28",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 28
+      },
+      {
+        "name": "p-size-32",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 32
+      },
+      {
+        "name": "p-size-36",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 36
+      },
+      {
+        "name": "p-size-180",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 180
+      },
+      {
+        "name": "p-size-240",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 240
+      },
+      {
+        "name": "size-focus-bar",
+        "usage": "size-focus-bar",
+        "value": "{p-size-2}"
+      },
+      {
+        "name": "size-dot",
+        "usage": "size-dot",
+        "value": "{p-size-6}"
+      },
+      {
+        "name": "size-agent-marker-width",
+        "usage": "size-agent-marker-width",
+        "value": "{p-size-8}"
+      },
+      {
+        "name": "size-agent-marker-height",
+        "usage": "size-agent-marker-height",
+        "value": "{p-size-14}"
+      },
+      {
+        "name": "size-inline-badge",
+        "usage": "size-inline-badge",
+        "value": "{p-size-16}"
+      },
+      {
+        "name": "size-selector-track",
+        "usage": "size-selector-track",
+        "value": "{p-size-20}"
+      },
+      {
+        "name": "size-inline-action",
+        "usage": "size-inline-action",
+        "value": "{p-size-24}"
+      },
+      {
+        "name": "size-compact-row",
+        "usage": "size-compact-row",
+        "value": "{p-size-24}"
+      },
+      {
+        "name": "size-selector-knob",
+        "usage": "size-selector-knob",
+        "value": "{p-size-24}"
+      },
+      {
+        "name": "size-action-button",
+        "usage": "size-action-button",
+        "value": "{p-size-24}"
+      },
+      {
+        "name": "size-icon-button",
+        "usage": "最小逻辑尺寸；字号增大后重排，不裁切",
+        "value": "{p-size-32}"
+      },
+      {
+        "name": "size-pill-height",
+        "usage": "size-pill-height",
+        "value": "{p-size-28}"
+      },
+      {
+        "name": "size-row-height",
+        "usage": "size-row-height",
+        "value": "{p-size-32}"
+      },
+      {
+        "name": "size-comfortable-row",
+        "usage": "size-comfortable-row",
+        "value": "{p-size-36}"
+      },
+      {
+        "name": "size-truncation-slot",
+        "usage": "size-truncation-slot",
+        "value": "{p-size-180}"
+      },
+      {
+        "name": "size-truncation-slot-wide",
+        "usage": "size-truncation-slot-wide",
+        "value": "{p-size-240}"
+      },
+      {
+        "name": "size-icon-small",
+        "usage": "size-icon-small",
+        "value": "{p-size-12}"
+      },
+      {
+        "name": "size-icon-standard",
+        "usage": "size-icon-standard",
+        "value": "{p-size-16}"
+      },
+      {
+        "name": "size-icon-preview",
+        "usage": "size-icon-preview",
+        "value": "{p-size-24}"
+      },
+      {
+        "name": "size-icon-artboard-stroke",
+        "usage": "size-icon-artboard-stroke",
+        "value": "{p-size-1_5}"
+      },
+      {
+        "name": "c-button-hit-size",
+        "usage": "c-button-hit-size",
+        "value": "{size-icon-button}"
+      },
+      {
+        "name": "c-row-min-height",
+        "usage": "c-row-min-height",
+        "value": "{size-row-height}"
+      },
+      {
+        "name": "p-size-40",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 40
+      },
+      {
+        "name": "p-size-44",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 44
+      },
+      {
+        "name": "p-size-48",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 48
+      },
+      {
+        "name": "p-size-128",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 128
+      },
+      {
+        "name": "p-size-96",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 96
+      },
+      {
+        "name": "p-size-384",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 384
+      },
+      {
+        "name": "size-button-xs",
+        "usage": "最小逻辑尺寸；字号增大后重排，不裁切",
+        "value": "{p-size-24}"
+      },
+      {
+        "name": "size-button-sm",
+        "usage": "最小逻辑尺寸；字号增大后重排，不裁切",
+        "value": "{p-size-28}"
+      },
+      {
+        "name": "size-button-md",
+        "usage": "最小逻辑尺寸；字号增大后重排，不裁切",
+        "value": "{p-size-32}"
+      },
+      {
+        "name": "size-button-lg",
+        "usage": "最小逻辑尺寸；字号增大后重排，不裁切",
+        "value": "{p-size-40}"
+      },
+      {
+        "name": "size-icon-button-compact",
+        "usage": "最小逻辑尺寸；字号增大后重排，不裁切",
+        "value": "{p-size-28}"
+      },
+      {
+        "name": "size-composer-editor-min",
+        "usage": "最小逻辑尺寸；字号增大后重排，不裁切",
+        "value": "{p-size-44}"
+      },
+      {
+        "name": "size-composer-editor-max",
+        "usage": "最小逻辑尺寸；字号增大后重排，不裁切",
+        "value": "{p-size-240}"
+      },
+      {
+        "name": "size-composer-expanded-editor-max",
+        "usage": "最小逻辑尺寸；字号增大后重排，不裁切",
+        "value": "{p-size-384}"
+      },
+      {
+        "name": "size-attachment-width",
+        "usage": "最小逻辑尺寸；字号增大后重排，不裁切",
+        "value": "{p-size-128}"
+      },
+      {
+        "name": "size-attachment-height",
+        "usage": "最小逻辑尺寸；字号增大后重排，不裁切",
+        "value": "{p-size-96}"
+      }
+    ]
+  },
+  "spacing": {
+    "tokens": [
+      {
+        "name": "p-spacing-0",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 0
+      },
+      {
+        "name": "p-spacing-2",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 2
+      },
+      {
+        "name": "p-spacing-4",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 4
+      },
+      {
+        "name": "p-spacing-6",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 6
+      },
+      {
+        "name": "p-spacing-8",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 8
+      },
+      {
+        "name": "p-spacing-12",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 12
+      },
+      {
+        "name": "p-spacing-16",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 16
+      },
+      {
+        "name": "p-spacing-24",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 24
+      },
+      {
+        "name": "p-spacing-32",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 32
+      },
+      {
+        "name": "p-spacing-48",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 48
+      },
+      {
+        "name": "space-none",
+        "usage": "space-none",
+        "value": "{p-spacing-0}"
+      },
+      {
+        "name": "space-micro",
+        "usage": "space-micro",
+        "value": "{p-spacing-2}"
+      },
+      {
+        "name": "space-tight",
+        "usage": "space-tight",
+        "value": "{p-spacing-4}"
+      },
+      {
+        "name": "space-snug",
+        "usage": "space-snug",
+        "value": "{p-spacing-6}"
+      },
+      {
+        "name": "space-regular",
+        "usage": "space-regular",
+        "value": "{p-spacing-8}"
+      },
+      {
+        "name": "space-relaxed",
+        "usage": "space-relaxed",
+        "value": "{p-spacing-12}"
+      },
+      {
+        "name": "space-loose",
+        "usage": "space-loose",
+        "value": "{p-spacing-16}"
+      },
+      {
+        "name": "space-section",
+        "usage": "space-section",
+        "value": "{p-spacing-24}"
+      },
+      {
+        "name": "space-page",
+        "usage": "space-page",
+        "value": "{p-spacing-32}"
+      },
+      {
+        "name": "space-major",
+        "usage": "space-major",
+        "value": "{p-spacing-48}"
+      },
+      {
+        "name": "c-field-gap",
+        "usage": "c-field-gap",
+        "value": "{space-regular}"
+      },
+      {
+        "name": "p-spacing-10",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 10
+      },
+      {
+        "name": "p-spacing-14",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 14
+      },
+      {
+        "name": "p-spacing-20",
+        "usage": "参考对齐的基础值；禁止业务直接消费",
+        "value": 20
+      },
+      {
+        "name": "space-button-xs-inset",
+        "usage": "专用内边距；来自组件源码或明确的 Tekes 适配",
+        "value": "{p-spacing-8}"
+      },
+      {
+        "name": "space-button-sm-inset",
+        "usage": "专用内边距；来自组件源码或明确的 Tekes 适配",
+        "value": "{p-spacing-10}"
+      },
+      {
+        "name": "space-button-md-inset",
+        "usage": "专用内边距；来自组件源码或明确的 Tekes 适配",
+        "value": "{p-spacing-14}"
+      },
+      {
+        "name": "space-button-lg-inset",
+        "usage": "专用内边距；来自组件源码或明确的 Tekes 适配",
+        "value": "{p-spacing-20}"
+      },
+      {
+        "name": "space-composer-inset",
+        "usage": "专用内边距；来自组件源码或明确的 Tekes 适配",
+        "value": "{p-spacing-14}"
+      },
+      {
+        "name": "space-segmented-inset",
+        "usage": "专用内边距；来自组件源码或明确的 Tekes 适配",
+        "value": "{p-spacing-2}"
+      }
+    ]
+  },
+  "stroke": {
+    "tokens": [
+      {
+        "name": "p-stroke-0_5",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 0.5
+      },
+      {
+        "name": "p-stroke-1",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 1
+      },
+      {
+        "name": "p-stroke-2",
+        "usage": "基础数值；只由语义 token 引用",
+        "value": 2
+      },
+      {
+        "name": "stroke-hairline",
+        "usage": "stroke-hairline",
+        "value": "{p-stroke-0_5}"
+      },
+      {
+        "name": "stroke-rule",
+        "usage": "stroke-rule",
+        "value": "{p-stroke-1}"
+      },
+      {
+        "name": "stroke-emphasis",
+        "usage": "stroke-emphasis",
+        "value": "{p-stroke-2}"
+      },
+      {
+        "name": "c-focus-width",
+        "usage": "c-focus-width",
+        "value": "{stroke-rule}"
+      }
+    ]
+  },
+  "type": {
+    "families": [
+      {
+        "fonts": [
+          "platform-ui"
+        ],
+        "name": "ui"
+      },
+      {
+        "fonts": [
+          "platform-mono"
+        ],
+        "name": "mono"
+      }
+    ],
+    "fonts": [
+      {
+        "name": "platform-ui",
+        "redistribute": false,
+        "source": "system"
+      },
+      {
+        "name": "platform-mono",
+        "redistribute": false,
+        "source": "system"
+      }
+    ],
+    "groups": [
+      {
+        "name": "core",
+        "styles": [
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 13,
+            "fontWeight": 400,
+            "lineHeight": 16,
+            "name": "ui-body"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 13,
+            "fontWeight": 500,
+            "lineHeight": 16,
+            "name": "ui-label"
+          },
+          {
+            "color": "{secondary-text}",
+            "family": "ui",
+            "fontSize": 12,
+            "fontWeight": 400,
+            "lineHeight": 16,
+            "name": "ui-secondary"
+          },
+          {
+            "color": "{tertiary-text}",
+            "family": "ui",
+            "fontSize": 11,
+            "fontWeight": 400,
+            "lineHeight": 16,
+            "name": "ui-caption"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 16,
+            "fontWeight": 600,
+            "lineHeight": 22,
+            "name": "ui-heading"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "mono",
+            "fontSize": 12,
+            "fontWeight": 400,
+            "lineHeight": 18,
+            "name": "code"
+          }
+        ]
+      },
+      {
+        "name": "document",
+        "styles": [
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 14,
+            "fontWeight": 400,
+            "lineHeight": 22,
+            "name": "doc-body"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 24,
+            "fontWeight": 600,
+            "lineHeight": 32,
+            "name": "doc-h1"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 20,
+            "fontWeight": 600,
+            "lineHeight": 28,
+            "name": "doc-h2"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 16,
+            "fontWeight": 600,
+            "lineHeight": 24,
+            "name": "doc-h3"
+          }
+        ]
+      },
+      {
+        "name": "ocui-aligned",
+        "styles": [
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 14,
+            "fontWeight": 400,
+            "lineHeight": 20,
+            "name": "chat-body"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 14,
+            "fontWeight": 400,
+            "lineHeight": 20,
+            "name": "composer-body"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 12,
+            "fontWeight": 500,
+            "lineHeight": 16,
+            "name": "button-xs"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 12,
+            "fontWeight": 500,
+            "lineHeight": 16,
+            "name": "button-sm"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 14,
+            "fontWeight": 500,
+            "lineHeight": 20,
+            "name": "button-md"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 15,
+            "fontWeight": 500,
+            "lineHeight": 20,
+            "name": "button-lg"
+          }
+        ]
+      }
+    ]
+  }
+}

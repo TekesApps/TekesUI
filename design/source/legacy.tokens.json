@@ -1,0 +1,1706 @@
+{
+  "$schema": "./tokens.schema.json",
+  "api": {
+    "color": {
+      "enum": "ColorRole",
+      "variants": [
+        {
+          "id": "scrim",
+          "variant": "Scrim"
+        },
+        {
+          "id": "warning-text",
+          "variant": "WarningText"
+        },
+        {
+          "id": "warning-foreground",
+          "variant": "WarningForeground"
+        },
+        {
+          "id": "row-selection",
+          "variant": "RowSelection"
+        },
+        {
+          "id": "button-hover",
+          "variant": "ButtonHover"
+        },
+        {
+          "id": "transcript-input",
+          "variant": "TranscriptInput"
+        },
+        {
+          "id": "border",
+          "variant": "Border"
+        },
+        {
+          "id": "floating-panel-border",
+          "variant": "FloatingPanelBorder"
+        },
+        {
+          "id": "floating-panel-divider",
+          "variant": "FloatingPanelDivider"
+        },
+        {
+          "id": "border-focused",
+          "variant": "BorderFocused"
+        },
+        {
+          "id": "primary-text",
+          "variant": "PrimaryText"
+        },
+        {
+          "id": "secondary-text",
+          "variant": "SecondaryText"
+        },
+        {
+          "id": "tertiary-text",
+          "variant": "TertiaryText"
+        },
+        {
+          "id": "selected-text",
+          "variant": "SelectedText"
+        },
+        {
+          "id": "document-canvas",
+          "variant": "DocumentCanvas"
+        },
+        {
+          "id": "text-selection",
+          "variant": "TextSelection"
+        },
+        {
+          "id": "accent",
+          "variant": "Accent"
+        },
+        {
+          "id": "status-running",
+          "variant": "StatusRunning"
+        },
+        {
+          "id": "warning",
+          "variant": "Warning"
+        },
+        {
+          "id": "status-failed",
+          "variant": "StatusFailed"
+        },
+        {
+          "id": "status-succeeded",
+          "variant": "StatusSucceeded"
+        },
+        {
+          "id": "diff-added-marker",
+          "variant": "DiffAddedMarker"
+        },
+        {
+          "id": "diff-removed-marker",
+          "variant": "DiffRemovedMarker"
+        },
+        {
+          "id": "hover-wash",
+          "variant": "HoverWash"
+        },
+        {
+          "id": "separator",
+          "variant": "Separator"
+        },
+        {
+          "id": "diff-added-surface",
+          "variant": "DiffAddedSurface"
+        },
+        {
+          "id": "diff-removed-surface",
+          "variant": "DiffRemovedSurface"
+        }
+      ]
+    },
+    "motion": {
+      "enum": "Motion",
+      "variants": [
+        {
+          "id": "instant",
+          "variant": "Instant"
+        },
+        {
+          "id": "state-change",
+          "variant": "StateChange"
+        },
+        {
+          "id": "geometry",
+          "variant": "Geometry"
+        },
+        {
+          "id": "list-expansion",
+          "variant": "ListExpansion"
+        },
+        {
+          "id": "expansion",
+          "variant": "Expansion"
+        }
+      ]
+    },
+    "opacity": {
+      "enum": "Alpha",
+      "variants": [
+        {
+          "id": "faint",
+          "variant": "Faint"
+        },
+        {
+          "id": "soft",
+          "variant": "Soft"
+        },
+        {
+          "id": "wash",
+          "variant": "Wash"
+        }
+      ]
+    },
+    "radius": {
+      "enum": "CornerRadius",
+      "variants": [
+        {
+          "id": "square",
+          "variant": "Square"
+        },
+        {
+          "id": "agent-marker",
+          "variant": "AgentMarker"
+        },
+        {
+          "id": "badge",
+          "variant": "Badge"
+        },
+        {
+          "id": "row",
+          "variant": "Row"
+        },
+        {
+          "id": "control",
+          "variant": "Control"
+        },
+        {
+          "id": "input",
+          "variant": "Input"
+        },
+        {
+          "id": "panel",
+          "variant": "Panel"
+        },
+        {
+          "id": "column",
+          "variant": "Column"
+        },
+        {
+          "id": "floating",
+          "variant": "Floating"
+        }
+      ]
+    },
+    "size": {
+      "enum": "ControlSize",
+      "variants": [
+        {
+          "id": "focus-bar",
+          "variant": "FocusBar"
+        },
+        {
+          "id": "dot",
+          "variant": "Dot"
+        },
+        {
+          "id": "agent-marker-width",
+          "variant": "AgentMarkerWidth"
+        },
+        {
+          "id": "agent-marker-height",
+          "variant": "AgentMarkerHeight"
+        },
+        {
+          "id": "inline-badge",
+          "variant": "InlineBadge"
+        },
+        {
+          "id": "selector-track",
+          "variant": "SelectorTrack"
+        },
+        {
+          "id": "inline-action",
+          "variant": "InlineAction"
+        },
+        {
+          "id": "compact-row",
+          "variant": "CompactRow"
+        },
+        {
+          "id": "selector-knob",
+          "variant": "SelectorKnob"
+        },
+        {
+          "id": "action-button",
+          "variant": "ActionButton"
+        },
+        {
+          "id": "icon-button",
+          "variant": "IconButton"
+        },
+        {
+          "id": "pill-height",
+          "variant": "PillHeight"
+        },
+        {
+          "id": "row-height",
+          "variant": "RowHeight"
+        },
+        {
+          "id": "truncation-slot",
+          "variant": "TruncationSlot"
+        },
+        {
+          "id": "truncation-slot-wide",
+          "variant": "TruncationSlotWide"
+        }
+      ]
+    },
+    "spacing": {
+      "enum": "Spacing",
+      "variants": [
+        {
+          "id": "none",
+          "variant": "None"
+        },
+        {
+          "id": "micro",
+          "variant": "Micro"
+        },
+        {
+          "id": "tight",
+          "variant": "Tight"
+        },
+        {
+          "id": "snug",
+          "variant": "Snug"
+        },
+        {
+          "id": "regular",
+          "variant": "Regular"
+        },
+        {
+          "id": "relaxed",
+          "variant": "Relaxed"
+        },
+        {
+          "id": "loose",
+          "variant": "Loose"
+        },
+        {
+          "id": "section",
+          "variant": "Section"
+        }
+      ]
+    },
+    "stroke": {
+      "enum": "Stroke",
+      "variants": [
+        {
+          "id": "hairline",
+          "variant": "Hairline"
+        },
+        {
+          "id": "rule",
+          "variant": "Rule"
+        },
+        {
+          "id": "emphasis",
+          "variant": "Emphasis"
+        }
+      ]
+    },
+    "text": {
+      "enum": "TextRole",
+      "variants": [
+        {
+          "id": "body",
+          "variant": "Body"
+        },
+        {
+          "id": "body-emphasized",
+          "variant": "BodyEmphasized"
+        },
+        {
+          "id": "row-meta",
+          "variant": "RowMeta"
+        },
+        {
+          "id": "section-header",
+          "variant": "SectionHeader"
+        },
+        {
+          "id": "identity-badge",
+          "variant": "IdentityBadge"
+        },
+        {
+          "id": "brand",
+          "variant": "Brand"
+        }
+      ]
+    }
+  },
+  "format": "tekesui.tokens/1",
+  "sets": {
+    "dark": {
+      "color": {
+        "accent": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "border": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "border-focused": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "button-hover": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-added-marker": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-added-surface": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-removed-marker": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-removed-surface": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "document-canvas": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "floating-panel-border": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "floating-panel-divider": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "hover-wash": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "primary-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "row-selection": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "scrim": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "secondary-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "selected-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "separator": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "status-failed": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "status-running": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "status-succeeded": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "tertiary-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "text-selection": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "transcript-input": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "warning": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "warning-foreground": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "warning-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        }
+      },
+      "opacity": {
+        "faint": {
+          "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+          "$type": "number",
+          "$value": {
+            "binding": true
+          }
+        },
+        "soft": {
+          "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+          "$type": "number",
+          "$value": {
+            "binding": true
+          }
+        },
+        "wash": {
+          "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+          "$type": "number",
+          "$value": {
+            "binding": true
+          }
+        }
+      }
+    },
+    "dark-ic": {
+      "color": {
+        "accent": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "border": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "border-focused": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "button-hover": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-added-marker": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-added-surface": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-removed-marker": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-removed-surface": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "document-canvas": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "floating-panel-border": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "floating-panel-divider": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "hover-wash": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "primary-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "row-selection": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "scrim": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "secondary-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "selected-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "separator": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "status-failed": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "status-running": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "status-succeeded": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "tertiary-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "text-selection": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "transcript-input": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "warning": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "warning-foreground": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "warning-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        }
+      },
+      "opacity": {
+        "faint": {
+          "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+          "$type": "number",
+          "$value": {
+            "binding": true
+          }
+        },
+        "soft": {
+          "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+          "$type": "number",
+          "$value": {
+            "binding": true
+          }
+        },
+        "wash": {
+          "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+          "$type": "number",
+          "$value": {
+            "binding": true
+          }
+        }
+      }
+    },
+    "light": {
+      "color": {
+        "accent": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "border": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "border-focused": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "button-hover": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-added-marker": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-added-surface": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-removed-marker": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-removed-surface": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "document-canvas": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "floating-panel-border": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "floating-panel-divider": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "hover-wash": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "primary-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "row-selection": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "scrim": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "secondary-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "selected-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "separator": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "status-failed": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "status-running": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "status-succeeded": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "tertiary-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "text-selection": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "transcript-input": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "warning": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "warning-foreground": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "warning-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        }
+      },
+      "opacity": {
+        "faint": {
+          "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+          "$type": "number",
+          "$value": {
+            "binding": true
+          }
+        },
+        "soft": {
+          "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+          "$type": "number",
+          "$value": {
+            "binding": true
+          }
+        },
+        "wash": {
+          "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+          "$type": "number",
+          "$value": {
+            "binding": true
+          }
+        }
+      }
+    },
+    "light-ic": {
+      "color": {
+        "accent": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "border": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "border-focused": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "button-hover": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-added-marker": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-added-surface": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-removed-marker": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "diff-removed-surface": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "document-canvas": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "floating-panel-border": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "floating-panel-divider": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "hover-wash": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "primary-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "row-selection": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "scrim": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "secondary-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "selected-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "separator": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "status-failed": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "status-running": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "status-succeeded": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "tertiary-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "text-selection": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "transcript-input": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "warning": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "warning-foreground": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        },
+        "warning-text": {
+          "$description": "Resolved semantic role in encoded sRGB, non-premultiplied RGBA; no 8-bit rounding.",
+          "$type": "color",
+          "$value": {
+            "binding": true
+          }
+        }
+      },
+      "opacity": {
+        "faint": {
+          "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+          "$type": "number",
+          "$value": {
+            "binding": true
+          }
+        },
+        "soft": {
+          "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+          "$type": "number",
+          "$value": {
+            "binding": true
+          }
+        },
+        "wash": {
+          "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+          "$type": "number",
+          "$value": {
+            "binding": true
+          }
+        }
+      }
+    }
+  },
+  "source": {
+    "authority": "design/source plus design/brand JSON inputs",
+    "baselineManifest": "design/baseline/manifest.json",
+    "compatibility": "Project schema borrowing DTCG $type/$value; logical pt and theme sets are project-specific. Not a claim of full DTCG compatibility.",
+    "expectedBaselineCommit": "a8ab9303ab2f528913f83cfc2c8da2a0eab8b8f3",
+    "generator": "tekes-ui-design-export JSON compiler",
+    "historicalState": "v0.3.0-proposal.1 adopted as user-authorized design input; not a release or brand approval. Five unmatched historical text roles remain explicit legacy complements.",
+    "policy": "Generated compatibility projection; edit canonical JSON inputs, run scripts/merge-design-system.py. Package overlaps win; unmatched legacy roles are retained."
+  },
+  "status": "generated-projection",
+  "tokens": {
+    "motion": {
+      "reduced-motion": {
+        "expansion": {
+          "$description": "Motion duration in seconds.",
+          "$type": "duration",
+          "$value": {
+            "binding": true
+          }
+        },
+        "geometry": {
+          "$description": "Motion duration in seconds.",
+          "$type": "duration",
+          "$value": {
+            "binding": true
+          }
+        },
+        "instant": {
+          "$description": "Motion duration in seconds.",
+          "$type": "duration",
+          "$value": {
+            "binding": true
+          }
+        },
+        "list-expansion": {
+          "$description": "Motion duration in seconds.",
+          "$type": "duration",
+          "$value": {
+            "binding": true
+          }
+        },
+        "state-change": {
+          "$description": "Motion duration in seconds.",
+          "$type": "duration",
+          "$value": {
+            "binding": true
+          }
+        }
+      },
+      "standard": {
+        "expansion": {
+          "$description": "Motion duration in seconds.",
+          "$type": "duration",
+          "$value": {
+            "binding": true
+          }
+        },
+        "geometry": {
+          "$description": "Motion duration in seconds.",
+          "$type": "duration",
+          "$value": {
+            "binding": true
+          }
+        },
+        "instant": {
+          "$description": "Motion duration in seconds.",
+          "$type": "duration",
+          "$value": {
+            "binding": true
+          }
+        },
+        "list-expansion": {
+          "$description": "Motion duration in seconds.",
+          "$type": "duration",
+          "$value": {
+            "binding": true
+          }
+        },
+        "state-change": {
+          "$description": "Motion duration in seconds.",
+          "$type": "duration",
+          "$value": {
+            "binding": true
+          }
+        }
+      }
+    },
+    "opacity": {
+      "text-selection-increased": {
+        "$description": "Final opacity in [0,1]; replacement alpha, not a second multiplication.",
+        "$type": "number",
+        "$value": {
+          "binding": true
+        }
+      }
+    },
+    "radius": {
+      "agent-marker": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "badge": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "column": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "control": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "floating": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "input": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "panel": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "row": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "square": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      }
+    },
+    "size": {
+      "action-button": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "agent-marker-height": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "agent-marker-width": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "compact-row": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "dot": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "focus-bar": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "icon-button": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "inline-action": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "inline-badge": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "pill-height": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "row-height": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "selector-knob": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "selector-track": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "truncation-slot": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "truncation-slot-wide": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      }
+    },
+    "spacing": {
+      "loose": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "micro": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "none": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "regular": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "relaxed": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "section": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "snug": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "tight": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      }
+    },
+    "stroke": {
+      "emphasis": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "hairline": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      },
+      "rule": {
+        "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+        "$type": "dimension",
+        "$value": {
+          "binding": true
+        }
+      }
+    },
+    "text": {
+      "body": {
+        "font-size": {
+          "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+          "$type": "dimension",
+          "$value": {
+            "binding": true
+          }
+        },
+        "line-height": {
+          "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+          "$type": "dimension",
+          "$value": {
+            "binding": true
+          }
+        },
+        "weight": {
+          "$description": "Numeric Rust font weight. Font family is a component/platform strategy, not invented here.",
+          "$type": "fontWeight",
+          "$value": {
+            "binding": true
+          }
+        }
+      },
+      "body-emphasized": {
+        "font-size": {
+          "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+          "$type": "dimension",
+          "$value": {
+            "unit": "pt",
+            "value": 13.0
+          }
+        },
+        "line-height": {
+          "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+          "$type": "dimension",
+          "$value": {
+            "unit": "pt",
+            "value": 16.0
+          }
+        },
+        "weight": {
+          "$description": "Numeric Rust font weight. Font family is a component/platform strategy, not invented here.",
+          "$type": "fontWeight",
+          "$value": 600
+        }
+      },
+      "brand": {
+        "font-size": {
+          "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+          "$type": "dimension",
+          "$value": {
+            "unit": "pt",
+            "value": 17.0
+          }
+        },
+        "line-height": {
+          "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+          "$type": "dimension",
+          "$value": {
+            "unit": "pt",
+            "value": 22.0
+          }
+        },
+        "weight": {
+          "$description": "Numeric Rust font weight. Font family is a component/platform strategy, not invented here.",
+          "$type": "fontWeight",
+          "$value": 700
+        }
+      },
+      "identity-badge": {
+        "font-size": {
+          "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+          "$type": "dimension",
+          "$value": {
+            "unit": "pt",
+            "value": 10.0
+          }
+        },
+        "line-height": {
+          "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+          "$type": "dimension",
+          "$value": {
+            "unit": "pt",
+            "value": 16.0
+          }
+        },
+        "weight": {
+          "$description": "Numeric Rust font weight. Font family is a component/platform strategy, not invented here.",
+          "$type": "fontWeight",
+          "$value": 600
+        }
+      },
+      "row-meta": {
+        "font-size": {
+          "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+          "$type": "dimension",
+          "$value": {
+            "unit": "pt",
+            "value": 11.0
+          }
+        },
+        "line-height": {
+          "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+          "$type": "dimension",
+          "$value": {
+            "unit": "pt",
+            "value": 16.0
+          }
+        },
+        "weight": {
+          "$description": "Numeric Rust font weight. Font family is a component/platform strategy, not invented here.",
+          "$type": "fontWeight",
+          "$value": 400
+        }
+      },
+      "section-header": {
+        "font-size": {
+          "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+          "$type": "dimension",
+          "$value": {
+            "unit": "pt",
+            "value": 11.0
+          }
+        },
+        "line-height": {
+          "$description": "Logical points; not physical CSS pt or an implicit px conversion.",
+          "$type": "dimension",
+          "$value": {
+            "unit": "pt",
+            "value": 16.0
+          }
+        },
+        "weight": {
+          "$description": "Numeric Rust font weight. Font family is a component/platform strategy, not invented here.",
+          "$type": "fontWeight",
+          "$value": 700
+        }
+      }
+    }
+  }
+}

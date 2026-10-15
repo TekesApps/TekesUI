@@ -1,5 +1,8 @@
 # TekesUI 章程
 
+> 2026-10-15 最新设计权威：用户提供的 v0.3.0-proposal1 有定义时优先，缺项保留现有补集。参见 [DESIGN.md](../DESIGN.md) 和完整导入索引；本文此前固定尺寸、旧值和原版优先约定仅在不冲突时适用。规范存在不等于原生实现已验收。
+
+
 > 外部库版本均为 2026-10 调研时状态，开工前复核：wgpu 30、Parley 0.12、objc2 0.6、AccessKit 2026-09 版本、winit 0.31 beta。
 
 ## 1. 定位
@@ -31,11 +34,9 @@ Gallery 是一个类似 Storybook 的 Rust 应用（`tekes-ui-gallery`），是�
 
 ## 3. 终态
 
-app 全部用 Rust 跑。Swift 只留一层极薄的 Apple 能力垫片 `tekes-apple-shim`：
+TekesUI 本仓库保持纯 Rust 实现，不引入 Swift 源码、Swift package 构建或 Swift 启动/运行垫片。macOS 平台能力通过 Rust 可调用的接口接入，例如 objc2 与 security-framework crate；无法这样接入的能力单独评估并推迟，不预设 `tekes-apple-shim`，也不承诺 StoreKit 2 已可纯 Rust 接入。
 
-- 只处理纯 Swift API，如 StoreKit 2；
-- 编成 static lib，通过 `@_cdecl` 暴露 C ABI，由 Rust 调用；
-- Sign in with Apple、Keychain、ScreenCaptureKit、AX 优先走 objc2 或 security-framework crate，只有这些路走不通时才放进垫片。
+现有 Kit 源码只读参考，compare 仓库只用于对比证据，不作为本仓库构建或运行依赖。用户批准的原版视觉基线与后续变更边界以根目录 [DESIGN.md](../DESIGN.md) 为准，阶段扩展不能自行推翻现有外观。
 
 ## 4. crate 分层
 

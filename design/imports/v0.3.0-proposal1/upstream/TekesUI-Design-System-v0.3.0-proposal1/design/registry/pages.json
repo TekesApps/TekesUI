@@ -1,0 +1,166 @@
+{
+  "scope": "consumer acceptance recipes; do not add agent-domain business models to TekesUI core",
+  "pages": [
+    {
+      "id": "agent.workspace",
+      "name": "工作台导航",
+      "component_ids": [
+        "tui.split-view",
+        "tui.tree",
+        "tui.list",
+        "tui.tabs",
+        "tui.text-area",
+        "tui.status-badge",
+        "tui.disclosure"
+      ],
+      "required_states": [
+        "empty",
+        "populated",
+        "loading",
+        "error",
+        "restricted",
+        "disconnected"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "runtime_evidence": "unverified",
+      "recipe_ids": [
+        "agent.composer",
+        "agent.message",
+        "agent.session-row"
+      ]
+    },
+    {
+      "id": "agent.settings",
+      "name": "设置与表单",
+      "component_ids": [
+        "tui.text-field",
+        "tui.checkbox",
+        "tui.switch",
+        "tui.combo-box",
+        "tui.button",
+        "tui.banner",
+        "tui.segmented-control"
+      ],
+      "required_states": [
+        "empty",
+        "populated",
+        "loading",
+        "error",
+        "restricted"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "runtime_evidence": "unverified"
+    },
+    {
+      "id": "agent.review",
+      "name": "富文本与改动审阅",
+      "component_ids": [
+        "tui.markdown",
+        "tui.code-block",
+        "tui.diff-view",
+        "tui.selection-surface",
+        "tui.button"
+      ],
+      "required_states": [
+        "empty",
+        "populated",
+        "loading",
+        "error",
+        "restricted"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "runtime_evidence": "unverified"
+    },
+    {
+      "id": "agent.approval",
+      "name": "审批对话框",
+      "component_ids": [
+        "tui.dialog",
+        "tui.code-block",
+        "tui.radio-group",
+        "tui.button",
+        "tui.banner"
+      ],
+      "required_states": [
+        "populated",
+        "loading",
+        "error",
+        "restricted",
+        "expired"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "runtime_evidence": "unverified"
+    },
+    {
+      "id": "agent.inspection",
+      "name": "执行与证据检查器",
+      "component_ids": [
+        "tui.data-table",
+        "tui.tree",
+        "tui.status-badge",
+        "tui.code-block",
+        "tui.popover"
+      ],
+      "required_states": [
+        "empty",
+        "populated",
+        "loading",
+        "error",
+        "restricted",
+        "unverified"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "runtime_evidence": "unverified"
+    },
+    {
+      "id": "agent.metrics",
+      "name": "数据与用量",
+      "component_ids": [
+        "tui.chart",
+        "tui.data-table",
+        "tui.combo-box",
+        "tui.empty-state"
+      ],
+      "required_states": [
+        "empty",
+        "populated",
+        "loading",
+        "error",
+        "restricted"
+      ],
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "runtime_evidence": "unverified"
+    }
+  ],
+  "version": "0.3.0-proposal.1"
+}

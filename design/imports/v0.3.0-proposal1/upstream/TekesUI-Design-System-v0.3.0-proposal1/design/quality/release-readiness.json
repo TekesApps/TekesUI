@@ -1,0 +1,22 @@
+{
+  "status": "blocked",
+  "source_artifact": "TekesUI Design System",
+  "source_revision": null,
+  "source_export_sha256": null,
+  "private_artifact_access": "not_accessed_in_this_revision",
+  "artifact_export_compatibility": "unverified",
+  "runtime_implementation": "unverified",
+  "gallery_native_runtime": "unverified",
+  "real_environment": "unverified",
+  "icon_originality_review": "unverified",
+  "owner_assignments": "unverified",
+  "note": "Proposal validation is separate from release acceptance. Null provenance and missing runtime evidence must never be treated as passed.",
+  "consumer_brand_approval": "unverified",
+  "native_theme_switch": "unverified",
+  "brand_gallery_evidence": "unverified",
+  "optional_tool_adapters": {
+    "figma_roundtrip": "unverified",
+    "claude_design_roundtrip": "unverified",
+    "code_connect_binding": "unverified"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "schema": "tekesui-token-source-migration/1",
+  "status": "approved-source-only-migration",
+  "authorization": {
+    "baseline_commit": "a8ab9303ab2f528913f83cfc2c8da2a0eab8b8f3",
+    "user_instruction": "User explicitly authorized JSON as sole source → generated Rust → Gallery while preserving approved original design."
+  },
+  "original_baseline": {
+    "manifest_sha256": "205a0cc5c58d6c0230e827a53c4a26aff8643d01414033747311c8876e8d374a",
+    "unchanged_goldens": 24
+  },
+  "json_source": {
+    "path": "design/tokens.json",
+    "file_sha256": "0a9ff3443420944a2e2587759cec3c3460141365176ca19b41ca662c7debe800",
+    "semantic_sha256": "70b69dd83cfeabfdceffcf8cec10ff370d09e7f12b9e9d9b90f3094ebae18f80"
+  },
+  "approved_numeric_contract": {
+    "count": 508,
+    "f32_sha256": "f08777d278d713b2a2549facf8b40804da900251ff886bda3204a6497dbe8c76"
+  },
+  "token_bindings": {
+    "crates/tekes-ui-tokens/Cargo.toml": "b930407c86888a67a0490578ee6dd151b5d79dbc3574eb6afc365d2e883fc943",
+    "crates/tekes-ui-tokens/build.rs": "6f8eeeb3ce814fd85a6f9a9c3ed2d1c8fe087545acf0121816844dcaa6c270d8",
+    "crates/tekes-ui-tokens/tests/approved-a8-channels.txt": "0e55800f146a3c60f069c7e1afa50dd9078e6f25c1b0fd01c8f2cce465ae7644",
+    "crates/tekes-ui-tokens/src/color.rs": "4460918dd30ee83640ad08443fcfc36c3dbe84d14e34db73d641df341df40739",
+    "crates/tekes-ui-tokens/src/lib.rs": "c5ce495fee06a14f2556c6b175f9fbc8d3fe64e73d454a469773c66efd9160eb",
+    "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
+    "crates/tekes-ui-tokens/src/metrics.rs": "f4bc41f30fb4455ef7a3b4a9461a1228170a96c58c4d03483e4a41fb71e36eb6",
+    "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
+    "crates/tekes-ui-tokens/src/alpha.rs": "aa3017df323ade39c0f6041ad2ff0a5d0d936186cc66f69c9bb6ebb67e1d780b"
+  },
+  "generator": {
+    "root": "crates/tekes-ui-design-export",
+    "files": {
+      "crates/tekes-ui-design-export/Cargo.toml": "dbade40e2735b8ece7ccc1f47b2ac967109efb825ac51cf23213d0d68154ac75",
+      "crates/tekes-ui-design-export/src/lib.rs": "9226826381c870c29b1a5b1cee3285d1215e3ec03e3b7937f555ec79e51868b0",
+      "crates/tekes-ui-design-export/src/validator.rs": "bb11f08be7b145c90dbacb1cbd20c8afc7102ef690925af81dafe6b1b6eebc7a",
+      "crates/tekes-ui-design-export/src/main.rs": "85d4ad19e793052b6a9e35221cb02d5a1c12089f1920669bfe8ac24d1f94ab74"
+    },
+    "generated_rust_sha256": "7d8c47b6cc5536a6361b716ccdc94dae8e45197615061654e3cb552375aead8d"
+  },
+  "visual_source_overrides": {
+    "Cargo.lock": "7341050be30be2ddca98cbd32a5f7950145b19dc04973459580d23ad7b70f4d2"
+  },
+  "evidence": {
+    "independent_original_getters": "a8 source compiled with rustc; all 508 runtime channels exactly match generated current JSON resolved contract",
+    "normal_cargo_probe": "isolated copy; JSON micro spacing 2→3 pt triggers no-clean rebuild and getter 40000000→40400000",
+    "scope": "Source-only authority migration; no approval to change token values, UI, original manifest or golden PNGs."
+  }
+}

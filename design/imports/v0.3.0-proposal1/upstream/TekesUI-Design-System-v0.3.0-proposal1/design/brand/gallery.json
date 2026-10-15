@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "reference_brand": "example-neutral",
+  "profiles": [
+    "design/brand/examples/example-neutral.json",
+    "design/brand/examples/example-blue.json",
+    "design/brand/examples/example-clay.json"
+  ],
+  "runtime_status": "unverified",
+  "selection": "explicit-reference-fixture; no framework-owned brand default"
+}

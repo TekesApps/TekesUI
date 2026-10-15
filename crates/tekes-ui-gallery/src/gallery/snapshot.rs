@@ -203,6 +203,6 @@ mod tests {
         let decoder = png::Decoder::new(std::io::Cursor::new(bytes));
         let reader = decoder.read_info().unwrap();
         let info = reader.info();
-        assert_eq!((info.width, info.height), (1200, 800));
+        assert_eq!((info.width, info.height), (FRAME_W as u32, FRAME_H as u32));
     }
 }

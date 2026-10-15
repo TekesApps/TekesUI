@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "repository": "Caho1/open-claude-ui",
+  "reference_commit": "2834bc158a4849f21c97cbb2e0b10525f6e646f1",
+  "observed_default_branch": "main",
+  "commit_timestamp": "2026-10-15T02:02:11Z",
+  "retrieved_date": "2026-10-15",
+  "authority": "external reference only; not Tekes authoring source and not Anthropic official specification",
+  "original_archive_sha256": null,
+  "whole_repository_checkout": false,
+  "claim": "Specific source ranges and Git blob IDs were retrieved through GitHub. Each entry explicitly distinguishes source-read, author-analysis-read and inventory-only. No whole checkout, build, original Claude binary audit or live screenshot comparison was performed.",
+  "files": [
+    {
+      "id": "OCUI-01",
+      "path": "code-examples/cds-theme.css",
+      "git_blob_sha": "86cbb0b4dc64cd187454f5074dd219393a1dfce9",
+      "inspection": "source-read",
+      "read_scope": "1–240: theme, radii, text and optical rules",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/cds-theme.css"
+    },
+    {
+      "id": "OCUI-02",
+      "path": "code-examples/CdsButton.tsx",
+      "git_blob_sha": "9302937c7a53f284721e75d8924432edfce854a5",
+      "inspection": "source-read",
+      "read_scope": "full",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/CdsButton.tsx"
+    },
+    {
+      "id": "OCUI-03",
+      "path": "code-examples/ClaudeMotionPresets.ts",
+      "git_blob_sha": "1e7a2bc028e39323b5e4305d6c10a54ad3afe63c",
+      "inspection": "source-read",
+      "read_scope": "full",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/ClaudeMotionPresets.ts"
+    },
+    {
+      "id": "OCUI-04",
+      "path": "code-examples/ChatComposer.tsx",
+      "git_blob_sha": "104f23d2d6613c9d3671497cd514f4a9ca39a670",
+      "inspection": "source-read",
+      "read_scope": "1–120: keyboard, submit, shell",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/ChatComposer.tsx"
+    },
+    {
+      "id": "OCUI-05",
+      "path": "code-examples/RichComposerWithMentions.tsx",
+      "git_blob_sha": "4984396dfd2e4f557ec74c01d4d2b8308133da77",
+      "inspection": "source-read",
+      "read_scope": "90–230: completion, IME, submit",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/RichComposerWithMentions.tsx"
+    },
+    {
+      "id": "OCUI-06",
+      "path": "code-examples/useClaudeScrollPinning.ts",
+      "git_blob_sha": "9c132e0975af485900d0395b4caa72693872651f",
+      "inspection": "source-read",
+      "read_scope": "full",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/useClaudeScrollPinning.ts"
+    },
+    {
+      "id": "OCUI-07",
+      "path": "code-examples/ArtifactsSplitPaneResizer.tsx",
+      "git_blob_sha": "6e466971080a24bb4f522695f93e59c74ff938a9",
+      "inspection": "source-read",
+      "read_scope": "1–130: pointer handlers and constraints",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/ArtifactsSplitPaneResizer.tsx"
+    },
+    {
+      "id": "OCUI-08",
+      "path": "code-examples/SegmentedControl.tsx",
+      "git_blob_sha": "bab417cae8629413bd339cc2b3834be2fa5363d4",
+      "inspection": "inventory-and-documentation-only",
+      "read_scope": "tree and README descriptions; implementation not reviewed",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/SegmentedControl.tsx"
+    },
+    {
+      "id": "OCUI-09",
+      "path": "code-examples/ThinkingAccordion.tsx",
+      "git_blob_sha": "8372c309b6a3aa825bb38679df7b79feab7ab3be",
+      "inspection": "inventory-and-documentation-only",
+      "read_scope": "tree and README descriptions; implementation not reviewed",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/ThinkingAccordion.tsx"
+    },
+    {
+      "id": "OCUI-10",
+      "path": "code-examples/ChatMessageBubbles.tsx",
+      "git_blob_sha": "dadfff689742482550af7408948c6f159979e0ed",
+      "inspection": "inventory-and-documentation-only",
+      "read_scope": "tree and README descriptions",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/ChatMessageBubbles.tsx"
+    },
+    {
+      "id": "OCUI-11",
+      "path": "code-examples/AttachmentCard.tsx",
+      "git_blob_sha": "8dcddbe49accf44cb76b06dcdbc78e1aeef87232",
+      "inspection": "inventory-and-documentation-only",
+      "read_scope": "tree and README descriptions",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/AttachmentCard.tsx"
+    },
+    {
+      "id": "OCUI-12",
+      "path": "code-examples/McpToolDecisionCard.tsx",
+      "git_blob_sha": "26b86b9054c1a34a2c3622911de5af932031ceb0",
+      "inspection": "inventory-and-documentation-only",
+      "read_scope": "tree and README descriptions",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/McpToolDecisionCard.tsx"
+    },
+    {
+      "id": "OCUI-13",
+      "path": "code-examples/ModelSwitcherWithTokenGauge.tsx",
+      "git_blob_sha": "a63f61515a7c2e832a1d550eacf06a0ecf1cdbca",
+      "inspection": "inventory-and-documentation-only",
+      "read_scope": "tree and README descriptions",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/ModelSwitcherWithTokenGauge.tsx"
+    },
+    {
+      "id": "OCUI-14",
+      "path": "code-examples/DraggableSessionList.tsx",
+      "git_blob_sha": "6f84368137373b2206bf4254635b5f724020b210",
+      "inspection": "inventory-and-documentation-only",
+      "read_scope": "tree and README descriptions",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/DraggableSessionList.tsx"
+    },
+    {
+      "id": "OCUI-15",
+      "path": "code-examples/StreamingDiffViewer.tsx",
+      "git_blob_sha": "13d5031e0595176da5d00f140fcb696591c23394",
+      "inspection": "inventory-and-documentation-only",
+      "read_scope": "tree and README descriptions",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/StreamingDiffViewer.tsx"
+    },
+    {
+      "id": "OCUI-16",
+      "path": "docs/09-Claude-Desktop-2.0-全量版本更新深度逆向分析.md",
+      "git_blob_sha": "6adefca7e0b38522986c29c170cdd779fed41e85",
+      "inspection": "author-analysis-read",
+      "read_scope": "1–145 and public rendered index; no upstream binary verification",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/docs/09-Claude-Desktop-2.0-全量版本更新深度逆向分析.md"
+    },
+    {
+      "id": "OCUI-17",
+      "path": "code-examples/CoworkAgentCanvas.tsx",
+      "git_blob_sha": "42457440acebd74ff2b62af733c217bd561485a4",
+      "inspection": "inventory-and-documentation-only",
+      "read_scope": "tree and README descriptions",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/code-examples/CoworkAgentCanvas.tsx"
+    },
+    {
+      "id": "OCUI-18",
+      "path": "docs/01-设计哲学与设计令牌体系.md",
+      "git_blob_sha": "ab4f8b0b4cb662eb9dd87a6d50ec5b4125f578ef",
+      "inspection": "author-analysis-read",
+      "read_scope": "pinned 15–76; typography and other sections read on main web view, not claimed atomic",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/docs/01-设计哲学与设计令牌体系.md"
+    },
+    {
+      "id": "OCUI-19",
+      "path": "docs/08-AI-Agent-前端-UI-与动效开发指南.md",
+      "git_blob_sha": "896a2ac73f2952559707519def183bc6c000c55c",
+      "inspection": "author-analysis-read",
+      "read_scope": "pinned 45–105; public rendered sections for context",
+      "url": "https://github.com/Caho1/open-claude-ui/blob/2834bc158a4849f21c97cbb2e0b10525f6e646f1/docs/08-AI-Agent-前端-UI-与动效开发指南.md"
+    }
+  ]
+}

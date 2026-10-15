@@ -1,0 +1,57 @@
+{
+  "version": "0.2.0-proposal.1",
+  "unit": "logical-pt",
+  "time_unit": "seconds",
+  "source_ids": [
+    "OCUI-04",
+    "OCUI-05",
+    "OCUI-06",
+    "OCUI-07"
+  ],
+  "ime": {
+    "priority": [
+      "platform-marked-text",
+      "completion-menu",
+      "editor",
+      "application-command"
+    ],
+    "blocks_all_submit_paths": true,
+    "escape_during_composition": "IME handles first; do not dismiss ancestor dialog",
+    "preserve_original_payload": true,
+    "send_ack_rule": "persist immutable draft/outbox entry before submission; clear the matching draft only after durable acceptance; idempotency key required for retry"
+  },
+  "drag": {
+    "dead_zone": 4,
+    "activation": "distance_from_pointer_down >= dead_zone",
+    "cancel": "Escape/lost capture/window deactivation restore initial ratio and release capture",
+    "double_click_ratio": 0.5,
+    "clamp_rule": "apply content minima first; if infeasible collapse into switchable panels; never produce minRatio > maxRatio",
+    "direct_tracking": true,
+    "drag_alternative_required": true
+  },
+  "scroll": {
+    "bottom_tolerance": 40,
+    "cooldown": 0.15,
+    "jump_control_threshold": 120,
+    "pin_states": [
+      "following",
+      "reading-history"
+    ],
+    "reading_history_latched": true,
+    "unpin": "any user upward intent immediately enters reading-history, even within tolerance",
+    "repin": "explicit jump-to-latest or user intentionally returns to bottom; never by timer alone",
+    "stream_reveal": "append without blur or glyph motion",
+    "retain_stable_anchor": true
+  },
+  "keyboard": {
+    "roving_focus": true,
+    "popover_not_modal_by_default": true,
+    "focus_restore_required": true
+  },
+  "native": {
+    "use_operating_system_momentum": true,
+    "simulate_browser_keycode_229": false,
+    "auto_focus_background_window": false
+  },
+  "runtime_status": "unverified"
+}

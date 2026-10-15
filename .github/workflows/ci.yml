@@ -12,6 +12,21 @@ jobs:
       - uses: actions/checkout@v4
       - name: 安装工具链（读取 rust-toolchain.toml）
         run: rustup show
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Design package, brand generation and Rust boundaries
+        run: |
+          python3 -m pip install -r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt
+          python3 -m unittest discover -s scripts/tests
+          python3 scripts/test-merge-design-system.py
+          python3 -I scripts/check-pure-rust.py --self-test
+          python3 -I scripts/check-pure-rust.py
+          python3 -I scripts/check-design-baseline.py --self-test
+          python3 scripts/merge-design-system.py --check
+          python3 scripts/check-design-system.py
+          cargo run --locked -p tekes-ui-design-export -- --generate design/tokens.json "$RUNNER_TEMP/tokens.rs"
+          cargo run --locked -p tekes-ui-design-export -- --check design/tokens.json "$RUNNER_TEMP/tokens.rs"
       - run: cargo fmt --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace

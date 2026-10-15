@@ -1,0 +1,498 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "version",
+    "algorithm",
+    "themes",
+    "output_space",
+    "tone_steps",
+    "gamut_iterations",
+    "max_chroma",
+    "subtle_chroma",
+    "subtle_chroma_factor",
+    "minimum_state_delta_ok",
+    "thresholds",
+    "targets",
+    "text_backgrounds",
+    "control_backgrounds",
+    "marker_backgrounds",
+    "fallback",
+    "focus",
+    "text_selection",
+    "syntax",
+    "charts",
+    "status"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "version": {
+      "const": "1.0.0"
+    },
+    "algorithm": {
+      "const": "tekes-oklch-constrained-v1"
+    },
+    "themes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "prefixItems": [
+        {
+          "const": "light"
+        },
+        {
+          "const": "dark"
+        },
+        {
+          "const": "light-ic"
+        },
+        {
+          "const": "dark-ic"
+        }
+      ],
+      "items": false
+    },
+    "output_space": {
+      "const": "srgb-8bit-opaque"
+    },
+    "tone_steps": {
+      "const": 1000
+    },
+    "gamut_iterations": {
+      "const": 20
+    },
+    "max_chroma": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "subtle_chroma": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "subtle_chroma_factor": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "minimum_state_delta_ok": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "thresholds": {
+      "const": {
+        "text": 4.5,
+        "text_ic": 7.0,
+        "non_text": 3.0
+      }
+    },
+    "targets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "properties": {
+        "light": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "action_step",
+            "link",
+            "link_step",
+            "outline",
+            "subtle",
+            "subtle_text"
+          ],
+          "properties": {
+            "action": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "action_step": {
+              "type": "number",
+              "minimum": -0.15,
+              "maximum": 0.15,
+              "not": {
+                "const": 0
+              }
+            },
+            "link": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "link_step": {
+              "type": "number",
+              "minimum": -0.15,
+              "maximum": 0.15,
+              "not": {
+                "const": 0
+              }
+            },
+            "outline": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "subtle": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "prefixItems": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                }
+              ],
+              "items": false
+            },
+            "subtle_text": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "dark": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "action_step",
+            "link",
+            "link_step",
+            "outline",
+            "subtle",
+            "subtle_text"
+          ],
+          "properties": {
+            "action": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "action_step": {
+              "type": "number",
+              "minimum": -0.15,
+              "maximum": 0.15,
+              "not": {
+                "const": 0
+              }
+            },
+            "link": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "link_step": {
+              "type": "number",
+              "minimum": -0.15,
+              "maximum": 0.15,
+              "not": {
+                "const": 0
+              }
+            },
+            "outline": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "subtle": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "prefixItems": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                }
+              ],
+              "items": false
+            },
+            "subtle_text": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "light-ic": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "action_step",
+            "link",
+            "link_step",
+            "outline",
+            "subtle",
+            "subtle_text"
+          ],
+          "properties": {
+            "action": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "action_step": {
+              "type": "number",
+              "minimum": -0.15,
+              "maximum": 0.15,
+              "not": {
+                "const": 0
+              }
+            },
+            "link": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "link_step": {
+              "type": "number",
+              "minimum": -0.15,
+              "maximum": 0.15,
+              "not": {
+                "const": 0
+              }
+            },
+            "outline": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "subtle": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "prefixItems": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                }
+              ],
+              "items": false
+            },
+            "subtle_text": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "dark-ic": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "action_step",
+            "link",
+            "link_step",
+            "outline",
+            "subtle",
+            "subtle_text"
+          ],
+          "properties": {
+            "action": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "action_step": {
+              "type": "number",
+              "minimum": -0.15,
+              "maximum": 0.15,
+              "not": {
+                "const": 0
+              }
+            },
+            "link": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "link_step": {
+              "type": "number",
+              "minimum": -0.15,
+              "maximum": 0.15,
+              "not": {
+                "const": 0
+              }
+            },
+            "outline": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "subtle": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "prefixItems": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                }
+              ],
+              "items": false
+            },
+            "subtle_text": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "text_backgrounds": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "prefixItems": [
+        {
+          "const": "surface-0"
+        },
+        {
+          "const": "surface-1"
+        },
+        {
+          "const": "surface-2"
+        },
+        {
+          "const": "surface-3"
+        },
+        {
+          "const": "surface-popover"
+        },
+        {
+          "const": "button-hover"
+        },
+        {
+          "const": "user-message-surface"
+        },
+        {
+          "const": "segmented-track"
+        },
+        {
+          "const": "segmented-thumb"
+        },
+        {
+          "const": "code-surface"
+        }
+      ],
+      "items": false
+    },
+    "control_backgrounds": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        {
+          "const": "surface-0"
+        },
+        {
+          "const": "surface-1"
+        },
+        {
+          "const": "surface-2"
+        },
+        {
+          "const": "surface-3"
+        },
+        {
+          "const": "surface-popover"
+        }
+      ],
+      "items": false
+    },
+    "marker_backgrounds": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        {
+          "const": "row-selection"
+        },
+        {
+          "const": "row-selection-hover"
+        }
+      ],
+      "items": false
+    },
+    "fallback": {
+      "const": "reject-invalid-build; runtime-keeps-last-validated-theme"
+    },
+    "focus": {
+      "const": "neutral; on-solid neutral may change luminance, never hue"
+    },
+    "text_selection": {
+      "const": "independent"
+    },
+    "syntax": {
+      "const": "independent"
+    },
+    "charts": {
+      "const": "independent"
+    },
+    "status": {
+      "const": "independent"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TekesUI brand generation policy v1"
+}

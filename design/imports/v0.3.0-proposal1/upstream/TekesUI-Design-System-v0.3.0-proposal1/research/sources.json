@@ -1,0 +1,125 @@
+{
+  "retrieved_on": "2026-10-15",
+  "language": "zh-CN",
+  "research_limits": [
+    "X direct post pages were not fully readable; indexed excerpts are not complete threads or community consensus.",
+    "Private authoring artifact and original export were not available in this session.",
+    "Repository files were read separately via main; observed head is not an atomic checkout attestation.",
+    "New design values and budgets are proposal decisions, not Claude official design tokens."
+  ],
+  "observed_repository_head": "a3bdf046891db2b216ef3640a2ca7f56c1893514",
+  "sources": [
+    {
+      "id": "R1",
+      "title": "TekesUI README",
+      "url": "https://github.com/TekesApps/TekesUI/blob/main/README.md",
+      "access": "connected GitHub file read",
+      "used_for": "Current repository scope and documentation-only status"
+    },
+    {
+      "id": "R2",
+      "title": "TekesUI charter",
+      "url": "https://github.com/TekesApps/TekesUI/blob/main/docs/charter.md",
+      "access": "connected GitHub file read",
+      "used_for": "Rust architecture, platform boundaries, Gallery and existing crate responsibilities"
+    },
+    {
+      "id": "R3",
+      "title": "Design output and import conventions",
+      "url": "https://github.com/TekesApps/TekesUI/blob/main/design/README.md",
+      "access": "connected GitHub file read",
+      "used_for": "Private authoring artifact; published export envelope; source and generated file conventions"
+    },
+    {
+      "id": "R4",
+      "title": "Icons and tokens brief",
+      "url": "https://github.com/TekesApps/TekesUI/blob/main/docs/design/icons-and-tokens-brief.md",
+      "access": "connected GitHub file read",
+      "used_for": "Historical requirements, previously approved rules, token anchors and 20 redraw tasks; not a delivery of those assets"
+    },
+    {
+      "id": "R5",
+      "title": "Comparison method",
+      "url": "https://github.com/TekesApps/TekesUI/blob/main/docs/comparison-method.md",
+      "access": "connected GitHub file read",
+      "used_for": "Proposed native rendering, layout, performance, IME and VoiceOver acceptance methods"
+    },
+    {
+      "id": "R6",
+      "title": "Claude Code Desktop documentation",
+      "url": "https://code.claude.com/docs/en/desktop",
+      "access": "official documentation read",
+      "used_for": "Parallel sessions, session sidebar, rearrangeable panes, integrated terminal and diff review"
+    },
+    {
+      "id": "R7",
+      "title": "ClaudeDevs: Mods announcement",
+      "url": "https://x.com/ClaudeDevs/status/2105721434807083061",
+      "access": "public search-index excerpt only; direct post read failed",
+      "used_for": "Indexed October 1, 2026 announcement describes customizable behavior, UI and features shipped as plugins"
+    },
+    {
+      "id": "R8",
+      "title": "Daniel Avila: Turn Inspector",
+      "url": "https://x.com/dani_avila7/status/2109822699174559748",
+      "access": "public search-index excerpt only; direct post read failed",
+      "used_for": "Indexed excerpt describes inspection of context per turn. On retrieval the search result displayed 2 days ago; exact publication time is not independently verified"
+    },
+    {
+      "id": "R9",
+      "title": "ClaudeDevs: Projects and threads",
+      "url": "https://x.com/ClaudeDevs/status/2100633571543367691",
+      "access": "public search-index excerpt only",
+      "used_for": "Indexed excerpt describes organizing parallel threads from a main conversation; not a full reply-thread review"
+    },
+    {
+      "id": "R10",
+      "title": "W3C WCAG 2.2",
+      "url": "https://www.w3.org/TR/WCAG22/",
+      "access": "primary standard read",
+      "used_for": "Text contrast, keyboard and accessible name/role/value principles; no blanket native application conformance claim"
+    },
+    {
+      "id": "R11",
+      "title": "Understanding Focus Appearance",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html",
+      "access": "primary W3C guidance read",
+      "used_for": "AAA focus indicator area/contrast criterion; a 1pt custom ring is not claimed to meet the AAA area criterion"
+    },
+    {
+      "id": "R12",
+      "title": "Understanding Non-text Contrast",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html",
+      "access": "primary W3C guidance read",
+      "used_for": "3:1 essential non-text information contrast and appropriate adjacent surfaces"
+    },
+    {
+      "id": "R13",
+      "title": "Apple HIG Typography",
+      "url": "https://developer.apple.com/design/human-interface-guidelines/typography",
+      "access": "official indexed documentation; direct body requires JavaScript",
+      "used_for": "System font and typography reference, not evidence that a custom Rust view automatically has platform text behaviors"
+    },
+    {
+      "id": "R14",
+      "title": "Understanding Dragging Movements",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html",
+      "access": "primary W3C guidance read",
+      "used_for": "Single-pointer alternative to dragging, in addition to keyboard support"
+    },
+    {
+      "id": "R15",
+      "title": "Understanding Content on Hover or Focus",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus.html",
+      "access": "primary W3C guidance read",
+      "used_for": "Dismissible, hoverable, persistent content when applicable"
+    },
+    {
+      "id": "R16",
+      "title": "Understanding Focus Order",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-order.html",
+      "access": "primary W3C guidance read",
+      "used_for": "Logical focus order and preservation of meaning and operability"
+    }
+  ]
+}

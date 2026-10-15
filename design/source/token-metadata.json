@@ -1,0 +1,2522 @@
+{
+  "profile_version": "0.3.0-proposal.1",
+  "format": "documented-artifact-family-envelope",
+  "type_profile": "proposed; actual private export compatibility unverified",
+  "family_units": {
+    "color": "sRGB",
+    "spacing": "logical-pt",
+    "radius": "logical-pt",
+    "stroke": "logical-pt",
+    "opacity": "ratio",
+    "size": "logical-pt",
+    "type": "logical-pt"
+  },
+  "tokens": {
+    "color:p-document-canvas": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:document-canvas": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-surface-panel": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:surface-panel": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-surface-sidebar": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:surface-sidebar": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-primary-text": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:primary-text": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-secondary-text": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:secondary-text": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-tertiary-text": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:tertiary-text": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-disabled-text": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:disabled-text": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-selected-text": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:selected-text": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-row-selection": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:row-selection": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-row-selection-hover": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:row-selection-hover": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-button-hover": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:button-hover": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-button-pressed": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:button-pressed": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-transcript-input": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:transcript-input": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-border": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:border": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-border-focused": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:border-focused": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-separator": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:separator": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-accent": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "accent"
+    },
+    "color:accent": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-warning-foreground": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:warning-foreground": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-warning": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:warning": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-warning-text": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:warning-text": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-status-running": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:status-running": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-status-failed": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:status-failed": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-status-succeeded": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:status-succeeded": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-status-info": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:status-info": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-diff-added-surface": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:diff-added-surface": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-diff-removed-surface": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:diff-removed-surface": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-code-surface": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:code-surface": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-text-selection": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:text-selection": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-scrim": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:scrim": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:floating-panel-border": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:floating-panel-divider": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:hover-wash": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:diff-added-marker": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:diff-removed-marker": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-button-primary-ground": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:c-button-primary-foreground": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:c-button-quiet-hover": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-list-row-selected": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-input-focus-outline": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-code-comment": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-code-keyword": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-code-string": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-code-number": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-chart-series-1": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-chart-series-2": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-chart-series-3": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-chart-series-4": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:p-spacing-0": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:p-spacing-2": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:p-spacing-4": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:p-spacing-6": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:p-spacing-8": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:p-spacing-12": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:p-spacing-16": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:p-spacing-24": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:p-spacing-32": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:p-spacing-48": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:space-none": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:space-micro": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:space-tight": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:space-snug": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:space-regular": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:space-relaxed": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:space-loose": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:space-section": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:space-page": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:space-major": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:p-radius-0": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:p-radius-3": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:p-radius-4": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:p-radius-6": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:p-radius-12": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:p-radius-14": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:p-radius-16": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:p-radius-18": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:p-radius-28": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:radius-square": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:radius-agent-marker": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:radius-badge": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:radius-row": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:radius-control": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:radius-input": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:radius-panel": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:radius-column": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:radius-floating": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "stroke:p-stroke-0_5": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "stroke:p-stroke-1": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "stroke:p-stroke-2": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "stroke:stroke-hairline": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "stroke:stroke-rule": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "stroke:stroke-emphasis": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "opacity:p-opacity-0": {
+      "tier": "primitive",
+      "unit": "ratio",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "opacity:p-opacity-0_07": {
+      "tier": "primitive",
+      "unit": "ratio",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "opacity:p-opacity-0_14": {
+      "tier": "primitive",
+      "unit": "ratio",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "opacity:p-opacity-0_45": {
+      "tier": "primitive",
+      "unit": "ratio",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "opacity:p-opacity-0_75": {
+      "tier": "primitive",
+      "unit": "ratio",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "opacity:p-opacity-1": {
+      "tier": "primitive",
+      "unit": "ratio",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "opacity:alpha-none": {
+      "tier": "semantic",
+      "unit": "ratio",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "opacity:alpha-faint": {
+      "tier": "semantic",
+      "unit": "ratio",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "opacity:alpha-soft": {
+      "tier": "semantic",
+      "unit": "ratio",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "opacity:alpha-wash": {
+      "tier": "semantic",
+      "unit": "ratio",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "opacity:alpha-selection-ic": {
+      "tier": "semantic",
+      "unit": "ratio",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "opacity:alpha-solid": {
+      "tier": "semantic",
+      "unit": "ratio",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-1_5": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-2": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-6": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-8": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-12": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-14": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-16": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-20": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-24": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-28": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-32": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-36": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-180": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-240": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-focus-bar": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-dot": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-agent-marker-width": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-agent-marker-height": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-inline-badge": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-selector-track": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-inline-action": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-compact-row": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-selector-knob": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-action-button": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-icon-button": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:size-pill-height": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-row-height": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-comfortable-row": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-truncation-slot": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-truncation-slot-wide": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-icon-small": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-icon-standard": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-icon-preview": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:size-icon-artboard-stroke": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:c-button-hit-size": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:c-row-min-height": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:c-input-radius": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:c-field-gap": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "stroke:c-focus-width": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-button-primary-focus-outline": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "Tekes adaptation of OCUI",
+      "owner_role": "design-maintainer",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-surface-0": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:surface-0": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-surface-1": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:surface-1": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-surface-2": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:surface-2": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-surface-3": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:surface-3": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-surface-popover": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:surface-popover": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-brand-clay": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "deprecated",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "DS-007 brand-neutral compatibility alias",
+      "last_changed": "0.3.0-proposal.1",
+      "deprecated_since": "0.3.0-proposal.1",
+      "replacement": "p-brand-seed"
+    },
+    "color:brand-clay": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "deprecated",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "DS-007 brand-neutral compatibility alias",
+      "last_changed": "0.3.0-proposal.1",
+      "deprecated_since": "0.3.0-proposal.1",
+      "replacement": "brand-decoration"
+    },
+    "color:p-action-primary-ground": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "action-primary-ground"
+    },
+    "color:action-primary-ground": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-action-primary-hover": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "action-primary-hover"
+    },
+    "color:action-primary-hover": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-action-primary-pressed": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "action-primary-pressed"
+    },
+    "color:action-primary-pressed": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-action-primary-foreground": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "action-primary-foreground"
+    },
+    "color:action-primary-foreground": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-user-message-surface": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:user-message-surface": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-segmented-track": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:segmented-track": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-segmented-thumb": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:segmented-thumb": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:c-button-primary-hover": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:c-button-primary-pressed": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:c-composer-ground": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:c-popover-ground": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:c-user-message-ground": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:c-segmented-track": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:c-segmented-thumb": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:p-radius-2": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:p-radius-8": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:p-radius-10": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:p-radius-20": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:p-radius-999": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:p-size-40": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:p-size-44": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:p-size-48": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:p-size-128": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:p-size-96": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:p-size-384": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "spacing:p-spacing-10": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "spacing:p-spacing-14": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "spacing:p-spacing-20": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:radius-button-xs": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:radius-button-sm": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:radius-button-md": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:radius-button-lg": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:radius-code": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:radius-dialog": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:radius-message": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:radius-composer": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:radius-pill": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:c-button-xs-radius": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:c-button-sm-radius": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:c-button-md-radius": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:c-button-lg-radius": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:c-composer-radius": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:c-user-message-radius": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:c-code-radius": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:c-dialog-radius": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "radius:c-segmented-radius": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:size-button-xs": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:size-button-sm": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:size-button-md": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:size-button-lg": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:size-icon-button-compact": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:size-composer-editor-min": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:size-composer-editor-max": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:size-composer-expanded-editor-max": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:size-attachment-width": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "size:size-attachment-height": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "spacing:space-button-xs-inset": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "spacing:space-button-sm-inset": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "spacing:space-button-md-inset": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "spacing:space-button-lg-inset": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "spacing:space-composer-inset": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "spacing:space-segmented-inset": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.2.0-proposal.1",
+      "owner_role": "design-maintainer",
+      "source": "Tekes adaptation of OCUI",
+      "last_changed": "0.2.0-proposal.1"
+    },
+    "color:p-syntax-keyword": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "v0.2 frozen syntax/data mapping; independent of brand",
+      "owner_role": "design-maintainer"
+    },
+    "color:syntax-keyword": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "v0.2 frozen syntax/data mapping; independent of brand",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-data-series-3": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "v0.2 frozen syntax/data mapping; independent of brand",
+      "owner_role": "design-maintainer"
+    },
+    "color:data-series-3": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "v0.2 frozen syntax/data mapping; independent of brand",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-brand-seed": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "brand-seed"
+    },
+    "color:p-accent-hover": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "accent-hover"
+    },
+    "color:accent-hover": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-accent-pressed": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "accent-pressed"
+    },
+    "color:accent-pressed": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-accent-subtle-ground": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "accent-subtle-ground"
+    },
+    "color:accent-subtle-ground": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-accent-subtle-hover": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "accent-subtle-hover"
+    },
+    "color:accent-subtle-hover": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-accent-subtle-pressed": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "accent-subtle-pressed"
+    },
+    "color:accent-subtle-pressed": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-accent-subtle-foreground": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "accent-subtle-foreground"
+    },
+    "color:accent-subtle-foreground": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-accent-outline": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "accent-outline"
+    },
+    "color:accent-outline": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-action-primary-focus-outline": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "last_changed": "0.3.0-proposal.1",
+      "source": "generated:brand-policy/tekes-oklch-constrained-v1",
+      "owner_role": "design-maintainer",
+      "generated": true,
+      "brand_role": "action-primary-focus-outline"
+    },
+    "color:action-primary-focus-outline": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:brand-decoration": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:selection-accent-ground": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:selection-accent-foreground": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:selection-accent-marker": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:control-checked-ground": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:control-checked-hover": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:control-checked-pressed": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:control-checked-mark": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:progress-active": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-link-foreground": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-link-hover": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-link-pressed": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-list-selection-marker": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-checkbox-checked-ground": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-checkbox-checked-mark": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-radio-checked-ground": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-radio-checked-mark": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-switch-on-ground": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-switch-on-thumb": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-progress-active": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-tabs-selected-marker": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "DS-007",
+      "owner_role": "design-maintainer"
+    }
+  }
+}

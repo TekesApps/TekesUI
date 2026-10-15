@@ -1,0 +1,57 @@
+{
+  "accessibility": {
+    "reduce_motion": "all-durations-zero; bypass spring simulation; no spinner rotation, shimmer or typewriter"
+  },
+  "duration": {
+    "expansion": 0.5,
+    "geometry": 0.12,
+    "instant": 0.0,
+    "listExpansion": 0.3,
+    "press": 0.07,
+    "stateChange": 0.15
+  },
+  "easing": {
+    "standard": [
+      0.16,
+      1.0,
+      0.3,
+      1.0
+    ]
+  },
+  "policy": {
+    "hover_translation": 0.0,
+    "idle_animation": false,
+    "press_scale": 1.0,
+    "shadow": false,
+    "spring_use": "selection thumb, bounded disclosure reveal, panel snap only; no pointer tracking lag",
+    "text_blur": false,
+    "vibrancy": false
+  },
+  "spring": {
+    "feedback": {
+      "damping": 18.0,
+      "mass": 1.0,
+      "source": "OCUI-03 SPRING_GENTLE; opt-in, not for reading or approvals",
+      "stiffness": 380.0
+    },
+    "micro": {
+      "damping": 30.0,
+      "mass": 1.0,
+      "source": "OCUI-03 SPRING_BOUNCY",
+      "stiffness": 600.0
+    },
+    "panel": {
+      "damping": 80.0,
+      "mass": 0.1,
+      "source": "OCUI-03 SPRING_HEAVY_SNAP",
+      "stiffness": 1200.0
+    },
+    "reveal": {
+      "damping": 28.0,
+      "mass": 1.0,
+      "source": "OCUI-03 SPRING_SNAPPY",
+      "stiffness": 320.0
+    }
+  },
+  "version": "0.2.0-proposal.1"
+}

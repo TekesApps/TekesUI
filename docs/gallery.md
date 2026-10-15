@@ -1,5 +1,8 @@
 # Gallery
 
+> 2026-10-15 最新设计权威：用户提供的 v0.3.0-proposal1 有定义时优先，缺项保留现有补集。参见 [DESIGN.md](../DESIGN.md) 和完整导入索引；本文此前固定尺寸、旧值和原版优先约定仅在不冲突时适用。规范存在不等于原生实现已验收。
+
+
 Gallery 是恒定的人工目测验收目标（章程第 2 节）：同一页、同一布局、每次长得一样。代码在 `crates/tekes-ui-gallery`。F1 起画面里是真文字（`tekes-ui-text`，系统界面字体，字号取自 `TextRole`：正文 13、列头与注释 11、节标题 11 粗；颜色取 `PrimaryText` / `SecondaryText` / `TertiaryText`）。文字放在固定大小的槽里，原点落在整数 pt 上，布局不随文字变化。
 
 ## 布局

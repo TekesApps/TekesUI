@@ -1,0 +1,146 @@
+{
+  "version": "1.0",
+  "retrieved_on": "2026-10-15",
+  "scope": "public primary-source references; no private Figma or Claude Design workspace accessed",
+  "sources": [
+    {
+      "id": "CD-01",
+      "publisher": "Anthropic",
+      "title": "Introducing Claude Design by Anthropic Labs",
+      "published": "2026-04-17",
+      "url": "https://www.anthropic.com/news/claude-design-anthropic-labs",
+      "access": "official article body read",
+      "finding": "从既有代码与设计资料建立可复用系统，并在项目中应用品牌、字体与组件。",
+      "adopt": "品牌配置与组件契约分离；所有生成项目绑定明确设计版本。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "CD-02",
+      "publisher": "Anthropic / Claude Help Center",
+      "title": "Set up your design system in Claude Design",
+      "published": null,
+      "url": "https://support.claude.com/en/articles/14604397-set-up-your-design-system-in-claude-design",
+      "access": "official guide body read; page says Updated this week, exact update date not asserted",
+      "finding": "同时涵盖品牌、排版、组件和布局；建议用真实项目核对；当前指南区分品牌资料导入和React组件同步。",
+      "adopt": "交接包包含用法与页面上下文；Rust适配未验证；不照搬文中组件预览的键盘限制。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "CD-03",
+      "publisher": "Anthropic / Claude Help Center",
+      "title": "Get started with Claude Design",
+      "published": null,
+      "url": "https://support.claude.com/en/articles/14604416-get-started-with-claude-design",
+      "access": "official guide retrieved; design-system and handoff sections read",
+      "finding": "设计工作使用已有系统组件与上下文，并支持向代码工作流交接。",
+      "adopt": "让AI接收结构化token、组件ID、API与证据状态，而非凭截图重建。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "CD-X01",
+      "publisher": "Claude official X account",
+      "title": "New in Claude Design: stays on brand across projects",
+      "published": null,
+      "url": "https://x.com/claudeai/status/2067325887909884315",
+      "access": "public search-index excerpt only; direct X page failed; replies not read",
+      "finding": "公开索引提及跨项目品牌一致性及与Claude Code同步。",
+      "adopt": "仅作发现线索；具体契约以官方正文与本地验收为准。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "FG-01",
+      "publisher": "Figma",
+      "title": "The future of design systems is semantic",
+      "published": "2023-07-27",
+      "url": "https://www.figma.com/blog/the-future-of-design-systems-is-semantic/",
+      "access": "official article body read; original publication date, page includes later additions",
+      "finding": "用语义变量与引用关系连接设计和代码，不把浅深主题扩展成重复组件。",
+      "adopt": "稳定语义ID；保留别名图；品牌不是组件variant。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "FG-02",
+      "publisher": "Figma Learn",
+      "title": "Extend a variable collection",
+      "published": null,
+      "url": "https://help.figma.com/hc/en-us/articles/36346281624471-Extend-a-variable-collection",
+      "access": "official guide body read; no fixed publication date asserted",
+      "finding": "子集合继承父集合未覆盖值；结构与modes由父集合统一；颜色和透明度覆盖不可分。当前功能有Enterprise限制。",
+      "adopt": "共享base＋显式品牌覆盖；四主题固定；Figma工具适配可选；不把颜色覆盖误作仅alpha变化。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "FG-03",
+      "publisher": "Figma",
+      "title": "Schema 2025: Design systems for a new era",
+      "published": "2025-10-28",
+      "url": "https://www.figma.com/blog/schema-2025-design-systems-recap/",
+      "access": "official article read for extended collections and reusable system direction",
+      "finding": "扩展集合用于多品牌设计系统，减少重复维护。",
+      "adopt": "单套组件目录，多个品牌配置；不按品牌复制组件库。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "FG-04",
+      "publisher": "Figma",
+      "title": "Design context, everywhere you build",
+      "published": "2025-09-23",
+      "url": "https://www.figma.com/blog/design-context-everywhere-you-build/",
+      "access": "official article body read, especially component mapping",
+      "finding": "Code Connect把设计组件映射到代码位置与用法，MCP传递结构化上下文。",
+      "adopt": "登记ID↔API↔源码位置↔Gallery；未知源码保持null，不假装已连接生产代码。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "FG-05",
+      "publisher": "Figma",
+      "title": "Workflow lab: Staying in the flow with Figma’s agent",
+      "published": "2026-10-06",
+      "url": "https://www.figma.com/blog/workflow-lab-staying-in-the-flow-with-the-figma-agent/",
+      "access": "official article body read, especially inspection/repair and ambiguous cases",
+      "finding": "先检查旧组件及变量绑定；明确可替换项可修复，歧义项留给设计者判断。",
+      "adopt": "自动修复限定稳定ID与显式迁移表；视觉或行为语义不明时产生待评审差异。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "FG-06",
+      "publisher": "Figma Learn",
+      "title": "Guide to variables in Figma",
+      "published": null,
+      "url": "https://help.figma.com/hc/en-us/articles/15339657135383-Guide-to-variables-in-Figma",
+      "access": "official variable guide retrieved",
+      "finding": "变量、集合、modes、别名与设计代码同步具有不同职责。",
+      "adopt": "Figma映射规划保留别名和四主题，不把解析结果反写为作者常量。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "COLOR-01",
+      "publisher": "W3C",
+      "title": "CSS Color Module Level 4",
+      "published": null,
+      "url": "https://www.w3.org/TR/css-color-4/",
+      "access": "primary specification, sRGB and Oklab/OkLCh reference",
+      "finding": "sRGB与Oklab/OkLCh提供颜色表示和转换依据。",
+      "adopt": "转换以此为参考；本包约束搜索与降色度算法是Tekes策略，不宣称实现CSS Local MINDE。",
+      "retrieved_on": "2026-10-15"
+    },
+    {
+      "id": "COLOR-02",
+      "publisher": "W3C WAI",
+      "title": "Understanding SC 1.4.3 and SC 1.4.11",
+      "published": null,
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html",
+      "related_url": "https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html",
+      "access": "primary guidance read",
+      "finding": "普通小字与必要非文字信息有不同对比度要求。",
+      "adopt": "数值对比基于最终8bit sRGB色对；IC正文7:1为沿用的Tekes增强基线，非整体合规声明。",
+      "retrieved_on": "2026-10-15"
+    }
+  ],
+  "notes": [
+    "博客发布日期与当前帮助文档更新时间分开记录。",
+    "X仅核实可索引摘要；没有读到完整回复threads。",
+    "没有重验v0.2锁定的open-claude-ui快照。",
+    "摘记是本次短摘要，不包含完整转载、图片或字体。"
+  ]
+}

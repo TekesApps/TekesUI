@@ -1,5 +1,3 @@
-//! **临时占位：数值取自 Tekes 现有 Spacing / CornerRadius / Stroke / Motion / ControlSize / Alpha / ColorRole / TextRole，等 Design 交付的 tokens.json 生成后替换。**
-//!
 //! 主题：外观加对比度。
 
 /// 外观。

@@ -1,0 +1,95 @@
+{
+  "version": "0.2.0-proposal.1",
+  "unit": "logical-pt",
+  "grid": 2,
+  "window": {
+    "minimum": [
+      720,
+      480
+    ],
+    "default": [
+      1360,
+      860
+    ]
+  },
+  "breakpoints": {
+    "three_panes_min": 1200,
+    "two_panes_min": 960
+  },
+  "sidebar": {
+    "default": 288,
+    "min": 224,
+    "max": 360
+  },
+  "inspector": {
+    "default": 320,
+    "min": 280,
+    "max": 420
+  },
+  "document": {
+    "max_reading_width": 768,
+    "minimum_editor_width": 560
+  },
+  "composer": {
+    "min_height": 72,
+    "max_height": 384,
+    "editor_min_token": "size-composer-editor-min",
+    "editor_max_token": "size-composer-editor-max",
+    "expanded_editor_max_token": "size-composer-expanded-editor-max",
+    "available_height_rule": "Clamp editor to available content height after toolbar/insets; never hide submit/stop. Expanded editor is opt-in and may require a larger window."
+  },
+  "gallery": {
+    "capture_size": [
+      1440,
+      960
+    ],
+    "backing_scales": [
+      1,
+      2
+    ],
+    "text_scales": [
+      1,
+      1.25,
+      1.5,
+      2
+    ],
+    "brand_profiles": [
+      "example-neutral",
+      "example-blue",
+      "example-clay"
+    ],
+    "brand_reference": "example-neutral"
+  },
+  "layers": {
+    "content": 0,
+    "sticky": 10,
+    "dropdown": 20,
+    "popover": 30,
+    "modal_scrim": 40,
+    "modal": 50,
+    "modal_popover": 60,
+    "tooltip": 70
+  },
+  "shadow": "none",
+  "density": {
+    "compact_row_token": "size-compact-row",
+    "normal_row_token": "size-row-height",
+    "comfortable_row_token": "size-comfortable-row"
+  },
+  "policy": "Controls grow with text; effective minimum constraints can collapse panes before nominal breakpoints. OS windows, IME candidates and menu surfaces have OS-owned stacking.",
+  "reference_layout": "OCUI proportion alignment, not a pixel-identical clone",
+  "hairline_policy": {
+    "decorative": "1 / backing_scale logical pt",
+    "required_boundary": "stroke-rule",
+    "increased_contrast": "stroke-rule",
+    "note": "stroke-hairline=0.5 is retained for @2x compatibility only; not a universal width"
+  },
+  "container_adaptation": {
+    "expanded_min": 576,
+    "labels_compact_below": 480,
+    "secondary_actions_overflow_below": 384,
+    "single_action_row_below": 320,
+    "unit": "logical-pt",
+    "rule": "content measurement wins; no essential action hidden, overflow remains keyboard accessible"
+  }
+}

@@ -1,0 +1,236 @@
+{
+  "$schema": "./system.schema.json",
+  "format": "tekesui-design-system/2",
+  "status": "integrated-proposal-with-json-token-authority",
+  "authority": {
+    "policy": {
+      "$ref": "../DESIGN.md"
+    },
+    "baseline": {
+      "$ref": "./baseline/manifest.json"
+    },
+    "design_baseline_name": "v0.3.0-proposal1 integration over approved Gallery foundation",
+    "release_tag": null,
+    "change_policy": "Package definitions take precedence where present; existing definitions survive only where absent. The earlier a8 baseline remains historical evidence. Integration is not a release or blanket native-component acceptance.",
+    "proposal": {
+      "$ref": "./integration.json"
+    },
+    "historical_visual_baseline_commit": "a8ab9303ab2f528913f83cfc2c8da2a0eab8b8f3"
+  },
+  "layers": {
+    "tokens": {
+      "$ref": "./tokens.json"
+    },
+    "layout_and_component_specs": {
+      "$ref": "./integration.json#/effective_specifications"
+    },
+    "interaction": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/interaction-contracts.json"
+    },
+    "themes": {
+      "$ref": "#/themes"
+    },
+    "accessibility": {
+      "$ref": "#/accessibility"
+    },
+    "evidence": {
+      "$ref": "#/evidence"
+    }
+  },
+  "specs": {
+    "classification": "Package specifications take precedence. Existing implementation-specific fixtures below remain only as a nonconflicting supplement.",
+    "calibration_layout": {
+      "proposal": {
+        "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/layout.json"
+      },
+      "historical_fixture": {
+        "$ref": "./history/pre-proposal1/system.json#/specs/calibration_layout"
+      },
+      "policy": "Proposal layout takes precedence for current captures; preserve the original three calibration pages and the scrolling fixture."
+    },
+    "typography_policy": {
+      "source": {
+        "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/tokens/tokens.json#/type"
+      },
+      "rust_role_binding": "See design/source/rust-mapping.json. Retain existing roles only when the proposal has no exact semantic equivalent.",
+      "font_policy": "Use platform UI and monospace fonts; do not redistribute system fonts."
+    },
+    "radius_derivation": {
+      "rule": "concentric(outer, inset) = max(outer - inset, Badge radius).",
+      "base_tokens": {
+        "$ref": "./tokens.json#/tokens/radius"
+      },
+      "source": {
+        "$ref": "../crates/tekes-ui-tokens/src/metrics.rs"
+      }
+    },
+    "components": [
+      {
+        "proposal": {
+          "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json"
+        },
+        "status": "requirements; runtime coverage tracked separately"
+      },
+      {
+        "retained_gallery_fixtures": [
+          "primitives",
+          "tokens",
+          "static-text"
+        ],
+        "implementation_reference": {
+          "$ref": "../crates/tekes-ui-gallery/src/gallery"
+        },
+        "historical_rules": {
+          "$ref": "./history/pre-proposal1/system.json#/specs/components"
+        },
+        "policy": "Use current proposal tokens and contracts for overlapping semantics; retain only nonconflicting fixture behavior."
+      }
+    ]
+  },
+  "interaction": {
+    "source": {
+      "$ref": "../crates/tekes-ui-gallery/src/gallery/mod.rs"
+    },
+    "navigation": {
+      "pages": [
+        "primitives",
+        "tokens",
+        "static-text"
+      ],
+      "selection": [
+        "mouse click",
+        "Up/Down without wrapping",
+        "Pages menu shortcuts Command+1/2/3"
+      ],
+      "selection_changes_update": "Scene, title and menu check state only when actual state changes.",
+      "search": "Not part of the approved three-page baseline; future additions must preserve existing appearance."
+    },
+    "redraw_policy": [
+      "Hover entering or leaving a row can redraw.",
+      "Pointer movement within one row and repeated selection of the same item do not redraw."
+    ],
+    "static_text_pickers": "Mouse fixture/width selection; invalid width falls back to fixture default.",
+    "motion": {
+      "source": {
+        "$ref": "./tokens.json#/tokens/motion"
+      },
+      "proposal": {
+        "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/tokens/motion.toml"
+      },
+      "implementation_status": "Existing auto-scroll fixture retained. Proposal interaction contracts are requirements, not a claim that all native behavior is implemented."
+    },
+    "proposal": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/interaction-contracts.json"
+    }
+  },
+  "themes": [
+    {
+      "id": "light",
+      "tokens": {
+        "$ref": "./tokens.json#/sets/light"
+      },
+      "appearance": "light",
+      "increased_contrast": false
+    },
+    {
+      "id": "dark",
+      "tokens": {
+        "$ref": "./tokens.json#/sets/dark"
+      },
+      "appearance": "dark",
+      "increased_contrast": false
+    },
+    {
+      "id": "light-ic",
+      "tokens": {
+        "$ref": "./tokens.json#/sets/light-ic"
+      },
+      "appearance": "light",
+      "increased_contrast": true
+    },
+    {
+      "id": "dark-ic",
+      "tokens": {
+        "$ref": "./tokens.json#/sets/dark-ic"
+      },
+      "appearance": "dark",
+      "increased_contrast": true
+    }
+  ],
+  "accessibility": {
+    "status": "known-gaps",
+    "implemented_contracts": [
+      "Theme selection and follow-system appearance/contrast semantics.",
+      "Explicit five-state visual samples in the verification page."
+    ],
+    "not_claimed": [
+      "Full semantic accessibility tree",
+      "VoiceOver acceptance",
+      "IME/text editor interaction",
+      "Complete keyboard-accessible component catalog"
+    ],
+    "policy": "Visual sample or token coverage does not prove accessible control behavior."
+  },
+  "evidence": {
+    "manifest": {
+      "$ref": "./baseline/manifest.json"
+    },
+    "golden_directory": {
+      "$ref": "./baseline/screenshots/"
+    },
+    "matrix": "Original three pages x four themes x two scales.",
+    "checker": {
+      "$ref": "../scripts/check-design-baseline.py"
+    },
+    "handoff": {
+      "$ref": "../docs/handoffs/design-baseline.md"
+    },
+    "golden_policy": "Approved immutable evidence; updates require explicit visual review and user approval.",
+    "limits": [
+      "No private comparison images in the public golden directory.",
+      "CI metadata/source checks do not prove same-environment pixel acceptance.",
+      "A candidate must have independent actual build/source provenance.",
+      "Proposal static reports are imported evidence only; current integration/native checks are recorded independently. Earlier goldens are historical and are not overwritten to hide intentional proposal changes."
+    ]
+  },
+  "known_gaps": [
+    {
+      "id": "full-component-system",
+      "status": "incomplete",
+      "detail": "The frozen Gallery and token vocabulary are not a complete production component library or icon system."
+    },
+    {
+      "id": "historical-performance",
+      "status": "failed-gate",
+      "detail": "Keep original F1 mixed scrolling gate failure; this export does not change that result."
+    },
+    {
+      "id": "physical-presentation",
+      "status": "unverified",
+      "detail": "Physical no-dropped-frame behavior and 60-second idle CPU remain unverified."
+    },
+    {
+      "id": "cross-platform",
+      "status": "unverified",
+      "detail": "Current rendering/font evidence is macOS-specific; other platforms have not been accepted."
+    },
+    {
+      "id": "proposal-native-coverage",
+      "status": "partial",
+      "note": "40 component contracts and 10 recipes are stored and indexed. Contract presence does not mean a finished Rust implementation or native acceptance."
+    }
+  ],
+  "token_source": {
+    "document": {
+      "$ref": "./tokens.json"
+    },
+    "schema": {
+      "$ref": "./tokens.schema.json"
+    },
+    "value_authority": "Authoritative base tokens, explicit consumer BrandConfig and brand policy, retained legacy supplement, and Rust API mapping; tokens.json is generated and must not be hand-edited.",
+    "status": "generated-from-authoritative-design-inputs",
+    "unit_policy": "Logical pt is retained in this project schema. No CSS px/rem conversion is implied.",
+    "format_policy": "Project-owned schema using DTCG-inspired $type/$value spelling; not full DTCG compliance.",
+    "single_source_migration": "Design inputs compile into a merged JSON projection; normal Cargo build verifies freshness and generates OUT_DIR Rust tokens. Python tools are development-time tools; native Gallery remains pure Rust."
+  }
+}

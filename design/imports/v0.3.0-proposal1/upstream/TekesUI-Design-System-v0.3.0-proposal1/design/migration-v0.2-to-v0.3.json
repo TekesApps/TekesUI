@@ -1,0 +1,42 @@
+{
+  "from": "0.2.0-proposal.1",
+  "to": "0.3.0-proposal.1",
+  "decision": "DS-007",
+  "breaking_visible_change": true,
+  "scope": "proposal only; not a stable semver compatibility claim",
+  "changes": [
+    {
+      "old": "design/tokens/tokens.json authored fixed palette",
+      "new": "base.tokens.json + approved consumer BrandConfig + brand policy -> generated tokens.json",
+      "behavior": "generated outputs read-only"
+    },
+    {
+      "old": "brand-clay / p-brand-clay",
+      "new": "brand-decoration / p-brand-seed",
+      "behavior": "deprecated aliases now follow consumer seed; no fixed clay guarantee"
+    },
+    {
+      "old": "accent / action-primary-* fixed clay",
+      "new": "same public IDs, four-theme constrained brand derivation",
+      "behavior": "foreground, hover, pressed and focus neutral recalculated as pairs"
+    },
+    {
+      "old": "c-code-keyword -> accent",
+      "new": "syntax-keyword",
+      "behavior": "preserve v0.2 code palette, no brand leakage"
+    },
+    {
+      "old": "c-chart-series-3 -> accent",
+      "new": "data-series-3",
+      "behavior": "preserve v0.2 chart palette, no brand leakage"
+    },
+    {
+      "old": "Gallery four-theme matrix",
+      "new": "explicit example-neutral/blue/clay × four themes",
+      "behavior": "all native evidence unverified"
+    }
+  ],
+  "deprecated_removal": "not before two minor versions AND 90 days after first public release; remove public APIs only on major release; publication date not established",
+  "old_component_ids_retained": true,
+  "native_api_or_business_behavior_changed": false
+}

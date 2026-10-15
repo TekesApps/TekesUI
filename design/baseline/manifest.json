@@ -1,0 +1,365 @@
+{
+  "schema": "tekesui-gallery-design-baseline/1",
+  "name": "Gallery Design System v1 visual baseline",
+  "status": "approved-visual-starting-point",
+  "approval": {
+    "source_commit": "a8ab9303ab2f528913f83cfc2c8da2a0eab8b8f3",
+    "source_commit_time": "2026-10-15T15:38:54+08:00",
+    "release_sha256": "9805be44bcb53e8ca925ae2cc1aade0cba76fc53e6398fc5132a6cfc7ecb2ebb",
+    "user_instruction": "我看到了，就是这个，以这个设计固定design system，不要完全改掉了",
+    "approved_date": "2026-10-15",
+    "scope": "Original three-page Gallery, current Rust token vocabulary, and mixed scrolling presentation. DSv1 is a baseline name, not a release tag or complete component-system claim.",
+    "change_policy": "Token source changes or different visuals require explicit user approval and a reviewed baseline update; this checker never updates golden files."
+  },
+  "token_sources": {
+    "root": "crates/tekes-ui-tokens",
+    "authority": "Approved a8ab930 Rust crate source. No duplicate handwritten token values in this manifest.",
+    "files": {
+      "crates/tekes-ui-tokens/Cargo.toml": "c645ca53601accd068bb0477f3ac43481430ba59003d525155de01a1a1d0f23f",
+      "crates/tekes-ui-tokens/src/alpha.rs": "1b247683f8068464eb88f3296ad02cd53b151e9d295e50bd4f63f7a516fbc497",
+      "crates/tekes-ui-tokens/src/color.rs": "7dfc3c78d9c25aa0349e2cc292371542f89499630ada5c1f7aeb931439795b0d",
+      "crates/tekes-ui-tokens/src/lib.rs": "dbd1d863772b95cc46ae7d4642e4157561b7f16cf025e857a740e26cde6a89d1",
+      "crates/tekes-ui-tokens/src/metrics.rs": "0db9edf9d084c6e1448c37bd3603a03ac24dadd948cd2c81e918f0015800333c",
+      "crates/tekes-ui-tokens/src/text.rs": "d59709a6f52c25f83c160accf68fd06bde1b6b0566cd13ebe7f68149870bde01",
+      "crates/tekes-ui-tokens/src/theme.rs": "1f4c96a5eb9a1c05158870da29179bac72073af69c5c105ca0bd8241dd35059a"
+    }
+  },
+  "visual_sources": {
+    "policy": "Source hashes are provenance and review triggers, not a ban on non-visual improvements. Changes require same-environment, byte-identical candidate snapshots; token changes remain blocked.",
+    "roots": [
+      "crates/tekes-ui-gallery/src",
+      "crates/tekes-ui-render/src",
+      "crates/tekes-ui-scene/src",
+      "crates/tekes-ui-text/src",
+      "fixtures/text",
+      "crates/tekes-ui-platform-macos/src"
+    ],
+    "extra_files": [
+      "Cargo.toml",
+      "Cargo.lock",
+      "crates/tekes-ui-gallery/Cargo.toml",
+      "crates/tekes-ui-render/Cargo.toml",
+      "crates/tekes-ui-scene/Cargo.toml",
+      "crates/tekes-ui-text/Cargo.toml",
+      "crates/tekes-ui-platform-macos/Cargo.toml"
+    ],
+    "files": {
+      "Cargo.lock": "050f0da417dda411c4fd3b33fa58110da0c11d44f17f03522f8a164b8dc9daf6",
+      "Cargo.toml": "e7ba84249d7d7d12b72c7da371ea4dcb22c63a30b1f35178cee2c0687d515ed5",
+      "crates/tekes-ui-gallery/Cargo.toml": "d9ebe1b093d627325c0cd23452503906a4c13b24b1c44109d38d265f94aa2fe6",
+      "crates/tekes-ui-gallery/src/gallery/chrome.rs": "9c61eee286c03102a0e5fa1f4cc41983fd8e71466ccc61bfbb4d2cc88e576db3",
+      "crates/tekes-ui-gallery/src/gallery/commands.rs": "bcdf7ac615e50ccc0b95dc63f546efa934d04316e6d9f5ebfd53ca5cda71cf02",
+      "crates/tekes-ui-gallery/src/gallery/containers.rs": "c88375c84ba9308878baa55877b2528b64869b01546c2717f6c4eb726e92f047",
+      "crates/tekes-ui-gallery/src/gallery/layout.rs": "f3d33a2b0084b08d62d2efbcb077e11a381a5d232bf8830297062bc4f8d9cdf4",
+      "crates/tekes-ui-gallery/src/gallery/mod.rs": "894954c8d7a83efe462a8d8add39396181c85c9c7c5561abf025e21f1962b202",
+      "crates/tekes-ui-gallery/src/gallery/pages/mod.rs": "2a88f9afe5243a94a4b0a2ac65871ee0ecd363897e2b6f4477597b71c239ae41",
+      "crates/tekes-ui-gallery/src/gallery/pages/primitives.rs": "64abcba2bc3b7a1e520547400808a49c141cf36ddebd1b53e917638bbeeaac6d",
+      "crates/tekes-ui-gallery/src/gallery/pages/static_text.rs": "6073927a6e0b41975cbb71d5dc3a14e5b1d7da6f4bd5360dd635bffbf1955c0c",
+      "crates/tekes-ui-gallery/src/gallery/pages/tokens.rs": "e058d0012edec066176917992c70c924d9b8a2b980dfc2446d9212bedbc86680",
+      "crates/tekes-ui-gallery/src/gallery/snapshot.rs": "88511f553bceb4a984120bb97283ffab10c258bf463e99d8fff4715e60b29c80",
+      "crates/tekes-ui-gallery/src/gallery/static_text.rs": "ad6622178ef5ea1b0581729a6359a50764c95ea40ef1eaa9360daad47add1a46",
+      "crates/tekes-ui-gallery/src/gallery/text.rs": "2a9da3217ce757433435fe3303d70fe51256373415e7156ae0f4f9f740f7a743",
+      "crates/tekes-ui-gallery/src/gallery/theme.rs": "e1ede314548a0ae25ad633f1a86cefb7118473d7b61d0967dcb6bfbe551982d5",
+      "crates/tekes-ui-gallery/src/host.rs": "f95a96567528178e8cf6c1f3ee6ce6750d31001df820bbc4ea016b30d16cd757",
+      "crates/tekes-ui-gallery/src/main.rs": "ee7a037c660078809cc711f1e58db45404d2d0424933e9887d391c14078a6b2f",
+      "crates/tekes-ui-gallery/src/perf.rs": "ebe0a6522e69ba63f95842c3bd7d0215d54c35e29bfb7453e8eaae83f47153ad",
+      "crates/tekes-ui-platform-macos/Cargo.toml": "7083daf4436fc9715f0e8b7f314e5e0839afe9f142103343637d59cb0711b16d",
+      "crates/tekes-ui-platform-macos/src/app.rs": "4ce4d898e9922483b59a957814703a2ad91be18ad1c5ef7db62b3a179ecf0066",
+      "crates/tekes-ui-platform-macos/src/appearance.rs": "db307a28b7ebcbbd0bf5f294e30235bad4f6f86e73916f3b270364c907cafae9",
+      "crates/tekes-ui-platform-macos/src/config.rs": "5bcbbc5165d9ae353c4e38e620350578d57ef0b533278e8139e8a0c9ec147fb3",
+      "crates/tekes-ui-platform-macos/src/event.rs": "dd817bba5655f3e20b7a4f289da9e9bab00e7e83f933aceb8c2c90b972673053",
+      "crates/tekes-ui-platform-macos/src/lib.rs": "e8016ee8e23b536f396abb61556cc852d57346556f3128dcb4d9028ca9f8060d",
+      "crates/tekes-ui-platform-macos/src/menu.rs": "0532145b26b4006235ec4a26d52ce041b9b968089259e64681cdf16695e560e6",
+      "crates/tekes-ui-platform-macos/src/menu_build.rs": "242b7702278fd715ea10d93ed6d93357c2d70d32cb57d6032d1bdc7316544d18",
+      "crates/tekes-ui-platform-macos/src/placement.rs": "a2167cf41d3f8bbe27b578726d871d57e0faac0d6e949e00923943105bc35aee",
+      "crates/tekes-ui-platform-macos/src/screens.rs": "ebec69d32c1c6de2a050f33448a88e211c4a119ba68133ebbdb3bd47d3f4ef23",
+      "crates/tekes-ui-platform-macos/src/selftest.rs": "d4358648c575c6388a9b7a90c6b3a20337543f529068359d0db6a8a1d9719532",
+      "crates/tekes-ui-platform-macos/src/shared.rs": "176dcabcf155b0723c7fc5485ab63c1b205bf81c3485e00933b6c02fd4207658",
+      "crates/tekes-ui-platform-macos/src/view.rs": "8070ae62611c4ba981a4c4d94379f52880d25b000923c4d049d2f80bdea4d95d",
+      "crates/tekes-ui-render/Cargo.toml": "70c3c909562031b0b929ab05d2861a2fea1aaadbc72ffd6464487ae9bec723fc",
+      "crates/tekes-ui-render/src/common.rs": "125b8e09181c3482cc721a174cef0e9d21e378b568e15b8350079373170b69ef",
+      "crates/tekes-ui-render/src/error.rs": "5db4974b2cea5f4d2fe9d54b112093d162efb247e336926275d533ee53fda67c",
+      "crates/tekes-ui-render/src/frame.rs": "9436d95442579d16ba4bac6a0bb3e27b305c502a03d5830a0db8b82fc3dff68b",
+      "crates/tekes-ui-render/src/glyph.wgsl": "eeda8fbb6d4e57c51f86ba6ae6b1dc19be5fc841e34a9dae8c69a518b9247912",
+      "crates/tekes-ui-render/src/glyph_pass.rs": "30aa7125dce0d9cdbf0a17984bfc211d5c50ad6baab57df4113648913dd0e0bf",
+      "crates/tekes-ui-render/src/image.wgsl": "dfcd6b705eaf03eabb7b245111d67916770d2df1d4bb33628b27c7884488f955",
+      "crates/tekes-ui-render/src/image_pass.rs": "3ad31ffd7a0938109dc4749b8751f4a94dd5e57d6ae8e38e1f66ac6ebb992960",
+      "crates/tekes-ui-render/src/instance.rs": "2e482054ac6bfbe912aaf37508ac58f12ba5bec0d608fdae2a3cf5ade5abca2e",
+      "crates/tekes-ui-render/src/lib.rs": "79a78ee60165c9a92e9959826f460480429ca22355c5ea778481124f503e62fe",
+      "crates/tekes-ui-render/src/quad.wgsl": "08c68efdab33784660a448c8059a7ac2b68d7d98abfb7ae0644a8a0e8725542f",
+      "crates/tekes-ui-render/src/quad_pass.rs": "d958af9e78c061646880c628f9718006c99fb03715352f2b33103bfd7ed4eb27",
+      "crates/tekes-ui-render/src/renderer.rs": "531c96261d79d7fd286cc5919d916bd4db8cdb0048a6061354724552174e600a",
+      "crates/tekes-ui-render/src/stats.rs": "061b7849987d9530c0ec8686fdcf94d19068ea3bc41c2d9074df0138dd69ee68",
+      "crates/tekes-ui-render/src/timing.rs": "0c8ee0ef691b5a1f248044659f9157d5d1a3d0cc1c6e754d9eadb7fbd570b308",
+      "crates/tekes-ui-scene/Cargo.toml": "819354f3c63f585c0ba639b5379a004cba255fc37834fb6767c4dabbc60ae927",
+      "crates/tekes-ui-scene/src/atlas.rs": "7728a5c3727bc5070c6e30bc3985261aca009141b71d78f5afd6f160d426dee4",
+      "crates/tekes-ui-scene/src/geometry.rs": "44fe7c558d392d1f835bd2acad7307df652095a56056db865983ba4d9ec054f7",
+      "crates/tekes-ui-scene/src/glyph.rs": "f8ca5567e472bf201dd8db3b3f68e59330cd7c1c6562cd55985499dd78027760",
+      "crates/tekes-ui-scene/src/lib.rs": "7c2ea0575716097846820eef9f1265c3e880e921b69813fd9c1932a06500bbc1",
+      "crates/tekes-ui-scene/src/quad.rs": "0ce9073e506ff2ff1cc7f6b742a10648aaa973b14c540c1455508a8b37645786",
+      "crates/tekes-ui-scene/src/scene.rs": "18aecad11636706afc10edf5067ec9a3e63c50d56329b95acad90f7b0be47034",
+      "crates/tekes-ui-text/Cargo.toml": "c57c6a491d589e1c8f8df2325d3a86790c8bd0f21e6680ed3ed0aa323e608217",
+      "crates/tekes-ui-text/src/compare.rs": "9f5970836dde517f584ead75b6c857b074ea3c28338bc9b5996586d4b7776a0a",
+      "crates/tekes-ui-text/src/coretext/fonts.rs": "a158602e6feb098ed485f2ccf290e5402ae5630ca8ca0dd7bf39ae3fb2ed6ae0",
+      "crates/tekes-ui-text/src/coretext/mod.rs": "755c1821181b8661f335fc87230b0bdacf4baa59fe575f08013f8cf99c285124",
+      "crates/tekes-ui-text/src/coretext/oracle.rs": "0ed6177740b1c0b544b4f5c81f971d226cee6ac4eeb0aa45851fe098d9d19aed",
+      "crates/tekes-ui-text/src/coretext/rasterizer.rs": "000673f0cf423950adc445541fef69359dd8275c9347b385c42bcc77e68678fb",
+      "crates/tekes-ui-text/src/coretext/shaper.rs": "30212fc73346d8b2a6280f3b0f0778af97b80bb959f5657e77c28350474664d5",
+      "crates/tekes-ui-text/src/export.rs": "d7d6df9b22ef675d8cce71110a6d27f05eb5d9580e4d5b100aea24f7028c32fd",
+      "crates/tekes-ui-text/src/lib.rs": "0032dbca24db74f8e35d905286dab2f7e93567e5e750f2a9d3602177f745a178",
+      "crates/tekes-ui-text/src/model.rs": "b3c6ac7da546dc6510feb9385d47b147e4b8dd2789d7d6d585e8fcb8b9029e14",
+      "crates/tekes-ui-text/src/push.rs": "3195ee72a0ccc4a0feedaa673bf8a5d92d6b093f549558763ba75789ce2d2fa5",
+      "crates/tekes-ui-text/src/style.rs": "690aa7ecf1dafff4ee16b03caa611d16305aad3bd040a7a1d4b6afd5641132ce",
+      "crates/tekes-ui-text/src/traits.rs": "cd767f2102f10df418bcd7eba840797848adc5298e9a140e63a77a442ee636d1",
+      "crates/tekes-ui-text/src/utf16.rs": "e07ad3f193473ad5d3b6e366156206dc8561a40153cf17873be20d97770f0fd1",
+      "fixtures/text/README.md": "7433d7046c3c9d8aa07f46ca92c39f8edb1df1216461ff34c8cea5770cf3dd19",
+      "fixtures/text/check.py": "4651b6259233b4e2196bd7c7b50912809c9f3f2691246e389b97f0e270ad4918",
+      "fixtures/text/combining.txt": "ddf230696812daee7759f015966a02473c5a81a8f1a2ff23832371764af3383b",
+      "fixtures/text/emoji.txt": "d8ab7fe19718a4568f66b5616925885146f4733c74aa6f7f26682366bbd57dc5",
+      "fixtures/text/kinsoku.md": "b6aa7ea2573872b46792b8ec8d98269d5afa0c3a68f8576f85c247541a1c5169",
+      "fixtures/text/kinsoku.txt": "8c2baefb1000f7c715b1819b29b36b30f55e7872f2571a95a81fb7bf464fd31a",
+      "fixtures/text/long-paragraph.txt": "e6c998ca0f8648c905afe7443deb42c07e72dfb552aabbfe89ddfafacd7f3a97",
+      "fixtures/text/manifest.json": "87133e7dc2de19fab87de4e77eaf11c32c03257f2e9fecab0788f8f8de8663f7",
+      "fixtures/text/mixed-cjk-latin.txt": "2032a17589785f4a15709e6d3931a334a2a51b0bab3966f8d7d0234f0a68d45c",
+      "fixtures/text/rtl.txt": "885538d2878517fcc64caa572c0ca34aa1bffc16953cfde0a266d9cf55d1d22a",
+      "fixtures/text/sentences-a.txt": "070e767144ce0431974a9195171f1e9ebe4433d1d0e6f94ef0c1e0521f880d7f",
+      "fixtures/text/sentences-b.txt": "fcc5fc5cc39cb7dfed9fd8ad6fd6b4aa6c8f2aeb11580f416b00fd6235d21e9b"
+    }
+  },
+  "snapshots": {
+    "directory": "design/baseline/screenshots",
+    "pages": [
+      "primitives",
+      "tokens",
+      "static-text"
+    ],
+    "themes": [
+      "light",
+      "dark",
+      "light-ic",
+      "dark-ic"
+    ],
+    "scales": [
+      1,
+      2
+    ],
+    "canvas_pt": [
+      1200,
+      800
+    ],
+    "capture": "Original 24 headless PNGs generated from approved a8ab930 source before the ten-page redesign; no private reference directory, StaticText::new(None), sentences-a at width 700.",
+    "environment": {
+      "match": {
+        "platform": "Darwin",
+        "machine_model": "Mac16,1",
+        "os_version": "26.6.2",
+        "os_build": "25G83",
+        "apple_languages": [
+          "en-JP",
+          "ja-JP"
+        ]
+      },
+      "chip": "Apple M4",
+      "image_scales": [
+        1,
+        2
+      ],
+      "evidence": "Machine/OS/languages are accompanying evidence from the original f1-perf and 40-case comparison records, with the language list also verified locally on the same machine. PNG headers alone do not establish this provenance. Physical displays are not inputs to headless rendering.",
+      "limits": "PNG equality alone does not prove a fresh candidate was built from claimed source. Record actual binary hash, source/WIP state and environment when performing visual acceptance. CI macos-latest metadata checks do not establish same-environment pixel acceptance."
+    },
+    "files": [
+      {
+        "file": "primitives-dark-ic@1x.png",
+        "size_px": [
+          1200,
+          800
+        ],
+        "sha256": "f63082b6fdf7b2c6c2b0179eb7621f8ab41c9a54c5894ed2cf55163946f06352"
+      },
+      {
+        "file": "primitives-dark-ic@2x.png",
+        "size_px": [
+          2400,
+          1600
+        ],
+        "sha256": "3c3573e752bcc4a39c9f74ca00410295c73992bc85757802708f4b8015a46a0e"
+      },
+      {
+        "file": "primitives-dark@1x.png",
+        "size_px": [
+          1200,
+          800
+        ],
+        "sha256": "30a03d4510f69d5a87b8f984f5b90b3edba64b9e4bc9ce504a6228ecb2b38cad"
+      },
+      {
+        "file": "primitives-dark@2x.png",
+        "size_px": [
+          2400,
+          1600
+        ],
+        "sha256": "c39265d478862f46574e8d7b9355fa154cb1dcc43d6cb8447a7c6cd23c7d0a0d"
+      },
+      {
+        "file": "primitives-light-ic@1x.png",
+        "size_px": [
+          1200,
+          800
+        ],
+        "sha256": "a16212fd1ddb5ce927ddbd3885b4d6ad9a1b939077499fcd6acbc857ccc86328"
+      },
+      {
+        "file": "primitives-light-ic@2x.png",
+        "size_px": [
+          2400,
+          1600
+        ],
+        "sha256": "8991fb516c1f2ae8e7e10996fee3230701df0cdd016c652b41ae1ba253b7607a"
+      },
+      {
+        "file": "primitives-light@1x.png",
+        "size_px": [
+          1200,
+          800
+        ],
+        "sha256": "cdb1fe0d67b114aa3ced3f4742ef54d6f24d3140e4af4aed5f8a7e6f57696733"
+      },
+      {
+        "file": "primitives-light@2x.png",
+        "size_px": [
+          2400,
+          1600
+        ],
+        "sha256": "14d96ecd2f23190a20dae0692a99d0ced6b3999985d3624e8224fe062a8b5fb8"
+      },
+      {
+        "file": "static-text-dark-ic@1x.png",
+        "size_px": [
+          1200,
+          800
+        ],
+        "sha256": "c125ab8877d6fd74bf3a61aad993683acdc15f46a8744ce95e804f1593efc06f"
+      },
+      {
+        "file": "static-text-dark-ic@2x.png",
+        "size_px": [
+          2400,
+          1600
+        ],
+        "sha256": "bcd09bf79f2f6d9c7034e7185c9856f60a99787e5666a2c35cb73658f185eb3a"
+      },
+      {
+        "file": "static-text-dark@1x.png",
+        "size_px": [
+          1200,
+          800
+        ],
+        "sha256": "ce55734a715983b6ddfcaeb8422450977d7f3fa98185be6f257bcc35a5836ba8"
+      },
+      {
+        "file": "static-text-dark@2x.png",
+        "size_px": [
+          2400,
+          1600
+        ],
+        "sha256": "1cdf0bf73b710cbe083ae54f9259220c195c6f747dd556a16ac22473dbcceb6d"
+      },
+      {
+        "file": "static-text-light-ic@1x.png",
+        "size_px": [
+          1200,
+          800
+        ],
+        "sha256": "66843dae4509c479e19febc4ce1066ed36c15a636612817f73d068954017e910"
+      },
+      {
+        "file": "static-text-light-ic@2x.png",
+        "size_px": [
+          2400,
+          1600
+        ],
+        "sha256": "09eb6221ae6637ff3b41e1459a5676f02dcb0c4aa24d867d75a4e39af9e8871d"
+      },
+      {
+        "file": "static-text-light@1x.png",
+        "size_px": [
+          1200,
+          800
+        ],
+        "sha256": "1c717c07d91a8ed398bc1b568854a9b3173ff81c4a1acb68baa0754ad24e12a5"
+      },
+      {
+        "file": "static-text-light@2x.png",
+        "size_px": [
+          2400,
+          1600
+        ],
+        "sha256": "6c3c70963e091ecccb31374d4e5ab88a8d650c56f96c02bc695784312fd5757f"
+      },
+      {
+        "file": "tokens-dark-ic@1x.png",
+        "size_px": [
+          1200,
+          800
+        ],
+        "sha256": "a6981b9d3771b9fac2bc67ac9fa3ef259e04b5eec7ead499c04ef3d8792303b4"
+      },
+      {
+        "file": "tokens-dark-ic@2x.png",
+        "size_px": [
+          2400,
+          1600
+        ],
+        "sha256": "5b5a0d0dc31df3e976f9efcdfd66901564901346b5a47c2442924f42b2b3e847"
+      },
+      {
+        "file": "tokens-dark@1x.png",
+        "size_px": [
+          1200,
+          800
+        ],
+        "sha256": "36be6927658968159b5dd8b3e2332ee14e4aea29f5df3e91906b36bfcd5ea13e"
+      },
+      {
+        "file": "tokens-dark@2x.png",
+        "size_px": [
+          2400,
+          1600
+        ],
+        "sha256": "e9e75466c46ca6610d7f030f177a8f291ecd4d98f409a8784b13e200269b3f20"
+      },
+      {
+        "file": "tokens-light-ic@1x.png",
+        "size_px": [
+          1200,
+          800
+        ],
+        "sha256": "e67b9dad1100f9eeae41edf2c9cec2928c57ae2a3a4d9cef34a5e5793493e480"
+      },
+      {
+        "file": "tokens-light-ic@2x.png",
+        "size_px": [
+          2400,
+          1600
+        ],
+        "sha256": "169eb8dfd5bba5c53fa376f15653468eaf2c36fd67d41021adaea1bd8764cae9"
+      },
+      {
+        "file": "tokens-light@1x.png",
+        "size_px": [
+          1200,
+          800
+        ],
+        "sha256": "3a3d86c2f89cbe500c8b0d312f893ce467fc40b7a8877f3ff8f66b0de538262d"
+      },
+      {
+        "file": "tokens-light@2x.png",
+        "size_px": [
+          2400,
+          1600
+        ],
+        "sha256": "f56aa05f847390e45f6c277759873d13b126354edfe3df8f737cc6165233ea8c"
+      }
+    ]
+  }
+}

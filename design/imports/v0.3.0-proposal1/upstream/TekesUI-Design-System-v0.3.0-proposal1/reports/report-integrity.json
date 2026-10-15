@@ -1,0 +1,22 @@
+{
+  "design_version": "0.3.0-proposal.1",
+  "scope": "report byte integrity only, not independent verification of conclusions",
+  "source_bundle_sha256": "60de2b338ebf7c4890158e537038d3f965c545155236c08532c26d97c93abe61",
+  "files": {
+    "reports/README.md": "3b200f6a438c707fc54ff3a7ed73b3d8c7df73c9a0852c6ec42c2dc928abffbd",
+    "reports/brand-contrast-results.json": "7f4a06f588caf9e191beea0bd494996cb9ac276715734f119e14aaf7fbec9448",
+    "reports/brand-tests.json": "9698595914cd743ce7bf2de9ee6bea3c22167b9c0a2759e9691474b6c9f05c24",
+    "reports/brand-token-dependencies.json": "2f8c75374be5dbfcf5b056e38aa871217530e3d042ed125e6ac349bc7c817ac1",
+    "reports/brand-validation.json": "5fe6ee64457074569890b6a43b3e057079f87bb386a8b358fbd1ae4f766ab724",
+    "reports/context-validation.json": "950322b8ff28184971a0d28211ad50e6669b9ee99eea0793b7c1bb4ef908e1f1",
+    "reports/contrast-results.json": "d3201fea2132760d1d1fea34b5e43947c7a439ab5e178a2a736cd8ec94760517",
+    "reports/delivery-summary.json": "d3f32e1250d1e2e064e4f3d1a0753a87149ce4a490b2c61e6fa003d35aecbf73",
+    "reports/expected-gallery-cases.json": "93c8679e002a6258dd99d87d68fe74370abe94983bfa74a5e95011de79fe558e",
+    "reports/expected-page-brand-cases.json": "e493a049495637bea2d0df8dfb76297a75e0ef8c887899dc04a97048c37161b1",
+    "reports/expected-recipe-cases.json": "220b0f8d6fd65dcd44cf745a1ba6e5bf9a55debb354f01e8c37a8774086adf91",
+    "reports/negative-tests.json": "277d22f5ddb5d91ff4d5b4dde6ef23e29b6087903ddb368010882a28031701e5",
+    "reports/proposal-validation.json": "e3915c9335cb554e28a1278d6b3de3ba48401451f1b29713b9f497dbac2ef0e4",
+    "reports/release-readiness.json": "da49049e9752ce816e725a76683331cc903668d3f34659eef61761b1d7c0fa01",
+    "reports/resolved-colors.json": "e8c411b2dd85afebd73d764bd14406a1adf61637376010f227e06ee0dd942670"
+  }
+}

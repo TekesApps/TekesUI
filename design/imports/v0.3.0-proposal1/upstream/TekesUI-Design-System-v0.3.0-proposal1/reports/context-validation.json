@@ -1,0 +1,12 @@
+{
+  "scope": "local-context-and-reference-traceability",
+  "status": "pass",
+  "errors": [],
+  "generated_views": [
+    "design/adapters/generated/agent-context.json",
+    "design/adapters/generated/figma.variables-plan.json",
+    "docs/AGENT-HANDOFF.md"
+  ],
+  "online_roundtrip": "unverified",
+  "native_component_binding": "unverified"
+}

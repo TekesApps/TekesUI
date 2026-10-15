@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.0",
+  "version": "1.0.0",
+  "algorithm": "tekes-oklch-constrained-v1",
+  "themes": [
+    "light",
+    "dark",
+    "light-ic",
+    "dark-ic"
+  ],
+  "output_space": "srgb-8bit-opaque",
+  "tone_steps": 1000,
+  "gamut_iterations": 20,
+  "max_chroma": 0.2,
+  "subtle_chroma": 0.055,
+  "subtle_chroma_factor": 0.35,
+  "minimum_state_delta_ok": 0.012,
+  "thresholds": {
+    "text": 4.5,
+    "text_ic": 7.0,
+    "non_text": 3.0
+  },
+  "targets": {
+    "light": {
+      "action": 0.52,
+      "action_step": -0.045,
+      "link": 0.43,
+      "link_step": -0.035,
+      "outline": 0.5,
+      "subtle": [
+        0.97,
+        0.94,
+        0.91
+      ],
+      "subtle_text": 0.4
+    },
+    "dark": {
+      "action": 0.74,
+      "action_step": 0.045,
+      "link": 0.8,
+      "link_step": 0.035,
+      "outline": 0.76,
+      "subtle": [
+        0.22,
+        0.26,
+        0.3
+      ],
+      "subtle_text": 0.85
+    },
+    "light-ic": {
+      "action": 0.43,
+      "action_step": -0.045,
+      "link": 0.34,
+      "link_step": -0.035,
+      "outline": 0.43,
+      "subtle": [
+        0.96,
+        0.92,
+        0.88
+      ],
+      "subtle_text": 0.3
+    },
+    "dark-ic": {
+      "action": 0.83,
+      "action_step": 0.045,
+      "link": 0.88,
+      "link_step": 0.035,
+      "outline": 0.83,
+      "subtle": [
+        0.2,
+        0.25,
+        0.3
+      ],
+      "subtle_text": 0.92
+    }
+  },
+  "text_backgrounds": [
+    "surface-0",
+    "surface-1",
+    "surface-2",
+    "surface-3",
+    "surface-popover",
+    "button-hover",
+    "user-message-surface",
+    "segmented-track",
+    "segmented-thumb",
+    "code-surface"
+  ],
+  "control_backgrounds": [
+    "surface-0",
+    "surface-1",
+    "surface-2",
+    "surface-3",
+    "surface-popover"
+  ],
+  "marker_backgrounds": [
+    "row-selection",
+    "row-selection-hover"
+  ],
+  "fallback": "reject-invalid-build; runtime-keeps-last-validated-theme",
+  "focus": "neutral; on-solid neutral may change luminance, never hue",
+  "text_selection": "independent",
+  "syntax": "independent",
+  "charts": "independent",
+  "status": "independent"
+}

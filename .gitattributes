@@ -1,0 +1,2 @@
+# Preserve the supplied archive byte-for-byte, including original EOF whitespace.
+design/imports/v0.3.0-proposal1/upstream/** -whitespace

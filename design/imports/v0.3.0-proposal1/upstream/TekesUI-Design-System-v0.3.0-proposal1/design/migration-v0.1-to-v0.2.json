@@ -1,0 +1,1957 @@
+{
+  "from": "0.1.0-proposal.1",
+  "to": "0.2.0-proposal.1",
+  "status": "unapproved-visual-migration",
+  "breaking_visual_changes": true,
+  "old_public_identifiers_removed": [],
+  "changes": [
+    {
+      "family": "color",
+      "name": "p-surface-0",
+      "previous": null,
+      "current": {
+        "light": "#F5F5F3",
+        "dark": "#0B0B0A",
+        "light-ic": "#F4F4F1",
+        "dark-ic": "#000000"
+      },
+      "reason": "窗口基底/侧栏；普通主题取 OCUI CSS",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "surface-0",
+      "previous": null,
+      "current": "{p-surface-0}",
+      "reason": "窗口基底/侧栏；普通主题取 OCUI CSS",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-1",
+      "previous": null,
+      "current": {
+        "light": "#FCFCFB",
+        "dark": "#151515",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#111110"
+      },
+      "reason": "主文档画布；角色映射按 OCUI 手册第1篇",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "surface-1",
+      "previous": null,
+      "current": "{p-surface-1}",
+      "reason": "主文档画布；角色映射按 OCUI 手册第1篇",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-2",
+      "previous": null,
+      "current": {
+        "light": "#FFFFFF",
+        "dark": "#1A1A19",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#171715"
+      },
+      "reason": "独立卡片/代码容器",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "surface-2",
+      "previous": null,
+      "current": "{p-surface-2}",
+      "reason": "独立卡片/代码容器",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-3",
+      "previous": null,
+      "current": {
+        "light": "#FFFFFF",
+        "dark": "#20201E",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#20201E"
+      },
+      "reason": "Composer 与高层表面",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "surface-3",
+      "previous": null,
+      "current": "{p-surface-3}",
+      "reason": "Composer 与高层表面",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-popover",
+      "previous": null,
+      "current": {
+        "light": "#FFFFFF",
+        "dark": "#222220",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#252523"
+      },
+      "reason": "浮层实际表面；不是静态占位白色",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "surface-popover",
+      "previous": null,
+      "current": "{p-surface-popover}",
+      "reason": "浮层实际表面；不是静态占位白色",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "p-document-canvas",
+      "previous": {
+        "light": "#FAF9F6",
+        "dark": "#1D1C1A",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#111110"
+      },
+      "current": "{p-surface-1}",
+      "reason": "保留旧名，重绑定到显式表面阶梯；见迁移表",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-sidebar",
+      "previous": {
+        "light": "#F3F2EE",
+        "dark": "#181715",
+        "light-ic": "#F4F3EF",
+        "dark-ic": "#111110"
+      },
+      "current": "{p-surface-0}",
+      "reason": "保留旧名，重绑定到显式表面阶梯；见迁移表",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-panel",
+      "previous": {
+        "light": "#FFFFFF",
+        "dark": "#252422",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#171715"
+      },
+      "current": "{p-surface-2}",
+      "reason": "保留旧名，重绑定到显式表面阶梯；见迁移表",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-transcript-input",
+      "previous": {
+        "light": "#FFFFFF",
+        "dark": "#292724",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#171715"
+      },
+      "current": "{p-surface-3}",
+      "reason": "保留旧名，重绑定到显式表面阶梯；见迁移表",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-code-surface",
+      "previous": {
+        "light": "#F0EFEB",
+        "dark": "#181715",
+        "light-ic": "#F1F0EB",
+        "dark-ic": "#111110"
+      },
+      "current": "{p-surface-2}",
+      "reason": "保留旧名，重绑定到显式表面阶梯；见迁移表",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-primary-text",
+      "previous": {
+        "light": "#242321",
+        "dark": "#EEECE7",
+        "light-ic": "#141412",
+        "dark-ic": "#FFFFFF"
+      },
+      "current": {
+        "light": "#151515",
+        "dark": "#F5F5F5",
+        "light-ic": "#141412",
+        "dark-ic": "#FFFFFF"
+      },
+      "reason": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-secondary-text",
+      "previous": {
+        "light": "#595752",
+        "dark": "#C2BDB5",
+        "light-ic": "#2F2D29",
+        "dark-ic": "#F4EEE2"
+      },
+      "current": {
+        "light": "#525252",
+        "dark": "#A3A3A3",
+        "light-ic": "#2F2D29",
+        "dark-ic": "#F4EEE2"
+      },
+      "reason": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-tertiary-text",
+      "previous": {
+        "light": "#625F59",
+        "dark": "#BFB9B0",
+        "light-ic": "#37352F",
+        "dark-ic": "#F4EEE2"
+      },
+      "current": {
+        "light": "#606060",
+        "dark": "#B4B4B0",
+        "light-ic": "#37352F",
+        "dark-ic": "#F4EEE2"
+      },
+      "reason": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-row-selection",
+      "previous": {
+        "light": "#EEF0F0",
+        "dark": "#353B3B",
+        "light-ic": "#D8DEDE",
+        "dark-ic": "#414C4C"
+      },
+      "current": {
+        "light": "#E6E6E4",
+        "dark": "#2A2A29",
+        "light-ic": "#D8DEDE",
+        "dark-ic": "#414C4C"
+      },
+      "reason": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-row-selection-hover",
+      "previous": {
+        "light": "#E0E5E5",
+        "dark": "#424A4A",
+        "light-ic": "#CCD5D5",
+        "dark-ic": "#465151"
+      },
+      "current": {
+        "light": "#DCDCD9",
+        "dark": "#343433",
+        "light-ic": "#CCD5D5",
+        "dark-ic": "#465151"
+      },
+      "reason": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-button-hover",
+      "previous": {
+        "light": "#E6E6E6",
+        "dark": "#35322E",
+        "light-ic": "#DEDDD7",
+        "dark-ic": "#36332D"
+      },
+      "current": {
+        "light": "#E9E9E7",
+        "dark": "#272726",
+        "light-ic": "#DEDDD7",
+        "dark-ic": "#36332D"
+      },
+      "reason": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-button-pressed",
+      "previous": {
+        "light": "#DCDAD5",
+        "dark": "#454039",
+        "light-ic": "#D0CEC8",
+        "dark-ic": "#4C4740"
+      },
+      "current": {
+        "light": "#DDDDDA",
+        "dark": "#323231",
+        "light-ic": "#D0CEC8",
+        "dark-ic": "#4C4740"
+      },
+      "reason": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-separator",
+      "previous": {
+        "light": "#D9D5CD",
+        "dark": "#4B4640",
+        "light-ic": "#8C867D",
+        "dark-ic": "#9C9488"
+      },
+      "current": {
+        "light": "#DFDFDD",
+        "dark": "#353533",
+        "light-ic": "#8C867D",
+        "dark-ic": "#9C9488"
+      },
+      "reason": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-border",
+      "previous": {
+        "light": "#7B766C",
+        "dark": "#A39B90",
+        "light-ic": "#4E4A41",
+        "dark-ic": "#C8C0B4"
+      },
+      "current": {
+        "light": "#737370",
+        "dark": "#A3A39E",
+        "light-ic": "#4E4A41",
+        "dark-ic": "#C8C0B4"
+      },
+      "reason": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-border-focused",
+      "previous": {
+        "light": "#48443D",
+        "dark": "#F1EAE0",
+        "light-ic": "#111111",
+        "dark-ic": "#FFFFFF"
+      },
+      "current": {
+        "light": "#42423F",
+        "dark": "#EEEEEA",
+        "light-ic": "#111111",
+        "dark-ic": "#FFFFFF"
+      },
+      "reason": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "p-brand-clay",
+      "previous": null,
+      "current": {
+        "light": "#D97757",
+        "dark": "#D97757",
+        "light-ic": "#D97757",
+        "dark-ic": "#D97757"
+      },
+      "reason": "品牌装饰原色；不是小字、唯一状态标记或所有主题通用的可读前景",
+      "source": "OCUI-01 --cds-clay"
+    },
+    {
+      "family": "color",
+      "name": "brand-clay",
+      "previous": null,
+      "current": "{p-brand-clay}",
+      "reason": "品牌装饰原色；不是小字、唯一状态标记或所有主题通用的可读前景",
+      "source": "OCUI-01 --cds-clay"
+    },
+    {
+      "family": "color",
+      "name": "p-action-primary-ground",
+      "previous": null,
+      "current": {
+        "light": "#D97757",
+        "dark": "#D97757",
+        "light-ic": "#6B230E",
+        "dark-ic": "#FFD8C4"
+      },
+      "reason": "主按钮底；普通主题贴近参考，IC 使用专用高对比值",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "action-primary-ground",
+      "previous": null,
+      "current": "{p-action-primary-ground}",
+      "reason": "主按钮底；普通主题贴近参考，IC 使用专用高对比值",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "p-action-primary-hover",
+      "previous": null,
+      "current": {
+        "light": "#CC5A36",
+        "dark": "#E08264",
+        "light-ic": "#521C0C",
+        "dark-ic": "#FFE6D7"
+      },
+      "reason": "主按钮 hover；普通主题来自参考的 clay-hover",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "action-primary-hover",
+      "previous": null,
+      "current": "{p-action-primary-hover}",
+      "reason": "主按钮 hover；普通主题来自参考的 clay-hover",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "p-action-primary-pressed",
+      "previous": null,
+      "current": {
+        "light": "#BC5735",
+        "dark": "#E99578",
+        "light-ic": "#411507",
+        "dark-ic": "#FFF0E8"
+      },
+      "reason": "主按钮 pressed；Tekes 补充的高对比配对",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "action-primary-pressed",
+      "previous": null,
+      "current": "{p-action-primary-pressed}",
+      "reason": "主按钮 pressed；Tekes 补充的高对比配对",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "p-action-primary-foreground",
+      "previous": null,
+      "current": {
+        "light": "#000000",
+        "dark": "#000000",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#000000"
+      },
+      "reason": "品牌按钮文字/图标；普通主题不用参考中的低对比白字",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "action-primary-foreground",
+      "previous": null,
+      "current": "{p-action-primary-foreground}",
+      "reason": "品牌按钮文字/图标；普通主题不用参考中的低对比白字",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "p-user-message-surface",
+      "previous": null,
+      "current": {
+        "light": "#F0F4F8",
+        "dark": "#232322",
+        "light-ic": "#E8EEF5",
+        "dark-ic": "#252C34"
+      },
+      "reason": "用户消息气泡；dark 为白色6%在 surface-1 上预合成取整",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "user-message-surface",
+      "previous": null,
+      "current": "{p-user-message-surface}",
+      "reason": "用户消息气泡；dark 为白色6%在 surface-1 上预合成取整",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "p-segmented-track",
+      "previous": null,
+      "current": {
+        "light": "#EDEDEC",
+        "dark": "#282827",
+        "light-ic": "#E3E3DE",
+        "dark-ic": "#252523"
+      },
+      "reason": "分段控件轨道；为确定性渲染给出已合成不透明值",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "segmented-track",
+      "previous": null,
+      "current": "{p-segmented-track}",
+      "reason": "分段控件轨道；为确定性渲染给出已合成不透明值",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "p-segmented-thumb",
+      "previous": null,
+      "current": {
+        "light": "#FFFFFF",
+        "dark": "#2C2C2A",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#3C3C37"
+      },
+      "reason": "分段控件滑块；选中项另有可访问selected/value和可见标记",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "segmented-thumb",
+      "previous": null,
+      "current": "{p-segmented-thumb}",
+      "reason": "分段控件滑块；选中项另有可访问selected/value和可见标记",
+      "source": "OCUI-01; standard values from pinned CSS; IC values Tekes-specific"
+    },
+    {
+      "family": "color",
+      "name": "c-button-primary-ground",
+      "previous": "{primary-text}",
+      "current": "{action-primary-ground}",
+      "reason": "组件专属语义绑定；四主题必须同时解析",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "c-button-primary-foreground",
+      "previous": "{document-canvas}",
+      "current": "{action-primary-foreground}",
+      "reason": "组件专属语义绑定；四主题必须同时解析",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "c-button-primary-focus-outline",
+      "previous": "{document-canvas}",
+      "current": "{action-primary-foreground}",
+      "reason": "组件专属语义绑定；四主题必须同时解析",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "c-button-primary-hover",
+      "previous": null,
+      "current": "{action-primary-hover}",
+      "reason": "组件专属语义绑定；四主题必须同时解析",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "c-button-primary-pressed",
+      "previous": null,
+      "current": "{action-primary-pressed}",
+      "reason": "组件专属语义绑定；四主题必须同时解析",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "c-composer-ground",
+      "previous": null,
+      "current": "{surface-3}",
+      "reason": "组件专属语义绑定；四主题必须同时解析",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "c-popover-ground",
+      "previous": null,
+      "current": "{surface-popover}",
+      "reason": "组件专属语义绑定；四主题必须同时解析",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "c-user-message-ground",
+      "previous": null,
+      "current": "{user-message-surface}",
+      "reason": "组件专属语义绑定；四主题必须同时解析",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "c-segmented-track",
+      "previous": null,
+      "current": "{segmented-track}",
+      "reason": "组件专属语义绑定；四主题必须同时解析",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "color",
+      "name": "c-segmented-thumb",
+      "previous": null,
+      "current": "{segmented-thumb}",
+      "reason": "组件专属语义绑定；四主题必须同时解析",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "p-radius-2",
+      "previous": null,
+      "current": 2,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "p-radius-8",
+      "previous": null,
+      "current": 8,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "p-radius-10",
+      "previous": null,
+      "current": 10,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "p-radius-20",
+      "previous": null,
+      "current": 20,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "p-radius-999",
+      "previous": null,
+      "current": 999,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "p-size-40",
+      "previous": null,
+      "current": 40,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "p-size-44",
+      "previous": null,
+      "current": 44,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "p-size-48",
+      "previous": null,
+      "current": 48,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "p-size-128",
+      "previous": null,
+      "current": 128,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "p-size-96",
+      "previous": null,
+      "current": 96,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "p-size-384",
+      "previous": null,
+      "current": 384,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "spacing",
+      "name": "p-spacing-10",
+      "previous": null,
+      "current": 10,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "spacing",
+      "name": "p-spacing-14",
+      "previous": null,
+      "current": 14,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "spacing",
+      "name": "p-spacing-20",
+      "previous": null,
+      "current": 20,
+      "reason": "参考对齐的基础值；禁止业务直接消费",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-control",
+      "previous": "{p-radius-28}",
+      "current": "{p-radius-8}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-input",
+      "previous": "{p-radius-16}",
+      "current": "{p-radius-8}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-panel",
+      "previous": "{p-radius-12}",
+      "current": "{p-radius-10}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-floating",
+      "previous": "{p-radius-14}",
+      "current": "{p-radius-12}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-button-xs",
+      "previous": null,
+      "current": "{p-radius-6}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-button-sm",
+      "previous": null,
+      "current": "{p-radius-8}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-button-md",
+      "previous": null,
+      "current": "{p-radius-8}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-button-lg",
+      "previous": null,
+      "current": "{p-radius-12}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-code",
+      "previous": null,
+      "current": "{p-radius-12}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-dialog",
+      "previous": null,
+      "current": "{p-radius-16}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-message",
+      "previous": null,
+      "current": "{p-radius-18}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-composer",
+      "previous": null,
+      "current": "{p-radius-20}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "radius-pill",
+      "previous": null,
+      "current": "{p-radius-999}",
+      "reason": "明确的形态角色；pill 才允许半短边钳制",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "c-button-xs-radius",
+      "previous": null,
+      "current": "{radius-button-xs}",
+      "reason": "组件圆角；禁止从同数值的无关角色借用",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "c-button-sm-radius",
+      "previous": null,
+      "current": "{radius-button-sm}",
+      "reason": "组件圆角；禁止从同数值的无关角色借用",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "c-button-md-radius",
+      "previous": null,
+      "current": "{radius-button-md}",
+      "reason": "组件圆角；禁止从同数值的无关角色借用",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "c-button-lg-radius",
+      "previous": null,
+      "current": "{radius-button-lg}",
+      "reason": "组件圆角；禁止从同数值的无关角色借用",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "c-composer-radius",
+      "previous": null,
+      "current": "{radius-composer}",
+      "reason": "组件圆角；禁止从同数值的无关角色借用",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "c-user-message-radius",
+      "previous": null,
+      "current": "{radius-message}",
+      "reason": "组件圆角；禁止从同数值的无关角色借用",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "c-code-radius",
+      "previous": null,
+      "current": "{radius-code}",
+      "reason": "组件圆角；禁止从同数值的无关角色借用",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "c-dialog-radius",
+      "previous": null,
+      "current": "{radius-dialog}",
+      "reason": "组件圆角；禁止从同数值的无关角色借用",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "radius",
+      "name": "c-segmented-radius",
+      "previous": null,
+      "current": "{radius-pill}",
+      "reason": "组件圆角；禁止从同数值的无关角色借用",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "size-button-xs",
+      "previous": null,
+      "current": "{p-size-24}",
+      "reason": "最小逻辑尺寸；字号增大后重排，不裁切",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "size-button-sm",
+      "previous": null,
+      "current": "{p-size-28}",
+      "reason": "最小逻辑尺寸；字号增大后重排，不裁切",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "size-button-md",
+      "previous": null,
+      "current": "{p-size-32}",
+      "reason": "最小逻辑尺寸；字号增大后重排，不裁切",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "size-button-lg",
+      "previous": null,
+      "current": "{p-size-40}",
+      "reason": "最小逻辑尺寸；字号增大后重排，不裁切",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "size-icon-button",
+      "previous": "{p-size-28}",
+      "current": "{p-size-32}",
+      "reason": "最小逻辑尺寸；字号增大后重排，不裁切",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "size-icon-button-compact",
+      "previous": null,
+      "current": "{p-size-28}",
+      "reason": "最小逻辑尺寸；字号增大后重排，不裁切",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "size-composer-editor-min",
+      "previous": null,
+      "current": "{p-size-44}",
+      "reason": "最小逻辑尺寸；字号增大后重排，不裁切",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "size-composer-editor-max",
+      "previous": null,
+      "current": "{p-size-240}",
+      "reason": "最小逻辑尺寸；字号增大后重排，不裁切",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "size-composer-expanded-editor-max",
+      "previous": null,
+      "current": "{p-size-384}",
+      "reason": "最小逻辑尺寸；字号增大后重排，不裁切",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "size-attachment-width",
+      "previous": null,
+      "current": "{p-size-128}",
+      "reason": "最小逻辑尺寸；字号增大后重排，不裁切",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "size",
+      "name": "size-attachment-height",
+      "previous": null,
+      "current": "{p-size-96}",
+      "reason": "最小逻辑尺寸；字号增大后重排，不裁切",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "spacing",
+      "name": "space-button-xs-inset",
+      "previous": null,
+      "current": "{p-spacing-8}",
+      "reason": "专用内边距；来自组件源码或明确的 Tekes 适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "spacing",
+      "name": "space-button-sm-inset",
+      "previous": null,
+      "current": "{p-spacing-10}",
+      "reason": "专用内边距；来自组件源码或明确的 Tekes 适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "spacing",
+      "name": "space-button-md-inset",
+      "previous": null,
+      "current": "{p-spacing-14}",
+      "reason": "专用内边距；来自组件源码或明确的 Tekes 适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "spacing",
+      "name": "space-button-lg-inset",
+      "previous": null,
+      "current": "{p-spacing-20}",
+      "reason": "专用内边距；来自组件源码或明确的 Tekes 适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "spacing",
+      "name": "space-composer-inset",
+      "previous": null,
+      "current": "{p-spacing-14}",
+      "reason": "专用内边距；来自组件源码或明确的 Tekes 适配",
+      "source": "Tekes adaptation of OCUI"
+    },
+    {
+      "family": "spacing",
+      "name": "space-segmented-inset",
+      "previous": null,
+      "current": "{p-spacing-2}",
+      "reason": "专用内边距；来自组件源码或明确的 Tekes 适配",
+      "source": "Tekes adaptation of OCUI"
+    }
+  ],
+  "text_changes": [
+    "ui-caption 10→11",
+    "ui-secondary 11→12",
+    "add chat/composer and four button profiles"
+  ],
+  "business_behavior_change_authorized": false,
+  "token_changes": [
+    {
+      "family": "color",
+      "name": "p-document-canvas",
+      "kind": "changed",
+      "before": {
+        "light": "#FAF9F6",
+        "dark": "#1D1C1A",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#111110"
+      },
+      "after": "{p-surface-1}"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-panel",
+      "kind": "changed",
+      "before": {
+        "light": "#FFFFFF",
+        "dark": "#252422",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#171715"
+      },
+      "after": "{p-surface-2}"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-sidebar",
+      "kind": "changed",
+      "before": {
+        "light": "#F3F2EE",
+        "dark": "#181715",
+        "light-ic": "#F4F3EF",
+        "dark-ic": "#111110"
+      },
+      "after": "{p-surface-0}"
+    },
+    {
+      "family": "color",
+      "name": "p-primary-text",
+      "kind": "changed",
+      "before": {
+        "light": "#242321",
+        "dark": "#EEECE7",
+        "light-ic": "#141412",
+        "dark-ic": "#FFFFFF"
+      },
+      "after": {
+        "light": "#151515",
+        "dark": "#F5F5F5",
+        "light-ic": "#141412",
+        "dark-ic": "#FFFFFF"
+      }
+    },
+    {
+      "family": "color",
+      "name": "p-secondary-text",
+      "kind": "changed",
+      "before": {
+        "light": "#595752",
+        "dark": "#C2BDB5",
+        "light-ic": "#2F2D29",
+        "dark-ic": "#F4EEE2"
+      },
+      "after": {
+        "light": "#525252",
+        "dark": "#A3A3A3",
+        "light-ic": "#2F2D29",
+        "dark-ic": "#F4EEE2"
+      }
+    },
+    {
+      "family": "color",
+      "name": "p-tertiary-text",
+      "kind": "changed",
+      "before": {
+        "light": "#625F59",
+        "dark": "#BFB9B0",
+        "light-ic": "#37352F",
+        "dark-ic": "#F4EEE2"
+      },
+      "after": {
+        "light": "#606060",
+        "dark": "#B4B4B0",
+        "light-ic": "#37352F",
+        "dark-ic": "#F4EEE2"
+      }
+    },
+    {
+      "family": "color",
+      "name": "p-row-selection",
+      "kind": "changed",
+      "before": {
+        "light": "#EEF0F0",
+        "dark": "#353B3B",
+        "light-ic": "#D8DEDE",
+        "dark-ic": "#414C4C"
+      },
+      "after": {
+        "light": "#E6E6E4",
+        "dark": "#2A2A29",
+        "light-ic": "#D8DEDE",
+        "dark-ic": "#414C4C"
+      }
+    },
+    {
+      "family": "color",
+      "name": "p-row-selection-hover",
+      "kind": "changed",
+      "before": {
+        "light": "#E0E5E5",
+        "dark": "#424A4A",
+        "light-ic": "#CCD5D5",
+        "dark-ic": "#465151"
+      },
+      "after": {
+        "light": "#DCDCD9",
+        "dark": "#343433",
+        "light-ic": "#CCD5D5",
+        "dark-ic": "#465151"
+      }
+    },
+    {
+      "family": "color",
+      "name": "p-button-hover",
+      "kind": "changed",
+      "before": {
+        "light": "#E6E6E6",
+        "dark": "#35322E",
+        "light-ic": "#DEDDD7",
+        "dark-ic": "#36332D"
+      },
+      "after": {
+        "light": "#E9E9E7",
+        "dark": "#272726",
+        "light-ic": "#DEDDD7",
+        "dark-ic": "#36332D"
+      }
+    },
+    {
+      "family": "color",
+      "name": "p-button-pressed",
+      "kind": "changed",
+      "before": {
+        "light": "#DCDAD5",
+        "dark": "#454039",
+        "light-ic": "#D0CEC8",
+        "dark-ic": "#4C4740"
+      },
+      "after": {
+        "light": "#DDDDDA",
+        "dark": "#323231",
+        "light-ic": "#D0CEC8",
+        "dark-ic": "#4C4740"
+      }
+    },
+    {
+      "family": "color",
+      "name": "p-transcript-input",
+      "kind": "changed",
+      "before": {
+        "light": "#FFFFFF",
+        "dark": "#292724",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#171715"
+      },
+      "after": "{p-surface-3}"
+    },
+    {
+      "family": "color",
+      "name": "p-border",
+      "kind": "changed",
+      "before": {
+        "light": "#7B766C",
+        "dark": "#A39B90",
+        "light-ic": "#4E4A41",
+        "dark-ic": "#C8C0B4"
+      },
+      "after": {
+        "light": "#737370",
+        "dark": "#A3A39E",
+        "light-ic": "#4E4A41",
+        "dark-ic": "#C8C0B4"
+      }
+    },
+    {
+      "family": "color",
+      "name": "p-border-focused",
+      "kind": "changed",
+      "before": {
+        "light": "#48443D",
+        "dark": "#F1EAE0",
+        "light-ic": "#111111",
+        "dark-ic": "#FFFFFF"
+      },
+      "after": {
+        "light": "#42423F",
+        "dark": "#EEEEEA",
+        "light-ic": "#111111",
+        "dark-ic": "#FFFFFF"
+      }
+    },
+    {
+      "family": "color",
+      "name": "p-separator",
+      "kind": "changed",
+      "before": {
+        "light": "#D9D5CD",
+        "dark": "#4B4640",
+        "light-ic": "#8C867D",
+        "dark-ic": "#9C9488"
+      },
+      "after": {
+        "light": "#DFDFDD",
+        "dark": "#353533",
+        "light-ic": "#8C867D",
+        "dark-ic": "#9C9488"
+      }
+    },
+    {
+      "family": "color",
+      "name": "p-code-surface",
+      "kind": "changed",
+      "before": {
+        "light": "#F0EFEB",
+        "dark": "#181715",
+        "light-ic": "#F1F0EB",
+        "dark-ic": "#111110"
+      },
+      "after": "{p-surface-2}"
+    },
+    {
+      "family": "color",
+      "name": "c-button-primary-ground",
+      "kind": "changed",
+      "before": "{primary-text}",
+      "after": "{action-primary-ground}"
+    },
+    {
+      "family": "color",
+      "name": "c-button-primary-foreground",
+      "kind": "changed",
+      "before": "{document-canvas}",
+      "after": "{action-primary-foreground}"
+    },
+    {
+      "family": "color",
+      "name": "c-button-primary-focus-outline",
+      "kind": "changed",
+      "before": "{document-canvas}",
+      "after": "{action-primary-foreground}"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-0",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#F5F5F3",
+        "dark": "#0B0B0A",
+        "light-ic": "#F4F4F1",
+        "dark-ic": "#000000"
+      }
+    },
+    {
+      "family": "color",
+      "name": "surface-0",
+      "kind": "added",
+      "before": null,
+      "after": "{p-surface-0}"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-1",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#FCFCFB",
+        "dark": "#151515",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#111110"
+      }
+    },
+    {
+      "family": "color",
+      "name": "surface-1",
+      "kind": "added",
+      "before": null,
+      "after": "{p-surface-1}"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-2",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#FFFFFF",
+        "dark": "#1A1A19",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#171715"
+      }
+    },
+    {
+      "family": "color",
+      "name": "surface-2",
+      "kind": "added",
+      "before": null,
+      "after": "{p-surface-2}"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-3",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#FFFFFF",
+        "dark": "#20201E",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#20201E"
+      }
+    },
+    {
+      "family": "color",
+      "name": "surface-3",
+      "kind": "added",
+      "before": null,
+      "after": "{p-surface-3}"
+    },
+    {
+      "family": "color",
+      "name": "p-surface-popover",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#FFFFFF",
+        "dark": "#222220",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#252523"
+      }
+    },
+    {
+      "family": "color",
+      "name": "surface-popover",
+      "kind": "added",
+      "before": null,
+      "after": "{p-surface-popover}"
+    },
+    {
+      "family": "color",
+      "name": "p-brand-clay",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#D97757",
+        "dark": "#D97757",
+        "light-ic": "#D97757",
+        "dark-ic": "#D97757"
+      }
+    },
+    {
+      "family": "color",
+      "name": "brand-clay",
+      "kind": "added",
+      "before": null,
+      "after": "{p-brand-clay}"
+    },
+    {
+      "family": "color",
+      "name": "p-action-primary-ground",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#D97757",
+        "dark": "#D97757",
+        "light-ic": "#6B230E",
+        "dark-ic": "#FFD8C4"
+      }
+    },
+    {
+      "family": "color",
+      "name": "action-primary-ground",
+      "kind": "added",
+      "before": null,
+      "after": "{p-action-primary-ground}"
+    },
+    {
+      "family": "color",
+      "name": "p-action-primary-hover",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#CC5A36",
+        "dark": "#E08264",
+        "light-ic": "#521C0C",
+        "dark-ic": "#FFE6D7"
+      }
+    },
+    {
+      "family": "color",
+      "name": "action-primary-hover",
+      "kind": "added",
+      "before": null,
+      "after": "{p-action-primary-hover}"
+    },
+    {
+      "family": "color",
+      "name": "p-action-primary-pressed",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#BC5735",
+        "dark": "#E99578",
+        "light-ic": "#411507",
+        "dark-ic": "#FFF0E8"
+      }
+    },
+    {
+      "family": "color",
+      "name": "action-primary-pressed",
+      "kind": "added",
+      "before": null,
+      "after": "{p-action-primary-pressed}"
+    },
+    {
+      "family": "color",
+      "name": "p-action-primary-foreground",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#000000",
+        "dark": "#000000",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#000000"
+      }
+    },
+    {
+      "family": "color",
+      "name": "action-primary-foreground",
+      "kind": "added",
+      "before": null,
+      "after": "{p-action-primary-foreground}"
+    },
+    {
+      "family": "color",
+      "name": "p-user-message-surface",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#F0F4F8",
+        "dark": "#232322",
+        "light-ic": "#E8EEF5",
+        "dark-ic": "#252C34"
+      }
+    },
+    {
+      "family": "color",
+      "name": "user-message-surface",
+      "kind": "added",
+      "before": null,
+      "after": "{p-user-message-surface}"
+    },
+    {
+      "family": "color",
+      "name": "p-segmented-track",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#EDEDEC",
+        "dark": "#282827",
+        "light-ic": "#E3E3DE",
+        "dark-ic": "#252523"
+      }
+    },
+    {
+      "family": "color",
+      "name": "segmented-track",
+      "kind": "added",
+      "before": null,
+      "after": "{p-segmented-track}"
+    },
+    {
+      "family": "color",
+      "name": "p-segmented-thumb",
+      "kind": "added",
+      "before": null,
+      "after": {
+        "light": "#FFFFFF",
+        "dark": "#2C2C2A",
+        "light-ic": "#FFFFFF",
+        "dark-ic": "#3C3C37"
+      }
+    },
+    {
+      "family": "color",
+      "name": "segmented-thumb",
+      "kind": "added",
+      "before": null,
+      "after": "{p-segmented-thumb}"
+    },
+    {
+      "family": "color",
+      "name": "c-button-primary-hover",
+      "kind": "added",
+      "before": null,
+      "after": "{action-primary-hover}"
+    },
+    {
+      "family": "color",
+      "name": "c-button-primary-pressed",
+      "kind": "added",
+      "before": null,
+      "after": "{action-primary-pressed}"
+    },
+    {
+      "family": "color",
+      "name": "c-composer-ground",
+      "kind": "added",
+      "before": null,
+      "after": "{surface-3}"
+    },
+    {
+      "family": "color",
+      "name": "c-popover-ground",
+      "kind": "added",
+      "before": null,
+      "after": "{surface-popover}"
+    },
+    {
+      "family": "color",
+      "name": "c-user-message-ground",
+      "kind": "added",
+      "before": null,
+      "after": "{user-message-surface}"
+    },
+    {
+      "family": "color",
+      "name": "c-segmented-track",
+      "kind": "added",
+      "before": null,
+      "after": "{segmented-track}"
+    },
+    {
+      "family": "color",
+      "name": "c-segmented-thumb",
+      "kind": "added",
+      "before": null,
+      "after": "{segmented-thumb}"
+    },
+    {
+      "family": "spacing",
+      "name": "p-spacing-10",
+      "kind": "added",
+      "before": null,
+      "after": 10
+    },
+    {
+      "family": "spacing",
+      "name": "p-spacing-14",
+      "kind": "added",
+      "before": null,
+      "after": 14
+    },
+    {
+      "family": "spacing",
+      "name": "p-spacing-20",
+      "kind": "added",
+      "before": null,
+      "after": 20
+    },
+    {
+      "family": "spacing",
+      "name": "space-button-xs-inset",
+      "kind": "added",
+      "before": null,
+      "after": "{p-spacing-8}"
+    },
+    {
+      "family": "spacing",
+      "name": "space-button-sm-inset",
+      "kind": "added",
+      "before": null,
+      "after": "{p-spacing-10}"
+    },
+    {
+      "family": "spacing",
+      "name": "space-button-md-inset",
+      "kind": "added",
+      "before": null,
+      "after": "{p-spacing-14}"
+    },
+    {
+      "family": "spacing",
+      "name": "space-button-lg-inset",
+      "kind": "added",
+      "before": null,
+      "after": "{p-spacing-20}"
+    },
+    {
+      "family": "spacing",
+      "name": "space-composer-inset",
+      "kind": "added",
+      "before": null,
+      "after": "{p-spacing-14}"
+    },
+    {
+      "family": "spacing",
+      "name": "space-segmented-inset",
+      "kind": "added",
+      "before": null,
+      "after": "{p-spacing-2}"
+    },
+    {
+      "family": "radius",
+      "name": "radius-control",
+      "kind": "changed",
+      "before": "{p-radius-28}",
+      "after": "{p-radius-8}"
+    },
+    {
+      "family": "radius",
+      "name": "radius-input",
+      "kind": "changed",
+      "before": "{p-radius-16}",
+      "after": "{p-radius-8}"
+    },
+    {
+      "family": "radius",
+      "name": "radius-panel",
+      "kind": "changed",
+      "before": "{p-radius-12}",
+      "after": "{p-radius-10}"
+    },
+    {
+      "family": "radius",
+      "name": "radius-floating",
+      "kind": "changed",
+      "before": "{p-radius-14}",
+      "after": "{p-radius-12}"
+    },
+    {
+      "family": "radius",
+      "name": "p-radius-2",
+      "kind": "added",
+      "before": null,
+      "after": 2
+    },
+    {
+      "family": "radius",
+      "name": "p-radius-8",
+      "kind": "added",
+      "before": null,
+      "after": 8
+    },
+    {
+      "family": "radius",
+      "name": "p-radius-10",
+      "kind": "added",
+      "before": null,
+      "after": 10
+    },
+    {
+      "family": "radius",
+      "name": "p-radius-20",
+      "kind": "added",
+      "before": null,
+      "after": 20
+    },
+    {
+      "family": "radius",
+      "name": "p-radius-999",
+      "kind": "added",
+      "before": null,
+      "after": 999
+    },
+    {
+      "family": "radius",
+      "name": "radius-button-xs",
+      "kind": "added",
+      "before": null,
+      "after": "{p-radius-6}"
+    },
+    {
+      "family": "radius",
+      "name": "radius-button-sm",
+      "kind": "added",
+      "before": null,
+      "after": "{p-radius-8}"
+    },
+    {
+      "family": "radius",
+      "name": "radius-button-md",
+      "kind": "added",
+      "before": null,
+      "after": "{p-radius-8}"
+    },
+    {
+      "family": "radius",
+      "name": "radius-button-lg",
+      "kind": "added",
+      "before": null,
+      "after": "{p-radius-12}"
+    },
+    {
+      "family": "radius",
+      "name": "radius-code",
+      "kind": "added",
+      "before": null,
+      "after": "{p-radius-12}"
+    },
+    {
+      "family": "radius",
+      "name": "radius-dialog",
+      "kind": "added",
+      "before": null,
+      "after": "{p-radius-16}"
+    },
+    {
+      "family": "radius",
+      "name": "radius-message",
+      "kind": "added",
+      "before": null,
+      "after": "{p-radius-18}"
+    },
+    {
+      "family": "radius",
+      "name": "radius-composer",
+      "kind": "added",
+      "before": null,
+      "after": "{p-radius-20}"
+    },
+    {
+      "family": "radius",
+      "name": "radius-pill",
+      "kind": "added",
+      "before": null,
+      "after": "{p-radius-999}"
+    },
+    {
+      "family": "radius",
+      "name": "c-button-xs-radius",
+      "kind": "added",
+      "before": null,
+      "after": "{radius-button-xs}"
+    },
+    {
+      "family": "radius",
+      "name": "c-button-sm-radius",
+      "kind": "added",
+      "before": null,
+      "after": "{radius-button-sm}"
+    },
+    {
+      "family": "radius",
+      "name": "c-button-md-radius",
+      "kind": "added",
+      "before": null,
+      "after": "{radius-button-md}"
+    },
+    {
+      "family": "radius",
+      "name": "c-button-lg-radius",
+      "kind": "added",
+      "before": null,
+      "after": "{radius-button-lg}"
+    },
+    {
+      "family": "radius",
+      "name": "c-composer-radius",
+      "kind": "added",
+      "before": null,
+      "after": "{radius-composer}"
+    },
+    {
+      "family": "radius",
+      "name": "c-user-message-radius",
+      "kind": "added",
+      "before": null,
+      "after": "{radius-message}"
+    },
+    {
+      "family": "radius",
+      "name": "c-code-radius",
+      "kind": "added",
+      "before": null,
+      "after": "{radius-code}"
+    },
+    {
+      "family": "radius",
+      "name": "c-dialog-radius",
+      "kind": "added",
+      "before": null,
+      "after": "{radius-dialog}"
+    },
+    {
+      "family": "radius",
+      "name": "c-segmented-radius",
+      "kind": "added",
+      "before": null,
+      "after": "{radius-pill}"
+    },
+    {
+      "family": "size",
+      "name": "size-icon-button",
+      "kind": "changed",
+      "before": "{p-size-28}",
+      "after": "{p-size-32}"
+    },
+    {
+      "family": "size",
+      "name": "p-size-40",
+      "kind": "added",
+      "before": null,
+      "after": 40
+    },
+    {
+      "family": "size",
+      "name": "p-size-44",
+      "kind": "added",
+      "before": null,
+      "after": 44
+    },
+    {
+      "family": "size",
+      "name": "p-size-48",
+      "kind": "added",
+      "before": null,
+      "after": 48
+    },
+    {
+      "family": "size",
+      "name": "p-size-128",
+      "kind": "added",
+      "before": null,
+      "after": 128
+    },
+    {
+      "family": "size",
+      "name": "p-size-96",
+      "kind": "added",
+      "before": null,
+      "after": 96
+    },
+    {
+      "family": "size",
+      "name": "p-size-384",
+      "kind": "added",
+      "before": null,
+      "after": 384
+    },
+    {
+      "family": "size",
+      "name": "size-button-xs",
+      "kind": "added",
+      "before": null,
+      "after": "{p-size-24}"
+    },
+    {
+      "family": "size",
+      "name": "size-button-sm",
+      "kind": "added",
+      "before": null,
+      "after": "{p-size-28}"
+    },
+    {
+      "family": "size",
+      "name": "size-button-md",
+      "kind": "added",
+      "before": null,
+      "after": "{p-size-32}"
+    },
+    {
+      "family": "size",
+      "name": "size-button-lg",
+      "kind": "added",
+      "before": null,
+      "after": "{p-size-40}"
+    },
+    {
+      "family": "size",
+      "name": "size-icon-button-compact",
+      "kind": "added",
+      "before": null,
+      "after": "{p-size-28}"
+    },
+    {
+      "family": "size",
+      "name": "size-composer-editor-min",
+      "kind": "added",
+      "before": null,
+      "after": "{p-size-44}"
+    },
+    {
+      "family": "size",
+      "name": "size-composer-editor-max",
+      "kind": "added",
+      "before": null,
+      "after": "{p-size-240}"
+    },
+    {
+      "family": "size",
+      "name": "size-composer-expanded-editor-max",
+      "kind": "added",
+      "before": null,
+      "after": "{p-size-384}"
+    },
+    {
+      "family": "size",
+      "name": "size-attachment-width",
+      "kind": "added",
+      "before": null,
+      "after": "{p-size-128}"
+    },
+    {
+      "family": "size",
+      "name": "size-attachment-height",
+      "kind": "added",
+      "before": null,
+      "after": "{p-size-96}"
+    }
+  ]
+}

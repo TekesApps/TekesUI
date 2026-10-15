@@ -1,0 +1,92 @@
+{
+  "scope": "proposal-static",
+  "status": "pass",
+  "themes": [
+    "light",
+    "dark",
+    "light-ic",
+    "dark-ic"
+  ],
+  "token_count": 295,
+  "text_style_count": 16,
+  "component_count": 40,
+  "recipe_count": 10,
+  "declared_contrast_checks": 960,
+  "contrast_failures": 0,
+  "errors": [],
+  "not_verified": [
+    "Private source artifact revision and original export",
+    "Rust APIs and native Gallery",
+    "actual rendered pixels and final compositing",
+    "real mouse/keyboard/IME/VoiceOver",
+    "actual application coverage and performance",
+    "icon originality, missing assets and licenses"
+  ],
+  "bundle_source_sha256": "60de2b338ebf7c4890158e537038d3f965c545155236c08532c26d97c93abe61",
+  "brand_validation": {
+    "scope": "brand-build-static",
+    "status": "pass",
+    "errors": [],
+    "profiles": [
+      {
+        "brand_id": "example-neutral",
+        "seed_srgb": "#767676",
+        "themes": [
+          "light",
+          "dark",
+          "light-ic",
+          "dark-ic"
+        ],
+        "contrast_checks": 960,
+        "contrast_failures": 0,
+        "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+        "native_evidence": "unverified"
+      },
+      {
+        "brand_id": "example-blue",
+        "seed_srgb": "#2563EB",
+        "themes": [
+          "light",
+          "dark",
+          "light-ic",
+          "dark-ic"
+        ],
+        "contrast_checks": 960,
+        "contrast_failures": 0,
+        "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+        "native_evidence": "unverified"
+      },
+      {
+        "brand_id": "example-clay",
+        "seed_srgb": "#D97757",
+        "themes": [
+          "light",
+          "dark",
+          "light-ic",
+          "dark-ic"
+        ],
+        "contrast_checks": 960,
+        "contrast_failures": 0,
+        "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+        "native_evidence": "unverified"
+      }
+    ],
+    "contrast_checks": 2880,
+    "brand_dependent_color_token_count": 55,
+    "independent_roles": "identical across all example brand bundles",
+    "renderer_validation": "unverified",
+    "consumer_acceptance": "unverified"
+  },
+  "context_validation": {
+    "scope": "local-context-and-reference-traceability",
+    "status": "pass",
+    "errors": [],
+    "generated_views": [
+      "design/adapters/generated/agent-context.json",
+      "design/adapters/generated/figma.variables-plan.json",
+      "docs/AGENT-HANDOFF.md"
+    ],
+    "online_roundtrip": "unverified",
+    "native_component_binding": "unverified"
+  }
+}

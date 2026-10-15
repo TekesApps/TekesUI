@@ -1,7 +1,7 @@
 //! 固定的外壳：目录列、页面标题槽、内容框的右下边线。
 
 use tekes_ui_scene::{Quad, Rect, Scene};
-use tekes_ui_tokens::{ColorRole, CornerRadius, Rgba, TextRole, Theme};
+use tekes_ui_tokens::{ColorRole, CornerRadius, Rgba, TextRole, Theme, proposal};
 
 use super::layout::{
     CATALOG_W, FRAME_H, FRAME_W, PAGE_TITLE_SLOT, catalog_label_slot, catalog_row_rect,
@@ -16,9 +16,11 @@ pub const TITLE_STYLE: LabelStyle =
     LabelStyle::new(TextRole::BodyEmphasized, ColorRole::PrimaryText);
 
 /// 目录里某一行的底色：选中用 `RowSelection`，没选中但 hover 用 `ButtonHover`，否则没有底。
-/// 选中的行 hover 时保持选中色（不再变化，因此不用重绘）。
+/// 选中行 hover 使用提案的独立状态色，保留持久选中语义。
 pub fn row_fill(theme: Theme, selected: bool, hovered: bool) -> Option<Rgba> {
-    if selected {
+    if selected && hovered {
+        Some(proposal::color("row-selection-hover", theme).expect("validated proposal role"))
+    } else if selected {
         Some(ColorRole::RowSelection.resolve(theme))
     } else if hovered {
         Some(ColorRole::ButtonHover.resolve(theme))
@@ -37,7 +39,7 @@ pub fn draw(
     // 目录列底与右侧分隔线。
     scene.push_quad(Quad::new(
         Rect::new(0.0, 0.0, CATALOG_W, FRAME_H),
-        ColorRole::TranscriptInput.resolve(theme),
+        proposal::color("surface-sidebar", theme).expect("validated proposal sidebar surface"),
     ));
     scene.push_quad(Quad::new(
         Rect::new(CATALOG_W - 1.0, 0.0, 1.0, FRAME_H),
@@ -56,7 +58,7 @@ pub fn draw(
     // 页面标题槽。
     text.label_in(scene, theme, PAGE_TITLE_SLOT, page.name(), TITLE_STYLE);
 
-    // 内容框的右、下边线：窗口比 1200x800 大时，用它标出框的边界。
+    // 内容框的右、下边线：窗口比固定校准框大时，用它标出框的边界。
     let sep = ColorRole::Separator.resolve(theme);
     scene.push_quad(Quad::new(Rect::new(FRAME_W - 1.0, 0.0, 1.0, FRAME_H), sep));
     scene.push_quad(Quad::new(Rect::new(0.0, FRAME_H - 1.0, FRAME_W, 1.0), sep));
@@ -95,6 +97,10 @@ mod tests {
             row_fill(t, true, false),
             Some(ColorRole::RowSelection.resolve(t))
         );
-        assert_eq!(row_fill(t, true, true), row_fill(t, true, false));
+        assert_eq!(
+            row_fill(t, true, true),
+            proposal::color("row-selection-hover", t)
+        );
+        assert_ne!(row_fill(t, true, true), row_fill(t, true, false));
     }
 }

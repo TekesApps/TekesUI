@@ -1,0 +1,1736 @@
+{
+  "$comment": "Generated shape; JSON IDs/values are authoritative. $ref token expressions reference complete leaves; $base plus $alpha replaces alpha. Logical dimensions remain pt. Not full DTCG compatibility.",
+  "$defs": {
+    "color": {
+      "additionalProperties": false,
+      "properties": {
+        "$description": {
+          "type": "string"
+        },
+        "$type": {
+          "const": "color"
+        },
+        "$value": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "alpha": {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "colorSpace": {
+                  "const": "srgb"
+                },
+                "components": {
+                  "items": {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "maxItems": 3,
+                  "minItems": 3,
+                  "type": "array"
+                }
+              },
+              "required": [
+                "alpha",
+                "colorSpace",
+                "components"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "$ref": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "$ref"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "$alpha": {
+                  "type": "string"
+                },
+                "$base": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "$alpha",
+                "$base"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "$description",
+        "$type",
+        "$value"
+      ],
+      "type": "object"
+    },
+    "dimension": {
+      "additionalProperties": false,
+      "properties": {
+        "$description": {
+          "type": "string"
+        },
+        "$type": {
+          "const": "dimension"
+        },
+        "$value": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "unit": {
+                  "const": "pt"
+                },
+                "value": {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "unit",
+                "value"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "$ref": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "$ref"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "$alpha": {
+                  "type": "string"
+                },
+                "$base": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "$alpha",
+                "$base"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "$description",
+        "$type",
+        "$value"
+      ],
+      "type": "object"
+    },
+    "duration": {
+      "additionalProperties": false,
+      "properties": {
+        "$description": {
+          "type": "string"
+        },
+        "$type": {
+          "const": "duration"
+        },
+        "$value": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "unit": {
+                  "const": "s"
+                },
+                "value": {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "unit",
+                "value"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "$ref": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "$ref"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "$alpha": {
+                  "type": "string"
+                },
+                "$base": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "$alpha",
+                "$base"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "$description",
+        "$type",
+        "$value"
+      ],
+      "type": "object"
+    },
+    "fontWeight": {
+      "additionalProperties": false,
+      "properties": {
+        "$description": {
+          "type": "string"
+        },
+        "$type": {
+          "const": "fontWeight"
+        },
+        "$value": {
+          "oneOf": [
+            {
+              "maximum": 1000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "$ref": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "$ref"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "$alpha": {
+                  "type": "string"
+                },
+                "$base": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "$alpha",
+                "$base"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "$description",
+        "$type",
+        "$value"
+      ],
+      "type": "object"
+    },
+    "opacity": {
+      "additionalProperties": false,
+      "properties": {
+        "$description": {
+          "type": "string"
+        },
+        "$type": {
+          "const": "number"
+        },
+        "$value": {
+          "oneOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "$ref": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "$ref"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "$alpha": {
+                  "type": "string"
+                },
+                "$base": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "$alpha",
+                "$base"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "$description",
+        "$type",
+        "$value"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "const": "./tokens.schema.json"
+    },
+    "api": {
+      "const": {
+        "color": {
+          "enum": "ColorRole",
+          "variants": [
+            {
+              "id": "scrim",
+              "variant": "Scrim"
+            },
+            {
+              "id": "warning-text",
+              "variant": "WarningText"
+            },
+            {
+              "id": "warning-foreground",
+              "variant": "WarningForeground"
+            },
+            {
+              "id": "row-selection",
+              "variant": "RowSelection"
+            },
+            {
+              "id": "button-hover",
+              "variant": "ButtonHover"
+            },
+            {
+              "id": "transcript-input",
+              "variant": "TranscriptInput"
+            },
+            {
+              "id": "border",
+              "variant": "Border"
+            },
+            {
+              "id": "floating-panel-border",
+              "variant": "FloatingPanelBorder"
+            },
+            {
+              "id": "floating-panel-divider",
+              "variant": "FloatingPanelDivider"
+            },
+            {
+              "id": "border-focused",
+              "variant": "BorderFocused"
+            },
+            {
+              "id": "primary-text",
+              "variant": "PrimaryText"
+            },
+            {
+              "id": "secondary-text",
+              "variant": "SecondaryText"
+            },
+            {
+              "id": "tertiary-text",
+              "variant": "TertiaryText"
+            },
+            {
+              "id": "selected-text",
+              "variant": "SelectedText"
+            },
+            {
+              "id": "document-canvas",
+              "variant": "DocumentCanvas"
+            },
+            {
+              "id": "text-selection",
+              "variant": "TextSelection"
+            },
+            {
+              "id": "accent",
+              "variant": "Accent"
+            },
+            {
+              "id": "status-running",
+              "variant": "StatusRunning"
+            },
+            {
+              "id": "warning",
+              "variant": "Warning"
+            },
+            {
+              "id": "status-failed",
+              "variant": "StatusFailed"
+            },
+            {
+              "id": "status-succeeded",
+              "variant": "StatusSucceeded"
+            },
+            {
+              "id": "diff-added-marker",
+              "variant": "DiffAddedMarker"
+            },
+            {
+              "id": "diff-removed-marker",
+              "variant": "DiffRemovedMarker"
+            },
+            {
+              "id": "hover-wash",
+              "variant": "HoverWash"
+            },
+            {
+              "id": "separator",
+              "variant": "Separator"
+            },
+            {
+              "id": "diff-added-surface",
+              "variant": "DiffAddedSurface"
+            },
+            {
+              "id": "diff-removed-surface",
+              "variant": "DiffRemovedSurface"
+            }
+          ]
+        },
+        "motion": {
+          "enum": "Motion",
+          "variants": [
+            {
+              "id": "instant",
+              "variant": "Instant"
+            },
+            {
+              "id": "state-change",
+              "variant": "StateChange"
+            },
+            {
+              "id": "geometry",
+              "variant": "Geometry"
+            },
+            {
+              "id": "list-expansion",
+              "variant": "ListExpansion"
+            },
+            {
+              "id": "expansion",
+              "variant": "Expansion"
+            }
+          ]
+        },
+        "opacity": {
+          "enum": "Alpha",
+          "variants": [
+            {
+              "id": "faint",
+              "variant": "Faint"
+            },
+            {
+              "id": "soft",
+              "variant": "Soft"
+            },
+            {
+              "id": "wash",
+              "variant": "Wash"
+            }
+          ]
+        },
+        "radius": {
+          "enum": "CornerRadius",
+          "variants": [
+            {
+              "id": "square",
+              "variant": "Square"
+            },
+            {
+              "id": "agent-marker",
+              "variant": "AgentMarker"
+            },
+            {
+              "id": "badge",
+              "variant": "Badge"
+            },
+            {
+              "id": "row",
+              "variant": "Row"
+            },
+            {
+              "id": "control",
+              "variant": "Control"
+            },
+            {
+              "id": "input",
+              "variant": "Input"
+            },
+            {
+              "id": "panel",
+              "variant": "Panel"
+            },
+            {
+              "id": "column",
+              "variant": "Column"
+            },
+            {
+              "id": "floating",
+              "variant": "Floating"
+            }
+          ]
+        },
+        "size": {
+          "enum": "ControlSize",
+          "variants": [
+            {
+              "id": "focus-bar",
+              "variant": "FocusBar"
+            },
+            {
+              "id": "dot",
+              "variant": "Dot"
+            },
+            {
+              "id": "agent-marker-width",
+              "variant": "AgentMarkerWidth"
+            },
+            {
+              "id": "agent-marker-height",
+              "variant": "AgentMarkerHeight"
+            },
+            {
+              "id": "inline-badge",
+              "variant": "InlineBadge"
+            },
+            {
+              "id": "selector-track",
+              "variant": "SelectorTrack"
+            },
+            {
+              "id": "inline-action",
+              "variant": "InlineAction"
+            },
+            {
+              "id": "compact-row",
+              "variant": "CompactRow"
+            },
+            {
+              "id": "selector-knob",
+              "variant": "SelectorKnob"
+            },
+            {
+              "id": "action-button",
+              "variant": "ActionButton"
+            },
+            {
+              "id": "icon-button",
+              "variant": "IconButton"
+            },
+            {
+              "id": "pill-height",
+              "variant": "PillHeight"
+            },
+            {
+              "id": "row-height",
+              "variant": "RowHeight"
+            },
+            {
+              "id": "truncation-slot",
+              "variant": "TruncationSlot"
+            },
+            {
+              "id": "truncation-slot-wide",
+              "variant": "TruncationSlotWide"
+            }
+          ]
+        },
+        "spacing": {
+          "enum": "Spacing",
+          "variants": [
+            {
+              "id": "none",
+              "variant": "None"
+            },
+            {
+              "id": "micro",
+              "variant": "Micro"
+            },
+            {
+              "id": "tight",
+              "variant": "Tight"
+            },
+            {
+              "id": "snug",
+              "variant": "Snug"
+            },
+            {
+              "id": "regular",
+              "variant": "Regular"
+            },
+            {
+              "id": "relaxed",
+              "variant": "Relaxed"
+            },
+            {
+              "id": "loose",
+              "variant": "Loose"
+            },
+            {
+              "id": "section",
+              "variant": "Section"
+            }
+          ]
+        },
+        "stroke": {
+          "enum": "Stroke",
+          "variants": [
+            {
+              "id": "hairline",
+              "variant": "Hairline"
+            },
+            {
+              "id": "rule",
+              "variant": "Rule"
+            },
+            {
+              "id": "emphasis",
+              "variant": "Emphasis"
+            }
+          ]
+        },
+        "text": {
+          "enum": "TextRole",
+          "variants": [
+            {
+              "id": "body",
+              "variant": "Body"
+            },
+            {
+              "id": "body-emphasized",
+              "variant": "BodyEmphasized"
+            },
+            {
+              "id": "row-meta",
+              "variant": "RowMeta"
+            },
+            {
+              "id": "section-header",
+              "variant": "SectionHeader"
+            },
+            {
+              "id": "identity-badge",
+              "variant": "IdentityBadge"
+            },
+            {
+              "id": "brand",
+              "variant": "Brand"
+            }
+          ]
+        }
+      }
+    },
+    "format": {
+      "const": "tekesui.tokens/1"
+    },
+    "merge": {
+      "type": "object"
+    },
+    "proposal": {
+      "type": "object"
+    },
+    "sets": {
+      "additionalProperties": false,
+      "properties": {
+        "dark": {
+          "additionalProperties": false,
+          "properties": {
+            "color": {
+              "additionalProperties": false,
+              "properties": {
+                "accent": {
+                  "$ref": "#/$defs/color"
+                },
+                "border": {
+                  "$ref": "#/$defs/color"
+                },
+                "border-focused": {
+                  "$ref": "#/$defs/color"
+                },
+                "button-hover": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-added-marker": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-added-surface": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-removed-marker": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-removed-surface": {
+                  "$ref": "#/$defs/color"
+                },
+                "document-canvas": {
+                  "$ref": "#/$defs/color"
+                },
+                "floating-panel-border": {
+                  "$ref": "#/$defs/color"
+                },
+                "floating-panel-divider": {
+                  "$ref": "#/$defs/color"
+                },
+                "hover-wash": {
+                  "$ref": "#/$defs/color"
+                },
+                "primary-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "row-selection": {
+                  "$ref": "#/$defs/color"
+                },
+                "scrim": {
+                  "$ref": "#/$defs/color"
+                },
+                "secondary-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "selected-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "separator": {
+                  "$ref": "#/$defs/color"
+                },
+                "status-failed": {
+                  "$ref": "#/$defs/color"
+                },
+                "status-running": {
+                  "$ref": "#/$defs/color"
+                },
+                "status-succeeded": {
+                  "$ref": "#/$defs/color"
+                },
+                "tertiary-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "text-selection": {
+                  "$ref": "#/$defs/color"
+                },
+                "transcript-input": {
+                  "$ref": "#/$defs/color"
+                },
+                "warning": {
+                  "$ref": "#/$defs/color"
+                },
+                "warning-foreground": {
+                  "$ref": "#/$defs/color"
+                },
+                "warning-text": {
+                  "$ref": "#/$defs/color"
+                }
+              },
+              "required": [
+                "accent",
+                "border",
+                "border-focused",
+                "button-hover",
+                "diff-added-marker",
+                "diff-added-surface",
+                "diff-removed-marker",
+                "diff-removed-surface",
+                "document-canvas",
+                "floating-panel-border",
+                "floating-panel-divider",
+                "hover-wash",
+                "primary-text",
+                "row-selection",
+                "scrim",
+                "secondary-text",
+                "selected-text",
+                "separator",
+                "status-failed",
+                "status-running",
+                "status-succeeded",
+                "tertiary-text",
+                "text-selection",
+                "transcript-input",
+                "warning",
+                "warning-foreground",
+                "warning-text"
+              ],
+              "type": "object"
+            },
+            "opacity": {
+              "additionalProperties": false,
+              "properties": {
+                "faint": {
+                  "$ref": "#/$defs/opacity"
+                },
+                "soft": {
+                  "$ref": "#/$defs/opacity"
+                },
+                "wash": {
+                  "$ref": "#/$defs/opacity"
+                }
+              },
+              "required": [
+                "faint",
+                "soft",
+                "wash"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "color",
+            "opacity"
+          ],
+          "type": "object"
+        },
+        "dark-ic": {
+          "additionalProperties": false,
+          "properties": {
+            "color": {
+              "additionalProperties": false,
+              "properties": {
+                "accent": {
+                  "$ref": "#/$defs/color"
+                },
+                "border": {
+                  "$ref": "#/$defs/color"
+                },
+                "border-focused": {
+                  "$ref": "#/$defs/color"
+                },
+                "button-hover": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-added-marker": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-added-surface": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-removed-marker": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-removed-surface": {
+                  "$ref": "#/$defs/color"
+                },
+                "document-canvas": {
+                  "$ref": "#/$defs/color"
+                },
+                "floating-panel-border": {
+                  "$ref": "#/$defs/color"
+                },
+                "floating-panel-divider": {
+                  "$ref": "#/$defs/color"
+                },
+                "hover-wash": {
+                  "$ref": "#/$defs/color"
+                },
+                "primary-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "row-selection": {
+                  "$ref": "#/$defs/color"
+                },
+                "scrim": {
+                  "$ref": "#/$defs/color"
+                },
+                "secondary-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "selected-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "separator": {
+                  "$ref": "#/$defs/color"
+                },
+                "status-failed": {
+                  "$ref": "#/$defs/color"
+                },
+                "status-running": {
+                  "$ref": "#/$defs/color"
+                },
+                "status-succeeded": {
+                  "$ref": "#/$defs/color"
+                },
+                "tertiary-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "text-selection": {
+                  "$ref": "#/$defs/color"
+                },
+                "transcript-input": {
+                  "$ref": "#/$defs/color"
+                },
+                "warning": {
+                  "$ref": "#/$defs/color"
+                },
+                "warning-foreground": {
+                  "$ref": "#/$defs/color"
+                },
+                "warning-text": {
+                  "$ref": "#/$defs/color"
+                }
+              },
+              "required": [
+                "accent",
+                "border",
+                "border-focused",
+                "button-hover",
+                "diff-added-marker",
+                "diff-added-surface",
+                "diff-removed-marker",
+                "diff-removed-surface",
+                "document-canvas",
+                "floating-panel-border",
+                "floating-panel-divider",
+                "hover-wash",
+                "primary-text",
+                "row-selection",
+                "scrim",
+                "secondary-text",
+                "selected-text",
+                "separator",
+                "status-failed",
+                "status-running",
+                "status-succeeded",
+                "tertiary-text",
+                "text-selection",
+                "transcript-input",
+                "warning",
+                "warning-foreground",
+                "warning-text"
+              ],
+              "type": "object"
+            },
+            "opacity": {
+              "additionalProperties": false,
+              "properties": {
+                "faint": {
+                  "$ref": "#/$defs/opacity"
+                },
+                "soft": {
+                  "$ref": "#/$defs/opacity"
+                },
+                "wash": {
+                  "$ref": "#/$defs/opacity"
+                }
+              },
+              "required": [
+                "faint",
+                "soft",
+                "wash"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "color",
+            "opacity"
+          ],
+          "type": "object"
+        },
+        "light": {
+          "additionalProperties": false,
+          "properties": {
+            "color": {
+              "additionalProperties": false,
+              "properties": {
+                "accent": {
+                  "$ref": "#/$defs/color"
+                },
+                "border": {
+                  "$ref": "#/$defs/color"
+                },
+                "border-focused": {
+                  "$ref": "#/$defs/color"
+                },
+                "button-hover": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-added-marker": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-added-surface": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-removed-marker": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-removed-surface": {
+                  "$ref": "#/$defs/color"
+                },
+                "document-canvas": {
+                  "$ref": "#/$defs/color"
+                },
+                "floating-panel-border": {
+                  "$ref": "#/$defs/color"
+                },
+                "floating-panel-divider": {
+                  "$ref": "#/$defs/color"
+                },
+                "hover-wash": {
+                  "$ref": "#/$defs/color"
+                },
+                "primary-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "row-selection": {
+                  "$ref": "#/$defs/color"
+                },
+                "scrim": {
+                  "$ref": "#/$defs/color"
+                },
+                "secondary-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "selected-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "separator": {
+                  "$ref": "#/$defs/color"
+                },
+                "status-failed": {
+                  "$ref": "#/$defs/color"
+                },
+                "status-running": {
+                  "$ref": "#/$defs/color"
+                },
+                "status-succeeded": {
+                  "$ref": "#/$defs/color"
+                },
+                "tertiary-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "text-selection": {
+                  "$ref": "#/$defs/color"
+                },
+                "transcript-input": {
+                  "$ref": "#/$defs/color"
+                },
+                "warning": {
+                  "$ref": "#/$defs/color"
+                },
+                "warning-foreground": {
+                  "$ref": "#/$defs/color"
+                },
+                "warning-text": {
+                  "$ref": "#/$defs/color"
+                }
+              },
+              "required": [
+                "accent",
+                "border",
+                "border-focused",
+                "button-hover",
+                "diff-added-marker",
+                "diff-added-surface",
+                "diff-removed-marker",
+                "diff-removed-surface",
+                "document-canvas",
+                "floating-panel-border",
+                "floating-panel-divider",
+                "hover-wash",
+                "primary-text",
+                "row-selection",
+                "scrim",
+                "secondary-text",
+                "selected-text",
+                "separator",
+                "status-failed",
+                "status-running",
+                "status-succeeded",
+                "tertiary-text",
+                "text-selection",
+                "transcript-input",
+                "warning",
+                "warning-foreground",
+                "warning-text"
+              ],
+              "type": "object"
+            },
+            "opacity": {
+              "additionalProperties": false,
+              "properties": {
+                "faint": {
+                  "$ref": "#/$defs/opacity"
+                },
+                "soft": {
+                  "$ref": "#/$defs/opacity"
+                },
+                "wash": {
+                  "$ref": "#/$defs/opacity"
+                }
+              },
+              "required": [
+                "faint",
+                "soft",
+                "wash"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "color",
+            "opacity"
+          ],
+          "type": "object"
+        },
+        "light-ic": {
+          "additionalProperties": false,
+          "properties": {
+            "color": {
+              "additionalProperties": false,
+              "properties": {
+                "accent": {
+                  "$ref": "#/$defs/color"
+                },
+                "border": {
+                  "$ref": "#/$defs/color"
+                },
+                "border-focused": {
+                  "$ref": "#/$defs/color"
+                },
+                "button-hover": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-added-marker": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-added-surface": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-removed-marker": {
+                  "$ref": "#/$defs/color"
+                },
+                "diff-removed-surface": {
+                  "$ref": "#/$defs/color"
+                },
+                "document-canvas": {
+                  "$ref": "#/$defs/color"
+                },
+                "floating-panel-border": {
+                  "$ref": "#/$defs/color"
+                },
+                "floating-panel-divider": {
+                  "$ref": "#/$defs/color"
+                },
+                "hover-wash": {
+                  "$ref": "#/$defs/color"
+                },
+                "primary-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "row-selection": {
+                  "$ref": "#/$defs/color"
+                },
+                "scrim": {
+                  "$ref": "#/$defs/color"
+                },
+                "secondary-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "selected-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "separator": {
+                  "$ref": "#/$defs/color"
+                },
+                "status-failed": {
+                  "$ref": "#/$defs/color"
+                },
+                "status-running": {
+                  "$ref": "#/$defs/color"
+                },
+                "status-succeeded": {
+                  "$ref": "#/$defs/color"
+                },
+                "tertiary-text": {
+                  "$ref": "#/$defs/color"
+                },
+                "text-selection": {
+                  "$ref": "#/$defs/color"
+                },
+                "transcript-input": {
+                  "$ref": "#/$defs/color"
+                },
+                "warning": {
+                  "$ref": "#/$defs/color"
+                },
+                "warning-foreground": {
+                  "$ref": "#/$defs/color"
+                },
+                "warning-text": {
+                  "$ref": "#/$defs/color"
+                }
+              },
+              "required": [
+                "accent",
+                "border",
+                "border-focused",
+                "button-hover",
+                "diff-added-marker",
+                "diff-added-surface",
+                "diff-removed-marker",
+                "diff-removed-surface",
+                "document-canvas",
+                "floating-panel-border",
+                "floating-panel-divider",
+                "hover-wash",
+                "primary-text",
+                "row-selection",
+                "scrim",
+                "secondary-text",
+                "selected-text",
+                "separator",
+                "status-failed",
+                "status-running",
+                "status-succeeded",
+                "tertiary-text",
+                "text-selection",
+                "transcript-input",
+                "warning",
+                "warning-foreground",
+                "warning-text"
+              ],
+              "type": "object"
+            },
+            "opacity": {
+              "additionalProperties": false,
+              "properties": {
+                "faint": {
+                  "$ref": "#/$defs/opacity"
+                },
+                "soft": {
+                  "$ref": "#/$defs/opacity"
+                },
+                "wash": {
+                  "$ref": "#/$defs/opacity"
+                }
+              },
+              "required": [
+                "faint",
+                "soft",
+                "wash"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "color",
+            "opacity"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "dark",
+        "dark-ic",
+        "light",
+        "light-ic"
+      ],
+      "type": "object"
+    },
+    "source": {
+      "additionalProperties": false,
+      "properties": {
+        "authority": {
+          "const": "design/source plus design/brand JSON inputs"
+        },
+        "baselineManifest": {
+          "const": "design/baseline/manifest.json"
+        },
+        "compatibility": {
+          "type": "string"
+        },
+        "expectedBaselineCommit": {
+          "maxLength": 40,
+          "minLength": 40,
+          "type": "string"
+        },
+        "generator": {
+          "type": "string"
+        },
+        "historicalState": {
+          "type": "string"
+        },
+        "policy": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "authority",
+        "baselineManifest",
+        "compatibility",
+        "expectedBaselineCommit",
+        "generator",
+        "historicalState",
+        "policy"
+      ],
+      "type": "object"
+    },
+    "status": {
+      "const": "generated-projection"
+    },
+    "tokens": {
+      "additionalProperties": false,
+      "properties": {
+        "motion": {
+          "additionalProperties": false,
+          "properties": {
+            "reduced-motion": {
+              "additionalProperties": false,
+              "properties": {
+                "expansion": {
+                  "$ref": "#/$defs/duration"
+                },
+                "geometry": {
+                  "$ref": "#/$defs/duration"
+                },
+                "instant": {
+                  "$ref": "#/$defs/duration"
+                },
+                "list-expansion": {
+                  "$ref": "#/$defs/duration"
+                },
+                "state-change": {
+                  "$ref": "#/$defs/duration"
+                }
+              },
+              "required": [
+                "expansion",
+                "geometry",
+                "instant",
+                "list-expansion",
+                "state-change"
+              ],
+              "type": "object"
+            },
+            "standard": {
+              "additionalProperties": false,
+              "properties": {
+                "expansion": {
+                  "$ref": "#/$defs/duration"
+                },
+                "geometry": {
+                  "$ref": "#/$defs/duration"
+                },
+                "instant": {
+                  "$ref": "#/$defs/duration"
+                },
+                "list-expansion": {
+                  "$ref": "#/$defs/duration"
+                },
+                "state-change": {
+                  "$ref": "#/$defs/duration"
+                }
+              },
+              "required": [
+                "expansion",
+                "geometry",
+                "instant",
+                "list-expansion",
+                "state-change"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "reduced-motion",
+            "standard"
+          ],
+          "type": "object"
+        },
+        "opacity": {
+          "additionalProperties": false,
+          "properties": {
+            "text-selection-increased": {
+              "$ref": "#/$defs/opacity"
+            }
+          },
+          "required": [
+            "text-selection-increased"
+          ],
+          "type": "object"
+        },
+        "radius": {
+          "additionalProperties": false,
+          "properties": {
+            "agent-marker": {
+              "$ref": "#/$defs/dimension"
+            },
+            "badge": {
+              "$ref": "#/$defs/dimension"
+            },
+            "column": {
+              "$ref": "#/$defs/dimension"
+            },
+            "control": {
+              "$ref": "#/$defs/dimension"
+            },
+            "floating": {
+              "$ref": "#/$defs/dimension"
+            },
+            "input": {
+              "$ref": "#/$defs/dimension"
+            },
+            "panel": {
+              "$ref": "#/$defs/dimension"
+            },
+            "row": {
+              "$ref": "#/$defs/dimension"
+            },
+            "square": {
+              "$ref": "#/$defs/dimension"
+            }
+          },
+          "required": [
+            "agent-marker",
+            "badge",
+            "column",
+            "control",
+            "floating",
+            "input",
+            "panel",
+            "row",
+            "square"
+          ],
+          "type": "object"
+        },
+        "size": {
+          "additionalProperties": false,
+          "properties": {
+            "action-button": {
+              "$ref": "#/$defs/dimension"
+            },
+            "agent-marker-height": {
+              "$ref": "#/$defs/dimension"
+            },
+            "agent-marker-width": {
+              "$ref": "#/$defs/dimension"
+            },
+            "compact-row": {
+              "$ref": "#/$defs/dimension"
+            },
+            "dot": {
+              "$ref": "#/$defs/dimension"
+            },
+            "focus-bar": {
+              "$ref": "#/$defs/dimension"
+            },
+            "icon-button": {
+              "$ref": "#/$defs/dimension"
+            },
+            "inline-action": {
+              "$ref": "#/$defs/dimension"
+            },
+            "inline-badge": {
+              "$ref": "#/$defs/dimension"
+            },
+            "pill-height": {
+              "$ref": "#/$defs/dimension"
+            },
+            "row-height": {
+              "$ref": "#/$defs/dimension"
+            },
+            "selector-knob": {
+              "$ref": "#/$defs/dimension"
+            },
+            "selector-track": {
+              "$ref": "#/$defs/dimension"
+            },
+            "truncation-slot": {
+              "$ref": "#/$defs/dimension"
+            },
+            "truncation-slot-wide": {
+              "$ref": "#/$defs/dimension"
+            }
+          },
+          "required": [
+            "action-button",
+            "agent-marker-height",
+            "agent-marker-width",
+            "compact-row",
+            "dot",
+            "focus-bar",
+            "icon-button",
+            "inline-action",
+            "inline-badge",
+            "pill-height",
+            "row-height",
+            "selector-knob",
+            "selector-track",
+            "truncation-slot",
+            "truncation-slot-wide"
+          ],
+          "type": "object"
+        },
+        "spacing": {
+          "additionalProperties": false,
+          "properties": {
+            "loose": {
+              "$ref": "#/$defs/dimension"
+            },
+            "micro": {
+              "$ref": "#/$defs/dimension"
+            },
+            "none": {
+              "$ref": "#/$defs/dimension"
+            },
+            "regular": {
+              "$ref": "#/$defs/dimension"
+            },
+            "relaxed": {
+              "$ref": "#/$defs/dimension"
+            },
+            "section": {
+              "$ref": "#/$defs/dimension"
+            },
+            "snug": {
+              "$ref": "#/$defs/dimension"
+            },
+            "tight": {
+              "$ref": "#/$defs/dimension"
+            }
+          },
+          "required": [
+            "loose",
+            "micro",
+            "none",
+            "regular",
+            "relaxed",
+            "section",
+            "snug",
+            "tight"
+          ],
+          "type": "object"
+        },
+        "stroke": {
+          "additionalProperties": false,
+          "properties": {
+            "emphasis": {
+              "$ref": "#/$defs/dimension"
+            },
+            "hairline": {
+              "$ref": "#/$defs/dimension"
+            },
+            "rule": {
+              "$ref": "#/$defs/dimension"
+            }
+          },
+          "required": [
+            "emphasis",
+            "hairline",
+            "rule"
+          ],
+          "type": "object"
+        },
+        "text": {
+          "additionalProperties": false,
+          "properties": {
+            "body": {
+              "additionalProperties": false,
+              "properties": {
+                "font-size": {
+                  "$ref": "#/$defs/dimension"
+                },
+                "line-height": {
+                  "$ref": "#/$defs/dimension"
+                },
+                "weight": {
+                  "$ref": "#/$defs/fontWeight"
+                }
+              },
+              "required": [
+                "font-size",
+                "line-height",
+                "weight"
+              ],
+              "type": "object"
+            },
+            "body-emphasized": {
+              "additionalProperties": false,
+              "properties": {
+                "font-size": {
+                  "$ref": "#/$defs/dimension"
+                },
+                "line-height": {
+                  "$ref": "#/$defs/dimension"
+                },
+                "weight": {
+                  "$ref": "#/$defs/fontWeight"
+                }
+              },
+              "required": [
+                "font-size",
+                "line-height",
+                "weight"
+              ],
+              "type": "object"
+            },
+            "brand": {
+              "additionalProperties": false,
+              "properties": {
+                "font-size": {
+                  "$ref": "#/$defs/dimension"
+                },
+                "line-height": {
+                  "$ref": "#/$defs/dimension"
+                },
+                "weight": {
+                  "$ref": "#/$defs/fontWeight"
+                }
+              },
+              "required": [
+                "font-size",
+                "line-height",
+                "weight"
+              ],
+              "type": "object"
+            },
+            "identity-badge": {
+              "additionalProperties": false,
+              "properties": {
+                "font-size": {
+                  "$ref": "#/$defs/dimension"
+                },
+                "line-height": {
+                  "$ref": "#/$defs/dimension"
+                },
+                "weight": {
+                  "$ref": "#/$defs/fontWeight"
+                }
+              },
+              "required": [
+                "font-size",
+                "line-height",
+                "weight"
+              ],
+              "type": "object"
+            },
+            "row-meta": {
+              "additionalProperties": false,
+              "properties": {
+                "font-size": {
+                  "$ref": "#/$defs/dimension"
+                },
+                "line-height": {
+                  "$ref": "#/$defs/dimension"
+                },
+                "weight": {
+                  "$ref": "#/$defs/fontWeight"
+                }
+              },
+              "required": [
+                "font-size",
+                "line-height",
+                "weight"
+              ],
+              "type": "object"
+            },
+            "section-header": {
+              "additionalProperties": false,
+              "properties": {
+                "font-size": {
+                  "$ref": "#/$defs/dimension"
+                },
+                "line-height": {
+                  "$ref": "#/$defs/dimension"
+                },
+                "weight": {
+                  "$ref": "#/$defs/fontWeight"
+                }
+              },
+              "required": [
+                "font-size",
+                "line-height",
+                "weight"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "body",
+            "body-emphasized",
+            "brand",
+            "identity-badge",
+            "row-meta",
+            "section-header"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "motion",
+        "opacity",
+        "radius",
+        "size",
+        "spacing",
+        "stroke",
+        "text"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "$schema",
+    "api",
+    "format",
+    "merge",
+    "proposal",
+    "sets",
+    "source",
+    "status",
+    "tokens"
+  ],
+  "title": "TekesUI authoritative token format v1 (project schema)",
+  "type": "object"
+}

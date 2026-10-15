@@ -1,0 +1,54 @@
+{
+  "scope": "brand-build-static",
+  "status": "pass",
+  "errors": [],
+  "profiles": [
+    {
+      "brand_id": "example-neutral",
+      "seed_srgb": "#767676",
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "contrast_checks": 960,
+      "contrast_failures": 0,
+      "theme_contract_sha256": "0c313868423c07323c76eb21ef8fe4ce0cad87e1a7697d2d111852ed7943093f",
+      "native_evidence": "unverified"
+    },
+    {
+      "brand_id": "example-blue",
+      "seed_srgb": "#2563EB",
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "contrast_checks": 960,
+      "contrast_failures": 0,
+      "theme_contract_sha256": "b628a1ee020476817845a10c85edbfdd8b8a419c1f4010c65550626a03137e15",
+      "native_evidence": "unverified"
+    },
+    {
+      "brand_id": "example-clay",
+      "seed_srgb": "#D97757",
+      "themes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "contrast_checks": 960,
+      "contrast_failures": 0,
+      "theme_contract_sha256": "4fc8abfefbba98a3b6e21b561bfe36ad4364df2287fedb4905044276045a31f5",
+      "native_evidence": "unverified"
+    }
+  ],
+  "contrast_checks": 2880,
+  "brand_dependent_color_token_count": 55,
+  "independent_roles": "identical across all example brand bundles",
+  "renderer_validation": "unverified",
+  "consumer_acceptance": "unverified"
+}

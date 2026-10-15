@@ -1,0 +1,36 @@
+{
+  "version": "0.3.0-proposal.1",
+  "schema_version": "1.0",
+  "status": "planned-adapters; implemented-local-projections",
+  "authority": "existing-private-artifact-and-approved-release-bundle",
+  "directions": {
+    "export": "approved release -> read-only tool view",
+    "import": "tool diff -> staging -> owner review -> authority update -> new export"
+  },
+  "brand_structure": "shared-base-plus-single-consumer-override",
+  "appearance_modes": [
+    "light",
+    "dark",
+    "light-ic",
+    "dark-ic"
+  ],
+  "brand_is_component_variant": false,
+  "alias_policy": "preserve-graph; resolve-in-active-brand-context",
+  "unknown_mapping": "null-and-unverified",
+  "auto_repair": "explicit-one-to-one-migration-only; ambiguity-requires-review",
+  "figma_payload": "tekes-mapping-plan-not-native-api",
+  "figma_roundtrip": "unverified",
+  "claude_design_roundtrip": "unverified",
+  "code_connect_binding": "unverified",
+  "optional_adapter": true,
+  "source_ids": [
+    "CD-01",
+    "CD-02",
+    "CD-03",
+    "FG-01",
+    "FG-02",
+    "FG-04",
+    "FG-05",
+    "FG-06"
+  ]
+}

@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:tekesui:design-system:1",
+  "title": "TekesUI project DesignSystem entry",
+  "description": "Project-owned DesignSystem metadata schema; token values are external and are authoritative JSON build inputs.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "format",
+    "status",
+    "authority",
+    "layers",
+    "token_source",
+    "specs",
+    "interaction",
+    "themes",
+    "accessibility",
+    "evidence",
+    "known_gaps"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "./system.schema.json"
+    },
+    "format": {
+      "const": "tekesui-design-system/1"
+    },
+    "status": {
+      "const": "approved-visual-baseline-with-json-token-authority"
+    },
+    "authority": {
+      "type": "object",
+      "required": [
+        "visual_baseline_commit",
+        "policy",
+        "baseline",
+        "design_baseline_name",
+        "release_tag",
+        "change_policy"
+      ],
+      "properties": {
+        "visual_baseline_commit": {
+          "type": "string"
+        },
+        "policy": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "baseline": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "design_baseline_name": {
+          "type": "string"
+        },
+        "release_tag": {
+          "type": "null"
+        },
+        "change_policy": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "layers": {
+      "type": "object",
+      "required": [
+        "tokens",
+        "layout_and_component_specs",
+        "interaction",
+        "themes",
+        "accessibility",
+        "evidence"
+      ],
+      "properties": {
+        "tokens": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "layout_and_component_specs": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "interaction": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "themes": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "evidence": {
+          "$ref": "#/$defs/projectReference"
+        }
+      },
+      "additionalProperties": false
+    },
+    "token_source": {
+      "type": "object",
+      "required": [
+        "document",
+        "schema",
+        "value_authority",
+        "status",
+        "unit_policy",
+        "format_policy",
+        "single_source_migration"
+      ],
+      "properties": {
+        "document": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "schema": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "value_authority": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "unit_policy": {
+          "type": "string"
+        },
+        "format_policy": {
+          "type": "string"
+        },
+        "single_source_migration": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "specs": {
+      "type": "object",
+      "required": [
+        "classification",
+        "calibration_layout",
+        "typography_policy",
+        "radius_derivation",
+        "components"
+      ],
+      "properties": {
+        "classification": {
+          "type": "string"
+        },
+        "calibration_layout": {
+          "type": "object"
+        },
+        "typography_policy": {
+          "type": "object"
+        },
+        "radius_derivation": {
+          "type": "object"
+        },
+        "components": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "interaction": {
+      "type": "object",
+      "required": [
+        "source",
+        "navigation",
+        "redraw_policy",
+        "static_text_pickers",
+        "motion"
+      ],
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "navigation": {
+          "type": "object"
+        },
+        "redraw_policy": {
+          "type": "array"
+        },
+        "static_text_pickers": {
+          "type": "string"
+        },
+        "motion": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "themes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object"
+      }
+    },
+    "accessibility": {
+      "type": "object",
+      "required": [
+        "status",
+        "implemented_contracts",
+        "not_claimed",
+        "policy"
+      ],
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "implemented_contracts": {
+          "type": "array"
+        },
+        "not_claimed": {
+          "type": "array"
+        },
+        "policy": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "manifest",
+        "golden_directory",
+        "matrix",
+        "checker",
+        "handoff",
+        "golden_policy",
+        "limits"
+      ],
+      "properties": {
+        "manifest": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "golden_directory": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "matrix": {
+          "type": "string"
+        },
+        "checker": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "handoff": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "golden_policy": {
+          "type": "string"
+        },
+        "limits": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "known_gaps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "projectReference": {
+      "type": "object",
+      "required": [
+        "$ref"
+      ],
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

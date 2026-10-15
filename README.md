@@ -2,16 +2,20 @@
 
 纯 Rust 的 UI foundation 与组件库，mac 优先，之后扩展到 Windows 和 Linux。
 
-它是与现有 Swift 栈（TekesMetalTextKit，以及 Tekes 客户端的 UI 层）平行的长期项目：慢慢做、做扎实，产出就是组件，不绑定任何具体产品。最终目标是 Tekes 系列 app 全部用 Rust 跑，Swift 只保留一层极薄的 Apple 能力垫片。
+它是独立于现有 Swift UI 栈的自研组件层。当前仓库实现保持纯 Rust，不采用 GPUI 或其他现成 Rust UI 框架；wgpu 是 GPU 基础依赖，objc2 是系统绑定，窗口/菜单调用 AppKit、字体调用 CoreText。既有 Kit 源码只读参考，私有 compare 仓库只提供对比证据，不作为构建或运行依赖；不引入 Swift 垫片。
 
 ## 当前状态
 
-F0（平台层、窗口、wgpu、Gallery 骨架）已实现，待人工检查项确认，见 [docs/handoffs/F0.md](docs/handoffs/F0.md)。token 是临时占位值。
+已接入用户提供的 [v0.3.0-proposal1 完整设计包](design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/README.md)。包有的定义优先，包没有的保留现有补集；原始 ZIP、代码、文档、研究和报告全部保存。提案标识不等于仓库发布版本。
 
-运行 Gallery：
+[design/system.json](design/system.json) 是机器入口，[DESIGN.md](DESIGN.md) 说明权威与边界。基础 token、显式消费者品牌配置与统一 policy 生成四主题，再生成 Rust 兼容 API；原生 Gallery 仍为纯 Rust。已有三页与上下往返滚动保留；40 个组件规范及 10 个组合模式尚不等于全部完成原生实现。
+
+使用、品牌定制与检查命令见 [design/README.md](design/README.md)。原版 24 张 golden 与历史性能结果保留，新提案画面另行审查，不覆盖历史证据。
+
+运行当前 Gallery：
 
 ```bash
-cargo run -p tekes-ui-gallery --release
+cargo run --locked -p tekes-ui-gallery
 ```
 
 ## 验收方式
@@ -21,6 +25,9 @@ cargo run -p tekes-ui-gallery --release
 - 不设日期，按通过标准推进。
 
 ## 文档索引
+
+- [DESIGN.md](DESIGN.md)：用户批准的原版视觉契约及变更边界
+- [design/README.md](design/README.md)：24 张基线、来源与更新规则
 
 - [docs/charter.md](docs/charter.md)：定位、原则、crate 分层、平台边界
 - [docs/roadmap.md](docs/roadmap.md)：F0 到 F7 各阶段的范围、对照对象与通过标准
