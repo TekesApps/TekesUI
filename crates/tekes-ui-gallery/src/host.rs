@@ -136,10 +136,11 @@ impl WindowHandler for Host {
                 ));
                 window.close();
             }
-            Event::Mouse(_) | Event::Scroll(_) | Event::Key(_) => {
-                if self.gallery.handle_input(&event) {
-                    window.request_redraw();
-                }
+            // handle_input 返回是否需要重绘。
+            Event::Mouse(_) | Event::Scroll(_) | Event::Key(_)
+                if self.gallery.handle_input(&event) =>
+            {
+                window.request_redraw();
             }
             _ => {}
         }
