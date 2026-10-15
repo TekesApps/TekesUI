@@ -81,6 +81,7 @@ impl Pipelines {
         scene: &Scene,
         atlas: &mut GlyphAtlas,
         clear: Rgba,
+        timestamp_writes: Option<wgpu::RenderPassTimestampWrites<'_>>,
     ) -> FrameCounts {
         // 先让 GPU 纹理跟上 CPU 页。write_texture 排在本次提交所有命令缓冲之前。
         self.glyph.sync(device, queue, atlas);
@@ -157,7 +158,7 @@ impl Pipelines {
                 },
             })],
             depth_stencil_attachment: None,
-            timestamp_writes: None,
+            timestamp_writes,
             occlusion_query_set: None,
             multiview_mask: None,
         });

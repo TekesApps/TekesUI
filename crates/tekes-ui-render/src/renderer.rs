@@ -3,9 +3,11 @@
 use crate::common::COLOR_FORMAT;
 use crate::error::RenderError;
 use crate::frame::{FrameCounts, Pipelines};
+use crate::timing::{FrameTiming, SlotTicket, Timing};
 use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, Instant};
 use tekes_ui_scene::{GlyphAtlas, ImageId, Scene};
 use tekes_ui_tokens::Rgba;
 
@@ -47,6 +49,10 @@ pub struct Renderer {
     /// 最近一帧各类图元的实例数，测试用。
     last_frame: FrameCounts,
     surface: Option<SurfaceState>,
+    /// 设备带 `TIMESTAMP_QUERY`，可以量 GPU 时间。
+    gpu_timestamps: bool,
+    /// 逐帧计时，`None` 表示关着（默认）。
+    timing: Option<Timing>,
 }
 
 impl std::fmt::Debug for Renderer {
@@ -64,10 +70,11 @@ fn new_instance() -> wgpu::Instance {
     wgpu::Instance::new(desc)
 }
 
+/// 返回设备、队列，以及设备是否带 `TIMESTAMP_QUERY`（适配器支持就请求，供 `set_frame_timing` 使用）。
 fn request_device(
     instance: &wgpu::Instance,
     compatible_surface: Option<&wgpu::Surface<'_>>,
-) -> Result<(wgpu::Device, wgpu::Queue), RenderError> {
+) -> Result<(wgpu::Device, wgpu::Queue, bool), RenderError> {
     pollster::block_on(async {
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -78,13 +85,21 @@ fn request_device(
             })
             .await
             .map_err(|_| RenderError::NoAdapter)?;
-        adapter
+        let timestamps = adapter.features().contains(wgpu::Features::TIMESTAMP_QUERY);
+        let required_features = if timestamps {
+            wgpu::Features::TIMESTAMP_QUERY
+        } else {
+            wgpu::Features::empty()
+        };
+        let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("tekes device"),
+                required_features,
                 ..Default::default()
             })
             .await
-            .map_err(|e| RenderError::Device(e.to_string()))
+            .map_err(|e| RenderError::Device(e.to_string()))?;
+        Ok((device, queue, timestamps))
     })
 }
 
@@ -137,7 +152,7 @@ impl Renderer {
             ))
         }
         .map_err(|e| RenderError::Surface(e.to_string()))?;
-        let (device, queue) = request_device(&instance, Some(&surface))?;
+        let (device, queue, gpu_timestamps) = request_device(&instance, Some(&surface))?;
         let id = NEXT_RENDERER_ID.fetch_add(1, Ordering::Relaxed);
         let gpu = Pipelines::new(&device, id);
         let mut r = Renderer {
@@ -153,6 +168,8 @@ impl Renderer {
                 scale,
                 configured: false,
             }),
+            gpu_timestamps,
+            timing: None,
         };
         r.configure_surface()?;
         Ok(r)
@@ -162,7 +179,7 @@ impl Renderer {
     /// 用同一套管线和着色器，供测试和截图使用。
     pub fn new_headless() -> Result<Renderer, RenderError> {
         let instance = new_instance();
-        let (device, queue) = request_device(&instance, None)?;
+        let (device, queue, gpu_timestamps) = request_device(&instance, None)?;
         let id = NEXT_RENDERER_ID.fetch_add(1, Ordering::Relaxed);
         let gpu = Pipelines::new(&device, id);
         Ok(Renderer {
@@ -172,6 +189,8 @@ impl Renderer {
             gpu,
             last_frame: FrameCounts::default(),
             surface: None,
+            gpu_timestamps,
+            timing: None,
         })
     }
 
@@ -257,9 +276,12 @@ impl Renderer {
             self.configure_surface()?;
         }
 
+        // 计时关着时 `t_start` 是 `None`，整条路径只多这几次 `Option` 判断。
+        let t_start = self.timing.is_some().then(Instant::now);
         for _attempt in 0..3 {
             let s = self.surface.as_ref().expect("surface 存在");
             let (size_px, scale) = (s.size_px, s.scale);
+            let t_acquire = t_start.map(|_| Instant::now());
             let (frame, suboptimal) = match s.surface.get_current_texture() {
                 wgpu::CurrentSurfaceTexture::Success(t) => (t, false),
                 wgpu::CurrentSurfaceTexture::Suboptimal(t) => (t, true),
@@ -278,6 +300,7 @@ impl Renderer {
                     return Err(RenderError::Surface("取 drawable 时校验失败".into()));
                 }
             };
+            let t_acquired = t_acquire.map(|_| Instant::now());
             let view = frame
                 .texture
                 .create_view(&wgpu::TextureViewDescriptor::default());
@@ -286,25 +309,82 @@ impl Renderer {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("tekes frame"),
                 });
-            self.last_frame = self.gpu.encode(
-                &self.device,
-                &self.queue,
-                &mut encoder,
-                &view,
-                size_px,
-                scale,
-                scene,
-                atlas,
-                clear,
-            );
+            let ticket =
+                self.encode_scene(&mut encoder, &view, size_px, scale, scene, atlas, clear);
+            let t_encoded = t_start.map(|_| Instant::now());
             self.queue.submit([encoder.finish()]);
             self.queue.present(frame);
+            if let (Some(t), Some(t0), Some(ta), Some(tb), Some(tc)) =
+                (&mut self.timing, t_start, t_acquire, t_acquired, t_encoded)
+            {
+                let end = Instant::now();
+                t.finish_frame(
+                    FrameTiming {
+                        frame: 0,
+                        acquire: tb - ta,
+                        encode: tc - tb,
+                        submit: end - tc,
+                        total: end - t0,
+                        gpu: None,
+                    },
+                    ticket,
+                );
+                // 非阻塞地推进回调，把已完成的 GPU 结果收进来。
+                let _ = self.device.poll(wgpu::PollType::Poll);
+                t.collect();
+            }
             if suboptimal {
                 self.configure_surface()?;
             }
             return Ok(());
         }
         Err(RenderError::Surface("多次重试后仍取不到 drawable".into()))
+    }
+
+    /// 把 scene 编进 `encoder`。计时开着且有空槽时，给 render pass 挂上时间戳并解析到回读缓冲，
+    /// 返回占用的槽；否则返回 `None`。上屏和离屏两条路径共用。
+    #[allow(clippy::too_many_arguments)]
+    fn encode_scene(
+        &mut self,
+        encoder: &mut wgpu::CommandEncoder,
+        view: &wgpu::TextureView,
+        size_px: (u32, u32),
+        scale: f32,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        clear: Rgba,
+    ) -> Option<SlotTicket> {
+        if let Some(t) = &mut self.timing
+            && let Some((ticket, writes)) = t.begin_gpu()
+        {
+            self.last_frame = self.gpu.encode(
+                &self.device,
+                &self.queue,
+                encoder,
+                view,
+                size_px,
+                scale,
+                scene,
+                atlas,
+                clear,
+                Some(writes),
+            );
+            t.resolve(encoder, &ticket);
+            return Some(ticket);
+        }
+        self.last_frame = self.gpu.encode(
+            &self.device,
+            &self.queue,
+            encoder,
+            view,
+            size_px,
+            scale,
+            scene,
+            atlas,
+            clear,
+            None,
+        );
+        None
     }
 
     fn recreate_surface(&mut self) -> Result<(), RenderError> {
@@ -378,17 +458,9 @@ impl Renderer {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("tekes offscreen"),
             });
-        self.last_frame = self.gpu.encode(
-            &self.device,
-            &self.queue,
-            &mut encoder,
-            &view,
-            size_px,
-            scale,
-            scene,
-            atlas,
-            clear,
-        );
+        let t_start = self.timing.is_some().then(Instant::now);
+        let ticket = self.encode_scene(&mut encoder, &view, size_px, scale, scene, atlas, clear);
+        let t_encoded = t_start.map(|_| Instant::now());
         encoder.copy_texture_to_buffer(
             wgpu::TexelCopyTextureInfo {
                 texture: &texture,
@@ -411,6 +483,21 @@ impl Renderer {
             },
         );
         self.queue.submit([encoder.finish()]);
+        if let (Some(t), Some(t0), Some(tc)) = (&mut self.timing, t_start, t_encoded) {
+            // 离屏没有 drawable，acquire 为 0；total 到提交为止（不含读回等待）。
+            let end = Instant::now();
+            t.finish_frame(
+                FrameTiming {
+                    frame: 0,
+                    acquire: Duration::ZERO,
+                    encode: tc - t0,
+                    submit: end - tc,
+                    total: end - t0,
+                    gpu: None,
+                },
+                ticket,
+            );
+        }
 
         let (tx, rx) = std::sync::mpsc::channel();
         readback.slice(..).map_async(wgpu::MapMode::Read, move |r| {
@@ -439,6 +526,51 @@ impl Renderer {
         drop(mapped);
         readback.unmap();
         Ok(out)
+    }
+
+    /// 设备是否支持 GPU 时间戳（Metal 的 stage boundary 计数器采样）。
+    pub fn gpu_timing_supported(&self) -> bool {
+        self.gpu_timestamps
+    }
+
+    /// 打开或关闭逐帧计时，见 [`FrameTiming`]。关闭时丢弃尚未取走的结果。
+    ///
+    /// 打开后每次 [`render`](Renderer::render) 量取 drawable、编码、提交三段 CPU 时间，
+    /// 设备支持时再量 render pass 的 GPU 时间；结果用
+    /// [`drain_frame_timings`](Renderer::drain_frame_timings) 取走。关着时每帧没有额外开销。
+    /// 上屏（`render`）和离屏（`render_to_rgba8`）两条路径都计时；离屏没有 drawable，`acquire` 为 0。
+    pub fn set_frame_timing(&mut self, enabled: bool) {
+        match (enabled, self.timing.is_some()) {
+            (true, false) => {
+                self.timing = Some(Timing::new(&self.device, &self.queue, self.gpu_timestamps));
+            }
+            (false, true) => self.timing = None,
+            _ => {}
+        }
+    }
+
+    /// 最近一次真正画出（没有因遮挡等跳过）的帧的编号，对应 [`FrameTiming::frame`]。
+    /// 计时关着或还没画过时为 `None`。宿主靠它把自己量的数字和渲染器的结果配对。
+    pub fn last_timed_frame(&self) -> Option<u64> {
+        self.timing.as_ref().and_then(Timing::last_frame)
+    }
+
+    /// 取走已经完成的帧计时（追加到 `out`，按帧顺序）。GPU 结果通常晚一两帧到；
+    /// `wait` 为 true 时先阻塞到所有已提交的工作完成，用于收尾。
+    pub fn drain_frame_timings(&mut self, out: &mut Vec<FrameTiming>, wait: bool) {
+        let Some(t) = &mut self.timing else { return };
+        let _ = self.device.poll(if wait {
+            wgpu::PollType::wait_indefinitely()
+        } else {
+            wgpu::PollType::Poll
+        });
+        t.collect();
+        t.take_done(out);
+    }
+
+    /// 还有多少帧在等 GPU 结果（计时关着时为 0）。
+    pub fn pending_frame_timings(&self) -> usize {
+        self.timing.as_ref().map_or(0, Timing::pending)
     }
 
     /// 实例缓冲当前能放多少个 quad。

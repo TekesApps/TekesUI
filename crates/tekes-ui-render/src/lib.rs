@@ -81,6 +81,14 @@
 //!   实测 120Hz 吃紧时可以改成 2。
 //! - 透明度模式 `Opaque`：窗口背景由我们自己画，layer 标记为不透明，合成器可以跳过混合。
 //!
+//! # 帧计时
+//!
+//! [`Renderer::set_frame_timing`] 打开后，每帧量 `nextDrawable` 的等待、编码、提交三段 CPU 时间，
+//! 设备支持 `TIMESTAMP_QUERY` 时（本机 Apple M4 支持）再量 render pass 的 GPU 时间，
+//! 用 [`Renderer::drain_frame_timings`] 取走 [`FrameTiming`]。默认关闭，关闭时每帧只多几次
+//! `Option` 判断。[`stats`] 模块是宿主汇总用的纯函数：分位数和基于显示链接时间戳的掉帧检测。
+//! wgpu 30 不暴露 `CAMetalDrawable`，拿不到上屏时刻（`presentedTime`），细节见 [`stats`] 的文档。
+//!
 //! # 实例缓冲
 //!
 //! 每种图元（quad、字形、图像）各一个 `VERTEX | COPY_DST` 的实例缓冲；下面以 quad 为例，初始容量 256 个实例，按需增长：不够时分配
@@ -123,6 +131,10 @@ mod image_pass;
 mod instance;
 mod quad_pass;
 mod renderer;
+pub mod stats;
+mod timing;
 
 pub use error::RenderError;
 pub use renderer::Renderer;
+pub use stats::{DROP_THRESHOLD, Distribution, DropReport, FrameSample, FrameStats};
+pub use timing::FrameTiming;
