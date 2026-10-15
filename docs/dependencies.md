@@ -68,3 +68,17 @@ unsafe { instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CoreAnimation
 - 两边会统一到 objc2 0.6.5 与 objc2-* 0.3.2。
 
 accesskit_macos 0.27.1 依赖 `objc2 ^0.5.1`、`objc2-app-kit ^0.2.0`、`objc2-foundation ^0.2.0`。F6 引入它之后，同一个构建里会同时出现 objc2 0.5 和 0.6。不同版本的类型互不相同，可以共存，代价是编译时间和二进制体积。我们自己的代码只用 0.6 / 0.3 的类型，不在 crate 之间传 0.5 的类型。F6 开工时再复核 accesskit_macos 是否已升级。
+
+## 2026-10-15：tekes-ui-text 新增依赖（F1）
+
+数据来自 crates.io（`cargo info`）与 `cargo metadata`。
+
+| crate | 版本 | 许可证 | 用途 | 与 MIT 兼容 |
+|---|---|---|---|---|
+| objc2-core-text | 0.3.2 | Zlib OR Apache-2.0 OR MIT | CoreText 绑定：排版、字体回退、光栅化（只在 macOS 目标编译） | 是 |
+| serde | 1.0.229 | MIT OR Apache-2.0 | 布局导出（`tekesui-layout/0`）的序列化 | 是 |
+| serde_json | 1.0.154 | MIT OR Apache-2.0 | 同上，生成与读取 JSON | 是 |
+
+serde 与 serde_json 的传递依赖：serde_core、serde_derive、syn 3.0.9、proc-macro2、quote（均为 MIT OR Apache-2.0），itoa（MIT OR Apache-2.0），memchr（Unlicense OR MIT），zmij（MIT）。没有 GPL、LGPL、MPL。
+
+tekes-ui-text 还用到已在依赖表中的 objc2-core-foundation 与 objc2-core-graphics（0.3.2），只多开了几个 feature（CFString、CFAttributedString、CFDictionary、CFNumber、CFArray、CGBitmapContext、CGContext 等）。

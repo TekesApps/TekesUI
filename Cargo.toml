@@ -14,6 +14,7 @@ rust-version = "1.95"
 tekes-ui-tokens = { path = "crates/tekes-ui-tokens" }
 tekes-ui-scene = { path = "crates/tekes-ui-scene" }
 tekes-ui-render = { path = "crates/tekes-ui-render" }
+tekes-ui-text = { path = "crates/tekes-ui-text" }
 wgpu = { version = "30.0.1", default-features = false, features = ["metal", "wgsl", "std"] }
 bytemuck = { version = "1", features = ["derive"] }
 pollster = "1"
@@ -25,6 +26,9 @@ objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std"
 objc2-quartz-core = { version = "0.3.2", default-features = false, features = ["std"] }
 objc2-core-foundation = { version = "0.3.2", default-features = false, features = ["std"] }
 objc2-core-graphics = { version = "0.3.2", default-features = false, features = ["std"] }
+objc2-core-text = { version = "0.3.2", default-features = false, features = ["std"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "warn"

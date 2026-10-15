@@ -1,0 +1,22 @@
+[package]
+name = "tekes-ui-text"
+description = "TekesUI 文字：排版、字体回退、光栅化三个 trait，CoreText 实现，布局导出与像素对比"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+tekes-ui-tokens.workspace = true
+tekes-ui-scene.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-core-foundation = { workspace = true, features = ["CFString", "CFAttributedString", "CFDictionary", "CFNumber", "CFArray", "CFCGTypes", "CFBase", "CFCharacterSet", "CFData"] }
+objc2-core-graphics = { workspace = true, features = ["CGColorSpace", "CGBitmapContext", "CGContext", "CGAffineTransform", "CGGeometry", "CGImage"] }
+objc2-core-text = { workspace = true, features = ["CTFont", "CTFontDescriptor", "CTLine", "CTRun", "CTTypesetter", "CTStringAttributes", "CTFontTraits", "CTFrame", "CTFramesetter", "objc2-core-graphics"] }
+
+[lints]
+workspace = true
