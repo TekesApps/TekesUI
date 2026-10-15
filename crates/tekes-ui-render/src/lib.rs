@@ -38,6 +38,40 @@
 //! 目标的像素尺寸和 `scale`（用实际像素尺寸转 NDC，避免 `点 * scale` 与 drawable
 //! 尺寸取整不一致造成偏移）。
 //!
+//! # 字形
+//!
+//! 字形位图存在 [`tekes_ui_scene::GlyphAtlas`] 里（CPU 页缓冲是真值，规则见它的模块文档）。
+//! [`Renderer::render`] 和 [`Renderer::render_to_rgba8`] 都接收 `&mut GlyphAtlas`：
+//! 画之前先把 atlas 的脏区用 `Queue::write_texture` 上传到 GPU，然后画。
+//!
+//! - **纹理**：一张 `Bgra8Unorm` 的 `texture_2d_array`，一页一层，层数按 2 的幂增长到
+//!   `max_pages`；增长时新建纹理并整页重传（CPU 页是真值，不从旧纹理拷贝）。选数组而不是
+//!   "每页一张纹理"，是因为实例里带页号后一个 draw 能画任意页，而字形叠放顺序不能按页重排。
+//! - **共享**：一个 atlas 可以被多个渲染器使用（各自一份 GPU 纹理）。atlas 记着上一次是谁
+//!   取走了脏区，换了渲染器就整页重传，所以交替使用也是对的，只是多传一些。
+//! - **位置**：位图左上角的设备像素坐标是 `round(origin.x * scale) + left`、
+//!   `round(origin.y * scale) + top`，`round` 是四舍五入、0.5 向远离 0 的方向进位；
+//!   取整在 CPU 侧用 Rust 的 `f32::round` 做（WGSL 的 `round` 是银行家舍入，不能用）。
+//!   位图按 width x height 个设备像素原样贴，**不缩放、没有亚像素偏移**，
+//!   所以片元着色器用 `textureLoad` 按整数坐标取（等价于 nearest 采样，没有过滤和 uv 取整的歧义）。
+//! - **着色**：单色（`Mask`）输出 `(rgb * a * s.a, a * s.a)`，`a` 是 run 颜色的 alpha；
+//!   彩色（`Color`）输出 `s * a`（采样值已预乘，`a` 只当不透明度）。不做伽马修正和对比度增强，
+//!   覆盖率直接当 alpha，在 sRGB 编码空间里混合，和 quad 一样。
+//! - **无效字形**：页号超出当前纹理层数的字形（不是这个 atlas 编出来的）被跳过。
+//!
+//! # 图像
+//!
+//! [`Renderer::register_image`] 登记一张预乘 alpha 的 RGBA8 图像（`Rgba8Unorm`，数值原样当作
+//! sRGB 编码值），返回 [`tekes_ui_scene::ImageId`]；scene 里的 `Image` 图元把它线性采样、
+//! 钳边地画进矩形，整体乘 `opacity`。矩形边缘不做抗锯齿，用于 Gallery 的参照图。
+//! 没登记或已注销的 id 被跳过。
+//!
+//! # 批
+//!
+//! scene 是有序列表。一帧里线性扫描，把**连续的同类图元**并成一批（一次实例化 draw），
+//! 不同种类交错时按原顺序排批，所以叠放顺序跨种类成立：多个相邻的 `GlyphRun` 并成一次 draw
+//! （颜色在实例里），相邻的 `Image` 只有同一张图才并。每种图元一个实例缓冲，各自按需增长。
+//!
 //! # 帧节奏
 //!
 //! - 只在调用 [`Renderer::render`] 时工作。没有内部循环、定时器或线程；空闲时 0 CPU。
@@ -49,7 +83,7 @@
 //!
 //! # 实例缓冲
 //!
-//! 一个 `VERTEX | COPY_DST` 的实例缓冲，初始容量 256 个实例，按需增长：不够时分配
+//! 每种图元（quad、字形、图像）各一个 `VERTEX | COPY_DST` 的实例缓冲；下面以 quad 为例，初始容量 256 个实例，按需增长：不够时分配
 //! `max(需要的数量, 旧容量 * 2)`，够用就原样复用，**不缩小**。每帧只用 `queue.write_buffer`
 //! 往里写，CPU 侧的打包暂存也是复用的，稳定状态下每帧没有堆分配和 GPU 缓冲分配。
 //! [`Renderer::instance_buffer_allocations`] 可以观察到这一点。
