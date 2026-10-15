@@ -82,3 +82,11 @@ accesskit_macos 0.27.1 依赖 `objc2 ^0.5.1`、`objc2-app-kit ^0.2.0`、`objc2-f
 serde 与 serde_json 的传递依赖：serde_core、serde_derive、syn 3.0.9、proc-macro2、quote（均为 MIT OR Apache-2.0），itoa（MIT OR Apache-2.0），memchr（Unlicense OR MIT），zmij（MIT）。没有 GPL、LGPL、MPL。
 
 tekes-ui-text 还用到已在依赖表中的 objc2-core-foundation 与 objc2-core-graphics（0.3.2），只多开了几个 feature（CFString、CFAttributedString、CFDictionary、CFNumber、CFArray、CGBitmapContext、CGContext 等）。
+
+## 2026-10-15：tekes-ui-compare 新增依赖（F1）
+
+| crate | 版本 | 许可证 | 用途 | 与 MIT 兼容 |
+|---|---|---|---|---|
+| sha2 | 0.11.1 | MIT OR Apache-2.0 | 对比报告里记录夹具文件的 SHA-256，核对与参照侧用的是同一份夹具 | 是 |
+
+sha2 的传递依赖：digest 0.11.3、crypto-common 0.2.2、block-buffer 0.12.1、hybrid-array 0.4.15、cpufeatures 0.3.1、const-oid 0.10.2、typenum 1.20.1，许可证均为 MIT OR Apache-2.0。png 与 serde / serde_json 已在前面记录。

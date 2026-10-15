@@ -1,0 +1,21 @@
+[package]
+name = "tekes-ui-compare"
+description = "TekesUI 与参照实现的对比运行器：排版数值逐项比较，atlas 加 wgpu 渲染与参照位图做带容差的像素差异"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+tekes-ui-tokens.workspace = true
+tekes-ui-scene.workspace = true
+tekes-ui-text.workspace = true
+tekes-ui-render.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+png.workspace = true
+sha2.workspace = true
+
+[lints]
+workspace = true

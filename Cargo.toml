@@ -15,10 +15,12 @@ tekes-ui-tokens = { path = "crates/tekes-ui-tokens" }
 tekes-ui-scene = { path = "crates/tekes-ui-scene" }
 tekes-ui-render = { path = "crates/tekes-ui-render" }
 tekes-ui-text = { path = "crates/tekes-ui-text" }
+tekes-ui-compare = { path = "crates/tekes-ui-compare" }
 wgpu = { version = "30.0.1", default-features = false, features = ["metal", "wgsl", "std"] }
 bytemuck = { version = "1", features = ["derive"] }
 pollster = "1"
 png = "0.17"
+sha2 = "0.11"
 tekes-ui-platform-macos = { path = "crates/tekes-ui-platform-macos" }
 objc2 = { version = "0.6.5", default-features = false, features = ["std"] }
 objc2-foundation = { version = "0.3.2", default-features = false, features = ["std"] }
