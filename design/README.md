@@ -42,11 +42,11 @@ crates/
 
 ### tokens/tokens.schema.json
 
-机器校验规则，导入和 CI 都用它。至少包括：
+机器校验规则，导入和 CI 都用它。JSON Schema 本身只管结构，引用无环、对比度这类跨字段检查由导入工具在 schema 之外补做。合起来至少包括：
 
 - 引用无环（颜色可引用另一角色加 alpha 档，引用链不能成环）；
 - 四种外观齐全：light、dark、IC-light（increase-contrast-light）、IC-dark（increase-contrast-dark），或者按 brief 7.1 写明的推导规则从 light/dark 推导；
-- brief 7.1 校验清单里的其他项，例如对比度达标、三套（四种外观）完整、每个 token 带用途说明和禁区。
+- brief 7.1 校验清单里的其他项，例如对比度达标、每个 token 带用途说明和禁区。
 
 ### icons/svg/&lt;slot-name&gt;.svg
 
@@ -115,11 +115,11 @@ Design 交付的原包原样归档，只读，不被代码引用。只有原创�
 ## 流转规则
 
 1. 委托件（如 SEND 发送件）留在私有仓库，不进本仓库。本仓库只有 `docs/design/` 下的委托草案。
-2. 交付原件先原样放进 `design/handoffs/<日期>-<轮次>/`。
+2. 交付原件先原样放进 `design/handoffs/<日期>-<轮次>/`。此时只在工作区，不提交。
 3. 跑 `cargo xtask design import`，做格式校验和元数据剥除。
 4. 人工核对原创性声明和映射表（brief 7.3、7.4、第 9 节）。
 5. 两者都通过后，才写进 `design/tokens/` 和 `design/icons/`，并重新生成 generated.rs。
-6. 一次导入一个提交，提交信息注明 handoff 目录。
+6. 一次导入一个提交：`handoffs/` 里的原包和写进 `design/` 的结果放在同一个提交里，提交信息注明 handoff 目录。第 3 或第 4 步没通过的，整包从工作区删除、不提交，并退回 Design 重交。
 
 硬规则：
 
