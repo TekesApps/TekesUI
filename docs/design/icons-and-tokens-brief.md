@@ -2,6 +2,8 @@
 
 状态：草案，**待用户决定是否发出**。数字统计于 2026-10-15。
 
+> 更新：设计工作已转到 TekesUI Design System artifact（claude.ai 上的私有 Design System artifact，不在此处给链接）。本文作为历史记录与需求来源保留；交付格式以 [design/README.md](../../design/README.md) 为准。
+
 本文分两部分：第一部分是给用户看的"值不值得"评估；第二部分起是发给另一个 Claude 会话（Design Agent）的委托正文，需自足。发出时把第二部分起的内容连同附件一起发。
 
 ---
@@ -240,6 +242,8 @@ Alpha：faint .07、soft .14、wash .45。Increase Contrast 下 faint 提升为 
 ### 7. 交付格式
 
 #### 7.1 token 真源
+
+> **已被 artifact 格式取代，见 design/README.md。** 下面的 schema 草案仅作历史保留。
 
 平台中立的 JSON（或 TOML，二选一并说明理由），含 light、dark、increase-contrast 三套。建议 schema 草案如下，你可以改进，但需保持"一个文件、三种外观、可机器校验"：
 
