@@ -7,8 +7,11 @@
 use std::ffi::c_void;
 use std::time::Duration;
 
-use objc2_app_kit::NSApplication;
-use objc2_foundation::{MainThreadMarker, NSSize};
+use objc2_app_kit::{
+    NSAppearance, NSAppearanceCustomization, NSAppearanceNameDarkAqua, NSApplication, NSEvent,
+    NSEventModifierFlags, NSEventType, NSWindow,
+};
+use objc2_foundation::{MainThreadMarker, NSPoint, NSSize, NSString};
 
 unsafe extern "C" {
     static _dispatch_main_q: c_void;
@@ -34,6 +37,74 @@ pub enum Action {
     Log(String),
     /// `performClose`：走 `CloseRequested` 路径。
     Close,
+    /// 触发菜单项（`tag` 是 `CommandId` 的值）：与点菜单走同一个 `sendAction`，
+    /// 菜单里没有这个命令时只打日志。
+    MenuCommand(u32),
+    /// 合成一个窗口内的鼠标移动（不带按键），坐标是内容区的 pt，左上角为原点。
+    /// 事件直接送给内容视图的 `mouseMoved:`，和 NSTrackingArea 的路径一致；不产生全局鼠标事件。
+    MouseMove {
+        x: f64,
+        y: f64,
+    },
+    /// 合成鼠标移出内容区（`mouseExited:`）。
+    MouseExit,
+    /// 合成一次左键单击（按下加抬起），经 `NSApplication.sendEvent`。
+    Click {
+        x: f64,
+        y: f64,
+    },
+    /// 合成一次按键（按下加抬起），无修饰键。`key_code` 是虚拟键码（↑ 126、↓ 125）。
+    Key {
+        key_code: u16,
+    },
+    /// 只改这一个窗口的外观（深色或跟随系统），不碰系统设置；
+    /// 内容视图的 `effectiveAppearance` 随之变化，平台层会投递 `SystemAppearanceChanged`。
+    WindowDark(bool),
+}
+
+/// 内容区坐标（左上角原点）→ 窗口坐标（左下角原点）。
+fn win_point(w: &NSWindow, x: f64, y_top: f64) -> NSPoint {
+    let h = w
+        .contentView()
+        .map(|v| v.frame().size.height)
+        .unwrap_or(0.0);
+    NSPoint::new(x, h - y_top)
+}
+
+fn mouse_event(
+    w: &NSWindow,
+    ty: NSEventType,
+    x: f64,
+    y: f64,
+    count: isize,
+) -> Option<objc2::rc::Retained<NSEvent>> {
+    NSEvent::mouseEventWithType_location_modifierFlags_timestamp_windowNumber_context_eventNumber_clickCount_pressure(
+        ty,
+        win_point(w, x, y),
+        NSEventModifierFlags::empty(),
+        0.0,
+        w.windowNumber(),
+        None,
+        0,
+        count,
+        1.0,
+    )
+}
+
+fn key_event(w: &NSWindow, ty: NSEventType, key_code: u16) -> Option<objc2::rc::Retained<NSEvent>> {
+    let s = NSString::from_str("");
+    NSEvent::keyEventWithType_location_modifierFlags_timestamp_windowNumber_context_characters_charactersIgnoringModifiers_isARepeat_keyCode(
+        ty,
+        NSPoint::new(0.0, 0.0),
+        NSEventModifierFlags::empty(),
+        0.0,
+        w.windowNumber(),
+        None,
+        &s,
+        &s,
+        false,
+        key_code,
+    )
 }
 
 extern "C" fn run_step(ctx: *mut c_void) {
@@ -52,6 +123,71 @@ extern "C" fn run_step(ctx: *mut c_void) {
         Action::Deminiaturize => w.deminiaturize(None),
         Action::Log(_) => {}
         Action::Close => w.performClose(None),
+        Action::MenuCommand(tag) => {
+            let mut found = false;
+            if let Some(main) = app.mainMenu() {
+                for top in main.itemArray().iter() {
+                    let Some(sub) = top.submenu() else { continue };
+                    for item in sub.itemArray().iter() {
+                        if item.tag() == tag as isize
+                            && let Some(action) = item.action()
+                        {
+                            // SAFETY: action/target 来自平台层自己建的菜单项。
+                            unsafe {
+                                app.sendAction_to_from(
+                                    action,
+                                    item.target().as_deref(),
+                                    Some(&item),
+                                );
+                            }
+                            found = true;
+                        }
+                    }
+                }
+            }
+            if !found {
+                eprintln!("selftest: 没有命令 {tag}");
+            }
+        }
+        Action::MouseMove { x, y } => {
+            if let (Some(v), Some(e)) = (
+                w.contentView(),
+                mouse_event(&w, NSEventType::MouseMoved, x, y, 0),
+            ) {
+                v.mouseMoved(&e);
+            }
+        }
+        Action::MouseExit => {
+            if let (Some(v), Some(e)) = (
+                w.contentView(),
+                mouse_event(&w, NSEventType::MouseExited, -1.0, -1.0, 0),
+            ) {
+                v.mouseExited(&e);
+            }
+        }
+        Action::Click { x, y } => {
+            for ty in [NSEventType::LeftMouseDown, NSEventType::LeftMouseUp] {
+                if let Some(e) = mouse_event(&w, ty, x, y, 1) {
+                    app.sendEvent(&e);
+                }
+            }
+        }
+        Action::Key { key_code } => {
+            for ty in [NSEventType::KeyDown, NSEventType::KeyUp] {
+                if let Some(e) = key_event(&w, ty, key_code) {
+                    app.sendEvent(&e);
+                }
+            }
+        }
+        Action::WindowDark(on) => {
+            let a = if on {
+                // SAFETY: AppKit 导出的常量，进程内有效。
+                NSAppearance::appearanceNamed(unsafe { NSAppearanceNameDarkAqua })
+            } else {
+                None
+            };
+            w.setAppearance(a.as_deref());
+        }
         Action::Capture { path } => {
             let number = w.windowNumber();
             std::thread::spawn(move || {
