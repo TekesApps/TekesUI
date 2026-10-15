@@ -29,6 +29,7 @@
 
 pub mod compare;
 pub mod export;
+mod geometry;
 pub mod model;
 pub mod push;
 pub mod style;
@@ -39,6 +40,6 @@ pub mod utf16;
 pub mod coretext;
 
 pub use model::{FontInfo, FontRun, Line, Paragraph, ShapeOptions, ShapedGlyph, ShapedRun};
-pub use push::push_paragraph;
+pub use push::{push_paragraph, push_paragraph_visible};
 pub use style::{FontFamily, TextStyle};
 pub use traits::{FontFallback, Rasterizer, Shaper};

@@ -1,0 +1,12 @@
+[package]
+name = "tekes-ui-controls"
+description = "Platform-independent Rust control and scrolling state models"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+[lints]
+workspace = true
+[dependencies]
+tekes-ui-scene.workspace = true
+unicode-segmentation = "1.13.3"

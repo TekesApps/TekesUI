@@ -271,7 +271,22 @@ impl Shaper for CoreTextShaper {
             let m = line_metrics(&line, &base);
             let height = line_height(&m);
             let runs = self.collect_runs(&line, base_key, &mut fonts_used, n);
+            let mut carets = Vec::new();
+            let mut index = utf16.start;
+            while index < utf16.end {
+                // SAFETY: index is a composed-character boundary inside this CTLine.
+                let x =
+                    unsafe { line.offset_for_string_index(index as isize, std::ptr::null_mut()) };
+                carets.push((index, x));
+                index += grapheme_len_at(&ts.cf_text, index);
+            }
+            carets.push((utf16.end, unsafe {
+                line.offset_for_string_index(utf16.end as isize, std::ptr::null_mut())
+            }));
+            let has_newline = text[map.byte_range(utf16.clone())].ends_with('\n');
             lines.push(Line {
+                has_newline,
+                carets,
                 index: lines.len(),
                 bytes: map.byte_range(utf16.clone()),
                 utf16,
@@ -305,6 +320,8 @@ impl Shaper for CoreTextShaper {
                 width: 0.0,
                 width_trimmed: 0.0,
                 runs: Vec::new(),
+                carets: vec![(n, 0.0)],
+                has_newline: false,
             });
             cursor_y += default_line_height + line_spacing;
         }

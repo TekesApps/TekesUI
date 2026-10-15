@@ -11,6 +11,7 @@ repository = "https://github.com/TekesApps/TekesUI"
 rust-version = "1.95"
 
 [workspace.dependencies]
+tekes-ui-controls = { path = "crates/tekes-ui-controls" }
 tekes-ui-tokens = { path = "crates/tekes-ui-tokens" }
 tekes-ui-scene = { path = "crates/tekes-ui-scene" }
 tekes-ui-render = { path = "crates/tekes-ui-render" }

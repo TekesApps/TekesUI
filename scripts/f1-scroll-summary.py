@@ -2,7 +2,7 @@
 """汇总 f1-scroll-gate.sh 的多次 JSON 报告：每次的 p99，中位数，最坏值，门禁判定。
 
 门槛（comparison-method 第 2.3 节）：
-  - 滚动帧时间 p99 <= 8.3 ms：CPU（干活，不含等 drawable）与 GPU 各自的 p99；
+  - 滚动帧时间 p99 <= 8.33 ms：CPU（干活，不含等 drawable）与 GPU 各自的 p99；
   - 不得有连续掉帧：一个间隔里连续丢掉的刷新数 <= 1（longest_drop_run）；
   - 在 120Hz 屏上量（刷新间隔 8.33 ms）。
 另列出：含等待的 CPU p99、取 drawable p99、晚到帧数、空闲确认。
@@ -11,7 +11,7 @@ import json
 import statistics
 import sys
 
-LIMIT_MS = 8.3
+LIMIT_MS = 8.33
 
 
 def main(paths):

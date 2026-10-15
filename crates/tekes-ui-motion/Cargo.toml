@@ -1,0 +1,10 @@
+[package]
+name = "tekes-ui-motion"
+description = "Deterministic, renderer-independent animation models for TekesUI"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true

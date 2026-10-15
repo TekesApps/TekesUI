@@ -512,3 +512,40 @@ fn non_multiple_of_64_widths_read_back_correctly() {
     assert_eq!(img.px(1, 0), [255, 255, 255, 255]);
     assert_eq!(img.px(36, 3), [255, 255, 255, 255]);
 }
+
+#[test]
+fn nested_scissors_preserve_quad_geometry_and_restore_parent() {
+    let Some(mut renderer) = renderer() else {
+        return;
+    };
+    for scale in [1.0, 2.0] {
+        let mut scene = Scene::new();
+        let red = Rgba::new(1.0, 0.0, 0.0, 1.0);
+        let blue = Rgba::new(0.0, 0.0, 1.0, 1.0);
+        scene.push_clip(Rect::new(20.0, 20.0, 60.0, 60.0));
+        scene.push_quad(
+            Quad::new(Rect::new(0.0, 0.0, 100.0, 100.0), red)
+                .with_corner_radius(20.0)
+                .with_border(4.0, Rgba::gray(0.0)),
+        );
+        scene.push_clip(Rect::new(40.0, 40.0, 20.0, 20.0));
+        scene.push_quad(Quad::new(Rect::new(0.0, 0.0, 100.0, 100.0), blue));
+        scene.pop_clip();
+        scene.push_clip(Rect::new(200.0, 200.0, 10.0, 10.0));
+        scene.push_quad(Quad::new(Rect::new(0.0, 0.0, 100.0, 100.0), blue));
+        scene.pop_clip();
+        scene.pop_clip();
+        scene.push_quad(Quad::new(Rect::new(90.0, 90.0, 5.0, 5.0), blue));
+        let size = (100 * scale as u32, 100 * scale as u32);
+        let image = render(&mut renderer, &scene, size, scale, Rgba::gray(1.0));
+        for (x, y, c) in [
+            (19, 30, [255, 255, 255, 255]),
+            (20, 30, [255, 0, 0, 255]),
+            (50, 50, [0, 0, 255, 255]),
+            (65, 50, [255, 0, 0, 255]),
+            (92, 92, [0, 0, 255, 255]),
+        ] {
+            assert_px(&image, x * scale as u32, y * scale as u32, c, 0);
+        }
+    }
+}

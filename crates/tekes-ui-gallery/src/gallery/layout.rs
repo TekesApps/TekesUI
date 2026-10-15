@@ -2,7 +2,9 @@
 //! Larger windows expose background; smaller windows clip this reproducible frame.
 //! The three existing pages remain calibration fixtures inside the new capture size.
 
-use tekes_ui_scene::{Point, Rect, Size};
+#[cfg(test)]
+use tekes_ui_scene::Point;
+use tekes_ui_scene::{Rect, Size};
 use tekes_ui_tokens::{ControlSize, Spacing, TextRole, proposal};
 
 /// 固定内容框的尺寸（pt）。
@@ -53,21 +55,18 @@ pub const PAGE_CONTENT: Rect = Rect::new(
 
 /// 第 `i` 行的视觉矩形（选中、hover 的底）。
 pub fn catalog_row_rect(i: usize) -> Rect {
-    Rect::new(
-        ROW_INSET_X,
-        CATALOG_TOP + i as f32 * (ROW_H + ROW_GAP),
-        CATALOG_W - 2.0 * ROW_INSET_X,
-        ROW_H,
-    )
+    super::navigation::row(super::Page::ALL[i])
 }
 
 /// 第 `i` 行的命中矩形：视觉矩形向外各扩半个间隔，相邻行的命中区正好拼起来。
 /// `Rect::contains` 左、上包含，右、下不包含，所以一个点最多命中一行。
+#[cfg(test)]
 pub fn catalog_hit_rect(i: usize) -> Rect {
     catalog_row_rect(i).inset(-ROW_GAP / 2.0)
 }
 
 /// 点落在第几行（只考虑前 `count` 行）。不在任何行上返回 `None`。
+#[cfg(test)]
 pub fn catalog_hit_test(p: Point, count: usize) -> Option<usize> {
     (0..count).find(|&i| catalog_hit_rect(i).contains(p))
 }

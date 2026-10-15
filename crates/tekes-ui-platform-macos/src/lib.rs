@@ -1,7 +1,7 @@
 //! macOS 平台层，基于 objc2 的 AppKit 绑定，不使用 winit。
 //!
 //! 负责窗口、事件泵、菜单和系统外观，向引擎投递规整的 [`Event`]；
-//! 剪贴板和输入法（NSTextInputClient）在后续阶段加入。
+//! NSTextInputClient 和剪贴板桥接只传递数据；文本及选区由 Rust 管理。
 //! 与引擎之间只通过窄接口通信：[`App`]、[`WindowHandler`]、[`Window`]、[`Event`]，
 //! 引擎不接触任何 objc2 类型。见章程第 4、8 节与 docs/platform-boundary.md。
 //! 引擎不依赖这个 crate；这个 crate 也不依赖渲染层。
@@ -16,7 +16,7 @@ pub mod placement;
 pub use config::{AppConfig, WindowConfig};
 pub use event::{
     AnimationFrame, Event, KeyEvent, KeyEventKind, Modifiers, MouseButton, MouseEvent,
-    MouseEventKind, Point, ScrollEvent, ScrollPhase, Size, Vec2,
+    MouseEventKind, Point, ScrollEvent, ScrollPhase, Size, TextInputState, Vec2,
 };
 pub use menu::{CommandId, KeyEquivalent, Menu, MenuBar, MenuCommand, MenuError, MenuItem};
 pub use placement::{Layout, PlacementReport, Rect, ScreenChoice, ScreenInfo, WindowPlacement};

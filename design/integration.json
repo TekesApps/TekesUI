@@ -77,17 +77,31 @@
       "static-text",
       "mixed automatic bidirectional scroll"
     ],
-    "policy": "Retain unmatched existing values/fixtures with explicit mapping, not by dropping incoming definitions."
+    "policy": "Retain unmatched existing values/fixtures with explicit mapping, not by dropping incoming definitions.",
+    "component_gallery": {
+      "$ref": "./gallery/catalog.json"
+    },
+    "navigation": {
+      "$ref": "./gallery/navigation.json"
+    }
   },
   "acceptance": {
     "archive_integrity": "pass",
     "static_package_validation": "pass",
-    "native_scope": "Existing Gallery pages only; new component/recipe specifications are not all implemented.",
+    "native_scope": "Original three calibration pages, forty fixed-state component illustrations, and live ScrollArea/Text/TextEditor/Icons/Motion foundation pages; full production control parity remains incomplete.",
     "visual_review": "reviewed-integration-candidate; see reviews/proposal1/verification.json",
     "user_visual_approval": "not-claimed",
     "release": "not-requested",
     "evidence": {
       "$ref": "./reviews/proposal1/verification.json"
+    },
+    "component_showcase": "pass: 40 component IDs, 252 selectable base states, 8 new pages; fixed illustrations, not production controls",
+    "component_showcase_evidence": {
+      "$ref": "./reviews/component-gallery/verification.json"
+    },
+    "foundation_integration": "reviewed candidate: 16 unified pages, real scroll/text/motion interactions; p99 performance and peak/untested limits recorded separately",
+    "foundation_evidence": {
+      "$ref": "./reviews/text-foundation/verification.json"
     }
   }
 }

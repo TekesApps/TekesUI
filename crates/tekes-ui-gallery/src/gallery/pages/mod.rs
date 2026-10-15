@@ -12,7 +12,10 @@ use tekes_ui_tokens::Theme;
 use super::static_text::StaticText;
 use super::text::TextEngine;
 
+pub mod icons;
+pub mod motion;
 pub mod primitives;
+pub mod showcase;
 pub mod static_text;
 pub mod tokens;
 
@@ -30,26 +33,89 @@ pub enum Page {
     Primitives,
     Tokens,
     StaticText,
+    Foundations,
+    Actions,
+    Forms,
+    Navigation,
+    Overlays,
+    Feedback,
+    Documents,
+    Data,
+    TextEditing,
+    Icons,
+    Text,
+    ScrollArea,
+    Motion,
 }
 
 impl Page {
-    pub const ALL: [Page; 3] = [Page::Primitives, Page::Tokens, Page::StaticText];
+    pub const ALL: [Page; 16] = [
+        Page::Primitives,
+        Page::Tokens,
+        Page::StaticText,
+        Page::Foundations,
+        Page::Actions,
+        Page::Forms,
+        Page::Navigation,
+        Page::Overlays,
+        Page::Feedback,
+        Page::Documents,
+        Page::Data,
+        Page::TextEditing,
+        Page::Icons,
+        Page::Text,
+        Page::ScrollArea,
+        Page::Motion,
+    ];
+
+    pub const fn category(self) -> Option<&'static str> {
+        match self {
+            Self::Foundations => Some("foundations"),
+            Self::Actions => Some("actions"),
+            Self::Forms => Some("forms"),
+            Self::Navigation => Some("navigation"),
+            Self::Overlays => Some("overlays"),
+            Self::Feedback => Some("feedback"),
+            Self::Documents => Some("documents"),
+            Self::Data => Some("data"),
+            _ => None,
+        }
+    }
 
     /// 菜单和窗口标题里的名字。
     pub fn name(self) -> &'static str {
         match self {
+            Page::Icons => "Icons",
+            Page::Text => "Text",
+            Page::Motion => "Motion",
+            Page::ScrollArea => "ScrollArea",
             Page::Primitives => "Primitives",
             Page::Tokens => "Token Swatches",
             Page::StaticText => "静态文字",
+            Page::TextEditing => "TextEditor",
+            page => &super::catalog::group(page.category().unwrap()).name,
         }
     }
 
     /// 快照文件名里的名字。
     pub fn slug(self) -> &'static str {
         match self {
+            Page::Icons => "icons",
+            Page::Text => "text",
+            Page::Motion => super::motion_preview::SLUG,
+            Page::ScrollArea => "scroll-area",
             Page::Primitives => "primitives",
             Page::Tokens => "tokens",
             Page::StaticText => "static-text",
+            Page::Foundations => "components-foundations",
+            Page::Actions => "components-actions",
+            Page::Forms => "components-forms",
+            Page::Navigation => "components-navigation",
+            Page::Overlays => "components-overlays",
+            Page::Feedback => "components-feedback",
+            Page::Documents => "components-documents",
+            Page::Data => "components-data",
+            Page::TextEditing => "text-editing",
         }
     }
 
@@ -60,9 +126,33 @@ impl Page {
     /// 编译这一页。`content` 是页面内容区（见 `layout::PAGE_CONTENT`）。
     pub fn build(self, ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
         match self {
+            Page::Icons => {
+                super::text_demo::TextDemo::search_fixture().build_search(
+                    ctx,
+                    icons::search_rect(content),
+                    scene,
+                );
+                icons::build(ctx, content, scene, "");
+            }
+            Page::Motion => motion::build(
+                ctx,
+                content,
+                scene,
+                &super::motion_preview::MotionPreview::default(),
+            ),
+            Page::TextEditing => super::text_demo::build_editors_fixture(ctx, content, scene),
+            Page::Text => super::text_demo::build_text_fixture(ctx, content, scene),
+            Page::ScrollArea => super::text_demo::build_scroll_fixture(ctx, content, scene),
             Page::Primitives => primitives::build(ctx, content, scene),
             Page::Tokens => tokens::build(ctx, content, scene),
             Page::StaticText => static_text::build(ctx, content, scene),
+            page => showcase::build(
+                page.category().unwrap(),
+                ctx,
+                content,
+                scene,
+                &super::catalog::ShowcaseState::default(),
+            ),
         }
     }
 }

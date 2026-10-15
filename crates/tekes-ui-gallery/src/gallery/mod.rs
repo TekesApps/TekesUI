@@ -4,7 +4,7 @@
 //! 坐标一律是逻辑点，左上角为原点。不依赖窗口和渲染器，所以可以在测试里直接驱动。
 //!
 //! 模块：
-//! - `layout`：固定 1200x800 框、目录列几何、命中测试；
+//! - `layout`：固定 JSON 捕获框、目录列几何、命中测试；
 //! - `chrome`：目录列等外壳的绘制；
 //! - `containers`：`StateMatrix`、`ReferenceSlot` 和它们的标题文字；
 //! - `text`：文字引擎（排版器、光栅化器、字体登记表、`GlyphAtlas`）和标签缓存；
@@ -17,15 +17,21 @@
 //! 重绘规则：只有可见状态真的变了（hover 行、选中页、生效主题）才返回 `redraw`；
 //! 鼠标在同一行内移动、重复选同一页、重复选同一主题都不重绘。
 
+pub mod catalog;
 pub mod chrome;
 pub mod commands;
 pub mod containers;
+pub mod icon_catalog;
 pub mod layout;
+pub mod motion_preview;
+pub mod navigation;
 pub mod pages;
 pub mod snapshot;
 pub mod static_text;
 pub mod text;
+pub mod text_demo;
 pub mod theme;
+pub mod viewport;
 
 use tekes_ui_platform_macos::{
     Event, KeyEventKind, MenuBar, MouseButton, MouseEventKind, Point as PlatformPoint,
@@ -70,6 +76,12 @@ impl Change {
 // 键盘虚拟键码。
 const KEY_DOWN: u16 = 125;
 const KEY_UP: u16 = 126;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ScrollOwner {
+    Sidebar,
+    Document,
+    Text(Page),
+}
 
 #[derive(Debug)]
 pub struct Gallery {
@@ -79,6 +91,17 @@ pub struct Gallery {
     /// 文字引擎与窗口用的 atlas（主线程）。
     text: TextEngine,
     static_text: StaticText,
+    showcase: catalog::ShowcaseState,
+    viewport: viewport::Viewport,
+    page_offsets: [Point; Page::ALL.len()],
+    editor: text_demo::TextDemo,
+    text_view: text_demo::TextDemo,
+    scroll_demo: text_demo::TextDemo,
+    sidebar: navigation::Navigation,
+    motion: motion_preview::MotionPreview,
+    scroll_owner: Option<ScrollOwner>,
+    icon_search: text_demo::TextDemo,
+    icons: icon_catalog::IconCatalog,
 }
 
 impl Default for Gallery {
@@ -100,6 +123,17 @@ impl Gallery {
             theme: ThemeState::default(),
             text: TextEngine::new(),
             static_text,
+            showcase: catalog::ShowcaseState::default(),
+            viewport: viewport::Viewport::default(),
+            page_offsets: [Point::default(); Page::ALL.len()],
+            editor: text_demo::TextDemo::editors_only(),
+            text_view: text_demo::TextDemo::text_only(),
+            scroll_demo: text_demo::TextDemo::scroll_only(),
+            sidebar: navigation::Navigation::default(),
+            motion: motion_preview::MotionPreview::default(),
+            scroll_owner: None,
+            icon_search: text_demo::TextDemo::search(),
+            icons: icon_catalog::IconCatalog::from_env(),
         }
     }
 
@@ -115,7 +149,17 @@ impl Gallery {
 
     /// 每次重绘之前调用：记下窗口倍率，给静态文字页备好参照图和差异（状态没变时什么都不做）。
     pub fn prepare(&mut self, renderer: &mut Renderer, scale: f32) {
+        self.layout_page_extent();
         self.text.set_scale(scale);
+        if self.page == Page::Icons {
+            let visible = pages::icons::visible_legacy(
+                &self.icons,
+                self.icon_search.query(),
+                self.viewport.content(),
+                self.viewport.bounds(),
+            );
+            self.icons.prepare(renderer, self.theme(), scale, &visible);
+        }
         if self.page == Page::StaticText {
             let theme = self.theme();
             self.static_text
@@ -170,17 +214,190 @@ impl Gallery {
         commands::menu_bar(|c| self.is_checked(c))
     }
 
-    /// 编译当前内容。内容永远排在固定的 1200x800 框里，与窗口尺寸无关。
+    /// 编译当前内容。内容永远排在固定的 JSON 捕获框里，与窗口尺寸无关。
     ///
     /// 先 `begin_frame`（一帧一次），再整个重编：scene 里的 `AtlasGlyph` 只在这一帧有效。
     pub fn build_scene(&mut self, scene: &mut Scene) {
+        self.layout_page_extent();
         self.text.begin_frame();
         let mut ctx = PageCtx {
             theme: self.theme.effective(),
             text: &mut self.text,
             static_text: &mut self.static_text,
         };
-        compose(self.page, self.hover, &mut ctx, scene);
+        chrome::draw_with_navigation(
+            scene,
+            ctx.theme,
+            ctx.text,
+            self.page,
+            self.hover,
+            &self.sidebar,
+        );
+        let mut layer = Scene::new();
+        if self.page == Page::Icons {
+            self.icon_search.build_search(
+                &mut ctx,
+                pages::icons::search_rect(self.viewport.content()),
+                &mut layer,
+            );
+            pages::icons::build_catalog(
+                &mut ctx,
+                self.viewport.content(),
+                &mut layer,
+                self.icon_search.query(),
+                &self.icons,
+                self.viewport.bounds(),
+            );
+        } else if self.page == Page::Motion {
+            pages::motion::build(&mut ctx, self.viewport.content(), &mut layer, &self.motion);
+        } else if self.page == Page::Text {
+            self.text_view
+                .build(&mut ctx, self.viewport.content(), &mut layer);
+        } else if self.page == Page::ScrollArea {
+            self.scroll_demo
+                .build(&mut ctx, self.viewport.content(), &mut layer);
+        } else if self.page == Page::TextEditing {
+            self.editor
+                .build(&mut ctx, self.viewport.content(), &mut layer);
+        } else if let Some(category) = self.page.category() {
+            pages::showcase::build(
+                category,
+                &mut ctx,
+                self.viewport.content(),
+                &mut layer,
+                &self.showcase,
+            );
+        } else {
+            self.page
+                .build(&mut ctx, self.viewport.content(), &mut layer);
+        }
+        self.viewport
+            .append_visible(&layer, scene, ctx.text.scale(), ctx.theme);
+    }
+
+    pub fn needs_animation(&self) -> bool {
+        self.viewport.needs_animation()
+            || self.sidebar.scroll.needs_animation()
+            || match self.page {
+                Page::TextEditing => self.editor.needs_animation(),
+                Page::Text => self.text_view.needs_animation(),
+                Page::ScrollArea => self.scroll_demo.needs_animation(),
+                Page::Motion => self.motion.needs_animation(),
+                _ => false,
+            }
+    }
+    pub fn animate(&mut self, dt: f32) -> bool {
+        let mut dirty = self.viewport.tick(dt) | self.sidebar.scroll.tick(dt);
+        dirty |= match self.page {
+            Page::TextEditing => self.editor.animate(dt),
+            Page::Text => self.text_view.animate(dt),
+            Page::ScrollArea => self.scroll_demo.animate(dt),
+            Page::Motion => self.motion.animate(dt),
+            _ => false,
+        };
+        dirty
+    }
+    fn layout_page_extent(&mut self) {
+        let size = if self.page == Page::Icons {
+            pages::icons::extent(&self.icons, self.icon_search.query())
+        } else if self.page == Page::Motion {
+            pages::motion::extent(layout::PAGE_CONTENT)
+        } else {
+            layout::PAGE_CONTENT.size
+        };
+        self.viewport.set_document_extent(size);
+    }
+    pub fn set_view_size(&mut self, width: f32, height: f32) {
+        self.sidebar.resize(height);
+        self.viewport.resize(width, height);
+        self.layout_page_extent();
+    }
+
+    pub fn set_reduced_motion(&mut self, reduced: bool) -> Change {
+        let mut dirty = self.motion.set_system_reduced_motion(reduced);
+        dirty |= self.viewport.set_reduced_motion(reduced);
+        dirty |= self.sidebar.scroll.set_reduced_motion(reduced);
+        dirty |= self.editor.set_reduced_motion(reduced);
+        dirty |= self.text_view.set_reduced_motion(reduced);
+        dirty |= self.scroll_demo.set_reduced_motion(reduced);
+        dirty |= self.icon_search.set_reduced_motion(reduced);
+        redraw_if(dirty)
+    }
+    pub fn page_document_height(&self) -> f32 {
+        self.viewport.document_height()
+    }
+    pub fn page_scroll_range(&self) -> f32 {
+        self.viewport.limit().y
+    }
+    pub fn scroll_page_to(&mut self, y: f32) {
+        let offset = self.viewport.offset.y;
+        self.viewport.move_by(0.0, y - offset);
+    }
+    pub fn motion_retarget(&mut self, target: f64) {
+        self.motion.retarget(target);
+    }
+    pub fn advance_motion(&mut self, dt: f32) {
+        self.motion.animate(dt);
+    }
+    pub fn editor_scroll_metrics(&self) -> (f32, f32) {
+        self.editor.scroll_metrics()
+    }
+    pub fn scroll_editor_to(&mut self, offset: f32) {
+        self.editor.scroll_to(offset);
+    }
+    pub fn text_input_state(&self) -> Option<tekes_ui_platform_macos::TextInputState> {
+        if self.page == Page::TextEditing {
+            self.editor.state()
+        } else if self.page == Page::Text {
+            self.text_view.state()
+        } else if self.page == Page::ScrollArea {
+            self.scroll_demo.state()
+        } else if self.page == Page::Icons {
+            self.icon_search.state()
+        } else {
+            None
+        }
+    }
+    fn reveal_text_caret(&mut self) -> bool {
+        let Some(state) = self.text_input_state() else {
+            return false;
+        };
+        let origin = self.viewport.content().origin;
+        self.viewport.reveal(tekes_ui_scene::Rect::new(
+            state.caret_origin.x as f32 - origin.x,
+            state.caret_origin.y as f32 - origin.y,
+            state.caret_size.width as f32,
+            state.caret_size.height as f32,
+        ))
+    }
+    pub fn text_command(
+        &mut self,
+        command: &str,
+        clipboard: Option<&str>,
+    ) -> (Change, Option<String>) {
+        let editor = match self.page {
+            Page::TextEditing => &mut self.editor,
+            Page::Text => &mut self.text_view,
+            Page::ScrollArea => &mut self.scroll_demo,
+            Page::Icons => &mut self.icon_search,
+            _ => return (Change::NONE, None),
+        };
+        let mut copied = None;
+        let changed = match command {
+            "copy:" => {
+                copied = editor.clipboard_selection();
+                false
+            }
+            "cut:" => {
+                copied = editor.clipboard_selection();
+                editor.cut()
+            }
+            "paste:" => editor.paste(clipboard.unwrap_or("")),
+            _ => editor.command(command).unwrap_or(false),
+        };
+        editor.refresh(&mut self.text);
+        let revealed = changed && self.reveal_text_caret();
+        (redraw_if(changed || revealed), copied)
     }
 
     /// 平台层投来系统外观变化。生效主题变了才需要重绘。
@@ -202,7 +419,19 @@ impl Gallery {
                 if self.page == p {
                     return Change::NONE;
                 }
+                self.end_scroll_gestures();
+                self.editor.blur();
+                self.text_view.blur();
+                self.scroll_demo.blur();
+                self.motion.deactivate();
+                self.icon_search.blur();
+                self.page_offsets[self.page.index()] = self.viewport.offset;
+                self.viewport.cancel();
                 self.page = p;
+                self.sidebar.reveal(p);
+                self.layout_page_extent();
+                self.viewport.offset = self.page_offsets[p.index()];
+                self.viewport.move_by(0.0, 0.0);
                 return Change::BOTH;
             }
             Command::Appearance(a) => {
@@ -227,11 +456,110 @@ impl Gallery {
 
     /// 切到相邻的页（`delta` 为 ±1），到头不循环。
     fn step_page(&mut self, delta: isize) -> Change {
-        let next = self.page.index() as isize + delta;
-        match usize::try_from(next).ok().and_then(|i| Page::ALL.get(i)) {
+        let pages = navigation::pages();
+        let index = pages.iter().position(|p| *p == self.page).unwrap();
+        let next = index as isize + delta;
+        match usize::try_from(next).ok().and_then(|i| pages.get(i)) {
             Some(p) => self.apply(Command::Page(*p)),
             None => Change::NONE,
         }
+    }
+
+    fn end_scroll_gestures(&mut self) {
+        self.sidebar.scroll.end_gesture();
+        self.viewport.end_gesture();
+        self.editor.end_scroll_gesture();
+        self.text_view.end_scroll_gesture();
+        self.scroll_demo.end_scroll_gesture();
+        self.icon_search.end_scroll_gesture();
+        self.scroll_owner = None;
+    }
+    fn scroll_target_at(&self, p: Point) -> Option<ScrollOwner> {
+        if self.sidebar.bounds().contains(p) {
+            return Some(ScrollOwner::Sidebar);
+        }
+        if !self.viewport.bounds().contains(p) {
+            return None;
+        }
+        let editor = match self.page {
+            Page::TextEditing => Some(&self.editor),
+            Page::Text => Some(&self.text_view),
+            Page::ScrollArea => Some(&self.scroll_demo),
+            _ => None,
+        };
+        if editor.is_some_and(|e| e.contains_surface(p)) {
+            Some(ScrollOwner::Text(self.page))
+        } else {
+            Some(ScrollOwner::Document)
+        }
+    }
+    fn handle_scroll(&mut self, event: &tekes_ui_platform_macos::ScrollEvent) -> Change {
+        use tekes_ui_platform_macos::ScrollPhase;
+        let point = to_point(event.position);
+        let phased = event.precise
+            && (event.phase != ScrollPhase::None || event.momentum_phase != ScrollPhase::None);
+        let begins = matches!(event.phase, ScrollPhase::Began | ScrollPhase::MayBegin);
+        if begins || !phased {
+            self.end_scroll_gestures();
+            self.scroll_owner = self.scroll_target_at(point);
+        }
+        let owner = if phased {
+            let owner = self.scroll_owner.or_else(|| self.scroll_target_at(point));
+            self.scroll_owner = owner;
+            owner
+        } else {
+            self.scroll_target_at(point)
+        };
+        let Some(owner) = owner else {
+            return Change::NONE;
+        };
+        let mut handled = None;
+        if let ScrollOwner::Text(page) = owner {
+            let editor = match page {
+                Page::Text => &mut self.text_view,
+                Page::ScrollArea => &mut self.scroll_demo,
+                _ => &mut self.editor,
+            };
+            handled = editor.handle(&Event::Scroll(*event), Some(point));
+        }
+        let changed = if let Some(changed) = handled {
+            changed
+        } else {
+            let step = if event.precise { 1.0 } else { layout::ROW_H };
+            let x = -(event.delta.x as f32) * step;
+            let y = -(event.delta.y as f32) * step;
+            let (x, y) = if event.modifiers.shift {
+                (x + y, 0.0)
+            } else {
+                (x, y)
+            };
+            let end = matches!(event.phase, ScrollPhase::Ended | ScrollPhase::Cancelled)
+                || matches!(
+                    event.momentum_phase,
+                    ScrollPhase::Ended | ScrollPhase::Cancelled
+                );
+            let area = if owner == ScrollOwner::Sidebar {
+                &mut self.sidebar.scroll
+            } else {
+                &mut *self.viewport
+            };
+            area.wheel(
+                x,
+                y,
+                event.precise,
+                event.phase == ScrollPhase::Began,
+                end,
+                event.momentum_phase != ScrollPhase::None,
+            )
+        };
+        if matches!(
+            event.momentum_phase,
+            ScrollPhase::Ended | ScrollPhase::Cancelled
+        ) || event.phase == ScrollPhase::Cancelled
+        {
+            self.scroll_owner = None;
+        }
+        redraw_if(changed)
     }
 
     /// 更新 hover 行，变了返回 true。
@@ -245,20 +573,170 @@ impl Gallery {
 
     /// 处理输入事件。
     pub fn handle_input(&mut self, event: &Event) -> Change {
-        match event {
+        if let Event::Focus(active) = event {
+            self.editor.set_window_active(*active);
+            self.text_view.set_window_active(*active);
+            self.scroll_demo.set_window_active(*active);
+            self.icon_search.set_window_active(*active);
+            if !active {
+                self.end_scroll_gestures();
+                self.motion.deactivate();
+                self.sidebar.scroll.cancel();
+                self.viewport.cancel();
+            }
+            return Change::REDRAW;
+        }
+
+        if let Event::Scroll(e) = event {
+            return self.handle_scroll(e);
+        }
+        if let Event::Mouse(m) = event {
+            let p = to_point(m.position);
+            match m.kind {
+                MouseEventKind::Down {
+                    button: MouseButton::Left,
+                    ..
+                } if self.sidebar.pointer_down(p) => return Change::REDRAW,
+                MouseEventKind::Down {
+                    button: MouseButton::Left,
+                    ..
+                } if self.viewport.pointer_down(p) => {
+                    self.editor.blur();
+                    self.text_view.blur();
+                    self.scroll_demo.blur();
+                    self.icon_search.blur();
+                    return Change::REDRAW;
+                }
+                MouseEventKind::Dragged { .. } if self.sidebar.scroll.dragging_axis().is_some() => {
+                    return redraw_if(self.sidebar.pointer_drag(p));
+                }
+                MouseEventKind::Dragged { .. } if self.viewport.dragging_axis().is_some() => {
+                    return redraw_if(self.viewport.pointer_drag(p));
+                }
+                MouseEventKind::Up { .. } if self.viewport.dragging_axis().is_some() => {
+                    self.viewport.pointer_up();
+                    return Change::NONE;
+                }
+                MouseEventKind::Up { .. } => self.sidebar.scroll.pointer_up(),
+                _ => {}
+            }
+        }
+        let mut search_blurred = false;
+        if self.page == Page::Icons {
+            let point = match event {
+                Event::Mouse(m) => Some(to_point(m.position)),
+                _ => None,
+            };
+            let search_hit = point.is_some_and(|p| {
+                self.viewport.bounds().contains(p)
+                    && pages::icons::search_rect(self.viewport.content()).contains(p)
+            });
+            let route = match event {
+                Event::Mouse(m) => match m.kind {
+                    MouseEventKind::Down { .. } => {
+                        if !search_hit {
+                            search_blurred = self.icon_search.state().is_some();
+                            self.icon_search.blur();
+                        }
+                        search_hit
+                    }
+                    MouseEventKind::Dragged { .. } | MouseEventKind::Up { .. } => {
+                        self.icon_search.state().is_some()
+                    }
+                    _ => false,
+                },
+                Event::Scroll(_) => false,
+                _ => true,
+            };
+            if route && let Some(changed) = self.icon_search.handle(event, point) {
+                self.icon_search.refresh(&mut self.text);
+                return redraw_if(changed);
+            }
+        }
+        if matches!(self.page, Page::TextEditing | Page::Text | Page::ScrollArea) {
+            let editor = match self.page {
+                Page::Text => &mut self.text_view,
+                Page::ScrollArea => &mut self.scroll_demo,
+                _ => &mut self.editor,
+            };
+            if let Event::Key(k) = event
+                && k.kind == KeyEventKind::Down
+                && k.key_code == 48
+            {
+                let command = if k.modifiers.shift {
+                    "insertBacktab:"
+                } else {
+                    "insertTab:"
+                };
+                let changed = editor.command(command).unwrap_or(false);
+                editor.refresh(&mut self.text);
+                let revealed = changed && self.reveal_text_caret();
+                return redraw_if(changed || revealed);
+            }
+            let point = match event {
+                Event::Mouse(m) => Some(to_point(m.position)),
+                Event::Scroll(e) => Some(to_point(e.position)),
+                _ => None,
+            };
+            let in_catalog = point.is_some_and(|p| p.x < layout::CATALOG_W);
+            let handled = if !in_catalog
+                || matches!(
+                    event,
+                    Event::Mouse(tekes_ui_platform_macos::MouseEvent {
+                        kind: MouseEventKind::Up { .. },
+                        ..
+                    })
+                ) {
+                editor.handle(event, point)
+            } else {
+                None
+            };
+            if let Some(changed) = handled {
+                editor.refresh(&mut self.text);
+                let reveal = !matches!(event, Event::CaretBlink | Event::Mouse(_));
+                let revealed = changed && reveal && self.reveal_text_caret();
+                return redraw_if(changed || revealed);
+            }
+        }
+        if self.page == Page::Motion {
+            let route = match event {
+                Event::Mouse(m) => {
+                    self.viewport.bounds().contains(to_point(m.position))
+                        || self.motion.dragging.is_some()
+                        || self.motion.pressed.is_some()
+                }
+                _ => false,
+            };
+            if route
+                && pages::motion::handle_input(&mut self.motion, event, self.viewport.content())
+            {
+                return Change::REDRAW;
+            }
+        }
+        let mut change = match event {
             Event::Mouse(m) => {
-                let hit = || layout::catalog_hit_test(to_point(m.position), Page::ALL.len());
+                let hit = self.sidebar.hit(to_point(m.position));
                 match m.kind {
-                    MouseEventKind::Moved
-                    | MouseEventKind::Entered
-                    | MouseEventKind::Dragged { .. } => redraw_if(self.set_hover(hit())),
+                    MouseEventKind::Moved | MouseEventKind::Entered => {
+                        redraw_if(self.set_hover(hit))
+                    }
+                    MouseEventKind::Dragged { .. } => {
+                        redraw_if(self.viewport.pointer_drag(to_point(m.position)))
+                    }
+                    MouseEventKind::Up { .. } => {
+                        self.viewport.pointer_up();
+                        Change::NONE
+                    }
                     MouseEventKind::Exited => redraw_if(self.set_hover(None)),
                     MouseEventKind::Down {
                         button: MouseButton::Left,
                         ..
                     } => {
-                        let hover_changed = self.set_hover(hit());
-                        let mut change = match hit() {
+                        if self.viewport.pointer_down(to_point(m.position)) {
+                            return Change::REDRAW;
+                        }
+                        let hover_changed = self.set_hover(hit);
+                        let mut change = match hit {
                             Some(i) => self.apply(Command::Page(Page::ALL[i])),
                             None => self.click_in_page(m.position),
                         };
@@ -273,6 +751,27 @@ impl Gallery {
                 if m.command || m.control || m.alt || m.shift {
                     return Change::NONE;
                 }
+                {
+                    let bounds = self.viewport.bounds();
+                    let moved = match k.key_code {
+                        121 => Some(self.viewport.move_by(0.0, bounds.size.height * 0.8)),
+                        116 => Some(self.viewport.move_by(0.0, -bounds.size.height * 0.8)),
+                        119 => {
+                            let delta = self.viewport.limit().y - self.viewport.offset.y;
+                            Some(self.viewport.move_by(0.0, delta))
+                        }
+                        115 => {
+                            let offset = self.viewport.offset;
+                            Some(self.viewport.move_by(-offset.x, -offset.y))
+                        }
+                        124 => Some(self.viewport.move_by(layout::ROW_H, 0.0)),
+                        123 => Some(self.viewport.move_by(-layout::ROW_H, 0.0)),
+                        _ => None,
+                    };
+                    if let Some(changed) = moved {
+                        return redraw_if(changed);
+                    }
+                }
                 match k.key_code {
                     KEY_UP => self.step_page(-1),
                     KEY_DOWN => self.step_page(1),
@@ -280,20 +779,34 @@ impl Gallery {
                 }
             }
             _ => Change::NONE,
-        }
+        };
+        change.redraw |= search_blurred;
+        change
     }
 }
 
 impl Gallery {
-    /// 页面区里的点击：目前只有静态文字页的夹具与宽度选择器。
+    /// 页面区的夹具选择器与组件固定状态选择器。
     fn click_in_page(&mut self, position: PlatformPoint) -> Change {
+        if let Some(category) = self.page.category() {
+            let Some(point) = self.viewport.point_in_content(to_point(position)) else {
+                return Change::NONE;
+            };
+            return match pages::showcase::hit_state(category, layout::PAGE_CONTENT, point) {
+                Some((id, state)) => redraw_if(self.showcase.select(id, state)),
+                None => Change::NONE,
+            };
+        }
         if self.page != Page::StaticText {
             return Change::NONE;
         }
         match pages::static_text::hit_test(
             layout::PAGE_CONTENT,
             &self.static_text,
-            to_point(position),
+            match self.viewport.point_in_content(to_point(position)) {
+                Some(p) => p,
+                None => return Change::NONE,
+            },
         ) {
             Some(pick) => redraw_if(self.static_text.apply(pick)),
             None => Change::NONE,
@@ -316,8 +829,22 @@ fn to_point(p: PlatformPoint) -> Point {
 /// 编译 `page` 在 `theme` 下的完整内容。快照和窗口共用它。
 /// 调用方保证这一帧已经 `begin_frame` 过。
 pub fn compose(page: Page, hover: Option<usize>, ctx: &mut PageCtx<'_>, scene: &mut Scene) {
+    compose_with_showcase(page, hover, ctx, scene, &catalog::ShowcaseState::default());
+}
+
+pub fn compose_with_showcase(
+    page: Page,
+    hover: Option<usize>,
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    state: &catalog::ShowcaseState,
+) {
     chrome::draw(scene, ctx.theme, ctx.text, page, hover);
-    page.build(ctx, layout::PAGE_CONTENT, scene);
+    if let Some(category) = page.category() {
+        pages::showcase::build(category, ctx, layout::PAGE_CONTENT, scene, state);
+    } else {
+        page.build(ctx, layout::PAGE_CONTENT, scene);
+    }
 }
 
 #[cfg(test)]
@@ -358,6 +885,51 @@ mod tests {
     fn row_center(i: usize) -> (f64, f64) {
         let c = layout::catalog_row_rect(i).center();
         (c.x as f64, c.y as f64)
+    }
+
+    #[test]
+    fn icons_search_routes_native_text_clipboard_and_page_changes() {
+        let mut g = Gallery::new();
+        g.apply(Command::Page(Page::Icons));
+        g.build_scene(&mut Scene::new());
+        let center = pages::icons::search_rect(layout::PAGE_CONTENT).center();
+        assert!(
+            g.handle_input(&click(center.x.into(), center.y.into()))
+                .redraw
+        );
+        assert!(g.text_input_state().is_some());
+        assert!(
+            g.handle_input(&Event::TextCommit {
+                text: "vRoN".into(),
+                replacement: None
+            })
+            .redraw
+        );
+        assert_eq!(g.icon_search.query(), "vRoN");
+        g.text_command("selectAll:", None);
+        assert_eq!(g.text_command("copy:", None).1.as_deref(), Some("vRoN"));
+        g.text_command("paste:", Some("missing-icon"));
+        assert_eq!(g.icon_search.query(), "missing-icon");
+        g.text_command("selectAll:", None);
+        g.text_command("cut:", None);
+        assert_eq!(g.icon_search.query(), "");
+        g.handle_input(&Event::TextPreedit {
+            clauses: Vec::new(),
+            text: "搜索".into(),
+            selection: 2..2,
+            replacement: None,
+        });
+        assert!(g.text_input_state().unwrap().marked.is_some());
+        g.handle_input(&Event::TextCommit {
+            text: "file".into(),
+            replacement: None,
+        });
+        assert_eq!(g.icon_search.query(), "file");
+        g.apply(Command::Page(Page::Tokens));
+        assert!(g.text_input_state().is_none());
+        g.apply(Command::Page(Page::Icons));
+        assert_eq!(g.icon_search.query(), "file");
+        assert!(g.text_input_state().is_none());
     }
 
     #[test]
@@ -434,8 +1006,10 @@ mod tests {
     #[test]
     fn arrow_keys_switch_pages_without_wrapping() {
         let mut g = Gallery::new();
+        let pages = navigation::pages();
+        g.apply(Command::Page(pages[0]));
         assert_eq!(g.handle_input(&key(KEY_UP, Modifiers::NONE)), Change::NONE);
-        for expected in [Page::Tokens, Page::StaticText] {
+        for expected in pages.iter().copied().skip(1) {
             assert_eq!(
                 g.handle_input(&key(KEY_DOWN, Modifiers::NONE)),
                 Change::BOTH
@@ -446,16 +1020,17 @@ mod tests {
             g.handle_input(&key(KEY_DOWN, Modifiers::NONE)),
             Change::NONE
         );
-        assert_eq!(g.handle_input(&key(KEY_UP, Modifiers::NONE)), Change::BOTH);
-        assert_eq!(g.page(), Page::Tokens);
-        assert_eq!(g.handle_input(&key(KEY_UP, Modifiers::NONE)), Change::BOTH);
-        assert_eq!(g.page(), Page::Primitives);
+        for expected in pages.iter().copied().rev().skip(1) {
+            assert_eq!(g.handle_input(&key(KEY_UP, Modifiers::NONE)), Change::BOTH);
+            assert_eq!(g.page(), expected);
+        }
+        assert_eq!(g.handle_input(&key(KEY_UP, Modifiers::NONE)), Change::NONE);
         // 带修饰键的方向键不处理。
         assert_eq!(
             g.handle_input(&key(KEY_DOWN, Modifiers::COMMAND)),
             Change::NONE
         );
-        assert_eq!(g.page(), Page::Primitives);
+        assert_eq!(g.page(), pages[0]);
     }
 
     #[test]
@@ -673,6 +1248,190 @@ mod tests {
                 }
             }
         }
+    }
+
+    fn wheel(
+        x: f64,
+        y: f64,
+        phase: tekes_ui_platform_macos::ScrollPhase,
+        momentum: tekes_ui_platform_macos::ScrollPhase,
+    ) -> Event {
+        Event::Scroll(tekes_ui_platform_macos::ScrollEvent {
+            delta: tekes_ui_platform_macos::Vec2 { x: 0.0, y: -30.0 },
+            precise: true,
+            phase,
+            momentum_phase: momentum,
+            inverted: false,
+            position: PlatformPoint { x, y },
+            modifiers: Modifiers::NONE,
+        })
+    }
+    #[test]
+    fn scroll_gesture_keeps_its_owner_across_regions_and_momentum() {
+        use tekes_ui_platform_macos::ScrollPhase as P;
+        let mut g = Gallery::new();
+        g.set_view_size(1000.0, 480.0);
+        g.handle_input(&wheel(100.0, 300.0, P::Began, P::None));
+        assert_eq!(g.scroll_owner, Some(ScrollOwner::Sidebar));
+        let document = g.viewport.offset;
+        g.handle_input(&wheel(800.0, 350.0, P::Changed, P::None));
+        g.handle_input(&wheel(800.0, 350.0, P::Ended, P::None));
+        assert_eq!(g.viewport.offset, document);
+        g.handle_input(&wheel(800.0, 350.0, P::None, P::Began));
+        assert_eq!(g.scroll_owner, Some(ScrollOwner::Sidebar));
+        g.handle_input(&wheel(800.0, 350.0, P::None, P::Ended));
+        assert_eq!(g.scroll_owner, None);
+        for _ in 0..120 {
+            g.animate(1.0 / 120.0);
+        }
+        assert!(!g.needs_animation());
+        g.handle_input(&wheel(800.0, 350.0, P::Began, P::None));
+        assert_eq!(g.scroll_owner, Some(ScrollOwner::Document));
+        let sidebar = g.sidebar.scroll.offset;
+        g.handle_input(&wheel(100.0, 300.0, P::Changed, P::None));
+        g.handle_input(&wheel(100.0, 300.0, P::Ended, P::None));
+        assert_eq!(g.sidebar.scroll.offset, sidebar);
+        g.handle_input(&Event::Focus(false));
+        assert_eq!(g.scroll_owner, None);
+        assert!(!g.needs_animation());
+    }
+    #[test]
+    fn text_caret_is_revealed_through_both_nested_scroll_areas() {
+        let mut g = Gallery::new();
+        g.set_view_size(1000.0, 480.0);
+        g.apply(Command::Page(Page::TextEditing));
+        g.build_scene(&mut Scene::new());
+        g.handle_input(&key(48, Modifiers::NONE));
+        g.handle_input(&key(48, Modifiers::NONE));
+        g.text_command("moveToEndOfDocument:", None);
+        g.build_scene(&mut Scene::new());
+        let state = g.text_input_state().unwrap();
+        let bounds = g.viewport.bounds();
+        assert!(state.caret_origin.y as f32 >= bounds.min_y());
+        assert!((state.caret_origin.y + state.caret_size.height) as f32 <= bounds.max_y() + 0.1);
+        assert!(g.viewport.offset.y > 0.0);
+    }
+    #[test]
+    fn editor_outer_scrollbar_captures_before_text_surface_input() {
+        let mut g = Gallery::new();
+        g.set_view_size(1000.0, 480.0);
+        g.apply(Command::Page(Page::TextEditing));
+        g.build_scene(&mut Scene::new());
+        let track = g.viewport.track(true);
+        let p = g
+            .viewport
+            .thumb(
+                true,
+                track.inset(-tekes_ui_tokens::Spacing::Micro.value()),
+                tekes_ui_tokens::ControlSize::RowHeight.value(),
+            )
+            .center();
+        g.handle_input(&click(f64::from(p.x), f64::from(p.y)));
+        assert_eq!(g.viewport.dragging_axis(), Some(true));
+        g.handle_input(&Event::Mouse(MouseEvent {
+            kind: MouseEventKind::Dragged {
+                button: MouseButton::Left,
+            },
+            position: PlatformPoint {
+                x: f64::from(p.x),
+                y: f64::from(track.max_y()),
+            },
+            modifiers: Modifiers::NONE,
+        }));
+        assert!(g.viewport.offset.y > 0.0);
+        g.handle_input(&Event::Mouse(MouseEvent {
+            kind: MouseEventKind::Up {
+                button: MouseButton::Left,
+                click_count: 1,
+            },
+            position: PlatformPoint { x: 0.0, y: 0.0 },
+            modifiers: Modifiers::NONE,
+        }));
+        assert_eq!(g.viewport.dragging_axis(), None);
+    }
+    #[test]
+    fn page_change_ends_the_previous_scroll_gesture() {
+        use tekes_ui_platform_macos::ScrollPhase as P;
+        let mut g = Gallery::new();
+        g.handle_input(&wheel(800.0, 350.0, P::Began, P::None));
+        g.apply(Command::Page(Page::TextEditing));
+        assert_eq!(g.scroll_owner, None);
+        assert!(!g.needs_animation());
+    }
+    #[test]
+    fn short_window_scroll_and_translated_state_hits_remain_reachable() {
+        let mut gallery = Gallery::new();
+        gallery.set_view_size(1000.0, 720.0);
+        gallery.apply(Command::Page(Page::Foundations));
+        assert!(gallery.handle_input(&key(119, Modifiers::NONE)).redraw);
+        assert!(gallery.viewport.offset.y > 0.0);
+        // Horizontal scrolling exposes the right-hand column in a narrow window.
+        for _ in 0..30 {
+            gallery.handle_input(&key(124, Modifiers::NONE));
+        }
+        let point = pages::showcase::state_center(
+            "foundations",
+            layout::PAGE_CONTENT,
+            "tui.disclosure",
+            "rest",
+        )
+        .unwrap();
+        let visible = Point::new(
+            point.x - gallery.viewport.offset.x,
+            point.y - gallery.viewport.offset.y,
+        );
+        assert!(gallery.viewport.bounds().contains(visible));
+        assert!(
+            gallery
+                .handle_input(&click(f64::from(visible.x), f64::from(visible.y)))
+                .redraw
+        );
+        assert_eq!(
+            gallery
+                .showcase
+                .selected(catalog::component("tui.disclosure")),
+            "rest"
+        );
+        gallery.apply(Command::Page(Page::Primitives));
+        assert_eq!(gallery.viewport.offset, Point::default());
+        assert!(gallery.handle_input(&key(121, Modifiers::NONE)).redraw);
+        assert!(gallery.viewport.offset.y > 0.0);
+    }
+
+    #[test]
+    fn every_catalog_state_chip_routes_through_gallery_input() {
+        let mut gallery = Gallery::new();
+        let mut components = 0;
+        let mut states = 0;
+        for page in Page::ALL {
+            let Some(category) = page.category() else {
+                continue;
+            };
+            gallery.apply(Command::Page(page));
+            for id in &catalog::group(category).component_ids {
+                let component = catalog::component(id);
+                components += 1;
+                for state in &component.states {
+                    states += 1;
+                    let point =
+                        pages::showcase::state_center(category, layout::PAGE_CONTENT, id, state)
+                            .unwrap();
+                    let expected_change = gallery.showcase.selected(component) != state;
+                    let event = click(f64::from(point.x), f64::from(point.y));
+                    let change = gallery.handle_input(&event);
+                    assert_eq!(change.redraw, expected_change, "{id}/{state}");
+                    assert!(!change.chrome);
+                    assert_eq!(gallery.showcase.selected(component), state);
+                    assert_eq!(
+                        gallery.handle_input(&event),
+                        Change::NONE,
+                        "repeated {id}/{state}"
+                    );
+                }
+            }
+        }
+        assert_eq!(components, 40);
+        assert!(states > 200);
     }
 
     #[test]

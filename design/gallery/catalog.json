@@ -1,0 +1,104 @@
+{
+  "format": "tekesui-gallery-catalog/1",
+  "scope": "Deterministic state illustrations, not full native component acceptance. State names are read from the imported component registry.",
+  "groups": [
+    {
+      "id": "foundations",
+      "name": "基础与布局",
+      "component_ids": [
+        "tui.text",
+        "tui.icon",
+        "tui.separator",
+        "tui.stack",
+        "tui.grid",
+        "tui.split-view",
+        "tui.scroll-area",
+        "tui.disclosure"
+      ]
+    },
+    {
+      "id": "actions",
+      "name": "操作与选择",
+      "component_ids": [
+        "tui.button",
+        "tui.icon-button",
+        "tui.link",
+        "tui.checkbox",
+        "tui.radio-group",
+        "tui.switch"
+      ]
+    },
+    {
+      "id": "forms",
+      "name": "输入与表单",
+      "component_ids": [
+        "tui.text-field",
+        "tui.text-area",
+        "tui.search-field",
+        "tui.combo-box",
+        "tui.slider"
+      ]
+    },
+    {
+      "id": "navigation",
+      "name": "导航与组织",
+      "component_ids": [
+        "tui.tabs",
+        "tui.list",
+        "tui.tree",
+        "tui.breadcrumb",
+        "tui.command-palette",
+        "tui.segmented-control"
+      ]
+    },
+    {
+      "id": "overlays",
+      "name": "浮层与对话框",
+      "component_ids": [
+        "tui.menu",
+        "tui.tooltip",
+        "tui.popover",
+        "tui.dialog"
+      ]
+    },
+    {
+      "id": "feedback",
+      "name": "反馈与状态",
+      "component_ids": [
+        "tui.toast",
+        "tui.banner",
+        "tui.status-badge",
+        "tui.progress",
+        "tui.empty-state"
+      ]
+    },
+    {
+      "id": "documents",
+      "name": "文档与代码",
+      "component_ids": [
+        "tui.selection-surface",
+        "tui.markdown",
+        "tui.code-block",
+        "tui.diff-view"
+      ]
+    },
+    {
+      "id": "data",
+      "name": "数据与图表",
+      "component_ids": [
+        "tui.data-table",
+        "tui.chart"
+      ]
+    }
+  ],
+  "default_states": {
+    "tui.menu": "open",
+    "tui.tooltip": "open",
+    "tui.popover": "open",
+    "tui.dialog": "open",
+    "tui.disclosure": "expanded",
+    "tui.tree": "expanded",
+    "tui.selection-surface": "selection",
+    "tui.command-palette": "open"
+  }
+}

@@ -291,14 +291,20 @@ impl AnimationFrame {
 ///
 /// # 预留：输入法（F5）
 ///
-/// 输入法事件还没有。F5 实现 NSTextInputClient 时在这里增加变体，设计要求（章程第 4 节）：
-/// - `Preedit` 必须带组字串、分节区间（clause segments，每节有起止偏移和是否为当前转换节）
-///   以及组字内的光标位置，否则下划线分节和候选窗定位做不对；
-/// - `Commit` 带最终文本和 replacementRange；
-/// - 引擎反向向平台层提供 `firstRect`、`selectedRange`、`attributedSubstring` 的查询，
-///   形式是 `WindowHandler` 上的同步查询方法，而不是事件。
-///
-/// 现在不留空壳实现，避免先固化一个错的形状。
+/// UTF-16 text services state published by the Rust editor after each update.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TextInputState {
+    /// Active insertion end, which may precede selection.start after a reverse drag.
+    pub caret_index: usize,
+    pub text: String,
+    pub selection: std::ops::Range<usize>,
+    pub marked: Option<std::ops::Range<usize>>,
+    pub caret_origin: Point,
+    pub caret_size: Size,
+    pub read_only: bool,
+    pub carets: Vec<(usize, Point, Size)>,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Event {
@@ -324,6 +330,19 @@ pub enum Event {
     Mouse(MouseEvent),
     Scroll(ScrollEvent),
     Key(KeyEvent),
+    TextCommit {
+        text: String,
+        replacement: Option<std::ops::Range<usize>>,
+    },
+    TextPreedit {
+        text: String,
+        clauses: Vec<std::ops::Range<usize>>,
+        selection: std::ops::Range<usize>,
+        replacement: Option<std::ops::Range<usize>>,
+    },
+    TextUnmark,
+    CaretBlink,
+    TextCommand(String),
     /// 修饰键变化（`flagsChanged`）。
     ModifiersChanged(Modifiers),
     /// 窗口成为或不再是 key window。
@@ -331,6 +350,7 @@ pub enum Event {
     /// 菜单项被选中。
     Command(CommandId),
     /// 系统外观或“增强对比度”设置变化（含启动时的初始值）。
+    SystemMotionChanged(bool),
     SystemAppearanceChanged {
         dark: bool,
         increase_contrast: bool,

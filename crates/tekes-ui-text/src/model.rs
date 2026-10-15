@@ -102,6 +102,10 @@ pub struct Line {
     /// 不含行尾空白的宽度，`width - trailing_whitespace_width`。
     pub width_trimmed: f64,
     pub runs: Vec<ShapedRun>,
+    /// UTF-16 caret boundaries and primary visual offsets returned by CoreText.
+    pub carets: Vec<(usize, f64)>,
+    /// This visual line ends with an explicit line break, rather than soft wrap.
+    pub has_newline: bool,
 }
 
 /// 排版结果。

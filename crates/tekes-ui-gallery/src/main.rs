@@ -64,7 +64,17 @@ fn main() {
 
     let mode = std::env::var("TEKES_SELFTEST").ok();
     let perf_config = perf::PerfConfig::from_env();
-    let gallery_state = gallery::Gallery::new();
+    let mut gallery_state = gallery::Gallery::new();
+    if let Ok(slug) = std::env::var("TEKESUI_GALLERY_PAGE") {
+        let page = gallery::Page::ALL
+            .into_iter()
+            .find(|p| p.slug() == slug)
+            .unwrap_or_else(|| {
+                eprintln!("Unknown Gallery page: {slug}");
+                std::process::exit(2)
+            });
+        gallery_state.apply(gallery::Command::Page(page));
+    }
     let menu_bar = gallery_state.menu_bar();
     let window_config = WindowConfig {
         title: gallery_state.title(),
@@ -90,6 +100,9 @@ fn main() {
     match mode.as_deref() {
         None => {}
         Some("gallery") => selftest::run_script(selftest_gallery_script()),
+        Some("text") => selftest::run_script(selftest_text_script()),
+        Some("foundation") => selftest::run_script(selftest_foundation_script()),
+        Some("components") => selftest::run_script(selftest_components_script()),
         Some(_) => selftest::run_script(selftest_script()),
     }
     App::new(AppConfig {
@@ -303,4 +316,295 @@ fn selftest_gallery_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Act
     at(1500, cap("t07_text_sentences_a_light_again"));
     at(100, Close);
     steps
+}
+
+/// Native-window smoke: real menu routing, state-chip clicks, screenshots, then close.
+#[cfg(target_os = "macos")]
+fn selftest_components_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
+    use gallery::{Page, layout, pages::showcase};
+    use tekes_ui_platform_macos::selftest::Action;
+    let out = std::env::var("TEKES_SELFTEST_OUT").expect("components selftest output directory");
+    let fixtures = [
+        (Page::Foundations, "tui.split-view", "disabled"),
+        (Page::Actions, "tui.button", "pressed"),
+        (Page::Forms, "tui.text-field", "error"),
+        (Page::Navigation, "tui.tree", "selected"),
+        (Page::Overlays, "tui.dialog", "closing"),
+        (Page::Feedback, "tui.status-badge", "error"),
+        (Page::Documents, "tui.diff-view", "selection"),
+        (Page::Data, "tui.chart", "selected"),
+    ];
+    let mut time = 600;
+    let mut steps = vec![
+        (100, Action::MenuCommand(201)),
+        (200, Action::MenuCommand(302)),
+    ];
+    for (page, component, state) in fixtures {
+        steps.push((time, Action::MenuCommand(100 + page.index() as u32)));
+        time += 600;
+        steps.push((
+            time,
+            Action::Capture {
+                path: format!("{out}/{}-default.png", page.slug()),
+            },
+        ));
+        time += 500;
+        let point = showcase::state_center(
+            page.category().unwrap(),
+            layout::PAGE_CONTENT,
+            component,
+            state,
+        )
+        .expect("registered native state chip");
+        steps.push((
+            time,
+            Action::Log(format!("showcase click {component}/{state}")),
+        ));
+        steps.push((
+            time + 10,
+            Action::Click {
+                x: f64::from(point.x),
+                y: f64::from(point.y),
+            },
+        ));
+        time += 600;
+        steps.push((
+            time,
+            Action::Capture {
+                path: format!("{out}/{}-{state}.png", page.slug()),
+            },
+        ));
+        time += 500;
+        if page == Page::Foundations {
+            steps.push((time, Action::Key { key_code: 121 }));
+            time += 600;
+            steps.push((
+                time,
+                Action::Capture {
+                    path: format!("{out}/components-foundations-scrolled.png"),
+                },
+            ));
+            time += 500;
+            steps.push((time, Action::Key { key_code: 116 }));
+            time += 200;
+        }
+    }
+    steps.push((time, Action::Close));
+    steps
+}
+
+#[cfg(target_os = "macos")]
+fn selftest_text_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
+    use tekes_ui_platform_macos::selftest::Action;
+    let out = std::env::var("TEKES_SELFTEST_OUT").expect("text selftest output directory");
+    let single = gallery::text_demo::TextDemo::editor_target(0);
+    let multi = gallery::text_demo::TextDemo::editor_target(1);
+    vec![
+        (100, Action::MenuCommand(201)),
+        (200, Action::MenuCommand(302)),
+        (
+            500,
+            Action::MenuCommand(100 + gallery::Page::TextEditing.index() as u32),
+        ),
+        (
+            1100,
+            Action::Capture {
+                path: format!("{out}/text-default.png"),
+            },
+        ),
+        (
+            1700,
+            Action::Click {
+                x: f64::from(single.x),
+                y: f64::from(single.y),
+            },
+        ),
+        (1900, Action::TextCommand("selectAll:")),
+        (2100, Action::TypeAscii("Hello ".into())),
+        (2400, Action::Preedit("qing".into())),
+        (
+            2700,
+            Action::ExpectText {
+                text: "Hello qing".into(),
+                marked: true,
+            },
+        ),
+        (
+            2900,
+            Action::Capture {
+                path: format!("{out}/text-preedit.png"),
+            },
+        ),
+        (3500, Action::Text("清晰👨‍👩‍👧‍👦e\u{301}".into())),
+        (
+            3800,
+            Action::ExpectText {
+                text: "Hello 清晰👨‍👩‍👧‍👦e\u{301}".into(),
+                marked: false,
+            },
+        ),
+        (4000, Action::TextCommand("deleteBackward:")),
+        (4200, Action::TextCommand("deleteBackward:")),
+        (
+            4400,
+            Action::ExpectText {
+                text: "Hello 清晰".into(),
+                marked: false,
+            },
+        ),
+        (4600, Action::TextCommand("undo:")),
+        (4800, Action::TextCommand("undo:")),
+        (
+            5000,
+            Action::ExpectText {
+                text: "Hello 清晰👨‍👩‍👧‍👦e\u{301}".into(),
+                marked: false,
+            },
+        ),
+        (5200, Action::TextCommand("selectAll:")),
+        (5400, Action::TextCommand("copy:")),
+        (5600, Action::TextCommand("cut:")),
+        (5800, Action::TextCommand("paste:")),
+        (
+            6000,
+            Action::ExpectText {
+                text: "Hello 清晰👨‍👩‍👧‍👦e\u{301}".into(),
+                marked: false,
+            },
+        ),
+        (
+            6200,
+            Action::Capture {
+                path: format!("{out}/text-committed.png"),
+            },
+        ),
+        (
+            6800,
+            Action::Click {
+                x: f64::from(multi.x),
+                y: f64::from(multi.y),
+            },
+        ),
+        (7000, Action::TextCommand("selectAll:")),
+        (7200, Action::Text("第一行\n第二行👨‍👩‍👧‍👦\n第三行".into())),
+        (
+            7500,
+            Action::ExpectText {
+                text: "第一行\n第二行👨‍👩‍👧‍👦\n第三行".into(),
+                marked: false,
+            },
+        ),
+        (7700, Action::TextCommand("undo:")),
+        (7900, Action::TextCommand("moveToEndOfDocument:")),
+        (
+            8300,
+            Action::Capture {
+                path: format!("{out}/text-last-line.png"),
+            },
+        ),
+        (8900, Action::TextCommand("moveToBeginningOfDocument:")),
+        (
+            9200,
+            Action::Capture {
+                path: format!("{out}/text-first-line.png"),
+            },
+        ),
+        (9800, Action::MenuCommand(100)),
+        (10000, Action::Key { key_code: 121 }),
+        (
+            10300,
+            Action::Capture {
+                path: format!("{out}/primitives-scrolled.png"),
+            },
+        ),
+        (11000, Action::Close),
+    ]
+}
+
+/// Integrated native smoke test. Physical gestures/IME still require manual acceptance.
+#[cfg(target_os = "macos")]
+fn selftest_foundation_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
+    use gallery::{Page, layout::PAGE_CONTENT, pages::motion};
+    use tekes_ui_platform_macos::selftest::Action;
+    let out = std::env::var("TEKES_SELFTEST_OUT").expect("foundation evidence directory");
+    let capture = |name: &str| Action::Capture {
+        path: format!("{out}/{name}.png"),
+    };
+    let page = |p: Page| Action::MenuCommand(100 + p.index() as u32);
+    let click = |p: tekes_ui_scene::Point| Action::Click {
+        x: f64::from(p.x),
+        y: f64::from(p.y),
+    };
+    let motion = motion::Layout::new(PAGE_CONTENT);
+    vec![
+        (100, Action::MenuCommand(201)),
+        (200, Action::MenuCommand(302)),
+        (500, page(Page::Icons)),
+        (1000, capture("icons-top")),
+        (1300, Action::Key { key_code: 119 }),
+        (1700, capture("icons-bottom")),
+        (
+            2000,
+            Action::Resize {
+                w: 1000.0,
+                h: 520.0,
+            },
+        ),
+        (2400, capture("icons-resized-bottom")),
+        (2700, Action::Key { key_code: 115 }),
+        (
+            3000,
+            click(gallery::pages::icons::search_rect(PAGE_CONTENT).center()),
+        ),
+        (3200, Action::TypeAscii("SeArCh".into())),
+        (
+            3600,
+            Action::ExpectText {
+                text: "SeArCh".into(),
+                marked: false,
+            },
+        ),
+        (3800, capture("icons-search")),
+        (4200, page(Page::TextEditing)),
+        (
+            4500,
+            Action::Resize {
+                w: 1440.0,
+                h: 827.0,
+            },
+        ),
+        (4900, click(gallery::text_demo::TextDemo::editor_target(0))),
+        (5100, Action::TextCommand("selectAll:")),
+        (5300, Action::TypeAscii("Focus preserved".into())),
+        (5600, Action::Miniaturize),
+        (6200, Action::Deminiaturize),
+        (
+            6600,
+            Action::ExpectText {
+                text: "Focus preserved".into(),
+                marked: false,
+            },
+        ),
+        (6800, capture("text-focus-restored")),
+        (7300, page(Page::Motion)),
+        (
+            7600,
+            click(motion.button(motion::Action::Interrupt).center()),
+        ),
+        (7700, page(Page::Text)),
+        (7900, page(Page::Motion)),
+        (8300, capture("motion-resumed")),
+        (
+            8600,
+            click(motion.button(motion::Action::ReduceMotion).center()),
+        ),
+        (8800, click(motion.button(motion::Action::Replay).center())),
+        (9200, capture("motion-reduced")),
+        (9500, Action::Key { key_code: 119 }),
+        (9900, capture("motion-bottom")),
+        (10200, Action::Resize { w: 720.0, h: 480.0 }),
+        (10600, capture("motion-small")),
+        (11000, Action::Log("idle interval starts".into())),
+        (13500, Action::Close),
+    ]
 }

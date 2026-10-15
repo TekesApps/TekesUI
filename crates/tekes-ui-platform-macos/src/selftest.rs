@@ -48,6 +48,15 @@ pub enum Action {
     },
     /// 合成鼠标移出内容区（`mouseExited:`）。
     MouseExit,
+    /// Text-service bridge smoke tests; preedit is synthetic, not a physical IME session.
+    Text(String),
+    Preedit(String),
+    TextCommand(&'static str),
+    ExpectText {
+        text: String,
+        marked: bool,
+    },
+    TypeAscii(String),
     /// 合成一次左键单击（按下加抬起），经 `NSApplication.sendEvent`。
     Click {
         x: f64,
@@ -133,6 +142,72 @@ extern "C" fn run_step(ctx: *mut c_void) {
         Action::Miniaturize => w.miniaturize(None),
         Action::Deminiaturize => w.deminiaturize(None),
         Action::Log(_) => {}
+        Action::TypeAscii(text) => {
+            for c in text.chars() {
+                let string = NSString::from_str(&c.to_string());
+                if let Some(e)=NSEvent::keyEventWithType_location_modifierFlags_timestamp_windowNumber_context_characters_charactersIgnoringModifiers_isARepeat_keyCode(NSEventType::KeyDown,NSPoint::ZERO,NSEventModifierFlags::empty(),0.0,w.windowNumber(),None,&string,&string,false,0) {app.sendEvent(&e);}
+            }
+        }
+        Action::Text(_)
+        | Action::Preedit(_)
+        | Action::TextCommand(_)
+        | Action::ExpectText { .. } => {
+            use objc2_app_kit::NSTextInputClient;
+            use objc2_foundation::NSRange;
+            let view = w.contentView().expect("selftest content view");
+            let view = view
+                .downcast_ref::<crate::view::TekesView>()
+                .expect("TekesView");
+            match action {
+                Action::Text(text) => unsafe {
+                    view.insertText_replacementRange(
+                        &NSString::from_str(&text),
+                        NSRange::new(isize::MAX as usize, 0),
+                    );
+                },
+                Action::Preedit(text) => unsafe {
+                    view.setMarkedText_selectedRange_replacementRange(
+                        &NSString::from_str(&text),
+                        NSRange::new(text.encode_utf16().count(), 0),
+                        NSRange::new(isize::MAX as usize, 0),
+                    );
+                },
+                Action::TextCommand(command) => unsafe {
+                    view.doCommandBySelector(objc2::runtime::Sel::register(
+                        std::ffi::CString::new(command).unwrap().as_c_str(),
+                    ));
+                },
+                Action::ExpectText { text, marked } => {
+                    let result = unsafe {
+                        view.attributedSubstringForProposedRange_actualRange(
+                            NSRange::new(0, usize::MAX),
+                            std::ptr::null_mut(),
+                        )
+                    }
+                    .map(|s| s.string().to_string());
+                    if result.as_deref() != Some(text.as_str()) || view.hasMarkedText() != marked {
+                        eprintln!(
+                            "SELFTEST FAIL text={result:?} marked={}",
+                            view.hasMarkedText()
+                        );
+                        std::process::exit(3);
+                    }
+                    let selected = view.selectedRange();
+                    let rect = unsafe {
+                        view.firstRectForCharacterRange_actualRange(selected, std::ptr::null_mut())
+                    };
+                    assert!(
+                        rect.origin.x.is_finite()
+                            && rect.origin.y.is_finite()
+                            && rect.size.height > 0.0
+                    );
+                    eprintln!(
+                        "SELFTEST PASS text query, selection {selected:?}, candidate rect {rect:?}"
+                    );
+                }
+                _ => unreachable!(),
+            }
+        }
         Action::Close => w.performClose(None),
         Action::MenuCommand(tag) => {
             let mut found = false;

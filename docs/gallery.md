@@ -7,10 +7,10 @@ Gallery 是恒定的人工目测验收目标（章程第 2 节）：同一页、
 
 ## 布局
 
-内容永远排在 1200x800 pt 的固定框里，框锚在窗口左上角，**不随窗口缩放重排**：窗口更大就多露出背景，更小就裁掉右、下两侧。框的右、下边各有一条 `Separator` 线标出边界。
+当前内容排在 JSON 定义的 1440×960 pt 固定框里，锚在窗口左上角，不随窗口缩放重排。窗口更大时露出背景；原三页在较小窗口中裁切，新增八类组件页支持局部横向和纵向滚动。
 
-- 左边是目录列，宽 220 pt（180 的 `TruncationSlot` 加列内边距 8 和行内边距 12），每页一行：行高 `ControlSize::RowHeight`，圆角 `CornerRadius::Row`，选中 `RowSelection`，hover `ButtonHover`。
-- 右边是页面区：左缘 244，顶上一个页面标题槽，内容区 (244, 62) 起，932 x 714。
+- 左边是目录列，宽 288 pt，每页一行：行高 `ControlSize::RowHeight`，圆角 `CornerRadius::Row`，选中 `RowSelection`，hover `ButtonHover`。
+- 右边是页面区：左缘 312，顶上一个页面标题槽；内容区由 JSON 的标题行高、Section 间距和捕获框派生。
 - 几何常量和命中测试都在 `gallery/layout.rs`。
 
 ## 页面
@@ -27,7 +27,7 @@ Gallery 是恒定的人工目测验收目标（章程第 2 节）：同一页、
 
 夹具来自 `fixtures/text/`（编译时嵌入，文本原样含文件末尾的换行）：`sentences-a`（默认）、`mixed-cjk-latin`、`kinsoku`、`emoji`、`combining`、`rtl`、`long-paragraph`；宽度取自 `manifest.json`（默认 700，其余夹具另有 500、320；`sentences-a` 只有 700）。两排固定的小按钮选择，点一下即切换，只有状态变了才重绘；切夹具时若新夹具没有当前宽度，退回 700。字体是系统界面字体 14 pt，行间距 0，段落原点是窗格左上角（整数 pt）。
 
-**布局取舍**：700 pt 的文字加三个窗格并排放不下（页面区宽 932 pt），所以这一页把参照槽改成**上下叠放**，每个窗格宽 = 所选宽度、高 170 pt（`ReferenceSlot::vertical`，边框画在窗格外 1 pt，窗格内部就是文字画布）。文字比窗格高时三个窗格都只显示放得下的前几行整行（场景里没有裁剪图元，所以按整行裁），标题行右侧写着“显示前 N 行 / 共 M 行（画布 宽x高 pt，倍率）”。差异数字是整张画布的结果，不受显示裁切影响。
+**布局取舍**：700 pt 宽的三个文字窗格无法并排放进固定内容区，所以这一页把参照槽改成**上下叠放**，每个窗格宽 = 所选宽度、高 170 pt（`ReferenceSlot::vertical`，边框画在窗格外 1 pt，窗格内部就是文字画布）。文字比窗格高时三个窗格都只显示放得下的前几行整行（场景里没有裁剪图元，所以按整行裁），标题行右侧写着“显示前 N 行 / 共 M 行（画布 宽x高 pt，倍率）”。差异数字是整张画布的结果，不受显示裁切影响。
 
 **参照图**：环境变量 `TEKESUI_REFERENCE_DIR` 指向本地目录（私有伴随仓库的 `reference/`，只在运行时读取，不进本仓库）。目录里按 `<夹具>/<夹具>-w<宽度>@<倍率>x-<light|dark>.png` 找图，倍率是窗口 backing scale 四舍五入，深色与深色加高对比度取 dark，浅色与浅色加高对比度取 light；没有高对比度版本，所以高对比度主题下显示普通对比度的图并在标题行注明。图 1:1 画在设备像素上（图像矩形 = 像素尺寸 / 倍率）。可选的 `<目录>/appearances.json` 给出前景与背景色；没有时浅色 (0,0,0)/(255,255,255)，深色 (230,230,230)/(30,30,30)。实时窗格用同样的前景与背景色，三个窗格底色一致。
 
@@ -43,7 +43,7 @@ Gallery 是恒定的人工目测验收目标（章程第 2 节）：同一页、
 
 | 菜单 | 项 | 快捷键 |
 |---|---|---|
-| Pages | 每页一项，勾选当前页 | ⌘1、⌘2、⌘3 … |
+| Pages | 11 页各一项，勾选当前页 | 前 9 页为 ⌘1 至 ⌘9；其余用目录、菜单或上下键 |
 | Appearance | Follow System / Light / Dark（单选） | ⌃⌘1 / ⌃⌘2 / ⌃⌘3 |
 | Appearance | Increase Contrast: Follow System / On / Off（单选） | ⌃⌘4 / ⌃⌘5 / ⌃⌘6 |
 
@@ -72,11 +72,34 @@ TEKES_LOG_EVENTS=1 cargo run -p tekes-ui-gallery   # 同时把事件和重绘次
 cargo run -p tekes-ui-gallery -- --snapshot <目录>
 ```
 
-不开窗口，用 `Renderer::new_headless` 把每页（含静态文字页，固定为 `sentences-a`、宽 700、不带参照目录，与环境变量无关）x 4 个主题（light、dark、light-ic、dark-ic）x 缩放 2 和 1 渲染成 PNG，文件名 `<页>-<主题>@<缩放>x.png`，如 `primitives-dark-ic@2x.png`、`static-text-light@1x.png`，尺寸是 1200x800 乘缩放。同样的输入逐字节得到同样的 PNG（测试里断言，没有 GPU 时跳过）。这是以后自动对比的共用夹具。
+不开窗口，用 `Renderer::new_headless` 把每页（含静态文字页，固定为 `sentences-a`、宽 700、不带参照目录，与环境变量无关）x 4 个主题（light、dark、light-ic、dark-ic）x 缩放 2 和 1 渲染成 PNG，文件名 `<页>-<主题>@<缩放>x.png`，如 `primitives-dark-ic@2x.png`、`static-text-light@1x.png`，尺寸是 1440×960 乘缩放，共 16×4×2＝128 张。同样的输入逐字节得到同样的 PNG（测试里断言，没有 GPU 时跳过）。这是以后自动对比的共用夹具。
 
 ## 加一页
 
 1. 在 `gallery/pages/` 新建 `xxx.rs`，实现 `pub fn build(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene)`，只用 token、scene、`ctx.text`（文字引擎）和 `containers`，同一主题同一状态必须编出同一份图元。
-2. 在 `pages/mod.rs` 里加 `pub mod xxx;`、`Page` 的一个变体，并补 `ALL`、`name`、`slug`、`build`。目录行、菜单项（⌘ 加序号）、快照文件名都由 `Page::ALL` 派生，不用另外改。
+2. 在 `pages/mod.rs` 里加 `pub mod xxx;`、`Page` 的一个变体，并补 `ALL`、`name`、`slug`、`build`。快照文件名由 `Page::ALL` 派生；在 `design/gallery/navigation.json` 的 section/items 中登记页面，每页恰好一次。菜单和 ⌘1…9 跟随该导航顺序。
 3. 组件页用 `StateMatrix`（rest / hover / pressed / disabled / focus 五列，样本由回调按 `ComponentState` 画）和 `ReferenceSlot`（TekesUI live | 参照图 | 差异热力图，可左右并排也可上下叠放；图像图元由页面按窗格矩形自己画，见静态文字页）。
 4. 补测试：图元不越出内容区、同一页同一主题编两次相同。
+
+## 组件状态展示
+
+原三页之后新增八类组件状态页，覆盖提案40个ID。状态选择与控件自身交互的边界、短窗滚动及验收见 [component-gallery.md](handoffs/component-gallery.md)。
+
+## Icons 页面
+
+左侧目录与 Pages 菜单中的 Icons 展示 Gallery 当前组件共用的 10 种基础图标，以及本机旧 Tekes 图标集，每项预览 12 / 16 / 24 pt。两组按名称一起搜索，不区分大小写，执行包含匹配（等价于 `%query%`，无需输入百分号；百分号和下划线作为普通字符）。空查询显示全部，无匹配时显示空状态。支持选择、复制粘贴、撤销和 IME；切页保留查询并释放输入焦点。列表按筛选结果扩展滚动范围，屏外图标不绘制，SVG 预览按主题与屏幕倍率缓存。
+
+完整图标集通过 `TEKESUI_ICON_DIR` 指定，只读支持 `*.imageset/<name>.svg` 或平铺 `*.svg`。未设置时查找同级 Tekes 仓库或 `~/dev/Tekes/Tekes/Assets.xcassets/TekesIcons`。只加载 imageset 中的单个矢量母版，避免将 2x/3x 重复列成图标。按既有清单排除 5 个已作废原稿及其他带 C2PA 标记的文件，解析失败的数量显示在页内。当前本地旧集为 133 项，加基础 10 项共 143 项；来源缺失时明确显示未加载，不将缺失伪装成完整集。
+
+旧图标资产不复制或嵌入公开源码，不改来源目录；此处为本机只读预览，不表示完成 MIT 导入或原创性核对。SVG 由纯 Rust `resvg` 光栅化，无字体加载和外部图像解析。固定快照仍采用不依赖本机资产的 10 项基础夹具。
+
+
+## 基础组件与统一整合
+
+导航采用 `design/gallery/navigation.json` 的 section/items 两层结构。基础组件包含 ScrollArea、Text、TextEditor 和 Icons；Motion 单独归入交互与动效。页面与侧栏均使用同一 Rust ScrollArea 状态模型，滚动由系统手势和 momentum 驱动，渲染器嵌套 scissor 裁剪，不挪动或重建被裁剪的圆角形状。
+
+Text 支持只读选择与复制；TextEditor 展示单行与多行输入，复用 UTF-16 选区、字素移动/删除、预编辑、撤销重做和剪贴板。文字、选区、光标与命中共用 CoreText 的排版位置。单行垂直居中，多行按首行排版；内外层滚动共同保证编辑光标可见。窗口失活保留逻辑焦点与选区，停止绘制光标，恢复后继续输入。
+
+`TEKESUI_GALLERY_PAGE=text-editing` 可直接打开 TextEditor，`motion-foundation` 打开 Motion。`TEKES_SELFTEST=text` 验证原生文字桥，`TEKES_SELFTEST=foundation` 验证整合后的图标搜索、窗口缩放、焦点恢复、Motion 离页恢复和减运动。需提供 `TEKES_SELFTEST_OUT` 目录；自测剪贴板使用独立命名空间，不覆盖用户剪贴板。
+
+`TEKES_PERF=scroll:12 TEKES_PERF_CONTENT=editor|icons|motion` 分别测三类实际页面。逐项的通过、峰值和未测边界见 [基础组件整合验收](handoffs/text-foundation.md)。40 项组件状态展示仍是固定状态插图，不等于全部生产组件已实现。

@@ -23,8 +23,40 @@ pub fn push_paragraph<R: Rasterizer + ?Sized>(
     scale: f32,
     color: Rgba,
 ) {
+    push_paragraph_visible(
+        scene,
+        atlas,
+        rasterizer,
+        paragraph,
+        origin,
+        scale,
+        color,
+        f32::NEG_INFINITY..f32::INFINITY,
+    );
+}
+
+/// Rasterize only visible lines; a one-line overscan handles tall fallback glyphs.
+#[allow(clippy::too_many_arguments)]
+pub fn push_paragraph_visible<R: Rasterizer + ?Sized>(
+    scene: &mut Scene,
+    atlas: &mut GlyphAtlas,
+    rasterizer: &mut R,
+    paragraph: &Paragraph,
+    origin: Point,
+    scale: f32,
+    color: Rgba,
+    visible_y: std::ops::Range<f32>,
+) {
+    let start = paragraph
+        .lines
+        .partition_point(|line| origin.y + ((line.top + line.height) as f32) < visible_y.start);
+    let end = paragraph
+        .lines
+        .partition_point(|line| origin.y + line.top as f32 <= visible_y.end);
+    let start = start.saturating_sub(1);
+    let end = (end + 1).min(paragraph.lines.len());
     let scale_key = GlyphKey::scale_key_for(scale);
-    for line in &paragraph.lines {
+    for line in &paragraph.lines[start..end] {
         let mut glyphs = Vec::new();
         for run in &line.runs {
             for g in &run.glyphs {

@@ -52,12 +52,15 @@ pub(crate) struct Objects {
 }
 
 pub(crate) struct Shared {
+    pub caret_scheduled: Cell<bool>,
+    pub text_input: RefCell<Option<crate::event::TextInputState>>,
     pub mtm: MainThreadMarker,
     handler: RefCell<Option<Box<dyn WindowHandler>>>,
     queue: RefCell<VecDeque<Event>>,
     dispatching: Cell<bool>,
     pub redraw_pending: Cell<bool>,
     pub last_geometry: Cell<Option<GeometryState>>,
+    pub last_motion: Cell<Option<bool>>,
     pub last_appearance: Cell<Option<(bool, bool)>>,
     pub objects: OnceCell<Objects>,
     /// 窗口摆放的选择结果（autosave 恢复了位置时为 None）。
@@ -87,12 +90,15 @@ impl std::fmt::Debug for Shared {
 impl Shared {
     pub fn new(mtm: MainThreadMarker, handler: Box<dyn WindowHandler>) -> Rc<Shared> {
         Rc::new(Shared {
+            caret_scheduled: Cell::new(false),
+            text_input: RefCell::new(None),
             mtm,
             handler: RefCell::new(Some(handler)),
             queue: RefCell::new(VecDeque::new()),
             dispatching: Cell::new(false),
             redraw_pending: Cell::new(false),
             last_geometry: Cell::new(None),
+            last_motion: Cell::new(None),
             last_appearance: Cell::new(None),
             objects: OnceCell::new(),
             placement: RefCell::new(None),
@@ -142,6 +148,12 @@ impl Shared {
             return;
         }
         let Some(o) = self.objects.get() else { return };
+        let reduce =
+            objc2_app_kit::NSWorkspace::sharedWorkspace().accessibilityDisplayShouldReduceMotion();
+        if force || self.last_motion.get() != Some(reduce) {
+            self.last_motion.set(Some(reduce));
+            self.dispatch(Event::SystemMotionChanged(reduce));
+        }
         let now = crate::appearance::read(&o.view);
         if !force && self.last_appearance.get() == Some(now) {
             return;
@@ -188,6 +200,31 @@ pub struct Window {
 }
 
 impl Window {
+    pub fn set_text_input_state(&self, state: Option<crate::event::TextInputState>) {
+        let blink = state
+            .as_ref()
+            .is_some_and(|s| !s.read_only && s.selection.is_empty());
+        *self.shared.text_input.borrow_mut() = state;
+        if blink && !self.shared.caret_scheduled.replace(true) {
+            self.view.schedule_caret_blink();
+        }
+        if let Some(context) = self.view.inputContext() {
+            context.invalidateCharacterCoordinates();
+        }
+    }
+    pub fn clipboard_text(&self) -> Option<String> {
+        use objc2_app_kit::NSPasteboardTypeString;
+        text_pasteboard()
+            .stringForType(unsafe { NSPasteboardTypeString })
+            .map(|s| s.to_string())
+    }
+    pub fn set_clipboard_text(&self, text: &str) {
+        use objc2_app_kit::NSPasteboardTypeString;
+        let pasteboard = text_pasteboard();
+        pasteboard.clearContents();
+        pasteboard.setString_forType(&NSString::from_str(text), unsafe { NSPasteboardTypeString });
+    }
+
     fn new(shared: Rc<Shared>) -> Window {
         let o = shared
             .objects
@@ -310,5 +347,17 @@ impl Window {
     /// 已经投递的 `Redraw` 数量，仅用于诊断。
     pub fn redraw_count(&self) -> u64 {
         self.shared.redraw_count.get()
+    }
+}
+
+fn text_pasteboard() -> Retained<objc2_app_kit::NSPasteboard> {
+    if std::env::var("TEKES_SELFTEST").as_deref() == Ok("text") {
+        // Native text smoke tests must not replace the user's general clipboard.
+        objc2_app_kit::NSPasteboard::pasteboardWithName(&NSString::from_str(&format!(
+            "TekesUI.TextSelftest.{}",
+            std::process::id()
+        )))
+    } else {
+        objc2_app_kit::NSPasteboard::generalPasteboard()
     }
 }

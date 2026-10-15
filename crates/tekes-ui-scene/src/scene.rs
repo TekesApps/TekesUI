@@ -8,6 +8,10 @@ use crate::quad::Quad;
 #[non_exhaustive]
 pub enum Primitive {
     Quad(Quad),
+    /// Intersect with the current rectangular clip, in logical points.
+    PushClip(crate::Rect),
+    /// Restore the enclosing clip. Unmatched pops restore the target bounds.
+    PopClip,
     /// 一串同色字形，引用 [`crate::GlyphAtlas`] 里的位图。
     Glyphs(GlyphRun),
     /// 渲染层登记过的图像，画进矩形。
@@ -44,6 +48,14 @@ impl Scene {
 
     pub fn push_image(&mut self, image: ImageQuad) {
         self.primitives.push(Primitive::Image(image));
+    }
+
+    pub fn push_clip(&mut self, rect: crate::Rect) {
+        self.push(Primitive::PushClip(rect));
+    }
+
+    pub fn pop_clip(&mut self) {
+        self.push(Primitive::PopClip);
     }
 
     pub fn primitives(&self) -> &[Primitive] {

@@ -434,6 +434,22 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
         )
         .unwrap();
     }
+    out.push_str("}} pub const fn id(self)->&'static str {match self {\n");
+    for style in &styles {
+        let id = style["name"].as_str().unwrap();
+        let variant = id
+            .split('-')
+            .map(|part| {
+                let mut chars = part.chars();
+                format!(
+                    "{}{}",
+                    chars.next().unwrap().to_ascii_uppercase(),
+                    chars.as_str()
+                )
+            })
+            .collect::<String>();
+        writeln!(out, "Self::{variant}=>{id:?},").unwrap();
+    }
     out.push_str("}}}\n");
     out.push_str("pub fn text_family(id:&str)->Option<&'static str>{match id{\n");
     for style in &styles {

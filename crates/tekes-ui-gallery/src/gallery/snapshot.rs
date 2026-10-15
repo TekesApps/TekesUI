@@ -1,7 +1,7 @@
 //! 无头快照：用 `Renderer::new_headless` 把每一页在每个主题、每个缩放下渲染成 PNG。
 //!
 //! 文件名 `<页>-<主题>@<缩放>x.png`，例如 `primitives-dark-ic@2x.png`。
-//! 页名与主题名见 `Page::slug`、`theme_slug`。尺寸是固定框 1200x800 pt 乘缩放。
+//! 页名与主题名见 `Page::slug`、`theme_slug`。尺寸是 JSON 捕获框乘缩放。
 //! 这是以后自动对比（章程第 2 节）共用的固定夹具：同样的输入逐字节得到同样的 PNG。
 //!
 //! 静态文字页固定为默认状态：夹具 sentences-a、宽度 700，**不带参照目录**（参照窗格是占位文字，
@@ -183,6 +183,52 @@ mod tests {
             )
             .unwrap();
             assert_eq!(a, c, "{page:?} {theme:?} {scale}x（新渲染器）");
+        }
+    }
+
+    #[test]
+    fn original_three_page_content_matches_the_committed_proposal_review() {
+        let Ok(mut renderer) = Renderer::new_headless() else {
+            eprintln!("UNVERIFIED: no GPU adapter for content regression");
+            return;
+        };
+        fn rgba(bytes: Vec<u8>) -> (u32, Vec<u8>) {
+            let mut reader = png::Decoder::new(std::io::Cursor::new(bytes))
+                .read_info()
+                .unwrap();
+            let mut output = vec![0; reader.output_buffer_size()];
+            let frame = reader.next_frame(&mut output).unwrap();
+            assert_eq!(frame.color_type, png::ColorType::Rgba);
+            output.truncate(frame.buffer_size());
+            (frame.width, output)
+        }
+        let mut text = TextEngine::new();
+        let mut fixture = StaticText::new(None);
+        let historical = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../design/reviews/proposal1/screenshots");
+        for page in [Page::Primitives, Page::Tokens, Page::StaticText] {
+            for theme in Theme::ALL {
+                for scale in SCALES {
+                    let name = file_name(page, theme, scale);
+                    let (width, before) = rgba(fs::read(historical.join(&name)).unwrap());
+                    let (new_width, after) = rgba(
+                        render_png(&mut renderer, &mut text, &mut fixture, page, theme, scale)
+                            .unwrap(),
+                    );
+                    assert_eq!(width, new_width);
+                    assert_eq!(before.len(), after.len(), "{name} image dimensions");
+                    // New directory entries are intentional; original content and title remain exact.
+                    let start = super::super::layout::CATALOG_W as usize * scale as usize * 4;
+                    let stride = width as usize * 4;
+                    for (row, (a, b)) in before
+                        .chunks_exact(stride)
+                        .zip(after.chunks_exact(stride))
+                        .enumerate()
+                    {
+                        assert_eq!(&a[start..], &b[start..], "{name} content row {row}");
+                    }
+                }
+            }
         }
     }
 

@@ -12,7 +12,7 @@
 //! 环境变量：
 //! - `TEKES_PERF=scroll` 或 `scroll:10`：开启并指定测量秒数；
 //! - `TEKES_PERF_OUT=路径`：JSON 报告的路径，默认当前目录 `tekes-perf-<unix 秒>.json`；
-//! - `TEKES_PERF_CONTENT=quads|text|mixed`：滚动的内容，默认 `mixed`；
+//! - `TEKES_PERF_CONTENT=quads|text|mixed|editor|icons|motion`：滚动的内容，默认 `mixed`；
 //! - `TEKES_PERF_SPEED=点/秒`：滚动速度，默认 1200；
 //! - `TEKES_PERF_COMMIT=...`：写进报告的提交标识（`scripts/f1-scroll-gate.sh` 会设置）。
 //!
@@ -70,6 +70,9 @@ pub enum ContentKind {
     Quads,
     Text,
     Mixed,
+    Editor,
+    Icons,
+    Motion,
 }
 
 impl ContentKind {
@@ -78,6 +81,9 @@ impl ContentKind {
             ContentKind::Quads => "quads",
             ContentKind::Text => "text",
             ContentKind::Mixed => "mixed",
+            ContentKind::Editor => "editor",
+            ContentKind::Icons => "icons",
+            ContentKind::Motion => "motion",
         }
     }
 }
@@ -146,9 +152,12 @@ impl PerfConfig {
             None | Some("mixed") => ContentKind::Mixed,
             Some("quads") => ContentKind::Quads,
             Some("text") => ContentKind::Text,
+            Some("editor") => ContentKind::Editor,
+            Some("icons") => ContentKind::Icons,
+            Some("motion") => ContentKind::Motion,
             Some(other) => {
                 return Err(format!(
-                    "TEKES_PERF_CONTENT 取 quads、text、mixed，收到 {other:?}"
+                    "TEKES_PERF_CONTENT 取 quads、text、mixed、editor、icons、motion，收到 {other:?}"
                 ));
             }
         };
@@ -213,7 +222,9 @@ fn plan_document(content: ContentKind, para_heights: &[f32]) -> Plan {
     for i in 0..SEGMENTS {
         let want_text = match content {
             ContentKind::Quads => false,
-            ContentKind::Text => true,
+            ContentKind::Text | ContentKind::Editor | ContentKind::Icons | ContentKind::Motion => {
+                true
+            }
             ContentKind::Mixed => i % 2 == 1,
         };
         if !want_text || para_heights.is_empty() {
@@ -280,6 +291,8 @@ fn translate_into(dst: &mut Scene, src: &Scene, dy: f32, view_h: f32) {
                 }
                 dst.push_image(ImageQuad { rect, ..*im });
             }
+            Primitive::PushClip(rect) => dst.push_clip(rect.offset(0.0, dy)),
+            Primitive::PopClip => dst.pop_clip(),
             _ => {}
         }
     }
@@ -387,6 +400,8 @@ pub struct Perf {
     stop: Option<Stop>,
     prewarm_ms: f64,
     started: Instant,
+    motion_step: Option<u64>,
+    animation_target: Option<f64>,
     path: PathBuf,
     /// 窗口信息（开始时记下）。
     window_info: Value,
@@ -452,6 +467,8 @@ impl Perf {
             stop: None,
             prewarm_ms: 0.0,
             started: Instant::now(),
+            motion_step: None,
+            animation_target: None,
             path,
             window_info: Value::Null,
             scale: 2.0,
@@ -459,6 +476,12 @@ impl Perf {
         }
     }
 
+    pub fn set_reduced_motion(&mut self, reduced: bool) {
+        self.gallery.set_reduced_motion(reduced);
+    }
+    pub fn set_system_theme(&mut self, theme: Theme) {
+        self.gallery.set_system_theme(theme);
+    }
     pub fn is_active(&self) -> bool {
         self.phase != Phase::Done
     }
@@ -471,6 +494,18 @@ impl Perf {
         renderer.set_frame_timing(true);
         let t = Instant::now();
         self.prewarm(renderer);
+        if let Some(page) = match self.cfg.content {
+            ContentKind::Editor => Some(Page::TextEditing),
+            ContentKind::Icons => Some(Page::Icons),
+            ContentKind::Motion => Some(Page::Motion),
+            _ => None,
+        } {
+            self.gallery.apply(Command::Page(page));
+            self.gallery
+                .set_view_size(window.size().width as f32, window.size().height as f32);
+            self.gallery.prepare(renderer, self.scale);
+            self.gallery.build_scene(&mut Scene::new());
+        }
         self.prewarm_ms = t.elapsed().as_secs_f64() * 1e3;
         self.window_info = match window.screen_info() {
             Some(s) => json!({
@@ -483,10 +518,9 @@ impl Perf {
         };
         let on = window.set_animating(true);
         eprintln!(
-            "perf：内容 {}，文档高 {:.0} pt，{} 段；预热 atlas {:.0} ms；动画 {}；GPU 计时 {}",
+            "perf：内容 {}，文档高 {:.0} pt；预热 atlas {:.0} ms；动画 {}；GPU 计时 {}",
             self.cfg.content.name(),
-            self.plan.height,
-            self.plan.segments.len(),
+            self.document_height(),
             self.prewarm_ms,
             if on {
                 "已开"
@@ -521,13 +555,42 @@ impl Perf {
         }
     }
 
+    fn document_height(&self) -> f32 {
+        match self.cfg.content {
+            ContentKind::Editor => {
+                let (limit, view) = self.gallery.editor_scroll_metrics();
+                limit + view
+            }
+            ContentKind::Icons | ContentKind::Motion => self.gallery.page_document_height(),
+            _ => self.plan.height,
+        }
+    }
     fn scroll_at(&self, elapsed: f64) -> f32 {
-        let range = (self.plan.height - self.view_h).max(0.0) as f64;
+        let range = if self.cfg.content == ContentKind::Editor {
+            self.gallery.editor_scroll_metrics().0 as f64
+        } else if self.cfg.content == ContentKind::Icons {
+            self.gallery.page_scroll_range() as f64
+        } else {
+            (self.plan.height - self.view_h).max(0.0) as f64
+        };
         bounce(self.cfg.speed * elapsed, range) as f32
     }
 
     /// 编这一帧的可见内容。
     fn build(&mut self, ctx: &mut FrameCtx<'_>, scroll: f32) {
+        if matches!(
+            self.cfg.content,
+            ContentKind::Editor | ContentKind::Icons | ContentKind::Motion
+        ) {
+            if self.cfg.content == ContentKind::Editor {
+                self.gallery.scroll_editor_to(scroll);
+            } else if self.cfg.content == ContentKind::Icons {
+                self.gallery.scroll_page_to(scroll);
+                self.gallery.prepare(ctx.renderer, self.scale);
+            }
+            self.gallery.build_scene(ctx.scene);
+            return;
+        }
         let view_h = self.view_h;
         let color = ColorRole::PrimaryText.resolve(ctx.theme);
         for si in 0..self.plan.segments.len() {
@@ -583,6 +646,21 @@ impl Perf {
         let first = *self.first_target.get_or_insert(f.target_timestamp);
         let elapsed = f.target_timestamp - first;
         let scroll = self.scroll_at(elapsed);
+        if self.cfg.content == ContentKind::Motion {
+            let dt = self
+                .animation_target
+                .map_or(f.refresh_interval, |previous| {
+                    (f.target_timestamp - previous).max(0.0)
+                });
+            self.animation_target = Some(f.target_timestamp);
+            self.gallery.advance_motion(dt as f32);
+            let step = (elapsed / 0.3).floor() as u64;
+            if self.motion_step != Some(step) {
+                self.gallery
+                    .motion_retarget(if step.is_multiple_of(2) { 0.85 } else { 0.15 });
+                self.motion_step = Some(step);
+            }
+        }
 
         self.gallery.text_mut().set_scale(self.scale);
         self.gallery.text_mut().begin_frame();
@@ -774,8 +852,9 @@ impl Perf {
                 "scale": window.scale(),
                 "present_mode": "Fifo",
                 "max_drawable_count": 2,
-                "document_height_pt": self.plan.height,
-                "segments": self.plan.segments.len(),
+                "document_height_pt": self.document_height(),
+                "scroll_range_pt": if self.cfg.content==ContentKind::Editor {self.gallery.editor_scroll_metrics().0}else if self.cfg.content==ContentKind::Icons {self.gallery.page_scroll_range()}else if self.cfg.content==ContentKind::Motion {0.0}else{(self.plan.height-self.view_h).max(0.0)},
+                "segments": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::Icons|ContentKind::Motion) {Value::Null}else{json!(self.plan.segments.len())},
             },
             "gpu_timing": {
                 "supported": renderer.gpu_timing_supported(),

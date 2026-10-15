@@ -14,11 +14,12 @@ use crate::image_pass::{ImageInstance, ImagePass};
 use crate::instance::QuadInstance;
 use crate::quad_pass::QuadPass;
 use std::ops::Range;
-use tekes_ui_scene::{GlyphAtlas, ImageId, Primitive, Scene};
+use tekes_ui_scene::{GlyphAtlas, ImageId, Primitive, Rect, Scene};
 use tekes_ui_tokens::Rgba;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Batch {
+    Clip([u32; 4]),
     Quads(Range<u32>),
     Glyphs(Range<u32>),
     Image(ImageId, Range<u32>),
@@ -91,8 +92,26 @@ impl Pipelines {
         self.glyph.staging.clear();
         self.image.staging.clear();
         self.batches.clear();
+        let full = Rect::new(0.0, 0.0, size_px.0 as f32 / scale, size_px.1 as f32 / scale);
+        let mut clips = vec![full];
         for p in scene.primitives() {
             match p {
+                Primitive::PushClip(rect) => {
+                    let parent = *clips.last().unwrap();
+                    let clip = parent
+                        .intersection(rect)
+                        .unwrap_or(Rect::new(0.0, 0.0, 0.0, 0.0));
+                    clips.push(clip);
+                    self.batches
+                        .push(Batch::Clip(scissor(clip, scale, size_px)));
+                }
+                Primitive::PopClip => {
+                    if clips.len() > 1 {
+                        clips.pop();
+                    }
+                    self.batches
+                        .push(Batch::Clip(scissor(*clips.last().unwrap(), scale, size_px)));
+                }
                 Primitive::Quad(q) => {
                     let start = self.quad.staging.len() as u32;
                     self.quad.staging.push(QuadInstance::from_quad(q));
@@ -163,8 +182,20 @@ impl Pipelines {
             multiview_mask: None,
         });
         pass.set_bind_group(0, &self.globals.bind_group, &[]);
+        let mut visible = true;
         for b in &self.batches {
+            if let Batch::Clip([x, y, w, h]) = b {
+                visible = *w > 0 && *h > 0;
+                if visible {
+                    pass.set_scissor_rect(*x, *y, *w, *h);
+                }
+                continue;
+            }
+            if !visible {
+                continue;
+            }
             match b {
+                Batch::Clip(_) => unreachable!(),
                 Batch::Quads(r) => {
                     pass.set_pipeline(&self.quad.pipeline);
                     pass.set_vertex_buffer(0, self.quad.instances.buffer().slice(..));
@@ -194,9 +225,27 @@ impl Pipelines {
             quads: self.quad.staging.len(),
             glyphs: self.glyph.staging.len(),
             images: self.image.staging.len(),
-            draws: self.batches.len(),
+            draws: self
+                .batches
+                .iter()
+                .filter(|b| !matches!(b, Batch::Clip(_)))
+                .count(),
         }
     }
+}
+
+fn scissor(rect: Rect, scale: f32, size: (u32, u32)) -> [u32; 4] {
+    let x = (rect.min_x() * scale).ceil().max(0.0).min(size.0 as f32) as u32;
+    let y = (rect.min_y() * scale).ceil().max(0.0).min(size.1 as f32) as u32;
+    let right = (rect.max_x() * scale)
+        .floor()
+        .max(x as f32)
+        .min(size.0 as f32) as u32;
+    let bottom = (rect.max_y() * scale)
+        .floor()
+        .max(y as f32)
+        .min(size.1 as f32) as u32;
+    [x, y, right - x, bottom - y]
 }
 
 enum Kind {

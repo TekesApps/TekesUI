@@ -1,0 +1,9 @@
+{
+  "format": "tekesui-gallery-navigation/1",
+  "sections": [
+    {"title": "基础组件", "items": ["scroll-area", "text", "text-editing", "icons"]},
+    {"title": "组件展示", "items": ["components-foundations", "components-actions", "components-forms", "components-navigation", "components-overlays", "components-feedback", "components-documents", "components-data"]},
+    {"title": "交互与动效", "items": ["motion-foundation"]},
+    {"title": "设计校准", "items": ["primitives", "tokens", "static-text"]}
+  ]
+}

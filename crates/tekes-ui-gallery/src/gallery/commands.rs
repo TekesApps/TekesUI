@@ -29,7 +29,10 @@ const CONTRAST_BASE: u32 = 300;
 impl Command {
     /// 全部命令，按菜单里出现的顺序。
     pub fn all() -> Vec<Command> {
-        let mut v: Vec<Command> = Page::ALL.iter().map(|p| Command::Page(*p)).collect();
+        let mut v: Vec<Command> = super::navigation::pages()
+            .into_iter()
+            .map(Command::Page)
+            .collect();
         v.extend(
             AppearanceChoice::ALL
                 .iter()
@@ -71,7 +74,7 @@ impl Command {
         };
         match self {
             Command::Page(p) => {
-                let n = index_of(&Page::ALL, p) + 1;
+                let n = index_of(&super::navigation::pages(), p) + 1;
                 char::from_digit(n, 10).map(KeyEquivalent::command)
             }
             Command::Appearance(a) => char::from_digit(1 + index_of(&AppearanceChoice::ALL, a), 10)
@@ -95,7 +98,13 @@ pub fn menu_bar(checked: impl Fn(Command) -> bool) -> MenuBar {
         }
         MenuItem::Command(m)
     };
-    let pages = Page::ALL.iter().map(|p| item(Command::Page(*p))).collect();
+    let mut pages = Vec::new();
+    for (index, section) in super::navigation::sections().iter().enumerate() {
+        if index > 0 {
+            pages.push(MenuItem::Separator);
+        }
+        pages.extend(section.items.iter().map(|(p, _)| item(Command::Page(*p))));
+    }
     let mut appearance: Vec<MenuItem> = AppearanceChoice::ALL
         .iter()
         .map(|a| item(Command::Appearance(*a)))
@@ -163,7 +172,7 @@ mod tests {
                 _ => None,
             })
             .collect();
-        assert_eq!(pages.len(), Page::ALL.len());
+        assert_eq!(pages.len(), Page::ALL.len().min(9));
         for (i, k) in pages.iter().enumerate() {
             assert_eq!(k.key, char::from_digit(i as u32 + 1, 10).unwrap());
             assert_eq!(k.modifiers, Modifiers::COMMAND);

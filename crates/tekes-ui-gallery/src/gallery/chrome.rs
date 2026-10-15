@@ -3,9 +3,7 @@
 use tekes_ui_scene::{Quad, Rect, Scene};
 use tekes_ui_tokens::{ColorRole, CornerRadius, Rgba, TextRole, Theme, proposal};
 
-use super::layout::{
-    CATALOG_W, FRAME_H, FRAME_W, PAGE_TITLE_SLOT, catalog_label_slot, catalog_row_rect,
-};
+use super::layout::{CATALOG_W, FRAME_H, FRAME_W, PAGE_TITLE_SLOT, catalog_label_slot};
 use super::pages::Page;
 use super::text::{LabelStyle, TextEngine};
 
@@ -36,29 +34,63 @@ pub fn draw(
     page: Page,
     hover: Option<usize>,
 ) {
-    // 目录列底与右侧分隔线。
+    draw_with_navigation(
+        scene,
+        theme,
+        text,
+        page,
+        hover,
+        &super::navigation::Navigation::default(),
+    );
+}
+pub fn draw_with_navigation(
+    scene: &mut Scene,
+    theme: Theme,
+    text: &mut TextEngine,
+    page: Page,
+    hover: Option<usize>,
+    navigation: &super::navigation::Navigation,
+) {
+    let height = FRAME_H.max(navigation.bounds().size.height);
     scene.push_quad(Quad::new(
-        Rect::new(0.0, 0.0, CATALOG_W, FRAME_H),
-        proposal::color("surface-sidebar", theme).expect("validated proposal sidebar surface"),
+        Rect::new(0.0, 0.0, CATALOG_W, height),
+        proposal::color("surface-sidebar", theme).unwrap(),
     ));
     scene.push_quad(Quad::new(
-        Rect::new(CATALOG_W - 1.0, 0.0, 1.0, FRAME_H),
+        Rect::new(CATALOG_W - 1.0, 0.0, 1.0, height),
         ColorRole::Separator.resolve(theme),
     ));
-
-    // 每页一行。
-    for (i, p) in Page::ALL.iter().enumerate() {
-        let rect = catalog_row_rect(i);
-        if let Some(fill) = row_fill(theme, page.index() == i, hover == Some(i)) {
-            scene.push_quad(Quad::new(rect, fill).with_corner_radius(CornerRadius::Row.value()));
+    let offset = navigation.scroll.visual_offset().y;
+    scene.push_clip(navigation.bounds());
+    for section in super::navigation::sections() {
+        text.proposal_label_in(
+            scene,
+            theme,
+            section.rect.offset(0.0, -offset),
+            &section.title,
+            proposal::TextRole::UiCaption,
+            ColorRole::SecondaryText.resolve(theme),
+        );
+        for (p, row) in &section.items {
+            let row = row.offset(0.0, -offset);
+            if let Some(fill) = row_fill(theme, *p == page, hover == Some(p.index())) {
+                scene.push_quad(Quad::new(row, fill).with_corner_radius(CornerRadius::Row.value()));
+            }
+            let label = catalog_label_slot(p.index()).offset(0.0, -offset);
+            text.label_in(scene, theme, label, p.name(), CATALOG_STYLE);
         }
-        text.label_in(scene, theme, catalog_label_slot(i), p.name(), CATALOG_STYLE);
     }
-
-    // 页面标题槽。
+    scene.pop_clip();
+    if navigation.scroll.limit().y > 0.0 {
+        let thumb = navigation
+            .scroll
+            .thumb(true, navigation.track(), super::layout::ROW_H);
+        scene.push_quad(
+            Quad::new(thumb, ColorRole::SecondaryText.resolve(theme))
+                .with_corner_radius(tekes_ui_tokens::Spacing::Micro.value()),
+        );
+    }
     text.label_in(scene, theme, PAGE_TITLE_SLOT, page.name(), TITLE_STYLE);
-
-    // 内容框的右、下边线：窗口比固定校准框大时，用它标出框的边界。
     let sep = ColorRole::Separator.resolve(theme);
     scene.push_quad(Quad::new(Rect::new(FRAME_W - 1.0, 0.0, 1.0, FRAME_H), sep));
     scene.push_quad(Quad::new(Rect::new(0.0, FRAME_H - 1.0, FRAME_W, 1.0), sep));

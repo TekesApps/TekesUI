@@ -11,13 +11,13 @@ use std::rc::Rc;
 use objc2::rc::Retained;
 use objc2::{AllocAnyThread, DefinedClass, MainThreadOnly, define_class, msg_send, sel};
 use objc2_app_kit::{
-    NSEvent, NSTrackingArea, NSTrackingAreaOptions, NSView, NSViewLayerContentsPlacement,
-    NSViewLayerContentsRedrawPolicy,
+    NSEvent, NSTextInputClient, NSTrackingArea, NSTrackingAreaOptions, NSView,
+    NSViewLayerContentsPlacement, NSViewLayerContentsRedrawPolicy,
 };
 use objc2_core_graphics::{CGColorSpace, kCGColorSpaceSRGB};
 use objc2_foundation::{
-    MainThreadMarker, NSArray, NSObjectNSThreadPerformAdditions, NSObjectProtocol, NSRect,
-    NSRunLoop, NSRunLoopCommonModes, NSSize,
+    MainThreadMarker, NSArray, NSObjectNSDelayedPerforming, NSObjectNSThreadPerformAdditions,
+    NSObjectProtocol, NSRect, NSRunLoop, NSRunLoopCommonModes, NSSize,
 };
 use objc2_quartz_core::{
     CACurrentMediaTime, CADisplayLink, CAFrameRateRange, CALayer, CAMetalLayer,
@@ -50,7 +50,74 @@ define_class!(
     // SAFETY: NSObjectProtocol 没有安全要求。
     unsafe impl NSObjectProtocol for TekesView {}
 
+    // SAFETY: required NSTextInputClient methods use AppKit's exact ABI. Rust owns
+    // document state; native callbacks only dispatch edits or query a published copy.
+    #[allow(non_snake_case)]
+    unsafe impl NSTextInputClient for TekesView {
+        #[unsafe(method(insertText:replacementRange:))]
+        unsafe fn insertText_replacementRange(&self,string:&objc2::runtime::AnyObject,replacement:objc2_foundation::NSRange) {
+            self.ivars().shared.dispatch(Event::TextCommit{text:input_string(string),replacement:input_range(replacement)});
+        }
+        #[unsafe(method(doCommandBySelector:))]
+        unsafe fn doCommandBySelector(&self,selector:objc2::runtime::Sel) {
+            self.ivars().shared.dispatch(Event::TextCommand(selector.name().to_string_lossy().into_owned()));
+        }
+        #[unsafe(method(setMarkedText:selectedRange:replacementRange:))]
+        unsafe fn setMarkedText_selectedRange_replacementRange(&self,string:&objc2::runtime::AnyObject,selection:objc2_foundation::NSRange,replacement:objc2_foundation::NSRange) {
+            self.ivars().shared.dispatch(Event::TextPreedit{text:input_string(string),clauses:input_clauses(string),selection:selection.location..selection.location.saturating_add(selection.length),replacement:input_range(replacement)});
+        }
+        #[unsafe(method(unmarkText))]
+        fn unmarkText(&self) {self.ivars().shared.dispatch(Event::TextUnmark);}
+        #[unsafe(method(selectedRange))]
+        fn selectedRange(&self)->objc2_foundation::NSRange {self.ivars().shared.text_input.borrow().as_ref().map(|s|native_range(s.selection.clone())).unwrap_or(not_found())}
+        #[unsafe(method(markedRange))]
+        fn markedRange(&self)->objc2_foundation::NSRange {self.ivars().shared.text_input.borrow().as_ref().and_then(|s|s.marked.clone()).map(native_range).unwrap_or(not_found())}
+        #[unsafe(method(hasMarkedText))]
+        fn hasMarkedText(&self)->bool {self.ivars().shared.text_input.borrow().as_ref().is_some_and(|s|s.marked.is_some())}
+        #[unsafe(method_id(attributedSubstringForProposedRange:actualRange:))]
+        unsafe fn attributedSubstringForProposedRange_actualRange(&self,range:objc2_foundation::NSRange,actual:*mut objc2_foundation::NSRange)->Option<Retained<objc2_foundation::NSAttributedString>> {
+            (|| {
+            let state=self.ivars().shared.text_input.borrow();let state=state.as_ref()?;
+            if range.location==isize::MAX as usize {return None;}
+            let units:Vec<u16>=state.text.encode_utf16().collect();let mut start=range.location.min(units.len());let mut end=range.location.saturating_add(range.length).min(units.len());
+            let low=|u:u16|(0xDC00..=0xDFFF).contains(&u);
+            if start<units.len()&&start>0&&low(units[start]){start-=1;}
+            if end<units.len()&&end>0&&low(units[end]){end+=1;}
+            if start>end {return None;}
+            if !actual.is_null(){unsafe {*actual=objc2_foundation::NSRange::new(start,end-start);}}
+            Some(objc2_foundation::NSAttributedString::initWithString(objc2_foundation::NSAttributedString::alloc(),&objc2_foundation::NSString::from_str(&String::from_utf16_lossy(&units[start..end]))))
+            })()
+        }
+        #[unsafe(method_id(validAttributesForMarkedText))]
+        fn validAttributesForMarkedText(&self)->Retained<NSArray<objc2_foundation::NSAttributedStringKey>> {unsafe {NSArray::from_slice(&[objc2_app_kit::NSMarkedClauseSegmentAttributeName,objc2_app_kit::NSUnderlineStyleAttributeName])}}
+        #[unsafe(method(firstRectForCharacterRange:actualRange:))]
+        unsafe fn firstRectForCharacterRange_actualRange(&self,_range:objc2_foundation::NSRange,actual:*mut objc2_foundation::NSRange)->NSRect {
+            let state=self.ivars().shared.text_input.borrow();let Some(s)=state.as_ref() else {return NSRect::ZERO;};
+            let (index,origin,size)=s.carets.iter().find(|v|v.0==_range.location).copied().unwrap_or((s.caret_index,s.caret_origin,s.caret_size));
+            if !actual.is_null(){unsafe {*actual=objc2_foundation::NSRange::new(index,0);}}
+            let rect=NSRect::new(objc2_foundation::NSPoint::new(origin.x,origin.y),NSSize::new(size.width,size.height));
+            let rect=self.convertRect_toView(rect,None);self.window().map_or(rect,|w|w.convertRectToScreen(rect))
+        }
+        #[unsafe(method(characterIndexForPoint:))]
+        fn characterIndexForPoint(&self,point:objc2_foundation::NSPoint)->usize {
+            let p=self.window().map_or(point,|w|w.convertPointFromScreen(point));let p=self.convertPoint_fromView(p,None);
+            self.ivars().shared.text_input.borrow().as_ref().map_or(0,|s|s.carets.iter().min_by(|a,b|{
+                let distance=|v:&(usize,Point,Size)| ((p.y-(v.1.y+v.2.height*0.5)).abs()*1000.0)+(p.x-v.1.x).abs();
+                distance(a).total_cmp(&distance(b))
+            }).map_or(s.caret_index,|v|v.0))
+        }
+    }
+
     impl TekesView {
+        #[unsafe(method(tekesCaretBlink))]
+        fn caret_blink(&self) {
+            let active=self.ivars().shared.text_input.borrow().as_ref().is_some_and(|s|!s.read_only&&s.selection.is_empty());
+            if active && !self.ivars().shared.closed.get() {
+                self.ivars().shared.dispatch(Event::CaretBlink);
+                self.schedule_caret_blink();
+            } else {self.ivars().shared.caret_scheduled.set(false);}
+        }
+
         // ---- 视图属性 ----
 
         /// 左上角为原点，与引擎一致。AppKit 会据此把 convertPoint 的结果翻转好，
@@ -305,7 +372,10 @@ define_class!(
 
         #[unsafe(method(keyDown:))]
         fn key_down(&self, e: &NSEvent) {
-            self.key_event(e, KeyEventKind::Down);
+            let editing=self.ivars().shared.text_input.borrow().is_some();
+            if editing && !modifiers_of(e).command {
+                self.interpretKeyEvents(&NSArray::from_slice(&[e]));
+            } else {self.key_event(e, KeyEventKind::Down);}
         }
         #[unsafe(method(keyUp:))]
         fn key_up(&self, e: &NSEvent) {
@@ -320,11 +390,69 @@ define_class!(
     }
 );
 
+fn not_found() -> objc2_foundation::NSRange {
+    objc2_foundation::NSRange::new(isize::MAX as usize, 0)
+}
+fn input_range(r: objc2_foundation::NSRange) -> Option<std::ops::Range<usize>> {
+    (r.location != isize::MAX as usize).then(|| r.location..r.location.saturating_add(r.length))
+}
+fn native_range(r: std::ops::Range<usize>) -> objc2_foundation::NSRange {
+    objc2_foundation::NSRange::new(r.start, r.end.saturating_sub(r.start))
+}
+fn input_clauses(value: &objc2::runtime::AnyObject) -> Vec<std::ops::Range<usize>> {
+    let Some(text) = value.downcast_ref::<objc2_foundation::NSAttributedString>() else {
+        return Vec::new();
+    };
+    let mut index = 0;
+    let mut clauses = Vec::new();
+    while index < text.length() {
+        let mut range = objc2_foundation::NSRange::new(index, 1);
+        // SAFETY: index is inside the attributed string; out-range pointer is valid.
+        let attribute = unsafe {
+            text.attribute_atIndex_effectiveRange(
+                objc2_app_kit::NSMarkedClauseSegmentAttributeName,
+                index,
+                &mut range,
+            )
+        };
+        let end = range
+            .location
+            .saturating_add(range.length)
+            .min(text.length());
+        if attribute.is_some() && end > range.location {
+            clauses.push(range.location..end);
+        }
+        index = end.max(index + 1);
+    }
+    clauses
+}
+
+fn input_string(value: &objc2::runtime::AnyObject) -> String {
+    if let Some(s) = value.downcast_ref::<objc2_foundation::NSString>() {
+        s.to_string()
+    } else if let Some(s) = value.downcast_ref::<objc2_foundation::NSAttributedString>() {
+        s.string().to_string()
+    } else {
+        String::new()
+    }
+}
+
 fn modifiers_of(e: &NSEvent) -> Modifiers {
     Modifiers::from_ns_flags(e.modifierFlags().bits())
 }
 
 impl TekesView {
+    pub(crate) fn schedule_caret_blink(&self) {
+        // SAFETY: main thread, selector has no arguments, common runloop modes.
+        unsafe {
+            self.performSelector_withObject_afterDelay_inModes(
+                sel!(tekesCaretBlink),
+                None,
+                0.5,
+                &NSArray::from_slice(&[NSRunLoopCommonModes]),
+            );
+        }
+    }
     pub(crate) fn new(
         mtm: MainThreadMarker,
         shared: Rc<Shared>,
@@ -388,7 +516,7 @@ impl TekesView {
                 let link = unsafe {
                     self.displayLinkWithTarget_selector(self, sel!(tekesDisplayLinkFired:))
                 };
-                link.setPreferredFrameRateRange(CAFrameRateRange::new(60.0, 120.0, 120.0));
+                link.setPreferredFrameRateRange(CAFrameRateRange::new(120.0, 120.0, 120.0));
                 link.setPaused(true);
                 // SAFETY: 主线程；common modes 是 Foundation 导出的全局常量。
                 unsafe {
