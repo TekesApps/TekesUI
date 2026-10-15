@@ -8,6 +8,7 @@
 //! | 字段 | 含义 | 来源 |
 //! |---|---|---|
 //! | `cpu_ms` | 从平台层把 `AnimationFrame`（或 `Redraw`）交给引擎，到 `Renderer::render` 返回 | 宿主用 `Instant` 量。包含建场景、取 drawable、编码、提交、`present` 调用；不含 GPU 执行 |
+//! | `cpu_active_ms` | `cpu_ms` 减去 `acquire_ms`：CPU 真正在干活的时间，不含等 drawable | 派生 |
 //! | `build_ms` | 其中建场景（排版结果编进 `Scene`、滚动偏移、裁剪）的部分 | 宿主 |
 //! | `acquire_ms` | 其中 `CAMetalLayer.nextDrawable` 的等待 | 渲染器量 `get_current_texture` |
 //! | `encode_ms` / `submit_ms` | 取到 drawable 之后：上传 atlas、打包实例、编码 render pass；`queue.submit` 加 `present` | 渲染器 |
@@ -148,6 +149,9 @@ pub struct FrameStats {
     /// 样本里刷新间隔的中位数，毫秒。
     pub refresh_interval_ms: f64,
     pub cpu: Distribution,
+    /// `cpu_ms - acquire_ms`：不含等 drawable 的 CPU 时间。`nextDrawable` 在队列满时会睡到下一次刷新，
+    /// 这段是被显示节奏卡住，不是我们在耗 CPU，门禁的 CPU 项以它为准，`cpu` 作为参考一并给出。
+    pub cpu_active: Distribution,
     pub build: Distribution,
     pub acquire: Distribution,
     pub encode: Distribution,
@@ -179,6 +183,7 @@ impl FrameStats {
             rendered_frames: rendered.len(),
             refresh_interval_ms: intervals.p50,
             cpu: Distribution::from_samples(&col_r(|s| s.cpu_ms)),
+            cpu_active: Distribution::from_samples(&col_r(|s| s.cpu_ms - s.acquire_ms)),
             build: Distribution::from_samples(&col_r(|s| s.build_ms)),
             acquire: Distribution::from_samples(&col_r(|s| s.acquire_ms)),
             encode: Distribution::from_samples(&col_r(|s| s.encode_ms)),
@@ -351,6 +356,7 @@ mod tests {
         assert_eq!(st.rendered_frames, 100);
         assert!((st.refresh_interval_ms - 1000.0 / 120.0).abs() < 1e-9);
         assert_eq!(st.cpu.count, 100);
+        assert_eq!(st.cpu_active.max, st.cpu.max, "样本里 acquire 为 0");
         assert!((st.cpu.p99 - 1.98).abs() < 1e-9);
         assert!((st.cpu.max - 1.99).abs() < 1e-9);
         let gpu = st.gpu.expect("有 GPU 样本");
@@ -358,6 +364,15 @@ mod tests {
         assert_eq!(st.drops.late_frames, 0);
         assert!((st.target_interval.p50 - 1000.0 / 120.0).abs() < 1e-6);
         assert!((st.budget.p50 - 4.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn cpu_active_excludes_the_drawable_wait() {
+        let mut s = sample(0, 8.3, Some(0.5));
+        s.acquire_ms = 8.0;
+        let st = FrameStats::from_samples(&[s]);
+        assert!((st.cpu.max - 8.3).abs() < 1e-12);
+        assert!((st.cpu_active.max - 0.3).abs() < 1e-12);
     }
 
     #[test]
