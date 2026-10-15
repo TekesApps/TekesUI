@@ -18,6 +18,8 @@ pub struct Host {
     renderer: Option<Renderer>,
     /// `TEKES_LOG_EVENTS` 设了就把事件和重绘次数打到 stderr，用来核对空闲时不重绘。
     log: bool,
+    /// `TEKES_LOG_EVENTS=all`：连没有处理的事件（鼠标、键盘、焦点……）也记，用来查空闲时是谁在唤醒进程。
+    log_all: bool,
     start: Instant,
     redraws: u64,
 }
@@ -31,6 +33,7 @@ impl Host {
             renderer: None,
             log: std::env::var("TEKES_LOG_EVENTS").is_ok()
                 || std::env::var("TEKES_SELFTEST").is_ok(),
+            log_all: std::env::var("TEKES_LOG_EVENTS").is_ok_and(|v| v == "all"),
             start: Instant::now(),
             redraws: 0,
         }
@@ -67,6 +70,14 @@ impl Host {
 
 impl WindowHandler for Host {
     fn handle(&mut self, event: Event, window: &mut Window) {
+        if self.log_all
+            && !matches!(
+                event,
+                Event::Created | Event::Resized { .. } | Event::Redraw
+            )
+        {
+            self.log(format_args!("{event:?}"));
+        }
         match &event {
             Event::Created => {
                 // SAFETY: 层由视图持有，窗口存活期间有效；渲染器随 Host 一起在窗口关闭后丢弃。

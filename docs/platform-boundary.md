@@ -32,7 +32,6 @@ pub trait WindowHandler: 'static {
 | `set_content_size(Size)` | 改内容区尺寸 |
 | `set_command_checked(CommandId, bool) -> bool` | 菜单勾选；命令不存在返回 false |
 | `is_command_checked(CommandId)` | 读勾选状态 |
-| `set_presents_with_transaction(bool)` | 见“实时缩放”，默认关 |
 | `placement_report()` / `screen_info()` | 摆放结果与当前屏幕，日志用 |
 | `native_window_number()` / `redraw_count()` | 诊断用 |
 
@@ -97,11 +96,11 @@ pub enum Event {            // #[non_exhaustive]
 
 - **尺寸变化同步投递**：`setFrameSize:`（缩放过程中 AppKit 每一步都会调）里，先调 super，再把层的 `drawableSize` 设成 `size * scale`（四舍五入，每维至少 1），然后同步投递 `Resized` 与 `Redraw`，不等下一轮 runloop。这样缩放过程中窗口与内容同一步更新，不会出现窗口已变而内容还是旧尺寸。
 - **缩放因子变化**（`viewDidChangeBackingProperties`：换屏幕、改分辨率）与 `viewDidMoveToWindow` 走同一个 `sync_geometry`；层的 `contentsScale` 同步到 `window.backingScaleFactor`。几何信息（尺寸、缩放、drawable）与上次投递的相同则不重复投递。
-- **drawableSize 由平台层设**：每次 `Resized` 之前就已经设到层上。渲染层应该用 `Resized.drawable_size` 重新 `configure` wgpu surface（wgpu 自己也会设同一个值，幂等）。
+- **drawableSize 归渲染器管**：wgpu 配置 surface 时设置它，平台层不碰（在渲染器接管之前，CAMetalLayer 自己按 `bounds * contentsScale` 算）。`Resized.drawable_size` 是平台层算出的像素尺寸（`size * scale` 取整），渲染层用它调用 `Renderer::resize`。`contentsScale` 归平台层管，随 `backingScaleFactor` 同步。
 - **色彩空间**：层的 `colorspace` 设为 sRGB，渲染层在 gamma 空间混合，与 AppKit 一致，不让系统再做一次色域转换。层 `opaque = true`，视图 `isOpaque = true`。
 - **`layerContentsRedrawPolicy = OnSetNeedsDisplay`**：不让 AppKit 在缩放时自己重绘层内容。默认的 `DuringViewResize` 会在我们的同步重绘之后再触发一次，同一次缩放画两帧，还会与渲染层写入的 drawable 冲突。注意 `setWantsLayer(true)` 会把策略重置成 `Never`，必须在它之后设置（实测）。
 - **`layerContentsPlacement = TopLeft`**：新 drawable 还没来时，旧内容按原尺寸钉在左上角，不拉伸，也不居中漂移；窗口变大时露出的是层的背景色。不能直接设层的 `contentsGravity`，AppKit 管着背衬层，会按视图的 `layerContentsPlacement` 改写它（实测：直接设的值被改回 `resize`）；视图设 `TopLeft` 后，AppKit 把层的 gravity 设成 `bottomLeft`（因为层是 geometry-flipped，两者是同一个视觉位置）。验证：自测给层塞一张 200x200 像素（2x 下 100pt）上红下蓝的图，窗口放大后截图，图仍在左上角、大小不变、上红下蓝，没有拉伸。
-- **`presentsWithTransaction`**：默认关闭，提供 `Window::set_presents_with_transaction`。打开后缩放边缘更稳，代价是呈现路径必须在主线程 `waitUntilScheduled` 再 `present`，wgpu 的 present 路径是否配合要在渲染集成时实测决定，所以平台层不替渲染层打开。
+- **`presentsWithTransaction`**：平时关闭；`viewWillStartLiveResize` 时自动打开，`viewDidEndLiveResize` 时关闭，不是公开 API。wgpu 在每次取 drawable 时读取它，为 true 时改用 `commit + waitUntilScheduled + present`，实时缩放时内容与窗口边框在同一个 Core Animation 事务里更新。平台层的同步 `Resized` + `Redraw` 就在 `setFrameSize:` 里、主线程上完成，满足这个路径的要求。程序化缩放（`setContentSize`）不算实时缩放，不开。
 
 ## 重入
 
@@ -161,12 +160,17 @@ pub enum ScreenChoice { Builtin, External }            // 缺外接屏时 Extern
 - 库的默认值是 `Centered`，不替产品应用做摆放；示例和 Gallery 在配置里写 `Auto`。
 - 日志：`Window::placement_report()` 给出选中的屏幕（名称、是否内建、缩放、最大帧率）、布局、原因与全部屏幕；`Window::screen_info()` 给出窗口当前所在屏幕。示例在 `Created` 时打印。
 
+## 窗口遮挡
+
+`windowDidChangeOcclusionState:`：窗口变为可见（最小化后恢复、被完全盖住后露出）时调用 `request_redraw()`。不可见期间渲染层取 drawable 会得到 Occluded，跳过帧并返回 Ok，不补这一帧就会停在旧画面。
+
 ## 与渲染层集成要点
 
 - 渲染层从 `Window::metal_layer()` 得到 CAMetalLayer 指针，用 `SurfaceTargetUnsafe::CoreAnimationLayer` 建 surface。指针在窗口存活期间有效，渲染层不要 release 它。
 - `Created` 时层已存在、`drawableSize` 已设好；`Resized` 在 `Redraw` 之前，每次 `Resized` 后必然紧跟一次同步 `Redraw`。渲染层应在 `Resized` 里重新 `configure`，在 `Redraw` 里 acquire、绘制、present。
-- `drawableSize`、`contentsScale`、`colorspace`（sRGB）、`opaque`、`contentsPlacement` 由平台层设置；`pixelFormat`、`framebufferOnly`、`device` 留给渲染层（wgpu 的 configure）。
-- `presentsWithTransaction` 默认关闭，是否打开见“实时缩放”，要在集成时对照实测。
+- 平台层设置 `contentsScale`、视图的 `layerContentsPlacement`（层 gravity 由 AppKit 据此生成）、`opaque`；渲染层（wgpu 的 configure）设置 `drawableSize`、`pixelFormat`、`framebufferOnly`、`device`、`maximumDrawableCount`、`displaySyncEnabled`，并在每次 configure 之后重新把 `colorspace` 设成 sRGB（wgpu 会把它重置为 nil；平台层建层时设的 sRGB 因此会被覆盖，以渲染层为准）。
+- `presentsWithTransaction` 由平台层在实时缩放期间自动开关，渲染层不用管，见“实时缩放”。
+- 窗口重新可见时平台层会 `request_redraw()`，见“窗口遮挡”。
 - 引擎的处理器 `Redraw` 里发现还要画下一帧时，调用 `request_redraw()`。
 
 ## 验证记录（F0）
