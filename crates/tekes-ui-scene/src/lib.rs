@@ -25,20 +25,22 @@
 //!   图元**合并成一批（instanced draw），代价只是一次线性扫描。
 //! - [`Primitive`] 标了 `#[non_exhaustive]`，以后加变体不算破坏性改动。
 //!   计划中的变体：
-//!   - F1：`GlyphRun`（引用 glyph atlas 里的字形，按 run 打包）；
+//!   - 已有：`Glyphs`（一串同色字形，引用 [`GlyphAtlas`] 里的位图）和 `Image`
+//!     （渲染层登记的图像，画进矩形，用于 Gallery 的参照图）；
 //!   - 裁剪：`PushClip(Rect)` / `PopClip`，作为列表里的状态指令，而不是每个图元
 //!     自带 clip，这样嵌套裁剪不需要给每个图元多存一份矩形；
-//!   - 参照图槽位：`Image { rect, id }`，图像本身由渲染层按 id 管理。
 //! - 图元体积小（`Quad` 约 60 字节），枚举的额外开销可以忽略。
 //!
 //! 不做的事：scene 不做脏区跟踪、不做命中测试、不做排序。上层每帧（按需）整体
 //! 重建，渲染层只负责画。
 
+mod atlas;
 mod geometry;
 mod glyph;
 mod quad;
 mod scene;
 
+pub use atlas::{AtlasConfig, AtlasStats, DirtyRect, GlyphAtlas};
 pub use geometry::{Point, Rect, Size};
 pub use glyph::{
     AtlasGlyph, FontKey, GlyphKey, GlyphRun, ImageId, ImageQuad, PositionedGlyph, RasterFormat,
