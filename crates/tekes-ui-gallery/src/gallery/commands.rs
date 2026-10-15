@@ -3,8 +3,8 @@
 //! | 菜单 | 项 | 快捷键 |
 //! |---|---|---|
 //! | Pages | 每页一项，勾选当前页 | ⌘1、⌘2、…（按页序） |
-//! | Appearance | Follow System / Light / Dark（单选） | ⌥⌘S / ⌥⌘L / ⌥⌘D |
-//! | Appearance | Increase Contrast: Follow System / On / Off（单选） | ⌃⌥⌘C / ⌥⌘C / ⇧⌥⌘C |
+//! | Appearance | Follow System / Light / Dark（单选） | ⌃⌘1 / ⌃⌘2 / ⌃⌘3 |
+//! | Appearance | Increase Contrast: Follow System / On / Off（单选） | ⌃⌘4 / ⌃⌘5 / ⌃⌘6 |
 //!
 //! 命令编号：页面 100 + 页序，外观 200 + 选项序，对比度 300 + 选项序。
 
@@ -64,8 +64,8 @@ impl Command {
     }
 
     fn key(self) -> Option<KeyEquivalent> {
-        let opt_cmd = Modifiers {
-            alt: true,
+        let ctrl_cmd = Modifiers {
+            control: true,
             command: true,
             ..Modifiers::NONE
         };
@@ -74,24 +74,10 @@ impl Command {
                 let n = index_of(&Page::ALL, p) + 1;
                 char::from_digit(n, 10).map(KeyEquivalent::command)
             }
-            Command::Appearance(AppearanceChoice::System) => Some(KeyEquivalent::new('s', opt_cmd)),
-            Command::Appearance(AppearanceChoice::Light) => Some(KeyEquivalent::new('l', opt_cmd)),
-            Command::Appearance(AppearanceChoice::Dark) => Some(KeyEquivalent::new('d', opt_cmd)),
-            Command::Contrast(ContrastChoice::System) => Some(KeyEquivalent::new(
-                'c',
-                Modifiers {
-                    control: true,
-                    ..opt_cmd
-                },
-            )),
-            Command::Contrast(ContrastChoice::On) => Some(KeyEquivalent::new('c', opt_cmd)),
-            Command::Contrast(ContrastChoice::Off) => Some(KeyEquivalent::new(
-                'c',
-                Modifiers {
-                    shift: true,
-                    ..opt_cmd
-                },
-            )),
+            Command::Appearance(a) => char::from_digit(1 + index_of(&AppearanceChoice::ALL, a), 10)
+                .map(|d| KeyEquivalent::new(d, ctrl_cmd)),
+            Command::Contrast(c) => char::from_digit(4 + index_of(&ContrastChoice::ALL, c), 10)
+                .map(|d| KeyEquivalent::new(d, ctrl_cmd)),
         }
     }
 }
@@ -190,6 +176,76 @@ mod tests {
         for i in 0..keys.len() {
             for j in i + 1..keys.len() {
                 assert_ne!(keys[i], keys[j]);
+            }
+        }
+    }
+
+    /// 已知被 macOS 或标准 AppKit 菜单占用的组合（键，⌃⌥⇧⌘ 四个修饰）。
+    /// 来源：Apple 支持文档“Mac 键盘快捷键”、系统设置 → 键盘 → 键盘快捷键里的系统默认值
+    /// （Mission Control、Dock、Spotlight、截屏、辅助功能缩放/反转/对比度），
+    /// 以及 AppKit 标准 App/窗口/编辑菜单。不求完整，只拦已知的坑；
+    /// 本机实际启用的热键见 docs/gallery.md。
+    const RESERVED: &[(char, [bool; 4])] = &[
+        // (键, [control, alt, shift, command])
+        ('d', [false, true, false, true]),  // ⌥⌘D 显示/隐藏 Dock
+        ('d', [true, false, false, true]),  // ⌃⌘D 查词
+        ('h', [false, false, false, true]), // ⌘H 隐藏
+        ('h', [false, true, false, true]),  // ⌥⌘H 隐藏其他
+        ('m', [false, false, false, true]), // ⌘M 最小化
+        ('m', [false, true, false, true]),  // ⌥⌘M 全部最小化
+        ('w', [false, false, false, true]), // ⌘W 关闭
+        ('w', [false, true, false, true]),  // ⌥⌘W 关闭全部
+        ('q', [false, false, false, true]), // ⌘Q 退出
+        ('q', [true, false, false, true]),  // ⌃⌘Q 锁定屏幕
+        ('f', [true, false, false, true]),  // ⌃⌘F 全屏
+        ('`', [false, false, false, true]), // ⌘` 切换窗口
+        (',', [false, false, false, true]), // ⌘, 设置
+        ('?', [false, false, false, true]), // ⌘? 帮助
+        ('/', [false, true, false, true]),  // ⌥⌘/ 帮助搜索
+        (' ', [false, false, false, true]), // ⌘Space Spotlight
+        (' ', [false, true, false, true]),  // ⌥⌘Space Finder 搜索
+        (' ', [true, false, false, true]),  // ⌃⌘Space 表情与符号
+        ('8', [false, true, false, true]),  // ⌥⌘8 缩放开关
+        ('8', [true, true, false, true]),   // ⌃⌥⌘8 反转颜色
+        ('=', [false, true, false, true]),  // ⌥⌘= 放大
+        ('-', [false, true, false, true]),  // ⌥⌘- 缩小
+        (',', [true, true, false, true]),   // ⌃⌥⌘, 降低对比度
+        ('.', [true, true, false, true]),   // ⌃⌥⌘. 增加对比度
+        ('3', [false, false, true, true]),  // ⇧⌘3 截屏
+        ('4', [false, false, true, true]),  // ⇧⌘4 截取选区
+        ('5', [false, false, true, true]),  // ⇧⌘5 截屏工具
+        ('6', [false, false, true, true]),  // ⇧⌘6 Touch Bar 截屏
+    ];
+
+    #[test]
+    fn shortcuts_avoid_reserved_system_combinations() {
+        for c in Command::all() {
+            let Some(k) = c.key() else { continue };
+            let m = k.modifiers;
+            let key = k.key.to_ascii_lowercase();
+            for (rk, rm) in RESERVED {
+                assert!(
+                    !(*rk == key && *rm == [m.control, m.alt, m.shift, m.command]),
+                    "{c:?} 用了被占用的快捷键 {k:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn appearance_and_contrast_are_ctrl_cmd_digits() {
+        for c in Command::all() {
+            if matches!(c, Command::Appearance(_) | Command::Contrast(_)) {
+                let k = c.key().unwrap();
+                assert!(k.key.is_ascii_digit());
+                assert_eq!(
+                    k.modifiers,
+                    Modifiers {
+                        control: true,
+                        command: true,
+                        ..Modifiers::NONE
+                    }
+                );
             }
         }
     }

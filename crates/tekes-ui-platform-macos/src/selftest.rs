@@ -60,6 +60,17 @@ pub enum Action {
     /// 只改这一个窗口的外观（深色或跟随系统），不碰系统设置；
     /// 内容视图的 `effectiveAppearance` 随之变化，平台层会投递 `SystemAppearanceChanged`。
     WindowDark(bool),
+    /// 合成一个本地 keyDown（不是全局 CGEvent），交给 `NSApp.mainMenu.performKeyEquivalent:`，
+    /// 走菜单快捷键匹配；日志里打印是否被菜单接住。这条路径不经过系统全局热键，
+    /// 所以只能证明菜单项配置正确，不能证明系统没有拦截。
+    KeyEquivalent {
+        chars: &'static str,
+        key_code: u16,
+        control: bool,
+        alt: bool,
+        shift: bool,
+        command: bool,
+    },
 }
 
 /// 内容区坐标（左上角原点）→ 窗口坐标（左下角原点）。
@@ -189,6 +200,48 @@ extern "C" fn run_step(ctx: *mut c_void) {
                     app.sendEvent(&e);
                 }
             }
+        }
+        Action::KeyEquivalent {
+            chars,
+            key_code,
+            control,
+            alt,
+            shift,
+            command,
+        } => {
+            let mut flags = NSEventModifierFlags::empty();
+            if control {
+                flags |= NSEventModifierFlags::Control;
+            }
+            if alt {
+                flags |= NSEventModifierFlags::Option;
+            }
+            if shift {
+                flags |= NSEventModifierFlags::Shift;
+            }
+            if command {
+                flags |= NSEventModifierFlags::Command;
+            }
+            let s = NSString::from_str(chars);
+            let e = NSEvent::keyEventWithType_location_modifierFlags_timestamp_windowNumber_context_characters_charactersIgnoringModifiers_isARepeat_keyCode(
+                NSEventType::KeyDown,
+                NSPoint::new(0.0, 0.0),
+                flags,
+                0.0,
+                w.windowNumber(),
+                None,
+                &s,
+                &s,
+                false,
+                key_code,
+            );
+            let handled = match (app.mainMenu(), e) {
+                (Some(m), Some(e)) => m.performKeyEquivalent(&e),
+                _ => false,
+            };
+            eprintln!(
+                "selftest: 菜单快捷键 {chars:?} 修饰 C={control} O={alt} S={shift} D={command} -> handled={handled}"
+            );
         }
         Action::WindowDark(on) => {
             let a = if on {

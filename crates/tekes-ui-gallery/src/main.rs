@@ -230,6 +230,32 @@ fn selftest_gallery_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Act
     at(500, cap("g13_hover_row1"));
     at(100, MouseExit);
     at(500, log("hover 结束"));
+    // 经 mainMenu.performKeyEquivalent 走快捷键匹配（⌃⌘ + 数字）：
+    // 3 深、2 浅、5 对比度开、6 关、1 跟随、4 跟随。再用 ⌥⌘D（旧键）确认不再触发。
+    let kq = |chars: &'static str, key_code: u16, control: bool, alt: bool, shift: bool| {
+        Action::KeyEquivalent {
+            chars,
+            key_code,
+            control,
+            alt,
+            shift,
+            command: true,
+        }
+    };
+    at(300, log("快捷键：⌃⌘3 深色"));
+    at(100, kq("3", 20, true, false, false));
+    at(700, cap("g14_key_dark"));
+    at(100, log("快捷键：⌃⌘2 浅色"));
+    at(100, kq("2", 19, true, false, false));
+    at(700, cap("g15_key_light"));
+    at(100, log("快捷键：⌃⌘5 对比度开"));
+    at(100, kq("5", 23, true, false, false));
+    at(700, cap("g16_key_ic_on"));
+    at(100, kq("6", 22, true, false, false));
+    at(100, kq("1", 18, true, false, false));
+    at(100, kq("4", 21, true, false, false));
+    at(100, log("旧键 ⌥⌘D：应 handled=false"));
+    at(100, kq("d", 2, false, true, false));
     at(100, Close);
     steps
 }

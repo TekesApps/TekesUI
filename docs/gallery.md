@@ -24,8 +24,14 @@ Gallery 是恒定的人工目测验收目标（章程第 2 节）：同一页、
 | 菜单 | 项 | 快捷键 |
 |---|---|---|
 | Pages | 每页一项，勾选当前页 | ⌘1、⌘2 … |
-| Appearance | Follow System / Light / Dark（单选） | ⌥⌘S / ⌥⌘L / ⌥⌘D |
-| Appearance | Increase Contrast: Follow System / On / Off（单选） | ⌃⌥⌘C / ⌥⌘C / ⇧⌥⌘C |
+| Appearance | Follow System / Light / Dark（单选） | ⌃⌘1 / ⌃⌘2 / ⌃⌘3 |
+| Appearance | Increase Contrast: Follow System / On / Off（单选） | ⌃⌘4 / ⌃⌘5 / ⌃⌘6 |
+
+快捷键选型：页面用 ⌘ 加序号；外观和对比度统一用 ⌃⌘ 加数字（外观 1 到 3，对比度 4 到 6，顺序同菜单）。
+
+最初的 ⌥⌘S / ⌥⌘L / ⌥⌘D 里，⌥⌘D 是系统的“显示/隐藏 Dock”，到不了应用，所以整套改掉。检查方法：对照 macOS 系统快捷键默认值（Mission Control、Dock、Spotlight、截屏、辅助功能缩放/反转/对比度、锁屏 ⌃⌘Q、表情 ⌃⌘Space、查词 ⌃⌘D、Finder 搜索 ⌥⌘Space）和 AppKit 标准菜单（⌘H、⌥⌘H、⌘M、⌥⌘M、⌘W、⌥⌘W、⌘Q、⌃⌘F、⌘`、⌘,、⌘?）；读了本机 `defaults read com.apple.symbolichotkeys`（只有 ⌃Space、⌃⌥Space 输入法切换被显式启用，另有 Mission Control 的 ⌃←/→ 切空间，其余是系统默认值）、`NSUserKeyEquivalents`（无）和 `com.apple.universalaccess`（缩放、反转、对比度快捷键都未启用）。⌃⌘ 加数字 1 到 6 在这些清单里都没有占用。旧方案里只有 ⌥⌘D 确认冲突；⌥⌘L、⌥⌘S、⌥⌘C 不是系统全局键（在个别 App 里有含义，如 Safari、Finder 的 ⌥⌘L），⌃⌥⌘C 也未见占用；⌘1、⌘2 无冲突。
+
+单元测试（`commands.rs`）断言菜单项快捷键互不相同，且不在一份已知占用组合的常量表里；这份表来自上面的系统默认值和 AppKit 标准菜单，不求完整。自测（`TEKES_SELFTEST=gallery`）合成本地 keyDown，经 `NSApp.mainMenu.performKeyEquivalent:` 触发 ⌃⌘1 到 6，标题和日志随主题变化；旧键 ⌥⌘D 不再被菜单接住。这条路径不经过系统全局热键，不能证明系统没有拦截，真实按键需要人工确认。
 
 目录里点一行，或按 ↑ / ↓（到头不循环），也能切页。窗口标题是 `TekesUI Gallery — <页面名> — <主题名>`。默认跟随系统外观和系统的 Increase Contrast。
 
