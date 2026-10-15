@@ -20,6 +20,7 @@
 - [docs/roadmap.md](docs/roadmap.md)：F0 到 F7 各阶段的范围、对照对象与通过标准
 - [docs/comparison-method.md](docs/comparison-method.md)：与参照实现对比的方法与容差
 - [docs/design/icons-and-tokens-brief.md](docs/design/icons-and-tokens-brief.md)：图标与设计 token 的调研任务书
+- [design/README.md](design/README.md)：设计产出的保存约定与导入流转
 
 ## 许可
 
