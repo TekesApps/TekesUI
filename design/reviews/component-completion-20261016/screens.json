@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Color LCD",
+    "resolution": "1512 x 982 @ 120.00Hz",
+    "builtin": true
+  },
+  {
+    "name": "U2790B",
+    "resolution": "1920 x 1080 @ 30.00Hz",
+    "builtin": false
+  }
+]

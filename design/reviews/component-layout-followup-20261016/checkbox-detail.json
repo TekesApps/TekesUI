@@ -1,0 +1,11 @@
+{
+  "input": "component-checkbox-light@2x.png",
+  "crop_device_pixels": [
+    608,
+    470,
+    1240,
+    584
+  ],
+  "zoom": 2,
+  "resampling": "nearest; diagnostic crop only; source screenshots unchanged"
+}

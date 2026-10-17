@@ -1,0 +1,16 @@
+{
+  "format": "tekesui-scroll-behavior/1",
+  "stiffness": 20.0,
+  "release_amplitude": 0.31,
+  "release_period": 1.6,
+  "velocity_timeout_s": 0.1,
+  "settle_position_pt": 1.0,
+  "maximum_stretch_fraction": 0.5,
+  "nominal_hz": 120.0,
+  "provenance": "Calibrated against public NSScrollView NSEvent adapter on macOS; mathematical shape cross-checked with historical Apple WebKit rubber-band model. See scroll-repair evidence.",
+  "boundary_entry_policy": {
+    "finger": "Apply elastic resistance to the first out-of-bounds excess as well as subsequent finger deltas; reversing the same input must not accumulate extra travel.",
+    "momentum": "Carry the first interior-to-boundary excess before subsequent elastic resistance; preserve measured OS momentum behavior.",
+    "evidence": "../reviews/scroll-repair/native-edge-reverse.json"
+  }
+}

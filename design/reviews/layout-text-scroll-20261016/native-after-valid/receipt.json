@@ -1,0 +1,23 @@
+[
+  {
+    "route": "component-text",
+    "pid": 74768,
+    "external": true,
+    "binary_sha256": "f04ed2494ea7338fd217133662581262b34daada796ed539a97c4577a98d8b66",
+    "capture": "component-text.png"
+  },
+  {
+    "route": "component-scroll-area",
+    "pid": 74773,
+    "external": true,
+    "binary_sha256": "f04ed2494ea7338fd217133662581262b34daada796ed539a97c4577a98d8b66",
+    "capture": "component-scroll-area.png"
+  },
+  {
+    "route": "lab-internal-text",
+    "pid": 74813,
+    "external": true,
+    "binary_sha256": "f04ed2494ea7338fd217133662581262b34daada796ed539a97c4577a98d8b66",
+    "capture": "lab-internal-text.png"
+  }
+]

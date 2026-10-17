@@ -1,0 +1,996 @@
+{
+  "cpu_unit": "100% = one logical CPU core, user+system",
+  "drop_definition": "actual presented interval > 1.5 refreshes; do not infer no drops from p99",
+  "rows": [
+    {
+      "case": "cache-diagnostic-gpu-timing-24",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf-cache/cache-diagnostic-gpu-timing-24.json",
+      "seconds": 30.0,
+      "gpu_timing": true,
+      "sources": 8,
+      "animated_views": 24,
+      "mode": "Steady",
+      "linear_rotation": false,
+      "asset_work": {
+        "rasterizations": 21036,
+        "texture_creations": 0,
+        "upload_bytes": 4222009344,
+        "uploads": 21036
+      },
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 22.43582568273116,
+      "cpu_peak_250ms_percent": 39.59384514694321,
+      "model_ms": {
+        "count": 3506,
+        "max": 0.034499999999999996,
+        "mean": 0.009725162863662335,
+        "p95": 0.016875,
+        "p99": 0.021875
+      },
+      "raster_upload_ms": {
+        "count": 3506,
+        "max": 2.5452920000000003,
+        "mean": 0.9129276503137473,
+        "p95": 1.71325,
+        "p99": 1.972167
+      },
+      "cpu_frame_ms": {
+        "count": 3506,
+        "max": 24.189417000000002,
+        "mean": 2.727059418425556,
+        "min": 0.6813750000000001,
+        "p50": 1.158,
+        "p95": 7.312833,
+        "p99": 14.696375
+      },
+      "cpu_active_ms": {
+        "count": 3506,
+        "max": 3.097334,
+        "mean": 1.2323478265829995,
+        "min": 0.6665840000000001,
+        "p50": 1.0338749999999999,
+        "p95": 2.2976659999999995,
+        "p99": 2.613791
+      },
+      "build_ms": {
+        "count": 3506,
+        "max": 2.562042,
+        "mean": 0.9247544837421561,
+        "min": 0.48575,
+        "p50": 0.7667499999999999,
+        "p95": 1.7335,
+        "p99": 1.9902079999999998
+      },
+      "acquire_ms": {
+        "count": 3506,
+        "max": 23.212666,
+        "mean": 1.4947115918425558,
+        "min": 0.011583999999999999,
+        "p50": 0.036833,
+        "p95": 5.93975,
+        "p99": 13.696875
+      },
+      "gpu_ms": {
+        "count": 3506,
+        "max": 7.549666,
+        "mean": 0.7222324158585263,
+        "min": 0.108375,
+        "p50": 0.30650000000000005,
+        "p95": 1.918167,
+        "p99": 3.5195830000000004
+      },
+      "presentation_interval_ms": {
+        "count": 3505,
+        "max": 20.8332083420828,
+        "mean": 8.556742154057808,
+        "min": 8.333124918863177,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 16.666541574522853
+      },
+      "presentation_gap_events": 70,
+      "presentation_missed_refreshes_estimate": 70,
+      "presented_fps": 116.86690822228135,
+      "callback_dropped_refreshes": 94,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 1.6380000000006945,
+        "cpu_percent": 0.03281233701460235,
+        "display_link_callbacks": 0,
+        "wait_s": 5.004208833
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 44,
+      "strict_zero_drop_pass": false,
+      "rendered_callbacks": 3506,
+      "total_callbacks": 3506,
+      "skipped_render_callbacks": 0,
+      "receipt_caveat": "Frozen harness repeats previous drawable serial on skipped render callbacks; not_presented is not a count of distinct drawables. Use rendered/skipped callbacks and raw frame flags."
+    },
+    {
+      "case": "cache-diagnostic-static-24",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf-cache/cache-diagnostic-static-24.json",
+      "seconds": 30.0,
+      "gpu_timing": false,
+      "sources": 8,
+      "animated_views": 24,
+      "mode": "Steady",
+      "linear_rotation": false,
+      "asset_work": {
+        "rasterizations": 0,
+        "texture_creations": 0,
+        "upload_bytes": 0,
+        "uploads": 0
+      },
+      "static_diagnostic": true,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 7.891151122428034,
+      "cpu_peak_250ms_percent": 10.258894565452206,
+      "model_ms": {
+        "count": 3598,
+        "max": 0.03975,
+        "mean": 0.008532349360756022,
+        "p95": 0.014333,
+        "p99": 0.01925
+      },
+      "raster_upload_ms": {
+        "count": 3598,
+        "max": 0.064292,
+        "mean": 0.01609356892718178,
+        "p95": 0.028541999999999998,
+        "p99": 0.037416000000000005
+      },
+      "cpu_frame_ms": {
+        "count": 3598,
+        "max": 15.900333,
+        "mean": 0.3271435494719288,
+        "min": 0.105667,
+        "p50": 0.250958,
+        "p95": 0.45675,
+        "p99": 1.580625
+      },
+      "cpu_active_ms": {
+        "count": 3598,
+        "max": 0.642167,
+        "mean": 0.2390994177320737,
+        "min": 0.093875,
+        "p50": 0.218333,
+        "p95": 0.388584,
+        "p99": 0.43958300000000006
+      },
+      "build_ms": {
+        "count": 3598,
+        "max": 0.09804199999999999,
+        "mean": 0.02658266981656473,
+        "min": 0.010459,
+        "p50": 0.022625000000000003,
+        "p95": 0.046208,
+        "p99": 0.05775
+      },
+      "acquire_ms": {
+        "count": 3598,
+        "max": 15.586416,
+        "mean": 0.08804413173985556,
+        "min": 0.011292,
+        "p50": 0.030167,
+        "p95": 0.066291,
+        "p99": 1.3435000000000001
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 3597,
+        "max": 16.66650001425296,
+        "mean": 8.340204557038073,
+        "min": 8.333083242177963,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "presentation_gap_events": 3,
+      "presentation_missed_refreshes_estimate": 3,
+      "presented_fps": 119.90113589673614,
+      "callback_dropped_refreshes": 4,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 1.2660000000002114,
+        "cpu_percent": 0.025371416769910286,
+        "display_link_callbacks": 0,
+        "wait_s": 5.00562575
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 44,
+      "strict_zero_drop_pass": false,
+      "rendered_callbacks": 3598,
+      "total_callbacks": 3598,
+      "skipped_render_callbacks": 0,
+      "receipt_caveat": "Frozen harness repeats previous drawable serial on skipped render callbacks; not_presented is not a count of distinct drawables. Use rendered/skipped callbacks and raw frame flags."
+    },
+    {
+      "case": "cache-final-all-effects-42",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf-cache/cache-final-all-effects-42.json",
+      "seconds": 20.0,
+      "gpu_timing": false,
+      "sources": 14,
+      "animated_views": 42,
+      "mode": "Steady",
+      "linear_rotation": false,
+      "asset_work": {
+        "rasterizations": 28800,
+        "texture_creations": 0,
+        "upload_bytes": 5780275200,
+        "uploads": 28800
+      },
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 26.15979778353402,
+      "cpu_peak_250ms_percent": 41.68061423287102,
+      "model_ms": {
+        "count": 2400,
+        "max": 0.043291,
+        "mean": 0.011839803333333343,
+        "p95": 0.018333,
+        "p99": 0.022417
+      },
+      "raster_upload_ms": {
+        "count": 2400,
+        "max": 3.944416,
+        "mean": 1.412542192916667,
+        "p95": 1.639916,
+        "p99": 2.726417
+      },
+      "cpu_frame_ms": {
+        "count": 2400,
+        "max": 8.369292,
+        "mean": 1.7342433245833286,
+        "min": 1.132375,
+        "p50": 1.668,
+        "p95": 1.9976249999999998,
+        "p99": 3.635875
+      },
+      "cpu_active_ms": {
+        "count": 2400,
+        "max": 4.633709,
+        "mean": 1.6727151333333352,
+        "min": 1.107958,
+        "p50": 1.64025,
+        "p95": 1.935333,
+        "p99": 3.1435
+      },
+      "build_ms": {
+        "count": 2400,
+        "max": 3.957167,
+        "mean": 1.426507895833333,
+        "min": 0.905625,
+        "p50": 1.391125,
+        "p95": 1.6575419999999998,
+        "p99": 2.7393330000000002
+      },
+      "acquire_ms": {
+        "count": 2400,
+        "max": 6.050083000000001,
+        "mean": 0.061528191250000065,
+        "min": 0.014667,
+        "p50": 0.026416,
+        "p95": 0.050958,
+        "p99": 0.108333
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 2399,
+        "max": 16.666541574522853,
+        "mean": 8.336727125896276,
+        "min": 8.333124918863177,
+        "p50": 8.333250065334141,
+        "p95": 8.333291742019355,
+        "p99": 8.33333341870457
+      },
+      "presentation_gap_events": 1,
+      "presentation_missed_refreshes_estimate": 1,
+      "presented_fps": 119.95114928179811,
+      "callback_dropped_refreshes": 2,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 1.3750000000003482,
+        "cpu_percent": 0.027558204442084414,
+        "display_link_callbacks": 0,
+        "wait_s": 5.003949209
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 81,
+      "strict_zero_drop_pass": false,
+      "rendered_callbacks": 2400,
+      "total_callbacks": 2400,
+      "skipped_render_callbacks": 0,
+      "receipt_caveat": "Frozen harness repeats previous drawable serial on skipped render callbacks; not_presented is not a count of distinct drawables. Use rendered/skipped callbacks and raw frame flags."
+    },
+    {
+      "case": "cache-final-baseline-3",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf-cache/cache-final-baseline-3.json",
+      "seconds": 30.0,
+      "gpu_timing": false,
+      "sources": 1,
+      "animated_views": 3,
+      "mode": "Steady",
+      "linear_rotation": false,
+      "asset_work": {
+        "rasterizations": 0,
+        "texture_creations": 0,
+        "upload_bytes": 0,
+        "uploads": 0
+      },
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 10.622644400441725,
+      "cpu_peak_250ms_percent": 28.570231024839448,
+      "model_ms": {
+        "count": 3516,
+        "max": 0.019709,
+        "mean": 0.003902603526734951,
+        "p95": 0.007084,
+        "p99": 0.00925
+      },
+      "raster_upload_ms": {
+        "count": 3516,
+        "max": 0.068792,
+        "mean": 0.018094849260523252,
+        "p95": 0.031,
+        "p99": 0.041083
+      },
+      "cpu_frame_ms": {
+        "count": 3516,
+        "max": 24.299625,
+        "mean": 1.6144370981228673,
+        "min": 0.081375,
+        "p50": 0.32120899999999997,
+        "p95": 8.25,
+        "p99": 15.30025
+      },
+      "cpu_active_ms": {
+        "count": 3516,
+        "max": 1.625209,
+        "mean": 0.2715652676336747,
+        "min": 0.07250000000000001,
+        "p50": 0.2485,
+        "p95": 0.44741699999999995,
+        "p99": 0.7482920000000002
+      },
+      "build_ms": {
+        "count": 3516,
+        "max": 0.078791,
+        "mean": 0.023958008816837312,
+        "min": 0.009417,
+        "p50": 0.021792000000000002,
+        "p95": 0.041041999999999995,
+        "p99": 0.052834000000000006
+      },
+      "acquire_ms": {
+        "count": 3516,
+        "max": 24.116249999999997,
+        "mean": 1.3428718304891936,
+        "min": 0.008791,
+        "p50": 0.042291,
+        "p95": 7.875375,
+        "p99": 15.025500000000001
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 3473,
+        "max": 20.8332083420828,
+        "mean": 8.531209953001111,
+        "min": 8.333083358593285,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 16.66650001425296
+      },
+      "presentation_gap_events": 78,
+      "presentation_missed_refreshes_estimate": 121,
+      "presented_fps": 115.81832086579905,
+      "callback_dropped_refreshes": 85,
+      "missing_receipts": 0,
+      "not_presented": 40,
+      "idle_after": {
+        "cpu_ms": 46.91500000000026,
+        "cpu_percent": 0.9374673591425874,
+        "display_link_callbacks": 0,
+        "wait_s": 5.004756458
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 5,
+      "strict_zero_drop_pass": false,
+      "rendered_callbacks": 3516,
+      "total_callbacks": 3516,
+      "skipped_render_callbacks": 0,
+      "receipt_caveat": "Frozen harness repeats previous drawable serial on skipped render callbacks; not_presented is not a count of distinct drawables. Use rendered/skipped callbacks and raw frame flags."
+    },
+    {
+      "case": "cache-final-combined-72",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf-cache/cache-final-combined-72.json",
+      "seconds": 30.0,
+      "gpu_timing": false,
+      "sources": 24,
+      "animated_views": 72,
+      "mode": "Combined",
+      "linear_rotation": false,
+      "asset_work": {
+        "rasterizations": 58536,
+        "texture_creations": 0,
+        "upload_bytes": 11748409344,
+        "uploads": 58536
+      },
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 36.63861199658546,
+      "cpu_peak_250ms_percent": 65.4570656262009,
+      "model_ms": {
+        "count": 3252,
+        "max": 0.399792,
+        "mean": 0.1456531765067651,
+        "p95": 0.21383400000000002,
+        "p99": 0.29312499999999997
+      },
+      "raster_upload_ms": {
+        "count": 3252,
+        "max": 6.39925,
+        "mean": 2.21062694803198,
+        "p95": 4.145375,
+        "p99": 5.243959
+      },
+      "cpu_frame_ms": {
+        "count": 3252,
+        "max": 28.198792,
+        "mean": 4.683430937269378,
+        "min": 2.021208,
+        "p50": 2.5515,
+        "p95": 14.349083,
+        "p99": 21.350708
+      },
+      "cpu_active_ms": {
+        "count": 3252,
+        "max": 7.319791,
+        "mean": 2.696297110393605,
+        "min": 2.002708,
+        "p50": 2.450083,
+        "p95": 4.8426659999999995,
+        "p99": 6.024709
+      },
+      "build_ms": {
+        "count": 3252,
+        "max": 6.556916,
+        "mean": 2.3586659541820363,
+        "min": 1.770167,
+        "p50": 2.1298749999999997,
+        "p95": 4.315125,
+        "p99": 5.432125
+      },
+      "acquire_ms": {
+        "count": 3252,
+        "max": 25.158792,
+        "mean": 1.987133826875769,
+        "min": 0.016625,
+        "p50": 0.039375,
+        "p95": 11.780791,
+        "p99": 18.132417
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 3251,
+        "max": 24.999708402901888,
+        "mean": 9.227839805710326,
+        "min": 8.3331250352785,
+        "p50": 8.333250065334141,
+        "p95": 16.66650001425296,
+        "p99": 20.833083312027156
+      },
+      "presentation_gap_events": 298,
+      "presentation_missed_refreshes_estimate": 299,
+      "presented_fps": 108.36772430544198,
+      "callback_dropped_refreshes": 347,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 2.456000000000458,
+        "cpu_percent": 0.049187527272792145,
+        "display_link_callbacks": 0,
+        "wait_s": 5.001261209
+      },
+      "edits_including_warmup": 204780,
+      "targets_including_warmup": 4224,
+      "images_per_frame": 132,
+      "strict_zero_drop_pass": false,
+      "rendered_callbacks": 3252,
+      "total_callbacks": 3252,
+      "skipped_render_callbacks": 0,
+      "receipt_caveat": "Frozen harness repeats previous drawable serial on skipped render callbacks; not_presented is not a count of distinct drawables. Use rendered/skipped callbacks and raw frame flags."
+    },
+    {
+      "case": "cache-final-multi-24",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf-cache/cache-final-multi-24.json",
+      "seconds": 60.0,
+      "gpu_timing": false,
+      "sources": 8,
+      "animated_views": 24,
+      "mode": "Steady",
+      "linear_rotation": false,
+      "asset_work": {
+        "rasterizations": 42414,
+        "texture_creations": 0,
+        "upload_bytes": 8512659456,
+        "uploads": 42414
+      },
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 19.31802756626996,
+      "cpu_peak_250ms_percent": 37.88957938030078,
+      "model_ms": {
+        "count": 7069,
+        "max": 0.06583399999999999,
+        "mean": 0.009555480548875415,
+        "p95": 0.016292,
+        "p99": 0.025459000000000002
+      },
+      "raster_upload_ms": {
+        "count": 7069,
+        "max": 5.256458,
+        "mean": 0.8344004625831065,
+        "p95": 1.163041,
+        "p99": 1.8029579999999998
+      },
+      "cpu_frame_ms": {
+        "count": 7069,
+        "max": 24.037167,
+        "mean": 1.777128880039606,
+        "min": 0.6645000000000001,
+        "p50": 1.066458,
+        "p95": 6.10325,
+        "p99": 13.047583
+      },
+      "cpu_active_ms": {
+        "count": 7069,
+        "max": 5.537208,
+        "mean": 1.0863628008204853,
+        "min": 0.646167,
+        "p50": 1.019667,
+        "p95": 1.556834,
+        "p99": 2.242959
+      },
+      "build_ms": {
+        "count": 7069,
+        "max": 5.279208,
+        "mean": 0.846535159994345,
+        "min": 0.5095,
+        "p50": 0.799875,
+        "p95": 1.1765,
+        "p99": 1.822375
+      },
+      "acquire_ms": {
+        "count": 7069,
+        "max": 23.075292,
+        "mean": 0.6907660792191258,
+        "min": 0.012459000000000001,
+        "p50": 0.031333,
+        "p95": 4.934542,
+        "p99": 11.769541
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 7023,
+        "max": 29.166416730731726,
+        "mean": 8.478606987753057,
+        "min": 8.333083242177963,
+        "p50": 8.33324994891882,
+        "p95": 8.333333302289248,
+        "p99": 16.66649989783764
+      },
+      "presentation_gap_events": 99,
+      "presentation_missed_refreshes_estimate": 151,
+      "presented_fps": 117.17593804987327,
+      "callback_dropped_refreshes": 131,
+      "missing_receipts": 0,
+      "not_presented": 38,
+      "idle_after": {
+        "cpu_ms": 7.495999999999725,
+        "cpu_percent": 0.1499782123069226,
+        "display_link_callbacks": 0,
+        "wait_s": 5.003381375
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 44,
+      "strict_zero_drop_pass": false,
+      "rendered_callbacks": 7069,
+      "total_callbacks": 7069,
+      "skipped_render_callbacks": 0,
+      "receipt_caveat": "Frozen harness repeats previous drawable serial on skipped render callbacks; not_presented is not a count of distinct drawables. Use rendered/skipped callbacks and raw frame flags."
+    },
+    {
+      "case": "cache-final-parameters-24",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf-cache/cache-final-parameters-24.json",
+      "seconds": 60.0,
+      "gpu_timing": false,
+      "sources": 8,
+      "animated_views": 24,
+      "mode": "Parameters",
+      "linear_rotation": false,
+      "asset_work": {
+        "rasterizations": 42810,
+        "texture_creations": 0,
+        "upload_bytes": 8592138240,
+        "uploads": 42810
+      },
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 16.41171304310896,
+      "cpu_peak_250ms_percent": 44.58333766210926,
+      "model_ms": {
+        "count": 7135,
+        "max": 0.265083,
+        "mean": 0.051929707918710606,
+        "p95": 0.09875,
+        "p99": 0.110625
+      },
+      "raster_upload_ms": {
+        "count": 7135,
+        "max": 2.66025,
+        "mean": 0.8184252518570441,
+        "p95": 1.7635839999999998,
+        "p99": 2.119084
+      },
+      "cpu_frame_ms": {
+        "count": 4521,
+        "max": 257.43037499999997,
+        "mean": 1.7775531300597207,
+        "min": 0.714958,
+        "p50": 1.133083,
+        "p95": 5.265,
+        "p99": 9.136458
+      },
+      "cpu_active_ms": {
+        "count": 4521,
+        "max": 3.1774590000000003,
+        "mean": 1.2242912497235088,
+        "min": 0.699667,
+        "p50": 1.074249,
+        "p95": 2.4495419999999997,
+        "p99": 2.75975
+      },
+      "build_ms": {
+        "count": 4521,
+        "max": 2.7498750000000003,
+        "mean": 0.9770714967927453,
+        "min": 0.575542,
+        "p50": 0.846125,
+        "p95": 2.0124169999999997,
+        "p99": 2.289917
+      },
+      "acquire_ms": {
+        "count": 4521,
+        "max": 256.368291,
+        "mean": 0.5532618803362092,
+        "min": 0.010375,
+        "p50": 0.033791999999999996,
+        "p95": 4.083959,
+        "p99": 7.672625
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 4475,
+        "max": 24.999666609801352,
+        "mean": 8.381668510248458,
+        "min": 8.333124918863177,
+        "p50": 8.33324994891882,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "presentation_gap_events": 25,
+      "presentation_missed_refreshes_estimate": 75,
+      "presented_fps": 118.02486935812472,
+      "callback_dropped_refreshes": 67,
+      "missing_receipts": 0,
+      "not_presented": 2655,
+      "idle_after": {
+        "cpu_ms": 2.193999999999363,
+        "cpu_percent": 0.04389099896053259,
+        "display_link_callbacks": 0,
+        "wait_s": 5.007855375
+      },
+      "edits_including_warmup": 146000,
+      "targets_including_warmup": 416,
+      "images_per_frame": 44,
+      "strict_zero_drop_pass": false,
+      "rendered_callbacks": 4521,
+      "total_callbacks": 7135,
+      "skipped_render_callbacks": 2614,
+      "receipt_caveat": "Frozen harness repeats previous drawable serial on skipped render callbacks; not_presented is not a count of distinct drawables. Use rendered/skipped callbacks and raw frame flags."
+    },
+    {
+      "case": "cache-final-retarget-24",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf-cache/cache-final-retarget-24.json",
+      "seconds": 60.0,
+      "gpu_timing": false,
+      "sources": 8,
+      "animated_views": 24,
+      "mode": "Retarget",
+      "linear_rotation": false,
+      "asset_work": {
+        "rasterizations": 41292,
+        "texture_creations": 0,
+        "upload_bytes": 8287469568,
+        "uploads": 41292
+      },
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 11.352060042173703,
+      "cpu_peak_250ms_percent": 34.73627335939892,
+      "model_ms": {
+        "count": 6882,
+        "max": 0.1445,
+        "mean": 0.018680119587329208,
+        "p95": 0.034041999999999996,
+        "p99": 0.039375
+      },
+      "raster_upload_ms": {
+        "count": 6882,
+        "max": 3.380208,
+        "mean": 0.7490609542284222,
+        "p95": 1.03275,
+        "p99": 1.7615
+      },
+      "cpu_frame_ms": {
+        "count": 1540,
+        "max": 1001.7195830000001,
+        "mean": 4.337592889610387,
+        "min": 0.730167,
+        "p50": 1.125084,
+        "p95": 12.055625000000001,
+        "p99": 16.712375
+      },
+      "cpu_active_ms": {
+        "count": 1540,
+        "max": 2.8164159999999994,
+        "mean": 1.0644727616883098,
+        "min": 0.709792,
+        "p50": 1.0019580000000001,
+        "p95": 1.523166,
+        "p99": 2.3156660000000002
+      },
+      "build_ms": {
+        "count": 1540,
+        "max": 2.4711659999999998,
+        "mean": 0.8226920701298714,
+        "min": 0.556625,
+        "p50": 0.788042,
+        "p95": 1.022875,
+        "p99": 1.8809580000000001
+      },
+      "acquire_ms": {
+        "count": 1540,
+        "max": 1000.711792,
+        "mean": 3.2731201279220783,
+        "min": 0.012,
+        "p50": 0.035333,
+        "p95": 10.433917,
+        "p99": 15.740625000000001
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 1492,
+        "max": 24.99974996317178,
+        "mean": 8.810796218751943,
+        "min": 8.3331250352785,
+        "p50": 8.333250065334141,
+        "p95": 12.499916716478765,
+        "p99": 16.666583251208067
+      },
+      "presentation_gap_events": 66,
+      "presentation_missed_refreshes_estimate": 237,
+      "presented_fps": 102.4667313034926,
+      "callback_dropped_refreshes": 316,
+      "missing_receipts": 0,
+      "not_presented": 5385,
+      "idle_after": {
+        "cpu_ms": 1.7009999999997305,
+        "cpu_percent": 0.033913195898207286,
+        "display_link_callbacks": 0,
+        "wait_s": 5.033423458
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 2672,
+      "images_per_frame": 44,
+      "strict_zero_drop_pass": false,
+      "rendered_callbacks": 1540,
+      "total_callbacks": 6882,
+      "skipped_render_callbacks": 5342,
+      "receipt_caveat": "Frozen harness repeats previous drawable serial on skipped render callbacks; not_presented is not a count of distinct drawables. Use rendered/skipped callbacks and raw frame flags."
+    },
+    {
+      "case": "cache-linear-24",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf-cache/cache-linear-24.json",
+      "seconds": 60.0,
+      "gpu_timing": false,
+      "sources": 8,
+      "animated_views": 24,
+      "mode": "Steady",
+      "linear_rotation": true,
+      "asset_work": {
+        "rasterizations": 0,
+        "texture_creations": 0,
+        "upload_bytes": 0,
+        "uploads": 0
+      },
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 10.091284748707071,
+      "cpu_peak_250ms_percent": 18.852103177234227,
+      "model_ms": {
+        "count": 7138,
+        "max": 0.025332999999999998,
+        "mean": 0.004670814934155257,
+        "p95": 0.01025,
+        "p99": 0.013708
+      },
+      "raster_upload_ms": {
+        "count": 7138,
+        "max": 0.08695900000000001,
+        "mean": 0.02313999705799938,
+        "p95": 0.041458,
+        "p99": 0.0505
+      },
+      "cpu_frame_ms": {
+        "count": 7138,
+        "max": 18.043,
+        "mean": 2.3645191994956574,
+        "min": 0.096667,
+        "p50": 0.31375000000000003,
+        "p95": 7.479667,
+        "p99": 9.194374999999999
+      },
+      "cpu_active_ms": {
+        "count": 7138,
+        "max": 0.991625,
+        "mean": 0.2822928562622583,
+        "min": 0.08704200000000001,
+        "p50": 0.236876,
+        "p95": 0.49145799999999995,
+        "p99": 0.6367090000000001
+      },
+      "build_ms": {
+        "count": 7138,
+        "max": 0.099666,
+        "mean": 0.029626016391145926,
+        "min": 0.011875,
+        "p50": 0.023416,
+        "p95": 0.054292,
+        "p99": 0.06625
+      },
+      "acquire_ms": {
+        "count": 7138,
+        "max": 17.80425,
+        "mean": 2.0822263432334016,
+        "min": 0.009625,
+        "p50": 0.043250000000000004,
+        "p95": 7.07,
+        "p99": 8.837583
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 7137,
+        "max": 20.833125105127692,
+        "mean": 8.40856387486823,
+        "min": 8.333083358593285,
+        "p50": 8.33324994891882,
+        "p95": 8.333333302289248,
+        "p99": 8.333375095389783
+      },
+      "presentation_gap_events": 64,
+      "presentation_missed_refreshes_estimate": 64,
+      "presented_fps": 118.92637255082644,
+      "callback_dropped_refreshes": 63,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 1.4479999999998938,
+        "cpu_percent": 0.02903264302241594,
+        "display_link_callbacks": 0,
+        "wait_s": 5.004703459
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 54,
+      "strict_zero_drop_pass": false,
+      "rendered_callbacks": 7138,
+      "total_callbacks": 7138,
+      "skipped_render_callbacks": 0,
+      "receipt_caveat": "Frozen harness repeats previous drawable serial on skipped render callbacks; not_presented is not a count of distinct drawables. Use rendered/skipped callbacks and raw frame flags."
+    }
+  ],
+  "measurement_context": "Shared desktop; external TekesKernel rustc and disk du observed. Not a randomized or quiet A/B. Original raw receipts preserved; strict zero-drop not passed."
+}

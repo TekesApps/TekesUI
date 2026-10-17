@@ -1,0 +1,1104 @@
+{
+  "cpu_unit": "100% = one logical CPU core, user+system",
+  "quiet_status": "Two preflights failed; shared-desktop runs and short boundary regressions are not quiet acceptance",
+  "source_changes_after_6f3bcfc3": [
+    "crates/tekes-ui-gallery/src/host.rs",
+    "crates/tekes-ui-gallery/src/perf.rs",
+    "crates/tekes-ui-platform-macos/src/selftest.rs"
+  ],
+  "rows": [
+    {
+      "case": "shared-cad-editor",
+      "purpose": "shared-desktop scrolling diagnostic",
+      "binary_sha256": "6f3bcfc32dee901fca1c9bb342ca10bfcbc7c7cab4fb1b0053ce6f8385f14c0f",
+      "seconds": 60.0,
+      "content": "editor",
+      "display_driver": "NSView CADisplayLink",
+      "completed": true,
+      "cpu_percent": 9.74427412850376,
+      "cpu_peak_250ms_percent": 12.985362206560163,
+      "cpu_frame_ms": {
+        "count": 7200,
+        "max": 5.07875,
+        "mean": 0.8477751845833321,
+        "min": 0.28600000000000003,
+        "p50": 0.913875,
+        "p95": 1.3575,
+        "p99": 4.580833999999999
+      },
+      "build_ms": {
+        "count": 7200,
+        "max": 0.353708,
+        "mean": 0.1558612209722224,
+        "min": 0.105917,
+        "p50": 0.13908299999999998,
+        "p95": 0.23566700000000002,
+        "p99": 0.2675
+      },
+      "acquire_ms": {
+        "count": 7200,
+        "max": 4.663917,
+        "mean": 0.460464945416666,
+        "min": 0.016292,
+        "p50": 0.553667,
+        "p95": 1.003167,
+        "p99": 4.195
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 7199,
+        "max": 16.666541690938175,
+        "mean": 8.335569674014742,
+        "min": 8.333041681908071,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "actual_gap_events": 2,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "callback_missed_refreshes": 2,
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            578602.2367114584,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "presentation_drain": null,
+      "idle_after": {
+        "cpu_ms": 1.1490000000007328,
+        "cpu_percent": 0.02310696416742982,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.007139167
+      },
+      "strict_rejection_reasons": [
+        "actual_presentation_gap_or_invalid_timeline",
+        "callback_missed_refreshes"
+      ],
+      "mechanical_gate_pass": false,
+      "quiet_120hz_acceptance_pass": false,
+      "ambient": {
+        "gate_passed": false,
+        "samples": 22,
+        "all_samples_below_cpu_limits": false,
+        "raw_local_sha256": "ac95892ad7c7a34b889e226431fb56cdad9d951c2ff269ecdee9da5a37b0e237",
+        "raw_local_path": "target/scroll-pages-retest/shared-cad-editor-ambient.json",
+        "external_cpu_mean": 257.9347670359379
+      },
+      "intentional_early_close_negative_test": false
+    },
+    {
+      "case": "shared-cad-icons",
+      "purpose": "shared-desktop scrolling diagnostic",
+      "binary_sha256": "6f3bcfc32dee901fca1c9bb342ca10bfcbc7c7cab4fb1b0053ce6f8385f14c0f",
+      "seconds": 60.0,
+      "content": "icons",
+      "display_driver": "NSView CADisplayLink",
+      "completed": true,
+      "cpu_percent": 10.153734320937817,
+      "cpu_peak_250ms_percent": 12.964814074370224,
+      "cpu_frame_ms": {
+        "count": 7200,
+        "max": 13.364875,
+        "mean": 3.627787458888887,
+        "min": 0.487917,
+        "p50": 4.79525,
+        "p95": 8.300584,
+        "p99": 8.552000000000001
+      },
+      "build_ms": {
+        "count": 7200,
+        "max": 1.175416,
+        "mean": 0.1718440597222214,
+        "min": 0.093,
+        "p50": 0.15437499999999998,
+        "p95": 0.252833,
+        "p99": 0.543375
+      },
+      "acquire_ms": {
+        "count": 7200,
+        "max": 12.768208,
+        "mean": 3.192452562916668,
+        "min": 0.036375000000000005,
+        "p50": 4.3685410000000005,
+        "p95": 7.918292,
+        "p99": 8.143457999999999
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 7199,
+        "max": 16.66650001425296,
+        "mean": 8.335569205216272,
+        "min": 8.333083358593285,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "actual_gap_events": 2,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "callback_missed_refreshes": 2,
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            578672.3610487084,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "presentation_drain": null,
+      "idle_after": {
+        "cpu_ms": 1.1140000000002814,
+        "cpu_percent": 0.022300006001949924,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.004479208
+      },
+      "strict_rejection_reasons": [
+        "actual_presentation_gap_or_invalid_timeline",
+        "callback_missed_refreshes",
+        "cpu_exceeds_frame_period_or_unknown"
+      ],
+      "mechanical_gate_pass": false,
+      "quiet_120hz_acceptance_pass": false,
+      "ambient": {
+        "gate_passed": false,
+        "samples": 22,
+        "all_samples_below_cpu_limits": false,
+        "raw_local_sha256": "680e2d02043279f516ccbcf5ab839c6beac45d433fb1a83db012fb475cf6071f",
+        "raw_local_path": "target/scroll-pages-retest/shared-cad-icons-ambient.json",
+        "external_cpu_mean": 257.21610626003917
+      },
+      "intentional_early_close_negative_test": false
+    },
+    {
+      "case": "shared-cad-scroll-area",
+      "purpose": "shared-desktop scrolling diagnostic",
+      "binary_sha256": "6f3bcfc32dee901fca1c9bb342ca10bfcbc7c7cab4fb1b0053ce6f8385f14c0f",
+      "seconds": 60.0,
+      "content": "scroll-area",
+      "display_driver": "NSView CADisplayLink",
+      "completed": true,
+      "cpu_percent": 9.947900182067606,
+      "cpu_peak_250ms_percent": 14.79561892914449,
+      "cpu_frame_ms": {
+        "count": 7199,
+        "max": 16.64425,
+        "mean": 2.9438769979163752,
+        "min": 0.26683399999999996,
+        "p50": 0.47354199999999996,
+        "p95": 8.504,
+        "p99": 8.732583
+      },
+      "build_ms": {
+        "count": 7199,
+        "max": 0.40908300000000003,
+        "mean": 0.14296206445339682,
+        "min": 0.10104099999999999,
+        "p50": 0.13366699999999998,
+        "p95": 0.212375,
+        "p99": 0.24729199999999998
+      },
+      "acquire_ms": {
+        "count": 7199,
+        "max": 16.273458,
+        "mean": 2.554281653146274,
+        "min": 0.012125,
+        "p50": 0.037708,
+        "p95": 8.162083,
+        "p99": 8.368834
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 7198,
+        "max": 16.666541690938175,
+        "mean": 8.337886148936132,
+        "min": 8.333083358593285,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "actual_gap_events": 4,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "callback_missed_refreshes": 3,
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            578529.3707286668,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "presentation_drain": null,
+      "idle_after": {
+        "cpu_ms": 1.154999999999795,
+        "cpu_percent": 0.023139884498409823,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.004341667
+      },
+      "strict_rejection_reasons": [
+        "actual_presentation_gap_or_invalid_timeline",
+        "callback_missed_refreshes",
+        "cpu_exceeds_frame_period_or_unknown"
+      ],
+      "mechanical_gate_pass": false,
+      "quiet_120hz_acceptance_pass": false,
+      "ambient": {
+        "gate_passed": false,
+        "samples": 23,
+        "all_samples_below_cpu_limits": false,
+        "raw_local_sha256": "4384cc2c6062df4bf83609144ea54ec9b281e301b41ee4f2123d82c32512f174",
+        "raw_local_path": "target/scroll-pages-retest/shared-cad-scroll-area-ambient.json",
+        "external_cpu_mean": 257.1798911312367
+      },
+      "intentional_early_close_negative_test": false
+    },
+    {
+      "case": "shared-metal-editor",
+      "purpose": "shared-desktop scrolling diagnostic",
+      "binary_sha256": "6f3bcfc32dee901fca1c9bb342ca10bfcbc7c7cab4fb1b0053ce6f8385f14c0f",
+      "seconds": 60.0,
+      "content": "editor",
+      "display_driver": "CAMetalDisplayLink",
+      "completed": true,
+      "cpu_percent": 9.489986828192551,
+      "cpu_peak_250ms_percent": 13.5780181995569,
+      "cpu_frame_ms": {
+        "count": 7201,
+        "max": 1.4137920000000002,
+        "mean": 0.3991349620885983,
+        "min": 0.230875,
+        "p50": 0.354583,
+        "p95": 0.67325,
+        "p99": 0.757667
+      },
+      "build_ms": {
+        "count": 7201,
+        "max": 0.403542,
+        "mean": 0.14707901277600374,
+        "min": 0.101167,
+        "p50": 0.126084,
+        "p95": 0.23,
+        "p99": 0.251709
+      },
+      "acquire_ms": {
+        "count": 7201,
+        "max": 0.050541,
+        "mean": 0.0108161842799611,
+        "min": 0.0026249999999999997,
+        "p50": 0.008417,
+        "p95": 0.021832999999999998,
+        "p99": 0.025667
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 7195,
+        "max": 24.999791639856994,
+        "mean": 8.339046189481234,
+        "min": 8.333083358593285,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "actual_gap_events": 4,
+      "not_presented": 5,
+      "missing_receipts": 0,
+      "callback_missed_refreshes": 1,
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            578819.8846398751,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "presentation_drain": null,
+      "idle_after": {
+        "cpu_ms": 1.4300000000000423,
+        "cpu_percent": 0.028634016537027386,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.004532834
+      },
+      "strict_rejection_reasons": [
+        "not_presented_or_unknown",
+        "actual_presentation_gap_or_invalid_timeline",
+        "callback_missed_refreshes"
+      ],
+      "mechanical_gate_pass": false,
+      "quiet_120hz_acceptance_pass": false,
+      "ambient": {
+        "gate_passed": false,
+        "samples": 22,
+        "all_samples_below_cpu_limits": false,
+        "raw_local_sha256": "1ec9862c22f7bd5a6020f159c8e5e869042527ebf853573484ed3638a02cc80d",
+        "raw_local_path": "target/scroll-pages-retest/shared-metal-editor-ambient.json",
+        "external_cpu_mean": 269.29693483408414
+      },
+      "intentional_early_close_negative_test": false
+    },
+    {
+      "case": "shared-metal-icons",
+      "purpose": "shared-desktop scrolling diagnostic",
+      "binary_sha256": "6f3bcfc32dee901fca1c9bb342ca10bfcbc7c7cab4fb1b0053ce6f8385f14c0f",
+      "seconds": 60.0,
+      "content": "icons",
+      "display_driver": "CAMetalDisplayLink",
+      "completed": true,
+      "cpu_percent": 13.938737381730796,
+      "cpu_peak_250ms_percent": 27.25180816823865,
+      "cpu_frame_ms": {
+        "count": 7183,
+        "max": 8.496,
+        "mean": 0.6475016338577194,
+        "min": 0.260375,
+        "p50": 0.537709,
+        "p95": 1.321292,
+        "p99": 1.9549590000000001
+      },
+      "build_ms": {
+        "count": 7183,
+        "max": 2.7817499999999997,
+        "mean": 0.20167243060002796,
+        "min": 0.093542,
+        "p50": 0.173041,
+        "p95": 0.373792,
+        "p99": 0.558375
+      },
+      "acquire_ms": {
+        "count": 7183,
+        "max": 1.327,
+        "mean": 0.014391152582486433,
+        "min": 0.003,
+        "p50": 0.010375,
+        "p95": 0.030583000000000003,
+        "p99": 0.043417000000000004
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 6883,
+        "max": 66.66608341038227,
+        "mean": 8.717046854568322,
+        "min": 8.333083358593285,
+        "p50": 8.333250065334141,
+        "p95": 8.33333341870457,
+        "p99": 16.666541690938175
+      },
+      "actual_gap_events": 305,
+      "not_presented": 299,
+      "missing_receipts": 0,
+      "callback_missed_refreshes": 18,
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            578890.1089816669,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "presentation_drain": null,
+      "idle_after": {
+        "cpu_ms": 1.2570000000007298,
+        "cpu_percent": 0.025159867073350748,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.007969834
+      },
+      "strict_rejection_reasons": [
+        "not_presented_or_unknown",
+        "actual_presentation_gap_or_invalid_timeline",
+        "actual_refresh_not_120hz",
+        "callback_missed_refreshes",
+        "cpu_exceeds_frame_period_or_unknown"
+      ],
+      "mechanical_gate_pass": false,
+      "quiet_120hz_acceptance_pass": false,
+      "ambient": {
+        "gate_passed": false,
+        "samples": 22,
+        "all_samples_below_cpu_limits": false,
+        "raw_local_sha256": "2ee1e3753401ec822e50abd27213e4737e9a34c2b5fe0a984d859e7bcb2bc3b7",
+        "raw_local_path": "target/scroll-pages-retest/shared-metal-icons-ambient.json",
+        "external_cpu_mean": 451.85943804259875
+      },
+      "intentional_early_close_negative_test": false
+    },
+    {
+      "case": "shared-metal-scroll-area",
+      "purpose": "shared-desktop scrolling diagnostic",
+      "binary_sha256": "6f3bcfc32dee901fca1c9bb342ca10bfcbc7c7cab4fb1b0053ce6f8385f14c0f",
+      "seconds": 60.0,
+      "content": "scroll-area",
+      "display_driver": "CAMetalDisplayLink",
+      "completed": true,
+      "cpu_percent": 10.81070197346705,
+      "cpu_peak_250ms_percent": 16.109967137050102,
+      "cpu_frame_ms": {
+        "count": 7200,
+        "max": 1.3983750000000001,
+        "mean": 0.45251462055555497,
+        "min": 0.269459,
+        "p50": 0.39475000000000005,
+        "p95": 0.73175,
+        "p99": 0.83975
+      },
+      "build_ms": {
+        "count": 7200,
+        "max": 0.49275,
+        "mean": 0.1596134140277779,
+        "min": 0.112334,
+        "p50": 0.136125,
+        "p95": 0.241666,
+        "p99": 0.274417
+      },
+      "acquire_ms": {
+        "count": 7200,
+        "max": 0.050167,
+        "mean": 0.011882320833333295,
+        "min": 0.004292,
+        "p50": 0.009333000000000001,
+        "p95": 0.023083,
+        "p99": 0.027792
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 7192,
+        "max": 24.999833316542208,
+        "mean": 8.342522855257451,
+        "min": 8.333041681908071,
+        "p50": 8.33324994891882,
+        "p95": 8.333291742019355,
+        "p99": 8.33333341870457
+      },
+      "actual_gap_events": 7,
+      "not_presented": 7,
+      "missing_receipts": 0,
+      "callback_missed_refreshes": 2,
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            578749.6936459586,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "presentation_drain": null,
+      "idle_after": {
+        "cpu_ms": 1.2970000000001036,
+        "cpu_percent": 0.025962813680064138,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.007156792
+      },
+      "strict_rejection_reasons": [
+        "not_presented_or_unknown",
+        "actual_presentation_gap_or_invalid_timeline",
+        "callback_missed_refreshes"
+      ],
+      "mechanical_gate_pass": false,
+      "quiet_120hz_acceptance_pass": false,
+      "ambient": {
+        "gate_passed": false,
+        "samples": 22,
+        "all_samples_below_cpu_limits": false,
+        "raw_local_sha256": "dbbd0fbb355dd1a6213c31cbac346b25ca5737d477f5716c09af89f596101b19",
+        "raw_local_path": "target/scroll-pages-retest/shared-metal-scroll-area-ambient.json",
+        "external_cpu_mean": 305.0604529676659
+      },
+      "intentional_early_close_negative_test": false
+    },
+    {
+      "case": "drain-cad-linear-2s",
+      "purpose": "native measurement-boundary regression",
+      "binary_sha256": "0763d8d034ed4e2a83b437a0df52ea067194298870a8db85b8566e73fe31a57c",
+      "seconds": 2.0,
+      "content": "symbols",
+      "display_driver": "NSView CADisplayLink",
+      "completed": true,
+      "cpu_percent": 7.356564428306391,
+      "cpu_peak_250ms_percent": 7.4909327536682975,
+      "cpu_frame_ms": {
+        "count": 242,
+        "max": 0.7995829999999999,
+        "mean": 0.30728753305785117,
+        "min": 0.12079200000000001,
+        "p50": 0.287667,
+        "p95": 0.578958,
+        "p99": 0.769208
+      },
+      "build_ms": {
+        "count": 242,
+        "max": 0.054875,
+        "mean": 0.021705243801652885,
+        "min": 0.012374999999999999,
+        "p50": 0.019625,
+        "p95": 0.042416,
+        "p99": 0.050167
+      },
+      "acquire_ms": {
+        "count": 242,
+        "max": 0.5510419999999999,
+        "mean": 0.10855822727272729,
+        "min": 0.012459000000000001,
+        "p50": 0.08237499999999999,
+        "p95": 0.33995800000000004,
+        "p99": 0.547459
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 241,
+        "max": 8.33333341870457,
+        "mean": 8.333254322463732,
+        "min": 8.333166595548391,
+        "p50": 8.33324994891882,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "actual_gap_events": 0,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "callback_missed_refreshes": 0,
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            579460.7285817502,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "presentation_drain": {
+        "expected_unique_serials": 242,
+        "finished": true,
+        "received": 242,
+        "timed_out": false,
+        "timeout_ms": 500.0,
+        "unpresented": 0,
+        "wait_ms": 32.978667
+      },
+      "idle_after": {
+        "cpu_ms": 1.6119999999999468,
+        "cpu_percent": 0.03226520842575296,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.005386667
+      },
+      "strict_rejection_reasons": [],
+      "mechanical_gate_pass": true,
+      "quiet_120hz_acceptance_pass": false,
+      "ambient": null,
+      "intentional_early_close_negative_test": false
+    },
+    {
+      "case": "drain-metal-early-close-2s",
+      "purpose": "native measurement-boundary regression",
+      "binary_sha256": "0d19db7609ef9ad29e4ab9aafc0a30a1d5901d28d52a85438c234e17306be3c4",
+      "seconds": 2.0,
+      "content": "symbols",
+      "display_driver": "CAMetalDisplayLink",
+      "completed": false,
+      "cpu_percent": 9.422892680318078,
+      "cpu_peak_250ms_percent": 12.47160170653675,
+      "cpu_frame_ms": {
+        "count": 241,
+        "max": 0.833,
+        "mean": 0.33031740248962654,
+        "min": 0.17425000000000002,
+        "p50": 0.27108299999999996,
+        "p95": 0.5512079999999999,
+        "p99": 0.721167
+      },
+      "build_ms": {
+        "count": 241,
+        "max": 0.074583,
+        "mean": 0.03361187966804979,
+        "min": 0.017708,
+        "p50": 0.029167000000000002,
+        "p95": 0.056833,
+        "p99": 0.063667
+      },
+      "acquire_ms": {
+        "count": 241,
+        "max": 0.030667000000000003,
+        "mean": 0.014011199170124486,
+        "min": 0.006084,
+        "p50": 0.011208000000000001,
+        "p95": 0.024666999999999998,
+        "p99": 0.0295
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 240,
+        "max": 8.333374978974462,
+        "mean": 8.333253992896061,
+        "min": 8.333166595548391,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "actual_gap_events": 0,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "callback_missed_refreshes": 0,
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            579946.3614322918,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "presentation_drain": {
+        "expected_unique_serials": 241,
+        "finished": true,
+        "received": 241,
+        "timed_out": false,
+        "timeout_ms": 500.0,
+        "timer_only_diagnostic": false,
+        "unpresented": 0,
+        "wait_ms": 49.753167
+      },
+      "idle_after": {
+        "cpu_ms": 0.6599999999999939,
+        "cpu_percent": 0.085582804307009,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 0.775851375
+      },
+      "strict_rejection_reasons": [
+        "incomplete",
+        "idle_observation_short_or_unknown"
+      ],
+      "mechanical_gate_pass": false,
+      "quiet_120hz_acceptance_pass": false,
+      "ambient": null,
+      "intentional_early_close_negative_test": true
+    },
+    {
+      "case": "drain-metal-final-normal-2s",
+      "purpose": "native measurement-boundary regression",
+      "binary_sha256": "0d19db7609ef9ad29e4ab9aafc0a30a1d5901d28d52a85438c234e17306be3c4",
+      "seconds": 2.0,
+      "content": "symbols",
+      "display_driver": "CAMetalDisplayLink",
+      "completed": true,
+      "cpu_percent": 6.832288869872534,
+      "cpu_peak_250ms_percent": 7.348165016146963,
+      "cpu_frame_ms": {
+        "count": 242,
+        "max": 0.507084,
+        "mean": 0.2312644669421488,
+        "min": 0.119416,
+        "p50": 0.18812500000000001,
+        "p95": 0.42804200000000003,
+        "p99": 0.472125
+      },
+      "build_ms": {
+        "count": 242,
+        "max": 0.059333000000000004,
+        "mean": 0.024093181818181795,
+        "min": 0.011833,
+        "p50": 0.019042000000000003,
+        "p95": 0.047125,
+        "p99": 0.054333000000000006
+      },
+      "acquire_ms": {
+        "count": 242,
+        "max": 0.029792,
+        "mean": 0.00907440082644628,
+        "min": 0.002791,
+        "p50": 0.006667,
+        "p95": 0.020999999999999998,
+        "p99": 0.023417
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 241,
+        "max": 8.33333341870457,
+        "mean": 8.333254149531427,
+        "min": 8.333166595548391,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "actual_gap_events": 0,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "callback_missed_refreshes": 0,
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            579973.3195115002,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "presentation_drain": {
+        "expected_unique_serials": 242,
+        "finished": true,
+        "received": 242,
+        "timed_out": false,
+        "timeout_ms": 500.0,
+        "timer_only_diagnostic": false,
+        "unpresented": 0,
+        "wait_ms": 49.802916
+      },
+      "idle_after": {
+        "cpu_ms": 1.603000000000021,
+        "cpu_percent": 0.03209246621871262,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.0105155
+      },
+      "strict_rejection_reasons": [],
+      "mechanical_gate_pass": true,
+      "quiet_120hz_acceptance_pass": false,
+      "ambient": null,
+      "intentional_early_close_negative_test": false
+    },
+    {
+      "case": "drain-metal-linear-20s",
+      "purpose": "native measurement-boundary regression",
+      "binary_sha256": "df21b248b87d8ea940c94d5ef4405932f6f6cafcb75b863c34d701b585bf1ced",
+      "seconds": 20.0,
+      "content": "symbols",
+      "display_driver": "CAMetalDisplayLink",
+      "completed": true,
+      "cpu_percent": 9.570407656404933,
+      "cpu_peak_250ms_percent": 12.772937832214378,
+      "cpu_frame_ms": {
+        "count": 2402,
+        "max": 0.981916,
+        "mean": 0.31545518734387995,
+        "min": 0.134417,
+        "p50": 0.25925,
+        "p95": 0.542875,
+        "p99": 0.624125
+      },
+      "build_ms": {
+        "count": 2402,
+        "max": 0.096834,
+        "mean": 0.032110512489592014,
+        "min": 0.0155,
+        "p50": 0.02375,
+        "p95": 0.05625,
+        "p99": 0.0635
+      },
+      "acquire_ms": {
+        "count": 2402,
+        "max": 0.083,
+        "mean": 0.014246090341382156,
+        "min": 0.004417,
+        "p50": 0.010832999999999999,
+        "p95": 0.025625,
+        "p99": 0.037666000000000005
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 2401,
+        "max": 8.333375095389783,
+        "mean": 8.333253175722685,
+        "min": 8.333083358593285,
+        "p50": 8.333250065334141,
+        "p95": 8.333291742019355,
+        "p99": 8.33333341870457
+      },
+      "actual_gap_events": 0,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "callback_missed_refreshes": 0,
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            579614.0812702501,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "presentation_drain": {
+        "expected_unique_serials": 2402,
+        "finished": true,
+        "received": 2402,
+        "timed_out": false,
+        "timeout_ms": 500.0,
+        "timer_only_diagnostic": false,
+        "unpresented": 0,
+        "wait_ms": 49.779208
+      },
+      "idle_after": {
+        "cpu_ms": 1.1969999999998926,
+        "cpu_percent": 0.023991565992505827,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.00592025
+      },
+      "strict_rejection_reasons": [],
+      "mechanical_gate_pass": true,
+      "quiet_120hz_acceptance_pass": false,
+      "ambient": null,
+      "intentional_early_close_negative_test": false
+    },
+    {
+      "case": "drain-metal-linear-2s",
+      "purpose": "native measurement-boundary regression",
+      "binary_sha256": "0763d8d034ed4e2a83b437a0df52ea067194298870a8db85b8566e73fe31a57c",
+      "seconds": 2.0,
+      "content": "symbols",
+      "display_driver": "CAMetalDisplayLink",
+      "completed": true,
+      "cpu_percent": 8.505115271758314,
+      "cpu_peak_250ms_percent": 9.055336716530341,
+      "cpu_frame_ms": {
+        "count": 242,
+        "max": 0.627333,
+        "mean": 0.28657061570247927,
+        "min": 0.17049999999999998,
+        "p50": 0.234125,
+        "p95": 0.487125,
+        "p99": 0.5283749999999999
+      },
+      "build_ms": {
+        "count": 242,
+        "max": 0.06925,
+        "mean": 0.030877776859504144,
+        "min": 0.017959,
+        "p50": 0.022500000000000003,
+        "p95": 0.056459,
+        "p99": 0.06212500000000001
+      },
+      "acquire_ms": {
+        "count": 242,
+        "max": 0.043207999999999996,
+        "mean": 0.01299532231404959,
+        "min": 0.005458,
+        "p50": 0.009542,
+        "p95": 0.026083000000000002,
+        "p99": 0.032541
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 241,
+        "max": 8.333374978974462,
+        "mean": 8.333254840777592,
+        "min": 8.333124918863177,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "actual_gap_events": 0,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "callback_missed_refreshes": 0,
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            579416.1040047918,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "presentation_drain": {
+        "expected_unique_serials": 242,
+        "finished": true,
+        "received": 242,
+        "timed_out": false,
+        "timeout_ms": 500.0,
+        "unpresented": 0,
+        "wait_ms": 49.80520799999999
+      },
+      "idle_after": {
+        "cpu_ms": 1.2399999999999078,
+        "cpu_percent": 0.02479346596686916,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.0093795
+      },
+      "strict_rejection_reasons": [],
+      "mechanical_gate_pass": true,
+      "quiet_120hz_acceptance_pass": false,
+      "ambient": null,
+      "intentional_early_close_negative_test": false
+    },
+    {
+      "case": "drain-metal-timer-only-2s",
+      "purpose": "native measurement-boundary regression",
+      "binary_sha256": "df21b248b87d8ea940c94d5ef4405932f6f6cafcb75b863c34d701b585bf1ced",
+      "seconds": 2.0,
+      "content": "symbols",
+      "display_driver": "CAMetalDisplayLink",
+      "completed": true,
+      "cpu_percent": 8.707874836996542,
+      "cpu_peak_250ms_percent": 9.166334967135098,
+      "cpu_frame_ms": {
+        "count": 242,
+        "max": 0.6249170000000001,
+        "mean": 0.29049637190082644,
+        "min": 0.165916,
+        "p50": 0.23991600000000002,
+        "p95": 0.4975,
+        "p99": 0.573542
+      },
+      "build_ms": {
+        "count": 242,
+        "max": 0.078708,
+        "mean": 0.031196090909090902,
+        "min": 0.016708,
+        "p50": 0.022792,
+        "p95": 0.05425,
+        "p99": 0.070417
+      },
+      "acquire_ms": {
+        "count": 242,
+        "max": 0.050040999999999995,
+        "mean": 0.013590330578512404,
+        "min": 0.005667,
+        "p50": 0.010541,
+        "p95": 0.023875,
+        "p99": 0.029791
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 241,
+        "max": 8.333374978974462,
+        "mean": 8.333253457802213,
+        "min": 8.333166595548391,
+        "p50": 8.33324994891882,
+        "p95": 8.333291742019355,
+        "p99": 8.33333341870457
+      },
+      "actual_gap_events": 0,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "callback_missed_refreshes": 0,
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            579583.1148995002,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "presentation_drain": {
+        "expected_unique_serials": 242,
+        "finished": true,
+        "received": 242,
+        "timed_out": false,
+        "timeout_ms": 500.0,
+        "timer_only_diagnostic": true,
+        "unpresented": 0,
+        "wait_ms": 505.49504099999996
+      },
+      "idle_after": {
+        "cpu_ms": 1.7580000000000373,
+        "cpu_percent": 0.03518956076063453,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.010001625
+      },
+      "strict_rejection_reasons": [
+        "drain_timer_only_diagnostic"
+      ],
+      "mechanical_gate_pass": false,
+      "quiet_120hz_acceptance_pass": false,
+      "ambient": null,
+      "intentional_early_close_negative_test": false
+    }
+  ],
+  "raw_sha256": {
+    "raw/shared-cad-editor.json.gz": "77c1f62f326f84c846c1f48619c537ae62782bfbf8d32b7680503d6be143bce2",
+    "raw/shared-cad-editor.log.gz": "e0cfc972081ba383069ac0a0392ecd0363ee1075bbcb219fa81afef4931bccfa",
+    "raw/shared-cad-editor-run-sanitized.json": "f4919eaef2cfec60a466b605dd089ed4da632362be72730770ae55847a494c75",
+    "raw/shared-cad-icons.json.gz": "ed89d80fd0b8cda8a33b8fda50c7f3ef3cd99f7997f550606d539585fa31e8bc",
+    "raw/shared-cad-icons.log.gz": "cd31f7cdc02994cbea326e4511eb9775bf22e9092a6f07cee86457cf7947d908",
+    "raw/shared-cad-icons-run-sanitized.json": "80073a1c56b55e2d98a70ef7677417b7ff854839d4c3fdce38ce49e70da289b5",
+    "raw/shared-cad-scroll-area.json.gz": "1b3293c0767841243a25ea53a1d052635643891be4d8827c4ba27994f944f696",
+    "raw/shared-cad-scroll-area.log.gz": "60f5c32d68f8856563d0cdbb6fbf8f06b33538267abb0800d57df3cae6eb2137",
+    "raw/shared-cad-scroll-area-run-sanitized.json": "97bc59e74100ab019f156f60701917cd4fd4cd21c87a7d687dac181e7281b856",
+    "raw/shared-metal-editor.json.gz": "ec0224a1edff88c4f303984cf6096ca5001d7523d2df3972d22a527f851668fe",
+    "raw/shared-metal-editor.log.gz": "3604ea4c98e2cab4d78e8091eca12063aa01fa823f169aaebefaf3ade83a644b",
+    "raw/shared-metal-editor-run-sanitized.json": "306619b563bc52f2be342d77af89852f5406e6fc875d7f4e25d1d8b86dc1f25c",
+    "raw/shared-metal-icons.json.gz": "31190abe2eb4859af4ff0237757867ddabda68118a9ae177691b5f16ac3c3621",
+    "raw/shared-metal-icons.log.gz": "6e37cac206401bba2a9743c217716d48349ab53fcb39cbaac9059df5a4bad8e3",
+    "raw/shared-metal-icons-run-sanitized.json": "c2bd7ba4690dfaf52da6173064658a260acf5ab3feef6bdd8ef24324e6f95e72",
+    "raw/shared-metal-scroll-area.json.gz": "a776ad5d838c8006a762d0a74cdd0ea5bc78d462506e9717bf67f05ea39bb1e4",
+    "raw/shared-metal-scroll-area.log.gz": "c8c90866cf1b7fb817f6518175c2f05782b77ae701680995c72db9f8684a763d",
+    "raw/shared-metal-scroll-area-run-sanitized.json": "ddd9422273ff27fcb5269f36734f582652f3e53053432afdadc01c62b69428d5",
+    "raw/drain-cad-linear-2s.json.gz": "d2bd847251845e7b56c10d6a5372793d4f2c0d1c1bb4b0e3436f349b9eb0612d",
+    "raw/drain-cad-linear-2s.log.gz": "578b4359ed5bf947b33b1f2d1d49e5701906da383396d185ca53bc6fcce1efe1",
+    "raw/drain-cad-linear-2s-run-sanitized.json": "887b957b1b5cfcba41d44e48b8b79836b54f5e840c8eca93a1ece1918dd52321",
+    "raw/drain-metal-early-close-2s.json.gz": "f0f4b4cb3befcb8837e2b8b5cc60a87211d40e2af3f05e21112a2c8e970eb318",
+    "raw/drain-metal-early-close-2s.log.gz": "1e3484d4244a8e44e1349d14d12d52bade251b56b2d2970bead7bef3bf00fd05",
+    "raw/drain-metal-early-close-2s-run-sanitized.json": "a1e16c29e0326570d27076d3c8ee9ff9bb5963241ac23c0d3a3dde8995d0d70e",
+    "raw/drain-metal-final-normal-2s.json.gz": "ec59a3fd9eb4c5c01a2044fdf57ff78d081bfb53f035220ed9e6a21ee1c6d049",
+    "raw/drain-metal-final-normal-2s.log.gz": "6b8df7f4d35a03a46a6438f78b1df675d2139e192f0f9cb676d867bbdc0e0ac7",
+    "raw/drain-metal-final-normal-2s-run-sanitized.json": "8c067d47aaf767286eb6ffe8553398e1c42b5b42afdfe255c7b3274969e26ac0",
+    "raw/drain-metal-linear-20s.json.gz": "b3cc0f1c230f6d2f30edb19779421f70e921ffe1ba199461b4713bdb935bc9cc",
+    "raw/drain-metal-linear-20s.log.gz": "ceb63d067057b41dfa20f9c474930019fa4097401deaac2a0be92c6de7cd1952",
+    "raw/drain-metal-linear-20s-run-sanitized.json": "2d2f8bf8af7dee88178f150bd5f51fe882a6ed01fc4e22a77f69ece1fdb59bb7",
+    "raw/drain-metal-linear-2s.json.gz": "8eb5dcd8ccf6c806a1620c316385cf8a0448a006e02f6c389c712dc1a4dd3359",
+    "raw/drain-metal-linear-2s.log.gz": "f48feee6ba73499b52fc045ce28a6be434c59779c830d31f2ab29ea309a2ac9b",
+    "raw/drain-metal-linear-2s-run-sanitized.json": "bdf3554423cb3fd3c9688b1858b829bfb6a2c09e8e49af5066d23424d4fa2d37",
+    "raw/drain-metal-timer-only-2s.json.gz": "5a83e695518c7bef81e43678a8d470e058afab4229075627ce97103ddc32c762",
+    "raw/drain-metal-timer-only-2s.log.gz": "d2db0c684f2d593dccd54ea70cd42ec1b021d3b540864bd1a6f0e7f8911056ea",
+    "raw/drain-metal-timer-only-2s-run-sanitized.json": "cb797f72321e3436dda85401f1565e1baba2bce09e9dd8cd6d2515d48364be2d"
+  },
+  "check_log_sha256": {
+    "drain-tests.log": "ce7c9c1a28ab057f9f7c182a610d18e646955c0dbaae0610df882ee2210e7eae",
+    "drain-build.log": "a4c1235b86a069922f29abbcfef79ff084f4a5c40c1ad285f284f92e2cb360c1",
+    "drain-clippy.log": "7734c17b8711a57a26d63d0ae30e728d63a9a158a894aa169948b789ec67a3af",
+    "drain-full-tests.log": "cf31aa53e87312b04abf614cbe97e28a7aedaf43bf606e4e2a107eee296a8651",
+    "drain-platform-tests.log": "ec114b75a978e65d03ea0524c1d09d3f5d47dd12c21e126eca15df942a3ff1e2"
+  }
+}

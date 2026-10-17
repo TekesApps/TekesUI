@@ -1,0 +1,104 @@
+[
+  {
+    "check": "tests-final",
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "tekes-ui-controls",
+      "-p",
+      "tekes-ui-gallery",
+      "-p",
+      "tekes-ui-motion",
+      "--release",
+      "--locked"
+    ],
+    "exit": 0,
+    "seconds": 19.93
+  },
+  {
+    "check": "clippy-final",
+    "command": [
+      "cargo",
+      "clippy",
+      "-p",
+      "tekes-ui-controls",
+      "-p",
+      "tekes-ui-gallery",
+      "-p",
+      "tekes-ui-motion",
+      "--all-targets",
+      "--release",
+      "--locked",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit": 0,
+    "seconds": 1.78
+  },
+  {
+    "check": "fmt-final",
+    "command": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "exit": 0,
+    "seconds": 0.37
+  },
+  {
+    "check": "build-final",
+    "command": [
+      "cargo",
+      "build",
+      "-p",
+      "tekes-ui-gallery",
+      "--release",
+      "--locked"
+    ],
+    "exit": 0,
+    "seconds": 5.22
+  },
+  {
+    "check": "package-final",
+    "command": [
+      "python3",
+      "scripts/package-gallery.py",
+      "--binary",
+      "target/presentation-repair-20261016/build/release/tekes-ui-gallery"
+    ],
+    "exit": 0,
+    "seconds": 3.16
+  },
+  {
+    "check": "pure-rust-final",
+    "command": [
+      "python3",
+      "scripts/check-pure-rust.py"
+    ],
+    "exit": 0,
+    "seconds": 0.29
+  },
+  {
+    "check": "design-system-final",
+    "command": [
+      "target/design-check-venv/bin/python",
+      "scripts/check-design-system.py"
+    ],
+    "exit": 0,
+    "seconds": 0.36
+  },
+  {
+    "check": "diff-final",
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit": 0,
+    "seconds": 0.07
+  }
+]

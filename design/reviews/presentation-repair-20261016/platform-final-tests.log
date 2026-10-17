@@ -1,0 +1,38 @@
+   Compiling objc2 v0.6.5
+   Compiling libc v0.2.190
+   Compiling serde_core v1.0.229
+   Compiling objc2-core-foundation v0.3.2
+   Compiling block2 v0.6.2
+   Compiling serde_json v1.0.154
+   Compiling objc2-foundation v0.3.2
+   Compiling objc2-core-graphics v0.3.2
+   Compiling objc2-metal v0.3.2
+   Compiling objc2-quartz-core v0.3.2
+   Compiling objc2-app-kit v0.3.2
+   Compiling tekes-ui-platform-macos v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-platform-macos)
+    Finished `release` profile [optimized] target(s) in 10.53s
+     Running unittests src/lib.rs (target/presentation-repair-20261016/build/release/deps/tekes_ui_platform_macos-fd61dc06db462dca)
+
+running 19 tests
+test event::tests::drawable_size_rounds_and_clamps ... ok
+test event::tests::modifiers_roundtrip ... ok
+test event::tests::button_numbers ... ok
+test event::tests::modifiers_ignore_unknown_bits ... ok
+test event::tests::modifier_bits_match_appkit ... ok
+test event::tests::animation_frame_interval_is_sanitized ... ok
+test event::tests::scroll_phase_passthrough ... ok
+test menu::tests::commands_skip_separators ... ok
+test menu::tests::empty_titles_rejected ... ok
+test menu::tests::duplicate_command_rejected ... ok
+test menu::tests::key_equivalent_is_lowercase ... ok
+test menu::tests::validate_ok ... ok
+test placement::tests::auto_120hz_goes_builtin_right_half ... ok
+test placement::tests::auto_prefers_external ... ok
+test placement::tests::auto_without_external_is_right_half_unless_size_check ... ok
+test placement::tests::env_values ... ok
+test placement::tests::explicit_choices_and_fallbacks ... ok
+test placement::tests::origin_center_and_right_half ... ok
+test placement::tests::origin_clamps_big_windows ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -1,0 +1,128 @@
+{
+  "scope": "Production Button ownership and real Gallery consumers; Motion layout and text clipping. No new component or Design System change.",
+  "tests": {
+    "gallery": {
+      "status": "passed",
+      "passed": 207,
+      "ignored": 1,
+      "ignored_reason": "optional full local icon corpus requires explicit directory"
+    },
+    "controls": {
+      "status": "passed",
+      "passed": 58
+    },
+    "release_build": "passed",
+    "clippy_all_targets_D_warnings": "passed",
+    "cargo_fmt_all_check": "passed",
+    "pure_rust_boundary": "passed",
+    "design_system_check": "passed",
+    "historical_golden": "passed as part of Gallery tests"
+  },
+  "design_authority": {
+    "unchanged": true,
+    "sha256": {
+      "design/system.json": "807c605a3eac5f831e10c789e90acc5451836187a7171ac9b5cec45d626984cb",
+      "design/source/layout.json": "ed3da7a0f36d674f7e9afb03fa6eab58ea969579889ff4f9b943b6b8107037d0",
+      "design/source/base.tokens.json": "6f5893cdf91db3b3cba9cf9f1c781f61754100c5661334f382849e1606634217",
+      "design/tokens.json": "3abea67b9cdbe2c25adec5babb2ad501078d703b628ae0d8596f6815d8f2ed38",
+      "design/brand/policy.json": "8ab0d7c6c9605a72ace5af335cf90ffa8abe3243534ac9c4ca68f3fc39bf488c"
+    }
+  },
+  "headless_motion": {
+    "status": "passed",
+    "cases": 192,
+    "scope": "4 themes x 2 locales x 3 widths x 2 text scales x 4 initial catalogs; real Gallery renderer and production Button. Not all animation phases.",
+    "geometry_errors": 0,
+    "raw_output": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/button-encapsulation-20261016/motion-snapshots-final"
+  },
+  "native_motion_final": {
+    "exit": 0,
+    "seconds": 22.29,
+    "captures": 24,
+    "binary_sha256": "80154c2313c55cbb95e5469c5834d186c01dea768c44cca704ebd832e51d1262",
+    "explicit_env": {
+      "TEKESUI_WINDOW_PLACEMENT": "external",
+      "TEKES_LOG_EVENTS": "1",
+      "TEKES_METAL_DISPLAY_LINK": "0",
+      "TEKES_SELFTEST": "motion-layout",
+      "TEKES_SELFTEST_OUT": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/button-encapsulation-20261016/native-motion-final"
+    },
+    "display": "U2790B external; scale2;30Hz",
+    "capture_successes": 24,
+    "script_scope": "Wide100% catalog/target interactions; separate720/800 EN/Zh125/150 top/bottom and calibration selectors"
+  },
+  "native_workbench_checkpoint": {
+    "status": "passed on rerun",
+    "captures": 20,
+    "exit": 0,
+    "phase": "before final Motion clip and calibration-label fix; shared Button/Workbench implementation unchanged afterward",
+    "initial_failure": "First launch text=None marked=false, window was inactive; subsequent rerun passed. Activation race is an inference, not independently proven."
+  },
+  "native_extended_checkpoint": {
+    "status": "passed",
+    "captures": 34,
+    "exit": 0,
+    "phase": "before final Motion/calibration-only fixes"
+  },
+  "manually_reviewed_representatives": [
+    "motion-layout-initial.png",
+    "motion-layout-symbols-linear-rotation.png",
+    "motion-layout-design-system.png",
+    "motion-layout-target-expanded.png",
+    "motion-layout-720-en-150-top.png",
+    "motion-layout-720-en-150-bottom.png",
+    "motion-layout-720-zh-150-top.png",
+    "motion-layout-800-zh-125-bottom.png",
+    "motion-layout-calibration-width-selected.png",
+    "native-workbench/07-dialog-focus.png",
+    "native-workbench/11-large-text-narrow.png",
+    "launch-final.png"
+  ],
+  "manual_review_scope": "Representative images inspected; not a claim of reviewing every matrix pixel or every native frame. Earlier calibration-label overlap was found and repaired before final native run.",
+  "native_capture_sha256": {
+    "motion-layout-720-en-150-bottom.png": "a51f7b4cc6b20932fa2fe3f251a9a1e7f823923935d2279944112f5833c5c720",
+    "motion-layout-symbols-linear-rotation-hover.png": "8060dbdc2af2ae8a5224682f24e9aabf7bbef76f9eb14698727afde3dd0e862c",
+    "motion-layout-scroll-bottom.png": "15507134bdf500ada6e576be300a5dc37df3330fc5adcc5ff19726eb3034d76a",
+    "motion-layout-symbols-linear-rotation.png": "a2006f440e9760e5a20c7bf1408f206e24871a4c5af46197efd9b829fddf53b2",
+    "motion-layout-hover-preview-origin.png": "c2d03a511101814298c9f95fb200bade3e2d539ec82437984dec3c91a3c2a556",
+    "motion-layout-initial.png": "7c2d20cdc6ccce4ff6d64f7bce9358059470ec8274d1798ae09d717dad9372e4",
+    "motion-layout-800-en-125-bottom.png": "ca35c42a6e63b44d361879e48bd8a6dd052f2109897e87ca3eeab6de85b72b9f",
+    "motion-layout-target-collapsed.png": "01ff952fc272926eabfca30f54188c1a1c8cd46ef7b3d2c58314a2cffc8f3ca4",
+    "motion-layout-800-zh-125-top.png": "45794cc1f043663948860c03324b8a05419839527c8f4235b10addf2562b3816",
+    "motion-layout-target-expanded.png": "348cefb32fcc3c4d9afedb542952b3d4e9b9e9ebd6c99c33a0b2d3952f5eb5f8",
+    "motion-layout-scroll-top.png": "2b78a0432796b49cd4b224166583d550e5bf504f977c08bfa05fec4acbbe7e76",
+    "motion-layout-calibration-large-type.png": "1a51db93595c651b2cddfd88bb94856e59eef9713708ac9d9ba1da391d18c4e6",
+    "motion-layout-design-system.png": "4857614d6764857f8fdd3bcc30f2801cdd7cacbef6b69c1dc41a14bda7816cd8",
+    "motion-layout-800-zh-125-bottom.png": "b5c57e63381652304623f5deef614d1352e08f4f57cd5f401d3172aa2eda66fc",
+    "motion-layout-720-en-150-top.png": "2bc451fa8e0d9b6d79d7af2ed9a81182d59e1423ab21ab27bfe0b011d8121053",
+    "motion-layout-recipes-restored.png": "e917d820027d1a036c625c673900bde2c95cf8e7f5bbb3fe8a7f952a84292cf9",
+    "motion-layout-720-zh-150-bottom.png": "5e8a6b5b360e662472c098e1ca53b6f9a7764e39140bbbfd544a104a5ba49a0a",
+    "motion-layout-800-en-125-top.png": "38c2f0577f2fc130b7457ff7d29b7f17e019c7babcdd9b4fb145a5c385ba91d9",
+    "motion-layout-calibration-width-selected.png": "1d39c4bd02f1bd82aa08bfb1d9a4dbd7312aff0454546ca64185e91224732e07",
+    "motion-layout-target-hover.png": "efbde5cb65406cc0fba8f0234cf773ebc6a19d99830287082f20d5565074ed35",
+    "motion-layout-720-zh-150-top.png": "8245ebb65aab7691b2864da3ff4a3270cda1538b568e239b835793136388ea02",
+    "motion-layout-target-reversed.png": "20bf63bca02b69b1e2aa1bacb1ad0726bdadb26e564c218b3ce0ef1a29f8cbdd",
+    "motion-layout-calibration-fixture-selected.png": "9ed596620b1a65745332fe8a29ec98a86d18c71ed47bb7377bdaf3f90a8e5c53",
+    "motion-layout-catalog-click.png": "b04ebbd3a67dd4be22a60b6f0582fe3fc4c0e166a4624bcf09ffd742e845aafc"
+  },
+  "launch": {
+    "pid": 30725,
+    "window": 51650,
+    "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app/Contents/MacOS/TekesUI-Gallery",
+    "binary_sha256": "80154c2313c55cbb95e5469c5834d186c01dea768c44cca704ebd832e51d1262",
+    "page": "foundation-motion",
+    "explicit_env": {
+      "TEKESUI_WINDOW_PLACEMENT": "external",
+      "TEKESUI_GALLERY_PAGE": "foundation-motion",
+      "TEKES_LOG_EVENTS": "1",
+      "TEKES_METAL_DISPLAY_LINK": "0"
+    },
+    "start_new_session": true
+  },
+  "unverified": [
+    "Sustained120Hz/8.33ms and CPU target remain open performance acceptance",
+    "VoiceOver and physical IME sessions",
+    "General retained layout tree and multi-native-window orchestration; other components are not all fully encapsulated views"
+  ],
+  "git": "No commit, staging, push or release performed; prior WIP retained."
+}

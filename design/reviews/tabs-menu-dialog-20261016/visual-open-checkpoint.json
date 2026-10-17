@@ -1,0 +1,78 @@
+{
+  "captures": 40,
+  "pixel_identical": 32,
+  "changed": [
+    {
+      "file": "component-menu-playground-dark-increased-t100-1x.png",
+      "bbox": [
+        316,
+        334,
+        588,
+        370
+      ]
+    },
+    {
+      "file": "component-menu-playground-dark-increased-t100-2x.png",
+      "bbox": [
+        632,
+        668,
+        1176,
+        740
+      ]
+    },
+    {
+      "file": "component-menu-playground-dark-standard-t100-1x.png",
+      "bbox": [
+        316,
+        334,
+        588,
+        370
+      ]
+    },
+    {
+      "file": "component-menu-playground-dark-standard-t100-2x.png",
+      "bbox": [
+        632,
+        668,
+        1176,
+        740
+      ]
+    },
+    {
+      "file": "component-menu-playground-light-increased-t100-1x.png",
+      "bbox": [
+        316,
+        334,
+        588,
+        370
+      ]
+    },
+    {
+      "file": "component-menu-playground-light-increased-t100-2x.png",
+      "bbox": [
+        632,
+        668,
+        1176,
+        740
+      ]
+    },
+    {
+      "file": "component-menu-playground-light-standard-t100-1x.png",
+      "bbox": [
+        316,
+        334,
+        588,
+        370
+      ]
+    },
+    {
+      "file": "component-menu-playground-light-standard-t100-2x.png",
+      "bbox": [
+        632,
+        668,
+        1176,
+        740
+      ]
+    }
+  ]
+}

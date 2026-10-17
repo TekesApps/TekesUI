@@ -16,6 +16,7 @@ struct Instance {
     @location(0) rect: vec4<f32>,
     // x: 不透明度，yzw 保留。
     @location(1) params: vec4<f32>,
+    @location(2) uv: vec4<f32>,
 }
 
 struct VsOut {
@@ -27,14 +28,22 @@ struct VsOut {
 @vertex
 fn vs_main(@builtin(vertex_index) vi: u32, inst: Instance) -> VsOut {
     let corner = vec2<f32>(f32(vi & 1u), f32(vi >> 1u));
-    let pos_px = (inst.rect.xy + corner * inst.rect.zw) * globals.scale;
+    var position = inst.rect.xy + corner * inst.rect.zw;
+    // Preserve the legacy zero-angle pixel path exactly.
+    if inst.params.y != 0.0 {
+        let offset = (corner - vec2<f32>(0.5)) * inst.rect.zw;
+        let c = cos(inst.params.y);
+        let s = sin(inst.params.y);
+        position = inst.rect.xy + inst.rect.zw * 0.5 + vec2<f32>(c * offset.x - s * offset.y, s * offset.x + c * offset.y);
+    }
+    let pos_px = position * globals.scale;
     let ndc = vec2<f32>(
         pos_px.x / globals.viewport_px.x * 2.0 - 1.0,
         1.0 - pos_px.y / globals.viewport_px.y * 2.0,
     );
     var out: VsOut;
     out.position = vec4<f32>(ndc, 0.0, 1.0);
-    out.uv = corner;
+    out.uv = inst.uv.xy + corner * inst.uv.zw;
     out.opacity = inst.params.x;
     return out;
 }

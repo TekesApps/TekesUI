@@ -1,0 +1,41 @@
+{
+  "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Motion Preview.app/Contents/MacOS/TekesUI-Motion",
+  "binary_sha256": "6cb064da40ba2fe0882d31f25daece135fa7278ec8fec51a13e4ab092668f87d",
+  "sources": {
+    "crates/tekes-ui-icons/src/animation.rs": "ce1223acc6f0f285f0f77ff5b6284f6d00922b479e11f012dcbf11274ba1136f",
+    "crates/tekes-ui-icons/src/lib.rs": "2b4d843afe45d2e9f8a1832f79eb7e381537a93b0b8778744a2a453f47ad9680",
+    "crates/tekes-ui-gallery/src/gallery/symbol_assets.rs": "1fb0c18834fb2fa757e904ec04a255d401838e790d5abf3c78190fb533ab5bfb",
+    "crates/tekes-ui-gallery/src/gallery/motion_preview.rs": "745c6958e123242d98391cc0d955de4f0bd7fde41324a1a4e2c777edc59df16e",
+    "crates/tekes-ui-gallery/src/gallery/pages/motion.rs": "3886dd1a982d653d5ac29c7d5b9a3aed2696acc46d17a6c71fdc39775aa4b07a",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs": "1a547c777dba6233f70e00a09b62783256e7e67ae832ba243123fedb1cfc74e4",
+    "crates/tekes-ui-gallery/src/main.rs": "5d52f38674c947998b1700f70b15ef2e91e680bf6eb005ce6a5a6536c9bf8fd0",
+    "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "527444627e9d1406db98288aaf3fabe92a8aaa01365ef549960274175e975f89",
+    "crates/tekes-ui-render/src/image_pass.rs": "c04f830cc78f5d41ba98e8b63be34af33e7a07399c8624da8b2481b214e157f0",
+    "crates/tekes-ui-render/src/renderer.rs": "8259275028196976692e318aa04d6138d7d6772571f26cabae117948d534f83d"
+  },
+  "approved_svgs": {
+    "tekes-think.svg": "2469ed55708e9dbab091479fb96370011338230f0d16f4bbf6825fe118aef590",
+    "tekes-settings.svg": "2bc1ae68873e019174cb4c78ace1d5a3c32ad15573e87748e22d2ee85b813ce0",
+    "tekes-router.svg": "9f9fd657434f785e7a9924fa1a8e3081dd97b1abffda6a9ef0528a189e010495",
+    "tekes-goal-completed.svg": "13bbd3053b4af1cd0ea9f8dfde05b6c13a3d96567e9c0ba03830afa03ee4b947",
+    "tekes-provider.svg": "ba287fdc8903f525fcaf93229562cb6e3277c2909a111eb81d2e9ac9b1f76808",
+    "tekes-appearance.svg": "05e6d29820da9acade156d3bb8cefbb16ec1711ce96db1c5d44a71b5d66e3bf6",
+    "tekes-memory.svg": "41c0add7c8042c6142a4b54dceb3375ee1408ffdf1c5dac17583d085b8cb1775",
+    "tekes-new-goal.svg": "e3ff1f1e71e7a3cbbc4c0ffd333293025c1daf5bf88811cd63cf489c082eeef3"
+  },
+  "verification": {
+    "gallery_motion_tests": 26,
+    "image_update_gpu_tests": 1,
+    "rest_svg_pixel_parity": "8 icons x 4 themes x 2 scales exact",
+    "effect_rasterization": "8 icons x 14 effects",
+    "native_representatives": [
+      "breathe",
+      "pause/resume",
+      "mid-flight reverse",
+      "router DrawOn",
+      "goal MagicReplace",
+      "settings Wiggle"
+    ],
+    "performance_120hz": "not tested"
+  }
+}

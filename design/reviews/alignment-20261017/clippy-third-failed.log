@@ -1,0 +1,30 @@
+    Checking tekes-ui-gallery v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery)
+error: constant `ROW_STEP` is never used
+   --> crates/tekes-ui-gallery/src/gallery/pages/icons.rs:140:7
+    |
+140 | const ROW_STEP: f32 = 164.0;
+    |       ^^^^^^^^
+    |
+    = note: `-D dead-code` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[expect(dead_code)]` or `#[allow(dead_code)]`
+
+error: function `tile_rect` is never used
+   --> crates/tekes-ui-gallery/src/gallery/pages/icons.rs:163:4
+    |
+163 | fn tile_rect(content: Rect, index: usize) -> Rect {
+    |    ^^^^^^^^^
+
+error: function `extent` is never used
+   --> crates/tekes-ui-gallery/src/gallery/pages/icons.rs:208:8
+    |
+208 | pub fn extent(catalog: &IconCatalog, query: &str, width: f32) -> Size {
+    |        ^^^^^^
+
+error: function `visible_legacy` is never used
+   --> crates/tekes-ui-gallery/src/gallery/pages/icons.rs:224:8
+    |
+224 | pub fn visible_legacy(
+    |        ^^^^^^^^^^^^^^
+
+error: could not compile `tekes-ui-gallery` (bin "tekes-ui-gallery") due to 4 previous errors
+warning: build failed, waiting for other jobs to finish...

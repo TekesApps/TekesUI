@@ -1,0 +1,13 @@
+{
+  "pid": 62152,
+  "alive_at_capture": true,
+  "detached_session": true,
+  "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app/Contents/MacOS/TekesUI-Gallery",
+  "binary_sha256": "a4863249103abf125f34495d98db55a3a8401c56f5ffe538450b1c498685e18b",
+  "window": 50486,
+  "placement": [
+    "[   0.113] placement: \"U2790B\" builtin=false scale=2 max_fps=30\uff1bScreen(External)"
+  ],
+  "page": "foundation-motion",
+  "capture_exit": 0
+}

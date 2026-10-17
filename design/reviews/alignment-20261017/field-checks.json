@@ -1,0 +1,370 @@
+[
+  {
+    "id": "component-field-default-light-1x",
+    "phase": [
+      312.0,
+      464.0,
+      1104.0,
+      16.0
+    ],
+    "log": [
+      312.0,
+      820.0,
+      1104.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      194.0,
+      1104.0,
+      742.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-default-light-2x",
+    "phase": [
+      312.0,
+      464.0,
+      1104.0,
+      16.0
+    ],
+    "log": [
+      312.0,
+      820.0,
+      1104.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      194.0,
+      1104.0,
+      742.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-large-narrow-light-1x",
+    "phase": [
+      312.0,
+      564.0,
+      564.0,
+      24.0
+    ],
+    "log": [
+      312.0,
+      612.0,
+      564.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      290.0,
+      564.0,
+      406.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-large-narrow-light-2x",
+    "phase": [
+      312.0,
+      564.0,
+      564.0,
+      24.0
+    ],
+    "log": [
+      312.0,
+      612.0,
+      564.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      290.0,
+      564.0,
+      406.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-default-dark-1x",
+    "phase": [
+      312.0,
+      464.0,
+      1104.0,
+      16.0
+    ],
+    "log": [
+      312.0,
+      820.0,
+      1104.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      194.0,
+      1104.0,
+      742.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-default-dark-2x",
+    "phase": [
+      312.0,
+      464.0,
+      1104.0,
+      16.0
+    ],
+    "log": [
+      312.0,
+      820.0,
+      1104.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      194.0,
+      1104.0,
+      742.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-large-narrow-dark-1x",
+    "phase": [
+      312.0,
+      564.0,
+      564.0,
+      24.0
+    ],
+    "log": [
+      312.0,
+      612.0,
+      564.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      290.0,
+      564.0,
+      406.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-large-narrow-dark-2x",
+    "phase": [
+      312.0,
+      564.0,
+      564.0,
+      24.0
+    ],
+    "log": [
+      312.0,
+      612.0,
+      564.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      290.0,
+      564.0,
+      406.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-default-light-ic-1x",
+    "phase": [
+      312.0,
+      464.0,
+      1104.0,
+      16.0
+    ],
+    "log": [
+      312.0,
+      820.0,
+      1104.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      194.0,
+      1104.0,
+      742.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-default-light-ic-2x",
+    "phase": [
+      312.0,
+      464.0,
+      1104.0,
+      16.0
+    ],
+    "log": [
+      312.0,
+      820.0,
+      1104.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      194.0,
+      1104.0,
+      742.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-large-narrow-light-ic-1x",
+    "phase": [
+      312.0,
+      564.0,
+      564.0,
+      24.0
+    ],
+    "log": [
+      312.0,
+      612.0,
+      564.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      290.0,
+      564.0,
+      406.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-large-narrow-light-ic-2x",
+    "phase": [
+      312.0,
+      564.0,
+      564.0,
+      24.0
+    ],
+    "log": [
+      312.0,
+      612.0,
+      564.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      290.0,
+      564.0,
+      406.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-default-dark-ic-1x",
+    "phase": [
+      312.0,
+      464.0,
+      1104.0,
+      16.0
+    ],
+    "log": [
+      312.0,
+      820.0,
+      1104.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      194.0,
+      1104.0,
+      742.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-default-dark-ic-2x",
+    "phase": [
+      312.0,
+      464.0,
+      1104.0,
+      16.0
+    ],
+    "log": [
+      312.0,
+      820.0,
+      1104.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      194.0,
+      1104.0,
+      742.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-large-narrow-dark-ic-1x",
+    "phase": [
+      312.0,
+      564.0,
+      564.0,
+      24.0
+    ],
+    "log": [
+      312.0,
+      612.0,
+      564.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      290.0,
+      564.0,
+      406.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  },
+  {
+    "id": "component-field-large-narrow-dark-ic-2x",
+    "phase": [
+      312.0,
+      564.0,
+      564.0,
+      24.0
+    ],
+    "log": [
+      312.0,
+      612.0,
+      564.0,
+      22.0
+    ],
+    "preview": [
+      312.0,
+      290.0,
+      564.0,
+      406.0
+    ],
+    "nonoverlap": true,
+    "log_title_visible": true
+  }
+]

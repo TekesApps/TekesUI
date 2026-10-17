@@ -1,0 +1,13 @@
+{
+  "command": [
+    "target/TekesUI Gallery.app/Contents/MacOS/TekesUI-Gallery",
+    "--snapshot",
+    "target/selection-components-20261017/snapshot-final"
+  ],
+  "extra_env": {},
+  "exit": 0,
+  "png_count": 672,
+  "binary_sha256": "3af76ec6e6eebe3b0e808fa610302d924c1e2b88b8b12a532de3caee56657d78",
+  "seconds": 5.12,
+  "mode": "offscreen_no_native_window"
+}

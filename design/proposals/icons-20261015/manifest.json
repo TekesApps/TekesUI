@@ -1,0 +1,425 @@
+{
+  "format": "tekesui-icon-proposals/1",
+  "status": "review-candidates",
+  "style": {
+    "viewBox": "0 0 24 24",
+    "stroke": 1.5,
+    "caps": "round",
+    "color": "currentColor",
+    "preview_pt": [
+      12,
+      16,
+      24
+    ]
+  },
+  "items": [
+    {
+      "name": "tekes-zoom-in",
+      "label": "放大",
+      "group": "shared",
+      "usage": "三应用的内容缩放",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-zoom-out",
+      "label": "缩小",
+      "group": "shared",
+      "usage": "三应用的内容缩放",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-open-external",
+      "label": "外部打开",
+      "group": "shared",
+      "usage": "系统应用或外部链接",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-attach",
+      "label": "添加附件",
+      "group": "shared",
+      "usage": "文件和素材附加",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-filter",
+      "label": "筛选",
+      "group": "shared",
+      "usage": "列表筛选",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-sort",
+      "label": "排序",
+      "group": "shared",
+      "usage": "名称、时间或顺序排序",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-undo",
+      "label": "撤销",
+      "group": "shared",
+      "usage": "文档编辑撤销",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-redo",
+      "label": "重做",
+      "group": "shared",
+      "usage": "文档编辑重做",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-diff-annotation",
+      "label": "差异批注",
+      "group": "shared",
+      "usage": "差异审核和批注入口",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-file-link",
+      "label": "关联文件",
+      "group": "shared",
+      "usage": "关联已有文件",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-layers",
+      "label": "图层",
+      "group": "cad",
+      "usage": "显示、隐藏和组织图层",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-dimension",
+      "label": "尺寸标注",
+      "group": "cad",
+      "usage": "工程尺寸及人工审核",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-snap",
+      "label": "对象捕捉",
+      "group": "cad",
+      "usage": "端点、中点等几何捕捉",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-window-select",
+      "label": "窗口选择",
+      "group": "cad",
+      "usage": "左到右：完全包围实体",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-crossing-select",
+      "label": "交叉选择",
+      "group": "cad",
+      "usage": "右到左：框内及穿越实体",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-line",
+      "label": "直线",
+      "group": "cad",
+      "usage": "直线实体工具",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-polyline",
+      "label": "多段线",
+      "group": "cad",
+      "usage": "连接顶点的多段线",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-arc",
+      "label": "圆弧",
+      "group": "cad",
+      "usage": "圆弧实体工具",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-block",
+      "label": "块",
+      "group": "cad",
+      "usage": "块定义和实例",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-layout",
+      "label": "图纸布局",
+      "group": "cad",
+      "usage": "模型空间、图纸及视口",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-pdf-import",
+      "label": "PDF 导入",
+      "group": "cad",
+      "usage": "PDF 转换及来源关联",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-export",
+      "label": "CAD 导出",
+      "group": "cad",
+      "usage": "保存可交换绘图产物",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-compare",
+      "label": "图形对比",
+      "group": "cad",
+      "usage": "来源和转换结果几何对照",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-cad-table-extract",
+      "label": "提取表格",
+      "group": "cad",
+      "usage": "PDF 表格附件和 CSV 导出",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-brief",
+      "label": "创作简报",
+      "group": "drama",
+      "usage": "Brief 工作区",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-character",
+      "label": "角色",
+      "group": "drama",
+      "usage": "Characters 工作区及人物对象",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-script",
+      "label": "剧本",
+      "group": "drama",
+      "usage": "Script 工作区",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-directing",
+      "label": "导演",
+      "group": "drama",
+      "usage": "Directing 工作区",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-production",
+      "label": "制作",
+      "group": "drama",
+      "usage": "Production 工作区与拍摄组织",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-editing",
+      "label": "剪辑",
+      "group": "drama",
+      "usage": "Editing 工作区",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-delivery",
+      "label": "交付",
+      "group": "drama",
+      "usage": "Delivery 工作区",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-audience",
+      "label": "观众实验",
+      "group": "drama",
+      "usage": "Audience Lab 工作区",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-references",
+      "label": "参考资料",
+      "group": "drama",
+      "usage": "References 工作区",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-collaboration",
+      "label": "协作",
+      "group": "drama",
+      "usage": "Collaboration 工作区",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-shot",
+      "label": "镜头",
+      "group": "drama",
+      "usage": "分镜与镜头清单对象",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-storyboard",
+      "label": "分镜板",
+      "group": "drama",
+      "usage": "镜头图板及顺序",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-audio",
+      "label": "声音轨",
+      "group": "drama",
+      "usage": "对白、音效与配乐轨",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-drama-subtitles",
+      "label": "字幕",
+      "group": "drama",
+      "usage": "字幕及对白时间轴",
+      "kind": "new",
+      "reason": ""
+    },
+    {
+      "name": "tekes-settings",
+      "label": "设置",
+      "group": "refine",
+      "usage": "三应用统一设置入口",
+      "kind": "refine",
+      "reason": "旧稿同心圆加十字，容易被读为准星；改为明确的齿轮轮廓"
+    },
+    {
+      "name": "tekes-new-goal",
+      "label": "新增目标",
+      "group": "refine",
+      "usage": "创建目标",
+      "kind": "refine",
+      "reason": "旧稿没有显著的加号；将新增标记移到右下，主轮廓留出负空间"
+    },
+    {
+      "name": "tekes-goal-completed",
+      "label": "完成目标",
+      "group": "refine",
+      "usage": "目标完成状态",
+      "kind": "refine",
+      "reason": "去掉挤在内环中的小勾，让完成标记在12pt仍有明确轮廓"
+    },
+    {
+      "name": "tekes-memory",
+      "label": "记忆",
+      "group": "refine",
+      "usage": "长期记忆入口",
+      "kind": "refine",
+      "reason": "减少密集引脚并扩大内部负空间，保留芯片语义"
+    },
+    {
+      "name": "tekes-think",
+      "label": "思考",
+      "group": "refine",
+      "usage": "模型思考状态",
+      "kind": "refine",
+      "reason": "降低下垂尾部的视觉重心，减小底部小点对边界的挤压"
+    },
+    {
+      "name": "tekes-router",
+      "label": "路由",
+      "group": "refine",
+      "usage": "模型或任务路由",
+      "kind": "refine",
+      "reason": "从闭合三角节点改为一入两出的方向路径，避免读成分享"
+    },
+    {
+      "name": "tekes-provider",
+      "label": "服务商",
+      "group": "refine",
+      "usage": "Provider 设置与服务入口",
+      "kind": "refine",
+      "reason": "旧叠层形与CAD图层冲突；改用服务器抽屉，与图层明确区分"
+    },
+    {
+      "name": "tekes-appearance",
+      "label": "外观",
+      "group": "refine",
+      "usage": "浅色、深色和外观设置",
+      "kind": "refine",
+      "reason": "调色盘多圆点在小尺寸过密；用明确的明暗分区表达外观，而非绘图工具"
+    },
+    {
+      "name": "tekes-annotate",
+      "label": "批注",
+      "group": "rebuild",
+      "usage": "annotation 槽位的新独立稿",
+      "kind": "rebuild",
+      "reason": "替代已作废 annotation，使用新的文件加笔构形"
+    },
+    {
+      "name": "tekes-access-read",
+      "label": "只读权限",
+      "group": "rebuild",
+      "usage": "permissionReadOnly 新独立稿",
+      "kind": "rebuild",
+      "reason": "替代已作废只读原稿，用眼睛直指查看权限"
+    },
+    {
+      "name": "tekes-access-workspace",
+      "label": "工作区写入",
+      "group": "rebuild",
+      "usage": "permissionWorkspaceWrite 新独立稿",
+      "kind": "rebuild",
+      "reason": "替代已作废工作区原稿，文件夹范围加编辑动作"
+    },
+    {
+      "name": "tekes-access-full",
+      "label": "完整访问",
+      "group": "rebuild",
+      "usage": "permissionFullAccess 新独立稿",
+      "kind": "rebuild",
+      "reason": "替代已作废完整访问原稿，用盾牌内钥匙表达授权"
+    },
+    {
+      "name": "tekes-desktop-control",
+      "label": "电脑控制",
+      "group": "rebuild",
+      "usage": "Computer Use 新独立稿",
+      "kind": "rebuild",
+      "reason": "替代已作废电脑控制原稿，用显示器加指针表达桌面操作"
+    }
+  ]
+}

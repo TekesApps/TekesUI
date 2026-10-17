@@ -5,11 +5,12 @@
 //!   或因尺寸变化调 `setFrameSize:` 时才投递事件。
 //! - 尺寸变化在 `setFrameSize:` 里同步投递 `Resized` 和 `Redraw`，不等下一个显示周期。
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use objc2::rc::Retained;
-use objc2::{AllocAnyThread, DefinedClass, MainThreadOnly, define_class, msg_send, sel};
+use objc2::runtime::ProtocolObject;
+use objc2::{AllocAnyThread, DefinedClass, MainThreadOnly, Message, define_class, msg_send, sel};
 use objc2_app_kit::{
     NSEvent, NSTextInputClient, NSTrackingArea, NSTrackingAreaOptions, NSView,
     NSViewLayerContentsPlacement, NSViewLayerContentsRedrawPolicy,
@@ -20,7 +21,8 @@ use objc2_foundation::{
     NSObjectProtocol, NSRect, NSRunLoop, NSRunLoopCommonModes, NSSize,
 };
 use objc2_quartz_core::{
-    CACurrentMediaTime, CADisplayLink, CAFrameRateRange, CALayer, CAMetalLayer,
+    CACurrentMediaTime, CADisplayLink, CAFrameRateRange, CALayer, CAMetalDisplayLink,
+    CAMetalDisplayLinkDelegate, CAMetalDisplayLinkUpdate, CAMetalLayer,
 };
 
 use crate::event::{
@@ -37,6 +39,9 @@ pub(crate) struct ViewIvars {
     /// 按需创建的显示链接。创建后一直存在，不跑的时候是暂停状态（`isPaused`），
     /// 窗口关闭或应用结束时 invalidate（它强引用 target，也就是这个视图）。
     link: RefCell<Option<Retained<CADisplayLink>>>,
+    metal_link: RefCell<Option<Retained<CAMetalDisplayLink>>>,
+    metal_start_pending: Cell<bool>,
+    live_resizing: Cell<bool>,
 }
 
 define_class!(
@@ -108,7 +113,45 @@ define_class!(
         }
     }
 
+    // SAFETY: QuartzCore's exact public delegate ABI. The display link is added
+    // only to the main run loop; this MainThreadOnly view owns its weak delegate.
+    #[allow(non_snake_case)]
+    unsafe impl CAMetalDisplayLinkDelegate for TekesView {
+        #[unsafe(method(metalDisplayLink:needsUpdate:))]
+        fn metalDisplayLink_needsUpdate(&self, _link: &CAMetalDisplayLink, update: &CAMetalDisplayLinkUpdate) {
+            let callback_time = CACurrentMediaTime();
+            // A handler may stop/invalidate the link during this callback.
+            let _lifetime_guard = _link.retain();
+            let shared = &self.ivars().shared;
+            shared.link_callbacks.set(shared.link_callbacks.get() + 1);
+            let current = self.ivars().metal_link.borrow().clone();
+            if !current.as_ref().is_some_and(|link| std::ptr::eq(&**link, _link)) { return; }
+            if !shared.ready.get() || !shared.animating.get() || self.ivars().live_resizing.get() { return; }
+            shared.animation_frames.set(shared.animation_frames.get() + 1);
+            // Keep a missed callback from enlarging the nominal refresh budget.
+            let hz = self.window().and_then(|w| w.screen()).map_or(60, |s| s.maximumFramesPerSecond()).clamp(1, 120);
+            let interval = 1.0 / hz as f64;
+            let target = update.targetPresentationTimestamp();
+            let frame = AnimationFrame::new(target - interval, target, callback_time, interval)
+                .with_submission_deadline(update.targetTimestamp());
+            shared.dispatch_metal_frame(frame, self.metal_layer(), update.drawable());
+        }
+    }
+
     impl TekesView {
+        #[unsafe(method(tekesStartMetalLink))]
+        fn start_metal_link_deferred(&self) {
+            self.ivars().metal_start_pending.set(false);
+            let shared = &self.ivars().shared;
+            if !shared.closed.get() && shared.animating.get() && !self.ivars().live_resizing.get() {
+                if shared.can_dispatch_synchronously() {
+                    self.start_metal_link_now();
+                } else {
+                    self.schedule_metal_start();
+                }
+            }
+        }
+
         #[unsafe(method(tekesCaretBlink))]
         fn caret_blink(&self) {
             let active=self.ivars().shared.text_input.borrow().as_ref().is_some_and(|s|!s.read_only&&s.selection.is_empty());
@@ -153,7 +196,7 @@ define_class!(
 
         #[unsafe(method_id(makeBackingLayer))]
         fn make_backing_layer(&self) -> Retained<CALayer> {
-            let layer = CAMetalLayer::new();
+            let layer = crate::presentation::ObservedMetalLayer::new(self.ivars().shared.presentation.clone()).into_super();
             // 渲染层按 gamma 空间混合，与 AppKit 一致，所以层的色彩空间标成 sRGB，
             // 不让系统把显示器的色域再转换一次。
             let srgb = CGColorSpace::with_name(Some(unsafe { kCGColorSpaceSRGB }));
@@ -199,6 +242,9 @@ define_class!(
             let callback_time = CACurrentMediaTime();
             let shared = &self.ivars().shared;
             shared.link_callbacks.set(shared.link_callbacks.get() + 1);
+            // Pausing CAD may leave one callback queued. Outside live resize
+            // only the Metal delegate may drive this opt-in renderer.
+            if Self::uses_metal_display_link() && !self.ivars().live_resizing.get() { return; }
             if !shared.ready.get() || !shared.animating.get() {
                 return;
             }
@@ -248,6 +294,13 @@ define_class!(
         fn view_will_start_live_resize(&self) {
             // SAFETY: 调用父类实现，签名一致。
             let () = unsafe { msg_send![super(self), viewWillStartLiveResize] };
+            self.ivars().live_resizing.set(true);
+            if Self::uses_metal_display_link() {
+                self.stop_metal_link();
+                // CADisplayLink supplies timing without reserving drawables;
+                // keep animation moving while AppKit resizes/reconfigures.
+                if self.ivars().shared.animating.get() { self.set_display_link_running(true); }
+            }
             self.metal_layer().setPresentsWithTransaction(true);
         }
 
@@ -256,6 +309,10 @@ define_class!(
             // SAFETY: 调用父类实现，签名一致。
             let () = unsafe { msg_send![super(self), viewDidEndLiveResize] };
             self.metal_layer().setPresentsWithTransaction(false);
+            self.ivars().live_resizing.set(false);
+            if Self::uses_metal_display_link() && self.ivars().shared.animating.get() {
+                self.set_metal_display_link_running(true);
+            }
         }
 
         // ---- 外观 ----
@@ -351,6 +408,7 @@ define_class!(
         #[unsafe(method(scrollWheel:))]
         fn scroll_wheel(&self, e: &NSEvent) {
             let ev = ScrollEvent {
+                timestamp: e.timestamp(),
                 delta: Vec2 {
                     x: e.scrollingDeltaX(),
                     y: e.scrollingDeltaY(),
@@ -463,6 +521,9 @@ impl TekesView {
             layer: RefCell::new(None),
             tracking_area: RefCell::new(None),
             link: RefCell::new(None),
+            metal_link: RefCell::new(None),
+            metal_start_pending: Cell::new(false),
+            live_resizing: Cell::new(false),
         });
         // SAFETY: NSView 的指定初始化方法 initWithFrame: 签名正确。
         let view: Retained<TekesView> = unsafe { msg_send![super(this), initWithFrame: frame] };
@@ -498,6 +559,9 @@ impl TekesView {
     /// 帧率范围 60–120，首选 120，ProMotion 上给到 120Hz，只有 60Hz 的屏幕自然落到 60。
     /// 返回启动之后链接是否在跑（系统不支持时为 false）；暂停永远返回 false。
     pub(crate) fn set_display_link_running(&self, run: bool) -> bool {
+        if Self::uses_metal_display_link() && !self.ivars().live_resizing.get() {
+            return self.set_metal_display_link_running(run);
+        }
         let existing = self.ivars().link.borrow().clone();
         if !run {
             if let Some(link) = existing {
@@ -530,9 +594,93 @@ impl TekesView {
         true
     }
 
+    fn uses_metal_display_link() -> bool {
+        std::env::var("TEKES_METAL_DISPLAY_LINK").as_deref() == Ok("1")
+    }
+
+    /// CAMetalDisplayLink owns layer drawable-count configuration while alive.
+    /// wgpu reconfigures it on resize, so detach the link before that operation.
+    fn stop_metal_link(&self) {
+        let link = self.ivars().metal_link.borrow_mut().take();
+        if let Some(link) = link {
+            link.setPaused(true);
+            link.invalidate();
+            link.setDelegate(None);
+        }
+        self.ivars().shared.discard_metal_frames();
+        self.ivars()
+            .shared
+            .presentation
+            .metal_display_link
+            .store(false, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Opt-in diagnostic driver. The ordinary production driver is unchanged.
+    fn set_metal_display_link_running(&self, run: bool) -> bool {
+        let cad = self.ivars().link.borrow().clone();
+        if let Some(cad) = cad {
+            cad.setPaused(true);
+        }
+        let existing = self.ivars().metal_link.borrow().clone();
+        if !run {
+            self.stop_metal_link();
+            return false;
+        }
+        if self.ivars().live_resizing.get() {
+            return true;
+        }
+        if existing.as_ref().is_some_and(|link| !link.isPaused()) {
+            return true;
+        }
+        self.schedule_metal_start();
+        true
+    }
+
+    fn schedule_metal_start(&self) {
+        if !self.ivars().metal_start_pending.replace(true) {
+            // SAFETY: exact zero-argument selector on this main-thread view.
+            unsafe {
+                self.performSelector_withObject_afterDelay_inModes(
+                    sel!(tekesStartMetalLink),
+                    None,
+                    0.001,
+                    &NSArray::from_slice(&[NSRunLoopCommonModes]),
+                );
+            }
+        }
+    }
+
+    fn start_metal_link_now(&self) {
+        let existing = self.ivars().metal_link.borrow().clone();
+        let link = existing.unwrap_or_else(|| {
+            let link = CAMetalDisplayLink::initWithMetalLayer(
+                CAMetalDisplayLink::alloc(),
+                &self.metal_layer(),
+            );
+            link.setPaused(true);
+            link.setDelegate(Some(ProtocolObject::from_ref(self)));
+            link.setPreferredFrameLatency(1.0);
+            link.setPreferredFrameRateRange(CAFrameRateRange::new(120.0, 120.0, 120.0));
+            *self.ivars().metal_link.borrow_mut() = Some(link.clone());
+            // SAFETY: main-thread NSView; common modes continue during tracking.
+            unsafe {
+                link.addToRunLoop_forMode(&NSRunLoop::mainRunLoop(), NSRunLoopCommonModes);
+            }
+            link
+        });
+        self.ivars()
+            .shared
+            .presentation
+            .metal_display_link
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+        link.setPaused(false);
+    }
+
     /// 窗口关闭或应用结束时调用：invalidate 显示链接，断开它对视图的强引用。
     pub(crate) fn invalidate_display_link(&self) {
-        if let Some(link) = self.ivars().link.borrow_mut().take() {
+        self.stop_metal_link();
+        let cad = self.ivars().link.borrow_mut().take();
+        if let Some(link) = cad {
             link.invalidate();
         }
     }
@@ -558,6 +706,24 @@ impl TekesView {
                 .map(|s| s.backingScaleFactor())
                 .unwrap_or(1.0),
         }
+    }
+
+    /// Selftest-only observation; counts actual positive Metal presentation receipts.
+    pub(crate) fn selftest_presented_count(&self) -> u64 {
+        let observer = &self.ivars().shared.presentation;
+        observer
+            .enabled
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+        observer.frames.lock().map_or(0, |frames| {
+            frames
+                .iter()
+                .filter(|frame| frame.presented_at > 0.0)
+                .count() as u64
+        })
+    }
+
+    pub(crate) fn is_live_resizing(&self) -> bool {
+        self.ivars().live_resizing.get()
     }
 
     pub(crate) fn size_points(&self) -> Size {
@@ -648,6 +814,10 @@ impl TekesView {
         if !force && shared.last_geometry.get() == Some(state) {
             return;
         }
+        let metal = Self::uses_metal_display_link();
+        if metal {
+            self.stop_metal_link();
+        }
         shared.last_geometry.set(Some(state));
         shared.dispatch(Event::Resized {
             size,
@@ -659,5 +829,8 @@ impl TekesView {
         // 看到标志已清，什么也不做。
         shared.redraw_pending.set(false);
         shared.dispatch(Event::Redraw);
+        if metal && shared.animating.get() && !self.ivars().live_resizing.get() {
+            self.schedule_metal_start();
+        }
     }
 }

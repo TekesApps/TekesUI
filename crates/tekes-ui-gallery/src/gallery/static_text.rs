@@ -23,8 +23,9 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::OnceLock;
 
+use tekes_ui_controls::{Button, ControlKey};
 use tekes_ui_render::Renderer;
-use tekes_ui_scene::ImageId;
+use tekes_ui_scene::{ImageId, Point};
 use tekes_ui_text::compare::{DiffOptions, diff_rgba8};
 use tekes_ui_text::model::{Paragraph, ShapeOptions};
 use tekes_ui_text::style::TextStyle;
@@ -54,7 +55,7 @@ macro_rules! fixture {
 }
 
 /// 默认夹具在最前。
-pub const FIXTURES: [FixtureDef; 7] = [
+pub const FIXTURES: [FixtureDef; 8] = [
     fixture!("sentences-a"),
     fixture!("mixed-cjk-latin"),
     fixture!("kinsoku"),
@@ -62,6 +63,7 @@ pub const FIXTURES: [FixtureDef; 7] = [
     fixture!("combining"),
     fixture!("rtl"),
     fixture!("long-paragraph"),
+    fixture!("gallery-reading-en"),
 ];
 
 pub const DEFAULT_WIDTH: u32 = 700;
@@ -505,6 +507,9 @@ const CACHE_CAP: usize = 6;
 pub struct StaticText {
     fixture: usize,
     width: u32,
+    fixture_buttons: Vec<Button>,
+    width_buttons: Vec<Button>,
+    focus_index: Option<usize>,
     reference_dir: Option<PathBuf>,
     shaped: HashMap<(usize, u32), Rc<ShapedFixture>>,
     results: Vec<Computed>,
@@ -517,6 +522,11 @@ impl StaticText {
         StaticText {
             fixture: 0,
             width: DEFAULT_WIDTH,
+            fixture_buttons: (0..FIXTURES.len()).map(|_| Button::default()).collect(),
+            width_buttons: (0..manifest_widths().iter().map(Vec::len).max().unwrap_or(0))
+                .map(|_| Button::default())
+                .collect(),
+            focus_index: None,
             reference_dir,
             shaped: HashMap::new(),
             results: Vec::new(),
@@ -580,6 +590,218 @@ impl StaticText {
             Pick::Fixture(i) => self.select_fixture(i),
             Pick::Width(w) => self.select_width(w),
         }
+    }
+
+    pub fn fixture_button_mut(&mut self, index: usize) -> Option<&mut Button> {
+        self.fixture_buttons.get_mut(index)
+    }
+
+    pub fn width_button_mut(&mut self, index: usize) -> Option<&mut Button> {
+        self.width_buttons.get_mut(index)
+    }
+
+    pub(super) fn fixture_buttons_mut(&mut self) -> &mut [Button] {
+        &mut self.fixture_buttons
+    }
+
+    pub(super) fn width_buttons_mut(&mut self) -> &mut [Button] {
+        &mut self.width_buttons
+    }
+
+    pub(super) fn focus_index(&self) -> Option<usize> {
+        self.focus_index
+    }
+
+    pub fn fixture_buttons(&self) -> &[Button] {
+        &self.fixture_buttons
+    }
+
+    pub fn width_buttons(&self) -> &[Button] {
+        &self.width_buttons
+    }
+
+    /// Update hover through each retained production Button placement.
+    pub fn pointer_move(&mut self, point: Point) -> bool {
+        let mut changed = false;
+        for button in self
+            .fixture_buttons
+            .iter_mut()
+            .chain(self.width_buttons.iter_mut())
+        {
+            let was_hovered = button.state.hovered;
+            button.pointer_move_at(point);
+            changed |= was_hovered != button.state.hovered;
+        }
+        changed
+    }
+
+    /// Arm the visible selector Button under the pointer.
+    pub fn pointer_down(&mut self, point: Point) -> bool {
+        self.cancel_pointer();
+        self.pointer_move(point);
+        let order = self.focus_order();
+        let index = order.iter().position(|pick| {
+            self.button(*pick)
+                .and_then(Button::layout)
+                .is_some_and(|layout| layout.hit_test(point))
+        });
+        let Some(index) = index else {
+            return false;
+        };
+        let pick = order[index];
+        self.set_focus(Some(index), false);
+        self.button_mut(pick).is_some_and(|button| {
+            // A pointer press changes the activation source intentionally; discard a held
+            // keyboard activation on this same target before arming the pointer.
+            button.cancel();
+            button.pointer_down_at(point)
+        })
+    }
+
+    /// Activate only the Button that was armed and released within its rendered bounds.
+    pub fn pointer_up(&mut self, point: Point) -> bool {
+        let mut activated = None;
+        let widths = self.widths().to_vec();
+        for (index, button) in self.fixture_buttons.iter_mut().enumerate() {
+            if button.pointer_up_at(point) {
+                activated = Some(Pick::Fixture(index));
+            }
+        }
+        for (index, button) in self.width_buttons.iter_mut().enumerate() {
+            if button.pointer_up_at(point)
+                && let Some(width) = widths.get(index)
+            {
+                activated = Some(Pick::Width(*width));
+            }
+        }
+        activated.is_some_and(|pick| self.apply(pick))
+    }
+
+    pub fn cancel_pointer(&mut self) {
+        for button in self
+            .fixture_buttons
+            .iter_mut()
+            .chain(self.width_buttons.iter_mut())
+        {
+            button.cancel_pointer();
+        }
+    }
+
+    pub(super) fn focus_order(&self) -> Vec<Pick> {
+        self.fixture_buttons
+            .iter()
+            .enumerate()
+            .filter(|(_, button)| {
+                button
+                    .layout()
+                    .is_some_and(|layout| layout.visible.is_some())
+            })
+            .map(|(index, _)| Pick::Fixture(index))
+            .chain(
+                self.width_buttons
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, button)| {
+                        button
+                            .layout()
+                            .is_some_and(|layout| layout.visible.is_some())
+                    })
+                    .filter_map(|(index, _)| self.widths().get(index).copied().map(Pick::Width)),
+            )
+            .collect()
+    }
+
+    fn button_mut(&mut self, pick: Pick) -> Option<&mut Button> {
+        match pick {
+            Pick::Fixture(index) => self.fixture_buttons.get_mut(index),
+            Pick::Width(width) => {
+                let index = self
+                    .widths()
+                    .iter()
+                    .position(|candidate| *candidate == width)?;
+                self.width_buttons.get_mut(index)
+            }
+        }
+    }
+
+    fn button(&self, pick: Pick) -> Option<&Button> {
+        match pick {
+            Pick::Fixture(index) => self.fixture_buttons.get(index),
+            Pick::Width(width) => {
+                let index = self
+                    .widths()
+                    .iter()
+                    .position(|candidate| *candidate == width)?;
+                self.width_buttons.get(index)
+            }
+        }
+    }
+
+    pub(super) fn set_focus(&mut self, index: Option<usize>, keyboard: bool) {
+        if self.focus_index != index
+            && let Some(previous) = self
+                .focus_index
+                .and_then(|focused| self.focus_order().get(focused).copied())
+            && let Some(button) = self.button_mut(previous)
+        {
+            button.cancel();
+        }
+        for button in self
+            .fixture_buttons
+            .iter_mut()
+            .chain(self.width_buttons.iter_mut())
+        {
+            button.state.focused = false;
+            button.state.focus_visible = false;
+        }
+        self.focus_index = index;
+        if let Some(pick) = index.and_then(|index| self.focus_order().get(index).copied())
+            && let Some(button) = self.button_mut(pick)
+        {
+            button.state.focused = true;
+            button.state.focus_visible = keyboard;
+        }
+    }
+
+    /// Route keyboard focus and activation through the same retained Button models.
+    pub fn handle_key(&mut self, key: ControlKey, down: bool) -> bool {
+        let order = self.focus_order();
+        if let ControlKey::Tab { reverse } = key {
+            if !down || order.is_empty() {
+                return false;
+            }
+            let next = match self.focus_index {
+                Some(current) if reverse => current.checked_sub(1).unwrap_or(order.len() - 1),
+                Some(current) => (current + 1) % order.len(),
+                None if reverse => order.len() - 1,
+                None => 0,
+            };
+            self.set_focus(Some(next), true);
+            return true;
+        }
+        let Some(index) = self.focus_index.filter(|index| *index < order.len()) else {
+            return false;
+        };
+        let pick = order[index];
+        let activated = self
+            .button_mut(pick)
+            .is_some_and(|button| button.key(key, down));
+        if activated {
+            self.apply(pick);
+        }
+        activated || matches!(key, ControlKey::Enter | ControlKey::Space)
+    }
+
+    pub fn blur(&mut self) {
+        self.cancel_pointer();
+        for button in self
+            .fixture_buttons
+            .iter_mut()
+            .chain(self.width_buttons.iter_mut())
+        {
+            button.blur();
+        }
+        self.focus_index = None;
     }
 
     pub fn key(&self, theme: Theme, scale: f32) -> ResultKey {

@@ -1,0 +1,26 @@
+{
+  "old_exact_app_pid": [
+    89850
+  ],
+  "new_exact_app_pid": [
+    48766
+  ],
+  "command": [
+    "open",
+    "--stdout",
+    "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/alignment-review-20261017/app-stdout.log",
+    "--stderr",
+    "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/alignment-review-20261017/app-stderr.log",
+    "--env",
+    "TEKESUI_WINDOW_PLACEMENT=external",
+    "--env",
+    "TEKESUI_GALLERY_PAGE=component-chart/playground",
+    "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app"
+  ],
+  "app_executable": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app/Contents/MacOS/TekesUI-Gallery",
+  "sha256": "ba9ce67b3fd04dcea0b9ad48d42fb299278fe96670f24a5cfdfaf2c8c16b3750",
+  "started": true,
+  "native_visual_or_performance_test": false,
+  "placement_request": "external",
+  "note": "App startup only. No native test, screen capture, monitor probe or 120Hz measurement."
+}

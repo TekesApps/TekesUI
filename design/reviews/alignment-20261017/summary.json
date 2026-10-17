@@ -1,0 +1,815 @@
+{
+  "date": "2026-10-17",
+  "scope": "Existing 45 component alignment and Gallery fixtures; additive JSON alignment policy; no new registered components or numeric visual-token changes.",
+  "worktree": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI",
+  "registry_count": 45,
+  "component_coverage": [
+    {
+      "component": "tui.stack",
+      "route": "component-stack",
+      "renderer": "stack",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.grid",
+      "route": "component-grid",
+      "renderer": "grid",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.separator",
+      "route": "component-separator",
+      "renderer": "separator",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.split-view",
+      "route": "component-split-view",
+      "renderer": "split-view",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.scroll-area",
+      "route": "component-scroll-area",
+      "renderer": "scroll",
+      "producer": "tekes-ui-controls::scroll_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.disclosure",
+      "route": "component-disclosure",
+      "renderer": "disclosure",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.surface",
+      "route": "component-surface",
+      "renderer": "surface",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.toolbar",
+      "route": "component-toolbar",
+      "renderer": "toolbar",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.text",
+      "route": "component-text",
+      "renderer": "text",
+      "producer": "tekes-ui-controls::text_surface / text_input",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.icon",
+      "route": "component-icon",
+      "renderer": "icon",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.button",
+      "route": "component-button",
+      "renderer": "button",
+      "producer": "tekes-ui-controls::widgets",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.icon-button",
+      "route": "component-icon-button",
+      "renderer": "icon-button",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.link",
+      "route": "component-link",
+      "renderer": "link",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.text-field",
+      "route": "component-text-field",
+      "renderer": "field",
+      "producer": "tekes-ui-controls::text_surface / text_input",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.text-area",
+      "route": "component-text-area",
+      "renderer": "area",
+      "producer": "tekes-ui-controls::text_surface / text_input",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.search-field",
+      "route": "component-search-field",
+      "renderer": "search",
+      "producer": "tekes-ui-controls::text_surface / text_input",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.combo-box",
+      "route": "component-combo-box",
+      "renderer": "combo-box",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.slider",
+      "route": "component-slider",
+      "renderer": "slider",
+      "producer": "tekes-ui-controls::selection",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.checkbox",
+      "route": "component-checkbox",
+      "renderer": "checkbox",
+      "producer": "tekes-ui-controls::widgets",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.radio-group",
+      "route": "component-radio-group",
+      "renderer": "radio-group",
+      "producer": "tekes-ui-controls::selection",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.switch",
+      "route": "component-switch",
+      "renderer": "switch",
+      "producer": "tekes-ui-controls::selection",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.segmented-control",
+      "route": "component-segmented-control",
+      "renderer": "segmented-control",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.field",
+      "route": "component-field",
+      "renderer": "field-meta",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.select",
+      "route": "component-select",
+      "renderer": "select",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.number-field",
+      "route": "component-number-field",
+      "renderer": "number-field",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.tabs",
+      "route": "component-tabs",
+      "renderer": "tabs",
+      "producer": "tekes-ui-controls::composite",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.breadcrumb",
+      "route": "component-breadcrumb",
+      "renderer": "breadcrumb",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.command-palette",
+      "route": "component-command-palette",
+      "renderer": "command-palette",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.list",
+      "route": "component-list",
+      "renderer": "list",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.tree",
+      "route": "component-tree",
+      "renderer": "tree",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.data-table",
+      "route": "component-data-table",
+      "renderer": "data-table",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.chart",
+      "route": "component-chart",
+      "renderer": "chart",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.menu",
+      "route": "component-menu",
+      "renderer": "menu",
+      "producer": "tekes-ui-controls::composite",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.tooltip",
+      "route": "component-tooltip",
+      "renderer": "tooltip",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.popover",
+      "route": "component-popover",
+      "renderer": "popover",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.dialog",
+      "route": "component-dialog",
+      "renderer": "dialog",
+      "producer": "tekes-ui-controls::composite",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.toast",
+      "route": "component-toast",
+      "renderer": "toast",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.banner",
+      "route": "component-banner",
+      "renderer": "banner",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.status-badge",
+      "route": "component-status-badge",
+      "renderer": "status-badge",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.progress",
+      "route": "component-progress",
+      "renderer": "progress",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.empty-state",
+      "route": "component-empty-state",
+      "renderer": "empty-state",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.skeleton",
+      "route": "component-skeleton",
+      "renderer": "skeleton",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.markdown",
+      "route": "component-markdown",
+      "renderer": "markdown",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.code-block",
+      "route": "component-code-block",
+      "renderer": "code-block",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.diff-view",
+      "route": "component-diff-view",
+      "renderer": "diff-view",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    }
+  ],
+  "checks": [
+    {
+      "check": "tests-final",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-gallery",
+        "-p",
+        "tekes-ui-motion",
+        "-p",
+        "tekes-ui-icons",
+        "-p",
+        "tekes-ui-design-export",
+        "-p",
+        "tekes-ui-tokens",
+        "--release",
+        "--locked"
+      ],
+      "exit": 0,
+      "seconds": 19.77
+    },
+    {
+      "check": "clippy-final",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-gallery",
+        "-p",
+        "tekes-ui-motion",
+        "-p",
+        "tekes-ui-icons",
+        "-p",
+        "tekes-ui-design-export",
+        "-p",
+        "tekes-ui-tokens",
+        "--all-targets",
+        "--release",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 0.19
+    },
+    {
+      "check": "build-final",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "tekes-ui-gallery",
+        "--release",
+        "--locked"
+      ],
+      "exit": 0,
+      "seconds": 6.31
+    },
+    {
+      "check": "fmt-final",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.49
+    },
+    {
+      "check": "pure-rust-final",
+      "command": [
+        "python3",
+        "scripts/check-pure-rust.py"
+      ],
+      "exit": 0,
+      "seconds": 0.37
+    },
+    {
+      "check": "design-system-final",
+      "command": [
+        "target/design-check-venv/bin/python",
+        "scripts/check-design-system.py"
+      ],
+      "exit": 0,
+      "seconds": 0.33
+    },
+    {
+      "check": "diff-final",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.07
+    }
+  ],
+  "tests": {
+    "passed": 521,
+    "ignored": 1
+  },
+  "offscreen_pixel_checks": {
+    "component_count": 45,
+    "rendered_cases": 727,
+    "default_cases": 720,
+    "actual_input_open_cases": 7,
+    "out_of_preview_hit_rects": 0,
+    "chart_labels": 128,
+    "chart_max_value_ink_center_error_pt": 1.0,
+    "chart_max_category_ink_center_error_pt": 1.0,
+    "iconbutton_symmetry": [
+      {
+        "id": "component-icon-button-default-light-1x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          6,
+          6,
+          18,
+          18
+        ],
+        "button_center_pixel": [
+          334.0,
+          278.0
+        ]
+      },
+      {
+        "id": "component-icon-button-default-light-2x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          12,
+          12,
+          36,
+          36
+        ],
+        "button_center_pixel": [
+          668.0,
+          556.0
+        ]
+      },
+      {
+        "id": "component-icon-button-large-narrow-light-1x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          6,
+          6,
+          18,
+          18
+        ],
+        "button_center_pixel": [
+          334.0,
+          350.0
+        ]
+      },
+      {
+        "id": "component-icon-button-large-narrow-light-2x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          12,
+          12,
+          36,
+          36
+        ],
+        "button_center_pixel": [
+          668.0,
+          700.0
+        ]
+      },
+      {
+        "id": "component-icon-button-default-dark-1x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          6,
+          6,
+          18,
+          18
+        ],
+        "button_center_pixel": [
+          334.0,
+          278.0
+        ]
+      },
+      {
+        "id": "component-icon-button-default-dark-2x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          12,
+          12,
+          36,
+          36
+        ],
+        "button_center_pixel": [
+          668.0,
+          556.0
+        ]
+      },
+      {
+        "id": "component-icon-button-large-narrow-dark-1x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          6,
+          6,
+          18,
+          18
+        ],
+        "button_center_pixel": [
+          334.0,
+          350.0
+        ]
+      },
+      {
+        "id": "component-icon-button-large-narrow-dark-2x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          12,
+          12,
+          36,
+          36
+        ],
+        "button_center_pixel": [
+          668.0,
+          700.0
+        ]
+      },
+      {
+        "id": "component-icon-button-default-light-ic-1x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          6,
+          6,
+          18,
+          18
+        ],
+        "button_center_pixel": [
+          334.0,
+          278.0
+        ]
+      },
+      {
+        "id": "component-icon-button-default-light-ic-2x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          12,
+          12,
+          36,
+          36
+        ],
+        "button_center_pixel": [
+          668.0,
+          556.0
+        ]
+      },
+      {
+        "id": "component-icon-button-large-narrow-light-ic-1x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          6,
+          6,
+          18,
+          18
+        ],
+        "button_center_pixel": [
+          334.0,
+          350.0
+        ]
+      },
+      {
+        "id": "component-icon-button-large-narrow-light-ic-2x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          12,
+          12,
+          36,
+          36
+        ],
+        "button_center_pixel": [
+          668.0,
+          700.0
+        ]
+      },
+      {
+        "id": "component-icon-button-default-dark-ic-1x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          6,
+          6,
+          18,
+          18
+        ],
+        "button_center_pixel": [
+          334.0,
+          278.0
+        ]
+      },
+      {
+        "id": "component-icon-button-default-dark-ic-2x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          12,
+          12,
+          36,
+          36
+        ],
+        "button_center_pixel": [
+          668.0,
+          556.0
+        ]
+      },
+      {
+        "id": "component-icon-button-large-narrow-dark-ic-1x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          6,
+          6,
+          18,
+          18
+        ],
+        "button_center_pixel": [
+          334.0,
+          350.0
+        ]
+      },
+      {
+        "id": "component-icon-button-large-narrow-dark-ic-2x",
+        "horizontal_symmetric": true,
+        "vertical_symmetric": true,
+        "ink_bbox_in_crop": [
+          12,
+          12,
+          36,
+          36
+        ],
+        "button_center_pixel": [
+          668.0,
+          700.0
+        ]
+      }
+    ],
+    "disclosure_label_closed_open_core_ink_identical": true,
+    "disclosure_label_closed_open_raw_rgb_identical": false,
+    "note": "Center error measures visible glyph ink, not just slot frames. Antialiased glyph bearings/pixel rounding permit up to 1 logical point; Disclosure raw RGB differs because actual pointer input changes the background; fully covered label ink stays identical. No physical display or timing claim."
+  },
+  "field_layout_checks": {
+    "cases": 16,
+    "result": "Phase and event-log title frames separated and within preview at 100%/150%, all themes/backing scales",
+    "artifact": "field-checks.json"
+  },
+  "real_gallery_input": {
+    "cases": 63,
+    "passed": 63,
+    "path": "interactions.json",
+    "mechanism": "Production Gallery::build_scene / handle_input in target-only cloned source; mouse/key event fixtures, not native AppKit input."
+  },
+  "visual_review": {
+    "human_model_inspected": "All 45 default preview crops at 900x720 / 150% light 1x, then focused full-frame Chart, Disclosure, IconButton, Menu, Dialog, Popover, List, Tree, Toast and NumberField captures. Not every image or interactive state was manually reviewed.",
+    "full_capture_directory": "target/alignment-review-20261017/captures",
+    "png_hashes": "capture-file-hashes.json"
+  },
+  "design_system": {
+    "changed_authority": "design/source/layout.json alignment.presets only",
+    "projection": "design/tokens.json generated by existing merge/export pipeline",
+    "other_authority_sources_unchanged": true,
+    "prior_layout_sha_matches_after_removing_alignment": true,
+    "production_consumers": {
+      "ROW.main_and_cross": "Disclosure",
+      "ICON_ARTBOARD.main_and_cross": "IconView",
+      "CHART_LABEL.text_alignment": "Chart",
+      "BUTTON_CONTENT.text_alignment": "NumberField stepper"
+    },
+    "helper_only": [
+      "COLUMN",
+      "TEXT_ROW / real first-baseline geometry"
+    ],
+    "note": "Tree uses fixed icon slots; existing equal-cell Stack/Grid APIs remain compatible. No claim of every component consuming every preset."
+  },
+  "protected_wip": {
+    "baseline_files": 184,
+    "changed_allowed_files": [
+      "crates/tekes-ui-controls/src/chart.rs",
+      "crates/tekes-ui-controls/src/layout_view.rs",
+      "crates/tekes-ui-controls/src/layout.rs",
+      "crates/tekes-ui-controls/src/collections_view.rs",
+      "crates/tekes-ui-controls/src/feedback_view.rs",
+      "crates/tekes-ui-gallery/src/gallery/mod.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+      "crates/tekes-ui-gallery/src/gallery/pages/icons.rs",
+      "crates/tekes-ui-gallery/src/gallery/pages/showcase.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs",
+      "crates/tekes-ui-design-export/src/proposal.rs",
+      "crates/tekes-ui-design-export/src/lib.rs",
+      "docs/gallery.md"
+    ],
+    "deleted_files": [],
+    "widgets_rs_sha256": "4caf513a069f12acef2d85c3796655ed6a5f9d2c5a94a0d95fd90f74e5ffb4ff",
+    "design_changed_inputs": [
+      "design/tokens.json",
+      "design/source/layout.json"
+    ]
+  },
+  "binary": {
+    "path": "target/presentation-repair-20261016/build/release/tekes-ui-gallery",
+    "sha256": "8919e6c9081332ff4e702c0ecedaf7422741bbf16337608249a64f4059d1b682",
+    "app_path": "target/TekesUI Gallery.app/Contents/MacOS/TekesUI-Gallery",
+    "app_sha256": "ba9ce67b3fd04dcea0b9ad48d42fb299278fe96670f24a5cfdfaf2c8c16b3750",
+    "local_codesign": "package script verified ad-hoc signature",
+    "executable_identity": "package-binary-comparison.json (identical except code-signing metadata)",
+    "launch": {
+      "old_exact_app_pid": [
+        89850
+      ],
+      "new_exact_app_pid": [
+        48766
+      ],
+      "command": [
+        "open",
+        "--stdout",
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/alignment-review-20261017/app-stdout.log",
+        "--stderr",
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/alignment-review-20261017/app-stderr.log",
+        "--env",
+        "TEKESUI_WINDOW_PLACEMENT=external",
+        "--env",
+        "TEKESUI_GALLERY_PAGE=component-chart/playground",
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app"
+      ],
+      "app_executable": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app/Contents/MacOS/TekesUI-Gallery",
+      "sha256": "ba9ce67b3fd04dcea0b9ad48d42fb299278fe96670f24a5cfdfaf2c8c16b3750",
+      "started": true,
+      "native_visual_or_performance_test": false,
+      "placement_request": "external",
+      "note": "App startup only. No native test, screen capture, monitor probe or 120Hz measurement."
+    }
+  },
+  "failures_retained": [
+    {
+      "check": "Intermediate icon-page checks",
+      "cause": "Strict Clippy rejected an indexed range loop; cargo fmt rejected edition-inconsistent formatting. Both corrected; final checks are recorded separately.",
+      "logs": [
+        "clippy-second-failed.log",
+        "clippy-third-failed.log",
+        "fmt-initial-failed.log"
+      ]
+    },
+    {
+      "check": "Intermediate enlarged icon-page visual review",
+      "cause": "A three-line localized caption still overlapped artwork in a fixed-height card; fixed by sharing scaled card height across paint, extent and lazy visibility, with actual-caption regression tests."
+    },
+    {
+      "check": "Initial strict Clippy",
+      "cause": "Test-only drop(ctx) triggered drop_non_drop; replaced with lexical scope; final check passes.",
+      "log": "clippy-initial-failed.log"
+    },
+    {
+      "check": "Initial Disclosure raw RGB identity assertion",
+      "cause": "Actual pointer input changes background state; antialiased edge RGB differs. Fully covered label ink remains pixel-identical; not a label displacement.",
+      "evidence": "pixel-checks.json and disclosure-debug.png"
+    }
+  ],
+  "not_accepted": [
+    "External-display native pointer/keyboard retest deferred by user",
+    "Physical IME and VoiceOver not tested",
+    "Sustained 120 Hz / 8.33ms, CPU usage and display drawable timing remain open; no new performance acceptance",
+    "All states, all text lengths and arbitrary viewport combinations not exhaustively verified"
+  ],
+  "commit_push_publish": false,
+  "native_app_launched": true,
+  "native_acceptance_test_run": false,
+  "independent_review_boundary": "Source-only reviewer checked targeted findings at its recorded source hashes. Final icon compatibility-wrapper / dead-code cleanup was subsequently validated by main-agent source review, full tests, strict Clippy and the final offscreen matrix; no all-state native claim."
+}

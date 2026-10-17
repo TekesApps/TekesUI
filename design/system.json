@@ -15,6 +15,9 @@
     "proposal": {
       "$ref": "./integration.json"
     },
+    "gold7": {
+      "$ref": "./behavior/gold7.json"
+    },
     "historical_visual_baseline_commit": "a8ab9303ab2f528913f83cfc2c8da2a0eab8b8f3"
   },
   "layers": {
@@ -25,7 +28,7 @@
       "$ref": "./integration.json#/effective_specifications"
     },
     "interaction": {
-      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/interaction-contracts.json"
+      "$ref": "./source/interaction-contracts.json"
     },
     "themes": {
       "$ref": "#/themes"
@@ -41,6 +44,9 @@
     "classification": "Package specifications take precedence. Existing implementation-specific fixtures below remain only as a nonconflicting supplement.",
     "calibration_layout": {
       "proposal": {
+        "$ref": "./source/layout.json"
+      },
+      "package_source": {
         "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/layout.json"
       },
       "historical_fixture": {
@@ -56,11 +62,16 @@
       "font_policy": "Use platform UI and monospace fonts; do not redistribute system fonts."
     },
     "radius_derivation": {
-      "rule": "concentric(outer, inset) = max(outer - inset, Badge radius).",
+      "effective_rule": {
+        "$ref": "./source/layout.json#/nested_radius/concentric"
+      },
       "base_tokens": {
         "$ref": "./tokens.json#/tokens/radius"
       },
       "source": {
+        "$ref": "./source/layout.json#/nested_radius"
+      },
+      "implementation": {
         "$ref": "../crates/tekes-ui-tokens/src/metrics.rs"
       }
     },
@@ -112,14 +123,17 @@
     "static_text_pickers": "Mouse fixture/width selection; invalid width falls back to fixture default.",
     "motion": {
       "source": {
-        "$ref": "./tokens.json#/tokens/motion"
+        "$ref": "./source/motion.json"
       },
-      "proposal": {
+      "package_source": {
         "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/tokens/motion.toml"
       },
       "implementation_status": "Existing auto-scroll fixture retained. Proposal interaction contracts are requirements, not a claim that all native behavior is implemented."
     },
     "proposal": {
+      "$ref": "./source/interaction-contracts.json"
+    },
+    "package_source": {
       "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/interaction-contracts.json"
     }
   },

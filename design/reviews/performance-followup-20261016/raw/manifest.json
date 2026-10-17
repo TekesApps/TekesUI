@@ -1,0 +1,152 @@
+{
+  "current-cad-scroll-area.json.gz": {
+    "raw_sha256": "83bbb1025deb5390d4764faab8beb3556f954351310f36dfd3cf4f0760d8f432",
+    "raw_bytes": 3112762,
+    "gzip_sha256": "22bc4d017655a4c1e37520faaf84a0690b5dd2173e2b7c5926cf345e69ea9336"
+  },
+  "current-cad-scroll-area.log.gz": {
+    "raw_sha256": "1ff2d458d5c895c63af2d6782e083bc05492c6733a2b73b19ad923df197d6019",
+    "raw_bytes": 1298,
+    "gzip_sha256": "2a41f75778f1f28573fa19cf8c74fac0f4bc9869f34ca76089e827b59b54a1f8"
+  },
+  "current-cad-scroll-area-run.json.gz": {
+    "raw_sha256": "6f1a38ce55660fecba76912da0618e185e387db2f392400e328051ffeb6990c3",
+    "raw_bytes": 509,
+    "gzip_sha256": "0b62bb95a6cc259fac10b52fdd5de48b019776bac9fb840bb6f7f97247207a36"
+  },
+  "optimized-cad-scroll-area.json.gz": {
+    "raw_sha256": "520540f561eaee9339162b490180918d7e53713d05f12c0750da64e4d49c324b",
+    "raw_bytes": 3116915,
+    "gzip_sha256": "11e4df3b9d31a989cdabfa1ca94395125704057d05f8a9c3706fd916a7f73f19"
+  },
+  "optimized-cad-scroll-area.log.gz": {
+    "raw_sha256": "37105cb31de9bf2c9f5f387bcc50405cbf22d42397381563877212e0fd013e5f",
+    "raw_bytes": 1302,
+    "gzip_sha256": "9731c096dc0a0949740905ecfd3e8f989337478454ba605265a65aec1b7a3911"
+  },
+  "optimized-cad-scroll-area-run.json.gz": {
+    "raw_sha256": "a48ca9e22a0d16350d8bac651a6c35fe70fb1a385ed36b42bfe0434c1741ad22",
+    "raw_bytes": 530,
+    "gzip_sha256": "3d37844ff313a327959f8bb67d3e3f0ebff543b69c6a937c603ae93b78995587"
+  },
+  "workbench-cad-gpu-scroll-area.json.gz": {
+    "raw_sha256": "991833bd5412204e0e943891682f323537bd5435ab50f2208d34a08ba1e770e2",
+    "raw_bytes": 3153178,
+    "gzip_sha256": "f9e7be63f16834cae5a09d6818464cba04255810a0e4f5e391cd46e0ae1b1029"
+  },
+  "workbench-cad-gpu-scroll-area.log.gz": {
+    "raw_sha256": "62529f048c81810db0e530f43bce2430abb67a4f1dfcab5cad33ccce5863eba4",
+    "raw_bytes": 1351,
+    "gzip_sha256": "233c26b0b555b61cf3826a7d80ced847b898f5a50f32d135f49d5c7db10c848d"
+  },
+  "workbench-cad-gpu-scroll-area-run.json.gz": {
+    "raw_sha256": "6cb4ada65a0bfac595b79a73f152be56f8b597e8d4deb647724c608e4b100210",
+    "raw_bytes": 562,
+    "gzip_sha256": "4b7a41c1011a57d4644610442d983cf448ffb370959b4a900211fd719c62ae64"
+  },
+  "workbench-cad-latency1-scroll-area.json.gz": {
+    "raw_sha256": "2ce43e2bee9d2e6586c452a977b9639a3757c00166d11bb861f1d5dc10d4a202",
+    "raw_bytes": 3126100,
+    "gzip_sha256": "e954ccdeb0c8e3ef0694aac804c34b0e5acc4c2d287690882f685d9a4cf2b94d"
+  },
+  "workbench-cad-latency1-scroll-area.log.gz": {
+    "raw_sha256": "df1998cf0db26ef649c763cc832df9af03310f33ff60e5eb9ee78b4deff843b3",
+    "raw_bytes": 1310,
+    "gzip_sha256": "9925dd8246fdbf315f50d86a4dae6deef66d28021b2c21d6949d14a77409f80e"
+  },
+  "workbench-cad-latency1-scroll-area-run.json.gz": {
+    "raw_sha256": "6c547613fe9ed3323102e09dd7283b972bb1df168427bff79d7a33a9e4601530",
+    "raw_bytes": 530,
+    "gzip_sha256": "16ea77fd31a65895761552a92ae014a4ba3b108186d27f1c3a01ed067bf1f123"
+  },
+  "workbench-cad-scroll-area.json.gz": {
+    "raw_sha256": "382f43a2559a3ac1b8505fe6334f96b197edd51073dce9572f41d76f6ce1726e",
+    "raw_bytes": 3127478,
+    "gzip_sha256": "f6be0a581bbdce48e8c8e68f2b1d85dcdb413099e360c31287d4e363a07ac6fd"
+  },
+  "workbench-cad-scroll-area.log.gz": {
+    "raw_sha256": "9176ee0b70e5a92c61a9e4734d9446bbc012570cac687b2a1e71d4850f94c24d",
+    "raw_bytes": 1301,
+    "gzip_sha256": "b116a7144384ab5bc9109629537f16c95553d5292c45d6e62b94f97f6370de07"
+  },
+  "workbench-cad-scroll-area-run.json.gz": {
+    "raw_sha256": "5ba60a45eada64c9f3dc68203deb31cf2278792ee9abfcda805f3cc45f8bb158",
+    "raw_bytes": 530,
+    "gzip_sha256": "6ab71c4b31dd7b16c121c1b170200d3f20fdf9ee07551b0cd3b585f6df8f8e47"
+  },
+  "workbench-cad-editor.json.gz": {
+    "raw_sha256": "f0db7519464a0ad0a117b53930d990b4187710aba32f39221573a159711957e3",
+    "raw_bytes": 3116460,
+    "gzip_sha256": "227047891c586fba6f9db4e20b7188ad696452f1f4b6d6c2699a145d1d4a1245"
+  },
+  "workbench-cad-editor.log.gz": {
+    "raw_sha256": "ccfe56dbea45c95b259d8654ea7ade7b427a6e66a9d15672b90772fdad17c419",
+    "raw_bytes": 1290,
+    "gzip_sha256": "f14036124730829dc0ad0c2a78d8dd4e7f4d43df3d9c5fe88f2370066f9e8704"
+  },
+  "workbench-cad-editor-run.json.gz": {
+    "raw_sha256": "0db882bd05ad4ad5a1dcc6b27a622e6eecc433c67e5407480efd6ad085547541",
+    "raw_bytes": 523,
+    "gzip_sha256": "344d628d0847b8321ed772dd45a177fd455e471d5b1bde41e30ee743315700a5"
+  },
+  "workbench-cad-icons.json.gz": {
+    "raw_sha256": "70ce6bdf9ca679abdae95c2250df1c1f02ef38387e5b260645307edcd4792488",
+    "raw_bytes": 3125858,
+    "gzip_sha256": "74b7f3d37e38535a60c8f29a634a4c53c94cc39da35e31709e3660f40bd7005d"
+  },
+  "workbench-cad-icons.log.gz": {
+    "raw_sha256": "f9f223e8fe7b7881c88231f0f986b882e551a2d96e293cd113ce389bf9088267",
+    "raw_bytes": 1290,
+    "gzip_sha256": "95a26d0d44a09346823ac612352c2005b6a9456d4899bcc71e588f36415c6af5"
+  },
+  "workbench-cad-icons-run.json.gz": {
+    "raw_sha256": "2c23e8b547de079ad5c3a84e0d7e30121faee61255657e2b8abd6ebb29df9c50",
+    "raw_bytes": 525,
+    "gzip_sha256": "7383626e579132c344ade4234883e251d45f3516048f359a43e86f7e9ff69ce5"
+  },
+  "workbench-metal-scroll-area.json.gz": {
+    "raw_sha256": "40ea0c2746f8fe4501cea42039b0219c50c2149645ab9b605108bb74f8d82b8c",
+    "raw_bytes": 3126158,
+    "gzip_sha256": "239227359070ed71cdd50f02704df10ef656687bbf81b8db794f30e698788d4c"
+  },
+  "workbench-metal-scroll-area.log.gz": {
+    "raw_sha256": "3f5137fc382218058dadd25c48973a4fbb02c614d52063bad3863fa9462cd9de",
+    "raw_bytes": 1303,
+    "gzip_sha256": "94b729b0d2360a9cd1498586c9228d982e51780dcd747616491f6afc0ef97b90"
+  },
+  "workbench-metal-scroll-area-run.json.gz": {
+    "raw_sha256": "30a949453c919490f37ed44e82f12a1c77a700f6eb926f572d21664a95d87c06",
+    "raw_bytes": 531,
+    "gzip_sha256": "5d2d582cfaea7d829f34cec3666da35bcccc93b0c9e417f34c09d11b8fbc3ca8"
+  },
+  "workbench-metal-editor.json.gz": {
+    "raw_sha256": "8f01dd6248037c9947d2ae8601d574fb0463be3e664174ba866b4d297c54bc38",
+    "raw_bytes": 3113144,
+    "gzip_sha256": "38d4d9f0b139018e81c8a06dd608f2f5b164435f29c75ae2ec5dfefb7e450e33"
+  },
+  "workbench-metal-editor.log.gz": {
+    "raw_sha256": "b14355021eb4eb62645d27a9002b429fe211a8d6bacd3421acb789edad110718",
+    "raw_bytes": 1293,
+    "gzip_sha256": "2a40b013c419b241017b033f994ec154fcc99f80001221d4c5b64f8b44573f72"
+  },
+  "workbench-metal-editor-run.json.gz": {
+    "raw_sha256": "e9f554eeeb4605a4c2caf8b912e3bf76f4253fb9f5a01de9d7f019d564c34ebd",
+    "raw_bytes": 526,
+    "gzip_sha256": "005a11d36605c27bc395df8ba8e55e599f0665bb7e302dc4005a5c1f9707dbda"
+  },
+  "workbench-metal-icons.json.gz": {
+    "raw_sha256": "af07f1bb688cd03b72b01058e77a04c5ac177b9d02281f2ed8bac320f5036bbb",
+    "raw_bytes": 3128648,
+    "gzip_sha256": "b9b5912f3ca34c16ba81d56ee8a0c4905bb6c21cb12e7b567d7f72a526cf5bb2"
+  },
+  "workbench-metal-icons.log.gz": {
+    "raw_sha256": "a526d167fedd24f2f633a9bf69edbb61059658963ea521ba32bb58bed1e70b8b",
+    "raw_bytes": 1293,
+    "gzip_sha256": "d281c8d5c350deada22b5bfdb101231fb0648b314469dd0483ea3cf6017e5698"
+  },
+  "workbench-metal-icons-run.json.gz": {
+    "raw_sha256": "5cee9d66729a73a098727bd961153fcf23c1ae6c4b387db97285bd4b60c3a091",
+    "raw_bytes": 525,
+    "gzip_sha256": "1cc3fd6f6b3c9eb0633b8764b51f4f3c9c4102bc48523c9c00c7b8f5f7db458f"
+  }
+}

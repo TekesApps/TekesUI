@@ -1,0 +1,221 @@
+{
+  "cpu_unit": "100% = one logical core; process user+system",
+  "status": "not accepted as stable 120Hz; Metal driver remains opt-in",
+  "runs": [
+    {
+      "case": "cad-3-linear-24",
+      "completed": true,
+      "seconds": 20.0,
+      "driver": "NSView CADisplayLink",
+      "queue": {
+        "metal_drawables": 3,
+        "present_mode": "Fifo",
+        "requested_maximum_frame_latency": 2
+      },
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            570005.7256083335,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "frames": 2052,
+      "rendered_frames": 2052,
+      "cpu_percent": 9.464332476258853,
+      "cpu_ms": {
+        "count": 2052,
+        "max": 24.164833,
+        "mean": 5.683891753898629,
+        "min": 0.101417,
+        "p50": 5.964584,
+        "p95": 16.406917,
+        "p99": 17.287584000000003
+      },
+      "acquire_ms": {
+        "count": 2052,
+        "max": 23.546875,
+        "mean": 5.369716329434705,
+        "min": 0.008459,
+        "p50": 5.606458,
+        "p95": 16.123542,
+        "p99": 17.005208
+      },
+      "actual_intervals_ms": {
+        "count": 2051,
+        "max": 24.999791639856994,
+        "mean": 9.765469953692497,
+        "min": 8.333166595548391,
+        "p50": 8.333250065334141,
+        "p95": 16.666541690938175,
+        "p99": 20.833083428442478
+      },
+      "presentation_gaps": 326,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "skipped_render_callbacks": 0,
+      "duplicates": 0,
+      "acquisitions": {
+        "ordinary": 2193,
+        "provided": 0
+      },
+      "idle": {
+        "cpu_ms": 1.874999999999627,
+        "cpu_percent": 0.037527967372979865,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.004260167
+      },
+      "strict_pass": false
+    },
+    {
+      "case": "cad-2-linear-24",
+      "completed": true,
+      "seconds": 20.0,
+      "driver": "NSView CADisplayLink",
+      "queue": {
+        "metal_drawables": 2,
+        "present_mode": "Fifo",
+        "requested_maximum_frame_latency": 1
+      },
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            570040.1877961251,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "frames": 2039,
+      "rendered_frames": 2039,
+      "cpu_percent": 8.723632802907964,
+      "cpu_ms": {
+        "count": 2039,
+        "max": 24.374375,
+        "mean": 8.77207646885728,
+        "min": 0.197458,
+        "p50": 8.207,
+        "p95": 16.802,
+        "p99": 17.829291
+      },
+      "acquire_ms": {
+        "count": 2039,
+        "max": 23.784334,
+        "mean": 8.485195655713586,
+        "min": 0.021167,
+        "p50": 7.9047920000000005,
+        "p95": 16.566750000000003,
+        "p99": 17.486792
+      },
+      "actual_intervals_ms": {
+        "count": 2038,
+        "max": 37.499666679650545,
+        "mean": 9.8154950727365,
+        "min": 8.333166595548391,
+        "p50": 8.333250065334141,
+        "p95": 16.666541690938175,
+        "p99": 24.999750079587102
+      },
+      "presentation_gaps": 309,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "skipped_render_callbacks": 0,
+      "duplicates": 0,
+      "acquisitions": {
+        "ordinary": 2174,
+        "provided": 0
+      },
+      "idle": {
+        "cpu_ms": 1.3530000000003817,
+        "cpu_percent": 0.026991327843422327,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.023830958
+      },
+      "strict_pass": false
+    },
+    {
+      "case": "metal-deferred-debug",
+      "completed": true,
+      "seconds": 5.0,
+      "driver": "CAMetalDisplayLink",
+      "queue": {
+        "metal_drawables": 3,
+        "present_mode": "Fifo",
+        "requested_maximum_frame_latency": 2
+      },
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            570461.8254803752,
+            false,
+            true
+          ],
+          [
+            570462.2952769585,
+            false,
+            false
+          ]
+        ],
+        "non_key_callbacks": 543,
+        "occluded_callbacks": 0
+      },
+      "frames": 598,
+      "rendered_frames": 598,
+      "cpu_percent": 11.740120862374292,
+      "cpu_ms": {
+        "count": 598,
+        "max": 0.8785839999999999,
+        "mean": 0.38767921906354486,
+        "min": 0.144375,
+        "p50": 0.35675,
+        "p95": 0.6742919999999999,
+        "p99": 0.7853340000000001
+      },
+      "acquire_ms": {
+        "count": 598,
+        "max": 0.110708,
+        "mean": 0.01731536956521739,
+        "min": 0.00475,
+        "p50": 0.013625000000000002,
+        "p95": 0.044042000000000005,
+        "p99": 0.07579100000000001
+      },
+      "actual_intervals_ms": {
+        "count": 594,
+        "max": 24.999750079587102,
+        "mean": 8.431457070890902,
+        "min": 8.3331250352785,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.333374978974462
+      },
+      "presentation_gaps": 5,
+      "not_presented": 3,
+      "missing_receipts": 0,
+      "skipped_render_callbacks": 0,
+      "duplicates": 0,
+      "acquisitions": {
+        "ordinary": 0,
+        "provided": 778
+      },
+      "idle": {
+        "cpu_ms": 2.2210000000000285,
+        "cpu_percent": 0.04446932942259066,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.005689375
+      },
+      "strict_pass": false
+    }
+  ]
+}

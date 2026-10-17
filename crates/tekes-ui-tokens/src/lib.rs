@@ -148,3 +148,70 @@ mod migration_tests {
         }
     }
 }
+pub mod palette;
+pub use palette::Palette;
+
+#[cfg(test)]
+mod effect_binding_tests {
+    use super::{Theme, proposal};
+    #[test]
+    fn component_motion_and_overlay_elevation_round_trip_json() {
+        let document: serde_json::Value =
+            serde_json::from_str(include_str!("../../../design/tokens.json")).unwrap();
+        let motion = &document["proposal"]["motion"];
+        for role in [
+            "button_hover",
+            "button_press",
+            "switch_thumb",
+            "disclosure_reveal",
+        ] {
+            let binding = &motion["control_transitions"][role];
+            let duration = motion["control_duration"][binding["duration"].as_str().unwrap()]
+                .as_f64()
+                .unwrap() as f32;
+            assert_eq!(proposal::control_duration(role), Some(duration));
+            let curve = motion["easing"][binding["easing"].as_str().unwrap()]
+                .as_array()
+                .unwrap();
+            assert_eq!(
+                proposal::control_easing(role).unwrap(),
+                std::array::from_fn(|i| curve[i].as_f64().unwrap() as f32)
+            );
+        }
+        assert_eq!(proposal::FOCUS_ANTIALIAS_GUARD_PHYSICAL_PIXELS,
+            document["proposal"]["layout"]["boundary_styles"]["focus"]["antialias_guard_physical_pixels"].as_f64().unwrap() as f32);
+        let elevation = &document["proposal"]["layout"]["elevation"];
+        for theme in Theme::ALL {
+            for role in ["menu", "popover", "dialog", "panel"] {
+                let layers = proposal::elevation(role, theme);
+                if theme.is_increased() || role == "panel" {
+                    assert!(layers.is_empty());
+                    continue;
+                }
+                let level = elevation["roles"][role].as_str().unwrap();
+                let source = elevation["levels"][level]
+                    [if theme.is_dark() { "dark" } else { "light" }]
+                .as_array()
+                .unwrap();
+                assert_eq!(layers.len(), source.len());
+                for (actual, expected) in layers.iter().zip(source) {
+                    assert_eq!(
+                        actual.offset_x,
+                        expected["offset"][0].as_f64().unwrap() as f32
+                    );
+                    assert_eq!(
+                        actual.offset_y,
+                        expected["offset"][1].as_f64().unwrap() as f32
+                    );
+                    assert_eq!(
+                        actual.blur_radius,
+                        expected["blur_radius"].as_f64().unwrap() as f32
+                    );
+                    assert_eq!(actual.spread, expected["spread"].as_f64().unwrap() as f32);
+                    assert_eq!(actual.alpha, expected["alpha"].as_f64().unwrap() as f32);
+                    assert_eq!(actual.color, expected["color"].as_str().unwrap());
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,114 @@
+{
+  "total": 672,
+  "pixel_identical": 664,
+  "changed": [
+    {
+      "file": "component-checkbox-dark-ic@1x.png",
+      "size": [
+        1440,
+        960
+      ],
+      "difference_bounds": [
+        349,
+        251,
+        520,
+        268
+      ]
+    },
+    {
+      "file": "component-checkbox-dark-ic@2x.png",
+      "size": [
+        2880,
+        1920
+      ],
+      "difference_bounds": [
+        698,
+        502,
+        1039,
+        535
+      ]
+    },
+    {
+      "file": "component-checkbox-dark@1x.png",
+      "size": [
+        1440,
+        960
+      ],
+      "difference_bounds": [
+        349,
+        251,
+        520,
+        268
+      ]
+    },
+    {
+      "file": "component-checkbox-dark@2x.png",
+      "size": [
+        2880,
+        1920
+      ],
+      "difference_bounds": [
+        698,
+        502,
+        1039,
+        535
+      ]
+    },
+    {
+      "file": "component-checkbox-light-ic@1x.png",
+      "size": [
+        1440,
+        960
+      ],
+      "difference_bounds": [
+        349,
+        251,
+        520,
+        268
+      ]
+    },
+    {
+      "file": "component-checkbox-light-ic@2x.png",
+      "size": [
+        2880,
+        1920
+      ],
+      "difference_bounds": [
+        698,
+        502,
+        1039,
+        535
+      ]
+    },
+    {
+      "file": "component-checkbox-light@1x.png",
+      "size": [
+        1440,
+        960
+      ],
+      "difference_bounds": [
+        349,
+        251,
+        520,
+        268
+      ]
+    },
+    {
+      "file": "component-checkbox-light@2x.png",
+      "size": [
+        2880,
+        1920
+      ],
+      "difference_bounds": [
+        698,
+        502,
+        1039,
+        535
+      ]
+    }
+  ],
+  "baseline_binary_sha256": "e02880a13fed1d19026499ce236154bcb22c2cb3a8a0e8587788f91722cf3b64",
+  "final_binary_sha256": "ef90318f15142bd88cc7fe6d6a723d1135a809ff710d83a0e4c992ec4a69cc55",
+  "mode": "offscreen_no_native_window",
+  "allowed_change": "User-requested Checkbox label first-line alignment only; DS unchanged."
+}

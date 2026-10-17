@@ -1,0 +1,34 @@
+{
+  "long-capture-failure.json": {
+    "sha256": "67f87c1ad993fdf6c126336abdf72f9daf0f5a612b1092eebfdbb8d97d59c063",
+    "bytes": 1017
+  },
+  "tool-source-sha256.json": {
+    "sha256": "168818862d00e6c47939d687644247488522e622eb8c2b896a48bb517d5df9df",
+    "bytes": 443
+  },
+  "perf.json.gz": {
+    "sha256": "021e430be53c80edbe219ea10f0b7911a1375a8b43223b18859c7037277c5018",
+    "bytes": 260603
+  },
+  "target-tables.json.gz": {
+    "sha256": "d80cde0d80ad067e3c7efb858fbe3646b3ded6905f398a7a21feb39290491ee9",
+    "bytes": 369802
+  },
+  "gallery-launch.json": {
+    "sha256": "7edbf6d69872fa86e10e3653f1766b2cf9698d43d00322a5a93e6ab54dcd5c2e",
+    "bytes": 314
+  },
+  "analysis.json": {
+    "sha256": "83f24788a53085d85d888ba8f3f154113d68e4f81ee2d4fa60fee33b217d8883",
+    "bytes": 5339
+  },
+  "verification.log": {
+    "sha256": "b4507693cef396bc22a7be32398be5c917aa3900f241653b350274d72d663acb",
+    "bytes": 415
+  },
+  "capture-receipt.json": {
+    "sha256": "2a249029aad031be9516a75450f7b2a69e6da32aa916b091c7823bb788f1daac",
+    "bytes": 2182
+  }
+}

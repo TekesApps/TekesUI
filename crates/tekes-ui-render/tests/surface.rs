@@ -71,8 +71,8 @@ fn configures_the_layer_and_keeps_srgb_colorspace_across_resizes() {
     assert!(layer.isOpaque());
     assert_eq!(
         layer.maximumDrawableCount(),
-        2,
-        "desired_maximum_frame_latency = 1"
+        3,
+        "desired_maximum_frame_latency = 2 prevents compositor drawable starvation"
     );
     assert!(layer.displaySyncEnabled(), "Fifo 对应 displaySyncEnabled");
     assert_eq!(

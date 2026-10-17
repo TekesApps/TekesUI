@@ -3,7 +3,7 @@
 use tekes_ui_scene::{Quad, Rect, Scene};
 use tekes_ui_tokens::{ColorRole, CornerRadius, Rgba, TextRole, Theme, proposal};
 
-use super::layout::{CATALOG_W, FRAME_H, FRAME_W, PAGE_TITLE_SLOT, catalog_label_slot};
+use super::layout::{CATALOG_W, FRAME_H, FRAME_W, PAGE_TITLE_SLOT};
 use super::pages::Page;
 use super::text::{LabelStyle, TextEngine};
 
@@ -51,6 +51,18 @@ pub fn draw_with_navigation(
     hover: Option<usize>,
     navigation: &super::navigation::Navigation,
 ) {
+    draw_navigation(scene, theme, text, page, hover, navigation, true);
+}
+
+fn draw_navigation(
+    scene: &mut Scene,
+    theme: Theme,
+    text: &mut TextEngine,
+    page: Page,
+    hover: Option<usize>,
+    navigation: &super::navigation::Navigation,
+    cull: bool,
+) {
     let height = FRAME_H.max(navigation.bounds().size.height);
     scene.push_quad(Quad::new(
         Rect::new(0.0, 0.0, CATALOG_W, height),
@@ -60,28 +72,56 @@ pub fn draw_with_navigation(
         Rect::new(CATALOG_W - 1.0, 0.0, 1.0, height),
         ColorRole::Separator.resolve(theme),
     ));
-    let offset = navigation.scroll.visual_offset().y;
-    scene.push_clip(navigation.bounds());
-    for section in super::navigation::sections() {
-        text.proposal_label_in(
-            scene,
-            theme,
-            section.rect.offset(0.0, -offset),
-            &section.title,
-            proposal::TextRole::UiCaption,
-            ColorRole::SecondaryText.resolve(theme),
-        );
+    let geometry = navigation.geometry();
+    let origin = geometry.content_origin();
+    let visible_document = geometry.visible_document_rect();
+    scene.push_clip(geometry.visible_viewport_rect().unwrap_or_default());
+    for section in navigation.sections() {
+        let header = section.rect.offset(origin.x, origin.y);
+        let header_visible =
+            visible_document.is_some_and(|visible| section.rect.intersection(&visible).is_some());
+        if !cull || header_visible {
+            text.proposal_label_in(
+                scene,
+                theme,
+                header,
+                &section.title,
+                proposal::TextRole::UiCaption,
+                ColorRole::SecondaryText.resolve(theme),
+            );
+        }
         for (p, row) in &section.items {
-            let row = row.offset(0.0, -offset);
+            let row_document = *row;
+            let row = row.offset(origin.x, origin.y);
+            if cull
+                && visible_document
+                    .is_none_or(|visible| row_document.intersection(&visible).is_none())
+            {
+                continue;
+            }
             if let Some(fill) = row_fill(theme, *p == page, hover == Some(p.index())) {
                 scene.push_quad(Quad::new(row, fill).with_corner_radius(CornerRadius::Row.value()));
             }
-            let label = catalog_label_slot(p.index()).offset(0.0, -offset);
+            let label = tekes_ui_scene::Rect::new(
+                row.min_x() + super::layout::ROW_PAD_X,
+                row.min_y(),
+                row.size.width - 2.0 * super::layout::ROW_PAD_X,
+                row.size.height,
+            );
             text.label_in(scene, theme, label, p.name(), CATALOG_STYLE);
+            if matches!(p,Page::Workbench(i) if super::workbench::entry(*i).planned()) {
+                text.label_in(
+                    scene,
+                    theme,
+                    Rect::new(row.max_x() - 25.0, row.min_y(), 20.0, row.size.height),
+                    "…",
+                    CATALOG_STYLE,
+                );
+            }
         }
     }
     scene.pop_clip();
-    if navigation.scroll.limit().y > 0.0 {
+    if navigation.scroll.scrollbar_visible(true) {
         let thumb = navigation
             .scroll
             .thumb(true, navigation.track(), super::layout::ROW_H);
@@ -90,7 +130,18 @@ pub fn draw_with_navigation(
                 .with_corner_radius(tekes_ui_tokens::Spacing::Micro.value()),
         );
     }
-    text.label_in(scene, theme, PAGE_TITLE_SLOT, page.name(), TITLE_STYLE);
+    text.label_in(
+        scene,
+        theme,
+        Rect::new(
+            PAGE_TITLE_SLOT.min_x(),
+            PAGE_TITLE_SLOT.min_y(),
+            600.0,
+            PAGE_TITLE_SLOT.size.height,
+        ),
+        page.name(),
+        TITLE_STYLE,
+    );
     let sep = ColorRole::Separator.resolve(theme);
     scene.push_quad(Quad::new(Rect::new(FRAME_W - 1.0, 0.0, 1.0, FRAME_H), sep));
     scene.push_quad(Quad::new(Rect::new(0.0, FRAME_H - 1.0, FRAME_W, 1.0), sep));
@@ -99,7 +150,75 @@ pub fn draw_with_navigation(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gallery::layout::ROW_LABEL_SLOT;
+
+    #[test]
+    fn viewport_culling_preserves_pixels_at_clip_edges_and_reduces_glyph_work() {
+        let mut renderer = tekes_ui_render::Renderer::new_headless().unwrap();
+        for theme in Theme::ALL {
+            for scale in [1., 2.] {
+                for offset in [0., 317.25, 1800.5] {
+                    let mut navigation = super::super::navigation::Navigation::default();
+                    navigation.resize(360.);
+                    navigation.scroll.scroll_by(0., offset);
+                    let mut text = TextEngine::new();
+                    text.set_scale(scale);
+                    text.begin_frame();
+                    let page = super::super::navigation::pages()[4];
+                    let mut reference = Scene::new();
+                    draw_navigation(
+                        &mut reference,
+                        theme,
+                        &mut text,
+                        page,
+                        Some(page.index()),
+                        &navigation,
+                        false,
+                    );
+                    let size = (1440 * scale as u32, 360 * scale as u32);
+                    let before = renderer
+                        .render_to_rgba8(
+                            &reference,
+                            text.atlas_mut(),
+                            size,
+                            scale,
+                            ColorRole::DocumentCanvas.resolve(theme),
+                        )
+                        .unwrap();
+                    let mut culled = Scene::new();
+                    draw_navigation(
+                        &mut culled,
+                        theme,
+                        &mut text,
+                        page,
+                        Some(page.index()),
+                        &navigation,
+                        true,
+                    );
+                    let after = renderer
+                        .render_to_rgba8(
+                            &culled,
+                            text.atlas_mut(),
+                            size,
+                            scale,
+                            ColorRole::DocumentCanvas.resolve(theme),
+                        )
+                        .unwrap();
+                    assert_eq!(before, after, "{theme:?}/{scale}x/offset {offset}");
+                    let glyphs = |scene: &Scene| {
+                        scene
+                            .primitives()
+                            .iter()
+                            .map(|p| match p {
+                                tekes_ui_scene::Primitive::Glyphs(run) => run.glyphs.len(),
+                                _ => 0,
+                            })
+                            .sum::<usize>()
+                    };
+                    assert!(glyphs(&culled) * 2 < glyphs(&reference));
+                }
+            }
+        }
+    }
 
     #[test]
     fn page_names_fit_their_slots() {
@@ -107,13 +226,12 @@ mod tests {
         for p in Page::ALL {
             let w = text.label(p.name(), CATALOG_STYLE.role, None).width as f32;
             assert!(
-                w <= catalog_label_slot(p.index()).size.width,
-                "{}：{w}",
+                w <= CATALOG_W - 2.0 * super::super::layout::ROW_PAD_X - 16.0,
+                "{}: {w}",
                 p.name()
             );
-            assert!(w <= ROW_LABEL_SLOT.width);
             let t = text.label(p.name(), TITLE_STYLE.role, None).width as f32;
-            assert!(t <= PAGE_TITLE_SLOT.size.width, "{}：{t}", p.name());
+            assert!(t <= 600.0, "{}：{t}", p.name());
         }
     }
 

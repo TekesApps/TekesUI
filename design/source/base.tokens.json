@@ -209,7 +209,7 @@
       },
       {
         "name": "border-focused",
-        "usage": "中性 1pt 自绘焦点轮廓，不偏移、不换品牌色",
+        "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
         "value": "{p-border-focused}"
       },
       {
@@ -331,6 +331,21 @@
           "light": "#285B8D",
           "light-ic": "#143F6B"
         }
+      },
+      {
+        "name": "p-status-solid-foreground",
+        "usage": "中性实体状态底面的标签前景，不随品牌色变化。",
+        "value": {
+          "light": "#FFFFFF",
+          "light-ic": "#FFFFFF",
+          "dark": "#000000",
+          "dark-ic": "#000000"
+        }
+      },
+      {
+        "name": "c-status-badge-foreground",
+        "usage": "StatusBadge 实体色标签文字；与状态色底保持高对比，不随品牌色变化。",
+        "value": "{p-status-solid-foreground}"
       },
       {
         "name": "status-info",
@@ -861,6 +876,21 @@
         "name": "c-tabs-selected-marker",
         "usage": "品牌语义绑定；通过 theme context 解析，不在组件内计算颜色",
         "value": "{selection-accent-marker}"
+      },
+      {
+        "name": "p-shadow-ink",
+        "usage": "品牌独立的软阴影基色",
+        "value": {
+          "light": "#000000",
+          "dark": "#000000",
+          "light-ic": "#000000",
+          "dark-ic": "#000000"
+        }
+      },
+      {
+        "name": "shadow-ink",
+        "usage": "浮层静态软阴影；alpha由elevation层定义",
+        "value": "{p-shadow-ink}"
       }
     ]
   },
@@ -1024,6 +1054,11 @@
         "name": "c-input-radius",
         "usage": "c-input-radius",
         "value": "{radius-input}"
+      },
+      {
+        "name": "c-checkbox-radius",
+        "usage": "Checkbox 方框圆角组件角色",
+        "value": "{p-radius-4}"
       },
       {
         "name": "p-radius-2",
@@ -1325,6 +1360,16 @@
         "value": "{size-row-height}"
       },
       {
+        "name": "c-checkbox-size",
+        "usage": "Checkbox 方框视觉尺寸组件角色",
+        "value": "{size-icon-standard}"
+      },
+      {
+        "name": "c-checkbox-row-min",
+        "usage": "Checkbox 最小可交互行高组件角色",
+        "value": "{size-comfortable-row}"
+      },
+      {
         "name": "p-size-40",
         "usage": "参考对齐的基础值；禁止业务直接消费",
         "value": 40
@@ -1514,6 +1559,11 @@
         "value": "{space-regular}"
       },
       {
+        "name": "c-checkbox-label-gap",
+        "usage": "Checkbox 方框与标签间距组件角色",
+        "value": "{space-snug}"
+      },
+      {
         "name": "p-spacing-10",
         "usage": "参考对齐的基础值；禁止业务直接消费",
         "value": 10
@@ -1557,6 +1607,11 @@
         "name": "space-segmented-inset",
         "usage": "专用内边距；来自组件源码或明确的 Tekes 适配",
         "value": "{p-spacing-2}"
+      },
+      {
+        "name": "c-focus-offset",
+        "usage": "焦点外环与控件外边缘的可见间距",
+        "value": "{space-micro}"
       }
     ]
   },
@@ -1595,7 +1650,7 @@
       {
         "name": "c-focus-width",
         "usage": "c-focus-width",
-        "value": "{stroke-rule}"
+        "value": "{stroke-emphasis}"
       }
     ]
   },

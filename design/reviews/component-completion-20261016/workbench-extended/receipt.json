@@ -1,0 +1,11 @@
+{
+  "started_utc": "2026-10-16T06:39:59.827440+00:00",
+  "exit_code": 0,
+  "png_count": 34,
+  "text_checks_passed": 4,
+  "text_failures": 0,
+  "capture_failures": 0,
+  "placement": "[   0.103] placement: \"U2790B\" builtin=false scale=2 max_fps=30\uff1bScreen(External)",
+  "external_confirmed": true,
+  "binary_sha256": "adca7e653008559432f40d024ca433af1c03e398e97954d55cc9272ab1d24386"
+}

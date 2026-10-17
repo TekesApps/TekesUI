@@ -1,0 +1,30 @@
+[
+  {
+    "case": "cad-3-linear-24",
+    "binary_sha256": "edeb97a6552b9ed3220a6506e04ca987d650f286b24fc53e71dd326a49a753fe",
+    "exit_code": 0,
+    "wall_s": 28.741573095321655,
+    "started_unix": 1792106052.257788
+  },
+  {
+    "case": "cad-2-linear-24",
+    "binary_sha256": "edeb97a6552b9ed3220a6506e04ca987d650f286b24fc53e71dd326a49a753fe",
+    "exit_code": 0,
+    "wall_s": 27.19235110282898,
+    "started_unix": 1792106088.211212
+  },
+  {
+    "case": "metal-3-linear-24",
+    "binary_sha256": "edeb97a6552b9ed3220a6506e04ca987d650f286b24fc53e71dd326a49a753fe",
+    "timeout": true,
+    "wall_s": 80.08849811553955,
+    "started_unix": 1792106123.04679
+  },
+  {
+    "case": "metal-deferred-debug",
+    "sha256": "9ff196c5029565568a46b3deb7b1e2ecee978fa709a97829b81d4e70fb8bcc1b",
+    "exit": 0,
+    "report_exists": true,
+    "started_unix": 1792106509.849268
+  }
+]

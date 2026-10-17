@@ -1,0 +1,26 @@
+{
+  "baseline_files": 921,
+  "missing": [],
+  "changed": [
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+    "crates/tekes-ui-motion/src/state_transition.rs",
+    "design/behavior/scroll-viewport.json",
+    "docs/design/scroll-viewport.md",
+    "Cargo.lock",
+    "DESIGN.md",
+    "crates/tekes-ui-controls/Cargo.toml",
+    "crates/tekes-ui-controls/src/lib.rs",
+    "crates/tekes-ui-controls/src/scroll_view.rs",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs",
+    "crates/tekes-ui-gallery/src/gallery/text.rs",
+    "crates/tekes-ui-gallery/src/gallery/text_demo.rs",
+    "crates/tekes-ui-gallery/src/gallery/viewport.rs",
+    "crates/tekes-ui-gallery/src/main.rs",
+    "crates/tekes-ui-motion/src/lib.rs",
+    "docs/gallery.md"
+  ],
+  "visual_authority_files": 75,
+  "visual_authority_changed": [],
+  "note": "WIP snapshot was taken after worker dispatch; retention/drift evidence only. DESIGN.md/gold7 is concurrent user-authorized work."
+}

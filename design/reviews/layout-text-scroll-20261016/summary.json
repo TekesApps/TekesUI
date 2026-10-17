@@ -1,0 +1,79 @@
+{
+  "date": "2026-10-16",
+  "status": "implementation_complete_native_external_retest_deferred_by_user",
+  "scope": "Shared layout, Text/TextSurface and ScrollArea integration; no new Gallery component or DS visual redesign.",
+  "implemented": [
+    "ContainerLayout: normalized border/insets/content and ancestor clip.",
+    "ScrollGeometry: viewport/document bounds, separate offset/bounce, shared visible ranges and pointer coordinate conversion.",
+    "Production TextSurface owns existing TextInput/ScrollArea, selection/caret/IME paint and pointer capture; Gallery retains font/native adapters.",
+    "Text, ScrollArea, TextField/TextArea, sidebar/icon search, ComboBox/CommandPalette, forms/settings/filter/master-detail use clipped shared text surfaces.",
+    "Multiline editor fills remaining container; single-line height follows actual text metrics; type/width reflow preserves read anchor or sticky bottom.",
+    "Canonical native test routes and retained-layout pointer targets replace obsolete page IDs and PAGE_CONTENT targets."
+  ],
+  "animation_boundary": {
+    "chat": "研究 Apple UI 动画并建模",
+    "thread_id": "01a13ffc-e8c0-7170-b6cc-6272ce135e33",
+    "delivered": "state_transition.rs exported from motion crate; numeric pause/retarget/reduced-motion tests included.",
+    "not_delivered": "No automatic component animation/ScrollArea physics hookup or visual change."
+  },
+  "checks": {
+    "passed": 361,
+    "ignored": 1,
+    "by_crate": {
+      "controls": 64,
+      "gallery": 227,
+      "motion_including_doctest": 70
+    },
+    "commands": "checks-final.json",
+    "all_exit_zero": true
+  },
+  "visual": {
+    "status": "passed_limited_candidate_default_comparison",
+    "before_sha256": "80154c2313c55cbb95e5469c5834d186c01dea768c44cca704ebd832e51d1262",
+    "after_sha256": "f04ed2494ea7338fd217133662581262b34daada796ed539a97c4577a98d8b66",
+    "scope": "3 default canonical routes: component-text, component-scroll-area, lab-internal-text; 1440x960 external screen @2x; all Gallery pixels identical after excluding macOS title bar. Final package has later selftest routing/target helper changes and is not asserted pixel-identical without rerun.",
+    "details": "visual-comparison.json",
+    "ds_visual_authority_changed": []
+  },
+  "native": {
+    "initial": "native-initial/classification.json",
+    "earlier_valid_external": [
+      "workbench: exit0,20 captures,2 text assertions",
+      "workbench-extended: exit0,34 captures,4 text assertions"
+    ],
+    "earlier_external_sha256": "f04ed2494ea7338fd217133662581262b34daada796ed539a97c4577a98d8b66",
+    "corrected_rejected": "native-corrected-display-rejected/classification.json",
+    "final_external": "not_run_user_deferred_after_external_display_disappeared",
+    "final_launch": "not_started_per_external_display_constraint",
+    "future_runner": "native-runner.py (external preflight and actual placement guard; updated guard has not been natively rerun)"
+  },
+  "package": {
+    "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app",
+    "binary_sha256": "e02880a13fed1d19026499ce236154bcb22c2cb3a8a0e8587788f91722cf3b64",
+    "signature": "packaging script codesign verification passed",
+    "launched": false
+  },
+  "open_items": [
+    "External native rerun: corrected text, scroll-repair, reflow, workbench and workbench-extended; inspect actual selection/IME/caret, short/large text, viewport bounds.",
+    "TextArea PageDown capture has not been run; prior End capture showed event log, not field.",
+    "Full lazy provider/content realization, version/reason notifications and frame coalescing; block text layout and large-coordinate precision.",
+    "120Hz/8.33ms presentation, isolated drops, CPU and NSScrollView rebound acceptance remain open; no performance result from this batch.",
+    "Physical IME/keyboard/VoiceOver and all-component final visual review.",
+    "Other historical generic selftest scripts still contain legacy grouped-page IDs; not migrated or claimed passing here."
+  ],
+  "git": {
+    "staged": false,
+    "committed": false,
+    "pushed": false,
+    "released": false
+  },
+  "retention": "protected-wip-check.json",
+  "source_freeze": "source-freeze.json",
+  "source_archive": "sources.tar.gz",
+  "manual_review_scope": [
+    "Default canonical Text and internal editor native screenshots; default three-page pixel comparison.",
+    "Earlier external large-text narrow Button screenshot.",
+    "Rejected-display diagnostic editor1000x520 and ScrollArea bottom; observations only, not external acceptance.",
+    "Rejected-display TextArea End screenshot showed event log; documented and script changed to PageDown without rerun."
+  ]
+}

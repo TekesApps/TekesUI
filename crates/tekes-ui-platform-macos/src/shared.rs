@@ -51,12 +51,23 @@ pub(crate) struct Objects {
     pub view: Retained<TekesView>,
 }
 
+struct ProvidedFrame {
+    layer: Retained<objc2_quartz_core::CAMetalLayer>,
+    drawable: Retained<objc2::runtime::ProtocolObject<dyn objc2_quartz_core::CAMetalDrawable>>,
+}
+
+struct QueuedEvent {
+    event: Event,
+    drawable: Option<ProvidedFrame>,
+}
+
 pub(crate) struct Shared {
+    pub presentation: std::sync::Arc<crate::presentation::PresentationObserver>,
     pub caret_scheduled: Cell<bool>,
     pub text_input: RefCell<Option<crate::event::TextInputState>>,
     pub mtm: MainThreadMarker,
     handler: RefCell<Option<Box<dyn WindowHandler>>>,
-    queue: RefCell<VecDeque<Event>>,
+    queue: RefCell<VecDeque<QueuedEvent>>,
     dispatching: Cell<bool>,
     pub redraw_pending: Cell<bool>,
     pub last_geometry: Cell<Option<GeometryState>>,
@@ -74,6 +85,7 @@ pub(crate) struct Shared {
     pub animating: Cell<bool>,
     /// 显示链接回调被调用的总次数（不论动画模式开没开，用来验证关掉之后真的静默）。
     pub link_callbacks: Cell<u64>,
+    pub metal_reentrant_queued: Cell<u64>,
     /// 其中作为 `AnimationFrame` 投递给引擎的次数。
     pub animation_frames: Cell<u64>,
 }
@@ -90,6 +102,7 @@ impl std::fmt::Debug for Shared {
 impl Shared {
     pub fn new(mtm: MainThreadMarker, handler: Box<dyn WindowHandler>) -> Rc<Shared> {
         Rc::new(Shared {
+            presentation: Default::default(),
             caret_scheduled: Cell::new(false),
             text_input: RefCell::new(None),
             mtm,
@@ -107,36 +120,100 @@ impl Shared {
             redraw_count: Cell::new(0),
             animating: Cell::new(false),
             link_callbacks: Cell::new(0),
+            metal_reentrant_queued: Cell::new(0),
             animation_frames: Cell::new(0),
         })
     }
 
-    /// 投递一个事件。可以在任何时刻、包括 `handle` 运行期间调用。
+    pub(crate) fn can_dispatch_synchronously(&self) -> bool {
+        !self.dispatching.get()
+    }
+
+    /// Metal updates keep their drawable across reentrant AppKit callbacks. The
+    /// thread-local handoff is installed only when this queued handler runs.
+    pub(crate) fn dispatch_metal_frame(
+        self: &Rc<Self>,
+        frame: crate::AnimationFrame,
+        layer: Retained<objc2_quartz_core::CAMetalLayer>,
+        drawable: Retained<objc2::runtime::ProtocolObject<dyn objc2_quartz_core::CAMetalDrawable>>,
+    ) {
+        if self.dispatching.get() {
+            self.metal_reentrant_queued
+                .set(self.metal_reentrant_queued.get() + 1);
+        }
+        self.enqueue(QueuedEvent {
+            event: Event::AnimationFrame(frame),
+            drawable: Some(ProvidedFrame { layer, drawable }),
+        });
+    }
+
+    /// Release queued drawables before reconfiguring their layer. Restore the
+    /// ordinary event queue before dropping Objective-C objects (may reenter).
+    pub(crate) fn discard_metal_frames(&self) {
+        let mut pending = std::mem::take(&mut *self.queue.borrow_mut());
+        let mut discarded = Vec::new();
+        while let Some(event) = pending.pop_front() {
+            if event.drawable.is_some() {
+                discarded.push(event);
+            } else {
+                self.queue.borrow_mut().push_back(event);
+            }
+        }
+        drop(discarded);
+    }
+
+    /// 投递一个事件。重入时在当前 handler 返回后按顺序处理。
     pub fn dispatch(self: &Rc<Self>, event: Event) {
-        if self.closed.get() && !matches!(event, Event::CloseRequested) {
+        self.enqueue(QueuedEvent {
+            event,
+            drawable: None,
+        });
+    }
+
+    fn enqueue(self: &Rc<Self>, queued: QueuedEvent) {
+        if self.closed.get() && queued.event != Event::CloseRequested {
             return;
         }
         {
-            let mut q = self.queue.borrow_mut();
-            if event == Event::Redraw && q.back() == Some(&Event::Redraw) {
+            let mut queue = self.queue.borrow_mut();
+            if queued.event == Event::Redraw
+                && queue.back().is_some_and(|q| q.event == Event::Redraw)
+            {
                 return;
             }
-            q.push_back(event);
+            queue.push_back(queued);
         }
         if self.dispatching.replace(true) {
-            // 外层已经有分发循环在跑，它会在当前 handle 返回后取到这个事件。
             return;
         }
         loop {
             let next = self.queue.borrow_mut().pop_front();
-            let Some(ev) = next else { break };
+            let Some(QueuedEvent {
+                mut event,
+                drawable,
+            }) = next
+            else {
+                break;
+            };
+            if drawable.is_some() && (self.closed.get() || !self.animating.get()) {
+                continue;
+            }
+            if let Event::AnimationFrame(frame) = &mut event {
+                frame.dispatch_time = objc2_quartz_core::CACurrentMediaTime();
+            }
             let taken = self.handler.borrow_mut().take();
             let Some(mut handler) = taken else { break };
-            if ev == Event::Redraw {
+            if event == Event::Redraw {
                 self.redraw_count.set(self.redraw_count.get() + 1);
             }
             let mut window = Window::new(self.clone());
-            handler.handle(ev, &mut window);
+            if let Some(frame) = drawable {
+                crate::presentation::with_provided_drawable(&frame.layer, frame.drawable, || {
+                    handler.handle(event, &mut window)
+                });
+            } else {
+                handler.handle(event, &mut window);
+            }
             *self.handler.borrow_mut() = Some(handler);
         }
         self.dispatching.set(false);
@@ -169,6 +246,7 @@ impl Shared {
     pub fn finish(&self) {
         self.closed.set(true);
         self.animating.set(false);
+        self.discard_metal_frames();
         if let Some(o) = self.objects.get() {
             o.view.invalidate_display_link();
         }
@@ -200,6 +278,62 @@ pub struct Window {
 }
 
 impl Window {
+    /// Visibility at this instant; a fully covered/minimized window cannot be
+    /// used as evidence of visible presentation cadence.
+    pub fn is_occluded(&self) -> bool {
+        !self
+            .window
+            .occlusionState()
+            .contains(objc2_app_kit::NSWindowOcclusionState::Visible)
+    }
+
+    pub fn is_key_window(&self) -> bool {
+        self.window.isKeyWindow()
+    }
+
+    /// Enable optional drawable receipts for benchmarking; disabled in normal UI.
+    pub fn set_presentation_timing(&self, enabled: bool) {
+        if enabled && let Ok(mut frames) = self.shared.presentation.frames.lock() {
+            frames.reserve(16384);
+        }
+        self.shared
+            .presentation
+            .enabled
+            .store(enabled, std::sync::atomic::Ordering::Relaxed);
+    }
+    /// Benchmark counters (provided drawable consumptions, ordinary acquisitions).
+    pub fn drawable_acquisition_counts(&self) -> (u64, u64) {
+        use std::sync::atomic::Ordering;
+        (
+            self.shared
+                .presentation
+                .provided_drawables
+                .load(Ordering::Relaxed),
+            self.shared
+                .presentation
+                .fallback_acquires
+                .load(Ordering::Relaxed),
+        )
+    }
+
+    pub fn metal_reentrant_queued(&self) -> u64 {
+        self.shared.metal_reentrant_queued.get()
+    }
+
+    pub fn drawable_serial(&self) -> u64 {
+        self.shared
+            .presentation
+            .serial
+            .load(std::sync::atomic::Ordering::Relaxed)
+    }
+    pub fn presented_frames(&self) -> Vec<crate::PresentedFrame> {
+        self.shared
+            .presentation
+            .frames
+            .lock()
+            .map(|v| v.clone())
+            .unwrap_or_default()
+    }
     pub fn set_text_input_state(&self, state: Option<crate::event::TextInputState>) {
         let blink = state
             .as_ref()
@@ -256,12 +390,20 @@ impl Window {
         if self.shared.closed.get() {
             return false;
         }
+        if self.shared.animating.get() == animating {
+            return animating;
+        }
         let on = animating && self.view.set_display_link_running(true);
         if !animating {
             self.view.set_display_link_running(false);
         }
         self.shared.animating.set(on);
         on
+    }
+
+    /// Live resize needs immediate geometry redraws even when animation is on.
+    pub fn is_live_resizing(&self) -> bool {
+        self.view.is_live_resizing()
     }
 
     /// 持续动画模式现在是否开着。
@@ -316,6 +458,10 @@ impl Window {
     pub fn set_content_size(&self, size: Size) {
         self.window
             .setContentSize(NSSize::new(size.width, size.height));
+    }
+
+    pub fn update_menu_titles(&self, bar: &crate::menu::MenuBar) {
+        crate::menu_build::update_titles(self.shared.mtm, bar);
     }
 
     /// 修改菜单项的勾选状态。命令不存在时返回 false。

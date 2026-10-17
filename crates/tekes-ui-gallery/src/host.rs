@@ -27,7 +27,7 @@ pub struct Host {
     redraws: u64,
     /// `TEKES_PERF` 开着时的性能 harness（见 `perf.rs`）。
     perf: Option<Perf>,
-    pending_scroll: bool,
+    pending_redraw: bool,
     last_animation_target: Option<f64>,
     window_active: bool,
 }
@@ -44,7 +44,7 @@ impl Host {
             start: Instant::now(),
             redraws: 0,
             perf: None,
-            pending_scroll: false,
+            pending_redraw: false,
             last_animation_target: None,
             window_active: true,
         }
@@ -65,6 +65,7 @@ impl Host {
     /// 窗口标题与菜单勾选跟随 Gallery 状态。
     fn sync_chrome(&self, window: &Window) {
         window.set_title(&self.gallery.title());
+        window.update_menu_titles(&self.gallery.menu_bar());
         for c in Command::all() {
             window.set_command_checked(c.id(), self.gallery.is_checked(c));
         }
@@ -121,6 +122,20 @@ impl Host {
         {
             eprintln!("渲染失败：{e}");
         }
+        if self.log && window.is_live_resizing() {
+            let presented = window
+                .presented_frames()
+                .iter()
+                .filter(|frame| frame.presented_at > 0.0)
+                .count();
+            self.log(format_args!(
+                "live-resize rendered; positive presented={presented}"
+            ));
+        }
+        // Components discover their transition targets while building the
+        // scene. Start the display link after that build as well as after
+        // input, otherwise a first hover/press can remain on its initial frame.
+        self.sync_animation(window, self.gallery.needs_animation());
     }
 }
 
@@ -172,6 +187,11 @@ impl WindowHandler for Host {
                 scale,
                 drawable_size,
             } => {
+                self.gallery
+                    .set_view_size(size.width as f32, size.height as f32);
+                if let Some(perf) = &mut self.perf {
+                    perf.resize(size.width as f32, size.height as f32);
+                }
                 self.log(format_args!(
                     "Resized {}x{} scale {scale} drawable {drawable_size:?}",
                     size.width, size.height
@@ -179,6 +199,19 @@ impl WindowHandler for Host {
                 if let Some(r) = &mut self.renderer {
                     r.resize(*drawable_size, *scale as f32);
                 }
+            }
+            Event::Redraw if self.perf.is_some() => {
+                if let (Some(perf), Some(renderer)) = (self.perf.as_mut(), self.renderer.as_mut()) {
+                    perf.poll_presentation_drain(&mut FrameCtx {
+                        scene: &mut self.scene,
+                        renderer,
+                        window: &mut *window,
+                        theme: self.gallery.theme(),
+                    });
+                }
+            }
+            Event::Redraw if window.is_animating() && !window.is_live_resizing() => {
+                self.pending_redraw = true;
             }
             Event::Redraw => self.redraw(window),
             Event::AnimationFrame(f) => {
@@ -198,7 +231,8 @@ impl WindowHandler for Host {
                         });
                     self.last_animation_target = Some(f.target_timestamp);
                     let animated = self.gallery.animate(dt as f32);
-                    if animated || std::mem::take(&mut self.pending_scroll) {
+                    let pending = std::mem::take(&mut self.pending_redraw);
+                    if animated || pending {
                         self.redraw(window);
                     }
                     let animate = self.gallery.needs_animation();
@@ -315,12 +349,18 @@ impl WindowHandler for Host {
                     self.log(format_args!("hover {:?}", self.gallery.hover()));
                 }
                 window.set_text_input_state(self.gallery.text_input_state());
+                if matches!(event, Event::Scroll(_)) {
+                    self.pending_redraw |= change.redraw;
+                    self.sync_animation(
+                        window,
+                        self.gallery.needs_animation() || self.pending_redraw,
+                    );
+                    return;
+                }
                 let animate = self.gallery.needs_animation();
-                if matches!(event, Event::Scroll(_)) && animate {
-                    self.pending_scroll |= change.redraw;
-                } else {
+                {
                     self.apply_change(change, window);
-                    if std::mem::take(&mut self.pending_scroll) {
+                    if std::mem::take(&mut self.pending_redraw) {
                         window.request_redraw();
                     }
                 }

@@ -1,0 +1,97 @@
+[
+  {
+    "check": "tests-final",
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "tekes-ui-controls",
+      "-p",
+      "tekes-ui-gallery",
+      "-p",
+      "tekes-ui-motion",
+      "-p",
+      "tekes-ui-icons",
+      "--release",
+      "--locked"
+    ],
+    "exit": 0,
+    "seconds": 17.46
+  },
+  {
+    "check": "clippy-final",
+    "command": [
+      "cargo",
+      "clippy",
+      "-p",
+      "tekes-ui-controls",
+      "-p",
+      "tekes-ui-gallery",
+      "-p",
+      "tekes-ui-motion",
+      "-p",
+      "tekes-ui-icons",
+      "--all-targets",
+      "--release",
+      "--locked",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit": 0,
+    "seconds": 2.25
+  },
+  {
+    "check": "build-final",
+    "command": [
+      "cargo",
+      "build",
+      "-p",
+      "tekes-ui-gallery",
+      "--release",
+      "--locked"
+    ],
+    "exit": 0,
+    "seconds": 4.7
+  },
+  {
+    "check": "fmt-final",
+    "command": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "exit": 0,
+    "seconds": 0.46
+  },
+  {
+    "check": "pure-rust-final",
+    "command": [
+      "python3",
+      "scripts/check-pure-rust.py"
+    ],
+    "exit": 0,
+    "seconds": 0.31
+  },
+  {
+    "check": "design-system-final",
+    "command": [
+      "target/design-check-venv/bin/python",
+      "scripts/check-design-system.py"
+    ],
+    "exit": 0,
+    "seconds": 0.31
+  },
+  {
+    "check": "diff-final",
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit": 0,
+    "seconds": 0.06
+  }
+]

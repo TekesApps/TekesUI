@@ -3,9 +3,22 @@
 pub use crate::generated::{ControlSize, CornerRadius, Motion, Spacing, Stroke};
 
 impl CornerRadius {
-    /// Child radius = outer - inset, with the semantic Badge floor.
+    /// Child radius for concentric nested geometry, floored by `radius-square`.
+    ///
+    /// Negative outer radii and insets are treated as zero. Non-finite inputs
+    /// return the safe square-radius floor. Non-concentric shapes must not use
+    /// this helper.
     pub fn concentric(outer: f32, inset: f32) -> f32 {
-        (outer - inset).max(CornerRadius::Badge.value())
+        let token_floor = CornerRadius::Square.value();
+        let floor = if token_floor.is_finite() {
+            token_floor.max(0.0)
+        } else {
+            0.0
+        };
+        if !outer.is_finite() || !inset.is_finite() {
+            return floor;
+        }
+        (outer.max(floor) - inset.max(0.0)).max(floor)
     }
 }
 
@@ -42,9 +55,31 @@ mod tests {
     }
 
     #[test]
-    fn concentric_has_floor() {
+    fn concentric_uses_square_token_floor_and_clamps_insets() {
         assert_eq!(CornerRadius::concentric(12.0, 4.0), 8.0);
-        assert_eq!(CornerRadius::concentric(6.0, 5.0), 4.0);
+        assert_eq!(CornerRadius::concentric(6.0, 5.0), 1.0);
+        assert_eq!(
+            CornerRadius::concentric(6.0, 6.0),
+            CornerRadius::Square.value()
+        );
+        assert_eq!(
+            CornerRadius::concentric(6.0, 8.0),
+            CornerRadius::Square.value()
+        );
+        assert_eq!(CornerRadius::concentric(6.0, -2.0), 6.0);
+        assert_eq!(
+            CornerRadius::concentric(-2.0, 0.0),
+            CornerRadius::Square.value()
+        );
+    }
+
+    #[test]
+    fn concentric_non_finite_inputs_return_square_token_floor() {
+        let floor = CornerRadius::Square.value();
+        assert_eq!(CornerRadius::concentric(f32::NAN, 1.0), floor);
+        assert_eq!(CornerRadius::concentric(1.0, f32::NAN), floor);
+        assert_eq!(CornerRadius::concentric(f32::INFINITY, 0.0), floor);
+        assert_eq!(CornerRadius::concentric(1.0, f32::NEG_INFINITY), floor);
     }
 
     #[test]

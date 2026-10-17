@@ -93,6 +93,96 @@ pub fn button_sample(scene: &mut Scene, cell: Rect, state: ComponentState, theme
     );
 }
 
+/// Shared visual vocabulary. Foundations owns the rules; calibration reuses the
+/// same samples. The original build remains a historical golden fixture only.
+pub fn stroke_samples(scene: &mut Scene, theme: Theme, origin: Point) {
+    let (x, top) = (origin.x, origin.y);
+    for (i, stroke) in [Stroke::Hairline, Stroke::Rule, Stroke::Emphasis]
+        .iter()
+        .enumerate()
+    {
+        let r = Rect::new(
+            x + i as f32 * (ITEM.width + GAP),
+            top,
+            ITEM.width,
+            ITEM.height,
+        );
+        scene.push_quad(
+            Quad::new(r, Rgba::new(0.0, 0.0, 0.0, 0.0))
+                .with_corner_radius(CornerRadius::Row.value())
+                .with_border(stroke.value(), ColorRole::BorderFocused.resolve(theme)),
+        );
+    }
+}
+pub fn alpha_samples(scene: &mut Scene, theme: Theme, origin: Point) {
+    let (overlap_x, top) = (origin.x, origin.y);
+    for (i, alpha) in [Alpha::Faint, Alpha::Soft, Alpha::Wash].iter().enumerate() {
+        let a = alpha.resolve(theme.contrast);
+        let gx = overlap_x + i as f32 * (120.0 + GAP);
+        scene.push_quad(
+            Quad::new(
+                Rect::new(gx, top, 72.0, ITEM.height),
+                ColorRole::Accent.resolve(theme).with_alpha(a),
+            )
+            .with_corner_radius(CornerRadius::Row.value()),
+        );
+        scene.push_quad(
+            Quad::new(
+                Rect::new(gx + 36.0, top + 8.0, 72.0, ITEM.height - 16.0),
+                ColorRole::StatusFailed.resolve(theme).with_alpha(a),
+            )
+            .with_corner_radius(CornerRadius::Row.value()),
+        );
+    }
+}
+pub fn state_samples(
+    scene: &mut Scene,
+    theme: Theme,
+    text: &mut crate::gallery::text::TextEngine,
+    origin: Point,
+) {
+    let matrix = StateMatrix::new(origin, 1);
+    matrix.draw(
+        scene,
+        theme,
+        text,
+        &["类按钮"],
+        |scene, _row, cell, state| {
+            button_sample(scene, cell, state, theme);
+        },
+    );
+}
+
+/// Live raster diagnostics only: no unavailable reference image or heatmap panes.
+pub fn build_calibration(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
+    let x = content.min_x();
+    let y = content.min_y();
+    for (row, offset) in [0.0, 0.5].into_iter().enumerate() {
+        let top = y + row as f32 * 160.;
+        ctx.text.proposal_label_in(
+            scene,
+            ctx.theme,
+            Rect::new(x, top, content.size.width, 32.),
+            &format!(
+                "Raster alignment: origin + {offset} pt · backing scale {}x",
+                ctx.text.scale()
+            ),
+            proposal::TextRole::UiBody,
+            ColorRole::PrimaryText.resolve(ctx.theme),
+        );
+        stroke_samples(scene, ctx.theme, Point::new(x + offset, top + 40. + offset));
+    }
+    ctx.text.proposal_label_in(
+        scene,
+        ctx.theme,
+        Rect::new(x, y + 340., content.size.width, 32.),
+        "Live alpha compositing — inspect intersections for seams and clipping",
+        proposal::TextRole::UiBody,
+        ColorRole::PrimaryText.resolve(ctx.theme),
+    );
+    alpha_samples(scene, ctx.theme, Point::new(x, y + 384.));
+}
+
 pub fn build(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
     let theme = ctx.theme;
     let text = &mut *ctx.text;
@@ -119,55 +209,15 @@ pub fn build(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
     // 2. 描边三档，然后是三档 alpha 叠放。
     draw_section_header(scene, theme, text, x, y, "描边与 alpha 叠放");
     let top = y + SECTION_HEADER_H;
-    for (i, stroke) in [Stroke::Hairline, Stroke::Rule, Stroke::Emphasis]
-        .iter()
-        .enumerate()
-    {
-        let r = Rect::new(
-            x + i as f32 * (ITEM.width + GAP),
-            top,
-            ITEM.width,
-            ITEM.height,
-        );
-        scene.push_quad(
-            Quad::new(r, Rgba::new(0.0, 0.0, 0.0, 0.0))
-                .with_corner_radius(CornerRadius::Row.value())
-                .with_border(stroke.value(), ColorRole::BorderFocused.resolve(theme)),
-        );
-    }
+    stroke_samples(scene, theme, Point::new(x, top));
     let overlap_x = x + 3.0 * (ITEM.width + GAP) + SECTION_GAP;
-    for (i, alpha) in [Alpha::Faint, Alpha::Soft, Alpha::Wash].iter().enumerate() {
-        let a = alpha.resolve(theme.contrast);
-        let gx = overlap_x + i as f32 * (120.0 + GAP);
-        scene.push_quad(
-            Quad::new(
-                Rect::new(gx, top, 72.0, ITEM.height),
-                ColorRole::Accent.resolve(theme).with_alpha(a),
-            )
-            .with_corner_radius(CornerRadius::Row.value()),
-        );
-        scene.push_quad(
-            Quad::new(
-                Rect::new(gx + 36.0, top + 8.0, 72.0, ITEM.height - 16.0),
-                ColorRole::StatusFailed.resolve(theme).with_alpha(a),
-            )
-            .with_corner_radius(CornerRadius::Row.value()),
-        );
-    }
+    alpha_samples(scene, theme, Point::new(overlap_x, top));
     y += SECTION_HEADER_H + ITEM.height + SECTION_GAP;
 
     // 3. 状态矩阵，一行。
     draw_section_header(scene, theme, text, x, y, "状态矩阵");
     let matrix = StateMatrix::new(Point::new(x, y + SECTION_HEADER_H), 1);
-    matrix.draw(
-        scene,
-        theme,
-        text,
-        &["类按钮"],
-        |scene, _row, cell, state| {
-            button_sample(scene, cell, state, theme);
-        },
-    );
+    state_samples(scene, theme, text, matrix.origin);
     y += SECTION_HEADER_H + matrix.size().height + SECTION_GAP;
 
     // 4. 并排参照槽：live 窗格里画同一个样本（rest）。
@@ -210,6 +260,33 @@ mod tests {
 
     fn count_quads(theme: Theme) -> usize {
         build_page(theme, &mut TextEngine::new()).len()
+    }
+
+    #[test]
+    fn lab_has_live_raster_checks_without_empty_reference_panes() {
+        for theme in Theme::ALL {
+            let mut text = TextEngine::new();
+            let mut st = StaticText::new(None);
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut st,
+            };
+            let mut scene = Scene::new();
+            build_calibration(&mut ctx, Rect::new(0., 0., 1104., 700.), &mut scene);
+            let quads: Vec<_> = scene
+                .primitives()
+                .iter()
+                .filter_map(|p| match p {
+                    tekes_ui_scene::Primitive::Quad(q) => Some(q),
+                    _ => None,
+                })
+                .collect();
+            // Six alignment strokes and six intersecting color samples. No
+            // reference/difference placeholder containers are constructed.
+            assert_eq!(quads.len(), 12);
+            assert!(quads.iter().all(|q| q.rect.max_y() <= 440.));
+        }
     }
 
     #[test]

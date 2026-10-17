@@ -4,6 +4,14 @@ use serde_json::{Value, json};
 use std::{collections::BTreeSet, fmt::Write};
 
 const GROUPS: &[&str] = &["color", "spacing", "radius", "stroke", "opacity", "size"];
+const ALIGNMENT_PRESETS: &[(&str, &str, &str, &str)] = &[
+    ("row", "start", "center", "leading"),
+    ("column", "start", "leading", "leading"),
+    ("text_row", "start", "first_baseline", "leading"),
+    ("button_content", "start", "center", "center"),
+    ("icon_artboard", "center", "center", "center"),
+    ("chart_label", "center", "center", "center"),
+];
 
 pub(crate) fn resolve(
     tokens: &Value,
@@ -70,6 +78,45 @@ pub(crate) fn validate(p: &Value) -> Result<(), Errors> {
         return Err(vec!["proposal requires exact four themes".into()]);
     }
     let mut errors = vec![];
+    let presets = &p["layout"]["alignment"]["presets"];
+    let expected_presets: BTreeSet<_> = ALIGNMENT_PRESETS.iter().map(|item| item.0).collect();
+    if presets
+        .as_object()
+        .map(|map| map.keys().map(String::as_str).collect::<BTreeSet<_>>())
+        != Some(expected_presets)
+    {
+        errors.push("proposal/layout/alignment: exact preset keys required".into());
+    }
+    for (name, _, _, _) in ALIGNMENT_PRESETS {
+        let preset = &presets[*name];
+        let expected_fields = BTreeSet::from(["main_axis", "cross_axis", "text_alignment"]);
+        if preset
+            .as_object()
+            .map(|map| map.keys().map(String::as_str).collect::<BTreeSet<_>>())
+            != Some(expected_fields)
+        {
+            errors.push(format!(
+                "proposal/layout/alignment/{name}: exact fields required"
+            ));
+        }
+        if *name == "button_content" && preset["text_alignment"].as_str() == Some("trailing") {
+            errors.push("button_content text alignment supports leading or center".into());
+        }
+        if !matches!(
+            preset["main_axis"].as_str(),
+            Some("start" | "center" | "end" | "space_between")
+        ) || !matches!(
+            preset["cross_axis"].as_str(),
+            Some("leading" | "center" | "trailing" | "first_baseline")
+        ) || !matches!(
+            preset["text_alignment"].as_str(),
+            Some("leading" | "center" | "trailing")
+        ) {
+            errors.push(format!(
+                "proposal/layout/alignment/{name}: invalid or unsupported policy"
+            ));
+        }
+    }
     for group in GROUPS {
         let Some(list) = t[group]["tokens"].as_array() else {
             errors.push(format!("proposal/{group}: tokens array missing"));
@@ -248,6 +295,11 @@ pub(crate) fn validate(p: &Value) -> Result<(), Errors> {
         "/layout/gallery/capture_size/0",
         "/layout/gallery/capture_size/1",
         "/layout/sidebar/default",
+        "/layout/scroll_area/content_padding",
+        "/layout/scroll_area/single_line_padding_y",
+        "/layout/scroll_area/scrollbar_width",
+        "/layout/scroll_area/scrollbar_inset",
+        "/layout/scroll_area/sidebar_padding",
     ] {
         if !p
             .pointer(path)
@@ -260,6 +312,7 @@ pub(crate) fn validate(p: &Value) -> Result<(), Errors> {
     if !p["brand"]["config"]["brand_id"].is_string() {
         errors.push("proposal requires explicit consumer brand".into());
     }
+    errors.extend(crate::effects::validate(p));
     if errors.is_empty() {
         Ok(())
     } else {
@@ -267,10 +320,74 @@ pub(crate) fn validate(p: &Value) -> Result<(), Errors> {
     }
 }
 
+fn emit_layout_policies(p: &Value, out: &mut String) -> Result<(), Errors> {
+    out.push_str(
+        "pub mod layout {\n\
+         #[derive(Clone,Copy,Debug,PartialEq,Eq,Hash)] pub enum AlignmentPreset { Row, Column, TextRow, ButtonContent, IconArtboard, ChartLabel }\n\
+         #[derive(Clone,Copy,Debug,PartialEq,Eq,Hash)] pub enum MainAxisDistribution { Start, Center, End, SpaceBetween }\n\
+         #[derive(Clone,Copy,Debug,PartialEq,Eq,Hash)] pub enum CrossAxisAlignment { Leading, Center, Trailing, FirstBaseline }\n\
+         #[derive(Clone,Copy,Debug,PartialEq,Eq,Hash)] pub enum TextAlignment { Leading, Center, Trailing }\n\
+         #[derive(Clone,Copy,Debug,PartialEq,Eq,Hash)] pub struct AlignmentPolicy { pub main_axis: MainAxisDistribution, pub cross_axis: CrossAxisAlignment, pub text_alignment: TextAlignment }\n\
+         pub const fn alignment(preset: AlignmentPreset)->AlignmentPolicy { match preset {\n",
+    );
+    for (name, _, _, _) in ALIGNMENT_PRESETS {
+        let variant = pascal_case(name);
+        let p = &p["layout"]["alignment"]["presets"][*name];
+        let main = pascal_case(p["main_axis"].as_str().ok_or_else(|| {
+            vec![format!(
+                "proposal/layout/alignment/{name}: main_axis missing"
+            )]
+        })?);
+        let cross = pascal_case(p["cross_axis"].as_str().ok_or_else(|| {
+            vec![format!(
+                "proposal/layout/alignment/{name}: cross_axis missing"
+            )]
+        })?);
+        let text = pascal_case(p["text_alignment"].as_str().ok_or_else(|| {
+            vec![format!(
+                "proposal/layout/alignment/{name}: text_alignment missing"
+            )]
+        })?);
+        writeln!(
+            out,
+            "AlignmentPreset::{variant}=>AlignmentPolicy{{main_axis:MainAxisDistribution::{main},cross_axis:CrossAxisAlignment::{cross},text_alignment:TextAlignment::{text}}},"
+        )
+        .unwrap();
+    }
+    out.push_str("} }\n");
+    for (name, _, _, _) in ALIGNMENT_PRESETS {
+        let constant = name.to_ascii_uppercase();
+        let variant = pascal_case(name);
+        writeln!(
+            out,
+            "pub const {constant}:AlignmentPolicy=alignment(AlignmentPreset::{variant});"
+        )
+        .unwrap();
+    }
+    out.push_str("}\n");
+    Ok(())
+}
+
+fn pascal_case(value: &str) -> String {
+    value
+        .split('_')
+        .map(|part| {
+            let mut chars = part.chars();
+            format!(
+                "{}{}",
+                chars.next().unwrap_or_default().to_ascii_uppercase(),
+                chars.as_str()
+            )
+        })
+        .collect()
+}
+
 pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
     validate(p)?;
     let t = &p["tokens"];
     out.push_str("/// Full proposal vocabulary; old typed APIs are compatibility mappings.\npub mod proposal {\n");
+    emit_layout_policies(p, out)?;
+    crate::effects::generate(p, out);
     writeln!(
         out,
         "pub const BRAND_ID: &str = {:?};",
@@ -281,6 +398,17 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
         ("CAPTURE_WIDTH", "/layout/gallery/capture_size/0"),
         ("CAPTURE_HEIGHT", "/layout/gallery/capture_size/1"),
         ("SIDEBAR_WIDTH", "/layout/sidebar/default"),
+        (
+            "SCROLL_CONTENT_PADDING",
+            "/layout/scroll_area/content_padding",
+        ),
+        (
+            "SCROLL_SINGLE_LINE_PADDING_Y",
+            "/layout/scroll_area/single_line_padding_y",
+        ),
+        ("SCROLLBAR_WIDTH", "/layout/scroll_area/scrollbar_width"),
+        ("SCROLLBAR_INSET", "/layout/scroll_area/scrollbar_inset"),
+        ("SIDEBAR_PADDING", "/layout/scroll_area/sidebar_padding"),
     ] {
         writeln!(
             out,

@@ -10,6 +10,7 @@ publish = false
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tekes-ui-controls.workspace = true
+tekes-ui-icons = { path = "../tekes-ui-icons" }
 tekes-ui-motion = {path="../tekes-ui-motion"}
 tekes-ui-tokens.workspace = true
 tekes-ui-scene.workspace = true
@@ -18,7 +19,11 @@ tekes-ui-render.workspace = true
 tekes-ui-text.workspace = true
 png.workspace = true
 serde_json.workspace = true
+unicode-segmentation = "1"
 resvg = { version = "0.48.0", default-features = false }
 
 [lints]
 workspace = true
+
+[build-dependencies]
+serde_json.workspace = true

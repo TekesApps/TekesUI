@@ -231,3 +231,37 @@ pub(crate) fn is_command_checked(mtm: MainThreadMarker, command: CommandId) -> O
     let main = NSApplication::sharedApplication(mtm).mainMenu()?;
     find_command(&main, command.0 as isize).map(|i| i.state() == NSControlStateValueOn)
 }
+
+/// Update engine-owned copy without reinstalling menus or changing targets/keys.
+pub(crate) fn update_titles(mtm: MainThreadMarker, bar: &MenuBar) {
+    let Some(main) = NSApplication::sharedApplication(mtm).mainMenu() else {
+        return;
+    };
+    for menu in &bar.menus {
+        let anchor = menu.items.iter().find_map(|item| {
+            if let MenuItem::Command(c) = item {
+                Some(c.command.0 as isize)
+            } else {
+                None
+            }
+        });
+        if let Some(anchor) = anchor {
+            for root in main.itemArray() {
+                if let Some(submenu) = root.submenu()
+                    && find_command(&submenu, anchor).is_some()
+                {
+                    root.setTitle(&NSString::from_str(&menu.title));
+                    submenu.setTitle(&NSString::from_str(&menu.title));
+                    break;
+                }
+            }
+        }
+        for item in &menu.items {
+            if let MenuItem::Command(c) = item
+                && let Some(native) = find_command(&main, c.command.0 as isize)
+            {
+                native.setTitle(&NSString::from_str(&c.title));
+            }
+        }
+    }
+}

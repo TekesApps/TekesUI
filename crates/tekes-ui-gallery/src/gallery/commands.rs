@@ -12,14 +12,22 @@ use tekes_ui_platform_macos::{
     CommandId, KeyEquivalent, Menu, MenuBar, MenuCommand, MenuItem, Modifiers,
 };
 
+use super::locale::Locale;
 use super::pages::Page;
 use super::theme::{AppearanceChoice, ContrastChoice};
+use tekes_ui_tokens::palette::gallery_brand_presets;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Command {
     Page(Page),
     Appearance(AppearanceChoice),
     Contrast(ContrastChoice),
+    Language(Locale),
+    PreviewWidth(usize),
+    ReducedMotion(bool),
+    Brand(usize),
+    Density(usize),
+    TextScale(usize),
 }
 
 const PAGE_BASE: u32 = 100;
@@ -39,23 +47,80 @@ impl Command {
                 .map(|a| Command::Appearance(*a)),
         );
         v.extend(ContrastChoice::ALL.iter().map(|c| Command::Contrast(*c)));
+        v.extend([
+            Command::PreviewWidth(0),
+            Command::PreviewWidth(1),
+            Command::PreviewWidth(2),
+            Command::ReducedMotion(false),
+            Command::ReducedMotion(true),
+        ]);
+        v.extend(
+            gallery_brand_presets()
+                .iter()
+                .map(|preset| Command::Brand(preset.palette_index)),
+        );
+        v.extend([
+            Command::Density(0),
+            Command::Density(1),
+            Command::TextScale(0),
+            Command::TextScale(1),
+            Command::TextScale(2),
+        ]);
+        v.extend(Locale::ALL.into_iter().map(Command::Language));
+
         v
     }
 
     pub fn id(self) -> CommandId {
         CommandId(match self {
+            Command::Density(v) => 530 + v as u32,
+            Command::TextScale(v) => 540 + v as u32,
+            Command::Brand(v @ 0..=2) => 520 + v as u32,
+            Command::Brand(v) => 560 + (v - 3) as u32,
+            Command::PreviewWidth(v) => 500 + v as u32,
+            Command::ReducedMotion(v) => 510 + u32::from(v),
             Command::Page(p) => PAGE_BASE + index_of(&Page::ALL, p),
             Command::Appearance(a) => APPEARANCE_BASE + index_of(&AppearanceChoice::ALL, a),
             Command::Contrast(c) => CONTRAST_BASE + index_of(&ContrastChoice::ALL, c),
+            Command::Language(l) => 400 + index_of(&Locale::ALL, l),
         })
     }
 
     pub fn from_id(id: CommandId) -> Option<Command> {
-        Command::all().into_iter().find(|c| c.id() == id)
+        Page::ALL
+            .into_iter()
+            .map(Command::Page)
+            .chain(Command::all())
+            .find(|c| c.id() == id)
     }
 
-    fn title(self) -> String {
-        match self {
+    pub fn title(self, locale: Locale) -> String {
+        if let Command::Language(l) = self {
+            return if l == Locale::En {
+                "English"
+            } else {
+                "简体中文"
+            }
+            .into();
+        }
+        let title = match self {
+            Command::Density(v) => ["Density: comfortable", "Density: compact"][v].into(),
+            Command::TextScale(v) => ["Text: 100%", "Text: 125%", "Text: 150%"][v].into(),
+            Command::Brand(v) => format!(
+                "Brand: {}",
+                tekes_ui_tokens::palette::gallery_brand_preset(v)
+                    .map(|preset| preset.name)
+                    .unwrap_or("unknown")
+            ),
+            Command::PreviewWidth(v) => {
+                ["Preview: fill", "Preview: 420 pt", "Preview: 720 pt"][v].into()
+            }
+            Command::ReducedMotion(v) => if v {
+                "Reduced motion: On"
+            } else {
+                "Reduced motion: Off"
+            }
+            .into(),
             Command::Page(p) => p.name().to_string(),
             Command::Appearance(AppearanceChoice::System) => "Follow System".into(),
             Command::Appearance(AppearanceChoice::Light) => "Light".into(),
@@ -63,7 +128,9 @@ impl Command {
             Command::Contrast(ContrastChoice::System) => "Increase Contrast: Follow System".into(),
             Command::Contrast(ContrastChoice::On) => "Increase Contrast: On".into(),
             Command::Contrast(ContrastChoice::Off) => "Increase Contrast: Off".into(),
-        }
+            Command::Language(_) => unreachable!(),
+        };
+        locale.text(&title).into_owned()
     }
 
     fn key(self) -> Option<KeyEquivalent> {
@@ -79,6 +146,12 @@ impl Command {
             }
             Command::Appearance(a) => char::from_digit(1 + index_of(&AppearanceChoice::ALL, a), 10)
                 .map(|d| KeyEquivalent::new(d, ctrl_cmd)),
+            Command::Language(_)
+            | Command::PreviewWidth(_)
+            | Command::ReducedMotion(_)
+            | Command::Brand(_)
+            | Command::Density(_)
+            | Command::TextScale(_) => None,
             Command::Contrast(c) => char::from_digit(4 + index_of(&ContrastChoice::ALL, c), 10)
                 .map(|d| KeyEquivalent::new(d, ctrl_cmd)),
         }
@@ -90,9 +163,9 @@ fn index_of<T: PartialEq + Copy>(all: &[T], v: T) -> u32 {
 }
 
 /// 菜单栏描述。`checked` 给出每个命令的初始勾选状态。
-pub fn menu_bar(checked: impl Fn(Command) -> bool) -> MenuBar {
+pub fn menu_bar(locale: Locale, checked: impl Fn(Command) -> bool) -> MenuBar {
     let item = |c: Command| {
-        let mut m = MenuCommand::new(c.title(), c.id()).checked(checked(c));
+        let mut m = MenuCommand::new(c.title(locale), c.id()).checked(checked(c));
         if let Some(k) = c.key() {
             m = m.key(k);
         }
@@ -117,10 +190,44 @@ pub fn menu_bar(checked: impl Fn(Command) -> bool) -> MenuBar {
     );
     MenuBar {
         menus: vec![
-            Menu::new("Pages", pages),
-            Menu::new("Appearance", appearance),
+            Menu::new(locale.text("Pages"), pages),
+            Menu::new(locale.text("Appearance"), appearance),
+            Menu::new(
+                "Preview",
+                preview_commands().into_iter().map(item).collect(),
+            ),
+            Menu::new(
+                locale.text("Language"),
+                Locale::ALL
+                    .into_iter()
+                    .map(|l| item(Command::Language(l)))
+                    .collect(),
+            ),
         ],
     }
+}
+
+fn preview_commands() -> Vec<Command> {
+    let mut commands = vec![
+        Command::PreviewWidth(0),
+        Command::PreviewWidth(1),
+        Command::PreviewWidth(2),
+        Command::ReducedMotion(false),
+        Command::ReducedMotion(true),
+    ];
+    commands.extend(
+        gallery_brand_presets()
+            .iter()
+            .map(|preset| Command::Brand(preset.palette_index)),
+    );
+    commands.extend([
+        Command::Density(0),
+        Command::Density(1),
+        Command::TextScale(0),
+        Command::TextScale(1),
+        Command::TextScale(2),
+    ]);
+    commands
 }
 
 #[cfg(test)]
@@ -138,7 +245,7 @@ mod tests {
         ids.dedup();
         assert_eq!(ids.len(), all.len());
         assert_eq!(Command::from_id(CommandId(0)), None);
-        assert_eq!(Command::from_id(CommandId(150)), None);
+        assert_eq!(Command::from_id(CommandId(9999)), None);
     }
 
     #[test]
@@ -150,20 +257,33 @@ mod tests {
             CommandId(202)
         );
         assert_eq!(Command::Contrast(ContrastChoice::Off).id(), CommandId(302));
+        assert_eq!(Command::Brand(0).id(), CommandId(520));
+        assert_eq!(Command::Brand(2).id(), CommandId(522));
+        assert_eq!(Command::Brand(3).id(), CommandId(560));
     }
 
     #[test]
     fn menu_bar_is_valid_and_covers_all_commands() {
-        let bar = menu_bar(|_| false);
+        let bar = menu_bar(Locale::En, |_| false);
         assert_eq!(bar.validate(), Ok(()));
         let ids: Vec<_> = bar.commands().map(|c| c.command).collect();
         let want: Vec<_> = Command::all().iter().map(|c| c.id()).collect();
         assert_eq!(ids, want);
+        assert_eq!(
+            tekes_ui_tokens::palette::gallery_brand_presets()
+                .iter()
+                .map(|preset| Command::Brand(preset.palette_index))
+                .collect::<Vec<_>>(),
+            Command::all()
+                .into_iter()
+                .filter(|command| matches!(command, Command::Brand(_)))
+                .collect::<Vec<_>>()
+        );
     }
 
     #[test]
     fn page_shortcuts_are_cmd_digits_in_order() {
-        let bar = menu_bar(|_| false);
+        let bar = menu_bar(Locale::En, |_| false);
         let pages: Vec<_> = bar.menus[0]
             .items
             .iter()
@@ -261,12 +381,13 @@ mod tests {
 
     #[test]
     fn checked_state_comes_from_callback() {
-        let bar = menu_bar(|c| c == Command::Page(Page::Tokens));
+        let target = super::super::navigation::pages()[0];
+        let bar = menu_bar(Locale::En, |c| c == Command::Page(target));
         let checked: Vec<_> = bar
             .commands()
             .filter(|c| c.checked)
             .map(|c| c.command)
             .collect();
-        assert_eq!(checked, [Command::Page(Page::Tokens).id()]);
+        assert_eq!(checked, [Command::Page(target).id()]);
     }
 }

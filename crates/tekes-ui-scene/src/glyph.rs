@@ -114,6 +114,31 @@ pub struct ImageQuad {
     pub opacity: f32,
 }
 
+/// Cached-image transform. Rotation is clockwise in the y-down coordinate
+/// system, around the quad center. UVs select a normalized atlas subrectangle.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TransformedImageQuad {
+    pub quad: ImageQuad,
+    pub rotation: f32,
+    pub uv: Rect,
+}
+impl TransformedImageQuad {
+    pub fn new(quad: ImageQuad, rotation: f32) -> Self {
+        Self {
+            quad,
+            rotation,
+            uv: Rect::new(0.0, 0.0, 1.0, 1.0),
+        }
+    }
+    pub fn bounds(self) -> Rect {
+        let (sin, cos) = self.rotation.sin_cos();
+        let w = self.quad.rect.size.width * cos.abs() + self.quad.rect.size.height * sin.abs();
+        let h = self.quad.rect.size.width * sin.abs() + self.quad.rect.size.height * cos.abs();
+        let center = self.quad.rect.center();
+        Rect::new(center.x - w * 0.5, center.y - h * 0.5, w, h)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

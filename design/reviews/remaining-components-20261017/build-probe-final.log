@@ -1,0 +1,38 @@
+   Compiling tekes-ui-design-export v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/remaining-components-20261017/probe-source/crates/tekes-ui-design-export)
+   Compiling tekes-ui-controls v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/remaining-components-20261017/probe-source/crates/tekes-ui-controls)
+   Compiling tekes-ui-gallery v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/remaining-components-20261017/probe-source/crates/tekes-ui-gallery)
+   Compiling tekes-ui-tokens v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/remaining-components-20261017/probe-source/crates/tekes-ui-tokens)
+   Compiling tekes-ui-platform-macos v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/remaining-components-20261017/probe-source/crates/tekes-ui-platform-macos)
+   Compiling tekes-ui-scene v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/remaining-components-20261017/probe-source/crates/tekes-ui-scene)
+   Compiling tekes-ui-text v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/remaining-components-20261017/probe-source/crates/tekes-ui-text)
+   Compiling tekes-ui-render v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/remaining-components-20261017/probe-source/crates/tekes-ui-render)
+   Compiling tekes-ui-icons v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/remaining-components-20261017/probe-source/crates/tekes-ui-icons)
+   Compiling tekes-ui-motion v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/remaining-components-20261017/probe-source/crates/tekes-ui-motion)
+warning: associated functions `motion_action_center_for_selftest`, `text_surface_center_for_selftest`, and `calibration_selector_center_for_selftest` are never used
+   --> crates/tekes-ui-gallery/src/bin/../gallery/mod.rs:183:19
+    |
+117 | impl Gallery {
+    | ------------ associated functions in this implementation
+...
+183 |     pub(crate) fn motion_action_center_for_selftest(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+223 |     pub(crate) fn text_surface_center_for_selftest(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+254 |     pub(crate) fn calibration_selector_center_for_selftest(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `visible_frame_at` is never used
+   --> crates/tekes-ui-gallery/src/bin/../gallery/text_demo.rs:430:19
+    |
+139 | impl TextDemo {
+    | ------------- method in this implementation
+...
+430 |     pub(crate) fn visible_frame_at(&self, index: usize) -> Option<Rect> {
+    |                   ^^^^^^^^^^^^^^^^
+
+warning: `tekes-ui-gallery` (bin "offscreen-remaining-probe") generated 2 warnings
+    Finished `release` profile [optimized] target(s) in 14.80s

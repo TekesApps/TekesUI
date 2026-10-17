@@ -1,0 +1,8 @@
+   Compiling tekes-ui-design-export v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-design-export)
+   Compiling tekes-ui-tokens v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-tokens)
+    Checking tekes-ui-scene v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-scene)
+    Checking tekes-ui-text v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-text)
+    Checking tekes-ui-render v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-render)
+    Checking tekes-ui-controls v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-controls)
+    Checking tekes-ui-gallery v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery)
+    Finished `release` profile [optimized] target(s) in 4.98s

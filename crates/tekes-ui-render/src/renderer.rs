@@ -11,13 +11,24 @@ use std::time::{Duration, Instant};
 use tekes_ui_scene::{GlyphAtlas, ImageId, Scene};
 use tekes_ui_tokens::Rgba;
 
-/// 同时在途的帧数，用于 `desired_maximum_frame_latency`。
-///
-/// 取 1：Metal 上对应 `maximumDrawableCount = 2`。
-/// 我们每帧 GPU 工作量很小（几百个 quad），瓶颈不在 GPU 吞吐，而在输入到上屏的延迟，
-/// 所以用最短的队列，鼠标拖动和打字的反馈少一帧。代价是 CPU 编码和 GPU 执行不能
-/// 重叠，帧很重时可能掉帧；F1 以后若文字很多、实测 120Hz 吃紧，再改成 2。
-const FRAME_LATENCY: u32 = 1;
+/// Triple buffering leaves a drawable available while the compositor owns the
+/// previous frame. One render per display callback still limits producer pace;
+/// this does not add a free-running render-ahead loop.
+const FRAME_LATENCY: u32 = 2;
+
+// Diagnostic A/B only. Normal applications retain the measured FIFO default.
+// wgpu Metal uses desired latency + 1 drawables; never disable display sync.
+fn frame_latency() -> u32 {
+    if std::env::var_os("TEKES_PERF").is_some() {
+        match std::env::var("TEKES_PERF_FRAME_LATENCY").as_deref() {
+            Ok("1") => 1,
+            Ok("2") => 2,
+            _ => FRAME_LATENCY,
+        }
+    } else {
+        FRAME_LATENCY
+    }
+}
 
 /// 渲染器编号。atlas 靠它区分是哪个渲染器取走了脏区（见 `GlyphAtlas::take_dirty`）。
 static NEXT_RENDERER_ID: AtomicU64 = AtomicU64::new(1);
@@ -233,7 +244,7 @@ impl Renderer {
             height: s.size_px.1,
             // Fifo：与显示器刷新同步，不撕裂。Metal 上对应 displaySyncEnabled = true。
             present_mode: wgpu::PresentMode::Fifo,
-            desired_maximum_frame_latency: FRAME_LATENCY,
+            desired_maximum_frame_latency: frame_latency(),
             // Opaque：窗口背景由我们自己画，不需要和窗口后面的内容合成。
             // Metal 上对应 CAMetalLayer.opaque = true，合成器可以跳过混合。
             alpha_mode: wgpu::CompositeAlphaMode::Opaque,
@@ -550,6 +561,13 @@ impl Renderer {
         }
     }
 
+    /// Record CPU stages without GPU counter resolves/readbacks. This allows
+    /// presentation pacing to be measured without the extra profiling submits.
+    /// Resets previous timing samples, just like starting a new measurement.
+    pub fn set_frame_timing_cpu_only(&mut self) {
+        self.timing = Some(Timing::new(&self.device, &self.queue, false));
+    }
+
     /// 最近一次真正画出（没有因遮挡等跳过）的帧的编号，对应 [`FrameTiming::frame`]。
     /// 计时关着或还没画过时为 `None`。宿主靠它把自己量的数字和渲染器的结果配对。
     pub fn last_timed_frame(&self) -> Option<u64> {
@@ -604,6 +622,12 @@ impl Renderer {
     ) -> Result<ImageId, RenderError> {
         self.gpu
             .register_image(&self.device, &self.queue, rgba8_premul, width, height)
+    }
+
+    /// Update pixels in an existing image of the same dimensions, preserving its
+    /// ID, texture and bind group. Bytes are premultiplied RGBA8, as at registration.
+    pub fn update_image(&self, id: ImageId, rgba8_premul: &[u8]) -> Result<(), RenderError> {
+        self.gpu.image.update(&self.queue, id, rgba8_premul)
     }
 
     /// 注销图像并释放它的 GPU 内存。返回 `false` 表示这个 id 没有登记（或已注销）。

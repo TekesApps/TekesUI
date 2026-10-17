@@ -1,0 +1,785 @@
+{
+  "format": "tekesui-scroll-performance-followup/1",
+  "at": "2026-10-16T04:38:09.555497+00:00",
+  "status": "NOT ACCEPTED: CPU optimization delivered; sustained zero-gap 120Hz remains failed; shared desktop not isolated",
+  "cpu_unit": "100% = one logical CPU core; process user+system; peak sampled over 250ms",
+  "nominal_period_ms": 8.333333333333334,
+  "sources": {
+    "compiled_rust_unchanged_since_freeze": true,
+    "design_json_unchanged_since_freeze": true,
+    "snapshot_sha256": "f7f20de18a7d8b5593ed73f372fd0c26cfa9378d245e4d1e01c71d8c3203a8b5",
+    "scope": "Selected Rust/WGSL and design snapshot, not a standalone dependency archive; measurement CLI options were extended without changing compiled candidate."
+  },
+  "verification": {
+    "rust_passed": 284,
+    "rust_ignored": 1,
+    "python_acceptance_tests_passed": 14,
+    "clippy": "pass -D warnings",
+    "design_system": "pass",
+    "pure_rust": "pass",
+    "pixel_comparisons": 24,
+    "pixel_result": "byte-identical across four themes, two scales and three sidebar offsets"
+  },
+  "rows": [
+    {
+      "case": "current-cad-scroll-area",
+      "route": "scroll-area",
+      "driver": "cad",
+      "requested_frame_latency": 2,
+      "gpu_timing_enabled": false,
+      "seconds": 60.0,
+      "binary_sha256": "a8da9b364da5fa24055030dfff00b12ae146ac749e17e6cbb4fa5809567d476f",
+      "exit_code": 0,
+      "cpu_percent": 9.179523414233623,
+      "cpu_peak_250ms_percent": 11.767289704477966,
+      "cpu_frame_ms": {
+        "count": 7202,
+        "max": 1.328041,
+        "mean": 0.5550458425437385,
+        "min": 0.241458,
+        "p50": 0.5594169999999999,
+        "p95": 0.764958,
+        "p99": 0.853958
+      },
+      "build_ms": {
+        "count": 7202,
+        "max": 0.434291,
+        "mean": 0.16506784698694804,
+        "min": 0.122958,
+        "p50": 0.165875,
+        "p95": 0.185083,
+        "p99": 0.194916
+      },
+      "acquire_ms": {
+        "count": 7202,
+        "max": 0.640417,
+        "mean": 0.17913549541793952,
+        "min": 0.010041,
+        "p50": 0.181125,
+        "p95": 0.39575,
+        "p99": 0.45825
+      },
+      "gpu_ms": null,
+      "glyphs_median": 3804,
+      "actual_gaps": 0,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "receipts": 7202,
+      "interval_ms": {
+        "count": 7201,
+        "max": 8.33345833234489,
+        "mean": 8.333257331163413,
+        "min": 8.333083242177963,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "idle_after": {
+        "cpu_ms": 0.8910000000001972,
+        "cpu_percent": 0.01786353741052323,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.004602375
+      },
+      "strict_rejection_reasons": [],
+      "quiet_gate_passed": false,
+      "all_ambient_samples_below_limits": false,
+      "ambient_total_cpu_percent_range": [
+        186.60665613454265,
+        348.9989158360447
+      ],
+      "ambient_sha256": "0b82d578c5719b9672f92a33f7ce884eb7d9a1ec405160e5e8fff98d2f609b62"
+    },
+    {
+      "case": "optimized-cad-scroll-area",
+      "route": "scroll-area",
+      "driver": "cad",
+      "requested_frame_latency": 2,
+      "gpu_timing_enabled": false,
+      "seconds": 60.0,
+      "binary_sha256": "92f7205bf1572013d5cd8d5c43d470873c2dd4ae06aaa23c5c04317355bcd2a5",
+      "exit_code": 0,
+      "cpu_percent": 7.826594614459623,
+      "cpu_peak_250ms_percent": 12.525528624749855,
+      "cpu_frame_ms": {
+        "count": 7200,
+        "max": 13.370999999999999,
+        "mean": 5.782240533472225,
+        "min": 1.154959,
+        "p50": 8.131833,
+        "p95": 8.619458,
+        "p99": 8.741499999999998
+      },
+      "build_ms": {
+        "count": 7200,
+        "max": 0.321417,
+        "mean": 0.12349361000000034,
+        "min": 0.087542,
+        "p50": 0.125333,
+        "p95": 0.140667,
+        "p99": 0.149167
+      },
+      "acquire_ms": {
+        "count": 7200,
+        "max": 13.076167,
+        "mean": 5.470289321527767,
+        "min": 0.9444170000000001,
+        "p50": 7.809333,
+        "p95": 8.296792,
+        "p99": 8.417333000000001
+      },
+      "gpu_ms": null,
+      "glyphs_median": 3157,
+      "actual_gaps": 2,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "receipts": 7200,
+      "interval_ms": {
+        "count": 7199,
+        "max": 16.66650001425296,
+        "mean": 8.335570796867122,
+        "min": 8.333083358593285,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "idle_after": {
+        "cpu_ms": 0.7760000000001099,
+        "cpu_percent": 0.015585246095862901,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.004727667
+      },
+      "strict_rejection_reasons": [
+        "actual_presentation_gap_or_invalid_timeline",
+        "callback_missed_refreshes",
+        "cpu_exceeds_frame_period_or_unknown"
+      ],
+      "quiet_gate_passed": false,
+      "all_ambient_samples_below_limits": false,
+      "ambient_total_cpu_percent_range": [
+        175.658458656332,
+        484.8938486246275
+      ],
+      "ambient_sha256": "5f98614578a88b2007413d6c4edf09102fe73207986dd5e72f4e3691470cec88"
+    },
+    {
+      "case": "workbench-cad-gpu-scroll-area",
+      "route": "component-scroll-area",
+      "driver": "cad",
+      "requested_frame_latency": 2,
+      "gpu_timing_enabled": true,
+      "seconds": 60.0,
+      "binary_sha256": "92f7205bf1572013d5cd8d5c43d470873c2dd4ae06aaa23c5c04317355bcd2a5",
+      "exit_code": 0,
+      "cpu_percent": 12.510558328318186,
+      "cpu_peak_250ms_percent": 32.034276740090775,
+      "cpu_frame_ms": {
+        "count": 7155,
+        "max": 22.135167,
+        "mean": 4.381383880363387,
+        "min": 0.27975,
+        "p50": 1.344958,
+        "p95": 8.452083,
+        "p99": 9.476083
+      },
+      "build_ms": {
+        "count": 7155,
+        "max": 0.697875,
+        "mean": 0.17488546009783365,
+        "min": 0.093292,
+        "p50": 0.14179199999999997,
+        "p95": 0.37404099999999996,
+        "p99": 0.6451669999999999
+      },
+      "acquire_ms": {
+        "count": 7155,
+        "max": 21.718958,
+        "mean": 3.898345119916148,
+        "min": 0.010834,
+        "p50": 0.776667,
+        "p95": 8.014459,
+        "p99": 9.063833
+      },
+      "gpu_ms": {
+        "count": 7155,
+        "max": 2.969291,
+        "mean": 1.3755876234800812,
+        "min": 0.457917,
+        "p50": 1.387875,
+        "p95": 1.459292,
+        "p99": 1.965166
+      },
+      "glyphs_median": 2884,
+      "actual_gaps": 47,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "receipts": 7155,
+      "interval_ms": {
+        "count": 7154,
+        "max": 16.66658336762339,
+        "mean": 8.388007513280236,
+        "min": 8.333083358593285,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.333374978974462
+      },
+      "idle_after": {
+        "cpu_ms": 2.4969999999999715,
+        "cpu_percent": 0.049947338373993885,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.011265916
+      },
+      "strict_rejection_reasons": [
+        "actual_presentation_gap_or_invalid_timeline",
+        "actual_refresh_not_120hz",
+        "callback_missed_refreshes",
+        "cpu_exceeds_frame_period_or_unknown"
+      ],
+      "quiet_gate_passed": false,
+      "all_ambient_samples_below_limits": false,
+      "ambient_total_cpu_percent_range": [
+        133.48282203930742,
+        280.0043525749373
+      ],
+      "ambient_sha256": "8e82482aa8ebaba001c71843b942c74185b4b01d5c0622c9795b7b55f8adf9c0"
+    },
+    {
+      "case": "workbench-cad-latency1-scroll-area",
+      "route": "component-scroll-area",
+      "driver": "cad",
+      "requested_frame_latency": 1,
+      "gpu_timing_enabled": false,
+      "seconds": 60.0,
+      "binary_sha256": "92f7205bf1572013d5cd8d5c43d470873c2dd4ae06aaa23c5c04317355bcd2a5",
+      "exit_code": 0,
+      "cpu_percent": 10.46916181184862,
+      "cpu_peak_250ms_percent": 28.980007893214125,
+      "cpu_frame_ms": {
+        "count": 7196,
+        "max": 17.231208000000002,
+        "mean": 7.000016078654814,
+        "min": 0.759667,
+        "p50": 8.244416,
+        "p95": 8.567375,
+        "p99": 8.696417
+      },
+      "build_ms": {
+        "count": 7196,
+        "max": 1.0117909999999999,
+        "mean": 0.15543874777654265,
+        "min": 0.082625,
+        "p50": 0.14024999999999999,
+        "p95": 0.298792,
+        "p99": 0.648208
+      },
+      "acquire_ms": {
+        "count": 7196,
+        "max": 16.48975,
+        "mean": 6.588288420511416,
+        "min": 0.060917,
+        "p50": 7.829208,
+        "p95": 8.22,
+        "p99": 8.363959000000001
+      },
+      "gpu_ms": null,
+      "glyphs_median": 2884,
+      "actual_gaps": 6,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "receipts": 7196,
+      "interval_ms": {
+        "count": 7195,
+        "max": 16.66658336762339,
+        "mean": 8.340212821399327,
+        "min": 8.333124918863177,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "idle_after": {
+        "cpu_ms": 1.4339999999997133,
+        "cpu_percent": 0.02873209436422057,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.001369542
+      },
+      "strict_rejection_reasons": [
+        "actual_presentation_gap_or_invalid_timeline",
+        "callback_missed_refreshes",
+        "cpu_exceeds_frame_period_or_unknown"
+      ],
+      "quiet_gate_passed": false,
+      "all_ambient_samples_below_limits": false,
+      "ambient_total_cpu_percent_range": [
+        168.45822741827905,
+        949.4032423849019
+      ],
+      "ambient_sha256": "014396c1a61a9724c5de84cc477f5ea56ca119bef44e1ff8c0f37bb33d11cb79"
+    },
+    {
+      "case": "workbench-cad-scroll-area",
+      "route": "component-scroll-area",
+      "driver": "cad",
+      "requested_frame_latency": 2,
+      "gpu_timing_enabled": false,
+      "seconds": 60.0,
+      "binary_sha256": "92f7205bf1572013d5cd8d5c43d470873c2dd4ae06aaa23c5c04317355bcd2a5",
+      "exit_code": 0,
+      "cpu_percent": 14.890051534398793,
+      "cpu_peak_250ms_percent": 33.68163713248427,
+      "cpu_frame_ms": {
+        "count": 7199,
+        "max": 16.046625,
+        "mean": 1.0409233014307515,
+        "min": 0.185,
+        "p50": 0.917916,
+        "p95": 1.659125,
+        "p99": 8.324292
+      },
+      "build_ms": {
+        "count": 7199,
+        "max": 0.7975420000000001,
+        "mean": 0.2709652632310052,
+        "min": 0.091791,
+        "p50": 0.177292,
+        "p95": 0.686542,
+        "p99": 0.704333
+      },
+      "acquire_ms": {
+        "count": 7199,
+        "max": 15.75425,
+        "mean": 0.4194563496318938,
+        "min": 0.00725,
+        "p50": 0.107917,
+        "p95": 0.6585,
+        "p99": 7.94125
+      },
+      "gpu_ms": null,
+      "glyphs_median": 2884,
+      "actual_gaps": 3,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "receipts": 7199,
+      "interval_ms": {
+        "count": 7198,
+        "max": 16.666541690938175,
+        "mean": 8.336732014665,
+        "min": 8.333083242177963,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "idle_after": {
+        "cpu_ms": 1.504000000000616,
+        "cpu_percent": 0.030145596495257113,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.009014041
+      },
+      "strict_rejection_reasons": [
+        "actual_presentation_gap_or_invalid_timeline",
+        "callback_missed_refreshes",
+        "cpu_exceeds_frame_period_or_unknown"
+      ],
+      "quiet_gate_passed": false,
+      "all_ambient_samples_below_limits": false,
+      "ambient_total_cpu_percent_range": [
+        132.87564689852925,
+        363.0049162204762
+      ],
+      "ambient_sha256": "baebea534768fc96215855f4eaaa390a8dd87daa07bf7b11c6357cd1cfeca511"
+    },
+    {
+      "case": "workbench-cad-editor",
+      "route": "lab-internal-text",
+      "driver": "cad",
+      "requested_frame_latency": 2,
+      "gpu_timing_enabled": false,
+      "seconds": 60.0,
+      "binary_sha256": "92f7205bf1572013d5cd8d5c43d470873c2dd4ae06aaa23c5c04317355bcd2a5",
+      "exit_code": 0,
+      "cpu_percent": 15.76980159370793,
+      "cpu_peak_250ms_percent": 29.264500959378626,
+      "cpu_frame_ms": {
+        "count": 7199,
+        "max": 16.603292,
+        "mean": 6.568025734963182,
+        "min": 0.6703749999999999,
+        "p50": 8.237542000000001,
+        "p95": 8.624416,
+        "p99": 9.129042
+      },
+      "build_ms": {
+        "count": 7199,
+        "max": 0.985084,
+        "mean": 0.27406173399083283,
+        "min": 0.08662500000000001,
+        "p50": 0.190916,
+        "p95": 0.6413340000000001,
+        "p99": 0.671333
+      },
+      "acquire_ms": {
+        "count": 7199,
+        "max": 16.271375000000003,
+        "mean": 5.914029253646342,
+        "min": 0.02,
+        "p50": 7.595417,
+        "p95": 8.165166,
+        "p99": 8.623083
+      },
+      "gpu_ms": null,
+      "glyphs_median": 2906,
+      "actual_gaps": 3,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "receipts": 7199,
+      "interval_ms": {
+        "count": 7198,
+        "max": 16.66658336762339,
+        "mean": 8.336734874263922,
+        "min": 8.333083358593285,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "idle_after": {
+        "cpu_ms": 2.426999999999069,
+        "cpu_percent": 0.04854939032213223,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.011378084
+      },
+      "strict_rejection_reasons": [
+        "actual_presentation_gap_or_invalid_timeline",
+        "callback_missed_refreshes",
+        "cpu_exceeds_frame_period_or_unknown"
+      ],
+      "quiet_gate_passed": false,
+      "all_ambient_samples_below_limits": false,
+      "ambient_total_cpu_percent_range": [
+        121.01070668930002,
+        455.76872373022803
+      ],
+      "ambient_sha256": "3d5fd43f75360cf5015ebe05d5668b036b0857eaa936644688b37c22a42b2143"
+    },
+    {
+      "case": "workbench-cad-icons",
+      "route": "component-icon",
+      "driver": "cad",
+      "requested_frame_latency": 2,
+      "gpu_timing_enabled": false,
+      "seconds": 60.0,
+      "binary_sha256": "92f7205bf1572013d5cd8d5c43d470873c2dd4ae06aaa23c5c04317355bcd2a5",
+      "exit_code": 0,
+      "cpu_percent": 18.046474101941296,
+      "cpu_peak_250ms_percent": 35.1143412159079,
+      "cpu_frame_ms": {
+        "count": 7200,
+        "max": 16.452458999999998,
+        "mean": 2.0256913191666617,
+        "min": 0.403041,
+        "p50": 1.785625,
+        "p95": 3.084667,
+        "p99": 3.404667
+      },
+      "build_ms": {
+        "count": 7200,
+        "max": 1.7154589999999998,
+        "mean": 0.31215457513888806,
+        "min": 0.078792,
+        "p50": 0.234292,
+        "p95": 0.6597919999999999,
+        "p99": 0.709417
+      },
+      "acquire_ms": {
+        "count": 7200,
+        "max": 15.807000000000002,
+        "mean": 1.215832585833334,
+        "min": 0.023833,
+        "p50": 0.648292,
+        "p95": 2.4699999999999998,
+        "p99": 2.685958
+      },
+      "gpu_ms": null,
+      "glyphs_median": 902,
+      "actual_gaps": 1,
+      "not_presented": 0,
+      "missing_receipts": 0,
+      "receipts": 7200,
+      "interval_ms": {
+        "count": 7199,
+        "max": 16.66650001425296,
+        "mean": 8.334419792095632,
+        "min": 8.333083358593285,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "idle_after": {
+        "cpu_ms": 2.413999999999916,
+        "cpu_percent": 0.048380911311457164,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.001962417
+      },
+      "strict_rejection_reasons": [
+        "actual_presentation_gap_or_invalid_timeline",
+        "callback_missed_refreshes",
+        "cpu_exceeds_frame_period_or_unknown"
+      ],
+      "quiet_gate_passed": false,
+      "all_ambient_samples_below_limits": false,
+      "ambient_total_cpu_percent_range": [
+        119.93447438955509,
+        593.5073652038789
+      ],
+      "ambient_sha256": "34c8a712ddcc845d46bf44cab8ec2f7bdccfa62e7104960fe05d800ac7affa0b"
+    },
+    {
+      "case": "workbench-metal-scroll-area",
+      "route": "component-scroll-area",
+      "driver": "metal",
+      "requested_frame_latency": 2,
+      "gpu_timing_enabled": false,
+      "seconds": 60.0,
+      "binary_sha256": "92f7205bf1572013d5cd8d5c43d470873c2dd4ae06aaa23c5c04317355bcd2a5",
+      "exit_code": 0,
+      "cpu_percent": 11.818656166756728,
+      "cpu_peak_250ms_percent": 27.72806755107865,
+      "cpu_frame_ms": {
+        "count": 7202,
+        "max": 1.8899590000000002,
+        "mean": 0.49893860608164436,
+        "min": 0.1695,
+        "p50": 0.365417,
+        "p95": 1.02075,
+        "p99": 1.359833
+      },
+      "build_ms": {
+        "count": 7202,
+        "max": 0.8833340000000001,
+        "mean": 0.20244034337684005,
+        "min": 0.087584,
+        "p50": 0.147,
+        "p95": 0.386334,
+        "p99": 0.644458
+      },
+      "acquire_ms": {
+        "count": 7202,
+        "max": 0.048209,
+        "mean": 0.010041794501527384,
+        "min": 0.001,
+        "p50": 0.007709000000000001,
+        "p95": 0.022209,
+        "p99": 0.027583
+      },
+      "gpu_ms": null,
+      "glyphs_median": 2884,
+      "actual_gaps": 3,
+      "not_presented": 3,
+      "missing_receipts": 0,
+      "receipts": 7202,
+      "interval_ms": {
+        "count": 7198,
+        "max": 16.66658336762339,
+        "mean": 8.33673595674204,
+        "min": 8.3331250352785,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "idle_after": {
+        "cpu_ms": 1.8339999999996692,
+        "cpu_percent": 0.03675978646994193,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.010898208
+      },
+      "strict_rejection_reasons": [
+        "presentation_drain_failed_or_unfinished",
+        "not_presented_or_unknown",
+        "actual_presentation_gap_or_invalid_timeline"
+      ],
+      "quiet_gate_passed": false,
+      "all_ambient_samples_below_limits": false,
+      "ambient_total_cpu_percent_range": [
+        152.345740652094,
+        420.5480293238089
+      ],
+      "ambient_sha256": "26ea4fc9f85ed778ba7bde93fc25b105bd97753f7985a1b47509f0f7affe98bb"
+    },
+    {
+      "case": "workbench-metal-editor",
+      "route": "lab-internal-text",
+      "driver": "metal",
+      "requested_frame_latency": 2,
+      "gpu_timing_enabled": false,
+      "seconds": 60.0,
+      "binary_sha256": "92f7205bf1572013d5cd8d5c43d470873c2dd4ae06aaa23c5c04317355bcd2a5",
+      "exit_code": 0,
+      "cpu_percent": 18.661984156630925,
+      "cpu_peak_250ms_percent": 29.38313149031646,
+      "cpu_frame_ms": {
+        "count": 7201,
+        "max": 1.676833,
+        "mean": 0.8086266910151378,
+        "min": 0.203959,
+        "p50": 0.838708,
+        "p95": 1.440583,
+        "p99": 1.5279580000000001
+      },
+      "build_ms": {
+        "count": 7201,
+        "max": 0.734584,
+        "mean": 0.3605532714900699,
+        "min": 0.10058299999999999,
+        "p50": 0.336875,
+        "p95": 0.6776249999999999,
+        "p99": 0.697667
+      },
+      "acquire_ms": {
+        "count": 7201,
+        "max": 0.047,
+        "mean": 0.012828193584224433,
+        "min": 0.001167,
+        "p50": 0.013,
+        "p95": 0.022625000000000003,
+        "p99": 0.025457999999999998
+      },
+      "gpu_ms": null,
+      "glyphs_median": 2906,
+      "actual_gaps": 4,
+      "not_presented": 3,
+      "missing_receipts": 0,
+      "receipts": 7201,
+      "interval_ms": {
+        "count": 7197,
+        "max": 16.666541690938175,
+        "mean": 8.33789613727458,
+        "min": 8.333083358593285,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "idle_after": {
+        "cpu_ms": 2.373999999999654,
+        "cpu_percent": 0.047579892529587074,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.004202583
+      },
+      "strict_rejection_reasons": [
+        "presentation_drain_failed_or_unfinished",
+        "not_presented_or_unknown",
+        "actual_presentation_gap_or_invalid_timeline",
+        "callback_missed_refreshes"
+      ],
+      "quiet_gate_passed": false,
+      "all_ambient_samples_below_limits": false,
+      "ambient_total_cpu_percent_range": [
+        105.39230797112376,
+        330.0439486394269
+      ],
+      "ambient_sha256": "5397e8fa39e04e2ebd6a65396f70e5aa10dae59559a08c9354c01e54e645efc0"
+    },
+    {
+      "case": "workbench-metal-icons",
+      "route": "component-icon",
+      "driver": "metal",
+      "requested_frame_latency": 2,
+      "gpu_timing_enabled": false,
+      "seconds": 60.0,
+      "binary_sha256": "92f7205bf1572013d5cd8d5c43d470873c2dd4ae06aaa23c5c04317355bcd2a5",
+      "exit_code": 0,
+      "cpu_percent": 14.570540940553073,
+      "cpu_peak_250ms_percent": 31.074886218514443,
+      "cpu_frame_ms": {
+        "count": 7202,
+        "max": 3.006458,
+        "mean": 0.6592995312413233,
+        "min": 0.21004199999999998,
+        "p50": 0.4946249999999999,
+        "p95": 1.547959,
+        "p99": 1.767917
+      },
+      "build_ms": {
+        "count": 7202,
+        "max": 2.129958,
+        "mean": 0.2576790991391279,
+        "min": 0.086542,
+        "p50": 0.186916,
+        "p95": 0.623542,
+        "p99": 0.784125
+      },
+      "acquire_ms": {
+        "count": 7202,
+        "max": 0.05775,
+        "mean": 0.009819427797833964,
+        "min": 0.001375,
+        "p50": 0.008375,
+        "p95": 0.021167,
+        "p99": 0.026166
+      },
+      "gpu_ms": null,
+      "glyphs_median": 901,
+      "actual_gaps": 5,
+      "not_presented": 5,
+      "missing_receipts": 0,
+      "receipts": 7202,
+      "interval_ms": {
+        "count": 7196,
+        "max": 16.666541690938175,
+        "mean": 8.33905526797824,
+        "min": 8.333124918863177,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "idle_after": {
+        "cpu_ms": 1.7770000000005837,
+        "cpu_percent": 0.035524376892986695,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.010637708
+      },
+      "strict_rejection_reasons": [
+        "presentation_drain_failed_or_unfinished",
+        "not_presented_or_unknown",
+        "actual_presentation_gap_or_invalid_timeline"
+      ],
+      "quiet_gate_passed": false,
+      "all_ambient_samples_below_limits": false,
+      "ambient_total_cpu_percent_range": [
+        135.99024313222475,
+        442.8899764345858
+      ],
+      "ambient_sha256": "428ac2628e8f5aeff9de09dbbea3f0d396feb5b8d050b92cfe1b2d74487aba59"
+    }
+  ],
+  "trace": {
+    "record_exit_code": 1,
+    "export_error": "Export failed: Document Missing Template Error",
+    "accepted_evidence": false,
+    "scope": "Metal System Trace raw data remains local in target; partial/unexportable trace is not root-cause proof."
+  },
+  "limitations": [
+    "shared desktop CPU gate not passed; no unrelated process stopped",
+    "sequential CPU readings are not isolated causal A/B estimates",
+    "GPU-disabled cases have unmeasured GPU costs; enabled GPU run is an instrumented diagnostic",
+    "Metal opt-in and lower FIFO latency not promoted; default CAD/FIFO latency 2 retained",
+    "build+encode+submit excludes acquisition and GPU queue/compositor waiting",
+    "physical trackpad, VoiceOver and full end-to-end input latency not certified"
+  ]
+}

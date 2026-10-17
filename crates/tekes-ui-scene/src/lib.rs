@@ -14,7 +14,7 @@
 //!
 //! # 设计：一个有序的 `Vec<Primitive>`
 //!
-//! 现在只有 [`Quad`]，但 [`Scene`] 存的是 [`Primitive`] 枚举的有序列表，
+//! [`Scene`] 存的是 [`Primitive`] 枚举的有序列表，
 //! 而不是一个 `Vec<Quad>`，也不是"每种图元一个批次"。原因是 painter's order
 //! 要跨图元种类成立：F1 以后 quad、文字、图片会交错出现（文字压在 quad 上，
 //! 另一个 quad 又压在文字上），分开成几个批次就无法保持叠放顺序。
@@ -25,8 +25,8 @@
 //!   图元**合并成一批（instanced draw），代价只是一次线性扫描。
 //! - [`Primitive`] 标了 `#[non_exhaustive]`，以后加变体不算破坏性改动。
 //!   变体：
-//!   - 已有：`Glyphs`（一串同色字形，引用 [`GlyphAtlas`] 里的位图）和 `Image`
-//!     （渲染层登记的图像，画进矩形，用于 Gallery 的参照图）；
+//!   - 已有：[`Quad`]、[`ShadowQuad`]、`Glyphs`（引用 [`GlyphAtlas`] 位图）、
+//!     `Image`（渲染层登记的图像）和变换图像；
 //!   - 裁剪：`PushClip(Rect)` / `PopClip`，作为列表里的状态指令，而不是每个图元
 //!     自带 clip，这样嵌套裁剪不需要给每个图元多存一份矩形；
 //! - 图元体积小（`Quad` 约 60 字节），枚举的额外开销可以忽略。
@@ -39,12 +39,14 @@ mod geometry;
 mod glyph;
 mod quad;
 mod scene;
+mod shadow;
 
 pub use atlas::{AtlasConfig, AtlasStats, DirtyRect, GlyphAtlas};
 pub use geometry::{Point, Rect, Size};
 pub use glyph::{
     AtlasGlyph, FontKey, GlyphKey, GlyphRun, ImageId, ImageQuad, PositionedGlyph, RasterFormat,
-    RasterGlyph,
+    RasterGlyph, TransformedImageQuad,
 };
 pub use quad::{CornerRadii, Quad};
 pub use scene::{Primitive, Scene};
+pub use shadow::ShadowQuad;

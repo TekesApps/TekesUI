@@ -1,0 +1,1415 @@
+[
+  {
+    "after": {
+      "events": [
+        "disclosure: true"
+      ],
+      "focus": 20,
+      "value": true
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": false
+    },
+    "id": "disclosure-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "split: 55%"
+      ],
+      "focus": 90,
+      "value": 0.5474308133125305
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 0.5
+    },
+    "id": "split-view-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "icon-button: Create item"
+      ],
+      "focus": 20,
+      "value": [
+        "icon-button: Create item"
+      ]
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": []
+    },
+    "id": "icon-button-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "link: activated"
+      ],
+      "focus": 20,
+      "value": [
+        "link: activated"
+      ]
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": []
+    },
+    "id": "link-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "segment: 1"
+      ],
+      "focus": 31,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 0
+    },
+    "id": "segmented-control-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "breadcrumb: 1"
+      ],
+      "focus": 31,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 0
+    },
+    "id": "breadcrumb-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "combo-box: keyboard state changed",
+        "combo selection: 1",
+        "combo-box: keyboard state changed"
+      ],
+      "focus": 1000,
+      "value": {
+        "open": false,
+        "query": "Compact",
+        "selected": 1
+      }
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": {
+        "open": false,
+        "query": "",
+        "selected": null
+      }
+    },
+    "id": "combo-box-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "command palette: open",
+        "command-palette: keyboard state changed"
+      ],
+      "focus": 20,
+      "value": {
+        "open": true,
+        "selected": null
+      }
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": {
+        "open": false,
+        "selected": null
+      }
+    },
+    "id": "command-palette-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "select: open",
+        "select: 1"
+      ],
+      "focus": 20,
+      "value": {
+        "open": false,
+        "selected": 1
+      }
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": {
+        "open": false,
+        "selected": 0
+      }
+    },
+    "id": "select-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "list: selection changed"
+      ],
+      "focus": 31,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": null
+    },
+    "id": "list-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [],
+      "focus": 31,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": null
+    },
+    "id": "tree-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "data-table: selection changed"
+      ],
+      "focus": 21,
+      "value": {
+        "selected": null,
+        "sort": "Some((1, Ascending))"
+      }
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": {
+        "selected": null,
+        "sort": "None"
+      }
+    },
+    "id": "data-table-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [],
+      "focus": null,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": null
+    },
+    "id": "chart-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [],
+      "focus": null,
+      "value": "Some(Rect { origin: Point { x: 312.0, y: 254.0 }, size: Size { width: 276.0, height: 48.0 } })"
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": "None"
+    },
+    "id": "tooltip-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "popover: open"
+      ],
+      "focus": 20,
+      "value": true
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": false
+    },
+    "id": "popover-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "toast: dismissed"
+      ],
+      "focus": 20,
+      "value": false
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": true
+    },
+    "id": "toast-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "banner: dismissed"
+      ],
+      "focus": 20,
+      "value": false
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": true
+    },
+    "id": "banner-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "progress: 70%"
+      ],
+      "focus": 20,
+      "value": 0.7000000476837158
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 0.6000000238418579
+    },
+    "id": "progress-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "empty-state action: created Documents fixture item"
+      ],
+      "focus": 20,
+      "value": true
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": false
+    },
+    "id": "empty-state-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "toolbar: create"
+      ],
+      "focus": 20,
+      "value": [
+        "toolbar: create"
+      ]
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": []
+    },
+    "id": "toolbar-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "value: 9"
+      ],
+      "focus": 24,
+      "value": 9.0
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 8.0
+    },
+    "id": "number-field-light",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "disclosure: true"
+      ],
+      "focus": 20,
+      "value": true
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": false
+    },
+    "id": "disclosure-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "split: 55%"
+      ],
+      "focus": 90,
+      "value": 0.5474308133125305
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 0.5
+    },
+    "id": "split-view-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "icon-button: Create item"
+      ],
+      "focus": 20,
+      "value": [
+        "icon-button: Create item"
+      ]
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": []
+    },
+    "id": "icon-button-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "link: activated"
+      ],
+      "focus": 20,
+      "value": [
+        "link: activated"
+      ]
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": []
+    },
+    "id": "link-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "segment: 1"
+      ],
+      "focus": 31,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 0
+    },
+    "id": "segmented-control-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "breadcrumb: 1"
+      ],
+      "focus": 31,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 0
+    },
+    "id": "breadcrumb-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "combo-box: keyboard state changed",
+        "combo selection: 1",
+        "combo-box: keyboard state changed"
+      ],
+      "focus": 1000,
+      "value": {
+        "open": false,
+        "query": "Compact",
+        "selected": 1
+      }
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": {
+        "open": false,
+        "query": "",
+        "selected": null
+      }
+    },
+    "id": "combo-box-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "command palette: open",
+        "command-palette: keyboard state changed"
+      ],
+      "focus": 20,
+      "value": {
+        "open": true,
+        "selected": null
+      }
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": {
+        "open": false,
+        "selected": null
+      }
+    },
+    "id": "command-palette-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "select: open",
+        "select: 1"
+      ],
+      "focus": 20,
+      "value": {
+        "open": false,
+        "selected": 1
+      }
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": {
+        "open": false,
+        "selected": 0
+      }
+    },
+    "id": "select-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "list: selection changed"
+      ],
+      "focus": 31,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": null
+    },
+    "id": "list-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [],
+      "focus": 31,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": null
+    },
+    "id": "tree-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "data-table: selection changed"
+      ],
+      "focus": 21,
+      "value": {
+        "selected": null,
+        "sort": "Some((1, Ascending))"
+      }
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": {
+        "selected": null,
+        "sort": "None"
+      }
+    },
+    "id": "data-table-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [],
+      "focus": null,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": null
+    },
+    "id": "chart-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [],
+      "focus": null,
+      "value": "Some(Rect { origin: Point { x: 312.0, y: 254.0 }, size: Size { width: 276.0, height: 48.0 } })"
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": "None"
+    },
+    "id": "tooltip-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "popover: open"
+      ],
+      "focus": 20,
+      "value": true
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": false
+    },
+    "id": "popover-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "toast: dismissed"
+      ],
+      "focus": 20,
+      "value": false
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": true
+    },
+    "id": "toast-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "banner: dismissed"
+      ],
+      "focus": 20,
+      "value": false
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": true
+    },
+    "id": "banner-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "progress: 70%"
+      ],
+      "focus": 20,
+      "value": 0.7000000476837158
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 0.6000000238418579
+    },
+    "id": "progress-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "empty-state action: created Documents fixture item"
+      ],
+      "focus": 20,
+      "value": true
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": false
+    },
+    "id": "empty-state-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "toolbar: create"
+      ],
+      "focus": 20,
+      "value": [
+        "toolbar: create"
+      ]
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": []
+    },
+    "id": "toolbar-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "value: 9"
+      ],
+      "focus": 24,
+      "value": 9.0
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 8.0
+    },
+    "id": "number-field-dark",
+    "passed": true,
+    "text_scale": 100,
+    "viewport": [
+      1440,
+      960
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "disclosure: true"
+      ],
+      "focus": 20,
+      "value": true
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": false
+    },
+    "id": "disclosure-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "split: 55%"
+      ],
+      "focus": 90,
+      "value": 0.5542986392974854
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 0.5
+    },
+    "id": "split-view-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "icon-button: Create item"
+      ],
+      "focus": 20,
+      "value": [
+        "icon-button: Create item"
+      ]
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": []
+    },
+    "id": "icon-button-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "link: activated"
+      ],
+      "focus": 20,
+      "value": [
+        "link: activated"
+      ]
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": []
+    },
+    "id": "link-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "segment: 1"
+      ],
+      "focus": 31,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 0
+    },
+    "id": "segmented-control-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "breadcrumb: 1"
+      ],
+      "focus": 31,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 0
+    },
+    "id": "breadcrumb-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "combo-box: keyboard state changed",
+        "combo selection: 1",
+        "combo-box: keyboard state changed"
+      ],
+      "focus": 1000,
+      "value": {
+        "open": false,
+        "query": "Compact",
+        "selected": 1
+      }
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": {
+        "open": false,
+        "query": "",
+        "selected": null
+      }
+    },
+    "id": "combo-box-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "command palette: open",
+        "command-palette: keyboard state changed"
+      ],
+      "focus": 20,
+      "value": {
+        "open": true,
+        "selected": null
+      }
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": {
+        "open": false,
+        "selected": null
+      }
+    },
+    "id": "command-palette-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "select: open",
+        "select: 1"
+      ],
+      "focus": 20,
+      "value": {
+        "open": false,
+        "selected": 1
+      }
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": {
+        "open": false,
+        "selected": 0
+      }
+    },
+    "id": "select-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "list: selection changed"
+      ],
+      "focus": 31,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": null
+    },
+    "id": "list-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [],
+      "focus": 31,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": null
+    },
+    "id": "tree-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "data-table: selection changed"
+      ],
+      "focus": 21,
+      "value": {
+        "selected": null,
+        "sort": "Some((1, Ascending))"
+      }
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": {
+        "selected": null,
+        "sort": "None"
+      }
+    },
+    "id": "data-table-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [],
+      "focus": null,
+      "value": 1
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": null
+    },
+    "id": "chart-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [],
+      "focus": null,
+      "value": "Some(Rect { origin: Point { x: 312.0, y: 302.0 }, size: Size { width: 276.0, height: 48.0 } })"
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": "None"
+    },
+    "id": "tooltip-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "popover: open"
+      ],
+      "focus": 20,
+      "value": true
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": false
+    },
+    "id": "popover-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "toast: dismissed"
+      ],
+      "focus": 20,
+      "value": false
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": true
+    },
+    "id": "toast-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "banner: dismissed"
+      ],
+      "focus": 20,
+      "value": false
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": true
+    },
+    "id": "banner-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "progress: 70%"
+      ],
+      "focus": 20,
+      "value": 0.7000000476837158
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 0.6000000238418579
+    },
+    "id": "progress-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "empty-state action: created Documents fixture item"
+      ],
+      "focus": 20,
+      "value": true
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": false
+    },
+    "id": "empty-state-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "toolbar: create"
+      ],
+      "focus": 20,
+      "value": [
+        "toolbar: create"
+      ]
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": []
+    },
+    "id": "toolbar-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  },
+  {
+    "after": {
+      "events": [
+        "value: 9"
+      ],
+      "focus": 24,
+      "value": 9.0
+    },
+    "before": {
+      "events": [],
+      "focus": null,
+      "value": 8.0
+    },
+    "id": "number-field-large-narrow",
+    "passed": true,
+    "text_scale": 150,
+    "viewport": [
+      1000,
+      800
+    ]
+  }
+]

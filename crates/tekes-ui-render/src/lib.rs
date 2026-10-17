@@ -76,9 +76,8 @@
 //!
 //! - 只在调用 [`Renderer::render`] 时工作。没有内部循环、定时器或线程；空闲时 0 CPU。
 //! - 呈现模式 `Fifo`（垂直同步，不撕裂，Metal 上是 `displaySyncEnabled = true`）。
-//! - `desired_maximum_frame_latency = 1`（Metal 上 `maximumDrawableCount = 2`）：
-//!   每帧 GPU 工作很少，瓶颈是输入到上屏的延迟而不是吞吐，所以取最短队列。
-//!   实测 120Hz 吃紧时可以改成 2。
+//! - `desired_maximum_frame_latency = 2`（Metal 上 `maximumDrawableCount = 3`）：
+//!   三个 drawable 避免合成器持有前帧时主线程等待可用 drawable；宿主仍每个显示回调只提交一次。
 //! - 透明度模式 `Opaque`：窗口背景由我们自己画，layer 标记为不透明，合成器可以跳过混合。
 //!
 //! # 帧计时
@@ -87,7 +86,7 @@
 //! 设备支持 `TIMESTAMP_QUERY` 时（本机 Apple M4 支持）再量 render pass 的 GPU 时间，
 //! 用 [`Renderer::drain_frame_timings`] 取走 [`FrameTiming`]。默认关闭，关闭时每帧只多几次
 //! `Option` 判断。[`stats`] 模块是宿主汇总用的纯函数：分位数和基于显示链接时间戳的掉帧检测。
-//! wgpu 30 不暴露 `CAMetalDrawable`，拿不到上屏时刻（`presentedTime`），细节见 [`stats`] 的文档。
+//! 实际上屏时刻由 macOS 平台拥有的 CAMetalLayer 可选观察器提供，使用公开 addPresentedHandler；统计与渲染器计时分开。
 //!
 //! # 实例缓冲
 //!

@@ -8,6 +8,8 @@ repository.workspace = true
 rust-version.workspace = true
 
 [build-dependencies]
+sha2.workspace = true
+serde_json.workspace = true
 tekes-ui-design-export = { path = "../tekes-ui-design-export" }
 
 [dev-dependencies]

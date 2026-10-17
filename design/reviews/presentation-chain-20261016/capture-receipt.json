@@ -1,0 +1,71 @@
+{
+  "format": "tekesui-metal-trace/1",
+  "diagnostic_only": true,
+  "quiet_certified": false,
+  "driver": "cad",
+  "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/performance-followup-20261016/optimized/tekes-ui-gallery",
+  "binary_sha256": "92f7205bf1572013d5cd8d5c43d470873c2dd4ae06aaa23c5c04317355bcd2a5",
+  "tables": {
+    "metal-application-command-buffer-submissions": {
+      "exit": 0,
+      "rows": 9107,
+      "sha256": "6a19e84689a7c19243b637663ac22185849ddabb916a06db3cc6059e73b1caf6"
+    },
+    "metal-command-buffer-completed": {
+      "exit": 0,
+      "rows": 12617,
+      "sha256": "fc53ed647358b3a841cb0762102a6c8204c7935e55361cadd975ddb0b1f3c510"
+    },
+    "metal-gpu-intervals": {
+      "exit": 0,
+      "rows": 72036,
+      "sha256": "e8a9b0e019f5961ec8e47bcd1a2863cc601d4291899443a199f082cb862fb761"
+    },
+    "ca-client-buffer-wait-interval": {
+      "exit": 0,
+      "rows": 1301,
+      "sha256": "52d88e851b61d90a5281809481d173b34e1e2c09bccc0f2a51170520d8ba5d94"
+    },
+    "displayed-surfaces-interval": {
+      "exit": 0,
+      "rows": 1300,
+      "sha256": "40dbd97f794a1d5cf0da752abadc7268a6b91e91c0a646b4640f980d6617db19"
+    },
+    "display-surface-swap": {
+      "exit": 0,
+      "rows": 1302,
+      "sha256": "1171484036cee36d29e8db424c8a753a9653b823bbdf36972a07cbb102d50c96"
+    },
+    "display-vsyncs-interval": {
+      "exit": 0,
+      "rows": 6190,
+      "sha256": "5cd70707a03c6f0696ff5979b59b911dc7e73bb9fbfbafde986be9fdb2d58d7b"
+    },
+    "metal-object-label": {
+      "exit": 0,
+      "rows": 118417,
+      "sha256": "73cf570410468dd4d99230da7b910d88c3f037fa2a05198d04f4317cd8ea456f"
+    }
+  },
+  "complete": true,
+  "pid": 4908,
+  "record_command": [
+    "xcrun",
+    "xctrace",
+    "record",
+    "--template",
+    "Metal System Trace",
+    "--time-limit",
+    "10s",
+    "--output",
+    "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/presentation-chain-20261016/cad-short/metal.trace",
+    "--attach",
+    "4908"
+  ],
+  "record_exit": 0,
+  "gallery_alive_after_record": false,
+  "gallery_exit": 0,
+  "toc_exit": 0,
+  "binary_unchanged": true,
+  "usable_queue_capture": true
+}

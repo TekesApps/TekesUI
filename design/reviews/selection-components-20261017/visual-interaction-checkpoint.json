@@ -1,0 +1,294 @@
+{
+  "captures": 24,
+  "pixel_identical": 0,
+  "cases": [
+    {
+      "file": "component-radio-group-playground-dark-increased-t100-1x.png",
+      "before_sha256": "1806e3eeca3d525224b5f52a949dce6f406bfc2e6b855ee338b0cc1b08f57604",
+      "after_sha256": "ddf18192a4e059b7b00e46e2b113e505f08f8b26ed407161afeefdea4e9c7e4a",
+      "pixel_identical": false,
+      "diff_bbox": [
+        321,
+        334,
+        337,
+        350
+      ]
+    },
+    {
+      "file": "component-radio-group-playground-dark-increased-t100-2x.png",
+      "before_sha256": "4853582ce3424bddc731f337812c186d130044bfdfd6c1cdfa63f84db5e5c0b0",
+      "after_sha256": "ff1db51cc9843389b322d76a2ef4f8f3dd85223d37ca0e2e1e3b817f413698aa",
+      "pixel_identical": false,
+      "diff_bbox": [
+        642,
+        668,
+        674,
+        700
+      ]
+    },
+    {
+      "file": "component-radio-group-playground-dark-standard-t100-1x.png",
+      "before_sha256": "e9192543b83a5c0b6c60ccfea97b891e3cf10e433a95cb7adf238a553dd2436a",
+      "after_sha256": "ecff35d1372909dab279af960ef83ee80c68ef769af93d27dbd600fcbc1b2908",
+      "pixel_identical": false,
+      "diff_bbox": [
+        321,
+        334,
+        337,
+        350
+      ]
+    },
+    {
+      "file": "component-radio-group-playground-dark-standard-t100-2x.png",
+      "before_sha256": "a2d0e307679cef7547960a3b2c7569700c4af8b962bc01ae3d665d943a43bca7",
+      "after_sha256": "91680eaddc54113f025a3dbee2d0214f79478e9287aa0213969c09ed6cb41c95",
+      "pixel_identical": false,
+      "diff_bbox": [
+        642,
+        668,
+        674,
+        700
+      ]
+    },
+    {
+      "file": "component-radio-group-playground-light-increased-t100-1x.png",
+      "before_sha256": "884504076a706f6e849f53023f958b7da45a8de2c5f1c37b9c63d4db830f0b77",
+      "after_sha256": "daedd5299b8c138ef9dc296abc77137c56c8d5f47b5d0475338fd85094216973",
+      "pixel_identical": false,
+      "diff_bbox": [
+        321,
+        334,
+        337,
+        350
+      ]
+    },
+    {
+      "file": "component-radio-group-playground-light-increased-t100-2x.png",
+      "before_sha256": "d739cbbdf0c1e9ffba5491b38a3164dfb31aa6ffdd3faf568793987af3fdb03f",
+      "after_sha256": "e1262043db5189d7e72a69f559f92d1631d31671e2dd74bb6406c09613238fc2",
+      "pixel_identical": false,
+      "diff_bbox": [
+        642,
+        668,
+        674,
+        700
+      ]
+    },
+    {
+      "file": "component-radio-group-playground-light-standard-t100-1x.png",
+      "before_sha256": "0e00a40bb4251b43673578e2718384192370c51739a1b7805a11d159cb2c10db",
+      "after_sha256": "a37f82c0202d41c7ad19aaf81777c16ad7929f4c8ade9c6639bac7452225fd1a",
+      "pixel_identical": false,
+      "diff_bbox": [
+        321,
+        334,
+        337,
+        350
+      ]
+    },
+    {
+      "file": "component-radio-group-playground-light-standard-t100-2x.png",
+      "before_sha256": "86d71008f3ead623c4b40da8698c2f6394bacc8326965d58c0d3f68cab8ee7a4",
+      "after_sha256": "8daf69e59bcb4d34cebcbb55ac09cbf438907e91ab32c25f32d61b00e429f2d5",
+      "pixel_identical": false,
+      "diff_bbox": [
+        642,
+        668,
+        674,
+        700
+      ]
+    },
+    {
+      "file": "component-slider-playground-dark-increased-t100-1x.png",
+      "before_sha256": "6e5fa991324a6f10f00bb8f07fedbd9ff60e105ddb49c96528e78b171d9eef05",
+      "after_sha256": "15f8959edd86f69309933a388aceb92dae14401b7307c8f864710a0cb1737b24",
+      "pixel_identical": false,
+      "diff_bbox": [
+        312,
+        284,
+        616,
+        886
+      ]
+    },
+    {
+      "file": "component-slider-playground-dark-increased-t100-2x.png",
+      "before_sha256": "a63417bfec1a6b9c55730f4787a278642f5757b00c15e8d919bd4af443c7e7df",
+      "after_sha256": "3fd83425f8241ab46c7af7a42d194c55b13a810a1d006e1513d44a26abfc08bf",
+      "pixel_identical": false,
+      "diff_bbox": [
+        624,
+        568,
+        1231,
+        1771
+      ]
+    },
+    {
+      "file": "component-slider-playground-dark-standard-t100-1x.png",
+      "before_sha256": "398729b1994d3af2637ad263a436991d9cb384712a5e0c8fa12d2c25da9c349e",
+      "after_sha256": "2165ee0ac3ff5f7906d6d6c5a390c5ff6edff8475d9ca136fd292f81bbd2d14d",
+      "pixel_identical": false,
+      "diff_bbox": [
+        312,
+        284,
+        616,
+        886
+      ]
+    },
+    {
+      "file": "component-slider-playground-dark-standard-t100-2x.png",
+      "before_sha256": "107ab731e49d2fb5394ff12941d68351f62a4623e1a9c783b3e48cf95c2657b1",
+      "after_sha256": "ddd1fcdb2b2c4424c956e815836a2eb0319bdc7c0efc5dac36029c06cac202f5",
+      "pixel_identical": false,
+      "diff_bbox": [
+        624,
+        568,
+        1231,
+        1771
+      ]
+    },
+    {
+      "file": "component-slider-playground-light-increased-t100-1x.png",
+      "before_sha256": "090e859b59f526afcc96d6a6c7eddc74b974bbd4c6cdcfbe5642d38b508df71d",
+      "after_sha256": "51e4fa637e64d54bbc61672441142574a9cde4fa2f06f0c03ebcde715543f785",
+      "pixel_identical": false,
+      "diff_bbox": [
+        312,
+        284,
+        616,
+        886
+      ]
+    },
+    {
+      "file": "component-slider-playground-light-increased-t100-2x.png",
+      "before_sha256": "a0e87217e4210eec1e5bd252dab18a0699c58d5f4fb3b4372a06dcd2e60bb13c",
+      "after_sha256": "b10a95a524264440489acffd7d5692d58a09780270be32e82e794070a208c66e",
+      "pixel_identical": false,
+      "diff_bbox": [
+        624,
+        568,
+        1231,
+        1771
+      ]
+    },
+    {
+      "file": "component-slider-playground-light-standard-t100-1x.png",
+      "before_sha256": "cd857c2a13710fd454f1d422f0f441ae4a03fbc97687ea8673ae06f946f35f01",
+      "after_sha256": "3efadb96d332c496efcc06f8e2e556209a86b7e3abb59e778a0d289f541fa357",
+      "pixel_identical": false,
+      "diff_bbox": [
+        312,
+        284,
+        616,
+        886
+      ]
+    },
+    {
+      "file": "component-slider-playground-light-standard-t100-2x.png",
+      "before_sha256": "48679f5cd9a40729eb959bf26a9f6dfa2fa7c07e9d75a2eb3053c0ad85455144",
+      "after_sha256": "f0e1383b0b40540b8ca908f528f4e942046a55701fa69a9297265c34e35faca3",
+      "pixel_identical": false,
+      "diff_bbox": [
+        624,
+        568,
+        1231,
+        1771
+      ]
+    },
+    {
+      "file": "component-switch-playground-dark-increased-t100-1x.png",
+      "before_sha256": "03c304ab547f474e8c15ca627a9b231bea7e8324bdf4c8c42d501971ccdac60c",
+      "after_sha256": "a6ef5c6bcb88b4d1d435539463de2bb04341f5b0260f37344d28a8e1a6cf8a30",
+      "pixel_identical": false,
+      "diff_bbox": [
+        313,
+        257,
+        359,
+        281
+      ]
+    },
+    {
+      "file": "component-switch-playground-dark-increased-t100-2x.png",
+      "before_sha256": "b760aadd1d0decf956d400c1e16efbf990867bedb52901fe3c3ce8a6b2f6c680",
+      "after_sha256": "ddc02c8a3aa9cc10868a06bf84444bd290cc3c2365b7d7dd7f2901ae93a7bddc",
+      "pixel_identical": false,
+      "diff_bbox": [
+        626,
+        514,
+        718,
+        562
+      ]
+    },
+    {
+      "file": "component-switch-playground-dark-standard-t100-1x.png",
+      "before_sha256": "94f15077d89415c3462e1c3bfacd9234eeba31c5c2e32e851535521ce8ad0ffa",
+      "after_sha256": "0ef52b3768f26c379bfac4a5b5093f817a9216c9842acc8d40ea23a34341057c",
+      "pixel_identical": false,
+      "diff_bbox": [
+        313,
+        257,
+        359,
+        281
+      ]
+    },
+    {
+      "file": "component-switch-playground-dark-standard-t100-2x.png",
+      "before_sha256": "fb0b1c69886b855e222791a7373cceef5ae2af62f6844dbb87abc8339db02627",
+      "after_sha256": "78351b16feee709a6d40c7b142588557611134125175c1f322d16feba1b2589b",
+      "pixel_identical": false,
+      "diff_bbox": [
+        626,
+        514,
+        718,
+        562
+      ]
+    },
+    {
+      "file": "component-switch-playground-light-increased-t100-1x.png",
+      "before_sha256": "3c5ae8a8aee6cd039bb63eecc71750117db339a9c11467993f0905e25afd3933",
+      "after_sha256": "f2ad4ed578559da86ac45606425310fe0b8af34d65f4a7a0a860c318cdcc91fe",
+      "pixel_identical": false,
+      "diff_bbox": [
+        313,
+        257,
+        359,
+        281
+      ]
+    },
+    {
+      "file": "component-switch-playground-light-increased-t100-2x.png",
+      "before_sha256": "ff9a62f90cd2dd46340d9d9f4ee424450aac4e33bacbe2cc42ec8ac82bec80b9",
+      "after_sha256": "8168e498b5a1be9fff0aadb2123488a049d2f735a6a97e32077a7fc533ebc80a",
+      "pixel_identical": false,
+      "diff_bbox": [
+        626,
+        514,
+        718,
+        562
+      ]
+    },
+    {
+      "file": "component-switch-playground-light-standard-t100-1x.png",
+      "before_sha256": "74221d970c8fa31a439f86d060ba38b3747b9bc0c1d37936826382e620e0ae0e",
+      "after_sha256": "4e5900b62e50d1b776ba00075493f0acde257ab2eaa6632de30ae11b058a1cab",
+      "pixel_identical": false,
+      "diff_bbox": [
+        313,
+        257,
+        359,
+        281
+      ]
+    },
+    {
+      "file": "component-switch-playground-light-standard-t100-2x.png",
+      "before_sha256": "8477b5b571b162d2502e86607477b0d06df7d09875e94d4471498c27d2c95d60",
+      "after_sha256": "d2e42f285c743c2b2204e804ecd6d316daf0fabac84c3a8b245956e802364d2d",
+      "pixel_identical": false,
+      "diff_bbox": [
+        626,
+        514,
+        718,
+        562
+      ]
+    }
+  ]
+}

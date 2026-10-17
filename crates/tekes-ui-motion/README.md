@@ -83,3 +83,32 @@ cargo run -p tekes-ui-motion --example sample_motion > motion.csv
 ```
 
 示例输出 120Hz 的数值轨迹，在 0.15 秒从目标 100 改为 25，用于复现中断行为。无 GUI，也不要求 GPU。
+
+## Apple reference defaults
+
+`apple_defaults::AppleDefault` provides nine published SwiftUI configurations,
+separate from project semantic presets. See
+[values, sources and oracle scope](../../docs/design/apple-motion-defaults.md).
+The Gallery has independent Apple defaults / Design System banks, parameter
+controls and mid-flight retargeting. Cross-brand research and proposed next-level
+recipes are documented in [motion references](../../docs/design/motion-references.md).
+
+`recipes::RecipePlayer` demonstrates interruptible shared geometry, independently
+scheduled panel properties, cancellable success phases, and reading-anchor
+compensation. The host supplies timestamps; the model never schedules its own
+frames. See [Gallery recipe controls](../../docs/design/motion-recipes.md).
+
+`typing::TypingEngine` separates time-based release from per-unit opacity.
+Callers append counts of complete graphemes/shaped clusters, supply monotonic
+timestamps, and draw without moving text baselines. Arrival and paced modes,
+bounded backlog latency, pause/resume and reduced motion are supported. See
+[typing model and source research](../../docs/design/typing-engine.md).
+
+`symbols` provides fourteen symbol-effect families with layer scope, ordered-path
+reveal, replacement correspondence and explicit asset-capability fallbacks.
+Gallery's independent Symbols bank supports parameter editing, pause/resume and
+mid-flight reversal. Equations and defaults are TekesUI experiments, not Apple's
+private SF Symbols choreography. See [official versions, model and asset limits](../../docs/design/symbol-effects.md).
+
+
+`linear_rotation::LinearRotation` provides a separate constant angular velocity motor, driven by an external monotonic `Duration`. It preserves the current unwrapped angle when speed or direction changes, excludes paused time, and has no easing. Gallery exposes it as the fifteenth Symbols preset; it is a TekesUI preset, not an Apple SymbolEffect.

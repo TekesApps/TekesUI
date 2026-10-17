@@ -1,4 +1,6 @@
-//! Read-only local preview of the legacy Tekes catalogue. Assets stay outside this repository.
+#[path = "proposal_assets.rs"]
+mod proposal_assets;
+// Read-only legacy catalogue plus embedded design proposals.
 use resvg::{tiny_skia, usvg};
 use std::collections::HashSet;
 use std::io::Read;
@@ -25,6 +27,9 @@ pub const RETIRED: [&str; 5] = [
 
 #[derive(Debug)]
 pub struct Entry {
+    pub label: String,
+    pub kind: String,
+    pub before: Option<Box<Entry>>,
     pub name: String,
     tree: usvg::Tree,
     pub images: [Option<ImageId>; 3],
@@ -38,6 +43,11 @@ pub struct IconCatalog {
 }
 impl IconCatalog {
     pub fn from_env() -> Self {
+        let mut catalog = Self::load_local();
+        catalog.add_proposals();
+        catalog
+    }
+    fn load_local() -> Self {
         if let Some(path) = std::env::var_os("TEKESUI_ICON_DIR") {
             return Self::load(Path::new(&path));
         }
@@ -127,6 +137,9 @@ impl IconCatalog {
                 Ok(tree) => {
                     seen.insert(name.to_owned());
                     catalog.entries.push(Entry {
+                        label: String::new(),
+                        kind: String::new(),
+                        before: None,
                         name: name.into(),
                         tree,
                         images: [None; 3],
@@ -137,11 +150,47 @@ impl IconCatalog {
         }
         catalog
     }
+    /// Proposals are embedded; legacy source remains read-only and external.
+    pub fn add_proposals(&mut self) {
+        if self.entries.iter().any(|e| !e.kind.is_empty()) {
+            return;
+        }
+        for &(name, label, kind, svg) in proposal_assets::ASSETS {
+            let tree = usvg::Tree::from_str(svg, &usvg::Options::default())
+                .expect("validated embedded proposal SVG");
+            let before = self
+                .entries
+                .iter()
+                .position(|e| e.name == name)
+                .map(|i| Box::new(self.entries.remove(i)));
+            self.entries.push(Entry {
+                name: name.into(),
+                label: label.into(),
+                kind: kind.into(),
+                before,
+                tree,
+                images: [None; 3],
+            });
+        }
+        self.entries.sort_by(|a, b| {
+            let rank = |e: &Entry| {
+                if e.kind == "refine" {
+                    0
+                } else if !e.kind.is_empty() {
+                    1
+                } else {
+                    2
+                }
+            };
+            rank(a).cmp(&rank(b)).then(a.name.cmp(&b.name))
+        });
+    }
     #[cfg(test)]
     pub(crate) fn fixture(names: &[&str]) -> Self {
         let mut catalog = Self::default();
         for name in names {
             catalog.entries.push(Entry {
+                label: String::new(), kind: String::new(), before: None,
                 name: (*name).into(),
                 tree: usvg::Tree::from_str(r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect x="4" y="4" width="16" height="16"/></svg>"#, &usvg::Options::default()).unwrap(),
                 images: [None; 3],
@@ -164,7 +213,11 @@ impl IconCatalog {
         let key = (theme, (scale * 1000.0).round() as u32);
         if self.prepared != Some(key) {
             for entry in &mut self.entries {
-                for image in &mut entry.images {
+                for image in entry
+                    .images
+                    .iter_mut()
+                    .chain(entry.before.iter_mut().flat_map(|b| b.images.iter_mut()))
+                {
                     if let Some(id) = image.take() {
                         renderer.unregister_image(id);
                     }
@@ -178,32 +231,42 @@ impl IconCatalog {
             let Some(entry) = self.entries.get_mut(index) else {
                 continue;
             };
-            for (slot, size) in preview_sizes().into_iter().enumerate() {
-                if entry.images[slot].is_some() {
-                    continue;
-                }
-                let pixels = (size * scale).round().max(1.0) as u32;
-                let Some(mut pixmap) = tiny_skia::Pixmap::new(pixels, pixels) else {
-                    continue;
-                };
-                resvg::render(
-                    &entry.tree,
-                    tiny_skia::Transform::from_scale(
-                        pixels as f32 / entry.tree.size().width(),
-                        pixels as f32 / entry.tree.size().height(),
-                    ),
-                    &mut pixmap.as_mut(),
-                );
-                for rgba in pixmap.data_mut().chunks_exact_mut(4) {
-                    let alpha = f32::from(rgba[3]) / 255.0 * ink[3];
-                    for i in 0..3 {
-                        rgba[i] = (ink[i] * alpha * 255.0).round() as u8;
+            let Entry {
+                tree,
+                images,
+                before,
+                ..
+            } = entry;
+            for (tree, images) in std::iter::once((&*tree, images))
+                .chain(before.iter_mut().map(|b| (&b.tree, &mut b.images)))
+            {
+                for (slot, size) in preview_sizes().into_iter().enumerate() {
+                    if images[slot].is_some() {
+                        continue;
                     }
-                    rgba[3] = (alpha * 255.0).round() as u8;
-                }
-                match renderer.register_image(pixmap.data(), pixels, pixels) {
-                    Ok(id) => entry.images[slot] = Some(id),
-                    Err(error) => eprintln!("icon {}: {error}", entry.name),
+                    let pixels = (size * scale).round().max(1.0) as u32;
+                    let Some(mut pixmap) = tiny_skia::Pixmap::new(pixels, pixels) else {
+                        continue;
+                    };
+                    resvg::render(
+                        tree,
+                        tiny_skia::Transform::from_scale(
+                            pixels as f32 / tree.size().width(),
+                            pixels as f32 / tree.size().height(),
+                        ),
+                        &mut pixmap.as_mut(),
+                    );
+                    for rgba in pixmap.data_mut().chunks_exact_mut(4) {
+                        let alpha = f32::from(rgba[3]) / 255.0 * ink[3];
+                        for i in 0..3 {
+                            rgba[i] = (ink[i] * alpha * 255.0).round() as u8;
+                        }
+                        rgba[3] = (alpha * 255.0).round() as u8;
+                    }
+                    match renderer.register_image(pixmap.data(), pixels, pixels) {
+                        Ok(id) => images[slot] = Some(id),
+                        Err(error) => eprintln!("icon {}: {error}", entry.name),
+                    }
                 }
             }
         }
@@ -213,6 +276,77 @@ impl IconCatalog {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn approved_defaults_preserve_the_original_comparison_after_merging() {
+        let names: Vec<_> = tekes_ui_icons::Icon::ALL
+            .iter()
+            .map(|icon| icon.name())
+            .collect();
+        let mut catalog = IconCatalog::fixture(&names);
+        catalog.add_proposals();
+        for icon in tekes_ui_icons::Icon::ALL {
+            let entry = catalog
+                .entries
+                .iter()
+                .find(|e| e.name == icon.name())
+                .unwrap();
+            let embedded = proposal_assets::ASSETS
+                .iter()
+                .find(|e| e.0 == icon.name())
+                .unwrap();
+            assert_eq!(
+                embedded.3,
+                icon.svg(),
+                "Gallery must use the shared default"
+            );
+            assert_eq!(entry.before.as_ref().unwrap().name, icon.name());
+            assert_eq!(entry.kind, "refine");
+        }
+        assert_eq!(catalog.entries.len(), 51);
+        assert_eq!(
+            catalog
+                .entries
+                .iter()
+                .filter(|e| e.before.is_some())
+                .count(),
+            8
+        );
+    }
+
+    #[test]
+    fn proposals_merge_once_preserve_old_variants_and_work_without_local_assets() {
+        let mut catalog = IconCatalog::fixture(&["tekes-settings", "tekes-memory", "tekes-search"]);
+        catalog.add_proposals();
+        assert_eq!(catalog.entries.len(), 52);
+        assert_eq!(
+            catalog
+                .entries
+                .iter()
+                .filter(|e| e.before.is_some())
+                .count(),
+            2
+        );
+        let names: HashSet<_> = catalog.entries.iter().map(|e| &e.name).collect();
+        assert_eq!(names.len(), catalog.entries.len());
+        catalog.add_proposals();
+        assert_eq!(catalog.entries.len(), 52);
+        let mut embedded = IconCatalog::default();
+        embedded.add_proposals();
+        assert_eq!(embedded.entries.len(), 51);
+        let mut renderer = Renderer::new_headless().unwrap();
+        let visible: Vec<_> = (0..catalog.entries.len()).collect();
+        catalog.prepare(&mut renderer, Theme::ALL[0], 1.0, &visible);
+        assert_eq!(renderer.image_count(), 54 * 3);
+        catalog.prepare(&mut renderer, Theme::ALL[1], 2.0, &visible);
+        assert_eq!(renderer.image_count(), 54 * 3);
+        assert!(
+            catalog
+                .entries
+                .iter()
+                .filter_map(|e| e.before.as_ref())
+                .all(|e| e.images.iter().all(Option::is_some))
+        );
+    }
     const SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M2 2L22 22" stroke="#000" stroke-width="1.5"/></svg>"##;
     #[test]
     fn loading_deduplicates_scales_excludes_retired_and_reports_errors() {
@@ -241,6 +375,9 @@ mod tests {
         };
         let mut catalog = IconCatalog::default();
         catalog.entries.push(Entry {
+            label: String::new(),
+            kind: String::new(),
+            before: None,
             name: "fixture".into(),
             tree: usvg::Tree::from_str(SVG, &usvg::Options::default()).unwrap(),
             images: [None; 3],
@@ -268,6 +405,9 @@ mod color_review {
         let svg = r##"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect width="24" height="24" fill="#000"/></svg>"##;
         let mut icons = IconCatalog::default();
         icons.entries.push(Entry {
+            label: String::new(),
+            kind: String::new(),
+            before: None,
             name: "opaque-fixture".into(),
             tree: usvg::Tree::from_str(svg, &usvg::Options::default()).unwrap(),
             images: [None; 3],

@@ -1,0 +1,6 @@
+[   0.108] Created: size Size { width: 1440.0, height: 960.0 } scale 2 drawable (2880, 1920) windowNumber 52226
+[   0.108] placement: "U2790B" builtin=false scale=2 max_fps=30；Screen(External)
+[   0.108] system theme Theme { appearance: Light, contrast: Standard }
+[   0.108] Resized 1440x960 scale 2 drawable (2880, 1920)
+[   0.120] Redraw #1 size 1440x960 drawable (2880, 1920) quads 79
+[   0.171] Redraw #2 size 1440x960 drawable (2880, 1920) quads 79

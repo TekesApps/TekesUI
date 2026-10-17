@@ -18,7 +18,7 @@ pub(crate) fn premul_blend() -> wgpu::BlendState {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, PartialEq, Pod, Zeroable)]
 struct Globals {
     /// 渲染目标的像素尺寸。
     viewport_px: [f32; 2],
@@ -32,6 +32,7 @@ pub(crate) struct GlobalsBinding {
     buffer: wgpu::Buffer,
     pub layout: wgpu::BindGroupLayout,
     pub bind_group: wgpu::BindGroup,
+    last_written: Option<Globals>,
 }
 
 impl GlobalsBinding {
@@ -67,19 +68,21 @@ impl GlobalsBinding {
             buffer,
             layout,
             bind_group,
+            last_written: None,
         }
     }
 
-    pub fn write(&self, queue: &wgpu::Queue, size_px: (u32, u32), scale: f32) {
-        queue.write_buffer(
-            &self.buffer,
-            0,
-            bytemuck::bytes_of(&Globals {
-                viewport_px: [size_px.0 as f32, size_px.1 as f32],
-                scale,
-                _pad: 0.0,
-            }),
-        );
+    pub fn write(&mut self, queue: &wgpu::Queue, size_px: (u32, u32), scale: f32) {
+        let globals = Globals {
+            viewport_px: [size_px.0 as f32, size_px.1 as f32],
+            scale,
+            _pad: 0.0,
+        };
+        if self.last_written == Some(globals) {
+            return;
+        }
+        queue.write_buffer(&self.buffer, 0, bytemuck::bytes_of(&globals));
+        self.last_written = Some(globals);
     }
 }
 
@@ -136,6 +139,8 @@ pub(crate) struct GrowBuffer<T: Pod> {
     buffer: wgpu::Buffer,
     capacity: usize,
     allocations: usize,
+    /// Exact bytes last queued on this buffer. Invalidated on reallocation.
+    uploaded: Vec<u8>,
     _marker: PhantomData<T>,
 }
 
@@ -146,6 +151,7 @@ impl<T: Pod> GrowBuffer<T> {
             buffer: Self::alloc(device, label, min_capacity),
             capacity: min_capacity,
             allocations: 1,
+            uploaded: Vec::new(),
             _marker: PhantomData,
         }
     }
@@ -172,17 +178,111 @@ impl<T: Pod> GrowBuffer<T> {
         &self.buffer
     }
 
-    /// 把 `items` 写到缓冲开头，必要时先增长。空切片什么也不做。
-    pub fn write(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, items: &[T]) {
+    /// Upload only changed, 4-byte aligned words. Returns bytes actually queued.
+    /// Queue ordering keeps these writes after earlier frames and before this one.
+    pub fn write(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, items: &[T]) -> usize {
         if items.is_empty() {
-            return;
+            self.uploaded.clear();
+            return 0;
         }
         if items.len() > self.capacity {
             let new_capacity = items.len().max(self.capacity * 2);
             self.buffer = Self::alloc(device, self.label, new_capacity);
             self.capacity = new_capacity;
             self.allocations += 1;
+            self.uploaded.clear();
         }
-        queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(items));
+        let bytes = bytemuck::cast_slice(items);
+        let changed = changed_words(&self.uploaded, bytes);
+        let count = changed.as_ref().map_or(0, |range| range.len());
+        if let Some(range) = changed {
+            queue.write_buffer(&self.buffer, range.start as u64, &bytes[range.clone()]);
+            self.uploaded.resize(bytes.len(), 0);
+            self.uploaded[range.clone()].copy_from_slice(&bytes[range]);
+        } else {
+            self.uploaded.truncate(bytes.len());
+        }
+        count
+    }
+}
+
+/// Buffer writes require a four-byte offset and size. Compare exact words,
+/// including float bit patterns; a hash collision can never hide a change.
+fn changed_words(previous: &[u8], current: &[u8]) -> Option<std::ops::Range<usize>> {
+    debug_assert_eq!(previous.len() % 4, 0);
+    debug_assert_eq!(current.len() % 4, 0);
+    let common = previous.len().min(current.len());
+    let start = previous[..common]
+        .chunks_exact(4)
+        .zip(current[..common].chunks_exact(4))
+        .position(|(a, b)| a != b)
+        .map_or(common, |word| word * 4);
+    if start == current.len() {
+        return None;
+    }
+    let end = if previous.len() < current.len() {
+        current.len()
+    } else {
+        let equal_tail = previous[start..current.len()]
+            .rchunks_exact(4)
+            .zip(current[start..].rchunks_exact(4))
+            .take_while(|(a, b)| a == b)
+            .count()
+            * 4;
+        current.len() - equal_tail
+    };
+    Some(start..end)
+}
+
+#[cfg(test)]
+mod upload_tests {
+    use super::{GrowBuffer, changed_words};
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn cached_buffer_queues_only_changed_bytes_and_invalidates_on_growth() {
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
+        let adapter = pollster::block_on(instance.request_adapter(&Default::default()))
+            .expect("GPU adapter required for upload-cache validation");
+        let (device, queue) =
+            pollster::block_on(adapter.request_device(&Default::default())).unwrap();
+        let mut buffer = GrowBuffer::<u32>::new(&device, "upload cache validation", 4);
+        assert_eq!(buffer.write(&device, &queue, &[1, 2, 3, 4]), 16);
+        assert_eq!(buffer.write(&device, &queue, &[1, 2, 3, 4]), 0);
+        assert_eq!(buffer.write(&device, &queue, &[1, 7, 3, 4]), 4);
+        assert_eq!(buffer.write(&device, &queue, &[1, 7]), 0);
+        assert_eq!(buffer.write(&device, &queue, &[1, 7, 3, 4]), 8);
+        // New buffer: equal prefix still needs uploading.
+        assert_eq!(buffer.write(&device, &queue, &[1, 7, 3, 4, 5]), 20);
+        assert_eq!(buffer.allocations(), 2);
+        queue.submit([]);
+        device.poll(wgpu::PollType::wait_indefinitely()).unwrap();
+    }
+
+    #[test]
+    fn changes_are_exact_aligned_and_include_new_tail() {
+        let a = [1_u32, 2, 3, 4];
+        let b = [1_u32, 7, 3, 4];
+        let bytes = |v: &[u32]| bytemuck::cast_slice::<u32, u8>(v).to_vec();
+        assert_eq!(changed_words(&bytes(&a), &bytes(&a)), None);
+        assert_eq!(changed_words(&bytes(&a), &bytes(&b)), Some(4..8));
+        assert_eq!(changed_words(&bytes(&a), &bytes(&a[..2])), None);
+        assert_eq!(changed_words(&bytes(&a[..2]), &bytes(&a)), Some(8..16));
+        assert_eq!(changed_words(&[], &bytes(&a)), Some(0..16));
+        assert_eq!(changed_words(&bytes(&a), &[]), None);
+    }
+
+    #[test]
+    fn multiple_changes_and_float_bit_patterns_are_preserved() {
+        let a = [0_u32, 1, 2, 3, 4];
+        let b = [0_u32, 8, 2, 9, 4];
+        assert_eq!(
+            changed_words(bytemuck::cast_slice(&a), bytemuck::cast_slice(&b)),
+            Some(4..16)
+        );
+        assert_eq!(
+            changed_words(&0_f32.to_ne_bytes(), &(-0_f32).to_ne_bytes()),
+            Some(0..4)
+        );
     }
 }

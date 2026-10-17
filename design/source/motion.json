@@ -22,8 +22,8 @@
     "hover_translation": 0.0,
     "idle_animation": false,
     "press_scale": 1.0,
-    "shadow": false,
-    "spring_use": "selection thumb, bounded disclosure reveal, panel snap only; no pointer tracking lag",
+    "shadow": "static semantic elevation, no shadow animation",
+    "spring_use": "bounded control transitions use explicit role bindings; optional tuned springs remain available for recipes; no pointer tracking lag",
     "text_blur": false,
     "vibrancy": false
   },
@@ -53,5 +53,29 @@
       "stiffness": 320.0
     }
   },
-  "version": "0.2.0-proposal.1"
+  "version": "0.2.0-proposal.1",
+  "control_duration": {
+    "press_feedback": 0.06,
+    "hover_feedback": 0.2,
+    "selection_snap": 0.12,
+    "disclosure_reveal": 0.3
+  },
+  "control_transitions": {
+    "button_hover": {
+      "duration": "hover_feedback",
+      "easing": "standard"
+    },
+    "button_press": {
+      "duration": "press_feedback",
+      "easing": "standard"
+    },
+    "switch_thumb": {
+      "duration": "selection_snap",
+      "easing": "standard"
+    },
+    "disclosure_reveal": {
+      "duration": "disclosure_reveal",
+      "easing": "standard"
+    }
+  }
 }

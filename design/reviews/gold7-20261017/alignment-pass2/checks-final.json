@@ -1,0 +1,150 @@
+[
+  {
+    "check": "tests-final",
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "tekes-ui-controls",
+      "-p",
+      "tekes-ui-gallery",
+      "-p",
+      "tekes-ui-motion",
+      "-p",
+      "tekes-ui-icons",
+      "-p",
+      "tekes-ui-design-export",
+      "-p",
+      "tekes-ui-tokens",
+      "-p",
+      "tekes-ui-scene",
+      "-p",
+      "tekes-ui-render",
+      "-p",
+      "tekes-ui-text",
+      "--release",
+      "--locked",
+      "--offline"
+    ],
+    "exit": 0,
+    "seconds": 83.39
+  },
+  {
+    "check": "clippy-final",
+    "command": [
+      "cargo",
+      "clippy",
+      "-p",
+      "tekes-ui-controls",
+      "-p",
+      "tekes-ui-gallery",
+      "-p",
+      "tekes-ui-motion",
+      "-p",
+      "tekes-ui-icons",
+      "-p",
+      "tekes-ui-design-export",
+      "-p",
+      "tekes-ui-tokens",
+      "-p",
+      "tekes-ui-scene",
+      "-p",
+      "tekes-ui-render",
+      "-p",
+      "tekes-ui-text",
+      "--all-targets",
+      "--release",
+      "--locked",
+      "--offline",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit": 0,
+    "seconds": 8.14
+  },
+  {
+    "check": "build-final",
+    "command": [
+      "cargo",
+      "build",
+      "-p",
+      "tekes-ui-gallery",
+      "--release",
+      "--locked",
+      "--offline"
+    ],
+    "exit": 0,
+    "seconds": 10.04
+  },
+  {
+    "check": "fmt-final",
+    "command": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "exit": 0,
+    "seconds": 0.68
+  },
+  {
+    "check": "pure-rust-final",
+    "command": [
+      "python3",
+      "scripts/check-pure-rust.py"
+    ],
+    "exit": 0,
+    "seconds": 0.53
+  },
+  {
+    "check": "design-system-final",
+    "command": [
+      "target/design-check-venv/bin/python",
+      "scripts/check-design-system.py"
+    ],
+    "exit": 0,
+    "seconds": 0.45
+  },
+  {
+    "check": "diff-final",
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit": 0,
+    "seconds": 0.09
+  },
+  {
+    "check": "gold7-mechanical",
+    "command": [
+      "python3",
+      "scripts/check-gold7.py",
+      "--json"
+    ],
+    "exit": 0,
+    "seconds": 0.1
+  },
+  {
+    "check": "gold7-checker-tests",
+    "command": [
+      "python3",
+      "scripts/test-check-gold7.py"
+    ],
+    "exit": 0,
+    "seconds": 1.0
+  },
+  {
+    "check": "reference-colors",
+    "command": [
+      "target/design-check-venv/bin/python",
+      "scripts/check-reference-alignment.py",
+      "--output",
+      "target/gold7-alignment-pass2/reference-colors.json"
+    ],
+    "exit": 0,
+    "seconds": 1.34
+  }
+]

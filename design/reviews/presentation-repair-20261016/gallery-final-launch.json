@@ -1,0 +1,9 @@
+{
+  "pid": 67038,
+  "packaged_binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app/Contents/MacOS/TekesUI-Gallery",
+  "packaged_binary_sha256": "bdceb18b5306b795560f983219a1c4590009c6932f6857e94cc3da5f4d84c771",
+  "input_binary_sha256": "8576b7c74d2a3c164650456b108a1ec4ec0fc920caaa6fe5c079643f6b26d510",
+  "driver": "CAD",
+  "page": "component-scroll-area",
+  "normal_mode": true
+}

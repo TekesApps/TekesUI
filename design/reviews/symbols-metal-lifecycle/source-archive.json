@@ -1,0 +1,7 @@
+{
+  "archive": "measured-source-6f3bcfc3.tar.gz",
+  "sha256": "478e99ccfb23d4dc08221f021b11af610f58101d6c149b2d2adf6daeabaaaab2",
+  "files": 248,
+  "binary_sha256": "6f3bcfc32dee901fca1c9bb342ca10bfcbc7c7cab4fb1b0053ce6f8385f14c0f",
+  "note": "Actual dirty source bytes and measurement scripts preserved before further diagnostics. Original receipts and binary unchanged."
+}

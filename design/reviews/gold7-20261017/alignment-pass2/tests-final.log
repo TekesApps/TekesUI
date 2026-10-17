@@ -1,0 +1,944 @@
+   Compiling tekes-ui-tokens v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-tokens)
+   Compiling tekes-ui-scene v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-scene)
+   Compiling tekes-ui-render v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-render)
+   Compiling tekes-ui-text v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-text)
+   Compiling tekes-ui-controls v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-controls)
+   Compiling tekes-ui-gallery v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery)
+    Finished `release` profile [optimized] target(s) in 59.16s
+     Running unittests src/lib.rs (target/presentation-repair-20261016/build/release/deps/tekes_ui_controls-06acee6b59b8e94e)
+
+running 198 tests
+test chart::tests::keyboard_selection_skips_invalid_values_and_supports_boundaries ... ok
+test chart::tests::bounds_narrower_than_token_insets_produce_no_paintable_geometry ... ok
+test chart::tests::all_invalid_and_empty_inputs_are_safe ... ok
+test chart::tests::extreme_finite_values_do_not_overflow_geometry ... ok
+test chart::tests::invalid_or_degenerate_bounds_never_emit_geometry ... ok
+test chart::tests::layout_uses_every_data_value_and_preserves_category_indices ... ok
+test chart::tests::negative_values_extend_below_zero_baseline ... ok
+test chart::tests::measured_label_rows_keep_positive_negative_and_category_text_in_viewport ... ok
+test chart::tests::non_finite_values_are_counted_omitted_and_unselectable ... ok
+test chart::tests::painting_uses_chart_semantic_tokens_and_draws_dynamic_bars ... ok
+test chart::tests::scaled_label_regions_stay_inside_viewport_or_collapse_plot_safely ... ok
+test chart::tests::scaled_paint_returns_the_geometry_used_for_its_scene_and_labels ... ok
+test chart::tests::selected_and_focused_state_is_reported_per_bar ... ok
+test collections_view::tests::chart_routes_only_visible_real_bar_geometry ... ok
+test collections_view::tests::code_block_background_uses_parent_clip_and_text_keeps_frame_clip ... ok
+test collections_view::tests::code_diff_and_chart_keep_gallery_text_insets_and_alignment ... ok
+test collections_view::tests::code_block_surface_uses_code_role_and_text_backend_backing_scale ... ok
+test collections_view::tests::data_table_header_keyboard_focus_routes_to_sorting ... ok
+test collections_view::tests::diff_presentation_keeps_stable_line_ids_when_clipped ... ok
+test collections_view::tests::data_table_sorted_layout_routes_to_stable_source_row ... ok
+test collections_view::tests::data_table_measures_final_sorted_header_label_before_positioning_rows ... ok
+test collections_view::tests::list_down_and_up_without_render_keeps_capture_and_updates_model ... ok
+test collections_view::tests::list_hidden_or_disabled_state_does_not_keep_old_capture_or_hover ... ok
+test collections_view::tests::list_tree_and_table_keep_gallery_default_row_geometry ... ok
+test collections_view::tests::list_uses_owned_clip_geometry_and_clips_wide_text ... ok
+test collections_view::tests::malformed_and_empty_code_block_bounds_emit_no_surface_or_text ... ok
+test collections_view::tests::markdown_and_code_layout_expand_to_host_measure_and_clip ... ok
+test collections_view::tests::markdown_measures_bullet_prefix_and_diff_measures_wrapped_prefixed_lines ... ok
+test collections_view::tests::sorted_data_table_keys_follow_visual_order_without_intermediate_render ... ok
+test collections_view::tests::sorted_data_table_keys_skip_rows_outside_the_visible_clip ... ok
+test collections_view::tests::table_skips_clipped_rows_and_disabled_table_cannot_sort ... ok
+test collections_view::tests::tree_and_table_hidden_or_disabled_views_cancel_old_press ... ok
+test collections_view::tests::tree_expansion_rebuild_changes_visible_row_ids_not_node_identity ... ok
+test collections_view::tests::tree_icon_render_reuses_full_and_partial_row_clips ... ok
+test collections_view::tests::tree_uses_fixed_real_icon_slot_and_clips_branch_icons ... ok
+test collections_view::tests::window_deactivation_cancels_captured_list_row ... ok
+test composite::tests::dialog_actions_use_design_system_centered_content_alignment ... ok
+test composite::tests::dialog_inactive_input_is_ignored_but_explicit_cancel_closes ... ok
+test composite::tests::dialog_tab_then_enter_confirms_without_render_and_escape_closes_unrendered_dialog ... ok
+test composite::tests::disabled_dialog_still_closes_with_escape_but_rejects_activation ... ok
+test composite::tests::disabled_menu_still_closes_with_escape_or_outside_pointer ... ok
+test composite::tests::keyboard_menu_reveals_focus_ring_inside_popup_padding ... ok
+test composite::tests::large_dialog_text_keeps_its_measure_and_actions_clip_to_separate_slots ... ok
+test composite::tests::menu_and_dialog_surfaces_use_semantic_roles_and_renderer_scale ... ok
+test composite::tests::menu_hover_changes_active_action_and_precise_scroll_capture_survives_outside_point ... ok
+test composite::tests::menu_hover_target_is_the_action_enter_activates ... ok
+test composite::tests::menu_keyboard_active_row_uses_button_focus_ring ... ok
+test composite::tests::menu_keyboard_focus_syncs_before_enter_and_escape_works_before_render ... ok
+test composite::tests::menu_row_measurement_uses_actual_focus_safe_inner_width ... ok
+test composite::tests::menu_reduced_motion_clears_open_menu_bounce_and_stops_frames ... ok
+test composite::tests::menu_surface_uses_ancestor_clip_and_rows_keep_popup_clip ... ok
+test composite::tests::open_dialog_blocks_host_background_scroll_outside_modal_preview ... ok
+test composite::tests::short_dialog_stacks_actions_without_overlapping_or_leaving_modal ... ok
+test composite::tests::tabs_cancel_space_when_focus_moves_before_key_up ... ok
+test composite::tests::menu_wheel_edge_rebound_advances_and_settles_through_owned_clock ... ok
+test composite::tests::tabs_focus_arrow_and_space_use_the_new_focus_without_a_render ... ok
+test composite::tests::tabs_focus_ring_uses_ancestor_clip_not_tabs_frame ... ok
+test extended::tests::clipped_control_frames_do_not_retain_hit_regions_after_resize_or_disable ... ok
+test extended::tests::control_frame_focus_bounds_include_ring_gap_and_backing_pixel_guard ... ok
+test extended::tests::combo_filters_and_commits_only_visible_items ... ok
+test extended::tests::data_table_selects_rows_and_toggles_sort_direction ... ok
+test extended::tests::disabled_components_and_focus_return_have_contracts ... ok
+test extended::tests::existing_control_layouts_keep_draw_frames_separate_from_visible_hits ... ok
+test extended::tests::markdown_subset_and_lcs_diff_are_explicit_and_ordered ... ok
+test extended::tests::progress_painter_clamps_negative_geometry_and_semantic_tokens_exist ... ok
+test extended::tests::radio_and_segmented_navigation_skip_disabled ... ok
+test extended::tests::slider_rejects_nonfinite_and_maps_drag_and_keys ... ok
+test extended::tests::split_cancel_restores_ratio_and_switchable_pane_after_latched_drag ... ok
+test extended::tests::split_drag_deadzone_cancel_and_keyboard_restore ... ok
+test extended::tests::split_infeasible_minima_switches_single_visible_panel ... ok
+test extended::tests::split_keyboard_restores_both_panes_after_constrained_resize ... ok
+test extended::tests::stack_grid_and_split_respect_bounds ... ok
+test extended::tests::toast_uses_reproducible_and_paused_time ... ok
+test extended::tests::tree_expansion_and_navigation_are_structural ... ok
+test feedback_view::tests::banner_restores_legacy_message_slot_and_primary_dismiss_button ... ok
+test feedback_view::tests::empty_state_text_uses_top_aligned_legacy_slots ... ok
+test feedback_view::tests::empty_state_action_stays_inside_tight_frame ... ok
+test feedback_view::tests::empty_state_action_requires_a_real_visible_pointer_press ... ok
+test extended::tests::stateful_control_painters_use_brand_tokens_for_all_themes ... ok
+test feedback_view::tests::empty_state_wrap_measure_matches_draw_and_action_stays_after_text ... ok
+test feedback_view::tests::field_emphasized_form_presentation_restores_label_and_spacing ... ok
+test feedback_view::tests::field_provides_nonoverlapping_label_slot_and_error_message_geometry ... ok
+test feedback_view::tests::field_slot_grows_for_scaled_text_surface_line_metrics ... ok
+test feedback_view::tests::number_field_focus_routes_enter_and_space_to_the_focused_stepper_button ... ok
+test feedback_view::tests::number_field_respects_model_limits_and_cancels_press_when_disabled ... ok
+test feedback_view::tests::number_field_restores_leading_emphasized_value_presentation ... ok
+test feedback_view::tests::popover_background_uses_effective_parent_viewport_before_content_clip ... ok
+test feedback_view::tests::popover_content_slot_uses_component_bounds_and_deactivation_restores_focus ... ok
+test feedback_view::tests::popover_fully_clipped_geometry_never_receives_input ... ok
+test feedback_view::tests::popover_measure_matches_rendered_content_slot ... ok
+test feedback_view::tests::popover_surface_uses_floating_role_and_text_backend_scale ... ok
+test feedback_view::tests::surface_background_uses_parent_clip_but_keeps_visible_geometry ... ok
+test feedback_view::tests::surface_panel_clips_and_fully_clipped_frame_has_no_visible_geometry ... ok
+test feedback_view::tests::surface_render_scale_changes_only_decorative_ink_not_geometry ... ok
+test feedback_view::tests::toast_and_banner_backgrounds_use_parent_clip_before_content_clip ... ok
+test feedback_view::tests::toast_fixture_time_banner_dismiss_and_progress_are_clipped ... ok
+test feedback_view::tests::toast_measure_matches_wrapped_message_and_dismiss_slot ... ok
+test feedback_view::tests::toast_uses_legacy_top_aligned_message_slot ... ok
+test feedback_view::tests::toolbar_pointer_and_keyboard_activation_are_owned_by_child_buttons ... ok
+test feedback_view::tests::toolbar_restores_primary_presentation_for_first_action ... ok
+test feedback_view::tests::tooltip_and_popover_clamp_to_viewport_and_outside_escape_restore_focus ... ok
+test feedback_view::tests::tooltip_owns_hover_focus_escape_and_leave_state ... ok
+test layout::tests::background_paint_clip_is_ancestor_only_and_empty_visibility_stays_empty ... ok
+test layout::tests::column_defaults_to_leading_and_first_baseline_aligns_text_row ... ok
+test layout::tests::container_insets_are_applied_once_and_clip_to_ancestor ... ok
+test layout::tests::document_render_mapping_rejects_content_outside_extent ... ok
+test layout::tests::malformed_measurements_and_space_between_overrides_remain_finite ... ok
+test layout::tests::measured_row_centers_children_and_clips_fractional_overflow ... ok
+test layout::tests::narrow_long_measured_content_keeps_intrinsic_size_and_safe_visible_clip ... ok
+test layout::tests::nested_clip_and_bounce_share_the_same_forward_and_reverse_transform ... ok
+test layout::tests::normal_offset_clamps_after_resize_and_bounce_blank_has_no_hit ... ok
+test layout::tests::unrepresentable_bounds_or_accumulated_children_return_empty_visible_geometry ... ok
+test layout::tests::zero_nonfinite_and_empty_geometry_is_safe ... ok
+test layout_view::tests::combo_box_keys_use_live_query_without_an_intervening_render ... ok
+test layout_view::tests::combo_box_preserves_closed_open_and_disabled_model_semantics ... ok
+test layout_view::tests::command_palette_keys_use_live_query_without_an_intervening_render ... ok
+test layout_view::tests::disclosure_body_layout_animates_reversibly_and_respects_motion_and_clip ... ok
+test layout_view::tests::disclosure_icon_slot_keeps_label_geometry_stable_across_state_and_text_scale ... ok
+test layout_view::tests::disclosure_pointer_activation_requires_visible_matching_press ... ok
+test layout_view::tests::disclosure_space_down_is_consumed_and_release_toggles_once ... ok
+test layout_view::tests::icon_artboard_uses_json_center_alignment_without_changing_fitted_size ... ok
+test layout_view::tests::link_focus_ring_uses_ancestor_clip_while_text_keeps_its_frame_clip ... ok
+test layout_view::tests::link_hidden_by_clip_cancels_old_pointer_arm ... ok
+test layout_view::tests::link_needs_down_and_cancels_when_released_outside ... ok
+test layout_view::tests::segmented_space_is_consumed_and_selects_once_on_release ... ok
+test layout_view::tests::select_render_does_not_reactivate_an_inactive_menu_runtime ... ok
+test layout_view::tests::select_pointer_release_requires_a_matching_down_and_outside_down_dismisses ... ok
+test layout_view::tests::select_keeps_menu_cursor_across_render_close_and_reopen ... ok
+test layout_view::tests::shared_button_runtime_deactivation_clears_owned_motion_and_stale_hover ... ok
+test layout_view::tests::split_view_runtime_focus_loss_cancels_and_releases_drag ... ok
+test layout_view::tests::split_view_runtime_cancel_restores_ratio_for_escape_and_invalid_layout ... ok
+test layout_view::tests::stack_and_grid_views_preserve_frames_and_reject_overflow_geometry ... ok
+test paint::boundary_tests::checkbox_base_and_marked_states_share_the_component_square_radius ... ok
+test paint::boundary_tests::decorative_frames_follow_scale_and_contrast_without_weakening_controls ... ok
+test paint::boundary_tests::panel_surface_uses_panel_token_and_scale_aware_decorative_boundary ... ok
+test paint::boundary_tests::semantic_surface_roles_use_existing_fill_radius_and_hairline_tokens ... ok
+test paint::focus_tests::disabled_controls_do_not_paint_keyboard_focus ... ok
+test paint::focus_tests::focus_is_an_independent_two_point_ring_with_two_point_visible_gap ... ok
+test scroll_view::tests::auto_tracks_overflow_and_enabled_allows_elasticity_on_fitting_content ... ok
+test scroll_view::tests::disabling_axis_clears_rebound_and_blocks_reveal_and_scrollbar_capture ... ok
+test scroll_view::tests::elastic_return_is_refresh_independent_and_stationary_release_loses_velocity ... ok
+test scroll_view::tests::elastic_thumb_matches_native_visible_proportion_and_stays_edge_anchored ... ok
+test scroll_view::tests::finger_reversal_at_either_edge_does_not_accumulate_reverse_travel ... ok
+test scroll_view::tests::finger_edge_reversal_matches_native_active_phase ... ok
+test scroll_view::tests::geometry_snapshot_is_shared_by_content_clip_and_hit_coordinates ... ok
+test scroll_view::tests::hidden_scrollbars_preserve_range_and_input_but_cannot_capture ... ok
+test scroll_view::tests::policies_are_independent_for_all_nine_axis_combinations ... ok
+test scroll_view::tests::reveal_focus_keeps_ring_gap_and_one_physical_pixel_inside_viewport ... ok
+test scroll_view::tests::reverse_gesture_consumes_elastic_stretch_before_scrolling_document ... ok
+test scroll_view::tests::wheel_momentum_elasticity_and_resize ... ok
+test scroll_view::tests::thumb_capture_drag_and_reveal ... ok
+test selection::tests::completely_hidden_radio_rows_cancel_pointer_arm_and_switch_focus_ring_uses_ancestor_clip ... ok
+test selection::tests::default_views_are_active_and_nan_or_complete_clip_never_paints_or_captures ... ok
+test selection::tests::disabled_or_inactive_changes_cancel_armed_controls_without_mutating_values ... ok
+test selection::tests::narrow_radio_and_switch_label_slots_do_not_call_text_painter_outside_the_frame ... ok
+test selection::tests::radio_and_labeled_switch_expand_for_wrapped_text_and_align_to_first_line ... ok
+test selection::tests::radio_runtime_owns_roving_focus_pointer_selection_and_disabled_skip ... ok
+test selection::tests::slider_owns_clipped_drag_mapping_and_cancels_capture ... ok
+test scroll_view::tests::replay_measured_native_top_and_bottom_momentum_traces ... ok
+test selection::tests::switch_activates_on_matching_pointer_release_or_space_release_only ... ok
+test selection::tests::radio_focus_change_cancels_a_pointer_arm_before_late_release ... ok
+test selection::tests::switch_thumb_is_component_owned_interruptible_and_model_changes_immediately ... ok
+test selection::tests::switch_reduced_motion_snaps_and_fully_clipped_render_blurs ... ok
+test selection::tests::whole_radio_group_disable_preserves_model_and_rejects_pointer_and_keys ... ok
+test text_input::tests::grapheme_delete_and_selection_never_split_utf16_or_combining_sequences ... ok
+test text_input::tests::read_only_and_newlines_and_replacement ... ok
+test text_surface::tests::fractional_text_surface_background_uses_ancestor_clip_and_keeps_inner_clip ... ok
+test text_surface::tests::text_surface_frame_and_content_remain_strictly_clipped_to_parent_viewport ... ok
+test text_input::tests::preedit_replaces_marked_range_and_is_one_undo_transaction ... ok
+test widgets::tests::button_background_remains_clipped_by_a_real_parent_viewport_edge ... ok
+test widgets::tests::button_component_transitions_are_interactive_interruptible_and_reduced_motion_aware ... ok
+test widgets::tests::button_measure_keeps_legacy_height_at_default_text_and_expands_for_large_text ... ok
+test widgets::tests::button_point_interaction_uses_clipped_placement_and_cancels_outside_release ... ok
+test widgets::tests::button_release_contract_and_disabled_loading ... ok
+test widgets::tests::button_sizes_consume_their_own_radius_roles_for_base_and_focus ... ok
+test widgets::tests::checkbox_expands_for_large_text_and_cancels_stale_hit_when_disabled_or_cleared ... ok
+test widgets::tests::checkbox_first_line_center_label_gap_and_row_height_scale_naturally ... ok
+test widgets::tests::checkbox_indicator_clip_preserves_narrow_rows_with_or_without_ancestor ... ok
+test widgets::tests::checkbox_indicator_uses_parent_clip_while_label_and_hits_keep_row_clip ... ok
+test widgets::tests::checkbox_keyboard_activation_uses_the_shared_button_space_contract ... ok
+test widgets::tests::checkbox_pointer_capture_survives_blur_but_keyboard_space_arm_does_not ... ok
+test widgets::tests::checkbox_renders_and_hits_the_same_clipped_row_with_centered_default_text ... ok
+test widgets::tests::fractional_button_background_uses_only_the_ancestor_clip ... ok
+test widgets::tests::checkbox_label_uses_semantic_text_ink_for_all_mark_and_control_states ... ok
+test widgets::tests::invalid_button_layout_cannot_keep_keyboard_activation_or_motion ... ok
+test widgets::tests::invalid_geometry_and_empty_labels_never_emit_invalid_or_unclipped_text ... ok
+test widgets::tests::keyboard_and_pointer_arms_cannot_release_or_activate_each_other ... ok
+test widgets::tests::leading_and_centered_label_positions_are_component_owned ... ok
+test widgets::tests::mixed_checkbox_and_disabled_combination ... ok
+test widgets::tests::modal_traps_focus_and_restores_invoker ... ok
+test widgets::tests::numeric_clamps_and_rejects_invalid_values ... ok
+test widgets::tests::pointer_cancellation_preserves_keyboard_space_arm ... ok
+test widgets::tests::render_cancels_pointer_and_space_arms_when_disabled_or_loading ... ok
+test widgets::tests::render_cancels_space_arm_when_controlled_focus_is_lost ... ok
+test widgets::tests::rendered_button_owns_large_text_layout_clipping_and_hit_geometry ... ok
+test widgets::tests::stationary_pointer_hover_tracks_new_ancestor_clip ... ok
+test widgets::tests::stationary_pointer_rehits_after_layout_translation_and_restoration ... ok
+test widgets::tests::tab_menu_boundaries_and_escape ... ok
+
+test result: ok. 198 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/presentation-repair-20261016/build/release/deps/tekes_ui_design_export-a3d9cc99316741ae)
+
+running 14 tests
+test tests::checked_in_schema_is_fresh ... ok
+test tests::historical_a8_channels_remain_preserved_as_evidence_only ... ok
+test tests::proposal_text_ids_and_metrics_cannot_generate_invalid_rust ... ok
+test tests::unknown_final_alpha_contract_is_rejected ... ok
+test tests::normal_build_receipt_rejects_omitted_inputs_and_edited_projection ... ok
+test tests::new_semantic_id_requires_registry_and_generates_a_distinct_variant ... ok
+test tests::alignment_policy_is_typed_and_generated_from_layout_json ... ok
+test tests::full_proposal_aliases_and_text_metadata_are_consumable ... ok
+test tests::effect_bindings_are_validated_and_generated_from_authoritative_json ... ok
+test tests::rejects_unknown_missing_invalid_and_cyclic_input ... ok
+test tests::validation_and_compilation_share_api_and_contrast_constraints ... ok
+test tests::metadata_is_not_part_of_numeric_values_or_generated_api ... ok
+test tests::deterministic_and_freshness_checks_do_not_silently_update ... ok
+test tests::changed_json_compiles_and_executes_changed_values_and_derivations ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.96s
+
+     Running unittests src/main.rs (target/presentation-repair-20261016/build/release/deps/tekes_ui_design_export-00e704380df2b21e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (target/presentation-repair-20261016/build/release/deps/tekes_ui_gallery-1bb4ebc38c33bc41)
+
+running 288 tests
+test gallery::chrome::tests::row_fill_priority ... ok
+test gallery::commands::tests::known_ids ... ok
+test gallery::commands::tests::appearance_and_contrast_are_ctrl_cmd_digits ... ok
+test gallery::catalog::tests::all_forty_components_are_grouped_exactly_once ... ok
+test gallery::commands::tests::menu_bar_is_valid_and_covers_all_commands ... ok
+test gallery::commands::tests::checked_state_comes_from_callback ... ok
+test gallery::commands::tests::ids_roundtrip_and_are_unique ... ok
+test gallery::catalog::tests::state_selection_rejects_unknown_and_avoids_duplicate_redraws ... ok
+test gallery::commands::tests::page_shortcuts_are_cmd_digits_in_order ... ok
+test gallery::commands::tests::shortcuts_avoid_reserved_system_combinations ... ok
+test gallery::commands::tests::shortcuts_do_not_collide ... ok
+test gallery::containers::tests::matrix_cells_do_not_overlap_and_fit_in_size ... ok
+test gallery::containers::tests::matrix_has_five_state_columns_in_order ... ok
+test gallery::containers::tests::matrix_header_slots_sit_above_their_columns ... ok
+test gallery::containers::tests::reference_slot_panes_are_side_by_side ... ok
+test gallery::containers::tests::vertical_slot_stacks_panes_without_overlap ... ok
+test gallery::icon_catalog::tests::approved_defaults_preserve_the_original_comparison_after_merging ... ok
+test gallery::icon_catalog::source_boundaries::byte_tag_encoding_and_c2pa_budgets_reject_instead_of_showing_blank_icons ... ok
+test gallery::icon_catalog::source_boundaries::missing_source_has_a_notice_and_flat_scale_copies_do_not_become_items ... ok
+test gallery::layout::tests::catalog_width_uses_proposal_sidebar ... ok
+test gallery::layout::tests::hit_test_finds_rows ... ok
+test gallery::layout::tests::hit_test_gap_belongs_to_exactly_one_row ... ok
+test gallery::containers::tests::reference_slot_draw_calls_live_with_first_pane ... ok
+test gallery::layout::tests::label_slot_is_inside_row ... ok
+test gallery::layout::tests::hit_test_misses_outside_rows ... ok
+test gallery::layout::tests::page_content_fits_in_frame ... ok
+test gallery::locale::tests::default_is_english_and_formatted_copy_is_translated ... ok
+test gallery::containers::tests::matrix_draw_calls_sample_for_every_cell_in_state_order ... ok
+test gallery::motion_preview::symbol_assets::tests::annotations_cover_every_original_svg_contour_once ... ok
+test gallery::icon_catalog::tests::loading_deduplicates_scales_excludes_retired_and_reports_errors ... ok
+test gallery::chrome::tests::page_names_fit_their_slots ... ok
+test gallery::motion_preview::symbol_assets::tests::stroke_progress_filled_layers_and_magic_pairs_are_real_assets ... ok
+test gallery::motion_preview::symbol_assets::tests::every_effect_renders_on_every_approved_icon ... ok
+test gallery::motion_preview::tests::apple_and_design_catalogs_are_separate_and_both_settle ... ok
+test gallery::icon_catalog::source_boundaries::invalid_scales_do_not_allocate_images_or_replace_a_valid_cache ... ok
+test gallery::motion_preview::tests::clearing_system_reduction_restores_manual_choice_without_replay ... ok
+test gallery::motion_preview::tests::explicit_target_or_parameter_change_cancels_the_pending_demo_target ... ok
+test gallery::icon_catalog::tests::gpu_images_are_reused_and_released_across_themes_and_scales ... ok
+test gallery::motion_preview::tests::instant_does_not_schedule_work_and_short_tween_interrupts_before_end ... ok
+test gallery::motion_preview::symbol_assets::tests::completed_drawing_matches_original_approved_svg_pixels ... ok
+test gallery::motion_preview::tests::interruption_time_is_split_exactly_and_reduce_motion_cancels_it ... ok
+test gallery::motion_preview::tests::localized_typing_units_keep_graphemes_and_utf16_ranges_intact ... ok
+test gallery::motion_preview::tests::presets_settle_and_opening_is_idle ... ok
+test gallery::motion_preview::tests::reduced_motion_cancellation_and_repeated_preference_updates_are_idempotent ... ok
+test gallery::motion_preview::tests::release_speed_and_invalid_or_disabled_parameters ... ok
+test gallery::motion_preview::tests::repeated_targets_and_parameter_changes_keep_spring_continuity ... ok
+test gallery::motion_preview::tests::symbol_catalog_is_separate_and_preserves_pose_on_reverse_and_pause ... ok
+test gallery::motion_preview::tests::system_reduction_cannot_be_disabled_by_the_manual_toggle ... ok
+test gallery::motion_preview::tests::json_source_and_generated_design_projection_agree ... ok
+test gallery::motion_preview::tests::typing_demo_switches_source_units_and_pause_freezes_fade ... ok
+test gallery::navigation::tests::a_short_sidebar_reveals_the_last_item_and_inverse_hits_it ... ok
+test gallery::navigation::tests::every_page_occurs_once_and_headers_are_not_items ... ok
+test gallery::navigation::tests::sidebar_padding_clears_optional_scrollbar_and_hidden_bar_still_scrolls ... ok
+test gallery::navigation::tests::navigation_draw_and_hit_share_geometry_across_scroll_bounce_and_filter ... ok
+test gallery::pages::icons::catalogue_review::local_full_catalogue_pixels_and_scroll_culling ... ignored, requires explicit TEKESUI_ICON_DIR and TEKESUI_ICONS_REVIEW_OUT
+test gallery::navigation::tests::filtered_navigation_keeps_its_extent_after_resizing ... ok
+test gallery::pages::icons::catalogue_review::combined_search_and_the_last_row_use_the_same_filtered_geometry ... ok
+test gallery::pages::icons::tests::component_icon_frame_is_fitted_and_renderer_is_skipped_when_fully_clipped ... ok
+test gallery::pages::icons::tests::component_icon_rejects_non_finite_geometry_and_fits_narrow_bounds ... ok
+test gallery::motion_preview::symbol_assets::gpu_tests::cached_geometry_has_no_playback_raster_or_upload_and_paths_keep_fallback ... ok
+test gallery::pages::icons::tests::icon_tiles_reflow_inside_narrow_viewports_without_horizontal_scroll ... ok
+test gallery::pages::icons::tests::name_filter_is_case_insensitive_literal_substring ... ok
+test gallery::pages::icons::catalogue_review::new_old_and_refined_share_name_search_and_comparison_culling ... ok
+test gallery::pages::icons::tests::three_line_goal_caption_clears_preview_and_matches_scaled_scroll_geometry ... ok
+test gallery::pages::icons::tests::scaled_icon_card_slots_fit_measured_title_caption_and_size_labels ... ok
+test gallery::pages::icons::tests::decorative_icon_cards_follow_renderer_backing_scale ... ok
+test gallery::pages::motion::tests::clipped_input_cancels_outside_button_release_but_keeps_slider_capture ... ok
+test gallery::pages::motion::tests::manual_toggle_is_independent_of_system_reduction_in_the_real_hit_path ... ok
+test gallery::icon_catalog::color_review::svg_tint_matches_the_json_srgb_token_without_a_second_transfer_function ... ok
+test gallery::icon_catalog::tests::proposals_merge_once_preserve_old_variants_and_work_without_local_assets ... ok
+test gallery::pages::motion::tests::existing_icon_selectors_use_native_motion_hit_routing ... ok
+test gallery::pages::motion::tests::slider_capture_drag_and_focus_loss ... ok
+test gallery::pages::motion::tests::translated_and_narrow_document_layout_keeps_controls_and_footer_in_extent ... ok
+test gallery::pages::motion::tests::wide_default_layout_preserves_approved_motion_positions ... ok
+test gallery::pages::primitives::tests::disabled_sample_is_45_percent_of_rest ... ok
+test gallery::pages::primitives::tests::focus_sample_has_one_point_focused_border_and_no_fill ... ok
+test gallery::pages::primitives::tests::hover_and_pressed_fills ... ok
+test gallery::pages::motion::tests::motion_recipe_drag_and_press_use_captured_mouse_routes ... ok
+test gallery::pages::primitives::tests::page_builds_and_fits_in_content ... ok
+test gallery::pages::primitives::tests::lab_has_live_raster_checks_without_empty_reference_panes ... ok
+test gallery::pages::showcase::tests::all_forty_tiles_and_every_chip_fit_and_share_hit_geometry ... ok
+test gallery::pages::primitives::tests::quad_count_does_not_depend_on_theme ... ok
+test gallery::pages::showcase::tests::check_chevron_and_folder_ink_bounds_stay_inside_odd_even_artboards ... ok
+test gallery::pages::showcase::tests::plus_ink_is_mirrored_about_its_actual_center_at_odd_even_frames_and_scales ... ok
+test gallery::pages::showcase::tests::forty_components_all_base_states_render_in_four_themes_without_metadata_masks ... ok
+test gallery::pages::showcase::tests::semantic_icon_tint_is_used_in_light_and_dark_appearances ... ok
+test gallery::pages::static_text::tests::calibration_selectors_have_real_tab_enter_and_space_behavior ... ok
+test gallery::pages::static_text::tests::calibration_selectors_activate_through_the_retained_button_geometry ... ok
+test gallery::pages::static_text::tests::historical_reference_selectors_are_read_only_and_live_locale_uses_buttons ... ok
+test gallery::pages::static_text::tests::live_selector_label_column_tracks_localized_scaled_text_and_keeps_baseline_when_it_fits ... ok
+test gallery::motion_preview::symbol_assets::transformed_pose_tests::transformed_layers_match_vector_coverage_and_centers ... ok
+test gallery::pages::static_text::tests::scrolled_selector_uses_fixed_viewport_for_hit_and_paint ... ok
+test gallery::pages::tests::index_matches_all_order ... ok
+test gallery::pages::tests::names_and_slugs_are_unique ... ok
+test gallery::pages::tokens::tests::color_names_wrap_into_at_most_two_lines_within_the_swatch_width ... ok
+test gallery::pages::tokens::tests::page_fits_in_content ... ok
+test gallery::pages::tokens::tests::swatch_grid_holds_all_27_roles_in_enum_order ... ok
+test gallery::pages::tokens::tests::swatch_rects_are_in_row_major_order ... ok
+test gallery::pages::tokens::tests::token_name_labels_fit_their_slots ... ok
+test gallery::pages::static_text::tests::measured_calibration_extent_contains_wrapped_selector_rows_and_all_panes ... ok
+test gallery::motion_preview::symbol_assets::gpu_tests::gpu_endpoints_match_original_svg_texture_in_four_themes_and_two_scales ... ok
+test gallery::snapshot::tests::export_live_motion_matrix_when_requested ... ok
+test gallery::snapshot::tests::file_names ... ok
+test gallery::quality_effects::real_control_motion_changes_gpu_pixels_without_moving_hit_geometry ... ok
+test gallery::snapshot::tests::legacy_and_canonical_motion_snapshots_use_live_gallery_buttons ... ok
+test gallery::pages::static_text::tests::large_type_selector_rows_grow_before_content_and_stay_inside_the_viewport ... ok
+test gallery::snapshot::tests::png_has_expected_size ... ok
+test gallery::static_text::tests::colors_default_and_from_appearances_json ... ok
+test gallery::static_text::tests::crop_keeps_whole_lines_that_fit ... ok
+test gallery::static_text::tests::ensure_computes_once_per_key_and_evicts_oldest ... ok
+test gallery::static_text::tests::file_name_and_path ... ok
+test gallery::static_text::tests::fixtures_match_manifest ... ok
+test gallery::pages::motion::tests::rebuilds_cache_telemetry_and_keep_reduce_motion_button_above_background ... ok
+test gallery::static_text::tests::reference_resolution_with_a_fake_png ... ok
+test gallery::static_text::tests::rgba_png_is_premultiplied ... ok
+test gallery::static_text::tests::selection_rules ... ok
+test gallery::tests::appearance_radio_state_and_redraw_rules ... ok
+test gallery::tests::arrow_keys_switch_pages_without_wrapping ... ok
+test gallery::static_text::tests::prepare_with_a_generated_reference_passes_and_is_cached ... ok
+test gallery::tests::candidate_dialog_consumes_gallery_scroll_without_moving_the_background_page ... ok
+test gallery::tests::canonical_calibration_buttons_share_clipped_placements_and_measured_extent ... ok
+test gallery::tests::canonical_scroll_area_reaches_document_end_from_a_visible_pointer_target ... ok
+test gallery::tests::click_on_unhovered_row_redraws_even_if_page_same ... ok
+test gallery::tests::click_selects_page_and_updates_chrome ... ok
+test gallery::tests::combo_box_native_input_route_exposes_composition_state_to_the_gallery_host ... ok
+test gallery::pages::motion::tests::every_action_uses_same_layout_for_drawing_and_hit_routing ... ok
+test gallery::tests::default_language_and_live_switch_preserve_page_theme_and_layout ... ok
+test gallery::quality_effects::production_overlays_render_json_shadows_outside_surface_but_inside_ancestor ... ok
+test gallery::tests::every_catalog_state_chip_routes_through_gallery_input ... ok
+test gallery::tests::exactly_one_item_checked_per_group ... ok
+test gallery::tests::exit_clears_hover ... ok
+test gallery::tests::hover_moving_between_rows_redraws_each_time ... ok
+test gallery::tests::hover_within_same_row_does_not_redraw ... ok
+test gallery::tests::icons_disable_horizontal_scroll_even_in_a_narrow_window ... ok
+test gallery::tests::canonical_text_surface_pointer_targets_use_rendered_visible_frames ... ok
+test gallery::tests::icons_search_routes_native_text_clipboard_and_page_changes ... ok
+test gallery::tests::internal_multiline_text_editor_fills_remaining_scaled_preview ... ok
+test gallery::tests::label_origins_are_integer_points ... ok
+test gallery::tests::internal_text_editor_has_nonnegative_fill_at_narrow_150_percent ... ok
+test gallery::tests::live_gallery_drives_the_text_renderer_motion_clock ... ok
+test gallery::tests::menu_ids_drive_state ... ok
+test gallery::tests::motion_catalog_transitions_draw_and_hit_the_same_action_rectangles ... ok
+test gallery::tests::component_previews_keep_the_available_viewport_at_large_text_scale ... ok
+test gallery::tests::navigation_search_uses_independent_json_focus_ring_and_window_focus_lifecycle ... ok
+test gallery::tests::open_dialog_blocks_scroll_from_its_story_header_without_moving_document ... ok
+test gallery::tests::page_change_ends_the_previous_scroll_gesture ... ok
+test gallery::tests::page_commands ... ok
+test gallery::tests::motion_story_draw_and_pointer_share_preview_bounds_after_scroll_and_resize ... ok
+test gallery::chrome::tests::viewport_culling_preserves_pixels_at_clip_edges_and_reduces_glyph_work ... ok
+test gallery::tests::scene_is_independent_of_window_size_and_changes_with_theme_and_hover ... ok
+test gallery::tests::scroll_area_demo_has_only_one_document_scroll_owner_at_every_window_size ... ok
+test gallery::tests::scroll_gesture_keeps_its_owner_across_regions_and_momentum ... ok
+test gallery::tests::short_window_scroll_and_translated_state_hits_remain_reachable ... ok
+test gallery::tests::standalone_motion_keeps_viewport_content_as_its_draw_and_hit_origin ... ok
+test gallery::tests::static_text_page_changes_with_fixture_width_and_scale ... ok
+test gallery::tests::static_text_pickers_respond_to_clicks ... ok
+test gallery::tests::system_change_while_following_redraws ... ok
+test gallery::tests::text_caret_stays_in_the_remaining_window_viewport ... ok
+test gallery::snapshot::tests::rendering_twice_is_byte_identical ... ok
+test gallery::text::tests::actual_showcase_labels_stay_inside_their_slots_at_both_scales ... ok
+test gallery::text::tests::glyph_crop_adjusts_bitmap_region_without_mutating_the_cached_glyph ... ok
+test gallery::text::tests::label_origin_is_integer_and_centered ... ok
+test gallery::text::tests::labels_are_shaped_once_and_cached ... ok
+test gallery::text::tests::localized_motion_controls_fit_the_existing_compact_buttons ... ok
+test gallery::text::tests::motion_context_is_opt_in_and_frame_requests_reset_at_frame_start ... ok
+test gallery::text::tests::proposal_profiles_cache_and_keep_family_and_line_height ... ok
+test gallery::text::tests::role_style_follows_tokens ... ok
+test gallery::text::gold7_focus_raster::actual_button_focus_ring_keeps_the_gap_error_border_and_label_pixels ... ok
+test gallery::text::tests::shared_button_single_line_cache_survives_animated_frame_widths ... ok
+test gallery::text::tests::shared_button_measure_and_render_keep_wrapped_labels_in_the_same_geometry ... ok
+test gallery::pages::motion::tests::measured_motion_buttons_wrap_without_overflow_or_overlap ... ok
+test gallery::text_demo::tests::ancestor_clip_zero_height_empty_and_tall_single_line_share_hit_geometry ... ok
+test gallery::text_demo::tests::app_deactivation_preserves_selection_and_restores_native_input_focus ... ok
+test gallery::text_demo::tests::captured_precise_scroll_continues_outside_surface_until_end_or_blur ... ok
+test gallery::text_demo::tests::caret_hit_testing_uses_shaped_grapheme_positions_and_newline_stays_on_its_line ... ok
+test gallery::text_demo::tests::current_scroll_transform_drives_caret_and_hits_without_a_rebuild ... ok
+test gallery::text_demo::tests::editor_layout_is_cached_scroll_does_not_reshape_and_all_text_stays_in_scissors ... ok
+test gallery::text_demo::tests::hidden_and_zero_sized_previews_clear_the_old_pointer_target_then_restore_it ... ok
+test gallery::text_demo::tests::intrinsic_height_queries_do_not_reflow_multiline_paragraphs ... ok
+test gallery::text_demo::tests::language_switch_changes_only_pristine_samples_and_preserves_documents ... ok
+test gallery::text_demo::pixel_review::selected_text_and_caret_share_the_same_measured_line_boxes_at_both_scales ... ok
+test gallery::tests::english_pages_have_no_untranslated_interface_labels ... ok
+test gallery::text_demo::tests::partially_clipped_marked_line_keeps_its_original_typographic_baseline ... ok
+test gallery::text_demo::tests::native_edit_events_selection_copy_and_scroll_position_are_consistent ... ok
+test gallery::text_demo::tests::reflow_keeps_a_visible_insertion_caret_visible_without_revealing_a_scrolled_away_caret ... ok
+test gallery::text_demo::tests::reflow_pins_document_end_and_ignores_subpixel_width_noise ... ok
+test gallery::text_demo::tests::section_geometry_is_clamped_to_short_and_empty_viewports ... ok
+test gallery::text_demo::tests::selection_capture_survives_layout_when_only_a_visible_sliver_remains ... ok
+test gallery::text_demo::tests::text_role_change_invalidates_both_gallery_preparation_and_surface_paragraph ... ok
+test gallery::text_demo::tests::text_surface_minimum_height_and_gallery_sections_follow_type_scale ... ok
+test gallery::text_demo::tests::text_surface_pointer_capture_clip_read_only_and_disabled_are_consistent ... ok
+test gallery::text_demo::tests::live_editor_and_scroll_panels_fit_remaining_viewport_and_padding_is_symmetric ... ok
+test gallery::theme::tests::fixed_choices_override_system ... ok
+test gallery::theme::tests::follows_system_by_default ... ok
+test gallery::theme::tests::names_are_distinct ... ok
+test gallery::viewport::regression::one_snapshot_drives_gallery_content_transform_and_ancestor_hit_clip ... ok
+test gallery::viewport::regression::resize_must_not_reset_a_long_document_before_clamping_its_offset ... ok
+test gallery::viewport::tests::a_short_window_can_reach_the_last_row_and_inverse_hit_coordinates ... ok
+test gallery::workbench::brand_preview::tests::narrow_large_text_layout_measures_to_all_interactive_controls ... ok
+test gallery::workbench::extended::collections_adapter::tests::document_footers_wrap_inside_narrow_viewports_at_default_and_large_text ... ok
+test gallery::workbench::extended::collections_adapter::tests::list_and_tree_instructions_follow_real_large_text_layout ... ok
+test gallery::workbench::extended::feedback_adapter::layout_tests::default_size_fixture_rows_keep_their_existing_positions ... ok
+test gallery::workbench::extended::feedback_adapter::layout_tests::status_badge_glyph_ink_contrasts_with_all_status_fills_across_themes_and_brands ... ok
+test gallery::workbench::extended::feedback_adapter::layout_tests::toast_and_progress_fixture_controls_follow_measured_large_text ... ok
+test gallery::workbench::extended::tests::caption_help_slots_grow_from_real_measurement_at_large_text_scales ... ok
+test gallery::text_demo::tests::type_scale_reflow_preserves_middle_anchor_and_document_bottom ... ok
+test gallery::workbench::extended::tests::slider_workbench_uses_full_thumb_hit_and_retained_visual_track_until_hidden ... ok
+test gallery::workbench::extended::tests::icon_link_radio_and_switch_workbench_hits_are_unique_and_drive_models ... ok
+test gallery::workbench::extended::tests::split_view_escape_rolls_back_and_releases_gallery_pointer_capture ... ok
+test gallery::workbench::extended::tests::split_view_invalid_layout_and_focus_loss_restore_ratio_and_release_capture ... ok
+test gallery::workbench::interaction_tests::brand_direction_is_preview_only_until_explicit_confirmation_and_cancel_keeps_input ... ok
+test gallery::workbench::interaction_tests::brand_preview_tab_visits_each_target_once_and_enter_activates_on_key_down ... ok
+test gallery::workbench::interaction_tests::candidate_dialog_consumes_scroll_and_unrecognized_keys ... ok
+test gallery::workbench::interaction_tests::cancelling_pointer_capture_on_blur_prevents_delayed_confirm ... ok
+test gallery::workbench::interaction_tests::checkbox_preserves_input_modality_for_focus_visible_and_window_blur ... ok
+test gallery::workbench::interaction_tests::candidate_dialog_keeps_neutral_surface_roles_without_applying_the_brand ... ok
+test gallery::workbench::interaction_tests::checkbox_story_uses_component_row_geometry_for_click_disabled_and_resize ... ok
+test gallery::workbench::interaction_tests::checkbox_text_first_line_stays_centered_on_the_mark_at_large_scale_and_wrap ... ok
+test gallery::workbench::interaction_tests::clipped_workbench_text_field_measures_scaled_line_and_only_focuses_visible_area ... ok
+test gallery::workbench::interaction_tests::combobox_closed_state_hides_option_hits_and_input_reopens_candidates ... ok
+test gallery::workbench::interaction_tests::combobox_native_text_command_moves_the_real_input_caret ... ok
+test gallery::workbench::interaction_tests::combobox_pointer_selection_closes_list_and_keeps_input_focused ... ok
+test gallery::workbench::interaction_tests::dialog_blocks_story_header_and_underlay_controls_and_space_arms ... ok
+test gallery::workbench::interaction_tests::dialog_contains_focus_and_pointer_input_and_survives_window_deactivation ... ok
+test gallery::workbench::interaction_tests::disabled_selection_control_click_does_not_create_generic_focus_or_press ... ok
+test gallery::workbench::interaction_tests::disabled_selection_controls_are_skipped_by_real_tab_traversal ... ok
+test gallery::workbench::interaction_tests::disclosure_segmented_and_breadcrumb_pointer_activation_needs_a_matching_press ... ok
+test gallery::workbench::interaction_tests::extended_overlay_timer_and_reset_follow_deterministic_fixtures ... ok
+test gallery::workbench::interaction_tests::extended_keyboard_events_are_focus_scoped_and_update_models ... ok
+test gallery::workbench::interaction_tests::feedback_component_buttons_require_down_and_cancel_outside ... ok
+test gallery::workbench::interaction_tests::gallery_panel_uses_actual_backing_scale_without_changing_panel_geometry ... ok
+test gallery::workbench::interaction_tests::input_composition_clipboard_undo_and_disabled_are_real ... ok
+test gallery::workbench::interaction_tests::large_type_form_phase_and_event_log_glyphs_do_not_overlap_in_visible_preview ... ok
+test gallery::workbench::interaction_tests::marked_composition_defers_pointer_submit_but_not_other_actions_or_later_commit ... ok
+test gallery::workbench::interaction_tests::master_detail_keyboard_focus_reveals_scrolled_rows_with_focus_bounds ... ok
+test gallery::workbench::interaction_tests::extended_stories_render_within_narrow_preview_and_only_expose_supported_sections ... ok
+test gallery::workbench::interaction_tests::menu_escape_outside_click_and_relayout_use_component_geometry ... ok
+test gallery::workbench::interaction_tests::master_detail_rows_share_scroll_geometry_for_visible_paint_and_selection ... ok
+test gallery::workbench::interaction_tests::multiline_controls_stop_at_the_remaining_preview_bottom ... ok
+test gallery::workbench::interaction_tests::p0_gallery_controls_route_real_pointer_actions_through_owned_views ... ok
+test gallery::workbench::interaction_tests::multiline_text_area_reuses_its_wrapped_layout_across_builds ... ok
+test gallery::workbench::interaction_tests::panel_and_skeleton_stories_use_component_owned_visible_layouts ... ok
+test gallery::workbench::interaction_tests::pointer_release_outside_cancels_real_button_and_inside_logs ... ok
+test gallery::workbench::interaction_tests::popover_pointer_arms_are_component_owned_and_release_cleans_up ... ok
+test gallery::workbench::interaction_tests::preview_density_brand_and_font_scale_change_actual_scene ... ok
+test gallery::workbench::interaction_tests::scrolled_workbench_button_uses_fixed_viewport_for_hit_and_paint ... ok
+test gallery::workbench::interaction_tests::reduced_motion_is_applied_before_first_popup_creation_and_wheel_endpoint ... ok
+test gallery::workbench::interaction_tests::select_story_uses_its_owned_popup_keyboard_runtime ... ok
+test gallery::workbench::interaction_tests::selection_tab_exit_and_pointer_focus_move_cancel_arms_without_a_render ... ok
+test gallery::workbench::interaction_tests::search_filter_row_wraps_without_overlapping_hits_or_results ... ok
+test gallery::workbench::interaction_tests::slider_pointer_down_at_current_value_is_consumed_without_a_change_log ... ok
+test gallery::workbench::interaction_tests::standalone_action_uses_button_content_center_for_wrapped_150_percent_glyphs ... ok
+test gallery::workbench::interaction_tests::settings_full_failure_retry_and_danger_cancel_recovery ... ok
+test gallery::workbench::interaction_tests::switch_tab_focus_uses_production_focus_visible_painting ... ok
+test gallery::workbench::interaction_tests::tabs_menu_and_modal_use_distinct_keyboard_contracts ... ok
+test gallery::workbench::interaction_tests::tabs_use_one_roving_tabstop_and_pointer_release_cancels_selection ... ok
+test gallery::workbench::interaction_tests::tabs_panel_uses_expanded_component_frame_at_large_text_scale ... ok
+test gallery::workbench::interaction_tests::unrelated_mouse_release_does_not_cancel_keyboard_or_cross_release_button_arms ... ok
+test gallery::workbench::tests::deterministic_search_covers_ids_and_keywords ... ok
+test gallery::workbench::tests::form_validation_failure_retry_and_reset ... ok
+test gallery::workbench::tests::motion_header_prepass_matches_the_header_drawn_by_workbench ... ok
+test gallery::workbench::tests::registry_has_unique_routes_and_component_entries ... ok
+test gallery::workbench::tests::story_routes_match_the_sections_exposed_by_each_entry ... ok
+test gallery::workbench::tests::wrapped_workbench_tabs_push_panel_below_real_button_frames ... ok
+test gallery::workbench::tests::calibration_and_full_token_atlas_reuse_shared_renderers ... ok
+test perf::tests::bounce_is_a_triangle_wave ... ok
+test perf::tests::early_close_cannot_complete_the_five_second_idle_observation ... ok
+test perf::tests::parse_spec ... ok
+test perf::tests::perf_scroll_area_tracks_the_post_placement_window_viewport ... ok
+test perf::tests::plan_mixed_alternates_and_without_text_degrades_to_screens ... ok
+test perf::tests::plan_quads_is_screens_only ... ok
+test perf::tests::plan_text_fills_segments_to_a_screen_and_cycles ... ok
+test perf::tests::presentation_drain_does_not_count_duplicates_or_unrelated_receipts ... ok
+test perf::tests::presentation_drain_preserves_a_terminal_unpresented_receipt ... ok
+test perf::tests::presentation_drain_timeout_is_explicit_and_keeps_missing_evidence ... ok
+test perf::tests::presentation_drain_waits_for_the_final_submitted_drawable ... ok
+test perf::tests::presentation_receipts_exclude_skipped_and_duplicate_acquisitions ... ok
+test perf::tests::scene_translation_preserves_visible_shadow_tails_and_offsets ... ok
+test perf::tests::translate_culls_offscreen_primitives ... ok
+test perf::symbol_perf::tests::workload_changes_real_controllers_without_stale_or_invalid_state ... ok
+test gallery::snapshot::tests::original_three_page_content_matches_the_committed_proposal_review ... ok
+test gallery::text_demo::pixel_review::reflow_renders_every_width_and_returns_to_identical_pixels ... ok
+test gallery::tests::labels_are_laid_out_deterministically_and_shaped_once ... ok
+test gallery::pages::motion::tests::motion_recipes_controls_pause_reverse_scroll_and_change_parameters ... ok
+test gallery::pages::motion::tests::motion_recipes_reuse_cached_labels_and_render_finite_geometry ... ok
+test gallery::tests::pages_differ_and_themes_differ ... ok
+test gallery::text_demo::tests::reflow_keeps_reading_anchor_without_accumulating_wrap_drift ... ok
+test gallery::tests::scene_is_deterministic ... ok
+
+test result: ok. 287 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 12.60s
+
+     Running unittests src/lib.rs (target/presentation-repair-20261016/build/release/deps/tekes_ui_icons-24d59cd24c1e90ec)
+
+running 1 test
+test tests::canonical_names_resolve_to_the_approved_artwork ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/presentation-repair-20261016/build/release/deps/tekes_ui_motion-fd3d89a3fd1b6011)
+
+running 12 tests
+test state_transition::tests::reduced_motion_finishes_paused_target_once_and_does_not_replay ... ok
+test state_transition::tests::large_dt_finishes_once_but_large_paused_dt_never_hits_deadline ... ok
+test state_transition::tests::paused_parameter_change_preserves_velocity_and_uses_new_spring_on_resume ... ok
+test state_transition::tests::invalid_operations_do_not_consume_clock_or_mutate_policy ... ok
+test state_transition::tests::enabling_reduced_motion_during_playback_stops_work_without_replay ... ok
+test state_transition::tests::paused_retarget_keeps_spring_position_and_velocity ... ok
+test state_transition::tests::explicit_gesture_velocity_survives_pause_and_release ... ok
+test state_transition::tests::initially_reduced_is_immediate_and_disabled_preference_allows_only_new_motion ... ok
+test state_transition::tests::cancelled_generation_never_completes_after_resume ... ok
+test state_transition::tests::pause_excludes_elapsed_wall_time_and_preserves_generation ... ok
+test state_transition::tests::repeated_pause_resume_and_zero_dt_do_not_restart_or_emit_events ... ok
+test state_transition::tests::reverse_at_same_timestamp_is_continuous ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/apple_defaults.rs (target/presentation-repair-20261016/build/release/deps/apple_defaults-eb780c5d348f5364)
+
+running 3 tests
+test easing_defaults_all_have_350ms_duration ... ok
+test defaults_match_published_configuration_and_remain_distinct ... ok
+test trajectories_match_public_swiftui_spring_and_unitcurve_reference ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/linear_rotation.rs (target/presentation-repair-20261016/build/release/deps/linear_rotation-3e9b941532264624)
+
+running 2 tests
+test constant_angular_speed_survives_pause_reverse_and_parameter_edits ... ok
+test linear_recipe_retains_unwrapped_angle_and_disables_frames_when_paused ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/motion.rs (target/presentation-repair-20261016/build/release/deps/motion-2bab7bb4ee802a5b)
+
+running 24 tests
+test bezier_inverts_time_instead_of_treating_it_as_parameter ... ok
+test cancellation_holds_or_finishes_without_success_events ... ok
+test critical_spring_matches_closed_form ... ok
+test deadline_stops_slow_springs_and_long_tweens_even_after_time_jump ... ok
+test absolute_time_sampling_does_not_depend_on_frame_rate ... ok
+test derivatives_match_finite_differences ... ok
+test extreme_damping_and_near_critical_values_remain_finite ... ok
+test instant_zero_duration_and_tween_end_are_exact ... ok
+test bounded_curves_and_endpoint_slopes ... ok
+test interior_infinite_slope_is_rejected_but_degenerate_identity_is_valid ... ok
+test invalid_parameters_are_rejected ... ok
+test invalid_updates_are_atomic_and_time_never_rewinds ... ok
+test logical_and_settled_events_fire_once_and_idle_stops ... ok
+test numerical_failure_does_not_corrupt_the_channel ... ok
+test oscillation_crossing_does_not_prematurely_settle ... ok
+test physical_parameter_mapping_preserves_the_differential_equation ... ok
+test release_velocity_and_rapid_reversals_are_continuous ... ok
+test retarget_preserves_position_and_velocity_and_cancels_old_generation ... ok
+test spring_initial_sample_preserves_small_position_with_large_target ... ok
+test stationary_spring_needs_no_extra_frame ... ok
+test tween_retarget_is_position_continuous_but_uses_its_own_velocity ... ok
+test vector_sampling_matches_scalar_channels ... ok
+test energy_bound_covers_future_trajectory_after_settling ... ok
+test all_damping_regimes_match_independent_integrator ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/recipes.rs (target/presentation-repair-20261016/build/release/deps/recipes-2e679d483a6982f9)
+
+running 16 tests
+test drag_release_uses_velocity_and_can_be_grabbed_during_inertia ... ok
+test changing_rotation_target_angle_preserves_presented_angle_and_angular_velocity ... ok
+test numeric_new_value_supersedes_previous_target_without_position_jump ... ok
+test list_identity_positions_are_continuous_and_finish_in_both_orders ... ok
+test parameter_edits_preserve_spring_trajectory_origin_and_validate_atomically ... ok
+test recipes_reverse_continuously_and_drop_stale_cues ... ok
+test reading_anchor_is_stable_during_reversal_height_edits_and_user_scrolling ... ok
+test rotation_brake_accelerates_then_stops_and_preserves_velocity_on_retarget ... ok
+test reduce_motion_finishes_all_tracks_and_pending_phases_without_extra_frames ... ok
+test stagger_pause_cancels_future_items_and_resume_finishes_latest_direction ... ok
+test rotation_projection_distinguishes_axes_and_remains_finite_through_full_turns ... ok
+test streaming_typing_batches_are_frame_independent_and_target_switch_cancels_old_queue ... ok
+test success_large_time_steps_process_phases_in_order_and_pause_is_durable ... ok
+test text_scan_band_projects_diagonally_and_starts_and_ends_outside_text ... ok
+test text_scan_pause_resume_and_reverse_keep_presented_position ... ok
+test cue_sampling_does_not_depend_on_frame_partition ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/symbols.rs (target/presentation-repair-20261016/build/release/deps/symbols-64a2e6accb8b3077)
+
+running 6 tests
+test missing_asset_annotations_resolve_to_explicit_fallbacks ... ok
+test scope_order_and_ordered_path_direction_are_observable ... ok
+test symbol_progress_is_independent_of_frame_partition_and_rejects_invalid_input ... ok
+test symbol_runs_pause_resume_reverse_and_finish_without_background_frames ... ok
+test wiggle_supports_directional_translation_and_rotation_has_handedness ... ok
+test all_effects_have_bounded_frames_in_all_scopes_and_reduction ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/typing.rs (target/presentation-repair-20261016/build/release/deps/typing-bbf7e27d51988bd4)
+
+running 6 tests
+test append_one_or_a_batch_in_arrival_mode_and_do_not_bank_idle_credit ... ok
+test chunk_boundaries_do_not_duplicate_release_slots ... ok
+test invalid_input_is_rejected_without_dropping_buffered_units ... ok
+test elapsed_time_releases_multiple_units_without_frame_rate_dependency ... ok
+test bounded_latency_catches_bursts_and_reduced_motion_stops_frames ... ok
+test pause_freezes_reveal_and_fade_then_resumes_and_settles ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/presentation-repair-20261016/build/release/deps/tekes_ui_render-1ae0aa1c7d8a27dd)
+
+running 24 tests
+test common::upload_tests::multiple_changes_and_float_bit_patterns_are_preserved ... ok
+test common::upload_tests::changes_are_exact_aligned_and_include_new_tail ... ok
+test frame::tests::consecutive_same_kind_merge_and_order_is_kept ... ok
+test instance::tests::radii_are_clamped_to_half_the_short_side ... ok
+test instance::tests::instance_is_112_bytes ... ok
+test instance::tests::negative_size_and_border_are_clamped ... ok
+test instance::tests::ordinary_quad_leaves_shadow_parameters_zero ... ok
+test instance::tests::shadow_instance_keeps_css_blur_units_and_sanitizes_nonfinite_values ... ok
+test stats::tests::alternating_drops_are_isolated_but_form_a_late_streak ... ok
+test stats::tests::consecutive_missed_refreshes_in_one_gap ... ok
+test stats::tests::cpu_active_excludes_the_drawable_wait ... ok
+test stats::tests::distribution_basics ... ok
+test stats::tests::empty_stats_are_zero ... ok
+test stats::tests::frame_stats_detect_a_missed_refresh ... ok
+test stats::tests::frame_stats_aggregate ... ok
+test stats::tests::frame_stats_without_gpu_and_with_skipped_frames ... ok
+test stats::tests::gap_exactly_at_threshold_is_not_late ... ok
+test stats::tests::jitter_below_threshold_is_not_a_drop ... ok
+test stats::tests::percentile_is_nearest_rank ... ok
+test stats::tests::single_missed_refresh_counts_once ... ok
+test stats::tests::steady_cadence_has_no_drops ... ok
+test stats::tests::two_late_runs_are_separated_by_an_on_time_frame ... ok
+test stats::tests::unusable_interval_reports_gaps_only ... ok
+test common::upload_tests::cached_buffer_queues_only_changed_bytes_and_invalidates_on_growth ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/frame_timing.rs (target/presentation-repair-20261016/build/release/deps/frame_timing-17231762eda7f361)
+
+running 3 tests
+test timing_is_off_by_default_and_costs_nothing_to_drain ... ok
+test cpu_segments_are_consistent_and_frames_are_numbered ... ok
+test gpu_time_agrees_with_wall_clock_on_a_heavy_frame ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.76s
+
+     Running tests/glyphs.rs (target/presentation-repair-20261016/build/release/deps/glyphs-2a0fc6ae29fdb41d)
+
+running 18 tests
+test image_draws_into_its_rect ... ok
+test checker_mask_lands_on_the_rounded_pixel_at_scale_1 ... ok
+test color_glyph_keeps_its_own_colors ... ok
+test consecutive_primitives_of_a_kind_form_one_draw ... ok
+test half_pixel_origins_round_away_from_zero ... ok
+test checker_mask_at_scale_2_is_not_scaled ... ok
+test empty_and_missing_glyph_inputs_draw_nothing ... ok
+test atlas_stats_follow_the_frames ... ok
+test atlas_texture_grows_with_pages_and_keeps_old_pages ... ok
+test eviction_then_reinsert_uploads_the_new_pixels ... ok
+test premultiplied_image_alpha_blends_over_the_background ... ok
+test image_scales_with_scale_and_respects_opacity ... ok
+test mask_coverage_blends_in_gamma_space ... ok
+test unregistered_images_are_skipped_and_bad_input_is_rejected ... ok
+test painters_order_holds_across_primitive_kinds ... ok
+test transformed_images_rotate_select_atlas_region_and_keep_zero_angle_pixels ... ok
+test rendering_twice_is_byte_identical ... ok
+test two_renderers_can_share_one_atlas ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/offscreen.rs (target/presentation-repair-20261016/build/release/deps/offscreen-513b8b83dfae7779)
+
+running 31 tests
+test border_follows_rounded_outline ... ok
+test border_band_has_border_color_and_correct_width ... ok
+test bordered_outer_edge_is_antialiased_once ... ok
+test empty_scene_is_all_clear_color ... ok
+test fill_matches_token_srgb_at_scale_1_and_2 ... ok
+test invalid_arguments_are_errors_not_panics ... ok
+test hard_shadow_right_corners_select_radius_by_vertical_quadrant ... ok
+test hover_wash_token_over_background ... ok
+test half_pixel_edges_get_half_coverage ... ok
+test ordinary_quad_output_is_unchanged_by_shadow_primitive_support ... ok
+test non_multiple_of_64_widths_read_back_correctly ... ok
+test later_quads_paint_over_earlier_ones ... ok
+test nested_scissors_preserve_quad_geometry_and_restore_parent ... ok
+test cached_uploads_keep_edits_resize_and_growing_buffers_correct ... ok
+test oversized_radius_is_clamped_to_a_pill ... ok
+test per_corner_radii_only_round_the_requested_corners ... ok
+test pixel_aligned_edges_are_crisp_at_scale_1 ... ok
+test quads_partially_or_fully_outside_the_target_are_clipped ... ok
+test instance_buffer_is_reused_across_frames_and_grows_when_needed ... ok
+test rectangle_shadow_uses_gaussian_cdf_and_paints_below_its_surface ... ok
+test rounded_corner_is_symmetric ... ok
+test rounded_corner_is_clear_and_edge_midpoints_are_filled ... ok
+test ten_point_rect_covers_exactly_20_pixels_at_scale_2 ... ok
+test translucent_border_shows_the_fill_underneath ... ok
+test translucent_fill_blends_in_gamma_space ... ok
+test rounded_shadow_has_gaussian_decay_symmetry_scale_and_clip ... ok
+test update_image_reuses_registered_texture_and_validates_before_upload ... ok
+test fractional_scroll_keeps_hairline_brightness_constant ... ok
+test hairline_edge_profiles_are_rotation_transpose_equivalent ... ok
+test frame_edge_clip_is_measured_against_unclipped_hairline ... ok
+test hairline_edge_matrix_reports_four_sides_phase_and_peak_coverage ... ok
+
+test result: ok. 31 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.41s
+
+     Running tests/surface.rs (target/presentation-repair-20261016/build/release/deps/surface-0ff54535768ef5d4)
+
+running 4 tests
+test rejects_invalid_scale ... ok
+test zero_size_pauses_rendering_and_recovers ... ok
+test presents_with_transaction_when_the_layer_asks_for_it ... ok
+test configures_the_layer_and_keeps_srgb_colorspace_across_resizes ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running unittests src/lib.rs (target/presentation-repair-20261016/build/release/deps/tekes_ui_scene-12dd868c9cea34a1)
+
+running 29 tests
+test atlas::tests::clear_drops_glyphs_but_keeps_pages ... ok
+test atlas::tests::dirty_rects_cover_new_bitmaps_and_are_drained_once ... ok
+test atlas::tests::adds_pages_up_to_max_pages ... ok
+test atlas::tests::color_format_is_preserved ... ok
+test atlas::tests::evicts_the_least_recently_used_unpinned_page ... ok
+test atlas::tests::default_config_matches_the_reference_pages ... ok
+test atlas::tests::a_new_consumer_or_force_gets_whole_pages ... ok
+test atlas::tests::dropped_glyph_is_retried_next_frame ... ok
+test atlas::tests::empty_glyphs_are_cached_as_no_bitmap ... ok
+test atlas::tests::eviction_then_reinsert_exposes_only_the_new_pixels ... ok
+test atlas::tests::never_evicts_a_page_used_this_frame ... ok
+test atlas::tests::oversize_glyph_is_rejected_and_cached ... ok
+test atlas::tests::packs_into_shelves_with_one_pixel_gaps ... ok
+test atlas::tests::reuses_keys_without_rasterizing_again ... ok
+test atlas::tests::short_glyphs_reuse_a_taller_shelf_with_best_fit ... ok
+test geometry::tests::adjacent_rects_do_not_double_hit ... ok
+test geometry::tests::contains_is_half_open ... ok
+test geometry::tests::edges_and_center ... ok
+test geometry::tests::empty_rect ... ok
+test geometry::tests::inset_clamps_to_zero_around_center ... ok
+test geometry::tests::inset_shrinks_and_grows ... ok
+test geometry::tests::intersection ... ok
+test geometry::tests::offset_moves_origin_only ... ok
+test glyph::tests::scale_key_is_rounded_thousandths ... ok
+test quad::tests::builder_sets_fields ... ok
+test quad::tests::radii_order_is_tl_tr_br_bl ... ok
+test scene::tests::clear_empties_but_keeps_capacity ... ok
+test scene::tests::push_keeps_painters_order ... ok
+test scene::tests::shadow_is_an_ordered_primitive_without_changing_quad_values ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/presentation-repair-20261016/build/release/deps/tekes_ui_text-51ad24750385b89a)
+
+running 11 tests
+test compare::tests::below_threshold_differences_are_not_counted ... ok
+test compare::tests::diagonal_neighbours_are_one_component ... ok
+test compare::tests::identical_images_pass_with_zero_numbers ... ok
+test compare::tests::heatmap_marks_over_threshold_pixels ... ok
+test compare::tests::pure_background_has_no_bbox ... ok
+test compare::tests::ratio_is_over_threshold_pixels_in_text_bbox ... ok
+test compare::tests::scale_picks_the_threshold ... ok
+test utf16::tests::maps_ascii_cjk_and_astral ... ok
+test coretext::shaper::tests::forced_progress_is_at_least_one ... ok
+test coretext::shaper::tests::forced_progress_advances_by_a_whole_grapheme ... ok
+test compare::tests::large_connected_difference_fails_even_with_small_ratio ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/e2e_oracle.rs (target/presentation-repair-20261016/build/release/deps/e2e_oracle-9106a556fd8000b1)
+
+running 6 tests
+test a_one_pixel_position_error_is_detected ... ok
+test second_frame_reuses_the_atlas_without_rasterizing_again ... ok
+test ctlinedraw_differs_only_by_glyph_position_not_baseline_or_rasterization ... ok
+test cjk_sentence_matches_coretext_direct_draw ... ok
+test color_emoji_sentence_matches_coretext_direct_draw ... ok
+test mixed_sentence_matches_coretext_direct_draw ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/export.rs (target/presentation-repair-20261016/build/release/deps/export-99f5c3c60866bed4)
+
+running 5 tests
+test exporter_info_reads_the_commit_from_the_environment ... ok
+test export_has_every_documented_field ... ok
+test export_matches_the_json_schema_file ... ok
+test export_round_trips_through_json_text ... ok
+test validation_rejects_broken_documents ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/raster.rs (target/presentation-repair-20261016/build/release/deps/raster-f356c64524e3ed80)
+
+running 6 tests
+test glyphs_without_ink_and_bad_input_give_none ... ok
+test offsets_follow_the_documented_convention ... ok
+test monochrome_glyphs_are_masks_and_color_glyphs_are_color ... ok
+test font_smoothing_is_off_for_monochrome_and_has_no_effect_on_color_here ... ok
+test bitmap_has_two_pixels_of_padding_on_every_side ... ok
+test rasterizing_is_deterministic ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/shape.rs (target/presentation-repair-20261016/build/release/deps/shape-138fe55c1cbfdf8d)
+
+running 15 tests
+test baselines_are_not_rounded ... ok
+test line_spacing_goes_after_each_line_and_not_after_the_last ... ok
+test every_grapheme_gets_its_own_line_when_nothing_fits ... ok
+test trailing_newline_adds_an_empty_line_of_default_height ... ok
+test trailing_whitespace_is_included_in_width_and_excluded_in_trimmed ... ok
+test glyph_clusters_and_run_ranges_are_consistent ... ok
+test font_fallback_reports_runs_covering_the_text ... ok
+test system_font_cjk_fallback_keeps_the_line_height ... ok
+test wrapped_lines_fit_the_width_once_trailing_whitespace_is_ignored ... ok
+test font_keys_are_stable_and_distinguish_fonts ... ok
+test non_system_font_cjk_fallback_makes_the_line_taller ... ok
+test cjk_lines_never_start_with_closing_punctuation ... ok
+test surrogate_pairs_emoji_and_combining_marks_are_never_split ... ok
+test line_breaks_match_framesetter_for_latin_cjk_and_mixed ... ok
+test prepared_document_reflow_matches_fresh_layout_across_widths_and_styles ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running unittests src/lib.rs (target/presentation-repair-20261016/build/release/deps/tekes_ui_tokens-4306ac99a36a2dae)
+
+running 21 tests
+test alpha::tests::increased_contrast_raises_faint_to_soft ... ok
+test color::tests::every_value_in_range_for_all_themes ... ok
+test color::tests::derived_hover_wash_follows_ic_rule ... ok
+test color::tests::all_has_27_distinct_roles ... ok
+test color::tests::existing_roles_consume_adopted_proposal_colors ... ok
+test color::tests::linear_conversion ... ok
+test metrics::tests::concentric_non_finite_inputs_return_square_token_floor ... ok
+test alpha::tests::standard_values ... ok
+test metrics::tests::concentric_uses_square_token_floor_and_clamps_insets ... ok
+test metrics::tests::control_radius_uses_proposal_shape_not_old_pill_alias ... ok
+test metrics::tests::equal_control_sizes_stay_distinct ... ok
+test metrics::tests::reduce_motion_is_instant ... ok
+test metrics::tests::spacing_matches_brief ... ok
+test migration_tests::final_render_alpha_contracts_match_legacy_and_keep_raw_opaque ... ok
+test palette::tests::hue_choices_reference_registered_candidates_without_implicit_application ... ok
+test text::tests::all_roles_have_positive_metrics ... ok
+test text::tests::body_is_13_16_regular ... ok
+test palette::tests::every_registered_preset_compiles_four_themes_and_preserves_independent_roles ... ok
+test effect_binding_tests::component_motion_and_overlay_elevation_round_trip_json ... ok
+test migration_tests::complete_proposal_vocabulary_and_text_metadata_reach_runtime ... ok
+test migration_tests::all_runtime_channels_match_current_merged_json ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+   Doc-tests tekes_ui_controls
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests tekes_ui_design_export
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests tekes_ui_icons
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests tekes_ui_motion
+
+running 1 test
+test crates/tekes-ui-motion/src/lib.rs - (line 7) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+all doctests ran in 0.89s; merged doctests compilation took 0.44s
+   Doc-tests tekes_ui_render
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests tekes_ui_scene
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests tekes_ui_text
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests tekes_ui_tokens
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

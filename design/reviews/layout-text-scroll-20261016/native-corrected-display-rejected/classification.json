@@ -1,0 +1,11 @@
+{
+  "status": "rejected_display_and_deferred",
+  "reason": "External screen disappeared between initial valid captures and final native rerun. Explicit external placement silently fell back to built-in. Root stopped its owned runner/app after discovering this. User explicitly deferred native rerun; no further native launch.",
+  "native_process_results": "text/scroll-repair/reflow exited0 without missing menu IDs or failed assertions, but all had builtin=true and are NOT accepted external-screen checks. workbench was interrupted by owner; exit receipt unavailable.",
+  "observations_only": [
+    "Editor panel remained within viewport in 1000x520 capture.",
+    "ScrollArea bottom capture actually shows final text.",
+    "TextArea End capture reached event log instead of field; script changed to PageDown after this run, remains untested."
+  ],
+  "not_performance_acceptance": "Built-in max_fps=120 in placement log does not establish any 120Hz/8.33ms, frame-drop, or CPU result."
+}

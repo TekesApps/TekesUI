@@ -1,0 +1,12 @@
+{
+  "pid": 34491,
+  "alive": true,
+  "placement": "[   0.100] placement: \"U2790B\" builtin=false scale=2 max_fps=30\uff1bScreen(External)",
+  "external_confirmed": true,
+  "page": "component-index",
+  "locale": "en",
+  "binary_sha256": "adca7e653008559432f40d024ca433af1c03e398e97954d55cc9272ab1d24386",
+  "window_number": 49851,
+  "capture_exit": 0,
+  "started_utc": "2026-10-16T06:44:43.306065+00:00"
+}

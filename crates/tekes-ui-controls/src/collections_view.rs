@@ -1,0 +1,2836 @@
+//! Presentation runtimes for the existing collection and document models.
+//!
+//! These views own component geometry, semantic painting and transient input
+//! state. Hosts provide the existing text shaper and forward translated events.
+#![allow(clippy::too_many_arguments)]
+use crate::{
+    Button, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout, ControlKey,
+    ControlState, Insets,
+    chart::{BarChart, ChartGeometry, paint_bar_chart_with_label_metrics},
+    extended::{CodeBlock, DataTable, DiffKind, DiffView, List, Markdown, MarkdownBlock, Tree},
+    layout_view::{IconRenderer, IconView},
+    paint::ButtonVariant,
+};
+use tekes_ui_scene::{Point, Rect, Scene};
+use tekes_ui_tokens::{Palette, proposal};
+
+fn valid_rect(rect: Rect) -> bool {
+    [
+        rect.origin.x,
+        rect.origin.y,
+        rect.size.width,
+        rect.size.height,
+    ]
+    .into_iter()
+    .all(f32::is_finite)
+        && rect.max_x().is_finite()
+        && rect.max_y().is_finite()
+        && rect.size.width >= 0.0
+        && rect.size.height >= 0.0
+}
+fn visible(frame: Rect, clip: Option<Rect>) -> Option<Rect> {
+    let clip = clip?;
+    if !valid_rect(frame) || !valid_rect(clip) {
+        return None;
+    }
+    let x0 = frame.min_x().max(clip.min_x());
+    let y0 = frame.min_y().max(clip.min_y());
+    let x1 = frame.max_x().min(clip.max_x());
+    let y1 = frame.max_y().min(clip.max_y());
+    (x1 > x0 && y1 > y0).then(|| Rect::new(x0, y0, x1 - x0, y1 - y0))
+}
+fn own_clip(frame: Rect, ancestor: Option<Rect>) -> Option<Rect> {
+    if !valid_rect(frame) || frame.size.width <= 0.0 || frame.size.height <= 0.0 {
+        return None;
+    }
+    if let Some(ancestor) = ancestor
+        && (!valid_rect(ancestor) || ancestor.size.width <= 0.0 || ancestor.size.height <= 0.0)
+    {
+        return None;
+    }
+    match ancestor {
+        Some(ancestor) => visible(frame, Some(ancestor)),
+        None => Some(frame),
+    }
+}
+fn render_quiet_button(
+    button: &mut Button,
+    scene: &mut Scene,
+    text: &mut impl ButtonTextRenderer,
+    label: &str,
+    frame: Rect,
+    clip: Option<Rect>,
+    palette: Palette,
+) -> crate::ButtonLayout {
+    button.render(
+        scene,
+        text,
+        label,
+        frame,
+        clip,
+        palette,
+        ButtonVariant::Quiet,
+        ButtonSize::Body,
+        proposal::TextRole::UiBody,
+        ButtonTextAlign::Leading,
+    )
+}
+fn row_height() -> f32 {
+    proposal::metric("spacing", "space-loose")
+        .unwrap_or(24.0)
+        .max(24.0)
+        + 12.0
+}
+fn row_gap() -> f32 {
+    // Existing Gallery list/tree/table fixtures use 4pt row gaps. Preserve
+    // those default pitches while allowing wrapped content to grow naturally.
+    4.0
+}
+fn control_state(
+    selected: bool,
+    hovered: bool,
+    focused: bool,
+    focus_visible: bool,
+    disabled: bool,
+    pressed: bool,
+) -> ControlState {
+    ControlState {
+        selected,
+        hovered,
+        focused,
+        focus_visible,
+        disabled,
+        pressed,
+        ..Default::default()
+    }
+}
+
+/// One item's complete frame and clipped hit/paint area.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct CollectionItemLayout {
+    pub id: usize,
+    pub frame: Rect,
+    pub visible: Option<Rect>,
+    pub depth: usize,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct CollectionLayout {
+    pub frame: Rect,
+    pub visible: Option<Rect>,
+    pub items: Vec<CollectionItemLayout>,
+    pub content_height: f32,
+}
+
+/// Result of a row pointer or keyboard action. The model remains authoritative.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum CollectionEvent {
+    #[default]
+    Ignored,
+    Handled,
+    Changed,
+    Activated(usize),
+    Toggled(usize),
+}
+
+#[derive(Clone, Debug, Default)]
+struct CollectionInteraction {
+    hovered: Option<usize>,
+    focused: Option<usize>,
+    focus_visible: bool,
+    captured: Option<usize>,
+    window_active: bool,
+}
+impl CollectionInteraction {
+    fn focus(&mut self, id: usize, visible: bool) {
+        self.focused = Some(id);
+        self.focus_visible = visible;
+    }
+    fn blur(&mut self) {
+        self.focused = None;
+        self.focus_visible = false;
+        self.captured = None;
+        self.hovered = None;
+    }
+    fn set_window_active(&mut self, active: bool) {
+        self.window_active = active;
+        if !active {
+            self.blur();
+        }
+    }
+    fn retain_ids(&mut self, ids: &[usize]) {
+        if self.focused.is_some_and(|id| !ids.contains(&id)) {
+            self.focused = None;
+            self.focus_visible = false;
+        }
+        if self.captured.is_some_and(|id| !ids.contains(&id)) {
+            self.captured = None;
+        }
+        if self.hovered.is_some_and(|id| !ids.contains(&id)) {
+            self.hovered = None;
+        }
+    }
+}
+
+/// Runtime for the existing single-selection [`List`] model.
+#[derive(Clone, Debug)]
+pub struct ListView {
+    layout: CollectionLayout,
+    state: CollectionInteraction,
+    disabled: bool,
+    buttons: Vec<Button>,
+}
+impl Default for ListView {
+    fn default() -> Self {
+        Self {
+            layout: CollectionLayout::default(),
+            state: CollectionInteraction {
+                window_active: true,
+                ..Default::default()
+            },
+            disabled: false,
+            buttons: Vec::new(),
+        }
+    }
+}
+impl ListView {
+    pub fn new() -> Self {
+        Self {
+            state: CollectionInteraction {
+                window_active: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+        if disabled {
+            self.state.blur();
+        }
+    }
+    pub fn focus(&mut self, index: usize, keyboard: bool) {
+        self.state.focus(index, keyboard);
+    }
+    pub fn blur(&mut self) {
+        self.state.blur();
+    }
+    pub fn set_window_active(&mut self, active: bool) {
+        self.state.set_window_active(active);
+    }
+    pub fn layout(&self) -> &CollectionLayout {
+        &self.layout
+    }
+    pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &List,
+        labels: &[String],
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+    ) -> CollectionLayout {
+        self.render_rows(scene, text, model, labels, frame, clip, palette, 1.0)
+    }
+    pub fn render_scaled(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &List,
+        labels: &[String],
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        scale: f32,
+    ) -> CollectionLayout {
+        self.render_rows(scene, text, model, labels, frame, clip, palette, scale)
+    }
+    fn render_rows(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &List,
+        labels: &[String],
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        scale: f32,
+    ) -> CollectionLayout {
+        let count = model.count.min(labels.len());
+        let rh = row_height()
+            * if scale.is_finite() && scale > 0.0 {
+                scale
+            } else {
+                1.0
+            };
+        let gap = row_gap();
+        let heights = labels
+            .iter()
+            .take(count)
+            .map(|label| {
+                Button::measure(
+                    text,
+                    label,
+                    frame.size.width,
+                    ButtonSize::Body,
+                    proposal::TextRole::UiBody,
+                )
+                .height
+                .max(rh)
+            })
+            .collect::<Vec<_>>();
+        let own_clip = own_clip(frame, clip);
+        let ids = (0..count).collect::<Vec<_>>();
+        self.state.retain_ids(&ids);
+        self.layout = CollectionLayout {
+            frame,
+            visible: own_clip,
+            content_height: heights.iter().sum::<f32>() + gap * count.saturating_sub(1) as f32,
+            items: Vec::with_capacity(count),
+        };
+        if own_clip.is_none() {
+            self.state.blur();
+            for button in &mut self.buttons {
+                button.clear_layout();
+            }
+            return self.layout.clone();
+        }
+        scene.push_clip(own_clip.expect("checked list clip"));
+        self.buttons.resize_with(count, Button::default);
+        if self.buttons.len() > count {
+            self.buttons.truncate(count);
+        }
+        let mut y = frame.min_y();
+        for (index, label) in labels.iter().take(count).enumerate() {
+            let r = Rect::new(frame.min_x(), y, frame.size.width, heights[index]);
+            let focused = self.state.focused == Some(index) && self.state.window_active;
+            let button = &mut self.buttons[index];
+            button.state = control_state(
+                model.selected == Some(index),
+                self.state.hovered == Some(index),
+                focused,
+                self.state.focus_visible,
+                self.disabled,
+                self.state.captured == Some(index),
+            );
+            let layout = render_quiet_button(button, scene, text, label, r, own_clip, palette);
+            self.layout.items.push(CollectionItemLayout {
+                id: index,
+                frame: r,
+                visible: layout.visible,
+                depth: 0,
+            });
+            y += heights[index] + gap;
+        }
+        scene.pop_clip();
+        self.layout.clone()
+    }
+    pub fn pointer_move(&mut self, point: Point) -> bool {
+        if self.disabled || !self.state.window_active {
+            let changed = self.state.hovered.take().is_some();
+            return changed;
+        }
+        let next = self
+            .layout
+            .items
+            .iter()
+            .find(|i| i.visible.is_some_and(|r| r.contains(point)))
+            .map(|i| i.id);
+        let changed = self.state.hovered != next;
+        self.state.hovered = next;
+        changed
+    }
+    pub fn pointer_down(&mut self, point: Point, model: &mut List) -> CollectionEvent {
+        if self.disabled || !self.state.window_active {
+            return CollectionEvent::Ignored;
+        }
+        let Some(id) = self
+            .layout
+            .items
+            .iter()
+            .find(|i| i.visible.is_some_and(|r| r.contains(point)))
+            .map(|i| i.id)
+        else {
+            return CollectionEvent::Ignored;
+        };
+        self.state.focus(id, false);
+        self.state.captured = Some(id);
+        if model.select(id) {
+            CollectionEvent::Changed
+        } else {
+            CollectionEvent::Handled
+        }
+    }
+    pub fn pointer_up(&mut self, point: Point, model: &mut List) -> CollectionEvent {
+        let Some(id) = self.state.captured.take() else {
+            return CollectionEvent::Ignored;
+        };
+        if !self.state.window_active || self.disabled {
+            return CollectionEvent::Ignored;
+        }
+        if self
+            .layout
+            .items
+            .iter()
+            .any(|i| i.id == id && i.visible.is_some_and(|r| r.contains(point)))
+        {
+            if model.select(id) {
+                CollectionEvent::Changed
+            } else {
+                CollectionEvent::Handled
+            }
+        } else {
+            CollectionEvent::Handled
+        }
+    }
+    pub fn key(&mut self, key: ControlKey, down: bool, model: &mut List) -> CollectionEvent {
+        if !down || self.disabled || !self.state.window_active || self.state.focused.is_none() {
+            return CollectionEvent::Ignored;
+        }
+        self.state.focus_visible = true;
+        if key == ControlKey::Enter {
+            return model
+                .selected
+                .map_or(CollectionEvent::Ignored, CollectionEvent::Activated);
+        }
+        if model.key(key) {
+            let id = model.selected.unwrap_or(0);
+            self.state.focus(id, true);
+            CollectionEvent::Changed
+        } else if key == ControlKey::Enter {
+            model
+                .selected
+                .map_or(CollectionEvent::Ignored, CollectionEvent::Activated)
+        } else {
+            CollectionEvent::Handled
+        }
+    }
+    pub fn cancel(&mut self) {
+        self.state.captured = None;
+    }
+}
+
+/// Runtime for the existing hierarchical [`Tree`] model.
+#[derive(Clone, Debug)]
+pub struct TreeView {
+    layout: CollectionLayout,
+    state: CollectionInteraction,
+    disabled: bool,
+    buttons: Vec<Button>,
+    icons: Vec<IconView>,
+    icon_slots: Vec<TreeIconSlot>,
+}
+#[derive(Clone, Copy, Debug)]
+struct TreeIconSlot {
+    name: &'static str,
+    frame: Rect,
+    visible: Option<Rect>,
+    tint: tekes_ui_tokens::Rgba,
+}
+impl Default for TreeView {
+    fn default() -> Self {
+        Self {
+            layout: CollectionLayout::default(),
+            state: CollectionInteraction {
+                window_active: true,
+                ..Default::default()
+            },
+            disabled: false,
+            buttons: Vec::new(),
+            icons: Vec::new(),
+            icon_slots: Vec::new(),
+        }
+    }
+}
+impl TreeView {
+    pub fn new() -> Self {
+        Self {
+            state: CollectionInteraction {
+                window_active: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+        if disabled {
+            self.state.blur();
+        }
+    }
+    pub fn focus(&mut self, index: usize, keyboard: bool) {
+        self.state.focus(index, keyboard);
+    }
+    pub fn blur(&mut self) {
+        self.state.blur();
+    }
+    pub fn set_window_active(&mut self, active: bool) {
+        self.state.set_window_active(active);
+    }
+    pub fn layout(&self) -> &CollectionLayout {
+        &self.layout
+    }
+    pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &Tree,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+    ) -> CollectionLayout {
+        self.icon_slots.clear();
+        let ids = model.visible();
+        let rh = 34.0;
+        let gap = row_gap();
+        let icon_slot_width = proposal::metric("size", "size-icon-artboard").unwrap_or(24.0);
+        let horizontal_inset = proposal::metric("spacing", "space-relaxed").unwrap_or(12.0);
+        let heights = ids
+            .iter()
+            .map(|id| {
+                let node = &model.nodes()[*id];
+                let row_width = (frame.size.width - depth_indent(model, *id)).max(0.0);
+                let label_width = (row_width - horizontal_inset * 2.0 - icon_slot_width).max(0.0);
+                text.measure(&node.label, proposal::TextRole::UiBody, label_width)
+                    .height
+                    .max(rh)
+            })
+            .collect::<Vec<_>>();
+        let own_clip = own_clip(frame, clip);
+        self.state.retain_ids(&ids);
+        self.layout = CollectionLayout {
+            frame,
+            visible: own_clip,
+            content_height: heights.iter().sum::<f32>() + gap * ids.len().saturating_sub(1) as f32,
+            items: Vec::with_capacity(ids.len()),
+        };
+        if own_clip.is_none() {
+            self.state.blur();
+            for button in &mut self.buttons {
+                button.clear_layout();
+            }
+            return self.layout.clone();
+        }
+        scene.push_clip(own_clip.expect("checked tree clip"));
+        self.buttons
+            .resize_with(model.nodes().len(), Button::default);
+        if self.buttons.len() > model.nodes().len() {
+            self.buttons.truncate(model.nodes().len());
+        }
+        let mut y = frame.min_y();
+        for (row, id) in ids.iter().copied().enumerate() {
+            let node = &model.nodes()[id];
+            let depth = tree_depth(model, id);
+            let x = depth_indent(model, id);
+            let r = Rect::new(
+                frame.min_x() + x,
+                y,
+                (frame.size.width - x).max(0.0),
+                heights[row],
+            );
+            let focused = self.state.focused == Some(id) && self.state.window_active;
+            let has_children = model.nodes().iter().any(|n| n.parent == Some(id));
+            let button = &mut self.buttons[id];
+            button.state = control_state(
+                model.selected == Some(id),
+                self.state.hovered == Some(id),
+                focused,
+                self.state.focus_visible,
+                self.disabled || node.disabled,
+                self.state.captured == Some(id),
+            );
+            let button_layout = render_quiet_button(button, scene, text, "", r, own_clip, palette);
+            let content = button_layout.content;
+            let slot_width = icon_slot_width.min(content.size.width);
+            let icon_frame = Rect::new(content.min_x(), r.min_y(), slot_width, r.size.height);
+            let text_frame = Rect::new(
+                content.min_x() + slot_width,
+                content.min_y(),
+                (content.size.width - slot_width).max(0.0),
+                content.size.height.max(
+                    r.size
+                        .height
+                        .min(proposal::TextRole::UiBody.style().line_height),
+                ),
+            );
+            let label_size = text.measure(
+                &node.label,
+                proposal::TextRole::UiBody,
+                text_frame.size.width,
+            );
+            let label_frame = Rect::new(
+                text_frame.min_x(),
+                r.center().y - label_size.height.min(r.size.height) * 0.5,
+                text_frame.size.width,
+                label_size.height.min(r.size.height),
+            );
+            let tint = if self.disabled || node.disabled {
+                palette
+                    .color("tertiary-text")
+                    .expect("disabled tree text token")
+            } else {
+                palette.color("primary-text").expect("tree text token")
+            };
+            if button_layout.visible.is_some() && !node.label.is_empty() && !label_frame.is_empty()
+            {
+                text.draw(
+                    scene,
+                    &node.label,
+                    proposal::TextRole::UiBody,
+                    label_frame,
+                    ButtonTextAlign::Leading,
+                    tint,
+                );
+            }
+            if has_children {
+                self.icon_slots.push(TreeIconSlot {
+                    name: if node.expanded {
+                        "chevron-down"
+                    } else {
+                        "chevron-right"
+                    },
+                    frame: icon_frame,
+                    visible: button_layout.visible,
+                    tint,
+                });
+            }
+            self.layout.items.push(CollectionItemLayout {
+                id,
+                frame: r,
+                visible: button_layout.visible,
+                depth,
+            });
+            y += heights[row] + gap;
+        }
+        scene.pop_clip();
+        self.layout.clone()
+    }
+    /// Draw the branch affordances after releasing the host text-shaper borrow.
+    /// Every row reserves the same leading slot, including leaf rows.
+    pub fn render_icons(
+        &mut self,
+        scene: &mut Scene,
+        renderer: &mut impl IconRenderer,
+        clip: Option<Rect>,
+        palette: Palette,
+        icon_size: f32,
+    ) {
+        self.icons
+            .resize_with(self.icon_slots.len(), IconView::default);
+        for (view, slot) in self.icons.iter_mut().zip(&self.icon_slots) {
+            let effective_clip = match (slot.visible, clip) {
+                (Some(visible), Some(clip)) => visible.intersection(&clip),
+                (Some(visible), None) => Some(visible),
+                (None, _) => None,
+            };
+            if effective_clip.is_none() {
+                continue;
+            }
+            view.render_tinted(
+                scene,
+                renderer,
+                slot.name,
+                slot.frame,
+                icon_size,
+                effective_clip,
+                palette,
+                slot.tint,
+            );
+        }
+    }
+    pub fn pointer_move(&mut self, point: Point) -> bool {
+        if self.disabled || !self.state.window_active {
+            let changed = self.state.hovered.take().is_some();
+            return changed;
+        }
+        let next = self
+            .layout
+            .items
+            .iter()
+            .find(|i| i.visible.is_some_and(|r| r.contains(point)))
+            .map(|i| i.id);
+        let changed = self.state.hovered != next;
+        self.state.hovered = next;
+        changed
+    }
+    pub fn pointer_down(&mut self, point: Point, model: &mut Tree) -> CollectionEvent {
+        if self.disabled || !self.state.window_active {
+            return CollectionEvent::Ignored;
+        }
+        let Some(id) = self
+            .layout
+            .items
+            .iter()
+            .find(|i| i.visible.is_some_and(|r| r.contains(point)))
+            .map(|i| i.id)
+        else {
+            return CollectionEvent::Ignored;
+        };
+        if model.nodes().get(id).is_none_or(|n| n.disabled) {
+            return CollectionEvent::Ignored;
+        }
+        self.state.focus(id, false);
+        self.state.captured = Some(id);
+        if model.select(id) {
+            CollectionEvent::Changed
+        } else {
+            CollectionEvent::Handled
+        }
+    }
+    pub fn pointer_up(&mut self, point: Point, model: &mut Tree) -> CollectionEvent {
+        let Some(id) = self.state.captured.take() else {
+            return CollectionEvent::Ignored;
+        };
+        if !self.state.window_active || self.disabled {
+            return CollectionEvent::Ignored;
+        }
+        if !self
+            .layout
+            .items
+            .iter()
+            .any(|i| i.id == id && i.visible.is_some_and(|r| r.contains(point)))
+        {
+            return CollectionEvent::Handled;
+        }
+        if model.nodes().iter().any(|n| n.parent == Some(id)) && model.toggle(id) {
+            CollectionEvent::Toggled(id)
+        } else {
+            CollectionEvent::Handled
+        }
+    }
+    pub fn key(&mut self, key: ControlKey, down: bool, model: &mut Tree) -> CollectionEvent {
+        if !down || self.disabled || !self.state.window_active || self.state.focused.is_none() {
+            return CollectionEvent::Ignored;
+        }
+        self.state.focus_visible = true;
+        if key == ControlKey::Enter {
+            return model
+                .selected
+                .map_or(CollectionEvent::Ignored, CollectionEvent::Activated);
+        }
+        if model.key(key) {
+            let id = model.selected.unwrap_or(0);
+            self.state.focus(id, true);
+            CollectionEvent::Changed
+        } else {
+            CollectionEvent::Handled
+        }
+    }
+    pub fn cancel(&mut self) {
+        self.state.captured = None;
+    }
+}
+fn tree_depth(tree: &Tree, mut id: usize) -> usize {
+    let mut depth = 0;
+    while let Some(parent) = tree.nodes().get(id).and_then(|n| n.parent) {
+        depth += 1;
+        id = parent;
+        if depth > tree.nodes().len() {
+            break;
+        }
+    }
+    depth
+}
+fn depth_indent(tree: &Tree, id: usize) -> f32 {
+    tree_depth(tree, id) as f32 * 20.0
+}
+
+/// Data table row input uses original model indices, so sorting never retargets selection.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct DataTableLayout {
+    pub frame: Rect,
+    pub visible: Option<Rect>,
+    pub headers: Vec<CollectionItemLayout>,
+    pub rows: Vec<CollectionItemLayout>,
+    pub columns: Vec<Rect>,
+    pub content_height: f32,
+}
+#[derive(Clone, Debug)]
+pub struct DataTableView {
+    layout: DataTableLayout,
+    state: CollectionInteraction,
+    disabled: bool,
+    header_buttons: Vec<Button>,
+    row_buttons: Vec<Button>,
+    focused_header: Option<usize>,
+}
+impl Default for DataTableView {
+    fn default() -> Self {
+        Self {
+            layout: DataTableLayout::default(),
+            state: CollectionInteraction {
+                window_active: true,
+                ..Default::default()
+            },
+            disabled: false,
+            header_buttons: Vec::new(),
+            row_buttons: Vec::new(),
+            focused_header: None,
+        }
+    }
+}
+impl DataTableView {
+    pub fn new() -> Self {
+        Self {
+            state: CollectionInteraction {
+                window_active: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+        if disabled {
+            self.focused_header = None;
+            self.state.blur();
+        }
+    }
+    pub fn focus_row(&mut self, row: usize, keyboard: bool) {
+        self.focused_header = None;
+        self.state.focus(row, keyboard);
+    }
+    pub fn focus_header(&mut self, column: usize, keyboard: bool) {
+        self.focused_header = Some(column);
+        self.state.focused = None;
+        self.state.focus_visible = keyboard;
+    }
+    pub fn blur(&mut self) {
+        self.focused_header = None;
+        self.state.blur();
+    }
+    pub fn set_window_active(&mut self, active: bool) {
+        self.state.set_window_active(active);
+        if !active {
+            self.focused_header = None;
+        }
+    }
+    pub fn layout(&self) -> &DataTableLayout {
+        &self.layout
+    }
+    pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &DataTable,
+        headers: &[String],
+        rows: &[Vec<String>],
+        row_order: &[usize],
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+    ) -> DataTableLayout {
+        let width = frame.size.width.max(0.0);
+        let columns = model.columns.max(1);
+        let cw = width / columns as f32;
+        // Preserve the Gallery's existing table contract: 34pt header and
+        // rows, first row at 40pt, then 38pt pitch.
+        let header_h = 34.0;
+        let rh = 34.0;
+        let gap = row_gap();
+        let own_clip = own_clip(frame, clip);
+        let valid_order = row_order
+            .iter()
+            .copied()
+            .filter(|id| *id < model.rows && *id < rows.len())
+            .collect::<Vec<_>>();
+        self.state.retain_ids(&valid_order);
+        if self
+            .focused_header
+            .is_some_and(|column| column >= model.columns)
+        {
+            self.focused_header = None;
+        }
+        let header_labels = (0..model.columns)
+            .map(|col| {
+                let title = headers.get(col).cloned().unwrap_or_default();
+                if model.sort.is_some_and(|(sorted, _)| sorted == col) {
+                    format!("{title}  ↕")
+                } else {
+                    title
+                }
+            })
+            .collect::<Vec<_>>();
+        let header_heights = header_labels
+            .iter()
+            .map(|title| {
+                Button::measure(
+                    text,
+                    title,
+                    cw,
+                    ButtonSize::Body,
+                    proposal::TextRole::UiBody,
+                )
+                .height
+                .max(header_h)
+            })
+            .collect::<Vec<_>>();
+        let header_band = header_heights.iter().copied().fold(header_h, f32::max);
+        let row_start = header_band + 6.0;
+        let row_heights = valid_order
+            .iter()
+            .map(|id| {
+                (0..model.columns)
+                    .map(|col| {
+                        text.measure(
+                            rows[*id].get(col).map(String::as_str).unwrap_or(""),
+                            proposal::TextRole::UiBody,
+                            (cw - 16.).max(0.),
+                        )
+                        .height
+                    })
+                    .fold(rh, f32::max)
+            })
+            .collect::<Vec<_>>();
+        let content_height = if valid_order.is_empty() {
+            header_band
+        } else {
+            row_start
+                + row_heights.iter().sum::<f32>()
+                + gap * valid_order.len().saturating_sub(1) as f32
+        };
+        let mut result = DataTableLayout {
+            frame,
+            visible: own_clip,
+            content_height,
+            ..Default::default()
+        };
+        result.columns = (0..model.columns)
+            .map(|i| {
+                Rect::new(
+                    frame.min_x() + i as f32 * cw,
+                    frame.min_y(),
+                    cw,
+                    frame.size.height,
+                )
+            })
+            .collect();
+        if own_clip.is_none() {
+            self.state.blur();
+            self.focused_header = None;
+            for button in self
+                .header_buttons
+                .iter_mut()
+                .chain(self.row_buttons.iter_mut())
+            {
+                button.clear_layout();
+            }
+            self.layout = result.clone();
+            return result;
+        }
+        scene.push_clip(own_clip.expect("checked table clip"));
+        self.header_buttons
+            .resize_with(model.columns, Button::default);
+        self.row_buttons.resize_with(model.rows, Button::default);
+        for (col, _header_height) in header_heights.iter().copied().enumerate() {
+            let r = Rect::new(
+                frame.min_x() + col as f32 * cw,
+                frame.min_y(),
+                cw,
+                header_band,
+            );
+            let title = &header_labels[col];
+            let button = &mut self.header_buttons[col];
+            let header_focused = self.focused_header == Some(col) && self.state.window_active;
+            button.state = control_state(
+                false,
+                false,
+                header_focused,
+                self.state.focus_visible,
+                self.disabled,
+                false,
+            );
+            let button_layout =
+                render_quiet_button(button, scene, text, title, r, own_clip, palette);
+            result.headers.push(CollectionItemLayout {
+                id: col,
+                frame: r,
+                visible: button_layout.visible,
+                depth: 0,
+            });
+        }
+        let mut y = frame.min_y() + row_start;
+        for (display, id) in valid_order.iter().copied().enumerate() {
+            let row_height = row_heights[display];
+            let r = Rect::new(frame.min_x(), y, width, row_height);
+            let focused = self.state.focused == Some(id) && self.state.window_active;
+            let button = &mut self.row_buttons[id];
+            button.state = control_state(
+                model.selected_row == Some(id),
+                self.state.hovered == Some(id),
+                focused,
+                self.state.focus_visible,
+                self.disabled,
+                self.state.captured == Some(id),
+            );
+            let row_layout = render_quiet_button(button, scene, text, "", r, own_clip, palette);
+            for col in 0..model.columns {
+                let cell = Rect::new(
+                    frame.min_x() + col as f32 * cw + 8.,
+                    y,
+                    (cw - 16.).max(0.),
+                    row_height,
+                );
+                if let Some(v) = visible(cell, row_layout.visible) {
+                    scene.push_clip(v);
+                    text.draw(
+                        scene,
+                        rows[id].get(col).map(String::as_str).unwrap_or(""),
+                        proposal::TextRole::UiBody,
+                        cell,
+                        ButtonTextAlign::Leading,
+                        palette
+                            .color("primary-text")
+                            .expect("DS primary text token"),
+                    );
+                    scene.pop_clip();
+                }
+            }
+            result.rows.push(CollectionItemLayout {
+                id,
+                frame: r,
+                visible: row_layout.visible,
+                depth: 0,
+            });
+            y += row_height + gap;
+        }
+        scene.pop_clip();
+        self.layout = result.clone();
+        result
+    }
+    pub fn pointer_move(&mut self, point: Point) -> bool {
+        if self.disabled || !self.state.window_active {
+            let changed = self.state.hovered.take().is_some();
+            return changed;
+        }
+        let next = self
+            .layout
+            .rows
+            .iter()
+            .find(|i| i.visible.is_some_and(|r| r.contains(point)))
+            .map(|i| i.id);
+        let changed = self.state.hovered != next;
+        self.state.hovered = next;
+        changed
+    }
+    pub fn pointer_down(&mut self, point: Point, model: &mut DataTable) -> CollectionEvent {
+        if self.disabled || !self.state.window_active {
+            return CollectionEvent::Ignored;
+        }
+        if let Some(col) = self
+            .layout
+            .headers
+            .iter()
+            .find(|i| i.visible.is_some_and(|r| r.contains(point)))
+            .map(|i| i.id)
+        {
+            self.focus_header(col, false);
+            return if model.sort_by(col) {
+                CollectionEvent::Changed
+            } else {
+                CollectionEvent::Handled
+            };
+        }
+        let Some(id) = self
+            .layout
+            .rows
+            .iter()
+            .find(|i| i.visible.is_some_and(|r| r.contains(point)))
+            .map(|i| i.id)
+        else {
+            return CollectionEvent::Ignored;
+        };
+        self.focused_header = None;
+        self.state.focus(id, false);
+        self.state.captured = Some(id);
+        if model.select_row(id) {
+            CollectionEvent::Changed
+        } else {
+            CollectionEvent::Handled
+        }
+    }
+    pub fn pointer_up(&mut self, point: Point, model: &mut DataTable) -> CollectionEvent {
+        let Some(id) = self.state.captured.take() else {
+            return CollectionEvent::Ignored;
+        };
+        if !self.state.window_active || self.disabled {
+            return CollectionEvent::Ignored;
+        }
+        if self
+            .layout
+            .rows
+            .iter()
+            .any(|i| i.id == id && i.visible.is_some_and(|r| r.contains(point)))
+        {
+            if model.select_row(id) {
+                CollectionEvent::Changed
+            } else {
+                CollectionEvent::Handled
+            }
+        } else {
+            CollectionEvent::Handled
+        }
+    }
+    pub fn key(&mut self, key: ControlKey, down: bool, model: &mut DataTable) -> CollectionEvent {
+        if !down
+            || self.disabled
+            || !self.state.window_active
+            || (self.state.focused.is_none() && self.focused_header.is_none())
+        {
+            return CollectionEvent::Ignored;
+        }
+        self.state.focus_visible = true;
+        if let Some(column) = self.focused_header {
+            if key == ControlKey::Enter {
+                return if model.sort_by(column) {
+                    CollectionEvent::Changed
+                } else {
+                    CollectionEvent::Handled
+                };
+            }
+            if matches!(key, ControlKey::Left | ControlKey::Right) && model.columns > 0 {
+                let next = if key == ControlKey::Right {
+                    (column + 1).min(model.columns - 1)
+                } else {
+                    column.saturating_sub(1)
+                };
+                self.focus_header(next, true);
+                return CollectionEvent::Changed;
+            }
+            return CollectionEvent::Handled;
+        }
+        if key == ControlKey::Enter {
+            let Some(id) = self.state.focused else {
+                return CollectionEvent::Ignored;
+            };
+            return if model.select_row(id) {
+                CollectionEvent::Changed
+            } else {
+                CollectionEvent::Activated(id)
+            };
+        }
+        let visible_rows = self
+            .layout
+            .rows
+            .iter()
+            .filter(|row| row.visible.is_some())
+            .map(|row| row.id)
+            .collect::<Vec<_>>();
+        if visible_rows.is_empty() {
+            return CollectionEvent::Handled;
+        }
+        let target = match key {
+            ControlKey::Home => visible_rows.first().copied(),
+            ControlKey::End => visible_rows.last().copied(),
+            ControlKey::Up | ControlKey::Down => {
+                let origin = self.state.focused.or(model.selected_row);
+                let position = origin.and_then(|id| visible_rows.iter().position(|row| *row == id));
+                let position = match (key, position) {
+                    (ControlKey::Down, Some(position)) => {
+                        (position + 1).min(visible_rows.len() - 1)
+                    }
+                    (ControlKey::Up, Some(position)) => position.saturating_sub(1),
+                    (ControlKey::Down, None) => 0,
+                    (ControlKey::Up, None) => visible_rows.len() - 1,
+                    _ => unreachable!("only vertical navigation reaches this branch"),
+                };
+                visible_rows.get(position).copied()
+            }
+            _ => None,
+        };
+        let Some(target) = target else {
+            return CollectionEvent::Handled;
+        };
+        self.state.focus(target, true);
+        if model.select_row(target) {
+            CollectionEvent::Changed
+        } else {
+            CollectionEvent::Handled
+        }
+    }
+    pub fn cancel(&mut self) {
+        self.state.captured = None;
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ChartViewLayout {
+    pub frame: Rect,
+    pub visible: Option<Rect>,
+    pub geometry: ChartGeometry,
+}
+#[derive(Clone, Debug)]
+pub struct ChartView {
+    layout: ChartViewLayout,
+    hovered: Option<usize>,
+    focused: bool,
+    focus_visible: bool,
+    window_active: bool,
+}
+impl Default for ChartView {
+    fn default() -> Self {
+        Self {
+            layout: ChartViewLayout::default(),
+            hovered: None,
+            focused: false,
+            focus_visible: false,
+            window_active: true,
+        }
+    }
+}
+impl ChartView {
+    pub fn new() -> Self {
+        Self {
+            window_active: true,
+            ..Default::default()
+        }
+    }
+    pub fn focus(&mut self, keyboard: bool, model: &mut BarChart) {
+        self.focused = true;
+        self.focus_visible = keyboard;
+        model.set_focused(true, keyboard);
+    }
+    pub fn blur(&mut self, model: &mut BarChart) {
+        self.focused = false;
+        self.focus_visible = false;
+        model.set_focused(false, false);
+    }
+    pub fn set_window_active(&mut self, active: bool, model: &mut BarChart) {
+        self.window_active = active;
+        if !active {
+            self.blur(model);
+        }
+    }
+    pub fn layout(&self) -> &ChartViewLayout {
+        &self.layout
+    }
+    pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &mut BarChart,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        text_scale: f32,
+    ) -> ChartViewLayout {
+        let own_clip = own_clip(frame, clip);
+        if own_clip.is_none() {
+            self.focused = false;
+            self.focus_visible = false;
+            self.hovered = None;
+            model.set_focused(false, false);
+            model.set_hovered(None);
+            self.layout = ChartViewLayout {
+                frame,
+                visible: None,
+                geometry: ChartGeometry::default(),
+            };
+            return self.layout.clone();
+        }
+        model.set_focused(self.focused && self.window_active, self.focus_visible);
+        model.set_hovered(self.hovered);
+        let mut local = Scene::new();
+        let probe = model.layout_with_text_scale(frame, text_scale);
+        let mut value_line_height: f32 = 16.0;
+        let mut category_line_height: f32 = 16.0;
+        for bar in &probe.bars {
+            value_line_height = value_line_height.max(
+                text.measure(
+                    &bar.value.to_string(),
+                    proposal::TextRole::UiCaption,
+                    bar.value_label.size.width,
+                )
+                .height,
+            );
+            category_line_height = category_line_height.max(
+                text.measure(
+                    &bar.label,
+                    proposal::TextRole::UiCaption,
+                    bar.category_label.size.width,
+                )
+                .height,
+            );
+        }
+        let geometry = paint_bar_chart_with_label_metrics(
+            &mut local,
+            frame,
+            palette,
+            model,
+            value_line_height,
+            category_line_height,
+        );
+        let text_alignment = tekes_ui_tokens::proposal::layout::CHART_LABEL.text_alignment;
+        scene.push_clip(own_clip.expect("checked chart clip"));
+        for primitive in local.primitives() {
+            scene.push(primitive.clone());
+        }
+        for bar in &geometry.bars {
+            let value = bar.value.to_string();
+            let (value_rect, value_align) =
+                chart_text_frame(text, &value, bar.value_label, text_alignment);
+            text.draw(
+                scene,
+                &value,
+                proposal::TextRole::UiCaption,
+                value_rect,
+                value_align,
+                palette
+                    .color("primary-text")
+                    .expect("DS primary text token"),
+            );
+            let (category_rect, category_align) =
+                chart_text_frame(text, &bar.label, bar.category_label, text_alignment);
+            text.draw(
+                scene,
+                &bar.label,
+                proposal::TextRole::UiCaption,
+                category_rect,
+                category_align,
+                palette
+                    .color("secondary-text")
+                    .expect("DS secondary text token"),
+            );
+        }
+        scene.pop_clip();
+        self.layout = ChartViewLayout {
+            frame,
+            visible: own_clip,
+            geometry,
+        };
+        self.layout.clone()
+    }
+    pub fn pointer_move(&mut self, point: Point, model: &mut BarChart) -> bool {
+        if !self.window_active || self.layout.visible.is_none() {
+            let changed = self.hovered.take().is_some();
+            model.set_hovered(None);
+            return changed;
+        }
+        let next = self
+            .layout
+            .geometry
+            .bars
+            .iter()
+            .find(|b| {
+                visible(b.rect.inset(-6.0), self.layout.visible).is_some_and(|r| r.contains(point))
+            })
+            .map(|b| b.index);
+        let changed = next != self.hovered;
+        self.hovered = next;
+        model.set_hovered(next);
+        changed
+    }
+    pub fn pointer_down(&mut self, point: Point, model: &mut BarChart) -> CollectionEvent {
+        if !self.window_active || self.layout.visible.is_none_or(|r| !r.contains(point)) {
+            return CollectionEvent::Ignored;
+        }
+        let Some(index) = self
+            .layout
+            .geometry
+            .bars
+            .iter()
+            .find(|b| {
+                visible(b.rect.inset(-6.0), self.layout.visible).is_some_and(|r| r.contains(point))
+            })
+            .map(|b| b.index)
+        else {
+            return CollectionEvent::Ignored;
+        };
+        self.focus(false, model);
+        if model.select(index) {
+            CollectionEvent::Changed
+        } else {
+            CollectionEvent::Handled
+        }
+    }
+    pub fn key(&mut self, key: ControlKey, down: bool, model: &mut BarChart) -> CollectionEvent {
+        if !down || !self.focused || !self.window_active {
+            return CollectionEvent::Ignored;
+        }
+        self.focus_visible = true;
+        if model.key(key) {
+            model.set_focused(true, true);
+            CollectionEvent::Changed
+        } else {
+            CollectionEvent::Handled
+        }
+    }
+}
+
+fn chart_text_frame(
+    text: &mut impl ButtonTextRenderer,
+    value: &str,
+    slot: Rect,
+    alignment: tekes_ui_tokens::proposal::layout::TextAlignment,
+) -> (Rect, ButtonTextAlign) {
+    use tekes_ui_tokens::proposal::layout::TextAlignment;
+    match alignment {
+        TextAlignment::Center => (slot, ButtonTextAlign::Center),
+        TextAlignment::Leading => (slot, ButtonTextAlign::Leading),
+        TextAlignment::Trailing => {
+            // The renderer supports leading/center alignment. Anchor a
+            // measured-width frame at the trailing edge, then draw it leading.
+            let width = text
+                .measure(value, proposal::TextRole::UiCaption, slot.size.width)
+                .width
+                .clamp(0.0, slot.size.width);
+            (
+                Rect::new(slot.max_x() - width, slot.min_y(), width, slot.size.height),
+                ButtonTextAlign::Leading,
+            )
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct DocumentLayout {
+    pub frame: Rect,
+    pub visible: Option<Rect>,
+    pub blocks: Vec<CollectionItemLayout>,
+    pub content_height: f32,
+}
+
+/// Layout and paint runtime for the repository's intentionally bounded Markdown subset.
+#[derive(Clone, Debug, Default)]
+pub struct MarkdownView {
+    layout: DocumentLayout,
+}
+impl MarkdownView {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn layout(&self) -> &DocumentLayout {
+        &self.layout
+    }
+    pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &Markdown,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        text_scale: f32,
+    ) -> DocumentLayout {
+        let scale = if text_scale.is_finite() && text_scale > 0. {
+            text_scale
+        } else {
+            1.
+        };
+        // Keep the historical 12pt paragraph rhythm at the default scale;
+        // shaped multiline height remains content-driven.
+        let gap = proposal::metric("spacing", "space-relaxed").unwrap_or(12.);
+        let width = frame.size.width.max(0.);
+        let own_clip = own_clip(frame, clip);
+        // The original Gallery specimen started four points below its story
+        // body origin; preserve that breathing room while owning its layout.
+        let mut y = frame.min_y() + 4.0;
+        let mut blocks = Vec::with_capacity(model.blocks.len());
+        for (index, block) in model.blocks.iter().enumerate() {
+            let (value, role, indent, min_h) = match block {
+                MarkdownBlock::Heading { level: _, text } => (
+                    text.as_str(),
+                    proposal::TextRole::UiHeading,
+                    0.,
+                    proposal::TextRole::UiHeading.style().line_height,
+                ),
+                MarkdownBlock::Paragraph(value) => (
+                    value.as_str(),
+                    proposal::TextRole::UiBody,
+                    0.,
+                    proposal::TextRole::UiBody.style().line_height,
+                ),
+                MarkdownBlock::Bullet(value) => (
+                    value.as_str(),
+                    proposal::TextRole::UiBody,
+                    0.,
+                    proposal::TextRole::UiBody.style().line_height,
+                ),
+                MarkdownBlock::Code { source, .. } => (
+                    source.as_str(),
+                    proposal::TextRole::Code,
+                    0.,
+                    proposal::TextRole::Code.style().line_height,
+                ),
+            };
+            let max_width = (width - indent).max(0.);
+            let rendered = if matches!(block, MarkdownBlock::Bullet(_)) {
+                format!("• {value}")
+            } else {
+                value.to_owned()
+            };
+            let measured = text.measure(&rendered, role, max_width);
+            // `measure` reflects the active host scale; only the token floor is
+            // scaled here so the gallery does not apply its text scale twice.
+            let h = measured.height.max(min_h * scale).max(24.);
+            let rect = Rect::new(frame.min_x() + indent, y, max_width, h);
+            let draw_rect = Rect::new(rect.min_x(), rect.min_y(), rect.size.width, measured.height);
+            let v = visible(rect, own_clip);
+            if let Some(v) = v {
+                scene.push_clip(v);
+                let ink = palette
+                    .color("primary-text")
+                    .expect("DS primary text token");
+                text.draw(
+                    scene,
+                    &rendered,
+                    role,
+                    draw_rect,
+                    ButtonTextAlign::Leading,
+                    ink,
+                );
+                scene.pop_clip();
+            }
+            blocks.push(CollectionItemLayout {
+                id: index,
+                frame: rect,
+                visible: v,
+                depth: 0,
+            });
+            y += h + gap;
+        }
+        self.layout = DocumentLayout {
+            frame,
+            visible: own_clip,
+            blocks,
+            content_height: (y - frame.min_y() - if model.blocks.is_empty() { 0. } else { gap })
+                .max(0.),
+        };
+        self.layout.clone()
+    }
+}
+
+/// Paint runtime for plain source text. It does not claim syntax highlighting or editing.
+#[derive(Clone, Debug, Default)]
+pub struct CodeBlockView {
+    layout: DocumentLayout,
+}
+impl CodeBlockView {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn layout(&self) -> &DocumentLayout {
+        &self.layout
+    }
+    pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &CodeBlock,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        text_scale: f32,
+    ) -> DocumentLayout {
+        if !valid_rect(frame) || clip.is_some_and(|r| !valid_rect(r)) {
+            self.layout = DocumentLayout {
+                frame,
+                ..Default::default()
+            };
+            return self.layout.clone();
+        }
+        let container = ContainerLayout::new(frame, Insets::ZERO, Insets::ZERO, clip);
+        let own_clip = container.visible_clip();
+        if let Some(own) = own_clip {
+            if let Some(background_clip) = container.background_paint_clip() {
+                scene.push_clip(background_clip);
+            }
+            crate::paint::surface_kind_at_scale(
+                scene,
+                frame,
+                palette,
+                crate::paint::SurfaceKind::Code,
+                text.backing_scale(),
+            );
+            if container.background_paint_clip().is_some() {
+                scene.pop_clip();
+            }
+            scene.push_clip(own);
+        }
+        let scale = if text_scale.is_finite() && text_scale > 0. {
+            text_scale
+        } else {
+            1.
+        };
+        let role = proposal::TextRole::Code;
+        let lh = role.style().line_height * scale;
+        // The original Gallery code specimen uses a 14pt text inset from its
+        // surface edge. Keep that visual contract while the view owns drawing.
+        let inset = proposal::metric("spacing", "space-button-md-inset").unwrap_or(14.);
+        let mut blocks = Vec::new();
+        let mut y = frame.min_y() + inset;
+        let x = frame.min_x() + inset;
+        let w = frame.size.width.clamp(0., 650.);
+        for (index, source) in model.lines().enumerate() {
+            let measured = text.measure(source, role, w);
+            let h = measured.height.max(lh);
+            let rect = Rect::new(x, y, w, h);
+            let v = visible(rect, own_clip);
+            if let Some(v) = v {
+                scene.push_clip(v);
+                text.draw(
+                    scene,
+                    source,
+                    role,
+                    rect,
+                    ButtonTextAlign::Leading,
+                    palette
+                        .color("primary-text")
+                        .expect("DS primary text token"),
+                );
+                scene.pop_clip();
+            }
+            blocks.push(CollectionItemLayout {
+                id: index,
+                frame: rect,
+                visible: v,
+                depth: 0,
+            });
+            y += h;
+        }
+        if own_clip.is_some() {
+            scene.pop_clip();
+        }
+        self.layout = DocumentLayout {
+            frame,
+            visible: own_clip,
+            blocks,
+            content_height: y - frame.min_y() + inset,
+        };
+        self.layout.clone()
+    }
+}
+
+/// Paint runtime for the existing line-oriented LCS diff model.
+#[derive(Clone, Debug, Default)]
+pub struct DiffViewRuntime {
+    layout: DocumentLayout,
+}
+impl DiffViewRuntime {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn layout(&self) -> &DocumentLayout {
+        &self.layout
+    }
+    pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &DiffView,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        text_scale: f32,
+    ) -> DocumentLayout {
+        if !valid_rect(frame) || clip.is_some_and(|r| !valid_rect(r)) {
+            self.layout = DocumentLayout {
+                frame,
+                ..Default::default()
+            };
+            return self.layout.clone();
+        }
+        let own_clip = own_clip(frame, clip);
+        if let Some(own) = own_clip {
+            scene.push_clip(own);
+        }
+        let scale = if text_scale.is_finite() && text_scale > 0. {
+            text_scale
+        } else {
+            1.
+        };
+        let role = proposal::TextRole::Code;
+        let line_floor = 28. * scale;
+        let mut blocks = Vec::with_capacity(model.lines.len());
+        let inset = 8.0;
+        let line_gap = 2.0 * scale;
+        let mut y = frame.min_y();
+        for (index, line) in model.lines.iter().enumerate() {
+            let (prefix, color) = match line.kind {
+                DiffKind::Equal => ("  ", "primary-text"),
+                DiffKind::Added => ("+ ", "status-succeeded"),
+                DiffKind::Removed => ("− ", "status-failed"),
+            };
+            let rendered = format!("{prefix}{}", line.text);
+            let measured = text.measure(&rendered, role, frame.size.width.clamp(0., 700.));
+            let h = measured.height.max(line_floor);
+            let rect = Rect::new(frame.min_x() + inset, y, frame.size.width.min(700.), h);
+            let v = visible(rect, own_clip);
+            if let Some(v) = v {
+                scene.push_clip(v);
+                text.draw(
+                    scene,
+                    &rendered,
+                    role,
+                    rect,
+                    ButtonTextAlign::Leading,
+                    palette
+                        .color(color)
+                        .or_else(|| palette.color("primary-text"))
+                        .expect("DS text token"),
+                );
+                scene.pop_clip();
+            }
+            blocks.push(CollectionItemLayout {
+                id: index,
+                frame: rect,
+                visible: v,
+                depth: 0,
+            });
+            y += h + line_gap;
+        }
+        if own_clip.is_some() {
+            scene.pop_clip();
+        }
+        self.layout = DocumentLayout {
+            frame,
+            visible: own_clip,
+            blocks,
+            content_height: (y
+                - frame.min_y()
+                - if model.lines.is_empty() { 0. } else { line_gap })
+            .max(0.),
+        };
+        self.layout.clone()
+    }
+}
+
+/// Compatibility spelling for hosts that prefer the component name.
+pub type DiffViewPresenter = DiffViewRuntime;
+
+/// Read-only list/table/chart/document views do not own keyboard editing state.
+pub trait PassiveCollectionView {
+    fn cancel(&mut self);
+}
+impl PassiveCollectionView for MarkdownView {
+    fn cancel(&mut self) {}
+}
+impl PassiveCollectionView for CodeBlockView {
+    fn cancel(&mut self) {}
+}
+impl PassiveCollectionView for DiffViewRuntime {
+    fn cancel(&mut self) {}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tekes_ui_scene::{Primitive, Quad, Size};
+    use tekes_ui_tokens::{Rgba, Theme};
+    struct FixedText {
+        height: f32,
+    }
+
+    struct ScaledText(f32);
+
+    impl ButtonTextRenderer for ScaledText {
+        fn backing_scale(&self) -> f32 {
+            self.0
+        }
+
+        fn measure(&mut self, _text: &str, _role: proposal::TextRole, max_width: f32) -> Size {
+            Size::new(max_width.min(100.0), 14.0)
+        }
+
+        fn draw(
+            &mut self,
+            _scene: &mut Scene,
+            _text: &str,
+            _role: proposal::TextRole,
+            _rect: Rect,
+            _align: ButtonTextAlign,
+            _ink: Rgba,
+        ) {
+        }
+    }
+    impl ButtonTextRenderer for FixedText {
+        fn measure(&mut self, _text: &str, _role: proposal::TextRole, max_width: f32) -> Size {
+            Size::new(max_width.min(100.), self.height)
+        }
+        fn draw(
+            &mut self,
+            _scene: &mut Scene,
+            _text: &str,
+            _role: proposal::TextRole,
+            _rect: Rect,
+            _align: ButtonTextAlign,
+            _ink: Rgba,
+        ) {
+        }
+    }
+    #[derive(Default)]
+    struct RecordingText {
+        measured: Vec<(String, f32)>,
+        drawn: Vec<String>,
+        draw_rects: Vec<Rect>,
+        alignments: Vec<ButtonTextAlign>,
+        ink_origins: Vec<Point>,
+        ink_widths: Vec<f32>,
+    }
+    impl ButtonTextRenderer for RecordingText {
+        fn measure(&mut self, value: &str, _role: proposal::TextRole, max_width: f32) -> Size {
+            self.measured.push((value.to_owned(), max_width));
+            let height = if value.chars().count() > 12 { 72. } else { 14. };
+            Size::new(max_width.min(100.), height)
+        }
+        fn draw(
+            &mut self,
+            _scene: &mut Scene,
+            value: &str,
+            role: proposal::TextRole,
+            rect: Rect,
+            align: ButtonTextAlign,
+            _ink: Rgba,
+        ) {
+            // Mirror the Gallery text engine's `label_origin` contract so
+            // tests verify the requested ink origin as well as the slot.
+            let ink_width = self.measure(value, role, rect.size.width).width;
+            let ink_x = match align {
+                ButtonTextAlign::Leading => rect.min_x(),
+                ButtonTextAlign::Center => rect.center().x - ink_width * 0.5,
+            };
+            self.drawn.push(value.to_owned());
+            self.draw_rects.push(rect);
+            self.alignments.push(align);
+            self.ink_origins.push(Point::new(ink_x, rect.min_y()));
+            self.ink_widths.push(ink_width);
+        }
+    }
+    #[derive(Default)]
+    struct RecordingIcon(Vec<(String, Rect, Rgba)>);
+    impl IconRenderer for RecordingIcon {
+        fn draw_icon(&mut self, scene: &mut Scene, canonical_name: &str, frame: Rect, tint: Rgba) {
+            self.0.push((canonical_name.to_owned(), frame, tint));
+            scene.push_quad(Quad::new(frame, tint));
+        }
+    }
+    fn rect() -> Rect {
+        Rect::new(10., 20., 240., 180.)
+    }
+    #[test]
+    fn list_uses_owned_clip_geometry_and_clips_wide_text() {
+        let mut view = ListView::new();
+        let model = List::new(4);
+        let labels = (0..4).map(|i| format!("row {i}")).collect::<Vec<_>>();
+        let mut text = FixedText { height: 60. };
+        let mut scene = Scene::new();
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            &labels,
+            rect(),
+            Some(Rect::new(10., 20., 240., 30.)),
+            Theme::LIGHT.into(),
+        );
+        assert_eq!(layout.items.len(), 4);
+        assert!(layout.items[0].visible.is_some());
+        assert!(layout.items[1].visible.is_none());
+        assert!(layout.items[0].frame.size.height >= 60.);
+    }
+
+    #[test]
+    fn list_tree_and_table_keep_gallery_default_row_geometry() {
+        let mut scene = Scene::new();
+        let mut text = FixedText { height: 14. };
+
+        let mut list = ListView::new();
+        let list_model = List::new(2);
+        let list_layout = list.render(
+            &mut scene,
+            &mut text,
+            &list_model,
+            &["first".into(), "second".into()],
+            Rect::new(0., 0., 200., 100.),
+            None,
+            Theme::LIGHT.into(),
+        );
+        assert_eq!(list_layout.items[0].frame.size.height, 36.);
+        assert_eq!(list_layout.items[1].frame.min_y(), 40.);
+
+        let mut tree = Tree::default();
+        let root = tree.add("root", None).unwrap();
+        let child = tree.add("child", Some(root)).unwrap();
+        tree.toggle(root);
+        let mut tree_view = TreeView::new();
+        let tree_layout = tree_view.render(
+            &mut scene,
+            &mut text,
+            &tree,
+            Rect::new(0., 0., 200., 100.),
+            None,
+            Theme::LIGHT.into(),
+        );
+        assert_eq!(tree_layout.items[0].frame.size.height, 34.);
+        assert_eq!(tree_layout.items[1].frame.min_y(), 38.);
+        assert_eq!(
+            tree_layout.items[1].frame.min_x() - tree_layout.items[0].frame.min_x(),
+            20.
+        );
+        assert_eq!(tree_layout.items[1].id, child);
+
+        let table_model = DataTable::new(2, 1);
+        let mut table_view = DataTableView::new();
+        let table_layout = table_view.render(
+            &mut scene,
+            &mut text,
+            &table_model,
+            &["Name".into()],
+            &[vec!["first".into()], vec!["second".into()]],
+            &[0, 1],
+            Rect::new(0., 0., 200., 120.),
+            None,
+            Theme::LIGHT.into(),
+        );
+        assert_eq!(table_layout.headers[0].frame.size.height, 34.);
+        assert_eq!(table_layout.rows[0].frame.min_y(), 40.);
+        assert_eq!(table_layout.rows[0].frame.size.height, 34.);
+        assert_eq!(
+            table_layout.rows[1].frame.min_y() - table_layout.rows[0].frame.min_y(),
+            38.
+        );
+    }
+
+    #[test]
+    fn tree_uses_fixed_real_icon_slot_and_clips_branch_icons() {
+        let mut tree = Tree::default();
+        let root = tree.add("Workspace", None).unwrap();
+        let branch = tree.add("Documents", Some(root)).unwrap();
+        tree.add("Report", Some(branch)).unwrap();
+        let leaf = tree.add("Settings", None).unwrap();
+        tree.toggle(root);
+        let mut view = TreeView::new();
+        let mut scene = Scene::new();
+        let mut text = RecordingText::default();
+        let frame = Rect::new(20.0, 30.0, 360.0, 120.0);
+        let full_clip = frame;
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &tree,
+            frame,
+            Some(full_clip),
+            Theme::LIGHT.into(),
+        );
+        assert_eq!(
+            layout.items.iter().map(|row| row.id).collect::<Vec<_>>(),
+            [root, branch, leaf]
+        );
+        assert_eq!(text.drawn, ["Workspace", "Documents", "Settings"]);
+        assert_eq!(
+            text.ink_origins[0].x, text.ink_origins[2].x,
+            "branch and leaf at the same depth keep the same label origin"
+        );
+        assert_eq!(text.draw_rects[0].min_x(), text.draw_rects[2].min_x());
+
+        let mut icons = RecordingIcon::default();
+        view.render_icons(
+            &mut scene,
+            &mut icons,
+            Some(full_clip),
+            Theme::LIGHT.into(),
+            16.0,
+        );
+        assert_eq!(
+            icons
+                .0
+                .iter()
+                .map(|item| item.0.as_str())
+                .collect::<Vec<_>>(),
+            ["chevron-down", "chevron-right"]
+        );
+        assert!(
+            icons
+                .0
+                .iter()
+                .all(|(_, rect, _)| rect.size.width == 16.0 && rect.size.height == 16.0)
+        );
+        let expected_ink = Palette::from(Theme::LIGHT).color("primary-text").unwrap();
+        assert!(icons.0.iter().all(|(_, _, tint)| *tint == expected_ink));
+
+        view.set_disabled(true);
+        view.render(
+            &mut scene,
+            &mut text,
+            &tree,
+            frame,
+            Some(full_clip),
+            Theme::LIGHT.into(),
+        );
+        let mut disabled_icons = RecordingIcon::default();
+        view.render_icons(
+            &mut scene,
+            &mut disabled_icons,
+            Some(full_clip),
+            Theme::LIGHT.into(),
+            16.0,
+        );
+        let disabled_ink = Palette::from(Theme::LIGHT).color("tertiary-text").unwrap();
+        assert!(
+            disabled_icons
+                .0
+                .iter()
+                .all(|(_, _, tint)| *tint == disabled_ink)
+        );
+        view.set_disabled(false);
+
+        let clipped = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, 34.0);
+        view.render(
+            &mut scene,
+            &mut text,
+            &tree,
+            frame,
+            Some(clipped),
+            Theme::LIGHT.into(),
+        );
+        let mut clipped_icons = RecordingIcon::default();
+        view.render_icons(
+            &mut scene,
+            &mut clipped_icons,
+            Some(clipped),
+            Theme::LIGHT.into(),
+            16.0,
+        );
+        assert_eq!(
+            clipped_icons
+                .0
+                .iter()
+                .map(|item| item.0.as_str())
+                .collect::<Vec<_>>(),
+            ["chevron-down"]
+        );
+        assert!(clipped_icons.0[0].1.intersection(&clipped).is_some());
+
+        view.render(
+            &mut scene,
+            &mut text,
+            &tree,
+            Rect::new(frame.min_x(), frame.min_y(), 0.0, frame.size.height),
+            Some(full_clip),
+            Theme::LIGHT.into(),
+        );
+        let mut hidden_icons = RecordingIcon::default();
+        view.render_icons(
+            &mut scene,
+            &mut hidden_icons,
+            None,
+            Theme::LIGHT.into(),
+            16.0,
+        );
+        assert!(
+            hidden_icons.0.is_empty(),
+            "hidden render clears old icon slots"
+        );
+    }
+
+    #[test]
+    fn tree_icon_render_reuses_full_and_partial_row_clips() {
+        let mut tree = Tree::default();
+        let root = tree.add("Workspace", None).unwrap();
+        let branch = tree.add("Documents", Some(root)).unwrap();
+        tree.add("Report", Some(branch)).unwrap();
+        tree.toggle(root);
+        let mut view = TreeView::new();
+        let mut scene = Scene::new();
+        let mut text = FixedText { height: 14.0 };
+        let frame = Rect::new(0.0, 0.0, 300.0, 120.0);
+        view.render(
+            &mut scene,
+            &mut text,
+            &tree,
+            frame,
+            None,
+            Theme::LIGHT.into(),
+        );
+        scene.clear();
+        let mut visible_icons = RecordingIcon::default();
+        view.render_icons(
+            &mut scene,
+            &mut visible_icons,
+            None,
+            Theme::LIGHT.into(),
+            16.0,
+        );
+        assert_eq!(
+            visible_icons
+                .0
+                .iter()
+                .map(|icon| icon.0.as_str())
+                .collect::<Vec<_>>(),
+            ["chevron-down", "chevron-right"]
+        );
+
+        let full_clip = Rect::new(0.0, 0.0, frame.size.width, 34.0);
+        view.render(
+            &mut scene,
+            &mut text,
+            &tree,
+            frame,
+            Some(full_clip),
+            Theme::LIGHT.into(),
+        );
+        scene.clear();
+        let mut row_clipped_icons = RecordingIcon::default();
+        view.render_icons(
+            &mut scene,
+            &mut row_clipped_icons,
+            None,
+            Theme::LIGHT.into(),
+            16.0,
+        );
+        assert_eq!(
+            row_clipped_icons
+                .0
+                .iter()
+                .map(|icon| icon.0.as_str())
+                .collect::<Vec<_>>(),
+            ["chevron-down"]
+        );
+
+        let partial_clip = Rect::new(0.0, 42.0, frame.size.width, 10.0);
+        let partial_layout = view.render(
+            &mut scene,
+            &mut text,
+            &tree,
+            frame,
+            Some(partial_clip),
+            Theme::LIGHT.into(),
+        );
+        scene.clear();
+        let mut partial_icons = RecordingIcon::default();
+        view.render_icons(
+            &mut scene,
+            &mut partial_icons,
+            None,
+            Theme::LIGHT.into(),
+            16.0,
+        );
+        assert_eq!(
+            partial_icons
+                .0
+                .iter()
+                .map(|icon| icon.0.as_str())
+                .collect::<Vec<_>>(),
+            ["chevron-right"]
+        );
+        let clips = scene
+            .primitives()
+            .iter()
+            .filter_map(|primitive| {
+                if let Primitive::PushClip(rect) = primitive {
+                    Some(*rect)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        let icon_slot = Rect::new(
+            partial_layout.items[1].frame.min_x()
+                + proposal::metric("spacing", "space-relaxed").unwrap_or(12.0),
+            partial_layout.items[1].frame.min_y(),
+            proposal::metric("size", "size-icon-artboard").unwrap_or(24.0),
+            partial_layout.items[1].frame.size.height,
+        );
+        assert_eq!(
+            clips,
+            [icon_slot.intersection(&partial_clip).unwrap()],
+            "icon pass must retain the rendered row clip and remain inside its reserved slot"
+        );
+    }
+
+    #[test]
+    fn data_table_measures_final_sorted_header_label_before_positioning_rows() {
+        let mut model = DataTable::new(1, 2);
+        model.sort_by(0);
+        let headers = ["name field".to_owned(), "Kind".to_owned()];
+        let rows = vec![vec!["A".to_owned(), "Text".to_owned()]];
+        let mut view = DataTableView::new();
+        let mut text = RecordingText::default();
+        let mut scene = Scene::new();
+        let frame = Rect::new(10.0, 20.0, 400.0, 180.0);
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            &headers,
+            &rows,
+            &[0],
+            frame,
+            Some(frame),
+            Theme::LIGHT.into(),
+        );
+        assert!(
+            text.measured
+                .iter()
+                .any(|(label, _)| label == "name field  ↕")
+        );
+        assert_eq!(layout.headers[0].frame.size.height, 80.0);
+        assert_eq!(layout.rows[0].frame.min_y(), frame.min_y() + 86.0);
+        assert_eq!(layout.content_height, 120.0);
+    }
+
+    #[test]
+    fn list_down_and_up_without_render_keeps_capture_and_updates_model() {
+        let mut view = ListView::new();
+        let mut model = List::new(2);
+        let labels = vec!["a".into(), "b".into()];
+        let mut text = FixedText { height: 14. };
+        let mut scene = Scene::new();
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            &labels,
+            rect(),
+            None,
+            Theme::LIGHT.into(),
+        );
+        let point = Point::new(20., view.layout.items[1].frame.min_y() + 2.);
+        assert_eq!(
+            view.pointer_down(point, &mut model),
+            CollectionEvent::Changed
+        );
+        assert_eq!(view.pointer_up(point, &mut model), CollectionEvent::Handled);
+        assert_eq!(model.selected, Some(1));
+    }
+    #[test]
+    fn tree_expansion_rebuild_changes_visible_row_ids_not_node_identity() {
+        let mut tree = Tree::default();
+        let root = tree.add("root", None).unwrap();
+        let child = tree.add("child", Some(root)).unwrap();
+        let mut view = TreeView::new();
+        let mut text = FixedText { height: 14. };
+        let mut scene = Scene::new();
+        view.render(
+            &mut scene,
+            &mut text,
+            &tree,
+            rect(),
+            None,
+            Theme::LIGHT.into(),
+        );
+        assert_eq!(
+            view.layout.items.iter().map(|i| i.id).collect::<Vec<_>>(),
+            vec![root]
+        );
+        tree.toggle(root);
+        view.render(
+            &mut scene,
+            &mut text,
+            &tree,
+            rect(),
+            None,
+            Theme::LIGHT.into(),
+        );
+        assert_eq!(
+            view.layout.items.iter().map(|i| i.id).collect::<Vec<_>>(),
+            vec![root, child]
+        );
+        assert_eq!(view.layout.items[1].depth, 1);
+    }
+    #[test]
+    fn data_table_sorted_layout_routes_to_stable_source_row() {
+        let mut table = DataTable::new(2, 1);
+        let rows = vec![vec!["z".into()], vec!["a".into()]];
+        let mut view = DataTableView::new();
+        let mut text = FixedText { height: 14. };
+        let mut scene = Scene::new();
+        view.render(
+            &mut scene,
+            &mut text,
+            &table,
+            &["Name".into()],
+            &rows,
+            &[1, 0],
+            rect(),
+            None,
+            Theme::LIGHT.into(),
+        );
+        let point = Point::new(20., view.layout.rows[0].frame.min_y() + 2.);
+        assert_eq!(
+            view.pointer_down(point, &mut table),
+            CollectionEvent::Changed
+        );
+        assert_eq!(table.selected_row, Some(1));
+    }
+    #[test]
+    fn window_deactivation_cancels_captured_list_row() {
+        let mut view = ListView::new();
+        let mut model = List::new(1);
+        let mut text = FixedText { height: 14. };
+        let mut scene = Scene::new();
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            &["a".into()],
+            rect(),
+            None,
+            Theme::LIGHT.into(),
+        );
+        let point = Point::new(20., 25.);
+        view.pointer_down(point, &mut model);
+        view.set_window_active(false);
+        assert_eq!(view.pointer_up(point, &mut model), CollectionEvent::Ignored);
+    }
+
+    #[test]
+    fn table_skips_clipped_rows_and_disabled_table_cannot_sort() {
+        let mut model = DataTable::new(2, 1);
+        let rows = vec![vec!["first".into()], vec!["second".into()]];
+        let mut view = DataTableView::new();
+        let mut text = FixedText { height: 56. };
+        let mut scene = Scene::new();
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            &["Name".into()],
+            &rows,
+            &[0, 1],
+            rect(),
+            Some(Rect::new(10., 20., 90., 32.)),
+            Theme::LIGHT.into(),
+        );
+        assert!(layout.rows.iter().all(|row| row.visible.is_none()));
+        view.set_disabled(true);
+        assert_eq!(
+            view.pointer_down(Point::new(20., 25.), &mut model),
+            CollectionEvent::Ignored
+        );
+        assert_eq!(model.sort, None);
+    }
+
+    #[test]
+    fn chart_routes_only_visible_real_bar_geometry() {
+        let mut model = BarChart::new(vec![
+            crate::ChartDatum::new("visible", 3.),
+            crate::ChartDatum::new("clipped", 7.),
+        ]);
+        let mut view = ChartView::new();
+        let mut text = FixedText { height: 12. };
+        let mut scene = Scene::new();
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &mut model,
+            Rect::new(0., 0., 300., 140.),
+            Some(Rect::new(0., 0., 60., 140.)),
+            Theme::LIGHT.into(),
+            1.,
+        );
+        assert!(layout.visible.is_some());
+        assert!(
+            layout
+                .geometry
+                .bars
+                .iter()
+                .all(|bar| bar.rect.min_x() >= 0.)
+        );
+        assert!(!view.pointer_move(Point::new(280., 80.), &mut model));
+    }
+
+    #[test]
+    fn markdown_and_code_layout_expand_to_host_measure_and_clip() {
+        let markdown = Markdown::parse("# Heading\n\nA long paragraph");
+        let mut view = MarkdownView::new();
+        let mut text = FixedText { height: 64. };
+        let mut scene = Scene::new();
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &markdown,
+            rect(),
+            Some(Rect::new(10., 20., 240., 40.)),
+            Theme::LIGHT.into(),
+            1.,
+        );
+        assert!(layout.blocks[0].frame.size.height >= 64.);
+        assert!(layout.blocks[0].visible.is_some());
+        assert!(layout.blocks[1].visible.is_none());
+
+        let mut code_view = CodeBlockView::new();
+        let code_layout = code_view.render(
+            &mut scene,
+            &mut text,
+            &CodeBlock {
+                language: "rs".into(),
+                source: "line one\nline two".into(),
+            },
+            Rect::new(0., 0., 80., 30.),
+            None,
+            Theme::LIGHT.into(),
+            1.5,
+        );
+        assert!(code_layout.content_height > 30.);
+        assert_eq!(
+            code_layout
+                .blocks
+                .iter()
+                .filter(|line| line.visible.is_some())
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn diff_presentation_keeps_stable_line_ids_when_clipped() {
+        let diff = DiffView::between("same\nold", "same\nnew");
+        let mut view = DiffViewRuntime::new();
+        let mut text = FixedText { height: 14. };
+        let mut scene = Scene::new();
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &diff,
+            Rect::new(0., 0., 200., 100.),
+            Some(Rect::new(0., 0., 200., 31.)),
+            Theme::LIGHT.into(),
+            1.,
+        );
+        assert_eq!(
+            layout.blocks.iter().map(|line| line.id).collect::<Vec<_>>(),
+            vec![0, 1, 2]
+        );
+        assert_eq!(
+            layout
+                .blocks
+                .iter()
+                .filter(|line| line.visible.is_some())
+                .count(),
+            2
+        );
+    }
+
+    #[test]
+    fn data_table_header_keyboard_focus_routes_to_sorting() {
+        let mut model = DataTable::new(0, 2);
+        let mut view = DataTableView::new();
+        view.focus_header(0, true);
+        assert_eq!(
+            view.key(ControlKey::Right, true, &mut model),
+            CollectionEvent::Changed
+        );
+        assert_eq!(
+            view.key(ControlKey::Enter, true, &mut model),
+            CollectionEvent::Changed
+        );
+        assert_eq!(
+            model.sort,
+            Some((1, crate::extended::SortDirection::Ascending))
+        );
+    }
+
+    #[test]
+    fn sorted_data_table_keys_follow_visual_order_without_intermediate_render() {
+        let mut model = DataTable::new(5, 1);
+        let mut view = DataTableView::new();
+        let mut text = FixedText { height: 14. };
+        let mut scene = Scene::new();
+        let rows = (0..5)
+            .map(|index| vec![index.to_string()])
+            .collect::<Vec<_>>();
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            &["Name".into()],
+            &rows,
+            &[3, 2, 1, 0, 4],
+            Rect::new(0., 0., 300., 260.),
+            None,
+            Theme::LIGHT.into(),
+        );
+        model.select_row(3);
+        view.focus_row(3, true);
+
+        for (key, expected) in [
+            (ControlKey::Down, 2),
+            (ControlKey::Down, 1),
+            (ControlKey::Up, 2),
+            (ControlKey::Home, 3),
+            (ControlKey::End, 4),
+        ] {
+            assert_eq!(
+                view.key(key, true, &mut model),
+                CollectionEvent::Changed,
+                "{key:?} should move to source row {expected} in visual order"
+            );
+            assert_eq!(model.selected_row, Some(expected));
+            assert_eq!(view.state.focused, Some(expected));
+        }
+    }
+
+    #[test]
+    fn sorted_data_table_keys_skip_rows_outside_the_visible_clip() {
+        let mut model = DataTable::new(5, 1);
+        let mut view = DataTableView::new();
+        let mut text = FixedText { height: 14. };
+        let mut scene = Scene::new();
+        let rows = (0..5)
+            .map(|index| vec![index.to_string()])
+            .collect::<Vec<_>>();
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            &["Name".into()],
+            &rows,
+            &[3, 2, 1, 0, 4],
+            Rect::new(0., 0., 300., 260.),
+            Some(Rect::new(0., 40., 300., 34.)),
+            Theme::LIGHT.into(),
+        );
+        model.select_row(3);
+        view.focus_row(3, true);
+        assert_eq!(
+            view.key(ControlKey::Down, true, &mut model),
+            CollectionEvent::Handled
+        );
+        assert_eq!(model.selected_row, Some(3));
+        assert_eq!(view.state.focused, Some(3));
+    }
+
+    #[test]
+    fn list_hidden_or_disabled_state_does_not_keep_old_capture_or_hover() {
+        let mut view = ListView::new();
+        let mut model = List::new(1);
+        let mut text = FixedText { height: 14. };
+        let mut scene = Scene::new();
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            &["row".into()],
+            rect(),
+            None,
+            Theme::LIGHT.into(),
+        );
+        let point = Point::new(20., 25.);
+        view.pointer_down(point, &mut model);
+        view.pointer_move(point);
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            &["row".into()],
+            Rect::new(0., 0., 0., 0.),
+            None,
+            Theme::LIGHT.into(),
+        );
+        assert_eq!(view.pointer_up(point, &mut model), CollectionEvent::Ignored);
+        assert!(!view.pointer_move(point));
+
+        view.set_disabled(true);
+        assert!(!view.pointer_move(point));
+    }
+
+    #[test]
+    fn tree_and_table_hidden_or_disabled_views_cancel_old_press() {
+        let mut tree = Tree::default();
+        tree.add("root", None).unwrap();
+        let mut tree_view = TreeView::new();
+        let mut text = FixedText { height: 14. };
+        let mut scene = Scene::new();
+        tree_view.render(
+            &mut scene,
+            &mut text,
+            &tree,
+            rect(),
+            None,
+            Theme::LIGHT.into(),
+        );
+        let tree_point = Point::new(20., 25.);
+        assert_eq!(
+            tree_view.pointer_down(tree_point, &mut tree),
+            CollectionEvent::Changed
+        );
+        tree_view.set_disabled(true);
+        assert_eq!(
+            tree_view.pointer_up(tree_point, &mut tree),
+            CollectionEvent::Ignored
+        );
+
+        let mut table = DataTable::new(1, 1);
+        let mut table_view = DataTableView::new();
+        table_view.render(
+            &mut scene,
+            &mut text,
+            &table,
+            &["Name".into()],
+            &[vec!["row".into()]],
+            &[0],
+            rect(),
+            None,
+            Theme::LIGHT.into(),
+        );
+        let row_point = Point::new(20., 62.);
+        assert_eq!(
+            table_view.pointer_down(row_point, &mut table),
+            CollectionEvent::Changed
+        );
+        table_view.render(
+            &mut scene,
+            &mut text,
+            &table,
+            &["Name".into()],
+            &[vec!["row".into()]],
+            &[0],
+            Rect::new(0., 0., 0., 0.),
+            None,
+            Theme::LIGHT.into(),
+        );
+        assert_eq!(
+            table_view.pointer_up(row_point, &mut table),
+            CollectionEvent::Ignored
+        );
+    }
+
+    #[test]
+    fn markdown_measures_bullet_prefix_and_diff_measures_wrapped_prefixed_lines() {
+        let mut markdown = Markdown::default();
+        markdown.blocks.push(MarkdownBlock::Bullet("item".into()));
+        let mut markdown_view = MarkdownView::new();
+        let mut text = RecordingText::default();
+        let mut scene = Scene::new();
+        markdown_view.render(
+            &mut scene,
+            &mut text,
+            &markdown,
+            Rect::new(0., 0., 80., 120.),
+            None,
+            Theme::LIGHT.into(),
+            1.,
+        );
+        assert!(text.measured.iter().any(|(value, _)| value == "• item"));
+        assert_eq!(text.drawn, ["• item"]);
+        assert_eq!(markdown_view.layout.blocks[0].frame.min_y(), 4.);
+        assert_eq!(markdown_view.layout.blocks[0].frame.min_x(), 0.);
+        assert_eq!(markdown_view.layout.blocks[0].frame.size.height, 24.);
+        assert_eq!(
+            text.draw_rects[0].min_y(),
+            markdown_view.layout.blocks[0].frame.min_y()
+        );
+        assert_eq!(text.draw_rects[0].size.height, 14.);
+
+        markdown
+            .blocks
+            .push(MarkdownBlock::Paragraph("next".into()));
+        markdown_view.render(
+            &mut scene,
+            &mut text,
+            &markdown,
+            Rect::new(0., 0., 80., 120.),
+            None,
+            Theme::LIGHT.into(),
+            1.,
+        );
+        assert_eq!(markdown_view.layout.blocks[1].frame.min_y(), 40.);
+
+        let diff = DiffView {
+            lines: vec![crate::extended::DiffLine {
+                kind: DiffKind::Added,
+                text: "a sufficiently long line".into(),
+            }],
+        };
+        let mut diff_view = DiffViewRuntime::new();
+        let mut text = RecordingText::default();
+        let diff_layout = diff_view.render(
+            &mut scene,
+            &mut text,
+            &diff,
+            Rect::new(0., 0., 80., 120.),
+            None,
+            Theme::LIGHT.into(),
+            1.,
+        );
+        assert!(
+            text.measured
+                .iter()
+                .any(|(value, width)| { value == "+ a sufficiently long line" && *width == 80. })
+        );
+        assert_eq!(text.drawn, ["+ a sufficiently long line"]);
+        assert!(diff_layout.blocks[0].frame.size.height >= 72.);
+        assert_eq!(diff_layout.blocks[0].frame.min_x(), 8.);
+        assert_eq!(diff_layout.blocks[0].frame.size.width, 80.);
+    }
+
+    #[test]
+    fn code_diff_and_chart_keep_gallery_text_insets_and_alignment() {
+        let mut scene = Scene::new();
+        let mut text = RecordingText::default();
+        let mut code_view = CodeBlockView::new();
+        let code = CodeBlock {
+            language: "rs".into(),
+            source: "let value = 1;".into(),
+        };
+        code_view.render(
+            &mut scene,
+            &mut text,
+            &code,
+            Rect::new(0., 0., 680., 100.),
+            None,
+            Theme::LIGHT.into(),
+            1.,
+        );
+        assert_eq!(text.draw_rects[0].min_x(), 14.);
+        assert_eq!(text.draw_rects[0].min_y(), 14.);
+        assert_eq!(text.draw_rects[0].size.width, 650.);
+
+        let mut diff_view = DiffViewRuntime::new();
+        let diff = DiffView::between("same", "same");
+        diff_view.render(
+            &mut scene,
+            &mut text,
+            &diff,
+            Rect::new(0., 0., 800., 100.),
+            None,
+            Theme::LIGHT.into(),
+            1.,
+        );
+        assert_eq!(text.draw_rects[1].min_x(), 8.);
+        assert_eq!(text.draw_rects[1].size.width, 700.);
+        assert_eq!(text.draw_rects[1].size.height, 28.);
+        assert_eq!(diff_view.layout.blocks[0].frame.size.height, 28.);
+
+        for (scale, label, value) in [(1., "A", 4.), (2., "Long release label", 123456.)] {
+            let mut chart_view = ChartView::new();
+            let mut chart = BarChart::new(vec![crate::chart::ChartDatum::new(label, value)]);
+            let mut chart_text = RecordingText::default();
+            let chart_layout = chart_view.render(
+                &mut scene,
+                &mut chart_text,
+                &mut chart,
+                Rect::new(0., 0., 320., 220.),
+                None,
+                Theme::LIGHT.into(),
+                scale,
+            );
+            let bar = &chart_layout.geometry.bars[0];
+            assert_eq!(chart_text.alignments, [ButtonTextAlign::Center; 2]);
+            assert_eq!(chart_text.draw_rects[0], bar.value_label);
+            assert_eq!(chart_text.draw_rects[1], bar.category_label);
+            for slot in [bar.value_label, bar.category_label] {
+                assert!(slot.min_y() >= chart_layout.geometry.bounds.min_y());
+                assert!(slot.max_y() <= chart_layout.geometry.bounds.max_y());
+            }
+            assert!(chart_layout.geometry.plot.min_y() > chart_layout.geometry.bounds.min_y());
+            for ((origin, ink_width), slot) in chart_text
+                .ink_origins
+                .iter()
+                .zip(&chart_text.ink_widths)
+                .zip([bar.value_label, bar.category_label])
+            {
+                assert!((origin.x + ink_width * 0.5 - slot.center().x).abs() < 0.001);
+            }
+        }
+    }
+
+    #[test]
+    fn code_block_surface_uses_code_role_and_text_backend_backing_scale() {
+        for theme in Theme::ALL {
+            for backing_scale in [1.0, 2.0] {
+                let palette = Palette::from(theme);
+                let frame = Rect::new(14.0, 18.0, 220.0, 80.0);
+                let mut text = ScaledText(backing_scale);
+                let mut view = CodeBlockView::new();
+                let mut scene = Scene::new();
+                let layout = view.render(
+                    &mut scene,
+                    &mut text,
+                    &CodeBlock {
+                        language: "rs".into(),
+                        source: "let value = 1;".into(),
+                    },
+                    frame,
+                    Some(Rect::new(0.0, 0.0, 400.0, 200.0)),
+                    palette,
+                    1.5,
+                );
+                assert_eq!(layout.frame, frame);
+                let code_quad = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|primitive| match primitive {
+                        Primitive::Quad(q) if q.rect == frame => Some(q),
+                        _ => None,
+                    })
+                    .expect("code block surface quad");
+                assert_eq!(code_quad.fill, palette.color("code-surface").unwrap());
+                assert_eq!(
+                    code_quad.corner_radii,
+                    tekes_ui_scene::CornerRadii::uniform(
+                        proposal::metric("radius", "c-code-radius").unwrap()
+                    )
+                );
+                assert_eq!(
+                    code_quad.border_width,
+                    crate::paint::decorative_border(palette, backing_scale).0
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn code_block_background_uses_parent_clip_and_text_keeps_frame_clip() {
+        let frame = Rect::new(14., 18., 220., 80.);
+        for ancestor in [
+            Rect::new(-20., -20., 400., 240.),
+            Rect::new(60., 30., 140., 50.),
+        ] {
+            let mut text = ScaledText(2.0);
+            let mut view = CodeBlockView::new();
+            let mut scene = Scene::new();
+            let layout = view.render(
+                &mut scene,
+                &mut text,
+                &CodeBlock {
+                    language: "rs".into(),
+                    source: "let value = 1;".into(),
+                },
+                frame,
+                Some(ancestor),
+                Theme::LIGHT.into(),
+                1.0,
+            );
+            let visible = frame.intersection(&ancestor).expect("visible code block");
+            assert_eq!(layout.visible, Some(visible));
+            let primitives = scene.primitives();
+            assert!(matches!(primitives.first(), Some(Primitive::PushClip(r)) if *r == ancestor));
+            assert!(matches!(primitives.get(1), Some(Primitive::Quad(q)) if q.rect == frame));
+            assert!(matches!(primitives.get(2), Some(Primitive::PopClip)));
+            assert!(matches!(primitives.get(3), Some(Primitive::PushClip(r)) if *r == visible));
+        }
+    }
+
+    #[test]
+    fn malformed_and_empty_code_block_bounds_emit_no_surface_or_text() {
+        let model = CodeBlock {
+            language: "rs".into(),
+            source: "line".into(),
+        };
+        let mut view = CodeBlockView::new();
+        let mut text = RecordingText::default();
+        let mut scene = Scene::new();
+        for frame in [
+            Rect::new(0., 0., 0., 40.),
+            Rect::new(f32::NAN, 0., 40., 40.),
+            Rect::new(f32::MAX, 0., f32::MAX, 40.),
+        ] {
+            scene.clear();
+            text.drawn.clear();
+            view.render(
+                &mut scene,
+                &mut text,
+                &model,
+                frame,
+                None,
+                Theme::LIGHT.into(),
+                1.,
+            );
+            assert!(scene.is_empty());
+            assert!(text.drawn.is_empty());
+        }
+    }
+}

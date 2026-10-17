@@ -1,0 +1,16 @@
+{
+  "packaged_build_restarted": true,
+  "app": "target/TekesUI Gallery.app",
+  "bundle_id": "com.tekesui.gallery.dev",
+  "final_page": "Disclosure",
+  "observed": [
+    "Button pointer action logged activation; subsequent Tab showed full Docs ring including left edge",
+    "Menu opened with soft external shadow; Down moved focus to Duplicate document and showed complete ring",
+    "Dialog showed soft shadow and centered Cancel/Confirm labels; Tab focused Confirm; Escape restored visible ring to Open dialog and logged focus restoration",
+    "Switch pointer toggled checked, then Space toggled back; label and thumb stayed aligned",
+    "Disclosure pointer expanded clipped body and Space collapsed it; event log recorded true/false"
+  ],
+  "screenshot_files_saved": false,
+  "scope": "Qualitative native window observations through CUA; intermediate animation pixels separately verified by actual GPU tests. Not a physical-display matrix, IME or screen-reader acceptance.",
+  "performance_measured": false
+}

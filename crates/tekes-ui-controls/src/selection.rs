@@ -1,0 +1,1574 @@
+//! Retained interaction and presentation runtimes for the existing selection controls.
+//!
+//! Gallery and consumers provide text shaping and the semantic model. These
+//! runtimes own normalized/clipped geometry, paint, pointer capture, focus, and
+//! keyboard activation without changing the model structs or their literals.
+use crate::control_motion::{ProgressTransition, motion_for};
+use crate::{
+    ButtonTextAlign, ButtonTextRenderer, ControlKey, ControlMotionContext, ControlState,
+    extended::{
+        ControlFrame, RadioGroup, Slider, Switch, radio_with_state, slider, switch_with_state,
+        switch_with_state_and_thumb_progress,
+    },
+};
+use std::time::Duration;
+use tekes_ui_scene::{Point, Rect, Scene};
+use tekes_ui_tokens::{Palette, proposal};
+
+fn invalid_rect(rect: Rect) -> bool {
+    !rect.origin.x.is_finite() || !rect.origin.y.is_finite()
+}
+fn invalid_clip(clip: Option<Rect>) -> bool {
+    clip.is_some_and(invalid_rect)
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct SliderLayout {
+    pub frame: Rect,
+    pub visible: Option<Rect>,
+    pub track: Rect,
+    pub thumb: Rect,
+}
+
+#[derive(Clone, Debug)]
+pub struct SliderView {
+    layout: SliderLayout,
+    hovered: bool,
+    focused: bool,
+    focus_visible: bool,
+    captured: bool,
+    window_active: bool,
+}
+impl SliderView {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        model: Slider,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+    ) -> SliderLayout {
+        if invalid_rect(frame) || invalid_clip(clip) {
+            self.layout = SliderLayout::default();
+            self.cancel();
+            return self.layout;
+        }
+        if model.disabled {
+            self.blur();
+        }
+        let component = model.layout(frame, clip);
+        let normalized = component.frame();
+        let visible = component.visible_frame();
+        if visible.is_some() {
+            // Focus rings extend beyond the thumb. Clip to the ancestor's
+            // viewport while keeping pointer hit testing on `visible`.
+            if let Some(clip) = clip {
+                scene.push_clip(clip);
+            }
+        }
+        let geom = if visible.is_some() {
+            slider(
+                scene,
+                normalized,
+                palette,
+                model,
+                ControlState {
+                    hovered: self.hovered,
+                    pressed: self.captured,
+                    focused: self.focused && self.window_active,
+                    focus_visible: self.focus_visible,
+                    disabled: model.disabled,
+                    ..Default::default()
+                },
+            )
+        } else {
+            crate::extended::SliderGeometry {
+                track: Rect::default(),
+                thumb: Rect::default(),
+                thumb_center_x: 0.,
+            }
+        };
+        if visible.is_some() && clip.is_some() {
+            scene.pop_clip();
+        }
+        self.layout = SliderLayout {
+            frame: normalized,
+            visible,
+            track: geom.track,
+            thumb: geom.thumb,
+        };
+        if self.layout.visible.is_none() || model.disabled {
+            self.cancel();
+        }
+        self.layout
+    }
+    pub fn focus(&mut self, focus_visible: bool) {
+        self.focused = true;
+        self.focus_visible = focus_visible;
+    }
+    pub fn blur(&mut self) {
+        self.focused = false;
+        self.focus_visible = false;
+        self.cancel();
+    }
+    pub fn set_window_active(&mut self, active: bool) {
+        self.window_active = active;
+        if !active {
+            self.blur();
+        }
+    }
+    pub fn pointer_move(&mut self, point: Point, model: &mut Slider) -> bool {
+        let hovered = self.layout.visible.is_some_and(|r| r.contains(point));
+        let mut changed = std::mem::replace(&mut self.hovered, hovered) != hovered;
+        if self.captured && (!self.window_active || model.disabled) {
+            self.cancel();
+        }
+        if self.captured && self.window_active && !model.disabled {
+            changed |= model.drag(point.x, self.layout.track);
+        }
+        changed
+    }
+    pub fn pointer_down(&mut self, point: Point, model: &mut Slider) -> bool {
+        if !self.window_active
+            || model.disabled
+            || !self.layout.visible.is_some_and(|r| r.contains(point))
+        {
+            return false;
+        }
+        self.captured = true;
+        self.focused = true;
+        self.focus_visible = false;
+        model.drag(point.x, self.layout.track);
+        true
+    }
+    pub fn pointer_up(&mut self, _point: Point, model: &Slider) -> bool {
+        let captured = std::mem::replace(&mut self.captured, false);
+        captured && self.window_active && !model.disabled
+    }
+    pub fn key(&mut self, key: ControlKey, down: bool, model: &mut Slider) -> bool {
+        if !self.focused || !self.window_active {
+            return false;
+        }
+        if !down {
+            return matches!(
+                key,
+                ControlKey::Left
+                    | ControlKey::Right
+                    | ControlKey::Up
+                    | ControlKey::Down
+                    | ControlKey::Home
+                    | ControlKey::End
+            );
+        }
+        if matches!(
+            key,
+            ControlKey::Left
+                | ControlKey::Right
+                | ControlKey::Up
+                | ControlKey::Down
+                | ControlKey::Home
+                | ControlKey::End
+        ) {
+            self.focus_visible = true;
+            model.key(key)
+        } else {
+            false
+        }
+    }
+    pub fn cancel(&mut self) -> bool {
+        std::mem::replace(&mut self.captured, false)
+    }
+    pub fn layout(&self) -> SliderLayout {
+        self.layout
+    }
+    pub fn is_focused(&self) -> bool {
+        self.focused
+    }
+    pub fn is_captured(&self) -> bool {
+        self.captured
+    }
+}
+
+impl Default for SliderView {
+    fn default() -> Self {
+        Self {
+            layout: SliderLayout::default(),
+            hovered: false,
+            focused: false,
+            focus_visible: false,
+            captured: false,
+            window_active: true,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct RadioGroupLayout {
+    pub frame: Rect,
+    pub rows: Vec<ControlFrame>,
+    pub indicators: Vec<Rect>,
+    pub labels: Vec<Rect>,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum SelectionEvent {
+    #[default]
+    Ignored,
+    Handled,
+    Changed,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct SwitchLayout {
+    pub frame: Rect,
+    pub visible: Option<Rect>,
+    pub toggle: ControlFrame,
+    pub label: Rect,
+}
+
+#[derive(Clone, Debug)]
+pub struct RadioGroupView {
+    layout: RadioGroupLayout,
+    focused: Option<usize>,
+    focus_visible: bool,
+    hovered: Option<usize>,
+    pressed: Option<usize>,
+    window_active: bool,
+    disabled: bool,
+}
+impl RadioGroupView {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &RadioGroup,
+        bounds: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        labels: &[&str],
+    ) -> RadioGroupLayout {
+        if invalid_rect(bounds) || invalid_clip(clip) {
+            self.layout = RadioGroupLayout::default();
+            self.cancel();
+            return self.layout.clone();
+        }
+        let normalized = ControlFrame::new(bounds, clip).frame();
+        let minimum = proposal::metric("size", "size-comfortable-row")
+            .expect("design system comfortable row");
+        let row_gap = 6.0;
+        let label_width = (normalized.size.width - 40.).max(0.);
+        let labels_metrics: Vec<_> = (0..model.len())
+            .map(|index| {
+                let label = labels.get(index).copied().unwrap_or("");
+                let measured = text
+                    .measure(label, proposal::TextRole::UiBody, label_width)
+                    .height;
+                let first_line =
+                    text.first_line_height(label, proposal::TextRole::UiBody, label_width);
+                let measured = measured.max(first_line).max(0.0);
+                (minimum.max(measured + 8.), measured, first_line.max(0.0))
+            })
+            .collect();
+        let mut total = 0.;
+        let rows: Vec<_> = labels_metrics
+            .iter()
+            .map(|(height, _, _)| *height)
+            .scan(normalized.min_y(), |y, height| {
+                let row = ControlFrame::new(
+                    Rect::new(normalized.min_x(), *y, normalized.size.width, height),
+                    clip,
+                );
+                total += height;
+                *y += height + row_gap;
+                Some(row)
+            })
+            .collect();
+        let frame = Rect::new(
+            normalized.min_x(),
+            normalized.min_y(),
+            normalized.size.width,
+            total + row_gap * rows.len().saturating_sub(1) as f32,
+        );
+        if self
+            .focused
+            .is_some_and(|i| i >= model.len() || !model.is_enabled(i))
+        {
+            self.focused = model
+                .selected
+                .filter(|i| model.is_enabled(*i))
+                .or_else(|| (0..model.len()).find(|i| model.is_enabled(*i)));
+        }
+        let mut indicators = Vec::with_capacity(rows.len());
+        let mut label_slots = Vec::with_capacity(rows.len());
+        for (index, row) in rows.iter().enumerate() {
+            let r = row.frame();
+            let (_, measured, first_line) = labels_metrics[index];
+            // Text is vertically centered as a paragraph in its row. Align
+            // the control to the first line box, not the paragraph midpoint.
+            let first_line_center = r.min_y() + (r.size.height - measured) * 0.5 + first_line * 0.5;
+            let indicator = Rect::new(r.min_x() + 8., first_line_center - 9., 18., 18.);
+            let label = Rect::new(
+                r.min_x() + 36.,
+                r.min_y(),
+                (r.size.width - 40.).max(0.),
+                r.size.height,
+            );
+            if row.visible_frame().is_some() {
+                if let Some(clip) = clip {
+                    scene.push_clip(clip);
+                }
+                let focused = self.focused == Some(index) && self.window_active && !self.disabled;
+                radio_with_state(
+                    scene,
+                    indicator,
+                    palette,
+                    ControlState {
+                        selected: model.selected == Some(index),
+                        disabled: self.disabled || !model.is_enabled(index),
+                        hovered: self.hovered == Some(index),
+                        pressed: self.pressed == Some(index),
+                        focused,
+                        focus_visible: focused && self.focus_visible,
+                        ..Default::default()
+                    },
+                );
+                let label_visible = ControlFrame::new(label, row.visible_frame()).visible_frame();
+                if let Some(label_clip) = label_visible {
+                    scene.push_clip(label_clip);
+                    text.draw(
+                        scene,
+                        labels.get(index).copied().unwrap_or(""),
+                        proposal::TextRole::UiBody,
+                        label,
+                        ButtonTextAlign::Leading,
+                        palette
+                            .color("primary-text")
+                            .expect("Design System primary text"),
+                    );
+                    scene.pop_clip();
+                }
+                if clip.is_some() {
+                    scene.pop_clip();
+                }
+            }
+            indicators.push(indicator);
+            label_slots.push(label);
+        }
+        let all_hidden = rows.iter().all(|row| row.visible_frame().is_none());
+        self.layout = RadioGroupLayout {
+            frame,
+            rows,
+            indicators,
+            labels: label_slots,
+        };
+        if self.disabled {
+            self.cancel();
+        }
+        if all_hidden
+            || self
+                .pressed
+                .is_some_and(|index| rows_visibility_for(&self.layout, index).is_none())
+        {
+            self.cancel();
+        }
+        self.layout.clone()
+    }
+    pub fn focus(&mut self, model: &RadioGroup, index: Option<usize>, focus_visible: bool) {
+        let next = index
+            .filter(|i| *i < model.len() && model.is_enabled(*i))
+            .or(model.selected.filter(|i| model.is_enabled(*i)))
+            .or_else(|| (0..model.len()).find(|i| model.is_enabled(*i)));
+        if self.focused != next {
+            self.cancel();
+        }
+        self.focused = next;
+        self.focus_visible = self.focused.is_some() && focus_visible;
+    }
+    pub fn blur(&mut self) {
+        self.focused = None;
+        self.focus_visible = false;
+        self.cancel();
+    }
+    pub fn set_window_active(&mut self, active: bool) {
+        self.window_active = active;
+        if !active {
+            self.blur();
+        }
+    }
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+        if disabled {
+            self.cancel();
+            self.focus_visible = false;
+            self.focused = None;
+        }
+    }
+    pub fn pointer_move(&mut self, point: Point) -> bool {
+        let next = self.layout.rows.iter().position(|row| row.contains(point));
+        let changed = self.hovered != next;
+        self.hovered = next;
+        changed
+    }
+    pub fn pointer_down(&mut self, point: Point, model: &RadioGroup) -> SelectionEvent {
+        if !self.window_active {
+            return SelectionEvent::Ignored;
+        }
+        let Some(index) = self.layout.rows.iter().position(|row| row.contains(point)) else {
+            return SelectionEvent::Ignored;
+        };
+        if self.disabled || !model.is_enabled(index) {
+            return SelectionEvent::Handled;
+        }
+        self.pressed = Some(index);
+        self.focused = Some(index);
+        self.focus_visible = false;
+        SelectionEvent::Handled
+    }
+    pub fn pointer_up(&mut self, point: Point, model: &mut RadioGroup) -> SelectionEvent {
+        let Some(index) = self.pressed.take() else {
+            return SelectionEvent::Ignored;
+        };
+        if self.disabled || !self.window_active {
+            return SelectionEvent::Handled;
+        }
+        if self
+            .layout
+            .rows
+            .get(index)
+            .is_some_and(|row| row.contains(point))
+        {
+            if model.select(index) {
+                SelectionEvent::Changed
+            } else {
+                SelectionEvent::Handled
+            }
+        } else {
+            SelectionEvent::Handled
+        }
+    }
+    pub fn key(&mut self, key: ControlKey, down: bool, model: &mut RadioGroup) -> SelectionEvent {
+        if !self.window_active || self.focused.is_none() {
+            return SelectionEvent::Ignored;
+        }
+        if self.disabled {
+            return if matches!(
+                key,
+                ControlKey::Left
+                    | ControlKey::Right
+                    | ControlKey::Up
+                    | ControlKey::Down
+                    | ControlKey::Home
+                    | ControlKey::End
+                    | ControlKey::Space
+            ) {
+                SelectionEvent::Handled
+            } else {
+                SelectionEvent::Ignored
+            };
+        }
+        let navigation = matches!(
+            key,
+            ControlKey::Left
+                | ControlKey::Right
+                | ControlKey::Up
+                | ControlKey::Down
+                | ControlKey::Home
+                | ControlKey::End
+        );
+        if !down {
+            return if navigation || key == ControlKey::Space {
+                SelectionEvent::Handled
+            } else {
+                SelectionEvent::Ignored
+            };
+        }
+        if navigation {
+            self.focus_visible = true;
+            let changed = model.key(key);
+            if self.focused != model.selected {
+                self.cancel();
+            }
+            self.focused = model.selected;
+            return if changed {
+                SelectionEvent::Changed
+            } else {
+                SelectionEvent::Handled
+            };
+        }
+        if key == ControlKey::Space {
+            self.focus_visible = true;
+            return if self.focused.is_some_and(|i| model.select(i)) {
+                SelectionEvent::Changed
+            } else {
+                SelectionEvent::Handled
+            };
+        }
+        SelectionEvent::Ignored
+    }
+    pub fn cancel(&mut self) -> bool {
+        self.pressed.take().is_some()
+    }
+    pub fn focused(&self) -> Option<usize> {
+        self.focused
+    }
+    pub fn is_disabled(&self) -> bool {
+        self.disabled
+    }
+    pub fn layout(&self) -> &RadioGroupLayout {
+        &self.layout
+    }
+}
+
+impl Default for RadioGroupView {
+    fn default() -> Self {
+        Self {
+            layout: RadioGroupLayout::default(),
+            focused: None,
+            focus_visible: false,
+            hovered: None,
+            pressed: None,
+            window_active: true,
+            disabled: false,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct SwitchView {
+    placement: ControlFrame,
+    hovered: bool,
+    focused: bool,
+    focus_visible: bool,
+    pointer_armed: bool,
+    space_armed: bool,
+    window_active: bool,
+    thumb_transition: ProgressTransition,
+    motion_palette: Option<(tekes_ui_tokens::Theme, usize)>,
+    motion_initialized: bool,
+    motion_now: Duration,
+    motion_suspended: bool,
+}
+impl SwitchView {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        model: Switch,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+    ) -> ControlFrame {
+        self.render_with_motion_context(scene, model, frame, clip, palette, None)
+    }
+
+    /// Render with explicit host-clock motion; model and hit geometry remain immediate.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_animated(
+        &mut self,
+        scene: &mut Scene,
+        model: Switch,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        now: Duration,
+        reduced_motion: bool,
+    ) -> ControlFrame {
+        self.render_with_motion_context(
+            scene,
+            model,
+            frame,
+            clip,
+            palette,
+            Some(ControlMotionContext {
+                now,
+                reduced_motion,
+            }),
+        )
+    }
+
+    fn render_with_motion_context(
+        &mut self,
+        scene: &mut Scene,
+        model: Switch,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        context: Option<ControlMotionContext>,
+    ) -> ControlFrame {
+        if invalid_rect(frame) || invalid_clip(clip) {
+            self.placement = ControlFrame::default();
+            self.blur();
+            let _ = self
+                .thumb_transition
+                .snap(if model.checked { 1.0 } else { 0.0 }, self.motion_now);
+            return self.placement;
+        }
+        if model.disabled {
+            self.blur();
+        }
+        self.placement = model.layout(frame, clip);
+        if self.placement.visible_frame().is_some() {
+            if let Some(clip) = clip {
+                scene.push_clip(clip);
+            }
+            let state = ControlState {
+                selected: model.checked,
+                disabled: model.disabled,
+                hovered: self.hovered,
+                pressed: self.pointer_armed || self.space_armed,
+                focused: self.focused && self.window_active,
+                focus_visible: self.focus_visible,
+                ..Default::default()
+            };
+            if let Some(context) = context {
+                let progress =
+                    self.prepare_thumb_progress(model.checked, model.disabled, palette, context);
+                switch_with_state_and_thumb_progress(
+                    scene,
+                    self.placement.frame(),
+                    palette,
+                    state,
+                    progress,
+                );
+            } else {
+                let _ = self
+                    .thumb_transition
+                    .snap(if model.checked { 1.0 } else { 0.0 }, self.motion_now);
+                switch_with_state(scene, self.placement.frame(), palette, state);
+            }
+            if clip.is_some() {
+                scene.pop_clip();
+            }
+        }
+        if self.placement.visible_frame().is_none() || model.disabled {
+            if self.placement.visible_frame().is_none() {
+                self.blur();
+                let _ = self
+                    .thumb_transition
+                    .snap(f64::from(model.checked as u8), self.motion_now);
+            } else {
+                self.cancel();
+            }
+        }
+        self.placement
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_labeled(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: Switch,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        label_text: &str,
+    ) -> SwitchLayout {
+        let context = text.motion_context();
+        self.render_labeled_with_motion_context(
+            scene, text, model, frame, clip, palette, label_text, context,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_labeled_animated(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: Switch,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        label_text: &str,
+        now: Duration,
+        reduced_motion: bool,
+    ) -> SwitchLayout {
+        self.render_labeled_with_motion_context(
+            scene,
+            text,
+            model,
+            frame,
+            clip,
+            palette,
+            label_text,
+            Some(ControlMotionContext {
+                now,
+                reduced_motion,
+            }),
+        )
+    }
+
+    fn prepare_thumb_progress(
+        &mut self,
+        checked: bool,
+        disabled: bool,
+        palette: Palette,
+        context: ControlMotionContext,
+    ) -> f32 {
+        self.motion_now = context.now;
+        let palette_key = (palette.theme, palette.brand);
+        let palette_changed = self
+            .motion_palette
+            .is_some_and(|previous| previous != palette_key);
+        self.motion_palette = Some(palette_key);
+        let target = if checked { 1.0 } else { 0.0 };
+        let initialize = !self.motion_initialized;
+        self.motion_initialized = true;
+        let value = if initialize || palette_changed || disabled || self.motion_suspended {
+            self.thumb_transition.snap(target, context.now)
+        } else {
+            self.thumb_transition.retarget(
+                target,
+                motion_for("switch_thumb"),
+                context.now,
+                context.reduced_motion,
+            )
+        }
+        .unwrap_or_else(|_| self.thumb_transition.value());
+        value.clamp(0.0, 1.0) as f32
+    }
+
+    pub fn needs_animation(&self) -> bool {
+        self.thumb_transition.needs_animation()
+    }
+
+    /// Advance the thumb presentation using a host monotonic timestamp.
+    pub fn tick(&mut self, now: Duration) -> bool {
+        self.motion_now = now;
+        let before = self.thumb_transition.value();
+        let _ = self.thumb_transition.advance(now);
+        before != self.thumb_transition.value()
+    }
+
+    /// Apply the host reduced-motion preference immediately.
+    pub fn set_reduced_motion(&mut self, reduced: bool, now: Duration, model: &Switch) -> bool {
+        self.motion_now = now;
+        let before = self.thumb_transition.value();
+        let _ = self.thumb_transition.set_reduced_motion(reduced, now);
+        if reduced {
+            let _ = self
+                .thumb_transition
+                .snap(if model.checked { 1.0 } else { 0.0 }, now);
+        }
+        before != self.thumb_transition.value()
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn render_labeled_with_motion_context(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: Switch,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        label_text: &str,
+        context: Option<ControlMotionContext>,
+    ) -> SwitchLayout {
+        if invalid_rect(frame) || invalid_clip(clip) {
+            self.placement = ControlFrame::default();
+            self.blur();
+            let _ = self
+                .thumb_transition
+                .snap(if model.checked { 1.0 } else { 0.0 }, self.motion_now);
+            return SwitchLayout::default();
+        }
+        if model.disabled {
+            self.blur();
+        }
+        let label_width = (frame.size.width - 62.0).max(0.0);
+        let measured = text
+            .measure(label_text, proposal::TextRole::UiBody, label_width)
+            .height;
+        let first_line =
+            text.first_line_height(label_text, proposal::TextRole::UiBody, label_width);
+        let row_height = 32.0_f32.max(measured.max(first_line).max(0.0) + 8.0);
+        let outer = ControlFrame::new(
+            Rect::new(frame.min_x(), frame.min_y(), frame.size.width, row_height),
+            clip,
+        );
+        let normalized = outer.frame();
+        let first_line_center = normalized.min_y()
+            + (normalized.size.height - measured.max(first_line).max(0.0)) * 0.5
+            + first_line.max(0.0) * 0.5;
+        let toggle_frame = Rect::new(
+            normalized.min_x(),
+            first_line_center + 1.0 - 13.0,
+            48.0,
+            26.0,
+        );
+        let paint_clip = match (clip, outer.visible_frame()) {
+            (_, None) => Some(Rect::default()),
+            (Some(clip), Some(_)) => Some(clip),
+            (None, Some(_)) => None,
+        };
+        self.placement = ControlFrame::new(toggle_frame, paint_clip);
+        if self.placement.visible_frame().is_some() {
+            if let Some(clip) = clip {
+                scene.push_clip(clip);
+            }
+            let state = ControlState {
+                selected: model.checked,
+                disabled: model.disabled,
+                hovered: self.hovered,
+                pressed: self.pointer_armed || self.space_armed,
+                focused: self.focused && self.window_active,
+                focus_visible: self.focus_visible,
+                ..Default::default()
+            };
+            if let Some(context) = context {
+                let progress =
+                    self.prepare_thumb_progress(model.checked, model.disabled, palette, context);
+                switch_with_state_and_thumb_progress(
+                    scene,
+                    self.placement.frame(),
+                    palette,
+                    state,
+                    progress,
+                );
+                if self.needs_animation() {
+                    text.request_animation_frame();
+                }
+            } else {
+                let _ = self
+                    .thumb_transition
+                    .snap(if model.checked { 1.0 } else { 0.0 }, self.motion_now);
+                switch_with_state(scene, self.placement.frame(), palette, state);
+            }
+            if clip.is_some() {
+                scene.pop_clip();
+            }
+        }
+        let label = Rect::new(
+            normalized.min_x() + 62.0,
+            normalized.min_y(),
+            (normalized.size.width - 62.0).max(0.0),
+            normalized.size.height,
+        );
+        let label_visible = outer
+            .visible_frame()
+            .and_then(|visible| ControlFrame::new(label, Some(visible)).visible_frame());
+        if let Some(label_clip) = label_visible {
+            scene.push_clip(label_clip);
+            text.draw(
+                scene,
+                label_text,
+                proposal::TextRole::UiBody,
+                label,
+                ButtonTextAlign::Leading,
+                palette
+                    .color("primary-text")
+                    .expect("Design System primary text"),
+            );
+            scene.pop_clip();
+        }
+        if outer.visible_frame().is_none()
+            || self.placement.visible_frame().is_none()
+            || model.disabled
+        {
+            if outer.visible_frame().is_none() || self.placement.visible_frame().is_none() {
+                self.blur();
+                let _ = self
+                    .thumb_transition
+                    .snap(if model.checked { 1.0 } else { 0.0 }, self.motion_now);
+            } else {
+                self.cancel();
+            }
+        }
+        SwitchLayout {
+            frame: normalized,
+            visible: outer.visible_frame(),
+            toggle: self.placement,
+            label,
+        }
+    }
+    pub fn focus(&mut self, focus_visible: bool) {
+        self.focused = true;
+        self.focus_visible = focus_visible;
+    }
+    pub fn blur(&mut self) {
+        self.focused = false;
+        self.focus_visible = false;
+        self.cancel();
+        self.hovered = false;
+        let _ = self
+            .thumb_transition
+            .snap(self.thumb_transition.target(), self.motion_now);
+    }
+    pub fn set_window_active(&mut self, active: bool) {
+        self.window_active = active;
+        self.motion_suspended = !active;
+        if !active {
+            self.blur();
+        }
+    }
+    pub fn pointer_move(&mut self, point: Point) -> bool {
+        let next = self.placement.contains(point);
+        let changed = self.hovered != next;
+        self.hovered = next;
+        changed
+    }
+    pub fn pointer_down(&mut self, point: Point, model: &Switch) -> bool {
+        if !self.window_active || model.disabled || !self.placement.contains(point) {
+            return false;
+        }
+        self.pointer_armed = true;
+        self.focused = true;
+        self.focus_visible = false;
+        true
+    }
+    pub fn pointer_up(&mut self, point: Point, model: &mut Switch) -> SelectionEvent {
+        if !std::mem::replace(&mut self.pointer_armed, false) {
+            return SelectionEvent::Ignored;
+        }
+        if !self.window_active || model.disabled {
+            return SelectionEvent::Handled;
+        }
+        if self.placement.contains(point) && model.toggle() {
+            SelectionEvent::Changed
+        } else {
+            SelectionEvent::Handled
+        }
+    }
+    pub fn key(&mut self, key: ControlKey, down: bool, model: &mut Switch) -> SelectionEvent {
+        if !self.focused || !self.window_active || key != ControlKey::Space {
+            return SelectionEvent::Ignored;
+        }
+        if down {
+            if model.disabled {
+                self.space_armed = false;
+                return SelectionEvent::Handled;
+            }
+            self.space_armed = true;
+            self.focus_visible = true;
+            return SelectionEvent::Handled;
+        }
+        if std::mem::replace(&mut self.space_armed, false) {
+            if model.toggle() {
+                SelectionEvent::Changed
+            } else {
+                SelectionEvent::Handled
+            }
+        } else {
+            SelectionEvent::Handled
+        }
+    }
+    pub fn cancel(&mut self) -> bool {
+        let was = self.pointer_armed || self.space_armed;
+        self.pointer_armed = false;
+        self.space_armed = false;
+        was
+    }
+    pub fn layout(&self) -> ControlFrame {
+        self.placement
+    }
+    pub fn is_focused(&self) -> bool {
+        self.focused
+    }
+}
+
+fn rows_visibility_for(layout: &RadioGroupLayout, index: usize) -> Option<Rect> {
+    layout.rows.get(index).and_then(|row| row.visible_frame())
+}
+
+impl Default for SwitchView {
+    fn default() -> Self {
+        Self {
+            placement: ControlFrame::default(),
+            hovered: false,
+            focused: false,
+            focus_visible: false,
+            pointer_armed: false,
+            space_armed: false,
+            window_active: true,
+            thumb_transition: ProgressTransition::new(0.0),
+            motion_palette: None,
+            motion_initialized: false,
+            motion_now: Duration::ZERO,
+            motion_suspended: false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tekes_ui_tokens::Theme;
+
+    #[test]
+    fn slider_owns_clipped_drag_mapping_and_cancels_capture() {
+        let mut model = Slider::new(50., 0., 100., 5.).unwrap();
+        let mut view = SliderView::new();
+        let mut scene = Scene::new();
+        let layout = view.render(
+            &mut scene,
+            model,
+            Rect::new(10., 10., 100., 30.),
+            Some(Rect::new(20., 0., 80., 60.)),
+            Palette {
+                theme: Theme::LIGHT,
+                brand: 0,
+            },
+        );
+        assert_eq!(layout.visible, Some(Rect::new(20., 10., 80., 30.)));
+        assert!(view.pointer_down(Point::new(layout.track.center().x, 20.), &mut model));
+        view.pointer_move(Point::new(layout.track.max_x() + 20., 20.), &mut model);
+        assert_eq!(model.value(), 100.);
+        assert!(view.cancel());
+        assert!(!view.pointer_up(Point::new(0., 0.), &model));
+    }
+
+    #[test]
+    fn radio_runtime_owns_roving_focus_pointer_selection_and_disabled_skip() {
+        let mut model = RadioGroup::new(3);
+        model.set_enabled(1, false);
+        let mut view = RadioGroupView::new();
+        let mut scene = Scene::new();
+        let mut text = TestText::default();
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            Rect::new(0., 0., 180., 0.),
+            None,
+            Palette {
+                theme: Theme::LIGHT,
+                brand: 0,
+            },
+            &["One", "Two", "Three"],
+        );
+        assert_eq!(layout.rows.len(), 3);
+        view.focus(&model, Some(0), true);
+        assert_eq!(
+            view.key(ControlKey::Right, true, &mut model),
+            SelectionEvent::Changed
+        );
+        assert_eq!(model.selected, Some(2));
+        assert_eq!(view.focused(), Some(2));
+        let point = layout.rows[0].frame().center();
+        assert_eq!(view.pointer_down(point, &model), SelectionEvent::Handled);
+        assert_eq!(view.pointer_up(point, &mut model), SelectionEvent::Changed);
+        assert_eq!(model.selected, Some(0));
+    }
+
+    #[test]
+    fn switch_activates_on_matching_pointer_release_or_space_release_only() {
+        let mut model = Switch::default();
+        let mut view = SwitchView::new();
+        let mut scene = Scene::new();
+        view.render(
+            &mut scene,
+            model,
+            Rect::new(0., 0., 48., 26.),
+            None,
+            Palette {
+                theme: Theme::LIGHT,
+                brand: 0,
+            },
+        );
+        assert!(view.pointer_down(Point::new(5., 5.), &model));
+        assert_eq!(
+            view.pointer_up(Point::new(80., 80.), &mut model),
+            SelectionEvent::Handled
+        );
+        assert!(!model.checked);
+        view.focus(true);
+        assert_eq!(
+            view.key(ControlKey::Space, true, &mut model),
+            SelectionEvent::Handled
+        );
+        assert!(!model.checked);
+        assert_eq!(
+            view.key(ControlKey::Space, false, &mut model),
+            SelectionEvent::Changed
+        );
+        assert!(model.checked);
+    }
+
+    #[test]
+    fn whole_radio_group_disable_preserves_model_and_rejects_pointer_and_keys() {
+        let mut model = RadioGroup::new(3);
+        model.select(2);
+        let mut view = RadioGroupView::new();
+        let mut text = TestText::default();
+        let mut scene = Scene::new();
+        view.focus(&model, Some(2), true);
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            Rect::new(0., 0., 200., 0.),
+            None,
+            Palette {
+                theme: Theme::LIGHT,
+                brand: 0,
+            },
+            &["One", "Two", "Three"],
+        );
+        view.set_disabled(true);
+        assert_eq!(
+            view.key(ControlKey::Left, true, &mut model),
+            SelectionEvent::Ignored
+        );
+        let point = layout.rows[0].frame().center();
+        assert_eq!(view.pointer_down(point, &model), SelectionEvent::Handled);
+        assert_eq!(model.selected, Some(2));
+        view.set_disabled(false);
+        assert_eq!(model.selected, Some(2));
+        view.focus(&model, Some(2), false);
+        assert_eq!(
+            view.key(ControlKey::Right, true, &mut model),
+            SelectionEvent::Changed
+        );
+        assert_eq!(model.selected, Some(0));
+    }
+
+    #[test]
+    fn radio_focus_change_cancels_a_pointer_arm_before_late_release() {
+        let mut model = RadioGroup::new(3);
+        let mut view = RadioGroupView::new();
+        let mut text = TestText::default();
+        let mut scene = Scene::new();
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            Rect::new(0., 0., 200., 0.),
+            None,
+            Palette {
+                theme: Theme::LIGHT,
+                brand: 0,
+            },
+            &["One", "Two", "Three"],
+        );
+        view.focus(&model, Some(0), false);
+        let row0 = layout.rows[0].frame().center();
+        assert_eq!(view.pointer_down(row0, &model), SelectionEvent::Handled);
+        assert_eq!(
+            view.key(ControlKey::Right, true, &mut model),
+            SelectionEvent::Changed
+        );
+        assert_eq!(model.selected, Some(1));
+        assert_eq!(view.pointer_up(row0, &mut model), SelectionEvent::Ignored);
+        assert_eq!(model.selected, Some(1));
+
+        let row1 = layout.rows[1].frame().center();
+        view.pointer_down(row1, &model);
+        view.focus(&model, Some(0), true);
+        assert_eq!(view.pointer_up(row1, &mut model), SelectionEvent::Ignored);
+        assert_eq!(model.selected, Some(1));
+    }
+
+    #[test]
+    fn default_views_are_active_and_nan_or_complete_clip_never_paints_or_captures() {
+        let mut slider = Slider::new(25., 0., 100., 5.).unwrap();
+        let mut slider_view = SliderView::default();
+        let switch = Switch::default();
+        let mut switch_view = SwitchView::default();
+        let mut scene = Scene::new();
+        let palette = Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        assert_eq!(
+            slider_view
+                .render(
+                    &mut scene,
+                    slider,
+                    Rect::new(f32::NAN, 2., 90., 32.),
+                    None,
+                    palette
+                )
+                .visible,
+            None
+        );
+        assert_eq!(
+            switch_view
+                .render(
+                    &mut scene,
+                    switch,
+                    Rect::new(0., 0., 48., 26.),
+                    Some(Rect::new(80., 80., 10., 10.)),
+                    palette
+                )
+                .visible_frame(),
+            None
+        );
+        assert!(!slider_view.pointer_down(Point::new(5., 5.), &mut slider));
+        assert!(!switch_view.pointer_down(Point::new(5., 5.), &switch));
+    }
+
+    #[test]
+    fn radio_and_labeled_switch_expand_for_wrapped_text_and_align_to_first_line() {
+        let palette = Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        let mut text = TestText::default();
+        let mut scene = Scene::new();
+        let radio = RadioGroup::new(1);
+        let mut radio_view = RadioGroupView::new();
+        let radio_layout = radio_view.render(
+            &mut scene,
+            &mut text,
+            &radio,
+            Rect::new(0., 0., 90., 0.),
+            None,
+            palette,
+            &["A long label that wraps across several lines"],
+        );
+        assert!(radio_layout.rows[0].frame().size.height > 36.0);
+        let radio_measure = text.measure(
+            "A long label that wraps across several lines",
+            proposal::TextRole::UiBody,
+            50.0,
+        );
+        let first_line_center = radio_layout.rows[0].frame().min_y()
+            + (radio_layout.rows[0].frame().size.height - radio_measure.height) * 0.5
+            + 10.0;
+        assert_eq!(radio_layout.indicators[0].center().y, first_line_center);
+
+        let switch = Switch::default();
+        let mut switch_view = SwitchView::new();
+        let switch_layout = switch_view.render_labeled(
+            &mut scene,
+            &mut text,
+            switch,
+            Rect::new(0., 100., 90., 32.),
+            None,
+            palette,
+            "A long label that wraps across several lines",
+        );
+        assert!(switch_layout.frame.size.height > 32.0);
+        let label_measure = text.measure(
+            "A long label that wraps across several lines",
+            proposal::TextRole::UiBody,
+            28.0,
+        );
+        let expected_center = switch_layout.frame.min_y()
+            + (switch_layout.frame.size.height - label_measure.height) * 0.5
+            + 10.0
+            + 1.0;
+        assert_eq!(switch_layout.toggle.frame().center().y, expected_center);
+    }
+
+    #[test]
+    fn disabled_or_inactive_changes_cancel_armed_controls_without_mutating_values() {
+        let palette = Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        let mut scene = Scene::new();
+        let mut slider = Slider::new(50., 0., 100., 1.).unwrap();
+        let mut slider_view = SliderView::new();
+        let slider_layout = slider_view.render(
+            &mut scene,
+            slider,
+            Rect::new(0., 0., 120., 32.),
+            None,
+            palette,
+        );
+        assert!(
+            slider_view.pointer_down(Point::new(slider_layout.track.center().x, 16.), &mut slider)
+        );
+        slider.disabled = true;
+        slider_view.pointer_move(Point::new(slider_layout.track.max_x(), 16.), &mut slider);
+        assert!(!slider_view.is_captured());
+        assert_eq!(slider.value(), 50.);
+        slider.disabled = false;
+        assert!(
+            slider_view.pointer_down(Point::new(slider_layout.track.center().x, 16.), &mut slider)
+        );
+        slider_view.set_window_active(false);
+        assert!(!slider_view.is_captured());
+        assert!(!slider_view.pointer_up(Point::new(slider_layout.track.max_x(), 16.), &slider));
+        assert_eq!(slider.value(), 50.);
+
+        let mut switch = Switch::default();
+        let mut switch_view = SwitchView::new();
+        switch_view.render(
+            &mut scene,
+            switch,
+            Rect::new(0., 0., 48., 26.),
+            None,
+            palette,
+        );
+        assert!(switch_view.pointer_down(Point::new(5., 5.), &switch));
+        switch.disabled = true;
+        assert_eq!(
+            switch_view.pointer_up(Point::new(5., 5.), &mut switch),
+            SelectionEvent::Handled
+        );
+        assert!(!switch.checked);
+        switch.disabled = false;
+        assert!(switch_view.pointer_down(Point::new(5., 5.), &switch));
+        switch_view.set_window_active(false);
+        assert_eq!(
+            switch_view.pointer_up(Point::new(5., 5.), &mut switch),
+            SelectionEvent::Ignored
+        );
+        assert!(!switch.checked);
+        switch_view.set_window_active(true);
+        switch_view.focus(true);
+        switch_view.key(ControlKey::Space, true, &mut switch);
+        switch.disabled = true;
+        assert_eq!(
+            switch_view.key(ControlKey::Space, false, &mut switch),
+            SelectionEvent::Handled
+        );
+        assert!(!switch.checked);
+    }
+
+    #[test]
+    fn completely_hidden_radio_rows_cancel_pointer_arm_and_switch_focus_ring_uses_ancestor_clip() {
+        let palette = Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        let mut scene = Scene::new();
+        let mut text = TestText::default();
+        let model = RadioGroup::new(2);
+        let mut radio_view = RadioGroupView::new();
+        let visible = radio_view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            Rect::new(0., 0., 180., 0.),
+            None,
+            palette,
+            &["One", "Two"],
+        );
+        let point = visible.rows[0].frame().center();
+        radio_view.pointer_down(point, &model);
+        assert!(radio_view.cancel());
+        radio_view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            Rect::new(0., 0., 180., 0.),
+            Some(Rect::new(300., 300., 1., 1.)),
+            palette,
+            &["One", "Two"],
+        );
+        assert_eq!(
+            radio_view.pointer_up(point, &mut model.clone()),
+            SelectionEvent::Ignored
+        );
+
+        let switch = Switch::default();
+        let mut switch_view = SwitchView::new();
+        switch_view.focus(true);
+        let clip = Rect::new(0., 0., 60., 26.);
+        scene.clear();
+        switch_view.render(
+            &mut scene,
+            switch,
+            Rect::new(0., 0., 48., 26.),
+            Some(clip),
+            palette,
+        );
+        let clips: Vec<_> = scene
+            .primitives()
+            .iter()
+            .filter_map(|primitive| match primitive {
+                tekes_ui_scene::Primitive::PushClip(rect) => Some(*rect),
+                _ => None,
+            })
+            .collect();
+        assert!(clips.contains(&clip));
+    }
+
+    #[test]
+    fn narrow_radio_and_switch_label_slots_do_not_call_text_painter_outside_the_frame() {
+        let palette = Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        let mut scene = Scene::new();
+        let mut text = TestText::default();
+        let radio = RadioGroup::new(1);
+        RadioGroupView::new().render(
+            &mut scene,
+            &mut text,
+            &radio,
+            Rect::new(0., 0., 32., 0.),
+            None,
+            palette,
+            &["Too narrow"],
+        );
+        assert_eq!(text.draw_count, 0);
+
+        let mut switch_view = SwitchView::new();
+        switch_view.render_labeled(
+            &mut scene,
+            &mut text,
+            Switch::default(),
+            Rect::new(0., 40., 60., 32.),
+            None,
+            palette,
+            "No label space",
+        );
+        assert_eq!(text.draw_count, 0);
+    }
+
+    #[derive(Default)]
+    struct TestText {
+        draw_count: usize,
+        motion: Option<ControlMotionContext>,
+        frame_requests: usize,
+    }
+    impl ButtonTextRenderer for TestText {
+        fn motion_context(&self) -> Option<ControlMotionContext> {
+            self.motion
+        }
+
+        fn request_animation_frame(&mut self) {
+            self.frame_requests += 1;
+        }
+
+        fn measure(
+            &mut self,
+            text: &str,
+            _: proposal::TextRole,
+            max_width: f32,
+        ) -> tekes_ui_scene::Size {
+            let chars_per_line = (max_width / 7.).floor().max(1.);
+            let lines = (text.chars().count() as f32 / chars_per_line)
+                .ceil()
+                .max(1.);
+            tekes_ui_scene::Size::new((text.len() as f32 * 7.).min(max_width), lines * 20.)
+        }
+        fn first_line_height(&mut self, _: &str, _: proposal::TextRole, _: f32) -> f32 {
+            20.
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+            self.draw_count += 1;
+        }
+    }
+
+    #[test]
+    fn switch_thumb_is_component_owned_interruptible_and_model_changes_immediately() {
+        let palette = Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        let mut model = Switch::default();
+        let mut view = SwitchView::new();
+        let mut text = TestText {
+            motion: Some(ControlMotionContext {
+                now: Duration::ZERO,
+                reduced_motion: false,
+            }),
+            ..Default::default()
+        };
+        let mut scene = Scene::new();
+        let frame = Rect::new(0., 0., 180., 32.);
+        view.render_labeled(
+            &mut scene, &mut text, model, frame, None, palette, "Enabled",
+        );
+
+        let toggle = view.layout().frame();
+        let center = Point::new(toggle.center().x, toggle.center().y);
+        assert!(view.pointer_down(center, &model));
+        assert_eq!(view.pointer_up(center, &mut model), SelectionEvent::Changed);
+        assert!(
+            model.checked,
+            "the semantic model changes on pointer release immediately"
+        );
+
+        text.motion = Some(ControlMotionContext {
+            now: Duration::from_millis(1),
+            reduced_motion: false,
+        });
+        scene.clear();
+        view.render_labeled(
+            &mut scene, &mut text, model, frame, None, palette, "Enabled",
+        );
+        assert!(view.needs_animation());
+        assert!(text.frame_requests > 0);
+        assert!(view.tick(Duration::from_millis(60)));
+        let midflight = view.thumb_transition.value();
+        assert!(
+            midflight > 0.0 && midflight < 1.0,
+            "thumb should be between both endpoints"
+        );
+
+        assert!(model.set(false));
+        text.motion = Some(ControlMotionContext {
+            now: Duration::from_millis(60),
+            reduced_motion: false,
+        });
+        scene.clear();
+        view.render_labeled(
+            &mut scene, &mut text, model, frame, None, palette, "Enabled",
+        );
+        view.tick(Duration::from_millis(90));
+        let reversed = view.thumb_transition.value();
+        assert!(
+            reversed >= 0.0 && reversed < midflight,
+            "reversal should retarget without jumping"
+        );
+    }
+
+    #[test]
+    fn switch_reduced_motion_snaps_and_fully_clipped_render_blurs() {
+        let palette = Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        let mut view = SwitchView::new();
+        let mut text = TestText {
+            motion: Some(ControlMotionContext {
+                now: Duration::ZERO,
+                reduced_motion: false,
+            }),
+            ..Default::default()
+        };
+        let mut scene = Scene::new();
+        let mut model = Switch::default();
+        let frame = Rect::new(0., 0., 180., 32.);
+        view.render_labeled(
+            &mut scene, &mut text, model, frame, None, palette, "Enabled",
+        );
+        let point = Point::new(
+            view.layout().frame().center().x,
+            view.layout().frame().center().y,
+        );
+        assert!(view.pointer_down(point, &model));
+        view.pointer_up(point, &mut model);
+        assert!(model.checked);
+        view.set_reduced_motion(true, Duration::from_millis(1), &model);
+        assert_eq!(view.thumb_transition.value(), 1.0);
+        assert!(!view.needs_animation());
+
+        view.focus(true);
+        view.render(
+            &mut scene,
+            model,
+            frame,
+            Some(Rect::new(500., 500., 1., 1.)),
+            palette,
+        );
+        assert!(
+            !view.is_focused(),
+            "a fully clipped switch must release focus"
+        );
+        assert_eq!(view.pointer_up(point, &mut model), SelectionEvent::Ignored);
+    }
+}

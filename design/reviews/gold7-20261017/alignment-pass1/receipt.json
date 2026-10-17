@@ -1,0 +1,178 @@
+{
+  "format": "tekesui-gold7-alignment-pass/1",
+  "date": "2026-10-17",
+  "source_state": "uncommitted worktree; no commit/push/publication",
+  "base_commit": "6ca8295dc398f68ba4d5d1fc333346f40fafee2b",
+  "source_manifest": "source-manifest.json",
+  "source_recovery": {
+    "base_archive": "../source-snapshot.tar.gz",
+    "base_archive_sha256": "0af6eea98000c10e0041a7e596d3e5f4abce8fb3e2b18c286a91f66da3403e69",
+    "overlay_archive": "sources-delta.tar.gz",
+    "instruction": "Extract base then overlay; verify every file against this source-manifest. Runtime code is Rust/WGSL; Python files are offline tooling only."
+  },
+  "worklist": "../../../behavior/gold7-alignment.json",
+  "requirement_coverage": 23,
+  "requirements_all_complete": false,
+  "verified_code_repairs": [
+    "measured-search-action-row",
+    "standalone-button-content-center",
+    "independent-focus-ring",
+    "split-cancel-capture",
+    "owned-popup-scroll-clock",
+    "navigation-search-preference",
+    "composition-pointer-submit-guard",
+    "button-size-radius-roles",
+    "split-keyboard-restore",
+    "filtered-popup-wheel-routing"
+  ],
+  "checks": [
+    {
+      "check": "tests-final",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-gallery",
+        "-p",
+        "tekes-ui-motion",
+        "-p",
+        "tekes-ui-icons",
+        "-p",
+        "tekes-ui-design-export",
+        "-p",
+        "tekes-ui-tokens",
+        "--release",
+        "--locked"
+      ],
+      "exit": 0,
+      "seconds": 19.69
+    },
+    {
+      "check": "clippy-final",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-gallery",
+        "-p",
+        "tekes-ui-motion",
+        "-p",
+        "tekes-ui-icons",
+        "-p",
+        "tekes-ui-design-export",
+        "-p",
+        "tekes-ui-tokens",
+        "--all-targets",
+        "--release",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 5.05
+    },
+    {
+      "check": "build-final",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "tekes-ui-gallery",
+        "--release",
+        "--locked"
+      ],
+      "exit": 0,
+      "seconds": 6.04
+    },
+    {
+      "check": "fmt-final",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.48
+    },
+    {
+      "check": "pure-rust-final",
+      "command": [
+        "python3",
+        "scripts/check-pure-rust.py"
+      ],
+      "exit": 0,
+      "seconds": 0.38
+    },
+    {
+      "check": "design-system-final",
+      "command": [
+        "target/design-check-venv/bin/python",
+        "scripts/check-design-system.py"
+      ],
+      "exit": 0,
+      "seconds": 0.31
+    },
+    {
+      "check": "diff-final",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.06
+    }
+  ],
+  "rust_tests": {
+    "passed": 571,
+    "failed": 0,
+    "ignored": 1,
+    "ignored_reason": "optional full local icon catalogue needs explicit fixture directories"
+  },
+  "gold7_checker_tests": 23,
+  "color_audit": {
+    "profiles": 13,
+    "themes": 4,
+    "declared_pairs": 12688,
+    "result": "pass"
+  },
+  "focus_gpu": {
+    "pngs": 8,
+    "themes": 4,
+    "scales": [
+      1,
+      2
+    ],
+    "actual_production_Button": true,
+    "checks": [
+      "ring pixels visibly differ",
+      "2pt gap pixels preserved",
+      "error boundary and label pixels within actual rounded shape and AA fringe unchanged"
+    ],
+    "evidence": "focus"
+  },
+  "native_observation": {
+    "packaged_build_restarted": true,
+    "page": "Search & filtering",
+    "observed": [
+      "Clear filter and other standalone actions have centered labels",
+      "actual Tab navigation reached Clear filter and displayed the independent ring with preserved input/button gap"
+    ],
+    "native_screenshot_file_saved": false
+  },
+  "limitations": [
+    "GPU fixture is not a physical-display acceptance",
+    "Menu/Select default Gallery fixtures have three items; overflow rebound is tested in Menu component tests, while ComboBox/CommandPalette use 24-item real overflow fixtures",
+    "physical IME, VoiceOver and complete page focus order still require native checks",
+    "focus outset/reveal across every component, shared soft shadows, production state transitions, durable drafts, live-edge reading and media capabilities remain on worklist",
+    "performance work remains deferred; no CPU/drop-frame/120Hz acceptance claimed"
+  ],
+  "package_identity": "package-binary-comparison.json"
+}

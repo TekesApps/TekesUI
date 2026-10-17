@@ -1,4 +1,38 @@
 {
+  "alignment": {
+    "presets": {
+      "row": {
+        "main_axis": "start",
+        "cross_axis": "center",
+        "text_alignment": "leading"
+      },
+      "column": {
+        "main_axis": "start",
+        "cross_axis": "leading",
+        "text_alignment": "leading"
+      },
+      "text_row": {
+        "main_axis": "start",
+        "cross_axis": "first_baseline",
+        "text_alignment": "leading"
+      },
+      "button_content": {
+        "main_axis": "start",
+        "cross_axis": "center",
+        "text_alignment": "center"
+      },
+      "icon_artboard": {
+        "main_axis": "center",
+        "cross_axis": "center",
+        "text_alignment": "center"
+      },
+      "chart_label": {
+        "main_axis": "center",
+        "cross_axis": "center",
+        "text_alignment": "center"
+      }
+    }
+  },
   "breakpoints": {
     "three_panes_min": 1200,
     "two_panes_min": 960
@@ -72,9 +106,21 @@
     "sticky": 10,
     "tooltip": 70
   },
+  "nested_radius": {
+    "concentric": {
+      "floor_token": "radius-square",
+      "formula": "max(floor_token, outer_radius - max(inset, 0))",
+      "input_policy": {
+        "negative_inset": "treat_as_zero",
+        "negative_outer_radius": "treat_as_zero",
+        "non_finite": "return_floor"
+      },
+      "scope": "Use only for declared concentric outer and inner shapes; non-concentric shapes use their own radius rule."
+    }
+  },
   "policy": "Controls grow with text; effective minimum constraints can collapse panes before nominal breakpoints. OS windows, IME candidates and menu surfaces have OS-owned stacking.",
   "reference_layout": "OCUI proportion alignment, not a pixel-identical clone",
-  "shadow": "none",
+  "shadow": "semantic-elevation",
   "sidebar": {
     "default": 288,
     "max": 360,
@@ -91,5 +137,147 @@
       720,
       480
     ]
+  },
+  "scroll_area": {
+    "content_padding": 12,
+    "single_line_padding_y": 8,
+    "scrollbar_width": 4,
+    "scrollbar_inset": 2,
+    "policy": "Scrollbars overlay the outer padding, never content. Visibility is independent per axis and does not disable scrolling. Hidden bars have no pointer target. Shown bars appear only for overflow.",
+    "sidebar_padding": 16
+  },
+  "boundary_styles": {
+    "required_control": {
+      "color": "border",
+      "stroke": "stroke-rule",
+      "minimum_contrast": 3
+    },
+    "focus": {
+      "color": "border-focused",
+      "stroke": "c-focus-width",
+      "offset": "c-focus-offset",
+      "placement": "outside-control",
+      "paint_outset": "c-focus-width + c-focus-offset",
+      "clip": "actual ancestor viewport only; never the control frame",
+      "layout_rule": "Reserve the focus paint outset around focusable content; paint outset does not enlarge hit targets.",
+      "antialias_guard_physical_pixels": 1
+    },
+    "decorative": {
+      "color": "separator",
+      "stroke": "1 / backing_scale",
+      "increased_contrast_stroke": "stroke-rule"
+    },
+    "policy": "Never use decorative strokes as the sole control boundary, focus or selected-state indicator. Preserve required-control contrast; distinguish noninteractive panels and preview frames."
+  },
+  "elevation": {
+    "unit": "logical-pt",
+    "blur_model": "gaussian-sigma-equals-css-box-shadow-blur-radius-divided-by-two",
+    "source": "DESIGN.md 2.5; floating=shadow-sm and modal=shadow-lg are project mappings; https://www.w3.org/TR/css-backgrounds-3/#shadow-blur",
+    "layer_order": "front-to-back",
+    "roles": {
+      "menu": "floating",
+      "popover": "floating",
+      "dialog": "modal",
+      "panel": "none"
+    },
+    "levels": {
+      "floating": {
+        "light": [
+          {
+            "offset": [
+              0,
+              1
+            ],
+            "blur_radius": 2,
+            "spread": 0,
+            "color": "shadow-ink",
+            "alpha": 0.05
+          },
+          {
+            "offset": [
+              0,
+              2
+            ],
+            "blur_radius": 8,
+            "spread": 0,
+            "color": "shadow-ink",
+            "alpha": 0.08
+          }
+        ],
+        "dark": [
+          {
+            "offset": [
+              0,
+              1
+            ],
+            "blur_radius": 2,
+            "spread": 0,
+            "color": "shadow-ink",
+            "alpha": 0.4
+          },
+          {
+            "offset": [
+              0,
+              2
+            ],
+            "blur_radius": 8,
+            "spread": 0,
+            "color": "shadow-ink",
+            "alpha": 0.4
+          }
+        ]
+      },
+      "modal": {
+        "light": [
+          {
+            "offset": [
+              0,
+              4
+            ],
+            "blur_radius": 8,
+            "spread": 0,
+            "color": "shadow-ink",
+            "alpha": 0.06
+          },
+          {
+            "offset": [
+              0,
+              12
+            ],
+            "blur_radius": 28,
+            "spread": -2,
+            "color": "shadow-ink",
+            "alpha": 0.08
+          }
+        ],
+        "dark": [
+          {
+            "offset": [
+              0,
+              4
+            ],
+            "blur_radius": 8,
+            "spread": 0,
+            "color": "shadow-ink",
+            "alpha": 0.5
+          },
+          {
+            "offset": [
+              0,
+              16
+            ],
+            "blur_radius": 36,
+            "spread": -2,
+            "color": "shadow-ink",
+            "alpha": 0.4
+          }
+        ]
+      }
+    },
+    "increased_contrast": {
+      "shadow": "none",
+      "boundary": "separator",
+      "boundary_width": "stroke-rule"
+    }
   }
 }

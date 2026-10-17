@@ -1,0 +1,23 @@
+{
+  "top": {
+    "input_count": 22,
+    "rmse_pt": 0.8429047344471226,
+    "max_error_pt": 3.6306610107421875,
+    "tail_rmse_pt": 0.8112458929078006,
+    "passed": true
+  },
+  "momentum": {
+    "input_count": 44,
+    "rmse_pt": 4.619023059036809,
+    "max_error_pt": 20.0,
+    "tail_rmse_pt": 0.25029244801773115,
+    "passed": true
+  },
+  "reverse": {
+    "input_count": 34,
+    "rmse_pt": 342.9850389689348,
+    "max_error_pt": 506.0,
+    "tail_rmse_pt": 406.1303219591393,
+    "passed": false
+  }
+}

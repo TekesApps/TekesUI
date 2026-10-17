@@ -551,6 +551,7 @@ dependencies = [
  "bitflags 2.13.2",
  "block2",
  "objc2",
+ "objc2-core-foundation",
  "objc2-foundation",
 ]
 
@@ -925,7 +926,11 @@ dependencies = [
 name = "tekes-ui-controls"
 version = "0.1.0"
 dependencies = [
+ "serde_json",
+ "tekes-ui-motion",
  "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
  "unicode-segmentation",
 ]
 
@@ -945,13 +950,19 @@ dependencies = [
  "resvg",
  "serde_json",
  "tekes-ui-controls",
+ "tekes-ui-icons",
  "tekes-ui-motion",
  "tekes-ui-platform-macos",
  "tekes-ui-render",
  "tekes-ui-scene",
  "tekes-ui-text",
  "tekes-ui-tokens",
+ "unicode-segmentation",
 ]
+
+[[package]]
+name = "tekes-ui-icons"
+version = "0.1.0"
 
 [[package]]
 name = "tekes-ui-motion"
@@ -961,12 +972,17 @@ version = "0.1.0"
 name = "tekes-ui-platform-macos"
 version = "0.1.0"
 dependencies = [
+ "block2",
  "objc2",
  "objc2-app-kit",
  "objc2-core-foundation",
  "objc2-core-graphics",
  "objc2-foundation",
+ "objc2-metal",
  "objc2-quartz-core",
+ "serde_json",
+ "tekes-ui-controls",
+ "tekes-ui-scene",
 ]
 
 [[package]]
@@ -1012,6 +1028,7 @@ name = "tekes-ui-tokens"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "sha2",
  "tekes-ui-design-export",
 ]
 

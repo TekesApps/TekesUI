@@ -198,6 +198,8 @@ impl ScrollPhase {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ScrollEvent {
+    /// Monotonic native event time (seconds since boot).
+    pub timestamp: f64,
     /// 滚动增量，取自 `scrollingDeltaX/Y`，符号不改：已经包含系统“自然滚动”设置。
     /// `delta.y > 0` 表示内容应向下移动（向 y 增大的方向，即用户在向上看更早的内容）。
     /// `precise` 为 true（触控板、妙控鼠标）时单位是点；为 false（普通滚轮）时单位是“行”，
@@ -252,8 +254,13 @@ pub struct AnimationFrame {
     /// 动画应当按它推进，而不是按回调实际发生的时刻，这样回调抖动不会变成画面抖动。
     pub target_timestamp: f64,
     /// 平台层的回调入口实际被调用的时刻（进入回调后第一件事读取）。
-    /// `target_timestamp - callback_time` 是这一帧在上屏截止之前剩下的时间预算。
+    /// `submission_deadline - callback_time` is the CPU submission budget.
     pub callback_time: f64,
+    /// CPU submission/present deadline. CADisplayLink uses the display target;
+    /// CAMetalDisplayLink supplies a separate deadline before presentation.
+    pub submission_deadline: f64,
+    /// Actual handler start after any reentrant event queue delay.
+    pub dispatch_time: f64,
     /// 显示器当前的刷新间隔，`CADisplayLink.duration`；系统给出 0 或负数时退回
     /// `target_timestamp - timestamp`，两者都不可用则为 0。
     pub refresh_interval: f64,
@@ -274,13 +281,24 @@ impl AnimationFrame {
             timestamp,
             target_timestamp,
             callback_time,
+            submission_deadline: target_timestamp,
+            dispatch_time: callback_time,
             refresh_interval,
         }
     }
 
-    /// 离上屏截止还剩多少秒；回调已经晚于目标时为负。
+    pub fn with_submission_deadline(mut self, deadline: f64) -> Self {
+        self.submission_deadline = deadline;
+        self
+    }
+
+    pub fn queue_delay(&self) -> f64 {
+        (self.dispatch_time - self.callback_time).max(0.0)
+    }
+
+    /// Seconds left at handler start to submit CPU work; negative when overdue.
     pub fn budget(&self) -> f64 {
-        self.target_timestamp - self.callback_time
+        self.submission_deadline - self.dispatch_time
     }
 }
 
@@ -371,6 +389,16 @@ mod tests {
         assert!((f.refresh_interval - 1.0 / 120.0).abs() < 1e-12);
         assert!((f.budget() - 0.006).abs() < 1e-12);
         // duration 为 0：退回 target - timestamp。
+        let metal =
+            AnimationFrame::new(10.0, 10.016, 10.002, 1.0 / 120.0).with_submission_deadline(10.008);
+        assert_eq!(metal.target_timestamp, 10.016);
+        assert!((metal.budget() - 0.006).abs() < 1e-12);
+        let mut queued = metal;
+        queued.dispatch_time = 10.010;
+        assert!((queued.queue_delay() - 0.008).abs() < 1e-12);
+        assert!((queued.budget() + 0.002).abs() < 1e-12);
+        assert_eq!(queued.target_timestamp, 10.016);
+
         let f = AnimationFrame::new(10.0, 10.016, 10.010, 0.0);
         assert!((f.refresh_interval - 0.016).abs() < 1e-12);
         // 都不可用：0。

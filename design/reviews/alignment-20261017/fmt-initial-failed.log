@@ -1,0 +1,33 @@
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/pages/icons.rs:1:
+ //! The native Gallery icon catalogue, reusing the component renderer.
+ use super::{
+-    showcase::{draw_icon_tinted, Icon},
+     PageCtx,
++    showcase::{Icon, draw_icon_tinted},
+ };
+-use crate::gallery::icon_catalog::{preview_sizes, IconCatalog};
++use crate::gallery::icon_catalog::{IconCatalog, preview_sizes};
+ use tekes_ui_controls::layout_view::{IconRenderer, IconView};
+ use tekes_ui_scene::{ImageId, ImageQuad, Quad, Rect, Scene, Size};
+-use tekes_ui_tokens::{proposal, ColorRole, CornerRadius, Spacing, Stroke};
++use tekes_ui_tokens::{ColorRole, CornerRadius, Spacing, Stroke, proposal};
+ 
+ pub fn search_rect(content: Rect) -> Rect {
+     Rect::new(content.min_x(), content.min_y(), content.size.width, 40.0)
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/pages/icons.rs:749:
+                     catalog.prepare(&mut renderer, theme, scale, &visible);
+                 }
+                 assert_eq!(renderer.image_count(), (176 + 8) * 3);
+-                assert!(catalog
+-                    .entries
+-                    .iter()
+-                    .all(|e| e.images.iter().all(Option::is_some)));
++                assert!(
++                    catalog
++                        .entries
++                        .iter()
++                        .all(|e| e.images.iter().all(Option::is_some))
++                );
+                 for (state, query, offset) in [
+                     ("all-top", "", 0.0),
+                     (

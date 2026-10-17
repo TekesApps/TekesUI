@@ -1,11 +1,173 @@
 {
-  "profiles": [
-    "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-neutral.json",
-    "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
-    "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json"
-  ],
-  "reference_brand": "example-neutral",
-  "runtime_status": "unverified",
   "schema_version": "1.0",
-  "selection": "explicit-reference-fixture; no framework-owned brand default"
+  "reference_brand": "consumer-reference",
+  "directions": [
+    {
+      "id": "red",
+      "name": "Red",
+      "description": "Warm, soft red tones"
+    },
+    {
+      "id": "orange",
+      "name": "Orange",
+      "description": "Apricot and softened orange tones"
+    },
+    {
+      "id": "yellow",
+      "name": "Yellow",
+      "description": "Wheat and muted golden tones"
+    },
+    {
+      "id": "green",
+      "name": "Green",
+      "description": "Soft botanical greens"
+    },
+    {
+      "id": "cyan",
+      "name": "Cyan",
+      "description": "Quiet sea-glass tones"
+    },
+    {
+      "id": "blue",
+      "name": "Blue",
+      "description": "Soft, low-saturation blues"
+    },
+    {
+      "id": "purple",
+      "name": "Purple",
+      "description": "Muted heather and violet tones"
+    }
+  ],
+  "presets": [
+    {
+      "id": "consumer-reference",
+      "name": "Consumer reference",
+      "runtime_index": 0,
+      "config": "design/brand/config.json",
+      "category": "reference",
+      "color_family": "neutral",
+      "recommended_for_direction": [],
+      "description": "Uses the consumer-owned design/brand/config.json bundle."
+    },
+    {
+      "id": "example-blue",
+      "name": "Example blue",
+      "runtime_index": 1,
+      "config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
+      "category": "example",
+      "color_family": "blue",
+      "recommended_for_direction": [],
+      "description": "Existing compiler example retained for comparison."
+    },
+    {
+      "id": "example-clay",
+      "name": "Example clay",
+      "runtime_index": 2,
+      "config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json",
+      "category": "example",
+      "color_family": "clay",
+      "recommended_for_direction": [],
+      "description": "Existing compiler example retained for comparison."
+    },
+    {
+      "id": "warm-stone",
+      "name": "Warm stone",
+      "runtime_index": 3,
+      "config": "design/brand/warm-stone.json",
+      "category": "warm-neutral",
+      "color_family": "neutral",
+      "recommended_for_direction": [],
+      "description": "A quiet stone-gray direction."
+    },
+    {
+      "id": "warm-taupe",
+      "name": "Warm taupe",
+      "runtime_index": 4,
+      "config": "design/brand/warm-taupe.json",
+      "category": "warm-neutral",
+      "color_family": "neutral",
+      "recommended_for_direction": [],
+      "description": "A softly warm brown-gray direction."
+    },
+    {
+      "id": "warm-sand",
+      "name": "Warm sand",
+      "runtime_index": 5,
+      "config": "design/brand/warm-sand.json",
+      "category": "warm-neutral",
+      "color_family": "neutral",
+      "recommended_for_direction": [],
+      "description": "A muted sandstone direction."
+    },
+    {
+      "id": "rose",
+      "name": "Rose",
+      "runtime_index": 6,
+      "config": "design/brand/rose.json",
+      "category": "soft-low-saturation",
+      "color_family": "red",
+      "recommended_for_direction": ["red"],
+      "description": "Soft rose for a red-family brand direction."
+    },
+    {
+      "id": "apricot",
+      "name": "Apricot",
+      "runtime_index": 7,
+      "config": "design/brand/apricot.json",
+      "category": "soft-low-saturation",
+      "color_family": "orange",
+      "recommended_for_direction": ["orange"],
+      "description": "Gentle apricot-orange for an orange-family brand direction."
+    },
+    {
+      "id": "wheat",
+      "name": "Wheat",
+      "runtime_index": 8,
+      "config": "design/brand/wheat.json",
+      "category": "soft-low-saturation",
+      "color_family": "yellow",
+      "recommended_for_direction": ["yellow"],
+      "description": "Muted wheat gold for a yellow-family brand direction."
+    },
+    {
+      "id": "sage",
+      "name": "Sage",
+      "runtime_index": 9,
+      "config": "design/brand/sage.json",
+      "category": "soft-low-saturation",
+      "color_family": "green",
+      "recommended_for_direction": ["green"],
+      "description": "Soft sage for a green-family brand direction."
+    },
+    {
+      "id": "sea-glass",
+      "name": "Sea glass",
+      "runtime_index": 10,
+      "config": "design/brand/sea-glass.json",
+      "category": "soft-low-saturation",
+      "color_family": "cyan",
+      "recommended_for_direction": ["cyan"],
+      "description": "Quiet sea glass for a cyan-family brand direction."
+    },
+    {
+      "id": "mist-blue",
+      "name": "Mist blue",
+      "runtime_index": 11,
+      "config": "design/brand/mist-blue.json",
+      "category": "soft-low-saturation",
+      "color_family": "blue",
+      "recommended_for_direction": ["blue"],
+      "description": "Soft, low-saturation blue for a blue-family brand direction."
+    },
+    {
+      "id": "heather",
+      "name": "Heather",
+      "runtime_index": 12,
+      "config": "design/brand/heather.json",
+      "category": "soft-low-saturation",
+      "color_family": "purple",
+      "recommended_for_direction": ["purple"],
+      "description": "Muted heather violet for a purple-family brand direction."
+    }
+  ]
 }

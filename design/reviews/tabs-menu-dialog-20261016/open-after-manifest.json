@@ -1,0 +1,906 @@
+[
+  {
+    "id": "component-tabs-playground-light-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-tabs/playground",
+    "scale": 1,
+    "scene_primitive_count": 87,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-menu-playground-light-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-menu/playground",
+    "scale": 1,
+    "scene_primitive_count": 97,
+    "state": {
+      "active_item": 1,
+      "open": true,
+      "selected": 1
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-select-playground-light-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-select/playground",
+    "scale": 1,
+    "scene_primitive_count": 96,
+    "state": {
+      "active_item": 0,
+      "open": true,
+      "selected": 0
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-dialog-playground-light-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-dialog/playground",
+    "scale": 1,
+    "scene_primitive_count": 97,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "pattern-danger-playground-light-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "pattern-danger/playground",
+    "scale": 1,
+    "scene_primitive_count": 95,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-tabs-playground-light-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-tabs/playground",
+    "scale": 2,
+    "scene_primitive_count": 87,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-menu-playground-light-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-menu/playground",
+    "scale": 2,
+    "scene_primitive_count": 97,
+    "state": {
+      "active_item": 1,
+      "open": true,
+      "selected": 1
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-select-playground-light-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-select/playground",
+    "scale": 2,
+    "scene_primitive_count": 96,
+    "state": {
+      "active_item": 0,
+      "open": true,
+      "selected": 0
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-dialog-playground-light-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-dialog/playground",
+    "scale": 2,
+    "scene_primitive_count": 97,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "pattern-danger-playground-light-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "pattern-danger/playground",
+    "scale": 2,
+    "scene_primitive_count": 95,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-tabs-playground-dark-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-tabs/playground",
+    "scale": 1,
+    "scene_primitive_count": 87,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-menu-playground-dark-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-menu/playground",
+    "scale": 1,
+    "scene_primitive_count": 97,
+    "state": {
+      "active_item": 1,
+      "open": true,
+      "selected": 1
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-select-playground-dark-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-select/playground",
+    "scale": 1,
+    "scene_primitive_count": 96,
+    "state": {
+      "active_item": 0,
+      "open": true,
+      "selected": 0
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-dialog-playground-dark-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-dialog/playground",
+    "scale": 1,
+    "scene_primitive_count": 97,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "pattern-danger-playground-dark-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "pattern-danger/playground",
+    "scale": 1,
+    "scene_primitive_count": 95,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-tabs-playground-dark-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-tabs/playground",
+    "scale": 2,
+    "scene_primitive_count": 87,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-menu-playground-dark-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-menu/playground",
+    "scale": 2,
+    "scene_primitive_count": 97,
+    "state": {
+      "active_item": 1,
+      "open": true,
+      "selected": 1
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-select-playground-dark-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-select/playground",
+    "scale": 2,
+    "scene_primitive_count": 96,
+    "state": {
+      "active_item": 0,
+      "open": true,
+      "selected": 0
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-dialog-playground-dark-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-dialog/playground",
+    "scale": 2,
+    "scene_primitive_count": 97,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "pattern-danger-playground-dark-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "pattern-danger/playground",
+    "scale": 2,
+    "scene_primitive_count": 95,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-tabs-playground-light-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-tabs/playground",
+    "scale": 1,
+    "scene_primitive_count": 87,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-menu-playground-light-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-menu/playground",
+    "scale": 1,
+    "scene_primitive_count": 97,
+    "state": {
+      "active_item": 1,
+      "open": true,
+      "selected": 1
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-select-playground-light-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-select/playground",
+    "scale": 1,
+    "scene_primitive_count": 96,
+    "state": {
+      "active_item": 0,
+      "open": true,
+      "selected": 0
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-dialog-playground-light-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-dialog/playground",
+    "scale": 1,
+    "scene_primitive_count": 97,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "pattern-danger-playground-light-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "pattern-danger/playground",
+    "scale": 1,
+    "scene_primitive_count": 95,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-tabs-playground-light-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-tabs/playground",
+    "scale": 2,
+    "scene_primitive_count": 87,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-menu-playground-light-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-menu/playground",
+    "scale": 2,
+    "scene_primitive_count": 97,
+    "state": {
+      "active_item": 1,
+      "open": true,
+      "selected": 1
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-select-playground-light-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-select/playground",
+    "scale": 2,
+    "scene_primitive_count": 96,
+    "state": {
+      "active_item": 0,
+      "open": true,
+      "selected": 0
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-dialog-playground-light-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-dialog/playground",
+    "scale": 2,
+    "scene_primitive_count": 97,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "pattern-danger-playground-light-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "pattern-danger/playground",
+    "scale": 2,
+    "scene_primitive_count": 95,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-tabs-playground-dark-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-tabs/playground",
+    "scale": 1,
+    "scene_primitive_count": 87,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "component-menu-playground-dark-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-menu/playground",
+    "scale": 1,
+    "scene_primitive_count": 97,
+    "state": {
+      "active_item": 1,
+      "open": true,
+      "selected": 1
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "component-select-playground-dark-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-select/playground",
+    "scale": 1,
+    "scene_primitive_count": 96,
+    "state": {
+      "active_item": 0,
+      "open": true,
+      "selected": 0
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "component-dialog-playground-dark-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-dialog/playground",
+    "scale": 1,
+    "scene_primitive_count": 97,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "pattern-danger-playground-dark-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "pattern-danger/playground",
+    "scale": 1,
+    "scene_primitive_count": 95,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "component-tabs-playground-dark-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-tabs/playground",
+    "scale": 2,
+    "scene_primitive_count": 87,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "component-menu-playground-dark-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-menu/playground",
+    "scale": 2,
+    "scene_primitive_count": 97,
+    "state": {
+      "active_item": 1,
+      "open": true,
+      "selected": 1
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "component-select-playground-dark-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-select/playground",
+    "scale": 2,
+    "scene_primitive_count": 96,
+    "state": {
+      "active_item": 0,
+      "open": true,
+      "selected": 0
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "component-dialog-playground-dark-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-dialog/playground",
+    "scale": 2,
+    "scene_primitive_count": 97,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "pattern-danger-playground-dark-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "pattern-danger/playground",
+    "scale": 2,
+    "scene_primitive_count": 95,
+    "state": {
+      "focus": 0,
+      "modal": [
+        634.0,
+        465.0,
+        460.0,
+        200.0
+      ],
+      "open": true
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  }
+]

@@ -1,0 +1,165 @@
+{
+  "format": "tekesui-gold7-refinement-review/1",
+  "date": "2026-10-17",
+  "scope": "warm neutral roles, restrained brand candidates, existing component geometry/ink/clip fixes; no new components; performance paused",
+  "source_state": "uncommitted worktree; no automatic commit/push/publication",
+  "base_commit": "6ca8295dc398f68ba4d5d1fc333346f40fafee2b",
+  "source_manifest": "source-manifest.json",
+  "source_snapshot": "source-snapshot.tar.gz",
+  "checks": [
+    {
+      "check": "tests-final",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-gallery",
+        "-p",
+        "tekes-ui-motion",
+        "-p",
+        "tekes-ui-icons",
+        "-p",
+        "tekes-ui-design-export",
+        "-p",
+        "tekes-ui-tokens",
+        "--release",
+        "--locked"
+      ],
+      "exit": 0,
+      "seconds": 39.94
+    },
+    {
+      "check": "clippy-final",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-gallery",
+        "-p",
+        "tekes-ui-motion",
+        "-p",
+        "tekes-ui-icons",
+        "-p",
+        "tekes-ui-design-export",
+        "-p",
+        "tekes-ui-tokens",
+        "--all-targets",
+        "--release",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 7.06
+    },
+    {
+      "check": "build-final",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "tekes-ui-gallery",
+        "--release",
+        "--locked"
+      ],
+      "exit": 0,
+      "seconds": 10.28
+    },
+    {
+      "check": "fmt-final",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.72
+    },
+    {
+      "check": "pure-rust-final",
+      "command": [
+        "python3",
+        "scripts/check-pure-rust.py"
+      ],
+      "exit": 0,
+      "seconds": 0.6
+    },
+    {
+      "check": "design-system-final",
+      "command": [
+        "target/design-check-venv/bin/python",
+        "scripts/check-design-system.py"
+      ],
+      "exit": 0,
+      "seconds": 0.5
+    },
+    {
+      "check": "diff-final",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.08
+    }
+  ],
+  "rust_tests": {
+    "passed": 556,
+    "failed": 0,
+    "ignored": 1,
+    "ignored_reason": "full icon catalogue requires explicit local TEKESUI_ICON_DIR and TEKESUI_ICONS_REVIEW_OUT"
+  },
+  "color_checks": {
+    "brand_profiles": 13,
+    "themes": 4,
+    "declared_pairs": 12688,
+    "brand_independent_color_roles": 99,
+    "result": "pass",
+    "scope": "declared pairs only, not arbitrary nesting or physical displays"
+  },
+  "render_checks": {
+    "component_count": 45,
+    "main_cases": 743,
+    "png_total": 859,
+    "interaction_cases": 63,
+    "interaction_passed": 63,
+    "checkbox_pointer_toggle_pixel_cases": 16,
+    "full_artifacts_local": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/gold7-review-20261017",
+    "full_artifact_hashes": "all-render-artifact-hashes.json",
+    "retained_samples": "images",
+    "tools": "tools",
+    "method": "target-only clone of actual Gallery; visibility adapters for inspection, real components, TextEngine, GPU renderer and actual event dispatch; all production Rust files refreshed before rendering; no screenshots used as component implementations"
+  },
+  "native_observations": {
+    "earlier_build_this_round": [
+      "Checkbox click and Space toggled without label disappearing",
+      "hue draft did not change applied brand",
+      "candidate dialog blocked background scrolling and Escape restored invoker focus"
+    ],
+    "final_packaged_build": [
+      "StatusBadge actual window showed readable light labels on four status surfaces",
+      "Gallery relaunched, Theme & brand matrix opened in Light with reference brand and no candidate applied"
+    ],
+    "native_screenshot_file_saved": false,
+    "display_timing_measured": false
+  },
+  "not_completed": [
+    "Gold7 G4 real component StateTransition integration",
+    "focus-ring and elevation design comparison",
+    "draft recovery and explicit return-to-latest gaps",
+    "media zoom/pan interactions",
+    "native VoiceOver and physical IME acceptance",
+    "physical external-display edge appearance across scales",
+    "CPU, dropped frames and sustained built-in 120Hz/8.33ms acceptance"
+  ],
+  "gold7_result": "partial refinement only; contract/code/experience remain separate; no blanket pass",
+  "package_comparison": "package-binary-comparison.json"
+}

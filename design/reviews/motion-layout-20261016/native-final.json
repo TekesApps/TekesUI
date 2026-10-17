@@ -1,0 +1,9 @@
+{
+  "exit_code": 0,
+  "external_confirmed": true,
+  "placement": [
+    "[   0.103] placement: \"U2790B\" builtin=false scale=2 max_fps=30\uff1bScreen(External)"
+  ],
+  "pngs": 11,
+  "capture_failures": []
+}

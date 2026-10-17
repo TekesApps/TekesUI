@@ -1,0 +1,557 @@
+{
+  "date": "2026-10-17",
+  "scope": "Existing 45 registered component contracts and Gallery integration; no new registered component, redesign or stable promotion.",
+  "worktree": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI",
+  "registry_count": 45,
+  "maturity": "experimental",
+  "native_app_launched": false,
+  "automatic_commit_push_release": false,
+  "component_coverage": [
+    {
+      "component": "tui.stack",
+      "route": "component-stack",
+      "renderer": "stack",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.grid",
+      "route": "component-grid",
+      "renderer": "grid",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.separator",
+      "route": "component-separator",
+      "renderer": "separator",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.split-view",
+      "route": "component-split-view",
+      "renderer": "split-view",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.scroll-area",
+      "route": "component-scroll-area",
+      "renderer": "scroll",
+      "producer": "tekes-ui-controls::scroll_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.disclosure",
+      "route": "component-disclosure",
+      "renderer": "disclosure",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.surface",
+      "route": "component-surface",
+      "renderer": "surface",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.toolbar",
+      "route": "component-toolbar",
+      "renderer": "toolbar",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.text",
+      "route": "component-text",
+      "renderer": "text",
+      "producer": "tekes-ui-controls::text_surface / text_input",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.icon",
+      "route": "component-icon",
+      "renderer": "icon",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.button",
+      "route": "component-button",
+      "renderer": "button",
+      "producer": "tekes-ui-controls::widgets",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.icon-button",
+      "route": "component-icon-button",
+      "renderer": "icon-button",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.link",
+      "route": "component-link",
+      "renderer": "link",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.text-field",
+      "route": "component-text-field",
+      "renderer": "field",
+      "producer": "tekes-ui-controls::text_surface / text_input",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.text-area",
+      "route": "component-text-area",
+      "renderer": "area",
+      "producer": "tekes-ui-controls::text_surface / text_input",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.search-field",
+      "route": "component-search-field",
+      "renderer": "search",
+      "producer": "tekes-ui-controls::text_surface / text_input",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.combo-box",
+      "route": "component-combo-box",
+      "renderer": "combo-box",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.slider",
+      "route": "component-slider",
+      "renderer": "slider",
+      "producer": "tekes-ui-controls::selection",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.checkbox",
+      "route": "component-checkbox",
+      "renderer": "checkbox",
+      "producer": "tekes-ui-controls::widgets",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.radio-group",
+      "route": "component-radio-group",
+      "renderer": "radio-group",
+      "producer": "tekes-ui-controls::selection",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.switch",
+      "route": "component-switch",
+      "renderer": "switch",
+      "producer": "tekes-ui-controls::selection",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.segmented-control",
+      "route": "component-segmented-control",
+      "renderer": "segmented-control",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.field",
+      "route": "component-field",
+      "renderer": "field-meta",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.select",
+      "route": "component-select",
+      "renderer": "select",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.number-field",
+      "route": "component-number-field",
+      "renderer": "number-field",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.tabs",
+      "route": "component-tabs",
+      "renderer": "tabs",
+      "producer": "tekes-ui-controls::composite",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.breadcrumb",
+      "route": "component-breadcrumb",
+      "renderer": "breadcrumb",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.command-palette",
+      "route": "component-command-palette",
+      "renderer": "command-palette",
+      "producer": "tekes-ui-controls::layout_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.list",
+      "route": "component-list",
+      "renderer": "list",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.tree",
+      "route": "component-tree",
+      "renderer": "tree",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.data-table",
+      "route": "component-data-table",
+      "renderer": "data-table",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.chart",
+      "route": "component-chart",
+      "renderer": "chart",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.menu",
+      "route": "component-menu",
+      "renderer": "menu",
+      "producer": "tekes-ui-controls::composite",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.tooltip",
+      "route": "component-tooltip",
+      "renderer": "tooltip",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.popover",
+      "route": "component-popover",
+      "renderer": "popover",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.dialog",
+      "route": "component-dialog",
+      "renderer": "dialog",
+      "producer": "tekes-ui-controls::composite",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.toast",
+      "route": "component-toast",
+      "renderer": "toast",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.banner",
+      "route": "component-banner",
+      "renderer": "banner",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.status-badge",
+      "route": "component-status-badge",
+      "renderer": "status-badge",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.progress",
+      "route": "component-progress",
+      "renderer": "progress",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.empty-state",
+      "route": "component-empty-state",
+      "renderer": "empty-state",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.skeleton",
+      "route": "component-skeleton",
+      "renderer": "skeleton",
+      "producer": "tekes-ui-controls::feedback_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.markdown",
+      "route": "component-markdown",
+      "renderer": "markdown",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.code-block",
+      "route": "component-code-block",
+      "renderer": "code-block",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    },
+    {
+      "component": "tui.diff-view",
+      "route": "component-diff-view",
+      "renderer": "diff-view",
+      "producer": "tekes-ui-controls::collections_view",
+      "status": "experimental"
+    }
+  ],
+  "key_changes": {
+    "production_modules": [
+      "crates/tekes-ui-controls/src/layout_view.rs",
+      "crates/tekes-ui-controls/src/collections_view.rs",
+      "crates/tekes-ui-controls/src/feedback_view.rs"
+    ],
+    "gallery_adapters": [
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs"
+    ],
+    "gallery_consumers": [
+      "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+      "crates/tekes-ui-gallery/src/gallery/pages/icons.rs"
+    ],
+    "durable_contract": "docs/gallery.md#component-runtime-ownership",
+    "registration_and_routes": "unchanged",
+    "public_model_apis": "preserved; read-only capability getters added"
+  },
+  "checks": [
+    {
+      "check": "tests-final",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-gallery",
+        "-p",
+        "tekes-ui-motion",
+        "-p",
+        "tekes-ui-icons",
+        "--release",
+        "--locked"
+      ],
+      "exit": 0,
+      "seconds": 17.46
+    },
+    {
+      "check": "clippy-final",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-gallery",
+        "-p",
+        "tekes-ui-motion",
+        "-p",
+        "tekes-ui-icons",
+        "--all-targets",
+        "--release",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 2.25
+    },
+    {
+      "check": "build-final",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "tekes-ui-gallery",
+        "--release",
+        "--locked"
+      ],
+      "exit": 0,
+      "seconds": 4.7
+    },
+    {
+      "check": "fmt-final",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.46
+    },
+    {
+      "check": "pure-rust-final",
+      "command": [
+        "python3",
+        "scripts/check-pure-rust.py"
+      ],
+      "exit": 0,
+      "seconds": 0.31
+    },
+    {
+      "check": "design-system-final",
+      "command": [
+        "target/design-check-venv/bin/python",
+        "scripts/check-design-system.py"
+      ],
+      "exit": 0,
+      "seconds": 0.31
+    },
+    {
+      "check": "diff-final",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.06
+    }
+  ],
+  "tests": {
+    "passed": 465,
+    "failed": 0,
+    "ignored": 1,
+    "crates": [
+      "controls",
+      "gallery",
+      "icons",
+      "motion"
+    ]
+  },
+  "real_gallery_input": {
+    "cases": 63,
+    "passed": 63,
+    "event_path": "Gallery::handle_input, target-only wrappers read real hit frames; no direct open/selected mutation",
+    "configurations": [
+      "light 1440x960 100%",
+      "dark 1440x960 100%",
+      "light 1000x800 150%"
+    ],
+    "manifest": "interactions.json",
+    "limitation": "Offscreen GPU validation; not physical input or native timing acceptance."
+  },
+  "default_visual": {
+    "captures": 672,
+    "pixel_identical": 596,
+    "changed": 76,
+    "comparison": "compare-final.json",
+    "changed_pages": [
+      "component-breadcrumb",
+      "component-chart",
+      "component-empty-state",
+      "component-grid",
+      "component-icon-button",
+      "component-segmented-control",
+      "component-split-view",
+      "component-stack",
+      "component-tree",
+      "icons"
+    ],
+    "reviewed_changes": {
+      "component-breadcrumb": "Intrinsic label widths replace fixed wrapping slots; last item uses the existing non-interactive current-item contract; separators are component-owned.",
+      "component-chart": "Production text adapter and component viewport clipping replace Gallery label-slot clipping; bar geometry and data remain unchanged.",
+      "component-empty-state": "Action is kept wholly inside the component visible frame; previous last two pixels overflowed the supplied content slot.",
+      "component-grid": "Child surface strokes inset by half a point so borders fit their visible geometry.",
+      "component-icon-button": "Actual production IconView plus asset replaces the text glyph; shared asset geometry may differ at a few pixels.",
+      "component-segmented-control": "Production Button content insets are used for labels; variants, colors and outer bounds retained.",
+      "component-split-view": "Shared geometry resolves the divider and clip boundary; small 1x raster differences retained.",
+      "component-stack": "Child surface strokes inset by half a point so borders fit their visible geometry.",
+      "component-tree": "Indented children fit inside the supplied component frame instead of extending beyond its right edge.",
+      "icons": "Production IconView applies consistent artboard fitting and clipping; existing cache and drawings are retained."
+    },
+    "manual_review": "Representative light before/after pairs for each changed component family; large-text input scenes and dark overlays. Not every individual PNG was manually reviewed.",
+    "full_capture_paths": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/remaining-components-20261017/snapshot-before",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/remaining-components-20261017/snapshot-final"
+    ]
+  },
+  "source_protection": {
+    "before_files": 1239,
+    "untouched_original_files": 1232,
+    "modified_originals": [
+      "crates/tekes-ui-controls/src/extended.rs",
+      "crates/tekes-ui-controls/src/widgets.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+      "crates/tekes-ui-controls/src/lib.rs",
+      "crates/tekes-ui-gallery/src/gallery/pages/icons.rs",
+      "docs/gallery.md"
+    ],
+    "new_source_files": [
+      "crates/tekes-ui-controls/src/layout_view.rs",
+      "crates/tekes-ui-controls/src/collections_view.rs",
+      "crates/tekes-ui-controls/src/feedback_view.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs"
+    ],
+    "deleted_originals": [],
+    "design_files_unchanged": 942,
+    "source_frozen": "final-source.json"
+  },
+  "package": {
+    "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app/Contents",
+    "executable": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app/Contents/MacOS/TekesUI-Gallery",
+    "sha256": "8a8b119d1d7178c1aa574ff60345741f4d0681dcfbbf5442decd0a02f6f0828e",
+    "baseline_sha256": "3af76ec6e6eebe3b0e808fa610302d924c1e2b88b8b12a532de3caee56657d78",
+    "launch_status": "not launched; external-display native retest deferred by user"
+  },
+  "bugs_fixed": [
+    "Production button hit geometry rejected by Gallery proxy layout checks",
+    "Pointer move misrouted as feedback pointer down",
+    "Missing Disclosure/SegmentedControl/Breadcrumb release delegation",
+    "NumberField Enter/Space consumed without model change",
+    "ComboBox and CommandPalette using stale rendered filtering during consecutive input without redraw",
+    "Popover generic host press left armed after component-owned dismissal",
+    "Hidden/clipped/inactive components retaining stale input capture",
+    "Sorted DataTable keyboard navigation using source row order",
+    "Body text incorrectly vertically centered through Button text drawing",
+    "Nested frame overflow and clipped EmptyState action"
+  ],
+  "boundaries": [
+    "NumberField remains a bounded stepper, without editable localized numeric input",
+    "Markdown remains the existing subset; CodeBlock is non-editable without new syntax features",
+    "Chart remains the existing single-series bar chart",
+    "TextEditor and SelectionSurface remain internal surfaces, not additional public registrations"
+  ],
+  "pending": [
+    "External-display native layout/input retest",
+    "Sustained 120Hz / 8.33ms and CPU acceptance; presentation/drawable timing gaps remain open",
+    "NSScrollView bounce native comparison",
+    "Long-text lazy provider and full virtualization work",
+    "Physical IME and VoiceOver acceptance",
+    "Final Design System visual review; current tokens remain unchanged"
+  ],
+  "intermediate_failures": "Initial full test exposed stale ComboBox event state; real Gallery probes exposed missing release routes; strict lint/format and default visual regressions were corrected before final checks."
+}

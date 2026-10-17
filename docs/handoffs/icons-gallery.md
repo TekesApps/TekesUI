@@ -52,3 +52,23 @@ cargo test --locked --offline -p tekes-ui-gallery \
 - 待主聊天统一验收：真实窗口的手势 owner、滚动条捕获、resize 后位置、真实系统 IME、焦点/剪贴板、120 Hz 性能及空闲显示回调归零。离屏几何与 GPU 测试不能替代这些验收。
 
 固定公共快照继续使用 10 项基础图标的确定性夹具，不隐式加载私有 SVG。完整集的本机源文件及 32 张证据 SHA256 保存在 `target/icons-review-20261015/verification.json`；资产未被复制入源码或修改。
+
+
+## 2026-10-16：提案接入与新旧对比
+
+51 个提案随 Gallery 编译嵌入：38 个新增、5 个重绘、8 个优化。133 个有效旧图标中与优化稿同名的 8 项保留为 before 变体，不覆盖私有源；页面合计 186 个逻辑条目（10 基础 + 133 原有 + 43 新名字）。优化条目优先显示，每张卡左旧右新，各列 12/16/24 pt，全部共享名称的大小写无关包含搜索，另支持中文标签。
+
+变更仅在 icon_catalog.rs、proposal_assets.rs、pages/icons.rs 与本文。固定公开快照仍使用基础夹具。内嵌资产只引用 design/proposals/icons-20261015/svg，旧图标继续从外部只读目录加载。缺少旧源时提案仍可用，优化卡提示旧稿未加载。
+
+验证：常规图标测试、提案合并/唯一性/缺源/双变体 GPU 缓存、跨新旧提案搜索测试通过；显式完整集逐行光栅检查通过（176 个条目 + 8 份旧稿，552 张尺寸纹理），四主题 × 两倍率 × 四状态共 32 张离屏图。真实原生窗口确认 186 项、CAD- 搜索 14 项、SETT 搜索 1 项且旧稿优化稿并排。已清空搜索并保留原生窗口供查看。
+
+独立窗口包：target/icons-proposals-preview/TekesUI Icon Proposals.app。原生截图：target/icons-proposals-review/native-icons-comparison.png。离屏图位于 crates/tekes-ui-gallery/target/icons-proposals-review。没有更新三个消费应用的图标。
+
+补充边界：本轮严格 Clippy 重跑停在 controls 的既有 build script，已终止本任务的等待进程，未得出通过结论；前述 Gallery 编译、11 个普通图标测试（分两次）、完整集测试和原生窗口验证已有成功结果。
+
+
+## 2026-10-16：8 个优化稿获批为默认
+
+用户明确批准 8 个优化稿作为默认。正式真源移至 crates/tekes-ui-icons/assets，通过 Icon::named / Icon::svg 复用，不再从提案目录取得默认稿。Gallery 的 8 条提案引用改为这个共享 crate，卡片标明“默认使用”，旧稿 before 仍从外部只读加载并排显示，条目总数仍为 186。其余 43 个提案状态不变。没有修改三个 Swift 应用的资产、映射或发布状态。
+
+本轮验证：tekes-ui-icons 单测及严格 Clippy 通过，Cargo 打包清单包含全部 8 个默认 SVG，逐字节确认与获批稿一致。Gallery 增加共享默认来源及 before 保留测试；重跑当前受并行动效 pages/motion.rs 的 RecipeKind 非穷尽分支错误阻挡，未声称新窗口已验证。

@@ -1,0 +1,8 @@
+{
+  "pid": 87190,
+  "page": "component-scroll-area",
+  "driver": "default CAD",
+  "signed_binary_sha256": "d4cf87136e26eeb9050529241548a556c774eb74b049fc3b47b743011bd523db",
+  "compiled_frozen_binary_sha256": "92f7205bf1572013d5cd8d5c43d470873c2dd4ae06aaa23c5c04317355bcd2a5",
+  "acceptance": "not accepted; normal preview relaunched with CPU optimization"
+}

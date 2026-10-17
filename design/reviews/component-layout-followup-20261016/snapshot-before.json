@@ -1,0 +1,7 @@
+{
+  "command": "frozen binary --snapshot snapshot-before",
+  "exit": 0,
+  "seconds": 5.06,
+  "png_count": 672,
+  "mode": "offscreen_no_native_window"
+}

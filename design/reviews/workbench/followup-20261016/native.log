@@ -1,0 +1,188 @@
+[   0.388] Created: size Size { width: 1440.0, height: 960.0 } scale 2 drawable (2880, 1920) windowNumber 47388
+[   0.393] placement: "Built-in Retina Display" builtin=true scale=2 max_fps=120；Screen(Builtin)
+[   0.393] system theme Theme { appearance: Light, contrast: Standard }
+[   0.393] Resized 1440x960 scale 2 drawable (2880, 1920)
+[   0.402] Redraw #1 size 1440x960 drawable (2880, 1920) quads 131
+[   0.411] Resized 1440x827 scale 2 drawable (2880, 1654)
+[   0.411] Redraw #2 size 1440x827 drawable (2880, 1654) quads 132
+[   0.499] Redraw #3 size 1440x827 drawable (2880, 1654) quads 132
+selftest: MenuCommand(201)
+[   0.951] command Appearance(Light)
+[   0.951] TekesUI Gallery — Introduction — Light
+selftest: MenuCommand(302)
+[   1.406] command Contrast(Off)
+[   1.406] TekesUI Gallery — Introduction — Light
+selftest: MenuCommand(176)
+[   1.861] command Page(Workbench(60))
+[   1.862] TekesUI Gallery — Settings — Light
+[   1.864] Redraw #4 size 1440x827 drawable (2880, 1654) quads 151
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/01-settings-initial.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/01-settings-initial.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: Click { x: 612.0, y: 306.0 }
+[   2.768] Redraw #5 size 1440x827 drawable (2880, 1654) quads 152
+selftest: TextCommand("selectAll:")
+[   3.221] Redraw #6 size 1440x827 drawable (2880, 1654) quads 155
+selftest: Preedit("中")
+[   3.678] Redraw #7 size 1440x827 drawable (2880, 1654) quads 154
+selftest: ExpectText { text: "中", marked: true }
+SELFTEST PASS text query, selection NSRange { location: 1, length: 0 }, candidate rect CGRect { origin: CGPoint { x: 372.0036934441367, y: 603.0 }, size: CGSize { width: 1.0, height: 16.0 } }
+[   4.179] Redraw #8 size 1440x827 drawable (2880, 1654) quads 153
+selftest: Text("Project Studio")
+[   4.586] Redraw #9 size 1440x827 drawable (2880, 1654) quads 154
+[   4.680] Redraw #10 size 1440x827 drawable (2880, 1654) quads 153
+selftest: ExpectText { text: "Project Studio", marked: false }
+SELFTEST PASS text query, selection NSRange { location: 14, length: 0 }, candidate rect CGRect { origin: CGPoint { x: 445.515625, y: 603.0 }, size: CGSize { width: 1.0, height: 16.0 } }
+[   5.181] Redraw #11 size 1440x827 drawable (2880, 1654) quads 154
+selftest: Click { x: 387.0, y: 434.0 }
+[   5.496] Redraw #12 size 1440x827 drawable (2880, 1654) quads 156
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/02-settings-pending.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/02-settings-pending.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: Click { x: 402.0, y: 537.0 }
+[   6.404] Redraw #13 size 1440x827 drawable (2880, 1654) quads 154
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/03-settings-failed.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/03-settings-failed.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: Click { x: 387.0, y: 434.0 }
+[   7.314] Redraw #14 size 1440x827 drawable (2880, 1654) quads 156
+selftest: Click { x: 402.0, y: 537.0 }
+[   7.767] Redraw #15 size 1440x827 drawable (2880, 1654) quads 154
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/04-settings-saved.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/04-settings-saved.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: MenuCommand(158)
+[   8.673] command Page(Workbench(42))
+[   8.673] TekesUI Gallery — Menu — Light
+[   8.675] Redraw #16 size 1440x827 drawable (2880, 1654) quads 144
+selftest: Click { x: 427.0, y: 266.0 }
+[   9.128] Redraw #17 size 1440x827 drawable (2880, 1654) quads 152
+selftest: Key { key_code: 125 }
+[   9.580] Redraw #18 size 1440x827 drawable (2880, 1654) quads 152
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/05-menu-keyboard.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/05-menu-keyboard.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: Key { key_code: 36 }
+[  10.488] Redraw #19 size 1440x827 drawable (2880, 1654) quads 146
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/06-menu-action.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/06-menu-action.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: MenuCommand(161)
+[  11.392] command Page(Workbench(45))
+[  11.393] TekesUI Gallery — Dialog — Light
+[  11.394] Redraw #20 size 1440x827 drawable (2880, 1654) quads 144
+selftest: Click { x: 427.0, y: 266.0 }
+[  11.847] Redraw #21 size 1440x827 drawable (2880, 1654) quads 152
+selftest: Key { key_code: 48 }
+[  12.300] Redraw #22 size 1440x827 drawable (2880, 1654) quads 152
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/07-dialog-focus.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/07-dialog-focus.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: Key { key_code: 53 }
+[  13.201] Redraw #23 size 1440x827 drawable (2880, 1654) quads 146
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/08-dialog-restored.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/08-dialog-restored.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: MenuCommand(521)
+[  14.105] command Brand(1)
+[  14.105] TekesUI Gallery — Dialog — Light
+[  14.105] Redraw #24 size 1440x827 drawable (2880, 1654) quads 146
+selftest: MenuCommand(136)
+[  14.559] command Page(Workbench(20))
+[  14.559] TekesUI Gallery — Button — Light
+[  14.561] Redraw #25 size 1440x827 drawable (2880, 1654) quads 148
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/09-button-blue.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/09-button-blue.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: MenuCommand(202)
+[  15.469] command Appearance(Dark)
+[  15.470] TekesUI Gallery — Button — Dark
+[  15.471] Redraw #26 size 1440x827 drawable (2880, 1654) quads 148
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/10-button-dark.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/10-button-dark.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: MenuCommand(542)
+[  16.372] command TextScale(2)
+[  16.372] TekesUI Gallery — Button — Dark
+[  16.375] Redraw #27 size 1440x827 drawable (2880, 1654) quads 148
+selftest: MenuCommand(501)
+[  16.826] command PreviewWidth(1)
+[  16.826] TekesUI Gallery — Button — Dark
+[  16.827] Redraw #28 size 1440x827 drawable (2880, 1654) quads 151
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/11-large-text-narrow.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/11-large-text-narrow.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: MenuCommand(540)
+[  17.735] command TextScale(0)
+[  17.735] TekesUI Gallery — Button — Dark
+[  17.736] Redraw #29 size 1440x827 drawable (2880, 1654) quads 149
+selftest: MenuCommand(500)
+[  18.188] command PreviewWidth(0)
+[  18.188] TekesUI Gallery — Button — Dark
+[  18.188] Redraw #30 size 1440x827 drawable (2880, 1654) quads 148
+selftest: MenuCommand(520)
+[  18.643] command Brand(0)
+[  18.643] TekesUI Gallery — Button — Dark
+[  18.643] Redraw #31 size 1440x827 drawable (2880, 1654) quads 148
+selftest: MenuCommand(201)
+[  19.098] command Appearance(Light)
+[  19.099] TekesUI Gallery — Button — Light
+[  19.100] Redraw #32 size 1440x827 drawable (2880, 1654) quads 148
+selftest: MenuCommand(173)
+[  19.551] command Page(Workbench(57))
+[  19.552] TekesUI Gallery — Master–detail — Light
+[  19.559] Redraw #33 size 1440x827 drawable (2880, 1654) quads 181
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/12-master-detail.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/12-master-detail.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: Resize { w: 800.0, h: 600.0 }
+[  20.456] Resized 800x600 scale 2 drawable (1600, 1200)
+[  20.460] Redraw #34 size 800x600 drawable (1600, 1200) quads 166
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/13-master-narrow.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/13-master-narrow.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: MenuCommand(130)
+[  21.360] command Page(Workbench(14))
+[  21.361] TekesUI Gallery — ScrollArea — Light
+[  21.367] Redraw #35 size 800x600 drawable (1600, 1200) quads 156
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/14-scroll-viewport.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/14-scroll-viewport.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: Resize { w: 1440.0, h: 960.0 }
+[  22.269] Resized 1440x827 scale 2 drawable (2880, 1654)
+[  22.274] Redraw #36 size 1440x827 drawable (2880, 1654) quads 162
+selftest: MenuCommand(119)
+[  22.724] command Page(Workbench(3))
+[  22.725] TekesUI Gallery — Colors & themes — Light
+[  22.726] Redraw #37 size 1440x827 drawable (2880, 1654) quads 182
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/15-foundation-colors.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/15-foundation-colors.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: Click { x: 144.0, y: 33.0 }
+[  23.630] Redraw #38 size 1440x827 drawable (2880, 1654) quads 182
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/16-navigation-search-focus.png" }
+[  24.130] Redraw #39 size 1440x827 drawable (2880, 1654) quads 181
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/16-navigation-search-focus.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: Text("component-button/states")
+[  24.539] Redraw #40 size 1440x827 drawable (2880, 1654) quads 74
+[  24.631] Redraw #41 size 1440x827 drawable (2880, 1654) quads 73
+selftest: Resize { w: 800.0, h: 600.0 }
+[  24.996] Resized 800x600 scale 2 drawable (1600, 1200)
+[  24.997] Redraw #42 size 800x600 drawable (1600, 1200) quads 78
+[  25.132] Redraw #43 size 800x600 drawable (1600, 1200) quads 79
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/17-navigation-search-resized.png" }
+[  25.633] Redraw #44 size 800x600 drawable (1600, 1200) quads 78
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/17-navigation-search-resized.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: TextCommand("selectAll:")
+[  25.905] Redraw #45 size 800x600 drawable (1600, 1200) quads 82
+selftest: TextCommand("deleteBackward:")
+[  26.357] Redraw #46 size 800x600 drawable (1600, 1200) quads 187
+selftest: Resize { w: 1440.0, h: 960.0 }
+[  26.812] Resized 1440x827 scale 2 drawable (2880, 1654)
+[  26.813] Redraw #47 size 1440x827 drawable (2880, 1654) quads 182
+[  26.858] Redraw #48 size 1440x827 drawable (2880, 1654) quads 181
+selftest: MenuCommand(123)
+[  27.263] command Page(Workbench(7))
+[  27.264] TekesUI Gallery — Shape & elevation — Light
+[  27.266] Redraw #49 size 1440x827 drawable (2880, 1654) quads 155
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/18-foundation-shape.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/18-foundation-shape.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: MenuCommand(125)
+[  28.172] command Page(Workbench(9))
+[  28.173] TekesUI Gallery — Interaction & accessibility — Light
+[  28.175] Redraw #50 size 1440x827 drawable (2880, 1654) quads 152
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/19-foundation-interaction.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/19-foundation-interaction.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: MenuCommand(178)
+[  29.077] command Page(Workbench(62))
+[  29.078] TekesUI Gallery — Raster & compositing checks — Light
+[  29.079] Redraw #51 size 1440x827 drawable (2880, 1654) quads 143
+selftest: Capture { path: "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/20-raster-calibration.png" }
+selftest: screencapture -> /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/workbench/followup-20261016/20-raster-calibration.png: Ok(ExitStatus(unix_wait_status(0)))
+selftest: Close
+[  29.985] CloseRequested -> close；Redraw 共 51 次

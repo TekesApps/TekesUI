@@ -1,0 +1,447 @@
+{
+  "source": "Public SwiftUI Spring / UnitCurve; macOS SDK 26.5; Swift 6.3.3",
+  "measurement_script": "External temporary reference: /tmp/tekesui-apple-motion-reference/apple_oracle.swift",
+  "samples": [
+    {
+      "kind": "spring",
+      "id": "default",
+      "time_or_progress": 0.0,
+      "value": 0.0,
+      "velocity": 0.0
+    },
+    {
+      "kind": "spring",
+      "id": "default",
+      "time_or_progress": 0.001,
+      "value": 6.475873523714704e-05,
+      "velocity": 0.12902473898389566
+    },
+    {
+      "kind": "spring",
+      "id": "default",
+      "time_or_progress": 0.05,
+      "value": 0.11251162454114771,
+      "velocity": 3.685835376740189
+    },
+    {
+      "kind": "spring",
+      "id": "default",
+      "time_or_progress": 0.1,
+      "value": 0.3164612148783562,
+      "velocity": 4.163873258117952
+    },
+    {
+      "kind": "spring",
+      "id": "default",
+      "time_or_progress": 0.25,
+      "value": 0.7782854813513475,
+      "velocity": 1.875997375816907
+    },
+    {
+      "kind": "spring",
+      "id": "default",
+      "time_or_progress": 0.5,
+      "value": 0.9778095145157484,
+      "velocity": 0.21573473836281631
+    },
+    {
+      "kind": "spring",
+      "id": "default",
+      "time_or_progress": 1.0,
+      "value": 0.9998642024453704,
+      "velocity": 0.0014264803655888254
+    },
+    {
+      "kind": "spring",
+      "id": "spring",
+      "time_or_progress": 0.0,
+      "value": 0.0,
+      "velocity": 0.0
+    },
+    {
+      "kind": "spring",
+      "id": "spring",
+      "time_or_progress": 0.001,
+      "value": 7.829847464546624e-05,
+      "velocity": 0.15594168500985006
+    },
+    {
+      "kind": "spring",
+      "id": "spring",
+      "time_or_progress": 0.05,
+      "value": 0.13131145535900623,
+      "velocity": 4.212253129409211
+    },
+    {
+      "kind": "spring",
+      "id": "spring",
+      "time_or_progress": 0.1,
+      "value": 0.35773955646956457,
+      "velocity": 4.494373762402091
+    },
+    {
+      "kind": "spring",
+      "id": "spring",
+      "time_or_progress": 0.25,
+      "value": 0.821025553585931,
+      "velocity": 1.7060171115377698
+    },
+    {
+      "kind": "spring",
+      "id": "spring",
+      "time_or_progress": 0.5,
+      "value": 0.986399068534425,
+      "velocity": 0.14744736802918004
+    },
+    {
+      "kind": "spring",
+      "id": "spring",
+      "time_or_progress": 1.0,
+      "value": 0.9999526894211365,
+      "velocity": 0.0005506990314711304
+    },
+    {
+      "kind": "spring",
+      "id": "smooth",
+      "time_or_progress": 0.0,
+      "value": 0.0,
+      "velocity": 0.0
+    },
+    {
+      "kind": "spring",
+      "id": "smooth",
+      "time_or_progress": 0.001,
+      "value": 7.829847464546624e-05,
+      "velocity": 0.15594168500985006
+    },
+    {
+      "kind": "spring",
+      "id": "smooth",
+      "time_or_progress": 0.05,
+      "value": 0.13131145535900623,
+      "velocity": 4.212253129409211
+    },
+    {
+      "kind": "spring",
+      "id": "smooth",
+      "time_or_progress": 0.1,
+      "value": 0.35773955646956457,
+      "velocity": 4.494373762402091
+    },
+    {
+      "kind": "spring",
+      "id": "smooth",
+      "time_or_progress": 0.25,
+      "value": 0.821025553585931,
+      "velocity": 1.7060171115377698
+    },
+    {
+      "kind": "spring",
+      "id": "smooth",
+      "time_or_progress": 0.5,
+      "value": 0.986399068534425,
+      "velocity": 0.14744736802918004
+    },
+    {
+      "kind": "spring",
+      "id": "smooth",
+      "time_or_progress": 1.0,
+      "value": 0.9999526894211365,
+      "velocity": 0.0005506990314711304
+    },
+    {
+      "kind": "spring",
+      "id": "snappy",
+      "time_or_progress": 0.0,
+      "value": 0.0,
+      "velocity": 0.0
+    },
+    {
+      "kind": "spring",
+      "id": "snappy",
+      "time_or_progress": 0.001,
+      "value": 7.839654787822337e-05,
+      "velocity": 0.15623476430253014
+    },
+    {
+      "kind": "spring",
+      "id": "snappy",
+      "time_or_progress": 0.05,
+      "value": 0.13821035270869308,
+      "velocity": 4.544508390994391
+    },
+    {
+      "kind": "spring",
+      "id": "snappy",
+      "time_or_progress": 0.1,
+      "value": 0.38810244578546205,
+      "velocity": 5.038907578344235
+    },
+    {
+      "kind": "spring",
+      "id": "snappy",
+      "time_or_progress": 0.25,
+      "value": 0.89450945319185,
+      "velocity": 1.6455812826277327
+    },
+    {
+      "kind": "spring",
+      "id": "snappy",
+      "time_or_progress": 0.5,
+      "value": 1.0060199607118339,
+      "velocity": -0.01914788912605389
+    },
+    {
+      "kind": "spring",
+      "id": "snappy",
+      "time_or_progress": 1.0,
+      "value": 0.9999660818584505,
+      "velocity": 0.00018093917312701015
+    },
+    {
+      "kind": "spring",
+      "id": "bouncy",
+      "time_or_progress": 0.0,
+      "value": 0.0,
+      "velocity": 0.0
+    },
+    {
+      "kind": "spring",
+      "id": "bouncy",
+      "time_or_progress": 0.001,
+      "value": 7.849480575339296e-05,
+      "velocity": 0.1565285797957241
+    },
+    {
+      "kind": "spring",
+      "id": "bouncy",
+      "time_or_progress": 0.05,
+      "value": 0.14571501353595817,
+      "velocity": 4.917048543370067
+    },
+    {
+      "kind": "spring",
+      "id": "bouncy",
+      "time_or_progress": 0.1,
+      "value": 0.4233021230745698,
+      "velocity": 5.707558337645976
+    },
+    {
+      "kind": "spring",
+      "id": "bouncy",
+      "time_or_progress": 0.25,
+      "value": 0.9840874909713708,
+      "velocity": 1.5262647111165197
+    },
+    {
+      "kind": "spring",
+      "id": "bouncy",
+      "time_or_progress": 0.5,
+      "value": 1.0144984216160449,
+      "velocity": -0.21095081990544456
+    },
+    {
+      "kind": "spring",
+      "id": "bouncy",
+      "time_or_progress": 1.0,
+      "value": 1.000071596885779,
+      "velocity": 0.0011592037012127477
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in",
+      "time_or_progress": 0.0,
+      "value": 0.0,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in",
+      "time_or_progress": 0.125,
+      "value": 0.025984764099121094,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in",
+      "time_or_progress": 0.25,
+      "value": 0.09346485137939453,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in",
+      "time_or_progress": 0.5,
+      "value": 0.3153572082519531,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in",
+      "time_or_progress": 0.75,
+      "value": 0.621861457824707,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in",
+      "time_or_progress": 0.875,
+      "value": 0.8014202117919922,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in",
+      "time_or_progress": 1.0,
+      "value": 1.0,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-out",
+      "time_or_progress": 0.0,
+      "value": 0.0,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-out",
+      "time_or_progress": 0.125,
+      "value": 0.1985797882080078,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-out",
+      "time_or_progress": 0.25,
+      "value": 0.37813854217529297,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-out",
+      "time_or_progress": 0.5,
+      "value": 0.6846427917480469,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-out",
+      "time_or_progress": 0.75,
+      "value": 0.9065351486206055,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-out",
+      "time_or_progress": 0.875,
+      "value": 0.9740152359008789,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-out",
+      "time_or_progress": 1.0,
+      "value": 1.0,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in-out",
+      "time_or_progress": 0.0,
+      "value": 0.0,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in-out",
+      "time_or_progress": 0.125,
+      "value": 0.031113624572753906,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in-out",
+      "time_or_progress": 0.25,
+      "value": 0.12916183471679688,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in-out",
+      "time_or_progress": 0.5,
+      "value": 0.5,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in-out",
+      "time_or_progress": 0.75,
+      "value": 0.8708381652832031,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in-out",
+      "time_or_progress": 0.875,
+      "value": 0.9688863754272461,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "ease-in-out",
+      "time_or_progress": 1.0,
+      "value": 1.0,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "linear",
+      "time_or_progress": 0.0,
+      "value": 0.0,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "linear",
+      "time_or_progress": 0.125,
+      "value": 0.125,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "linear",
+      "time_or_progress": 0.25,
+      "value": 0.25,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "linear",
+      "time_or_progress": 0.5,
+      "value": 0.5,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "linear",
+      "time_or_progress": 0.75,
+      "value": 0.75,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "linear",
+      "time_or_progress": 0.875,
+      "value": 0.875,
+      "velocity": null
+    },
+    {
+      "kind": "curve",
+      "id": "linear",
+      "time_or_progress": 1.0,
+      "value": 1.0,
+      "velocity": null
+    }
+  ]
+}

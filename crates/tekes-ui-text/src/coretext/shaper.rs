@@ -54,7 +54,19 @@ impl CoreTextShaper {
     }
 }
 
+/// Immutable document preparation, reusable across container widths. Keeping it
+/// with the document avoids repeating CoreText fallback/shaping setup on resize.
+/// It shares the same single-thread ownership as CoreTextFonts.
+#[derive(Debug)]
+pub struct PreparedText {
+    text: String,
+    base: CFRetained<CTFont>,
+    typeset: Typeset,
+    map: Utf16Map,
+}
+
 /// 一个属性字符串和它的排版器。
+#[derive(Debug)]
 pub(crate) struct Typeset {
     pub cf_text: CFRetained<CFString>,
     pub attributed: CFRetained<CFMutableAttributedString>,
@@ -242,12 +254,31 @@ impl CoreTextShaper {
 
 impl Shaper for CoreTextShaper {
     fn shape(&mut self, text: &str, style: &TextStyle, options: &ShapeOptions) -> Paragraph {
+        self.shape_prepared(&self.prepare(text, style), options)
+    }
+}
+
+impl CoreTextShaper {
+    pub fn prepare(&self, text: &str, style: &TextStyle) -> PreparedText {
         let base = self.fonts.create_font(style);
-        let base_key = self.fonts.key_for(&base);
-        let ts = typeset(text, &base);
-        let map = Utf16Map::new(text);
+        PreparedText {
+            text: text.into(),
+            typeset: typeset(text, &base),
+            map: Utf16Map::new(text),
+            base,
+        }
+    }
+
+    /// Recompute line breaks and geometry without replacing the document's
+    /// attributed string or typesetter. Font registration stays in this shaper.
+    pub fn shape_prepared(&mut self, prepared: &PreparedText, options: &ShapeOptions) -> Paragraph {
+        let text = prepared.text.as_str();
+        let base = &prepared.base;
+        let base_key = self.fonts.key_for(base);
+        let ts = &prepared.typeset;
+        let map = &prepared.map;
         let n = ts.utf16_len;
-        let default_line_height = base_line_height(&base);
+        let default_line_height = base_line_height(base);
         let line_spacing = options.line_spacing.max(0.0);
         let width = options.width.map_or(UNBOUNDED_WIDTH, |w| w.max(MIN_WIDTH));
 
@@ -268,7 +299,7 @@ impl Shaper for CoreTextShaper {
             let utf16 = location..location + length;
             // SAFETY: 范围在字符串之内。
             let line = unsafe { ts.typesetter.line(cf_range(&utf16)) };
-            let m = line_metrics(&line, &base);
+            let m = line_metrics(&line, base);
             let height = line_height(&m);
             let runs = self.collect_runs(&line, base_key, &mut fonts_used, n);
             let mut carets = Vec::new();

@@ -1,0 +1,69 @@
+{
+  "binary_sha256": "0d19db7609ef9ad29e4ab9aafc0a30a1d5901d28d52a85438c234e17306be3c4",
+  "candidate_receipt": "../scroll-pages-retest/build-measured-drain-final.json",
+  "quiet_preflight": {
+    "gate_passed": false,
+    "wait_s": 182.93334133306053,
+    "native_cases_started": 0,
+    "exit_code": 3,
+    "quiet_samples": 0
+  },
+  "profile": {
+    "profiling_perturbation": true,
+    "seconds": 40,
+    "sample_process_age_s": [
+      27.002,
+      33.497
+    ],
+    "main_thread_sample_count": 5006,
+    "main_thread_mach_wait_samples": 4774,
+    "actual_gaps": 16,
+    "not_presented": 12,
+    "drain": {
+      "expected_unique_serials": 4781,
+      "finished": true,
+      "received": 4781,
+      "timed_out": false,
+      "timeout_ms": 500.0,
+      "timer_only_diagnostic": false,
+      "unpresented": 12,
+      "wait_ms": 49.830292
+    },
+    "idle_after": {
+      "cpu_ms": 1.0550000000000281,
+      "cpu_percent": 0.021136882414153894,
+      "display_link_callbacks": 0,
+      "ordinary_drawable_acquisitions": 0,
+      "provided_drawable_consumptions": 0,
+      "wait_s": 5.00546275
+    },
+    "causal_conclusion": "inconclusive; aggregated stack sample lacks time alignment and itself perturbed callback cadence"
+  },
+  "files": {
+    "process27-33s.sample.txt.gz": {
+      "sha256": "b0c8981e18fade85c3dbdca03aa440f0acd7870878c7fe7e0e86118cd044a2b8",
+      "original_path": "target/symbol-profile-drain/process27-33s.sample.txt",
+      "original_sha256": "e2c2d5636cb2b73c0d7f511c9076cd9fd008af49d2a228e8c175b8d5d00ad31a"
+    },
+    "linear40s-sampled.log.gz": {
+      "sha256": "9a55720e2e5c29e5f97b2eaa11107f7d569f2bd5cecdecc47bbc26a6a29797d8",
+      "original_path": "target/symbol-profile-drain/linear40s-sampled.log",
+      "original_sha256": "db6f32022958e879e72bdb0ad71030036869375ae5e4fa1e242096c2c16b9066"
+    },
+    "linear40s-sampled.json.gz": {
+      "sha256": "aadd0624f7d479702f53b3cf389dbb5fc72c683fa09b6c142e2fcc29e0e46fd0",
+      "original_path": "target/symbol-profile-drain/linear40s-sampled.json",
+      "original_sha256": "25026b60082bc4c87660b120154fa3ce92a05ba7ebbb2809303e1b73af3a5e64"
+    },
+    "linear40s-sampled-run.json.gz": {
+      "sha256": "33b7300e4178b1798cb447069d08dfb4eaaf6e29e0587bfc57df2f4167602323",
+      "original_path": "target/symbol-profile-drain/linear40s-sampled-run.json",
+      "original_sha256": "39aa51669342df63b8049bf91273c8837bd2192b483a6bbc63edca65d914a24f"
+    },
+    "final-drain-multi-24-ambient.json.gz": {
+      "sha256": "1b2698d94449262903d5eb8a3c9a684128895c13d2a21a41551a0f8e4a8526e2",
+      "original_path": "target/symbol-perf-drain-quiet/final-drain-multi-24-ambient.json",
+      "original_sha256": "f9bca94149250f6cf5a73b6143817752eec557d412fe836753c11247ebb4ae66"
+    }
+  }
+}

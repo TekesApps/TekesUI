@@ -1,13 +1,16 @@
 //! 场景：有序的图元列表。
 
-use crate::glyph::{GlyphRun, ImageQuad};
+use crate::glyph::{GlyphRun, ImageQuad, TransformedImageQuad};
 use crate::quad::Quad;
+use crate::shadow::ShadowQuad;
 
 /// 一个绘制图元。见 crate 文档里关于扩展方式的说明。
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Primitive {
     Quad(Quad),
+    /// Gaussian-blurred rounded-rectangle shadow, painted in painter order.
+    Shadow(ShadowQuad),
     /// Intersect with the current rectangular clip, in logical points.
     PushClip(crate::Rect),
     /// Restore the enclosing clip. Unmatched pops restore the target bounds.
@@ -16,6 +19,7 @@ pub enum Primitive {
     Glyphs(GlyphRun),
     /// 渲染层登记过的图像，画进矩形。
     Image(ImageQuad),
+    TransformedImage(TransformedImageQuad),
 }
 
 /// 一帧要画的内容，按 painter's order 排列：先加入的在下，后加入的在上。
@@ -42,12 +46,20 @@ impl Scene {
         self.primitives.push(Primitive::Quad(quad));
     }
 
+    pub fn push_shadow(&mut self, shadow: ShadowQuad) {
+        self.primitives.push(Primitive::Shadow(shadow));
+    }
+
     pub fn push_glyphs(&mut self, run: GlyphRun) {
         self.primitives.push(Primitive::Glyphs(run));
     }
 
     pub fn push_image(&mut self, image: ImageQuad) {
         self.primitives.push(Primitive::Image(image));
+    }
+
+    pub fn push_transformed_image(&mut self, image: TransformedImageQuad) {
+        self.primitives.push(Primitive::TransformedImage(image));
     }
 
     pub fn push_clip(&mut self, rect: crate::Rect) {
@@ -87,6 +99,18 @@ mod tests {
         assert_eq!(s.len(), 2);
         assert_eq!(s.primitives()[0], Primitive::Quad(a));
         assert_eq!(s.primitives()[1], Primitive::Quad(b));
+    }
+
+    #[test]
+    fn shadow_is_an_ordered_primitive_without_changing_quad_values() {
+        let mut scene = Scene::new();
+        let quad = Quad::new(Rect::new(1.0, 2.0, 3.0, 4.0), Rgba::gray(1.0));
+        let shadow = ShadowQuad::new(Rect::new(1.0, 2.0, 3.0, 4.0), Rgba::gray(0.2));
+        scene.push_shadow(shadow);
+        scene.push_quad(quad);
+        assert_eq!(scene.primitives()[0], Primitive::Shadow(shadow));
+        assert_eq!(scene.primitives()[1], Primitive::Quad(quad));
+        assert_eq!(quad.border_width, 0.0);
     }
 
     #[test]

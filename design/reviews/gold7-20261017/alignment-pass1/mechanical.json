@@ -1,0 +1,149 @@
+{
+  "mechanical_checks": {
+    "status": "pass",
+    "checks": [
+      "authoritative-reference-integrity",
+      "boundary-role-separation",
+      "consumer-brand-registry",
+      "gold7-requirement-catalog",
+      "interaction-contract-invariants",
+      "pass-evidence-integrity",
+      "radius-contract",
+      "semantic-surface-order"
+    ],
+    "errors": [],
+    "scope": "source integrity and mechanical relationships only"
+  },
+  "review_assessments": {
+    "status": "separate-review-required",
+    "items": [
+      {
+        "id": "G1",
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      },
+      {
+        "id": "G2",
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      },
+      {
+        "id": "G3",
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      },
+      {
+        "id": "G4",
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "fail",
+          "reason": "StateTransition exists as a model and Motion fixture, but production controls do not yet consume the shared transition path. Timing values alone do not satisfy actual press, expansion and floating-surface integration.",
+          "evidence_refs": [
+            {
+              "$ref": "../../crates/tekes-ui-motion/src/state_transition.rs"
+            },
+            {
+              "$ref": "../../docs/design/gold7.md"
+            }
+          ]
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      },
+      {
+        "id": "G5",
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "fail",
+          "reason": "Text input and scroll protections have implementation, but durable draft restore and an explicit return-to-latest flow are still missing for the full Gold7 requirement. This is a partial implementation, not merely an untested complete feature.",
+          "evidence_refs": [
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/text_surface.rs"
+            },
+            {
+              "$ref": "../../docs/design/reference-alignment-20261016.md"
+            }
+          ]
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      },
+      {
+        "id": "G6",
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "fail",
+          "reason": "The cited media-viewer contract explicitly records a specified-but-unimplemented runtime. A contract reference cannot be counted as code integration.",
+          "evidence_refs": [
+            {
+              "$ref": "../behavior/reference-alignment.json#/media_viewer"
+            }
+          ]
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      },
+      {
+        "id": "G7",
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      }
+    ],
+    "scope": "contract, code, and experience claims; not promoted by mechanical checks"
+  }
+}

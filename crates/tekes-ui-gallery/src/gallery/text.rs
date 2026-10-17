@@ -8,12 +8,19 @@
 //! - scene 里的 `AtlasGlyph` 只在编出它的那一帧有效，而 Gallery 每次重绘都整个重编 scene，
 //!   所以 atlas 淘汰（`stats().evictions` 变化）不需要额外处理。
 
-use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
+use std::{
+    collections::{HashMap, VecDeque},
+    time::Duration,
+};
 
+use tekes_ui_controls::{
+    Button, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlMotionContext,
+    TextSurfaceTextRenderer,
+};
 use tekes_ui_render::{RenderError, Renderer};
-use tekes_ui_scene::{GlyphAtlas, Point, Rect, Scene};
-use tekes_ui_text::coretext::{CoreTextFonts, CoreTextRasterizer, CoreTextShaper};
+use tekes_ui_scene::{GlyphAtlas, Point, Rect, Scene, Size};
+use tekes_ui_text::coretext::{CoreTextFonts, CoreTextRasterizer, CoreTextShaper, PreparedText};
 use tekes_ui_text::model::{Paragraph, ShapeOptions};
 use tekes_ui_text::push::push_paragraph;
 use tekes_ui_text::style::TextStyle;
@@ -33,6 +40,8 @@ struct LabelKey {
     role: LabelRole,
     /// 换行宽度的 1/64 pt（整数，便于做键）；`None` 不换行。
     width_64: Option<u32>,
+    locale: super::locale::Locale,
+    type_scale_bits: u32,
 }
 
 /// 水平对齐。
@@ -76,6 +85,11 @@ pub struct TextEngine {
     /// 到目前为止排过几次版（测试用：重绘不应增加它）。
     shapes: u64,
     scale: f32,
+    type_scale: f32,
+    locale: super::locale::Locale,
+    motion_enabled: bool,
+    motion_context: Option<ControlMotionContext>,
+    motion_frame_requested: bool,
 }
 
 impl std::fmt::Debug for TextEngine {
@@ -112,7 +126,39 @@ impl TextEngine {
             label_order: VecDeque::new(),
             shapes: 0,
             scale: 2.0,
+            type_scale: 1.0,
+            locale: super::locale::Locale::default(),
+            motion_enabled: false,
+            motion_context: None,
+            motion_frame_requested: false,
         }
+    }
+
+    pub fn type_scale(&self) -> f32 {
+        self.type_scale
+    }
+    pub fn set_type_scale(&mut self, scale: f32) {
+        if scale.is_finite() {
+            self.type_scale = scale.clamp(1.0, 1.5);
+        }
+    }
+    pub fn locale(&self) -> super::locale::Locale {
+        self.locale
+    }
+    pub fn set_locale(&mut self, locale: super::locale::Locale) {
+        self.locale = locale;
+    }
+
+    #[cfg(test)]
+    pub fn untranslated_labels(&self) -> Vec<String> {
+        self.labels
+            .keys()
+            .filter(|key| key.locale == super::locale::Locale::En)
+            .filter_map(|key| {
+                let translated = key.locale.text(&key.text);
+                super::locale::has_cjk(&translated).then(|| translated.into_owned())
+            })
+            .collect()
     }
 
     pub fn scale(&self) -> f32 {
@@ -131,6 +177,33 @@ impl TextEngine {
     /// 每帧开头调用一次。
     pub fn begin_frame(&mut self) {
         self.atlas.begin_frame();
+        self.motion_frame_requested = false;
+    }
+
+    /// Enable component motion for the live Gallery. Standalone fixtures keep
+    /// the default static behavior unless a host explicitly opts in.
+    pub fn set_motion_enabled(&mut self, enabled: bool) {
+        self.motion_enabled = enabled;
+        if enabled && self.motion_context.is_none() {
+            self.motion_context = Some(ControlMotionContext {
+                now: Duration::ZERO,
+                reduced_motion: false,
+            });
+        } else if !enabled {
+            self.motion_context = None;
+            self.motion_frame_requested = false;
+        }
+    }
+
+    pub fn set_motion_context(&mut self, now: Duration, reduced_motion: bool) {
+        self.motion_context = self.motion_enabled.then_some(ControlMotionContext {
+            now,
+            reduced_motion,
+        });
+    }
+
+    pub fn motion_frame_requested(&self) -> bool {
+        self.motion_frame_requested
     }
 
     #[cfg(test)]
@@ -163,6 +236,8 @@ impl TextEngine {
             text: text.to_string(),
             role: LabelRole::Legacy(role),
             width_64: width.map(|w| (w * 64.0).round() as u32),
+            locale: self.locale,
+            type_scale_bits: self.type_scale.to_bits(),
         };
         if let Some(p) = self.labels.get(&key) {
             return p.clone();
@@ -171,7 +246,10 @@ impl TextEngine {
             width: width.map(f64::from),
             line_spacing: 0.0,
         };
-        let p = Rc::new(self.shape(text, &role_style(role), &options));
+        let localized = self.locale.text(text);
+        let mut style = role_style(role);
+        style.size *= self.type_scale;
+        let p = Rc::new(self.shape(&localized, &style, &options));
         self.cache_label(key, p.clone());
         p
     }
@@ -247,15 +325,71 @@ impl TextEngine {
         role: proposal::TextRole,
         width: Option<f32>,
     ) -> Rc<Paragraph> {
+        self.proposal_label_with_locale(text, role, width, self.locale)
+    }
+
+    /// Measure a Button using the same cached paragraph backend used by rendering.
+    /// The returned size includes the component's token-defined insets and minimum height.
+    pub fn measure_button(
+        &mut self,
+        label: &str,
+        max_width: f32,
+        size: ButtonSize,
+        role: proposal::TextRole,
+    ) -> Size {
+        Button::measure(self, label, max_width, size, role)
+    }
+
+    /// Render the shared production Button through Gallery's CoreText adapter.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_button(
+        &mut self,
+        scene: &mut Scene,
+        button: &mut Button,
+        label: &str,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: impl Into<tekes_ui_tokens::Palette>,
+        variant: tekes_ui_controls::paint::ButtonVariant,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+    ) -> ButtonLayout {
+        button.render(
+            scene, self, label, frame, clip, palette, variant, size, role, align,
+        )
+    }
+
+    /// Cached document geometry. The original UTF-16 text must stay intact for
+    /// selection and reveal ranges, regardless of the interface language.
+    pub fn proposal_document(
+        &mut self,
+        text: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> Rc<Paragraph> {
+        self.proposal_label_with_locale(text, role, width, super::locale::Locale::Reference)
+    }
+
+    fn proposal_label_with_locale(
+        &mut self,
+        text: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+        locale: super::locale::Locale,
+    ) -> Rc<Paragraph> {
         let key = LabelKey {
             text: text.into(),
             role: LabelRole::Proposal(role),
             width_64: width.map(|w| (w * 64.0).round() as u32),
+            locale,
+            type_scale_bits: self.type_scale.to_bits(),
         };
         if let Some(paragraph) = self.labels.get(&key) {
             return paragraph.clone();
         }
-        let paragraph = self.shape_proposal(text, role, width);
+        let localized = locale.text(text);
+        let paragraph = self.shape_proposal(&localized, role, width);
         let paragraph = Rc::new(paragraph);
         self.cache_label(key, paragraph.clone());
         paragraph
@@ -269,17 +403,31 @@ impl TextEngine {
         role: proposal::TextRole,
         width: Option<f32>,
     ) -> Paragraph {
+        let prepared = self.prepare_proposal(text, role);
+        self.reflow_proposal(&prepared, role, width)
+    }
+
+    pub fn prepare_proposal(&self, text: &str, role: proposal::TextRole) -> PreparedText {
         let metrics = role.style();
-        // Font choice is a platform strategy; sizes, weights and family roles come from JSON.
         let style = if proposal::text_family(role.id()) == Some("mono") {
-            TextStyle::named("Menlo", metrics.size)
+            TextStyle::named("Menlo", metrics.size * self.type_scale)
         } else {
-            TextStyle::system(metrics.size)
+            TextStyle::system(metrics.size * self.type_scale)
         }
         .with_weight(metrics.weight);
-        let mut paragraph = self.shape(
-            text,
-            &style,
+        self.shaper.prepare(text, &style)
+    }
+
+    pub fn reflow_proposal(
+        &mut self,
+        prepared: &PreparedText,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> Paragraph {
+        let metrics = role.style();
+        self.shapes += 1;
+        let mut paragraph = self.shaper.shape_prepared(
+            prepared,
             &ShapeOptions {
                 width: width.map(f64::from),
                 line_spacing: 0.0,
@@ -287,14 +435,14 @@ impl TextEngine {
         );
         let mut top = 0.0;
         for line in &mut paragraph.lines {
-            let height = f64::from(metrics.line_height).max(line.height);
+            let height = f64::from(metrics.line_height * self.type_scale).max(line.height);
             line.top = top;
             line.height = height;
             line.baseline_y = top + (height - line.ascent - line.descent) * 0.5 + line.ascent;
             top += height;
         }
-        paragraph.height = top.max(f64::from(metrics.line_height));
-        paragraph.default_line_height = f64::from(metrics.line_height);
+        paragraph.height = top.max(f64::from(metrics.line_height * self.type_scale));
+        paragraph.default_line_height = f64::from(metrics.line_height * self.type_scale);
         paragraph
     }
 
@@ -418,6 +566,92 @@ impl TextEngine {
     }
 }
 
+impl ButtonTextRenderer for TextEngine {
+    fn motion_context(&self) -> Option<ControlMotionContext> {
+        self.motion_context
+    }
+
+    fn request_animation_frame(&mut self) {
+        if self.motion_enabled {
+            self.motion_frame_requested = true;
+        }
+    }
+
+    fn backing_scale(&self) -> f32 {
+        self.scale
+    }
+
+    fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+        let paragraph = self.button_paragraph(text, role, max_width);
+        Size::new(paragraph.width as f32, paragraph.height as f32)
+    }
+
+    fn first_line_height(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> f32 {
+        let paragraph = self.button_paragraph(text, role, max_width);
+        paragraph
+            .lines
+            .first()
+            .map_or(paragraph.default_line_height as f32, |line| {
+                line.height as f32
+            })
+    }
+
+    fn draw(
+        &mut self,
+        scene: &mut Scene,
+        text: &str,
+        role: proposal::TextRole,
+        rect: Rect,
+        align: ButtonTextAlign,
+        ink: Rgba,
+    ) {
+        let paragraph = self.button_paragraph(text, role, rect.size.width);
+        let align = match align {
+            ButtonTextAlign::Leading => HAlign::Left,
+            ButtonTextAlign::Center => HAlign::Center,
+        };
+        let origin = label_origin(rect, &paragraph, align);
+        // The production Button already clips its complete contents to the visible outer frame.
+        // Clipping again to the logical wrap slot truncates negative glyph bearings and marks
+        // that extend into the token-defined horizontal inset, even when the button has room.
+        self.push(scene, &paragraph, origin, ink);
+    }
+}
+
+impl TextSurfaceTextRenderer for TextEngine {
+    fn push_visible(
+        &mut self,
+        scene: &mut Scene,
+        paragraph: &Paragraph,
+        origin: Point,
+        color: Rgba,
+        clip: Rect,
+    ) {
+        TextEngine::push_visible(self, scene, paragraph, origin, color, clip);
+    }
+}
+
+impl TextEngine {
+    /// Keep single-line labels on their unwrapped cache entry while the Button's frame animates.
+    /// Only labels that exceed the available slot acquire a width-dependent wrapped paragraph.
+    fn button_paragraph(
+        &mut self,
+        text: &str,
+        role: proposal::TextRole,
+        available_width: f32,
+    ) -> Rc<Paragraph> {
+        let natural = self.proposal_label(text, role, None);
+        let available_width = available_width.max(0.0);
+        // Widths are stored at 1/64 pt precision. Match that quantization at the fit boundary so
+        // a fractional frame does not spuriously reflow due to a sub-quantum rounding difference.
+        if natural.width as f32 <= available_width + (1.0 / 64.0) {
+            natural
+        } else {
+            self.proposal_label(text, role, Some(available_width))
+        }
+    }
+}
+
 /// Crop atlas subrects without changing cached atlas entries or global rendering.
 pub(super) fn clip_glyphs(
     run: &tekes_ui_scene::GlyphRun,
@@ -462,6 +696,36 @@ pub fn label_origin(slot: Rect, p: &Paragraph, align: HAlign) -> Point {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn motion_context_is_opt_in_and_frame_requests_reset_at_frame_start() {
+        let mut engine = TextEngine::new();
+        assert_eq!(
+            engine.motion_context(),
+            None,
+            "standalone fixtures remain static by default"
+        );
+        engine.request_animation_frame();
+        assert!(!engine.motion_frame_requested());
+
+        engine.set_motion_enabled(true);
+        engine.set_motion_context(Duration::from_millis(42), true);
+        assert_eq!(
+            engine.motion_context(),
+            Some(ControlMotionContext {
+                now: Duration::from_millis(42),
+                reduced_motion: true,
+            })
+        );
+        engine.request_animation_frame();
+        assert!(engine.motion_frame_requested());
+        engine.begin_frame();
+        assert!(!engine.motion_frame_requested());
+        assert_eq!(
+            engine.motion_context().unwrap().now,
+            Duration::from_millis(42)
+        );
+    }
 
     #[test]
     fn labels_are_shaped_once_and_cached() {
@@ -541,6 +805,220 @@ mod tests {
     }
 
     #[test]
+    fn localized_motion_controls_fit_the_existing_compact_buttons() {
+        let mut text = TextEngine::new();
+        for locale in super::super::locale::Locale::ALL {
+            text.set_locale(locale);
+            for copy in [
+                "目标 A / 反向",
+                "目标 B / 展开",
+                "演示中途改目标",
+                "暂停",
+                "重播",
+                "继续当前",
+            ] {
+                let paragraph = text.proposal_label(copy, proposal::TextRole::UiBody, None);
+                assert!(
+                    paragraph.width
+                        <= if copy == "演示中途改目标" {
+                            132.0
+                        } else {
+                            76.0
+                        },
+                    "{locale:?}: {copy} is {}pt",
+                    paragraph.width
+                );
+            }
+            let source = "Selected 中英文 👩‍💻 e\u{301}";
+            let paragraph = text.proposal_document(source, proposal::TextRole::UiBody, Some(300.0));
+            assert_eq!(paragraph.utf16_len, source.encode_utf16().count());
+        }
+    }
+
+    #[test]
+    fn shared_button_measure_and_render_keep_wrapped_labels_in_the_same_geometry() {
+        use tekes_ui_controls::{Button, ButtonSize, ButtonTextAlign, paint};
+        use tekes_ui_scene::Primitive;
+
+        let labels = [
+            "A long English label that wraps across several lines",
+            "长文本按钮标签需要自然换行并保持完整可见",
+            "Review 👩‍💻 changes e\u{301} before applying",
+        ];
+        let mut text = TextEngine::new();
+        for type_scale in [1.0, 1.25, 1.5] {
+            text.set_type_scale(type_scale);
+            for label in labels {
+                for max_width in [71.3, 157.7, 240.3] {
+                    let measured = text.measure_button(
+                        label,
+                        max_width,
+                        ButtonSize::Md,
+                        proposal::TextRole::UiBody,
+                    );
+                    let mut button = Button::default();
+                    let mut scene = Scene::new();
+                    let layout = text.render_button(
+                        &mut scene,
+                        &mut button,
+                        label,
+                        Rect::new(13.0, 17.0, measured.width, measured.height),
+                        None,
+                        tekes_ui_tokens::Palette {
+                            theme: Theme::LIGHT,
+                            brand: 0,
+                        },
+                        paint::ButtonVariant::Quiet,
+                        ButtonSize::Md,
+                        proposal::TextRole::UiBody,
+                        ButtonTextAlign::Center,
+                    );
+
+                    assert!(
+                        (layout.frame.size.height - measured.height).abs() <= 0.02,
+                        "measurement/render height drift for {label:?} at {max_width}pt, scale {type_scale}: {} vs {}",
+                        layout.frame.size.height,
+                        measured.height
+                    );
+                    assert!(layout.frame.max_y() >= layout.content.max_y());
+                    assert!(layout.content.min_x() >= layout.frame.min_x());
+                    assert!(layout.content.max_x() <= layout.frame.max_x());
+                    assert!(
+                        scene
+                            .primitives()
+                            .iter()
+                            .any(|p| matches!(p, Primitive::Glyphs(_)))
+                    );
+                    // Compare the component's clipped output to the exact same shaped paragraph
+                    // pushed without clipping, catching real glyph bitmap truncation.
+                    let paragraph = text.proposal_label(
+                        label,
+                        proposal::TextRole::UiBody,
+                        Some(layout.content.size.width),
+                    );
+                    let origin = label_origin(layout.content, &paragraph, HAlign::Center);
+                    let mut uncropped = Scene::new();
+                    text.push(&mut uncropped, &paragraph, origin, Rgba::gray(0.0));
+                    let glyph_records = |scene: &Scene| {
+                        scene
+                            .primitives()
+                            .iter()
+                            .flat_map(|primitive| match primitive {
+                                Primitive::Glyphs(run) => run.glyphs.iter().collect::<Vec<_>>(),
+                                _ => Vec::new(),
+                            })
+                            .map(|glyph| {
+                                (
+                                    glyph.origin.x.to_bits(),
+                                    glyph.origin.y.to_bits(),
+                                    glyph.glyph.page,
+                                    glyph.glyph.x,
+                                    glyph.glyph.y,
+                                    glyph.glyph.width,
+                                    glyph.glyph.height,
+                                    glyph.glyph.left,
+                                    glyph.glyph.top,
+                                    format!("{:?}", glyph.glyph.format),
+                                )
+                            })
+                            .collect::<Vec<_>>()
+                    };
+                    assert_eq!(
+                        glyph_records(&scene),
+                        glyph_records(&uncropped),
+                        "Button clipped glyphs for {label:?} at {max_width}pt, scale {type_scale}"
+                    );
+                    for primitive in scene.primitives() {
+                        let Primitive::Glyphs(run) = primitive else {
+                            continue;
+                        };
+                        for glyph in &run.glyphs {
+                            let scale = text.scale();
+                            let x = (glyph.origin.x * scale).round() + glyph.glyph.left as f32;
+                            let y = (glyph.origin.y * scale).round() + glyph.glyph.top as f32;
+                            assert!(x >= layout.frame.min_x() * scale - 1.0);
+                            assert!(y >= layout.frame.min_y() * scale - 1.0);
+                            assert!(
+                                x + glyph.glyph.width as f32 <= layout.frame.max_x() * scale + 1.0
+                            );
+                            assert!(
+                                y + glyph.glyph.height as f32 <= layout.frame.max_y() * scale + 1.0
+                            );
+                        }
+                    }
+
+                    let shaped = text.shape_count();
+                    let mut repeated = Scene::new();
+                    text.render_button(
+                        &mut repeated,
+                        &mut button,
+                        label,
+                        layout.frame,
+                        None,
+                        tekes_ui_tokens::Palette {
+                            theme: Theme::LIGHT,
+                            brand: 0,
+                        },
+                        paint::ButtonVariant::Quiet,
+                        ButtonSize::Md,
+                        proposal::TextRole::UiBody,
+                        ButtonTextAlign::Center,
+                    );
+                    assert_eq!(
+                        text.shape_count(),
+                        shaped,
+                        "button text should hit the shape cache"
+                    );
+                    assert_eq!(
+                        button.layout().unwrap().label_size.height,
+                        layout.label_size.height
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn shared_button_single_line_cache_survives_animated_frame_widths() {
+        use tekes_ui_controls::{Button, ButtonSize, ButtonTextAlign, paint};
+
+        let mut text = TextEngine::new();
+        text.set_type_scale(1.5);
+        let label = "Smooth motion preview";
+        let mut button = Button::default();
+        let palette = tekes_ui_tokens::Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        let mut scene = Scene::new();
+        let mut first_shapes = None;
+        for frame in 0..120 {
+            // Simulate the Motion story changing the Button frame every display tick while its
+            // one-line label remains comfortably inside the content slot.
+            let width = 320.0 + (frame as f32 * 0.15).sin() * 24.0;
+            text.render_button(
+                &mut scene,
+                &mut button,
+                label,
+                Rect::new(0.0, 0.0, width, 48.0),
+                None,
+                palette,
+                paint::ButtonVariant::Quiet,
+                ButtonSize::Md,
+                proposal::TextRole::UiBody,
+                ButtonTextAlign::Center,
+            );
+            let shapes = text.shape_count();
+            if let Some(first) = first_shapes {
+                assert_eq!(shapes, first, "fitting label reshaped at frame {frame}");
+            } else {
+                first_shapes = Some(shapes);
+            }
+            scene.clear();
+        }
+    }
+
+    #[test]
     fn actual_showcase_labels_stay_inside_their_slots_at_both_scales() {
         let slot = Rect::new(10.0, 10.0, 38.0, 18.0);
         let mut text = TextEngine::new();
@@ -579,5 +1057,114 @@ mod tests {
         assert_eq!(role_style(TextRole::RowMeta).size, 11.0);
         assert_eq!(role_style(TextRole::SectionHeader).size, 11.0);
         assert_eq!(role_style(TextRole::SectionHeader).weight, 700);
+    }
+}
+
+#[cfg(test)]
+mod gold7_focus_raster {
+    use super::*;
+    use tekes_ui_controls::{Button, ButtonSize, ButtonTextAlign, paint::ButtonVariant};
+    use tekes_ui_render::Renderer;
+    use tekes_ui_scene::{Rect, Scene};
+
+    #[test]
+    fn actual_button_focus_ring_keeps_the_gap_error_border_and_label_pixels() {
+        let Ok(mut renderer) = Renderer::new_headless() else {
+            eprintln!("SKIP: Gold7 focus raster needs a GPU adapter");
+            return;
+        };
+        for theme in Theme::ALL {
+            for scale in [1u32, 2] {
+                let mut text = TextEngine::new();
+                text.set_scale(scale as f32);
+                text.set_type_scale(1.5);
+                let frame = Rect::new(20., 20., 140., 40.);
+                let palette = tekes_ui_tokens::Palette::from(theme);
+                let background = palette.color("surface-1").unwrap();
+                let render = |focused: bool, text: &mut TextEngine, renderer: &mut Renderer| {
+                    text.begin_frame();
+                    let mut scene = Scene::new();
+                    let mut button = Button::default();
+                    button.state.error = true;
+                    button.state.focused = focused;
+                    button.state.focus_visible = focused;
+                    text.render_button(
+                        &mut scene,
+                        &mut button,
+                        "Clear filter",
+                        frame,
+                        Some(Rect::new(0., 0., 180., 80.)),
+                        palette,
+                        ButtonVariant::Quiet,
+                        ButtonSize::Body,
+                        proposal::TextRole::UiBody,
+                        ButtonTextAlign::default(),
+                    );
+                    renderer
+                        .render_to_rgba8(
+                            &scene,
+                            text.atlas_mut(),
+                            (180 * scale, 80 * scale),
+                            scale as f32,
+                            background,
+                        )
+                        .unwrap()
+                };
+                let normal = render(false, &mut text, &mut renderer);
+                let focused = render(true, &mut text, &mut renderer);
+                let pixel = |image: &[u8], x: u32, y: u32| {
+                    let index = ((y * scale * 180 * scale + x * scale) * 4) as usize;
+                    image[index..index + 4].to_vec()
+                };
+                assert_ne!(
+                    pixel(&normal, 90, 17),
+                    pixel(&focused, 90, 17),
+                    "ring is visible"
+                );
+                assert_eq!(
+                    pixel(&normal, 90, 19),
+                    pixel(&focused, 90, 19),
+                    "2pt gap stays clear"
+                );
+                // The outer rounded ring may enter the bounding-box corners
+                // outside the Button's actual rounded shape. Compare only the
+                // base shape and its one-pixel antialias fringe, not that cutout.
+                let radius = proposal::metric("radius", "c-button-md-radius").unwrap();
+                for y in 20 * scale..60 * scale {
+                    for x in 20 * scale..160 * scale {
+                        let px = (x as f32 + 0.5) / scale as f32;
+                        let py = (y as f32 + 0.5) / scale as f32;
+                        let qx = (px - 90.).abs() - (70. - radius);
+                        let qy = (py - 40.).abs() - (20. - radius);
+                        let distance = qx.max(0.).hypot(qy.max(0.)) + qx.max(qy).min(0.) - radius;
+                        if distance <= 0.5 / scale as f32 {
+                            let start = ((y * 180 * scale + x) * 4) as usize;
+                            assert_eq!(
+                                &normal[start..start + 4],
+                                &focused[start..start + 4],
+                                "focus changed Button ink at {x},{y}: {theme:?} {scale}x"
+                            );
+                        }
+                    }
+                }
+                if let Some(output) = std::env::var_os("TEKESUI_GOLD7_FOCUS_OUT") {
+                    let dir = std::path::PathBuf::from(output);
+                    std::fs::create_dir_all(&dir).unwrap();
+                    let path = dir.join(format!("focus-{theme:?}-{scale}x.png"));
+                    let mut encoder = png::Encoder::new(
+                        std::fs::File::create(path).unwrap(),
+                        180 * scale,
+                        80 * scale,
+                    );
+                    encoder.set_color(png::ColorType::Rgba);
+                    encoder.set_depth(png::BitDepth::Eight);
+                    encoder
+                        .write_header()
+                        .unwrap()
+                        .write_image_data(&focused)
+                        .unwrap();
+                }
+            }
+        }
     }
 }

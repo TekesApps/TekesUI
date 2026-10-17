@@ -1,0 +1,6 @@
+{
+  "scripts/trace-gallery-presentation.py": "e22c50e295200e36e75055ff36808588fd8c27ba1e8e150b5769cd3869e43db1",
+  "scripts/analyze-metal-trace.py": "cb51cc4aeedda1ad3574b446f9e481becd86b448c19ce66378f418d1171e1343",
+  "scripts/test-trace-gallery-presentation.py": "e63d26eb6ef46a3e82fb4cf5ad81b2ddafd90ee85350a5315b54f7decd44e871",
+  "scripts/test-analyze-metal-trace.py": "1c561ce652ecd1fe21ebe32d6975a084bb244b3ee1775e2ae086d87b87453d2f"
+}

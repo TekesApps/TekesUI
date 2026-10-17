@@ -1,0 +1,12 @@
+{
+  "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Metal Fixed Benchmark.app/Contents/MacOS/TekesUI-Metal-Fixed-Benchmark",
+  "binary_sha256": "6f3bcfc32dee901fca1c9bb342ca10bfcbc7c7cab4fb1b0053ce6f8385f14c0f",
+  "driver": "cad",
+  "frame_latency": 2,
+  "content": "scroll-area",
+  "seconds": 60.0,
+  "started_unix": 1792114577.486294,
+  "exit_code": 0,
+  "finished_unix": 1792114647.443218,
+  "binary_sha256_after": "6f3bcfc32dee901fca1c9bb342ca10bfcbc7c7cab4fb1b0053ce6f8385f14c0f"
+}

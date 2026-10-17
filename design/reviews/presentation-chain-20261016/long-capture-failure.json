@@ -1,0 +1,25 @@
+{
+  "format": "tekesui-metal-trace/1",
+  "diagnostic_only": true,
+  "quiet_certified": false,
+  "driver": "cad",
+  "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/performance-followup-20261016/optimized/tekes-ui-gallery",
+  "binary_sha256": "92f7205bf1572013d5cd8d5c43d470873c2dd4ae06aaa23c5c04317355bcd2a5",
+  "tables": {},
+  "complete": false,
+  "pid": 99686,
+  "record_command": [
+    "xcrun",
+    "xctrace",
+    "record",
+    "--template",
+    "Metal System Trace",
+    "--time-limit",
+    "40s",
+    "--output",
+    "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/presentation-chain-20261016/cad-scroll/metal.trace",
+    "--attach",
+    "99686"
+  ],
+  "error": "Command '['xcrun', 'xctrace', 'record', '--template', 'Metal System Trace', '--time-limit', '40s', '--output', '/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/presentation-chain-20261016/cad-scroll/metal.trace', '--attach', '99686']' timed out after 160 seconds"
+}

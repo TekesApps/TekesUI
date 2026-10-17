@@ -1,0 +1,26 @@
+{
+  "app": {
+    "original_sha256": "ba9ce67b3fd04dcea0b9ad48d42fb299278fe96670f24a5cfdfaf2c8c16b3750",
+    "signature_removed_and_linkedit_vmsize_normalized_sha256": "d3783742f818ff75e8bbb54d7ca9eec60936e54839fcf7c5f95773260adcc1d9",
+    "normalized_metadata": [
+      {
+        "offset": 1712,
+        "field": "LC_SEGMENT_64.__LINKEDIT.vmsize",
+        "value": 1753088
+      }
+    ]
+  },
+  "cargo": {
+    "original_sha256": "8919e6c9081332ff4e702c0ecedaf7422741bbf16337608249a64f4059d1b682",
+    "signature_removed_and_linkedit_vmsize_normalized_sha256": "d3783742f818ff75e8bbb54d7ca9eec60936e54839fcf7c5f95773260adcc1d9",
+    "normalized_metadata": [
+      {
+        "offset": 1712,
+        "field": "LC_SEGMENT_64.__LINKEDIT.vmsize",
+        "value": 1785856
+      }
+    ]
+  },
+  "passed": true,
+  "method": "Remove signatures only on disposable copies, then normalize only LC_SEGMENT_64 __LINKEDIT vmsize (codesign changes its allocation). All remaining executable bytes must be identical; original files unmodified."
+}

@@ -4,8 +4,12 @@
 
 #[cfg(test)]
 use tekes_ui_scene::Point;
-use tekes_ui_scene::{Rect, Size};
-use tekes_ui_tokens::{ControlSize, Spacing, TextRole, proposal};
+use tekes_ui_scene::Rect;
+#[cfg(test)]
+use tekes_ui_scene::Size;
+#[cfg(test)]
+use tekes_ui_tokens::TextRole;
+use tekes_ui_tokens::{ControlSize, Spacing, proposal};
 
 /// 固定内容框的尺寸（pt）。
 pub const FRAME_W: f32 = proposal::CAPTURE_WIDTH;
@@ -21,10 +25,11 @@ pub const ROW_GAP: f32 = Spacing::Micro.value();
 /// 目录第一行距顶部。
 pub const CATALOG_TOP: f32 = Spacing::Loose.value();
 /// 行距目录列左右边缘。
-pub const ROW_INSET_X: f32 = Spacing::Regular.value();
+pub const ROW_INSET_X: f32 = proposal::SIDEBAR_PADDING;
 /// 行内文字槽距行左缘（放页面名）。
 pub const ROW_PAD_X: f32 = Spacing::Relaxed.value();
 /// 行内标签槽的尺寸；页面名排进这个槽。
+#[cfg(test)]
 pub const ROW_LABEL_SLOT: Size = Size::new(
     ControlSize::TruncationSlot.value(),
     TextRole::RowMeta.style().line_height,
@@ -54,8 +59,9 @@ pub const PAGE_CONTENT: Rect = Rect::new(
 );
 
 /// 第 `i` 行的视觉矩形（选中、hover 的底）。
+#[cfg(test)]
 pub fn catalog_row_rect(i: usize) -> Rect {
-    super::navigation::row(super::Page::ALL[i])
+    super::navigation::row(super::navigation::pages()[i])
 }
 
 /// 第 `i` 行的命中矩形：视觉矩形向外各扩半个间隔，相邻行的命中区正好拼起来。
@@ -72,6 +78,7 @@ pub fn catalog_hit_test(p: Point, count: usize) -> Option<usize> {
 }
 
 /// 第 `i` 行里的标签槽（垂直居中）。
+#[cfg(test)]
 pub fn catalog_label_slot(i: usize) -> Rect {
     let row = catalog_row_rect(i);
     Rect::new(

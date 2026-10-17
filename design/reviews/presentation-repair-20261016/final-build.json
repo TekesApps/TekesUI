@@ -1,0 +1,8 @@
+{
+  "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/presentation-repair-20261016/final/tekes-ui-gallery",
+  "sha256": "8576b7c74d2a3c164650456b108a1ec4ec0fc920caaa6fe5c079643f6b26d510",
+  "driver": "CAD",
+  "fifo_latency": 2,
+  "threads_changed": false,
+  "experimental_headroom_option_retained": false
+}

@@ -14,6 +14,7 @@
 //! 自测模式（后台线程按时间表向主线程投递 AppKit 级动作，不合成全局输入事件）：
 //! - `TEKES_SELFTEST=1`：缩放窗口、截图、最小化再恢复，见 docs/handoffs/F0-measurements.md；
 //! - `TEKES_SELFTEST=gallery`：切页、切主题、hover、点击、方向键，每步截图，见 docs/gallery.md。
+//! - `TEKES_SELFTEST=workbench-extended`：交互式组件 stories 的原生 AppKit smoke；不是像素差分或 VoiceOver 验收。
 //!
 //! 截图写到 `TEKES_SELFTEST_OUT` 指定的目录。
 
@@ -65,15 +66,11 @@ fn main() {
     let mode = std::env::var("TEKES_SELFTEST").ok();
     let perf_config = perf::PerfConfig::from_env();
     let mut gallery_state = gallery::Gallery::new();
-    if let Ok(slug) = std::env::var("TEKESUI_GALLERY_PAGE") {
-        let page = gallery::Page::ALL
-            .into_iter()
-            .find(|p| p.slug() == slug)
-            .unwrap_or_else(|| {
-                eprintln!("Unknown Gallery page: {slug}");
-                std::process::exit(2)
-            });
-        gallery_state.apply(gallery::Command::Page(page));
+    if let Ok(slug) = std::env::var("TEKESUI_GALLERY_PAGE")
+        && !gallery_state.open_route(&slug)
+    {
+        eprintln!("Unknown Gallery route: {slug}");
+        std::process::exit(2);
     }
     let menu_bar = gallery_state.menu_bar();
     let window_config = WindowConfig {
@@ -99,10 +96,18 @@ fn main() {
     };
     match mode.as_deref() {
         None => {}
+        Some("workbench") => selftest::run_script(selftest_workbench_script()),
+        Some("workbench-extended") => selftest::run_script(selftest_workbench_extended_script()),
         Some("gallery") => selftest::run_script(selftest_gallery_script()),
+        Some("scroll-repair") => selftest::run_script(selftest_scroll_repair_script()),
+        Some("reflow") => selftest::run_script(selftest_reflow_script()),
         Some("text") => selftest::run_script(selftest_text_script()),
         Some("foundation") => selftest::run_script(selftest_foundation_script()),
+        Some("metal-lifecycle" | "metal-lifecycle-hold") => {
+            selftest::run_script(selftest_metal_lifecycle_script())
+        }
         Some("components") => selftest::run_script(selftest_components_script()),
+        Some("motion-layout") => selftest::run_script(selftest_motion_layout_script()),
         Some(_) => selftest::run_script(selftest_script()),
     }
     App::new(AppConfig {
@@ -394,17 +399,214 @@ fn selftest_components_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::
 }
 
 #[cfg(target_os = "macos")]
+fn selftest_reflow_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
+    use tekes_ui_platform_macos::selftest::Action;
+    let out = std::env::var("TEKES_SELFTEST_OUT").expect("reflow output directory");
+    let mut steps = Vec::new();
+    for (pass, (route, name)) in [
+        ("component-text/playground", "component-text"),
+        ("lab-internal-text/playground", "lab-internal-text"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let base = 100 + pass as u64 * 6500;
+        let page = gallery::workbench::route(route).expect("registered text story route");
+        steps.push((
+            base,
+            Action::MenuCommand(gallery::commands::Command::Page(page).id().0),
+        ));
+        steps.push((
+            base + 100,
+            Action::Resize {
+                w: 1440.0,
+                h: 720.0,
+            },
+        ));
+        for frame in 0..=240 {
+            let progress = if frame <= 120 { frame } else { 240 - frame } as f64 / 120.0;
+            steps.push((
+                base + 700 + frame * 9,
+                Action::Resize {
+                    w: 1440.0 - 720.0 * progress,
+                    h: 720.0,
+                },
+            ));
+        }
+        // Stable captures follow the continuous sweep; the sweep itself is not
+        // a substitute for a presentation-time trace or physical live resize.
+        for (offset, width, capture_name) in [
+            (3400, 720.0, "narrow"),
+            (4400, 1080.0, "medium"),
+            (5400, 1440.0, "wide"),
+        ] {
+            steps.push((base + offset, Action::Resize { w: width, h: 720.0 }));
+            steps.push((
+                base + offset + 300,
+                Action::Capture {
+                    path: format!("{out}/{name}-{capture_name}.png"),
+                },
+            ));
+        }
+    }
+    steps.push((13200, Action::Close));
+    steps
+}
+
+#[cfg(target_os = "macos")]
+fn selftest_scroll_repair_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
+    use tekes_ui_platform_macos::selftest::Action;
+    let out = std::env::var("TEKES_SELFTEST_OUT").expect("scroll-repair output");
+    let story = |route: &str| {
+        let page = gallery::workbench::route(route).expect("registered Gallery route");
+        Action::MenuCommand(gallery::commands::Command::Page(page).id().0)
+    };
+    let capture = |name: &str| Action::Capture {
+        path: format!("{out}/{name}.png"),
+    };
+    let multi = gallery::Gallery::text_surface_center_for_selftest(
+        "lab-internal-text/playground",
+        1440.0,
+        827.0,
+        0,
+        1,
+    );
+    let scroll_target = gallery::Gallery::text_surface_center_for_selftest(
+        "component-scroll-area/playground",
+        720.0,
+        480.0,
+        2,
+        0,
+    );
+    let reading = if std::env::var("TEKESUI_GALLERY_LOCALE")
+        .ok()
+        .as_deref()
+        .and_then(gallery::locale::Locale::from_code)
+        == Some(gallery::locale::Locale::ZhCn)
+    {
+        include_str!("../../../fixtures/text/gallery-reading.txt")
+    } else {
+        include_str!("../../../fixtures/text/gallery-reading-en.txt")
+    }
+    .trim_end()
+    .to_owned();
+    vec![
+        (100, story("lab-internal-text/playground")),
+        (
+            300,
+            Action::Resize {
+                w: 1440.0,
+                h: 827.0,
+            },
+        ),
+        (900, capture("editor-1440x827")),
+        (
+            1200,
+            Action::Resize {
+                w: 1000.0,
+                h: 520.0,
+            },
+        ),
+        (1800, capture("editor-1000x520")),
+        (2100, Action::Resize { w: 720.0, h: 480.0 }),
+        (2700, capture("editor-720x480")),
+        (
+            3000,
+            Action::Resize {
+                w: 1440.0,
+                h: 827.0,
+            },
+        ),
+        (
+            3400,
+            Action::Click {
+                x: f64::from(multi.x),
+                y: f64::from(multi.y),
+            },
+        ),
+        (3600, Action::TextCommand("selectAll:")),
+        (4000, capture("editor-selection")),
+        (4300, Action::TextCommand("moveToEndOfDocument:")),
+        (4800, capture("editor-last-line")),
+        (5200, story("component-text/playground")),
+        (5800, capture("reading-text")),
+        (6200, story("component-scroll-area/playground")),
+        (6800, capture("scroll-area-top")),
+        // Preserve the original seven-page scenario coverage, then inspect the
+        // canonical component stories with larger text and an explicit end query.
+        (7600, story("component-scroll-area/playground")),
+        (7800, Action::Resize { w: 720.0, h: 480.0 }),
+        (
+            8000,
+            Action::MenuCommand(gallery::commands::Command::TextScale(2).id().0),
+        ),
+        (8300, capture("scroll-area-720x480-150-top")),
+        (
+            8400,
+            Action::Click {
+                x: f64::from(scroll_target.x),
+                y: f64::from(scroll_target.y),
+            },
+        ),
+        (
+            8500,
+            Action::ExpectText {
+                text: reading.clone(),
+                marked: false,
+            },
+        ),
+        (8600, Action::TextCommand("moveToEndOfDocument:")),
+        (
+            8750,
+            Action::ExpectText {
+                text: reading,
+                marked: false,
+            },
+        ),
+        (8900, capture("scroll-area-720x480-150-bottom")),
+        (9200, story("component-text-area/playground")),
+        (9400, capture("text-area-720x480-150")),
+        // PageDown reveals the middle TextArea field; End would move past it
+        // to the event log at the bottom of the preview.
+        (9550, Action::Key { key_code: 121 }),
+        (9800, capture("text-area-720x480-150-scrolled")),
+        (10000, story("component-text-field/playground")),
+        (
+            10200,
+            Action::Resize {
+                w: 1000.0,
+                h: 720.0,
+            },
+        ),
+        (10500, capture("text-field-1000x720-150")),
+        (10800, story("pattern-master/playground")),
+        (11000, Action::Resize { w: 720.0, h: 480.0 }),
+        (11300, capture("master-detail-720x480-150")),
+        (11700, Action::Close),
+    ]
+}
+
+#[cfg(target_os = "macos")]
 fn selftest_text_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
     use tekes_ui_platform_macos::selftest::Action;
     let out = std::env::var("TEKES_SELFTEST_OUT").expect("text selftest output directory");
-    let single = gallery::text_demo::TextDemo::editor_target(0);
-    let multi = gallery::text_demo::TextDemo::editor_target(1);
+    let route = "lab-internal-text/playground";
+    let single = gallery::Gallery::text_surface_center_for_selftest(route, 1440.0, 827.0, 0, 0);
+    let multi = gallery::Gallery::text_surface_center_for_selftest(route, 1440.0, 827.0, 0, 1);
+    let page = gallery::workbench::route(route).expect("registered internal TextEditor story");
     vec![
         (100, Action::MenuCommand(201)),
         (200, Action::MenuCommand(302)),
         (
+            400,
+            Action::Resize {
+                w: 1440.0,
+                h: 827.0,
+            },
+        ),
+        (
             500,
-            Action::MenuCommand(100 + gallery::Page::TextEditing.index() as u32),
+            Action::MenuCommand(gallery::commands::Command::Page(page).id().0),
         ),
         (
             1100,
@@ -509,7 +711,17 @@ fn selftest_text_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action
                 path: format!("{out}/text-first-line.png"),
             },
         ),
-        (9800, Action::MenuCommand(100)),
+        (
+            9800,
+            Action::MenuCommand(
+                gallery::commands::Command::Page(
+                    gallery::workbench::route("lab-calibration/playground")
+                        .expect("registered calibration route"),
+                )
+                .id()
+                .0,
+            ),
+        ),
         (10000, Action::Key { key_code: 121 }),
         (
             10300,
@@ -524,22 +736,62 @@ fn selftest_text_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action
 /// Integrated native smoke test. Physical gestures/IME still require manual acceptance.
 #[cfg(target_os = "macos")]
 fn selftest_foundation_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
-    use gallery::{Page, layout::PAGE_CONTENT, pages::motion};
+    use gallery::{motion_preview::PresetCatalog, pages::motion::Action as MotionAction};
     use tekes_ui_platform_macos::selftest::Action;
     let out = std::env::var("TEKES_SELFTEST_OUT").expect("foundation evidence directory");
     let capture = |name: &str| Action::Capture {
         path: format!("{out}/{name}.png"),
     };
-    let page = |p: Page| Action::MenuCommand(100 + p.index() as u32);
+    let page = |route: &str| {
+        let page = gallery::workbench::route(route).expect("registered Foundation story route");
+        Action::MenuCommand(gallery::commands::Command::Page(page).id().0)
+    };
     let click = |p: tekes_ui_scene::Point| Action::Click {
         x: f64::from(p.x),
         y: f64::from(p.y),
     };
-    let motion = motion::Layout::new(PAGE_CONTENT);
+    let icon_search = gallery::Gallery::text_surface_center_for_selftest(
+        "component-icon/playground",
+        1000.0,
+        520.0,
+        0,
+        0,
+    );
+    let editor_target = gallery::Gallery::text_surface_center_for_selftest(
+        "lab-internal-text/playground",
+        1440.0,
+        827.0,
+        0,
+        0,
+    );
+    let motion_interrupt = gallery::Gallery::motion_action_center_for_selftest(
+        1440.0,
+        827.0,
+        0,
+        false,
+        PresetCatalog::Recipes,
+        MotionAction::Interrupt,
+    );
+    let motion_reduce = gallery::Gallery::motion_action_center_for_selftest(
+        1440.0,
+        827.0,
+        0,
+        false,
+        PresetCatalog::Recipes,
+        MotionAction::ReduceMotion,
+    );
+    let motion_replay = gallery::Gallery::motion_action_center_for_selftest(
+        1440.0,
+        827.0,
+        0,
+        false,
+        PresetCatalog::Recipes,
+        MotionAction::Replay,
+    );
     vec![
         (100, Action::MenuCommand(201)),
         (200, Action::MenuCommand(302)),
-        (500, page(Page::Icons)),
+        (500, page("component-icon/playground")),
         (1000, capture("icons-top")),
         (1300, Action::Key { key_code: 119 }),
         (1700, capture("icons-bottom")),
@@ -552,10 +804,7 @@ fn selftest_foundation_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::
         ),
         (2400, capture("icons-resized-bottom")),
         (2700, Action::Key { key_code: 115 }),
-        (
-            3000,
-            click(gallery::pages::icons::search_rect(PAGE_CONTENT).center()),
-        ),
+        (3000, click(icon_search)),
         (3200, Action::TypeAscii("SeArCh".into())),
         (
             3600,
@@ -565,7 +814,7 @@ fn selftest_foundation_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::
             },
         ),
         (3800, capture("icons-search")),
-        (4200, page(Page::TextEditing)),
+        (4200, page("lab-internal-text/playground")),
         (
             4500,
             Action::Resize {
@@ -573,7 +822,7 @@ fn selftest_foundation_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::
                 h: 827.0,
             },
         ),
-        (4900, click(gallery::text_demo::TextDemo::editor_target(0))),
+        (4900, click(editor_target)),
         (5100, Action::TextCommand("selectAll:")),
         (5300, Action::TypeAscii("Focus preserved".into())),
         (5600, Action::Miniaturize),
@@ -586,19 +835,13 @@ fn selftest_foundation_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::
             },
         ),
         (6800, capture("text-focus-restored")),
-        (7300, page(Page::Motion)),
-        (
-            7600,
-            click(motion.button(motion::Action::Interrupt).center()),
-        ),
-        (7700, page(Page::Text)),
-        (7900, page(Page::Motion)),
+        (7300, page("foundation-motion/playground")),
+        (7600, click(motion_interrupt)),
+        (7700, page("component-text/playground")),
+        (7900, page("foundation-motion/playground")),
         (8300, capture("motion-resumed")),
-        (
-            8600,
-            click(motion.button(motion::Action::ReduceMotion).center()),
-        ),
-        (8800, click(motion.button(motion::Action::Replay).center())),
+        (8600, click(motion_reduce)),
+        (8800, click(motion_replay)),
         (9200, capture("motion-reduced")),
         (9500, Action::Key { key_code: 119 }),
         (9900, capture("motion-bottom")),
@@ -607,4 +850,528 @@ fn selftest_foundation_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::
         (11000, Action::Log("idle interval starts".into())),
         (13500, Action::Close),
     ]
+}
+
+/// Regresses the canonical Motion story's live-preview origin through actual
+/// mouse-move and click events after preview text scaling, resize, and scroll.
+#[cfg(target_os = "macos")]
+fn selftest_motion_layout_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
+    use gallery::{
+        Command, locale::Locale, motion_preview::PresetCatalog,
+        pages::motion::Action as MotionAction,
+    };
+    use tekes_ui_platform_macos::selftest::Action;
+
+    let out = std::env::var("TEKES_SELFTEST_OUT").expect("motion layout evidence directory");
+    std::fs::create_dir_all(&out).expect("create motion layout evidence directory");
+    let capture = |name: &str| Action::Capture {
+        path: format!("{out}/{name}.png"),
+    };
+    let click = |p: tekes_ui_scene::Point| Action::Click {
+        x: f64::from(p.x),
+        y: f64::from(p.y),
+    };
+    let move_to = |p: tekes_ui_scene::Point| Action::MouseMove {
+        x: f64::from(p.x),
+        y: f64::from(p.y),
+    };
+    let page = gallery::workbench::route("foundation-motion/playground")
+        .expect("canonical Motion playground route");
+    let recipe_button = gallery::Gallery::motion_action_center_for_selftest(
+        gallery::CONTENT_WIDTH,
+        gallery::CONTENT_HEIGHT,
+        0,
+        false,
+        PresetCatalog::Recipes,
+        MotionAction::Catalog(PresetCatalog::Recipes),
+    );
+    let symbols_button = gallery::Gallery::motion_action_center_for_selftest(
+        gallery::CONTENT_WIDTH,
+        gallery::CONTENT_HEIGHT,
+        0,
+        false,
+        PresetCatalog::Recipes,
+        MotionAction::Catalog(PresetCatalog::Symbols),
+    );
+    let symbols_linear_rotation = gallery::Gallery::motion_action_center_for_selftest(
+        gallery::CONTENT_WIDTH,
+        gallery::CONTENT_HEIGHT,
+        0,
+        false,
+        PresetCatalog::Symbols,
+        MotionAction::Preset(tekes_ui_motion::symbols::SymbolEffect::ALL.len()),
+    );
+    let design_system_button = gallery::Gallery::motion_action_center_for_selftest(
+        gallery::CONTENT_WIDTH,
+        gallery::CONTENT_HEIGHT,
+        0,
+        false,
+        PresetCatalog::Symbols,
+        MotionAction::Catalog(PresetCatalog::DesignSystem),
+    );
+    let target_expand = gallery::Gallery::motion_action_center_for_selftest(
+        1440.0,
+        960.0,
+        0,
+        false,
+        PresetCatalog::Recipes,
+        MotionAction::Target(2),
+    );
+    let target_reverse = gallery::Gallery::motion_action_center_for_selftest(
+        1440.0,
+        960.0,
+        0,
+        false,
+        PresetCatalog::Recipes,
+        MotionAction::Target(0),
+    );
+    let target_reverse_click = click(target_reverse);
+    let calibration_page = gallery::workbench::route("lab-calibration/playground")
+        .expect("canonical calibration playground route");
+    let calibration_fixture =
+        gallery::Gallery::calibration_selector_center_for_selftest(1000.0, 520.0, 1, 1, false);
+    let calibration_width =
+        gallery::Gallery::calibration_selector_center_for_selftest(1000.0, 520.0, 1, 1, true);
+    vec![
+        (100, Action::MenuCommand(Command::Page(page).id().0)),
+        (700, capture("motion-layout-initial")),
+        (1000, move_to(recipe_button)),
+        (1300, capture("motion-layout-hover-preview-origin")),
+        (1600, click(recipe_button)),
+        (1900, capture("motion-layout-catalog-click")),
+        (2100, click(symbols_button)),
+        (2400, move_to(symbols_linear_rotation)),
+        (2700, capture("motion-layout-symbols-linear-rotation-hover")),
+        (3000, click(symbols_linear_rotation)),
+        (3300, capture("motion-layout-symbols-linear-rotation")),
+        (3500, click(design_system_button)),
+        (3800, capture("motion-layout-design-system")),
+        (4000, click(recipe_button)),
+        (4300, capture("motion-layout-recipes-restored")),
+        (
+            4600,
+            Action::Resize {
+                w: 1440.0,
+                h: 960.0,
+            },
+        ),
+        (5000, Action::MenuCommand(Command::TextScale(0).id().0)),
+        // Match fixture_point's unscrolled rendered Button geometry before native target clicks.
+        (5400, Action::Key { key_code: 115 }),
+        (5900, move_to(target_reverse)),
+        (6300, capture("motion-layout-target-hover")),
+        (6700, target_reverse_click.clone()),
+        (7100, capture("motion-layout-target-collapsed")),
+        (7400, move_to(target_expand)),
+        (7700, click(target_expand)),
+        (8100, capture("motion-layout-target-expanded")),
+        (8400, target_reverse_click),
+        (8800, capture("motion-layout-target-reversed")),
+        (9000, Action::Key { key_code: 119 }),
+        (9300, capture("motion-layout-scroll-bottom")),
+        (9600, Action::Key { key_code: 115 }),
+        (9900, capture("motion-layout-scroll-top")),
+        (10200, Action::Resize { w: 800.0, h: 600.0 }),
+        (10500, Action::MenuCommand(Command::TextScale(1).id().0)),
+        (
+            10800,
+            Action::MenuCommand(Command::Language(Locale::En).id().0),
+        ),
+        (11100, Action::Key { key_code: 115 }),
+        (11400, capture("motion-layout-800-en-125-top")),
+        (11700, Action::Key { key_code: 119 }),
+        (12000, capture("motion-layout-800-en-125-bottom")),
+        (12300, Action::Key { key_code: 115 }),
+        (12600, Action::Resize { w: 720.0, h: 480.0 }),
+        (12900, Action::MenuCommand(Command::TextScale(2).id().0)),
+        (13200, capture("motion-layout-720-en-150-top")),
+        (13500, Action::Key { key_code: 119 }),
+        (13800, capture("motion-layout-720-en-150-bottom")),
+        (14100, Action::Key { key_code: 115 }),
+        (
+            14400,
+            Action::MenuCommand(Command::Language(Locale::ZhCn).id().0),
+        ),
+        (14700, capture("motion-layout-720-zh-150-top")),
+        (15000, Action::Key { key_code: 119 }),
+        (15300, capture("motion-layout-720-zh-150-bottom")),
+        (15600, Action::Key { key_code: 115 }),
+        (15900, Action::Resize { w: 800.0, h: 600.0 }),
+        (16200, Action::MenuCommand(Command::TextScale(1).id().0)),
+        (16500, capture("motion-layout-800-zh-125-top")),
+        (16800, Action::Key { key_code: 119 }),
+        (17100, capture("motion-layout-800-zh-125-bottom")),
+        (
+            17400,
+            Action::Resize {
+                w: 1000.0,
+                h: 520.0,
+            },
+        ),
+        (
+            17700,
+            Action::MenuCommand(Command::Page(calibration_page).id().0),
+        ),
+        (
+            18100,
+            Action::MenuCommand(Command::Language(Locale::En).id().0),
+        ),
+        (18400, Action::MenuCommand(Command::TextScale(2).id().0)),
+        (18800, Action::MenuCommand(Command::PreviewWidth(1).id().0)),
+        (19200, capture("motion-layout-calibration-large-type")),
+        (19600, click(calibration_fixture)),
+        (20000, capture("motion-layout-calibration-fixture-selected")),
+        (20400, click(calibration_width)),
+        (20800, capture("motion-layout-calibration-width-selected")),
+        (21300, Action::Close),
+    ]
+}
+
+/// Native rendering regression, not a performance run or physical resize capture.
+fn selftest_metal_lifecycle_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
+    use gallery::{layout::PAGE_CONTENT, motion_preview::PresetCatalog, pages::motion};
+    use tekes_ui_platform_macos::selftest::Action;
+    let layout = motion::Layout::new(PAGE_CONTENT);
+    let click = |action| {
+        let mut rect = layout.button(action);
+        if matches!(
+            action,
+            motion::Action::Target(_)
+                | motion::Action::Resume
+                | motion::Action::Replay
+                | motion::Action::Interrupt
+        ) {
+            rect.origin.y = PAGE_CONTENT.min_y() + 238.0;
+            rect.size.height = 26.0;
+        }
+        let point = rect.center();
+        Action::Click {
+            x: point.x as f64,
+            y: point.y as f64,
+        }
+    };
+    let active = |label| Action::FrameExpect {
+        label,
+        min: 10,
+        max: 300,
+    };
+    let idle = |label| Action::FrameExpect {
+        label,
+        min: 0,
+        max: 0,
+    };
+    let mut steps = vec![
+        (100, Action::FrameMark("observe")),
+        (300, click(motion::Action::Catalog(PresetCatalog::Symbols))),
+        (500, click(motion::Action::Preset(14))),
+        (1000, Action::FrameMark("linear-start")),
+        (1800, active("initial-playback")),
+    ];
+    let mut base = 2000;
+    for _ in 0..3 {
+        steps.extend([
+            (base, Action::BeginLiveResize),
+            (
+                base + 100,
+                Action::Resize {
+                    w: 1200.0,
+                    h: 760.0,
+                },
+            ),
+            (
+                base + 200,
+                Action::Resize {
+                    w: 1000.0,
+                    h: 680.0,
+                },
+            ),
+            (base + 400, Action::FrameMark("during-live-resize")),
+            (base + 1000, active("during-live-resize-keeps-presenting")),
+            (base + 1100, Action::EndLiveResize),
+            (base + 1300, Action::FrameMark("after-resize")),
+            (base + 2100, active("resize-resumed")),
+            (base + 2200, click(motion::Action::Target(0))),
+            (base + 2800, active("retarget-reverse")),
+            (base + 2900, click(motion::Action::Target(1))),
+            (base + 3300, Action::FrameMark("paused-settled")),
+            (base + 3900, idle("paused-no-presents")),
+            (base + 4000, click(motion::Action::Resume)),
+            (base + 4800, active("pause-resume")),
+            (
+                base + 4900,
+                Action::Resize {
+                    w: 1440.0,
+                    h: 827.0,
+                },
+            ),
+            (base + 5300, Action::FrameMark("after-programmatic-resize")),
+            (base + 6100, active("programmatic-resize-resumed")),
+            (base + 6200, click(motion::Action::Target(2))),
+            (base + 6800, active("retarget-expand")),
+        ]);
+        base += 7000;
+    }
+    if std::env::var("TEKES_SELFTEST").as_deref() != Ok("metal-lifecycle-hold") {
+        steps.push((base, Action::Close));
+    }
+    steps
+}
+
+#[cfg(target_os = "macos")]
+fn selftest_workbench_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
+    use tekes_ui_platform_macos::selftest::Action;
+    let out = std::env::var("TEKES_SELFTEST_OUT").expect("workbench evidence directory");
+    let mut steps = Vec::new();
+    let mut time = 500;
+    let mut add = |action| {
+        time += 450;
+        steps.push((time, action));
+    };
+    let page = |route: &str| {
+        Action::MenuCommand(
+            gallery::Command::Page(gallery::workbench::route(route).unwrap())
+                .id()
+                .0,
+        )
+    };
+    let click = |route: &str, id| {
+        let p = gallery::workbench::Workbench::fixture_point(route, id);
+        Action::Click {
+            x: p.x as f64,
+            y: p.y as f64,
+        }
+    };
+    let cap = |name| Action::Capture {
+        path: format!("{out}/{name}.png"),
+    };
+    add(Action::MenuCommand(201));
+    add(Action::MenuCommand(302));
+    add(page("example-settings"));
+    add(cap("01-settings-initial"));
+    add(click("example-settings", 1000));
+    add(Action::TextCommand("selectAll:"));
+    add(Action::Preedit("中".into()));
+    add(Action::ExpectText {
+        text: "中".into(),
+        marked: true,
+    });
+    add(Action::Text("Project Studio".into()));
+    add(Action::ExpectText {
+        text: "Project Studio".into(),
+        marked: false,
+    });
+    add(click("example-settings", 20));
+    add(cap("02-settings-pending"));
+    add(click("example-settings", 21));
+    add(cap("03-settings-failed"));
+    add(click("example-settings", 20));
+    add(click("example-settings", 21));
+    add(cap("04-settings-saved"));
+    add(page("component-menu"));
+    add(click("component-menu", 20));
+    add(Action::Key { key_code: 125 });
+    add(cap("05-menu-keyboard"));
+    add(Action::Key { key_code: 36 });
+    add(cap("06-menu-action"));
+    add(page("component-dialog"));
+    add(click("component-dialog", 20));
+    add(Action::Key { key_code: 48 });
+    add(cap("07-dialog-focus"));
+    add(Action::Key { key_code: 53 });
+    add(cap("08-dialog-restored"));
+    add(Action::MenuCommand(521));
+    add(page("component-button"));
+    add(cap("09-button-blue"));
+    add(Action::MenuCommand(202));
+    add(cap("10-button-dark"));
+    add(Action::MenuCommand(542));
+    add(Action::MenuCommand(501));
+    add(cap("11-large-text-narrow"));
+    add(Action::MenuCommand(540));
+    add(Action::MenuCommand(500));
+    add(Action::MenuCommand(520));
+    add(Action::MenuCommand(201));
+    add(page("pattern-master"));
+    add(cap("12-master-detail"));
+    add(Action::Resize { w: 800., h: 600. });
+    add(cap("13-master-narrow"));
+    add(page("component-scroll-area"));
+    add(cap("14-scroll-viewport"));
+    add(Action::Resize { w: 1440., h: 960. });
+    add(page("foundation-tokens"));
+    add(cap("15-foundation-colors"));
+    let search = gallery::navigation::search_rect().center();
+    add(Action::Click {
+        x: search.x as f64,
+        y: search.y as f64,
+    });
+    add(cap("16-navigation-search-focus"));
+    add(Action::Text("component-button/states".into()));
+    add(Action::Resize { w: 800., h: 600. });
+    add(cap("17-navigation-search-resized"));
+    add(Action::TextCommand("selectAll:"));
+    add(Action::TextCommand("deleteBackward:"));
+    add(Action::Resize { w: 1440., h: 960. });
+    add(page("foundation-shape"));
+    add(cap("18-foundation-shape"));
+    add(page("foundation-accessibility"));
+    add(cap("19-foundation-interaction"));
+    add(page("lab-geometry"));
+    add(cap("20-raster-calibration"));
+    add(Action::Close);
+    steps
+}
+
+/// Native AppKit smoke across the production extended-control stories.
+/// This exercises their real hit targets and keyboard paths; it is not an
+/// automated pixel-diff or VoiceOver acceptance run.
+#[cfg(target_os = "macos")]
+fn selftest_workbench_extended_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
+    use tekes_ui_platform_macos::selftest::Action;
+
+    let out = std::env::var("TEKES_SELFTEST_OUT").expect("extended workbench evidence directory");
+    std::fs::create_dir_all(&out).expect("create extended workbench evidence directory");
+    let mut steps = Vec::new();
+    let mut time = 500;
+    let mut add = |action| {
+        time += 500;
+        steps.push((time, action));
+    };
+    let page = |route: &str| {
+        Action::MenuCommand(
+            gallery::Command::Page(gallery::workbench::route(route).unwrap())
+                .id()
+                .0,
+        )
+    };
+    let click = |route: &str, id| {
+        let point = gallery::workbench::Workbench::fixture_point(route, id);
+        Action::Click {
+            x: point.x as f64,
+            y: point.y as f64,
+        }
+    };
+    let capture = |name: &str| Action::Capture {
+        path: format!("{out}/{name}.png"),
+    };
+
+    // Fix theme and contrast so the evidence is reproducible.
+    add(Action::MenuCommand(201));
+    add(Action::MenuCommand(302));
+
+    let route = "component-switch";
+    add(page(route));
+    add(capture("x01-switch-initial"));
+    add(click(route, 20));
+    add(capture("x02-switch-pointer-toggle"));
+    add(Action::Key { key_code: 49 }); // Space
+    add(capture("x03-switch-space-toggle"));
+
+    let route = "component-radio-group";
+    add(page(route));
+    add(capture("x04-radio-initial"));
+    add(click(route, 31));
+    add(capture("x05-radio-pointer-select"));
+    add(Action::Key { key_code: 124 }); // Right
+    add(capture("x06-radio-arrow-select"));
+
+    let route = "component-slider";
+    add(page(route));
+    add(capture("x07-slider-initial"));
+    add(click(route, 20));
+    add(Action::Key { key_code: 124 }); // Right, increment by the model step
+    add(capture("x08-slider-key-right"));
+    add(Action::Key { key_code: 115 }); // Home
+    add(capture("x09-slider-home"));
+    add(Action::Key { key_code: 119 }); // End
+    add(capture("x10-slider-end"));
+
+    let route = "component-disclosure";
+    add(page(route));
+    add(capture("x11-disclosure-initial"));
+    add(click(route, 20));
+    add(capture("x12-disclosure-pointer-toggle"));
+    add(Action::Key { key_code: 36 }); // Return
+    add(capture("x13-disclosure-enter-toggle"));
+
+    let route = "component-tree";
+    add(page(route));
+    add(capture("x14-tree-initial"));
+    add(click(route, 30));
+    add(Action::Key { key_code: 125 }); // Down through visible rows
+    add(capture("x15-tree-down"));
+    add(Action::Key { key_code: 124 }); // Right expands or enters a child
+    add(capture("x16-tree-right"));
+
+    let route = "component-data-table";
+    add(page(route));
+    add(capture("x17-data-table-initial"));
+    add(click(route, 20)); // Sort by the first column
+    add(capture("x18-data-table-sorted"));
+    add(Action::Key { key_code: 125 });
+    add(Action::Key { key_code: 36 }); // Return selects the focused row
+    add(capture("x19-data-table-row-selected"));
+
+    let route = "component-combo-box";
+    add(page(route));
+    add(capture("x20-combo-initial"));
+    add(click(route, 1000)); // The actual native text-input fixture
+    add(Action::Preedit("C".into()));
+    add(Action::ExpectText {
+        text: "C".into(),
+        marked: true,
+    });
+    add(Action::Text("Com".into()));
+    add(Action::ExpectText {
+        text: "Com".into(),
+        marked: false,
+    });
+    add(capture("x21-combo-filtered"));
+    add(Action::TextCommand("moveDown:")); // AppKit doCommandBySelector for Down
+    add(Action::TextCommand("insertNewline:")); // AppKit doCommandBySelector for Return
+    add(Action::ExpectText {
+        text: "Comfortable".into(),
+        marked: false,
+    });
+    add(capture("x22-combo-enter-committed"));
+    add(Action::Key { key_code: 125 }); // Reopen from the input
+    add(Action::Key { key_code: 53 }); // Escape closes without a wall-clock wait
+    add(capture("x23-combo-escape"));
+    add(click(route, 1000));
+    add(Action::TextCommand("selectAll:"));
+    add(Action::TextCommand("deleteBackward:")); // Restore the all-options fixture
+    add(capture("x24-combo-options-restored"));
+    add(click(route, 42)); // Pointer-select the third real option
+    add(Action::ExpectText {
+        text: "Comfortable".into(),
+        marked: false,
+    });
+    add(capture("x25-combo-pointer-option"));
+
+    let route = "component-popover";
+    add(page(route));
+    add(capture("x26-popover-initial"));
+    add(click(route, 20));
+    add(capture("x27-popover-open"));
+    add(Action::Key { key_code: 53 }); // Escape restores invoker focus
+    add(capture("x28-popover-escape-restored"));
+
+    let route = "component-toast";
+    add(page(route));
+    add(capture("x29-toast-initial"));
+    add(click(route, 20));
+    add(capture("x30-toast-dismissed"));
+    add(click(route, 21)); // Restore deterministic visible fixture
+    add(capture("x31-toast-restored"));
+
+    let route = "component-chart";
+    add(page(route));
+    add(capture("x32-chart-initial"));
+    add(click(route, 32)); // Select the third data-driven bar
+    add(capture("x33-chart-pointer-selected"));
+    add(Action::Key { key_code: 124 }); // Move to the next finite data point
+    add(capture("x34-chart-arrow-selected"));
+
+    add(Action::Close);
+    steps
 }

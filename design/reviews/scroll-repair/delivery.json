@@ -1,0 +1,32 @@
+{
+  "format": "tekesui-scroll-repair-delivery/1",
+  "tests": {
+    "passed": 391,
+    "failed": 0,
+    "ignored": 1
+  },
+  "strict_clippy": "passed",
+  "pure_rust_source_boundary": "passed on active managed/untracked sources; Swift oracle relocated by owner",
+  "design_system_check": "passed",
+  "source_manifest": "target/scroll-repair/delivery-source-sha256.json",
+  "source_manifest_sha256": "f51c4af38fd2abffc25e6bab7b9cd713891374e0fac1af0a2a4a69db7e74f38d",
+  "binary_sha256_before_signing": "47865705ee8a2beea2b586347ab43554990b58c8407c52feee4cc2e15d8919bd",
+  "app_executable_sha256": "f1a6b9f814bd583b4b99ac6db10afa84ae4a397ed18dc3bf2a1cee9c6f9a2ba0",
+  "strict_zero_drops": "not passed",
+  "native_reverse_release_tail": "not passed",
+  "normal_preview_page": "scroll-area",
+  "preview_contains": "existing Rust foundations and frozen motion/icon integration; subsequent parallel animation WIP is preserved outside this candidate",
+  "idle_preview_top": {
+    "duration_s": 10,
+    "sampling_s": 1,
+    "median_cpu_percent": 0.0,
+    "max_cpu_percent": 0.0,
+    "precision": "top one decimal percent; not literal zero CPU",
+    "raw_log": "target/scroll-repair/delivery-idle-cpu.log"
+  },
+  "native_visual_review": {
+    "scroll_area_bottom": "confirmed in live window, frame remains inside available viewport, final line visible",
+    "text_layout": "four themes at 1x/2x; native small-window screenshots and original-resolution selected/caret images inspected",
+    "screenshots": "target/scroll-repair/native-layout; target/scroll-repair/text-pixels"
+  }
+}

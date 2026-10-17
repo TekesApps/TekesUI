@@ -1,0 +1,605 @@
+{
+  "format": "tekesui-gold7/1",
+  "authority": {
+    "$ref": "../../docs/design/gold7.md"
+  },
+  "assessment_policy": {
+    "levels": [
+      "contract",
+      "code",
+      "experience"
+    ],
+    "results": [
+      "pass",
+      "fail",
+      "unverified",
+      "not-applicable"
+    ],
+    "not_applicable_requires_reason": true,
+    "static_checker_limit": "This checker verifies source integrity and mechanical relationships only. It does not establish design-contract approval, production code integration, or actual experience."
+  },
+  "items": [
+    {
+      "id": "G1",
+      "name": "warm-human-neutral-and-replaceable-brand",
+      "scope": [
+        "semantic surface and text colors",
+        "consumer brand configuration and derived semantic colors",
+        "full-page reading composition"
+      ],
+      "requirements": [
+        {
+          "id": "warm-neutral-reading-foundation",
+          "rule": "Long-form reading uses a warm neutral base with quiet, legible foreground hierarchy; dark/light theme changes preserve the same semantic role relationships. A replaceable brand accent remains restrained and does not displace the reading foundation.",
+          "sources": [
+            {
+              "$ref": "../source/base.tokens.json#/color/tokens"
+            },
+            {
+              "$ref": "../behavior/reference-alignment.json#/color_roles"
+            },
+            {
+              "$ref": "../../docs/design/gold7.md"
+            }
+          ]
+        },
+        {
+          "id": "consumer-brand-derivation",
+          "rule": "Consumer brand seeds flow through the semantic color derivation pipeline. Clay is one available consumer preset, not a mandate to tint the whole interface Clay.",
+          "sources": [
+            {
+              "$ref": "../brand/config.json"
+            },
+            {
+              "$ref": "../brand/policy.json"
+            },
+            {
+              "$ref": "../brand/gallery.json"
+            }
+          ]
+        },
+        {
+          "id": "whole-page-reading-composition",
+          "rule": "Review real pages at realistic content length for accent proportion, typography hierarchy, spacing, whitespace, and sustained reading comfort; token swatches alone are insufficient.",
+          "sources": [
+            {
+              "$ref": "../../docs/design/gold7.md"
+            },
+            {
+              "$ref": "../../docs/gallery.md"
+            },
+            {
+              "$ref": "../gallery/workbench.json"
+            }
+          ]
+        }
+      ],
+      "assessment": {
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      }
+    },
+    {
+      "id": "G2",
+      "name": "four-layer-micro-contrast",
+      "scope": [
+        "surface-0 through surface-3 roles",
+        "same-color adjacent surfaces",
+        "real nested component geometry"
+      ],
+      "requirements": [
+        {
+          "id": "four-semantic-surface-roles",
+          "rule": "Four semantic surface levels distinguish canvas, region, panel, and elevated content.",
+          "sources": [
+            {
+              "$ref": "../source/base.tokens.json#/color/tokens"
+            }
+          ]
+        },
+        {
+          "id": "same-color-geometric-distinction",
+          "rule": "When adjacent tiers resolve to the same color, preserve discernible hierarchy through real placement, outline, or shadow geometry.",
+          "sources": [
+            {
+              "$ref": "../source/base.tokens.json#/color/tokens"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/layout.rs"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-gallery/src/gallery/layout.rs"
+            }
+          ],
+          "geometry_sources": [
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/layout.rs"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-gallery/src/gallery/layout.rs"
+            }
+          ]
+        }
+      ],
+      "assessment": {
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      }
+    },
+    {
+      "id": "G3",
+      "name": "hairline-boundaries-and-precise-radii",
+      "scope": [
+        "decorative and required boundaries",
+        "focus indicators",
+        "declared concentric shapes"
+      ],
+      "requirements": [
+        {
+          "id": "hairline-and-required-boundary-roles",
+          "rule": "Density-aware hairlines remain distinct from necessary control boundaries and visible focus indicators, with adequate non-text contrast.",
+          "sources": [
+            {
+              "$ref": "../source/layout.json#/hairline_policy"
+            },
+            {
+              "$ref": "../source/layout.json#/boundary_styles"
+            },
+            {
+              "$ref": "../source/base.tokens.json#/stroke/tokens"
+            },
+            {
+              "$ref": "../source/base.tokens.json#/color/tokens"
+            }
+          ]
+        },
+        {
+          "id": "component-role-radius-map",
+          "rule": "Control, input, row, panel, column, floating, button, code, dialog, and other declared component roles use explicit radius tokens; review role assignment rather than applying one radius globally.",
+          "sources": [
+            {
+              "$ref": "../source/base.tokens.json#/radius/tokens"
+            },
+            {
+              "$ref": "../source/layout.json"
+            }
+          ]
+        },
+        {
+          "id": "nested-radius-geometry",
+          "rule": "For declared concentric shapes the inner radius is max(existing square-radius floor, outer radius minus nonnegative inset); this rule applies only to declared concentric shapes.",
+          "sources": [
+            {
+              "$ref": "../source/layout.json#/nested_radius/concentric"
+            },
+            {
+              "$ref": "../source/base.tokens.json#/radius/tokens"
+            }
+          ]
+        },
+        {
+          "id": "real-scale-rendering",
+          "rule": "Check boundaries, focus rings, and nested radii at actual device scales and representative component sizes; source-token correctness does not prove rasterized appearance.",
+          "sources": [
+            {
+              "$ref": "../../docs/design/gold7.md"
+            },
+            {
+              "$ref": "../../docs/design/gold7.md"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-render/src/renderer.rs"
+            }
+          ]
+        }
+      ],
+      "assessment": {
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      }
+    },
+    {
+      "id": "G4",
+      "name": "tuned-interaction-physics",
+      "scope": [
+        "press and state changes",
+        "expansion and snap",
+        "continuous pointer tracking",
+        "reduced motion"
+      ],
+      "requirements": [
+        {
+          "id": "named-press-expansion-snap-presets",
+          "rule": "Press, expansion, and snap each use the named shared motion preset and transitions preserve the defined component states.",
+          "sources": [
+            {
+              "$ref": "../source/motion.json"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-motion/src/state_transition.rs"
+            }
+          ]
+        },
+        {
+          "id": "real-component-motion-integration",
+          "rule": "The policy is wired into real production components and Gallery stories; a preset existing in tokens or motion utilities alone does not establish integration.",
+          "sources": [
+            {
+              "$ref": "../source/motion.json"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/widgets.rs"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/layout_view.rs"
+            },
+            {
+              "$ref": "../../docs/design/component-motion-integration.md"
+            }
+          ]
+        },
+        {
+          "id": "direct-manipulation-and-interruption",
+          "rule": "During direct manipulation geometry follows the pointer without spring lag; cancel, lost capture, and window deactivation terminate the gesture and restore/reconcile state.",
+          "sources": [
+            {
+              "$ref": "../source/interaction-contracts.json#/drag"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/extended.rs"
+            }
+          ]
+        },
+        {
+          "id": "reduced-motion-path",
+          "rule": "Reduced Motion has a real nonanimated path covering duration transitions and continuous effects, without changing semantic operation outcomes.",
+          "sources": [
+            {
+              "$ref": "../source/motion.json#/accessibility/reduce_motion"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-motion/src/state_transition.rs"
+            }
+          ]
+        }
+      ],
+      "assessment": {
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "fail",
+          "reason": "Production Button, Switch and Disclosure now consume StateTransition with JSON role bindings and Gallery host frame requests. Full component-state coverage, especially floating-surface enter/exit lifecycle, remains incomplete; no blanket Gold7 pass.",
+          "evidence_refs": [
+            {
+              "$ref": "../../crates/tekes-ui-motion/src/state_transition.rs"
+            },
+            {
+              "$ref": "../../docs/design/gold7.md"
+            }
+          ]
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      }
+    },
+    {
+      "id": "G5",
+      "name": "input-and-reading-position-protection",
+      "scope": [
+        "IME composition and completion menus",
+        "submission and draft recovery",
+        "manual scrolling and return-to-latest behavior"
+      ],
+      "requirements": [
+        {
+          "id": "ime-and-suggestion-priority",
+          "rule": "Marked text and completion menus take priority over editor shortcuts and ancestors; composition blocks all submit paths, and Escape does not dismiss an ancestor dialog before IME handling.",
+          "sources": [
+            {
+              "$ref": "../source/interaction-contracts.json#/ime"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/text_input.rs"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-platform-macos/src/event.rs"
+            },
+            {
+              "$ref": "../behavior/reference-alignment.json#/components"
+            }
+          ]
+        },
+        {
+          "id": "durable-draft-recovery",
+          "rule": "A draft is recoverable across interruption. Submission persists an immutable draft/outbox record before dispatch; acknowledgment clears only the exact submitted version, not edits made afterward. An acknowledgment rule alone does not prove recovery.",
+          "sources": [
+            {
+              "$ref": "../source/interaction-contracts.json#/ime/send_ack_rule"
+            },
+            {
+              "$ref": "../behavior/reference-alignment.json#/components"
+            },
+            {
+              "$ref": "../../docs/design/reference-alignment-20261016.md"
+            }
+          ]
+        },
+        {
+          "id": "manual-scroll-reading-anchor",
+          "rule": "Any upward user intent enters reading-history and preserves a stable visible anchor while new content arrives.",
+          "sources": [
+            {
+              "$ref": "../source/interaction-contracts.json#/scroll"
+            },
+            {
+              "$ref": "./scroll.json"
+            },
+            {
+              "$ref": "./scroll-viewport.json#/change_delivery"
+            }
+          ]
+        },
+        {
+          "id": "explicit-return-to-latest",
+          "rule": "Returning to the live edge is explicit and user-triggered (for example, a jump-to-latest affordance); timers or incoming content do not silently move the reader.",
+          "sources": [
+            {
+              "$ref": "../source/interaction-contracts.json#/scroll/repin"
+            },
+            {
+              "$ref": "../source/interaction-contracts.json#/scroll/jump_control_threshold"
+            },
+            {
+              "$ref": "./scroll.json"
+            }
+          ]
+        }
+      ],
+      "assessment": {
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "fail",
+          "reason": "Text input and scroll protections have implementation, but durable draft restore and an explicit return-to-latest flow are still missing for the full Gold7 requirement. This is a partial implementation, not merely an untested complete feature.",
+          "evidence_refs": [
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/text_surface.rs"
+            },
+            {
+              "$ref": "../../docs/design/reference-alignment-20261016.md"
+            }
+          ]
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      }
+    },
+    {
+      "id": "G6",
+      "name": "multimodal-desktop-interaction",
+      "scope": [
+        "zoom and reading anchors",
+        "pan and split boundaries",
+        "capture cancellation and recovery",
+        "keyboard or non-gesture alternatives"
+      ],
+      "requirements": [
+        {
+          "id": "zoom-preserves-reading-anchor",
+          "rule": "Zoom preserves the chosen content point under the pointer/anchor, then clamps pan to content bounds; resize safely reclamps or refits.",
+          "sources": [
+            {
+              "$ref": "../behavior/reference-alignment.json#/media_viewer"
+            },
+            {
+              "$ref": "../../docs/design/reference-alignment-20261016.md"
+            }
+          ]
+        },
+        {
+          "id": "bounded-split-and-pan-geometry",
+          "rule": "Split panes respect content minima and switch to a recoverable constrained layout when infeasible; pan remains within declared content bounds.",
+          "sources": [
+            {
+              "$ref": "../source/layout.json#/window"
+            },
+            {
+              "$ref": "../source/layout.json#/container_adaptation"
+            },
+            {
+              "$ref": "../source/interaction-contracts.json#/drag"
+            },
+            {
+              "$ref": "../behavior/reference-alignment.json#/media_viewer"
+            }
+          ]
+        },
+        {
+          "id": "cancel-and-non-gesture-alternatives",
+          "rule": "Pointer capture cancellation, lost capture, and focus loss restore consistent state; zoom, reset, close, and essential split operations have keyboard or other non-gesture controls.",
+          "sources": [
+            {
+              "$ref": "../source/interaction-contracts.json#/drag"
+            },
+            {
+              "$ref": "../behavior/reference-alignment.json#/media_viewer"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/extended.rs"
+            }
+          ]
+        }
+      ],
+      "assessment": {
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "fail",
+          "reason": "The cited media-viewer contract explicitly records a specified-but-unimplemented runtime. A contract reference cannot be counted as code integration.",
+          "evidence_refs": [
+            {
+              "$ref": "../behavior/reference-alignment.json#/media_viewer"
+            }
+          ]
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      }
+    },
+    {
+      "id": "G7",
+      "name": "independent-components-docs-and-previews",
+      "scope": [
+        "semantic tokens and behavior contracts",
+        "real reusable components",
+        "documentation and runnable previews",
+        "business-composed examples"
+      ],
+      "requirements": [
+        {
+          "id": "reusable-real-component-contract",
+          "rule": "Published components have real reusable implementation, behavior/state contracts, and a single canonical entry; a planned registry entry does not count as a component.",
+          "sources": [
+            {
+              "$ref": "../integration.json#/effective_specifications/components"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/lib.rs"
+            },
+            {
+              "$ref": "../gallery/workbench.json"
+            }
+          ]
+        },
+        {
+          "id": "component-documentation-and-runnable-preview",
+          "rule": "Each exposed component has relevant documentation and an independently runnable, real-component preview; static illustration cannot stand in for interaction.",
+          "sources": [
+            {
+              "$ref": "../../docs/gallery.md"
+            },
+            {
+              "$ref": "../gallery/workbench.json"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-gallery/src/gallery/workbench.rs"
+            }
+          ]
+        },
+        {
+          "id": "business-combinations-are-real",
+          "rule": "Business examples compose the actual shared components and support their stated flow; a static placement or empty planned route is not a completed example.",
+          "sources": [
+            {
+              "$ref": "../../docs/gallery.md"
+            },
+            {
+              "$ref": "../gallery/workbench.json"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-gallery/src/gallery/workbench.rs"
+            }
+          ]
+        }
+      ],
+      "assessment": {
+        "contract": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "code": {
+          "status": "unverified",
+          "evidence_refs": []
+        },
+        "experience": {
+          "status": "unverified",
+          "evidence_refs": []
+        }
+      }
+    }
+  ],
+  "mechanical_checks": [
+    {
+      "id": "authoritative-reference-integrity",
+      "purpose": "Resolve local JSON references and verify effective local sources retain package provenance."
+    },
+    {
+      "id": "gold7-requirement-catalog",
+      "purpose": "Require all seven items and every enumerated core requirement."
+    },
+    {
+      "id": "semantic-surface-order",
+      "purpose": "Check semantic surface aliases and declared per-theme luminance ordering."
+    },
+    {
+      "id": "boundary-role-separation",
+      "purpose": "Check required, decorative, and focus boundary roles remain distinct."
+    },
+    {
+      "id": "radius-contract",
+      "purpose": "Check the declared concentric formula, floor token, and effective system reference."
+    },
+    {
+      "id": "interaction-contract-invariants",
+      "purpose": "Check direct tracking, reduced motion, IME priority, and stable scrolling anchors."
+    },
+    {
+      "id": "consumer-brand-registry",
+      "purpose": "Check semantic brand pipeline and registered brand fixture identity/index integrity."
+    },
+    {
+      "id": "pass-evidence-integrity",
+      "purpose": "For any pass assessment, verify evidence and input bytes against either an immutable Git commit or a digest-pinned frozen worktree manifest."
+    }
+  ],
+  "review_assessments": {
+    "dimensions": [
+      "contract",
+      "code",
+      "experience"
+    ],
+    "policy": "These are review states per Gold7 item. The checker reports them separately and does not upgrade them based on mechanical checks."
+  }
+}

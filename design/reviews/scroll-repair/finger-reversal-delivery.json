@@ -1,0 +1,14 @@
+{
+  "scope": "previous reflow candidate plus finger boundary reversal repair; live Symbols performance development remains separate",
+  "source_manifest": "target/scroll-repair/gesture-source-sha256.json",
+  "source_manifest_sha256": "a220b0ea6455f15c41eb9c5df602fc14055c0280ae46c0ec391597bdf419eca3",
+  "executable": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Layout Review.app/Contents/MacOS/TekesUI-Layout-Review",
+  "executable_sha256": "009cdedaaf09196f3af3866d5e0a8b1158bd99182d714eea18d86bdb0939132c",
+  "controls_tests": {
+    "passed": 14,
+    "failed": 0
+  },
+  "strict_clippy": "release all-targets controls passed",
+  "strict_120hz_zero_drops": "not passed",
+  "physical_trackpad_user_acceptance": "pending"
+}

@@ -1,0 +1,117 @@
+{
+  "format": "tekesui-workbench-followup/1",
+  "at": "2026-10-16T04:10:09.723960+00:00",
+  "exit_code": 0,
+  "binary_sha256": "424908aacf9adcb459e6d4bf42e8599c80fdbf5e0c4d256f8f6f7c4b1d739cf1",
+  "source_sha256": {
+    "design/gallery/workbench.json": "d17bba572e16be81246e8f6a14c73247265e7fd0fe584c0829e635e579c4732b",
+    "crates/tekes-ui-gallery/src/gallery/catalog.rs": "a092bab9bc4ee821175f5763aef51abb8af8b2d2fe9a45ebe5fc68270f69692c",
+    "crates/tekes-ui-gallery/src/gallery/chrome.rs": "151cad40f3ad7ec8b9395993131afcef0d807fe59f5d4be7cdcc2b664c6619fe",
+    "crates/tekes-ui-gallery/src/gallery/commands.rs": "cb713b153dddabb482a4708794e99fa474926f9a03608691a142a6e09a6e1942",
+    "crates/tekes-ui-gallery/src/gallery/containers.rs": "c88375c84ba9308878baa55877b2528b64869b01546c2717f6c4eb726e92f047",
+    "crates/tekes-ui-gallery/src/gallery/icon_catalog.rs": "9bdd43024eca1f31080efbebcd930c30b5eeaec34ebb90e8466654a5262a3a64",
+    "crates/tekes-ui-gallery/src/gallery/layout.rs": "ac347805f4a687ef6e3bbced72fa2d274d905ae159bde01b2c51c296aa6ddea2",
+    "crates/tekes-ui-gallery/src/gallery/locale.rs": "b8c429ecdad2c265cd61ccd4f7b5e4e69e17cc2f1618492fb23246dcf426a285",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs": "2a00df144b7a9c8fab454a440fe634fd56af681127bc57bda688f19c70821b3f",
+    "crates/tekes-ui-gallery/src/gallery/motion_preview.rs": "410e4d944fa0b20b1419188e5e49e17d8d5f49920288265988466459cf47e7da",
+    "crates/tekes-ui-gallery/src/gallery/navigation.rs": "cfdb73bd0d4e2ff5f0cafa7258dd5784a8653ae1c763afac1c2a14213b95f726",
+    "crates/tekes-ui-gallery/src/gallery/pages/icons.rs": "60bbaf3fd5cd1350406bf21774ee5d81bbdddb1abe6a3a860d27b21fb4a5e7fe",
+    "crates/tekes-ui-gallery/src/gallery/pages/mod.rs": "dd32496b0fb8a3de423b33441591851f9c564bdcbf2126a237448a762ec48554",
+    "crates/tekes-ui-gallery/src/gallery/pages/motion.rs": "e4f2c93a32fda089a958295f1440dd5f4dc3921748c785d79973eb2c797bca98",
+    "crates/tekes-ui-gallery/src/gallery/pages/primitives.rs": "dcd32f2a3c02639a37f861a1a3e8257c1bd22b9567ab4fe0d2d93ded83911eea",
+    "crates/tekes-ui-gallery/src/gallery/pages/showcase.rs": "fd8bfa66d2d9be13496edb1c5812cd1f7578310d3693825f42803eef776944d0",
+    "crates/tekes-ui-gallery/src/gallery/pages/static_text.rs": "7cf269bc50dd17ecca2a5c5f80300e6eb3048b50f3a34e112de7255a25ec2497",
+    "crates/tekes-ui-gallery/src/gallery/pages/tokens.rs": "e058d0012edec066176917992c70c924d9b8a2b980dfc2446d9212bedbc86680",
+    "crates/tekes-ui-gallery/src/gallery/proposal_assets.rs": "47ab3a31a1eb91f7b2d215ddd7ec173c5e48108c0ad9617e8883136c986a9b03",
+    "crates/tekes-ui-gallery/src/gallery/snapshot.rs": "fff4c6bc37ec98051dfc9d9e0d9fc8407d67dc47d3ca814d6b7543c73fa58ce1",
+    "crates/tekes-ui-gallery/src/gallery/static_text.rs": "62bb15999164197cf988e697b092907874afc8f9489bd58045b3e2dc02470bd2",
+    "crates/tekes-ui-gallery/src/gallery/symbol_assets.rs": "9c560c9c17d2e72aae9728cbf9d54317ab5939eff0a6a11e5bd52c939b04dc70",
+    "crates/tekes-ui-gallery/src/gallery/text.rs": "741e7688b9e3303d3c22f0b72d61b1778a0424b915837641f37b2c23012f413b",
+    "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "1eafc53180ad4ea2ae5a37908d767f611e2e6f3e038f5c73b0354cd579aa04f3",
+    "crates/tekes-ui-gallery/src/gallery/theme.rs": "e1ede314548a0ae25ad633f1a86cefb7118473d7b61d0967dcb6bfbe551982d5",
+    "crates/tekes-ui-gallery/src/gallery/viewport.rs": "c1a309598bd55bb855b85171f50e443c33d2dfdde9cd29542251bdb971de84e0",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "dda43d6cd98a0dbce179182a4aaaa182620412dffabfe9ab9cd5f2230cca7201",
+    "crates/tekes-ui-gallery/src/host.rs": "8ccfbd37823cafe728bad1789e8d5d425855ac3a861488f5d1dc3fabe93bb93e",
+    "crates/tekes-ui-gallery/src/main.rs": "e7dad1d0731ae2831a8802d2e8e236532e76eb85822472b31f3dfae9df99a290",
+    "crates/tekes-ui-gallery/src/perf.rs": "d4239d577da187b2edd1539324ff8c91a89949de1212261ff2df94f48c260049",
+    "crates/tekes-ui-gallery/src/symbol_perf.rs": "338126b978516e0f9a420f0de8d5218cbf007839da845d1641fb7679a311a26d"
+  },
+  "capture_count": 20,
+  "text_query_passes": 2,
+  "screenshots_sha256": {
+    "01-settings-initial.png": "998a8eda5d1ebd14cb0c2c138b11ed163e91cba7d47f7d8e7ee173f0f5d13997",
+    "02-settings-pending.png": "af729139fa7c36e1ca73c56129da6e0d632b54704a8cbf96a19edc0b7ad4b490",
+    "03-settings-failed.png": "a525805e0dd8768a06c8d2f18641010d4694255c00885ec28d437c4eb68626d8",
+    "04-settings-saved.png": "2202f45ee11c8467ec4e911834e782fbbf8b8b1c2cf4493b26f2e60ca0916e03",
+    "05-menu-keyboard.png": "2b74d0e1ecb802ff0283aabd03f0e51baad2896b45893f6588711ceda8f5ebb8",
+    "06-menu-action.png": "1b20df352c3a104a72c9156f6a010fd0d7c8c676a7bb3d8eef914259296e7fd2",
+    "07-dialog-focus.png": "9b2f9cd40f787f74b84d7faaeebf486a777e9a4c8868b63d68b0a7a6415c24bc",
+    "08-dialog-restored.png": "371ebeef088081376909ce02fa59ed354236116d3805e6950cf3d95b6b5d2a9b",
+    "09-button-blue.png": "0e0ce44a3472388331e7a1d68e19bed344311b99d5301c1537d5e19dd26b73f4",
+    "10-button-dark.png": "d5ce9ef74406807e70b3d655ae71056805ede6a542f38d5af654c910cbddcd91",
+    "11-large-text-narrow.png": "b7e6872bd7dd7d538b7549b22cc9b24971667c422974d2d2777fa66880ede37e",
+    "12-master-detail.png": "b9e26e88cc6444fbb5ae6faab458355660879a34f5a0f1c18280846b5893fd1c",
+    "13-master-narrow.png": "d22f24bd2a21bcb8ccf45b2283325da65dfd88870a81426506a9dd14f176c729",
+    "14-scroll-viewport.png": "822963fb570511ea16cdf74ed2a5e2f524ed9dc63f57842fcb411fb31c8df718",
+    "15-foundation-colors.png": "3619d7de9775ccf444d915b15f89315a63db808642bd0a2755dac56ce3163fad",
+    "16-navigation-search-focus.png": "da6159186c64a0db780a84b5b653af2e477ebfc7953de80516d893275be83c10",
+    "17-navigation-search-resized.png": "2c86b7c3354e62e7a18949d7cac72a6a5a5d6aed2d8f251f6aa403484ba43d5b",
+    "18-foundation-shape.png": "c62fcd6c536a4b320883042da82ffb3e110d51c531bd88df4a4dd9cd9a1fbbaf",
+    "19-foundation-interaction.png": "93d081d2019931ac3a042dfa9045772c68ed81957bff63c1e23a7ef777c79c37",
+    "20-raster-calibration.png": "f89351138f17d8efd1fa9cfb4f09ebba7e29b086e363c874a66623211025b99b"
+  },
+  "limitations": [
+    "synthetic AppKit input; physical IME and VoiceOver not verified",
+    "no new 120Hz or CPU acceptance measurement",
+    "visual border changes deferred; existing JSON tokens unchanged"
+  ],
+  "close_requested_observed": true,
+  "capture_exit_zero_count": 20,
+  "fail_markers": [],
+  "checks": {
+    "gallery": {
+      "passed": 176,
+      "failed": 0,
+      "ignored": 1
+    },
+    "controls": {
+      "passed": 21,
+      "failed": 0
+    },
+    "platform": {
+      "passed": 19,
+      "failed": 0
+    },
+    "tokens": {
+      "passed": 18,
+      "failed": 0
+    },
+    "clippy": "pass -D warnings",
+    "design_system": "pass",
+    "brand_projection": "pass",
+    "pure_rust": "pass",
+    "navigation_retest": "4 passed"
+  },
+  "visually_inspected": [
+    "03-settings-failed.png",
+    "05-menu-keyboard.png",
+    "07-dialog-focus.png",
+    "11-large-text-narrow.png",
+    "13-master-narrow.png",
+    "14-scroll-viewport.png",
+    "16-navigation-search-focus.png",
+    "17-navigation-search-resized.png"
+  ],
+  "design_source_sha256": {
+    "design/source/base.tokens.json": "6f5893cdf91db3b3cba9cf9f1c781f61754100c5661334f382849e1606634217",
+    "design/source/interaction-contracts.json": "5c56c0298dac965cdda2ffdf910ba582bd9a221228f5c96df6eb39d8bec7c8ac",
+    "design/source/layout.json": "ed3da7a0f36d674f7e9afb03fa6eab58ea969579889ff4f9b943b6b8107037d0",
+    "design/source/legacy.tokens.json": "e2532db5200b6310cf934ecd12bad820f60ef0dd3195a1d563f5ef7512149eda",
+    "design/source/motion.json": "9bfa90b6f514deca4cc08e0228e752b95fa81dd34229287b3bacdd3dab9968e0",
+    "design/source/rust-mapping.json": "cd34ddf901603272874201fd835cea8841f2fdc5875bcf640d647c70b39f3e76",
+    "design/source/token-metadata.json": "f9b667a210f07c5b36f5ba182ae6f149e082ce19e8203611e01360c289e6c263",
+    "design/brand/config.json": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
+    "design/brand/gallery.json": "56c0914bcada66d0ca7d31c60493fb166ac5090b2cdfae7a710ac37570ca7591",
+    "design/brand/policy.json": "8ab0d7c6c9605a72ace5af335cf90ffa8abe3243534ac9c4ca68f3fc39bf488c"
+  }
+}

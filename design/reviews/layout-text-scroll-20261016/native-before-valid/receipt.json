@@ -1,0 +1,23 @@
+[
+  {
+    "route": "component-text",
+    "pid": 74425,
+    "external": true,
+    "binary_sha256": "80154c2313c55cbb95e5469c5834d186c01dea768c44cca704ebd832e51d1262",
+    "capture": "component-text.png"
+  },
+  {
+    "route": "component-scroll-area",
+    "pid": 74450,
+    "external": true,
+    "binary_sha256": "80154c2313c55cbb95e5469c5834d186c01dea768c44cca704ebd832e51d1262",
+    "capture": "component-scroll-area.png"
+  },
+  {
+    "route": "lab-internal-text",
+    "pid": 74470,
+    "external": true,
+    "binary_sha256": "80154c2313c55cbb95e5469c5834d186c01dea768c44cca704ebd832e51d1262",
+    "capture": "lab-internal-text.png"
+  }
+]

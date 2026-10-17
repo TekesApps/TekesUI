@@ -1,0 +1,52 @@
+{
+  "baseline-before-smoke.json": {
+    "bytes": 595301,
+    "sha256": "9e6a2a7acaa4e6fec529b897bacd3ea8e1e45cbd4f785e4a20e46eb7299333a6",
+    "gzip_sha256": "add4a290055f92af1ef8a080b21cc6d919bd7dcc033c326c310477f018642c72"
+  },
+  "diagnostic-gpu-timing-24.json": {
+    "bytes": 1766411,
+    "sha256": "24000a3907d732bf4be50105405f9c023bac628f87e640089a9d34b5b664412d",
+    "gzip_sha256": "a92d4a3d4f1c5cec6c012f431edb90746aab9e9016ee7c490495c13314dfaedc"
+  },
+  "diagnostic-static-24.json": {
+    "bytes": 1755259,
+    "sha256": "5ee6bcebbddbce272f8e9ab79f5b9e35caa4de0018713795d8776c3ab9cc4595",
+    "gzip_sha256": "6697c2374b3adae6589e4d940413d2147ee254861b3da581097cb2f75262f51e"
+  },
+  "final-all-effects-42.json": {
+    "bytes": 1172294,
+    "sha256": "4abfcde843f66b1d014f1b5de99564d3b75181f8957b6d58ea751d3f46d5afe4",
+    "gzip_sha256": "fe7209fd08c40ae8901f652b17940a9a8b1e9e26348f0b730905ee981df38e39"
+  },
+  "final-baseline-3.json": {
+    "bytes": 1747463,
+    "sha256": "e8a6c544cc4edcad86fc991c9c46d71e86f40db2d9bda5cf4fd8baeeebdfa622",
+    "gzip_sha256": "9b7b51bb7be8a11d48f453a6cf5ed06c780cb24cbac2b631f2c68e38cd6b1ada"
+  },
+  "final-combined-72.json": {
+    "bytes": 1732230,
+    "sha256": "aee1ef3807d9c13445a38629d774ba3786109f83a7312df19298dbe7bb6d5efe",
+    "gzip_sha256": "dbb192f37ba2133ac93a3e49b26bad071fae71c073f4bc2cae40462d1b17bbb8"
+  },
+  "final-multi-24.json": {
+    "bytes": 3478578,
+    "sha256": "1f57854c789b80f444d7f033c3e5274df5e4f6eb4d962fbc01484d88d469ce08",
+    "gzip_sha256": "c80eea59f6e8c343542585a24c491f6badb4454c338769cb6ab79a29d4a6df51"
+  },
+  "final-parameters-24.json": {
+    "bytes": 3498534,
+    "sha256": "7214ae3ff0ee1d3a6bbfb1341c6877d47025482889e2ebbf13cc102f736be223",
+    "gzip_sha256": "7a7486cbc12c65d01268421fa239864afa81e67628e36920332ebd2488c94212"
+  },
+  "final-retarget-24.json": {
+    "bytes": 3495418,
+    "sha256": "a5a85af04176d8710e6bbc726f1453e3e6410934f38a6a8772170452872268df",
+    "gzip_sha256": "828e50c7c7278d454da337fbb163a66b3e59449ec7cd2d3489f6da9b5feda367"
+  },
+  "multi-before-smoke.json": {
+    "bytes": 595135,
+    "sha256": "49260976b65cdf7d3e824fcccd8b924918d7c6c304ba3475e0adb1d9d78ca0c8",
+    "gzip_sha256": "81de42cbe042cff2355e0ec58ed735cd9f2e65d5b22e820cc72c9c866b42fd55"
+  }
+}

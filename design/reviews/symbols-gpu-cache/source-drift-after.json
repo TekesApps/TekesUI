@@ -1,0 +1,35 @@
+{
+  "binary_sha256_unchanged": true,
+  "drift": [
+    {
+      "path": "crates/tekes-ui-gallery/src/perf.rs",
+      "measured_sha256": "fc752303b668f1b9fbc9c6923b84f84fa2ea362419200e95ee31edbe3b9f059a",
+      "current_sha256": "2780f4f3a433217ffdda6154accfd75b0e626ed6e19268f0bd74880bb489f6d7"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/Cargo.toml",
+      "measured_sha256": "e15825071255f3ff361aa1ffd7ba0dcdf484686a7b5e88ed19fa08511e6c1a2b",
+      "current_sha256": "a3b5892affd052e12f5d900d0da8f5cbbf4621aacfc409c4b5e61acc3c320fad"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/event.rs",
+      "measured_sha256": "57467ea34ab6b79642a02595bd0c5bebdfa7b260437715b4e344a4e3ae39216e",
+      "current_sha256": "c1edd784e56b961670e683be2415d67066a20f49944693a8fe30932d87750307"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/presentation.rs",
+      "measured_sha256": "9e1d25270ca91b526a2048cbdf8d5957d196bbbc3166ade2a860f4cf479660b0",
+      "current_sha256": "ff123a8e806c2807cb99a4a343fbbb021130e05764a1dd20f0f1c5bead498213"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/shared.rs",
+      "measured_sha256": "c5919f4d5b054d9cadb46aaa52a754dc7447e4fc26a54f3124fc54660353c816",
+      "current_sha256": "0da9d17d38dda00c1324caf5cbc668cbe88619c920c105e0b38f0bbf6b371c9c"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/view.rs",
+      "measured_sha256": "b6f681aa2cf97a3a0bbdb64bf31f7deea4841e4e61b69cd76ffe7a6736518477",
+      "current_sha256": "5292c18c0533e02ccaced7ecb38aa3607b91164e0435ee6e1b601eb62543f15f"
+    }
+  ]
+}

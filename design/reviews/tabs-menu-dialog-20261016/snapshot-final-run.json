@@ -1,0 +1,12 @@
+{
+  "command": [
+    "target/TekesUI Gallery.app/Contents/MacOS/TekesUI-Gallery",
+    "--snapshot",
+    "target/tabs-menu-dialog-20261016/snapshot-final"
+  ],
+  "exit": 0,
+  "seconds": 7.33,
+  "png_count": 672,
+  "binary_sha256": "6bec407a09c564b07c9a881a1f7e9429c24c23e454920716ec24225e06c410f1",
+  "mode": "offscreen_no_native_window"
+}

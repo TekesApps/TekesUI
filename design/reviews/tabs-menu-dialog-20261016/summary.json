@@ -1,0 +1,162 @@
+{
+  "scope": "Existing Tabs, Menu, Dialog own layout, paint, clipping, pointer and keyboard state; Gallery consumes production runtime views. No new component registrations or DS visual change.",
+  "implementation": {
+    "crates/tekes-ui-controls/src/composite.rs": "Production TabsView, MenuView, DialogView; retain public existing Tabs/Menu/Dialog models and struct literal compatibility.",
+    "crates/tekes-ui-controls/src/lib.rs": "Export component runtime views and layout/event types.",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "Reuse production runtimes, including Select external Menu and destructive Dialog; host-level focus routing/restoration only.",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs": "Regression for actual Gallery modal blocking Story header scroll.",
+    "docs/gallery.md": "Shared layout ownership, scope boundaries, correct keyboard contracts and current evidence link."
+  },
+  "behavior_verified": [
+    "Tabs one roving Tab stop; Left/Right/Home/End; Enter keydown, Space keyup; cancel old arm after focus move.",
+    "Menu pointer/keyboard active row agreement, Enter/Space keydown only, Escape/outside dismiss, bounded popup, short viewport internal scroll, precise gesture capture outside popup.",
+    "Dialog focus containment and visible enabled invoker restoration, same-host background pointer/wheel blocking including Story header, independent action clipping and measured large-font title.",
+    "Blur/deactivation cancels held keys; Dialog remains open on window deactivation; page blur closes overlays.",
+    "No intervening render needed between focus movement and action key; disabled overlays can still dismiss using Escape."
+  ],
+  "checks": [
+    {
+      "check": "tests-final",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-gallery",
+        "-p",
+        "tekes-ui-motion",
+        "--release",
+        "--locked"
+      ],
+      "exit": 0,
+      "seconds": 27.71
+    },
+    {
+      "check": "clippy-final",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-gallery",
+        "-p",
+        "tekes-ui-motion",
+        "--all-targets",
+        "--release",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 2.78
+    },
+    {
+      "check": "build-final",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "tekes-ui-gallery",
+        "--release",
+        "--locked"
+      ],
+      "exit": 0,
+      "seconds": 5.26
+    },
+    {
+      "check": "fmt-final",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.38
+    },
+    {
+      "check": "pure-rust-final",
+      "command": [
+        "python3",
+        "scripts/check-pure-rust.py"
+      ],
+      "exit": 0,
+      "seconds": 0.5
+    },
+    {
+      "check": "design-system-final",
+      "command": [
+        "target/design-check-venv/bin/python",
+        "scripts/check-design-system.py"
+      ],
+      "exit": 0,
+      "seconds": 0.42
+    },
+    {
+      "check": "diff-final",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.21
+    }
+  ],
+  "test_totals": {
+    "passed": 393,
+    "failed": 0,
+    "ignored": 1,
+    "ignored_reason": "Existing optional full icon corpus test"
+  },
+  "visual_comparison": {
+    "default": {
+      "captures": 672,
+      "pixel_identical": 672
+    },
+    "open": {
+      "captures": 40,
+      "pixel_identical": 40
+    }
+  },
+  "visual_method": {
+    "default": "Actual packaged executable --snapshot; 84 pages x 4 existing themes x 1x/2x; default text scale; no native window.",
+    "open": "Target-only frozen-source probe drives real Gallery input to Tabs selected2, Menu open active1, Select open active0, Dialog and destructive Dialog open; 5 states x4themes x1x/2x,1440x960 logical points,100% text. It reads layout geometry through appended private wrappers; no direct state writes.",
+    "intermediate_regression": "Initial open comparison32/40 matched; Menu generic focus border affected8. Fixed production Menu active-row presentation without changing real keyboard focus. Final40/40 match.",
+    "manual_offscreen_inspection": "Root inspected final light-standard2x Menu and Dialog PNGs; native accessibility and display timing not inferred."
+  },
+  "provenance": {
+    "baseline_packaged_binary_sha256": "ef90318f15142bd88cc7fe6d6a723d1135a809ff710d83a0e4c992ec4a69cc55",
+    "final_packaged_binary_sha256": "6bec407a09c564b07c9a881a1f7e9429c24c23e454920716ec24225e06c410f1",
+    "release_binary_sha256": "0a3a6d520debefe2fcc8adc086405780da5af08bbfe84f362ada0ec28ff75731",
+    "probe_binary_sha256": "2da39ce7c512a9b99065414c696433aa53e86d0405893bc0513921cb93f854bd",
+    "baseline_restoration": "Exact prior workbench and controls export hashes matched before-source.json; restored from prior component-layout-followup changed-sources archive. See baseline-source-receipt.",
+    "final_source_freeze": "source-freeze.json",
+    "source_archive": "changed-sources.tar.gz"
+  },
+  "protected_wip": {
+    "original_files": 1114,
+    "missing_files": [],
+    "existing_changed_paths": [
+      "crates/tekes-ui-controls/src/lib.rs",
+      "crates/tekes-ui-gallery/src/gallery/mod.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+      "docs/gallery.md"
+    ],
+    "other_original_files_unchanged": 1110,
+    "design_system_and_registry": "All pre-task originals outside the four listed paths unchanged; no token/registry/route/ID edits.",
+    "git_actions": "No staging, commit, push, release or cleanup performed."
+  },
+  "pending": [
+    "External-display native recheck deferred at user request; no native Gallery launched this turn.",
+    "120Hz /8.33ms presentation, isolated drops, CPU and drawable lifecycle remain performance work; offscreen renders are not timing acceptance.",
+    "Physical IME, VoiceOver/screen-reader and native focus/scroll acceptance remain unverified.",
+    "Full lazy text provider/block-layout and other existing component migrations are outside this three-component batch."
+  ],
+  "local_app": "target/TekesUI Gallery.app; rebuilt and ad-hoc signed locally by existing packaging script, not a release.",
+  "navigation_mapping": "No navigation migration in this batch; existing component/story IDs and routes remain unchanged."
+}

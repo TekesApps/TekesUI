@@ -1,0 +1,98 @@
+{
+  "date": "2026-10-16",
+  "status": "implemented_and_offscreen_checked_native_retest_deferred",
+  "scope": "Existing component/layout and Gallery integration only; no new component registration, no DS redesign.",
+  "changes": [
+    {
+      "files": [
+        "crates/tekes-ui-controls/src/widgets.rs",
+        "crates/tekes-ui-controls/src/lib.rs",
+        "crates/tekes-ui-gallery/src/gallery/text.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench.rs"
+      ],
+      "implementation": "Production Checkbox render/measure/clipped placement and existing Button interaction; Gallery actual shaped first-line metric; state matrix uses production render. Master-detail list uses one ScrollGeometry snapshot for transform/culling/clip/hit; original thumb frame painted under clip."
+    },
+    {
+      "files": [
+        "crates/tekes-ui-controls/src/extended.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs"
+      ],
+      "implementation": "Existing SplitView/Slider/RadioGroup/Switch/IconButton/Link consume production normalized frame/visible geometry. Duplicate icon/link hit entries removed. Slider thumb/row hit uses visible component frame, drag mapping retains original painted track; hidden/disabled capture and stale track cleared."
+    },
+    {
+      "files": [
+        "crates/tekes-ui-gallery/src/gallery/navigation.rs",
+        "crates/tekes-ui-gallery/src/gallery/chrome.rs"
+      ],
+      "implementation": "Sidebar drawing/cull/hit share ScrollGeometry; full original frames transformed, only visible ranges clipped; search excluded without changing historical extent/limits."
+    },
+    {
+      "files": [
+        "docs/gallery.md"
+      ],
+      "implementation": "Documented frame/visible contract, actual migration status and remaining component scope in the existing documentation."
+    }
+  ],
+  "checkbox_alignment": {
+    "rule": "24pt mark center equals actual shaped label first-line line-box center. Multiline labels align the mark to first line, and row grows with full paragraph. Existing dimensions/colors/tokens retained.",
+    "coverage": "English, Chinese/Japanese/emoji, 150% text and narrow wrap via real TextEngine; pointer vs keyboard focus-visible, disabled, resize, release cancellation, Space-only activation.",
+    "visual_change": "8 default Checkbox captures differ only in label position; other 664 default captures pixel-identical. Detail images are diagnostic nearest-neighbor crops of original captures."
+  },
+  "checks": {
+    "commands": "checks-final.json",
+    "all_exit_zero": true,
+    "passed": 374,
+    "ignored": 1,
+    "by_crate": {
+      "controls": 70,
+      "gallery": 234,
+      "motion_including_doctest": 70
+    },
+    "coverage": "Includes actual Workbench click/model transitions and GPU offscreen chrome culling/reflow pixel tests; does not establish native/physical-device acceptance."
+  },
+  "visual": {
+    "mode": "offscreen_no_native_window",
+    "pages": 84,
+    "themes": 4,
+    "scales": [
+      1,
+      2
+    ],
+    "captures": 672,
+    "pixel_identical": 664,
+    "changes": "visual-comparison-final.json",
+    "baseline_binary_sha256": "e02880a13fed1d19026499ce236154bcb22c2cb3a8a0e8587788f91722cf3b64",
+    "final_binary_sha256": "ef90318f15142bd88cc7fe6d6a723d1135a809ff710d83a0e4c992ec4a69cc55",
+    "full_png_hashes": "snapshot-manifest.json",
+    "manual_review": "Reviewed enlarged before/after default Checkbox and checked that only label positioning changed. Multilingual/large text covered by measured geometry tests, not claimed as complete manual visual acceptance."
+  },
+  "boundaries": {
+    "pure_rust": "check-pure-rust passed; no Swift/GPUI/UI framework migration.",
+    "ds_and_routes": "Design authority, generated tokens, brands and component registration unchanged; hashes checked.",
+    "not_full_component_tree": "Production geometry consumption for extended controls does not make every control a fully retained widget or finish all per-component layout/render/event encapsulation.",
+    "animation": "No new animation hookup or physics change in this batch.",
+    "native": "Not run or launched; user explicitly deferred external-screen native retest. No internal-screen substitute."
+  },
+  "remaining": [
+    "Tabs/Menu/Dialog layout/render/event encapsulation; other collection/overlay/document adapters by existing component boundaries.",
+    "External native tests: checkbox text/mark/focus, mouse/keyboard/IME, nested scrolling/resize and overlay behavior.",
+    "Full lazy provider and block text layout; viewport revision/reason notifications and frame coalescing.",
+    "120Hz/8.33ms, isolated frame drops, CPU and NSScrollView bounce acceptance remain open; no new performance claim.",
+    "VoiceOver/physical IME and final DS visual review remain separate."
+  ],
+  "package": {
+    "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app",
+    "binary_sha256": "ef90318f15142bd88cc7fe6d6a723d1135a809ff710d83a0e4c992ec4a69cc55",
+    "signed_and_verified": true,
+    "native_launched": false
+  },
+  "git": {
+    "staged": false,
+    "committed": false,
+    "pushed": false,
+    "released": false
+  },
+  "source_freeze": "source-freeze.json",
+  "changed_source_archive": "changed-sources.tar.gz (changed files only; not a full repository archive)",
+  "retention": "protected-wip.json"
+}

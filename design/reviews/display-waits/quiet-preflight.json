@@ -1,0 +1,30 @@
+{
+  "format": "tekesui-quiet-preflight-result/1",
+  "candidate": "final-gallery-candidate.json",
+  "benchmark_candidate_sha256": "d025dc1bb1cefde04d7461b674c43be58477a13c2d1610f83096e69530b5db34",
+  "gate_passed": false,
+  "exit_code": 3,
+  "maximum_wait_s": 600,
+  "preflight_samples": 197,
+  "native_during_samples": 0,
+  "native_workloads_started": 0,
+  "native_workloads_planned": 5,
+  "acceptance": "unmeasured; no 120Hz pass or performance failure inferred",
+  "ambient_record": "target/symbol-perf-corrected/corrected-multi-24-ambient.json",
+  "ambient_record_sha256": "0aa70695065c6d3291e6ed08117c11b7751774a9f3b3f998ad01efb0e46e1b2b",
+  "limits": {
+    "binary": "target/TekesUI Corrected Benchmark.app/Contents/MacOS/TekesUI-Corrected-Benchmark",
+    "out": "target/symbol-perf-corrected",
+    "driver": "cad",
+    "frame_latency": "2",
+    "wait_seconds": 600.0,
+    "stable_seconds": 15.0,
+    "interval": 3,
+    "per_process_limit": 30,
+    "total_limit": 100,
+    "seconds": 60,
+    "prefix": "corrected",
+    "gate_only": false
+  },
+  "caution": "CPU-only low-background gate; does not certify GPU, I/O or user inactivity. WindowServer activity during measurement can be caused by the benchmark itself; exceeding a threshold is not causal evidence of outside interference."
+}

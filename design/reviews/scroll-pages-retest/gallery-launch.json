@@ -1,0 +1,22 @@
+{
+  "started_unix": 1792116559.050098,
+  "pid": 56047,
+  "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app/Contents/MacOS/TekesUI-Gallery",
+  "previous_binary_sha256": "95bd468e1725593cd7178726e9da973080e21e13f2c341ad1e346740581d4ece",
+  "binary_sha256": "8135f8e5485873d9443ed7f21636d0116ea95db074e2fc345d676c74ad29e674",
+  "compiled_binary_sha256": "9d8f40f563893c049bb4161bc6009b5d36602e5238a31d8445dd631b6b6777a4",
+  "source_candidate": "build-measured-drain-final.json",
+  "display_driver": "default CADisplayLink",
+  "locale": "en",
+  "page": "scroll-area",
+  "note": "Approved appearance unchanged; long-running 120Hz is not yet accepted. Old final-gallery-candidate receipt remains historical.",
+  "visual_verification": {
+    "native_window_title": "TekesUI Gallery \u2014 ScrollArea \u2014 Light",
+    "observed": "English coherent prose, existing section/item navigation, content bottom within remaining viewport; no new components",
+    "method": "CUA native AX and screenshot"
+  },
+  "quiet_acceptance": {
+    "status": "not_started",
+    "reason": "Original low-background preflights failed; user currently unavailable for manual Codex minimization; no threshold relaxed"
+  }
+}

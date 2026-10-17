@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-16",
+  "validation": [
+    {
+      "command": "target/design-tools-venv/bin/python scripts/check-reference-alignment.py --self-test",
+      "result": "pass",
+      "negative_cases": [
+        "surface-order",
+        "state-collapse",
+        "brand-leakage"
+      ]
+    },
+    {
+      "command": "target/design-tools-venv/bin/python scripts/check-reference-alignment.py --output design/reviews/reference-alignment-20261016/report.json",
+      "result": "pass",
+      "contrast_checks": 2880,
+      "brand_profiles": 3,
+      "themes": 4
+    },
+    {
+      "command": "target/design-tools-venv/bin/python scripts/check-design-system.py",
+      "result": "pass"
+    },
+    {
+      "command": "cargo test --locked --offline -p tekes-ui-tokens -p tekes-ui-controls",
+      "result": "pass",
+      "tests": {
+        "tokens": 18,
+        "controls": 47
+      }
+    },
+    {
+      "command": "git diff --check -- DESIGN.md design/integration.json",
+      "result": "pass"
+    },
+    {
+      "check": "supplement local refs and JSON pointer",
+      "result": "pass"
+    }
+  ],
+  "preservation": {
+    "existing_files_hashed_before": 855,
+    "existing_files_modified_by_this_task": [
+      "DESIGN.md",
+      "design/integration.json"
+    ],
+    "other_changed_files_observed": [
+      "docs/gallery.md"
+    ],
+    "other_changed_files_action": "left as observed; not edited or reverted by this task",
+    "other_existing_file_hashes": "unchanged"
+  },
+  "runtime": {
+    "gui": "unverified",
+    "ime": "unverified",
+    "voiceover": "unverified",
+    "provider": "unverified",
+    "performance": "unverified"
+  },
+  "release": "not-requested; no commit/push/tag"
+}

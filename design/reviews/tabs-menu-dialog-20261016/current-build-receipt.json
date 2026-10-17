@@ -1,0 +1,8 @@
+{
+  "live_composite_sha256": "283c25a61d2ad9f58551ee634da83b46d381ab76b5a43cf03e531cfd1a376ccd",
+  "copied_composite_sha256": "283c25a61d2ad9f58551ee634da83b46d381ab76b5a43cf03e531cfd1a376ccd",
+  "binary_sha256": "2da39ce7c512a9b99065414c696433aa53e86d0405893bc0513921cb93f854bd",
+  "source_receipt": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/tabs-menu-dialog-20261016/current-source-receipt.json",
+  "build_command": "CARGO_TARGET_DIR=target/tabs-menu-dialog-20261016/probe-build/current CARGO_BUILD_JOBS=4 cargo build --manifest-path target/tabs-menu-dialog-20261016/sources/current/Cargo.toml -p tekes-ui-gallery --bin offscreen-overlay-probe --features current --locked",
+  "gpu_run_performed_by_this_agent": false
+}

@@ -1,0 +1,12 @@
+{
+  "command": [
+    "target/selection-components-20261017/probe-build/baseline/debug/offscreen-selection-probe",
+    "target/selection-components-20261017/interaction-before-final"
+  ],
+  "extra_env": {},
+  "exit": 0,
+  "png_count": 24,
+  "binary_sha256": "e7ed2ebdc1f88c0d7eb7847f2b6efa1725b26c81ef08dc50099ab667b1ef1cd9",
+  "seconds": 9.55,
+  "mode": "offscreen_no_native_window"
+}

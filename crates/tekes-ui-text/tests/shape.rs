@@ -15,6 +15,30 @@ const CJK: &str =
 const MIXED: &str =
     "使用 TekesUI 构建 2026 年的界面，支持 CJK 和 Latin 混排（含 123 个数字）。结束。";
 
+#[test]
+fn prepared_document_reflow_matches_fresh_layout_across_widths_and_styles() {
+    let mut shaper = CoreTextShaper::new(CoreTextFonts::new());
+    for value in [LATIN, CJK, MIXED, "A中👨‍👩‍👧‍👦 e\u{301}\nالعربية אבג\n", ""]
+    {
+        for style in [
+            TextStyle::system(14.0),
+            TextStyle::named("Menlo", 17.0).with_weight(600),
+        ] {
+            let prepared = shaper.prepare(value, &style);
+            for width in [Some(700.0), Some(140.0), Some(51.5), None, Some(700.0)] {
+                let options = ShapeOptions {
+                    width,
+                    line_spacing: 2.0,
+                };
+                let reused = shaper.shape_prepared(&prepared, &options);
+                let fresh = shaper.shape(value, &style, &options);
+                assert_eq!(reused, fresh, "{value:?}, {style:?}, {width:?}");
+                assert_eq!(reused.utf16_len, value.encode_utf16().count());
+            }
+        }
+    }
+}
+
 fn shape_with(
     fonts: &CoreTextFonts,
     text: &str,

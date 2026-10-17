@@ -1,0 +1,12 @@
+{
+  "mode": "workbench",
+  "exit": 0,
+  "seconds": 30.13,
+  "captures": 20,
+  "capture_successes": 20,
+  "selftest_fail": false,
+  "display_confirmed_external": true,
+  "binary_sha256": "f04ed2494ea7338fd217133662581262b34daada796ed539a97c4577a98d8b66",
+  "missing_menu_command": false,
+  "valid_run": true
+}

@@ -1,0 +1,9 @@
+{
+  "checks": "6 adversarial final-gate tests passed",
+  "files": {
+    "scripts/finalize-symbol-performance.py": "aa5d2e054214f2d886257ee55ea0083e4f15be399663b00310ef063a6b11b3a7",
+    "scripts/test-symbol-final-gates.py": "47117020e7369a4f18b5e979ef42830ca0727b0483732a38b015963d73c97cdb",
+    "design/reviews/symbols-metal-lifecycle/summary-shared.json": "b49738622ffc708dbebbd400772009c228fb154ef2b21b4e38aadd4fa3ee8988",
+    "design/reviews/symbols-metal-lifecycle/final-gates-shared.json": "615b03123b6a05db9d4432046ad81c6fe2faa607bf9d72e21695d92f73af4342"
+  }
+}

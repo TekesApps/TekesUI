@@ -1,5 +1,9 @@
 # TekesUI Design System
 
+后续设计与实现核对采用 [Gold7 七项体验基准](docs/design/gold7.md)。分别核验设计契约、代码接入和实际体验；已有设计选择不能单独作为偏离目标的理由。
+
+2026-10-16 附件对齐核对与缺失契约见 [对照报告](docs/design/reference-alignment-20261016.md) 和 [机器补充契约](design/behavior/reference-alignment.json)。按语义和计算规律比较颜色；现有明确设计选择保留，业务组合规范补齐不表示运行时已经实现。
+
 ## 当前权威与合并规则
 
 用户于 2026-10-15 提供 `TekesUI-Design-System-v0.3.0-proposal1.zip`，并明确要求：包里有的以包为准，包里没有的保留现有内容。本次整合采用该优先级，覆盖与此前原版冻结相冲突的设计定义；不把整合提案视为用户已亲验新画面或正式发布。

@@ -2472,11 +2472,11 @@
   "format": "tekesui.proposal-mapping/1",
   "native_evidence": "unverified; requires new Gallery render review",
   "new_proposal_counts": {
-    "color": 152,
+    "color": 156,
     "opacity": 12,
-    "radius": 42,
-    "size": 52,
-    "spacing": 30,
+    "radius": 43,
+    "size": 54,
+    "spacing": 32,
     "stroke": 7
   },
   "text_profiles": [

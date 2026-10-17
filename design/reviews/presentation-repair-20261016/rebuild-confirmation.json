@@ -1,0 +1,11 @@
+{
+  "initial_comparison": {
+    "identical": false,
+    "reason": "Different executable basenames produced different ad-hoc signing identifiers; not an equivalent comparison."
+  },
+  "equivalent_comparison": {
+    "rebuilt_sha256": "8576b7c74d2a3c164650456b108a1ec4ec0fc920caaa6fe5c079643f6b26d510",
+    "measured_sha256": "8576b7c74d2a3c164650456b108a1ec4ec0fc920caaa6fe5c079643f6b26d510",
+    "identical": true
+  }
+}

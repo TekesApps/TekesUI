@@ -7,6 +7,7 @@ use tekes_ui_tokens::{ColorRole, ControlSize, Spacing, Theme};
 #[derive(Debug)]
 pub struct Viewport {
     size: Size,
+    fill_window: bool,
     document: Size,
     scroll: ScrollArea,
 }
@@ -25,6 +26,7 @@ impl Default for Viewport {
     fn default() -> Self {
         let mut v = Self {
             size: Size::new(layout::FRAME_W, layout::FRAME_H),
+            fill_window: false,
             document: layout::PAGE_CONTENT.size,
             scroll: ScrollArea::default(),
         };
@@ -33,6 +35,10 @@ impl Default for Viewport {
     }
 }
 impl Viewport {
+    pub fn set_fill_window(&mut self, fill: bool) {
+        self.fill_window = fill;
+    }
+
     pub fn resize(&mut self, width: f32, height: f32) {
         if width.is_finite() && height.is_finite() && width > 0.0 && height > 0.0 {
             self.size = Size::new(width, height);
@@ -48,33 +54,71 @@ impl Viewport {
     }
     pub fn bounds(&self) -> Rect {
         let c = layout::PAGE_CONTENT;
+        let width = (self.size.width - c.min_x() - Spacing::Section.value()).max(0.0);
+        let height = (self.size.height - c.min_y() - Spacing::Section.value()).max(0.0);
         Rect::new(
             c.min_x(),
             c.min_y(),
-            c.size
-                .width
-                .min((self.size.width - c.min_x() - Spacing::Section.value()).max(0.0)),
-            c.size
-                .height
-                .min((self.size.height - c.min_y() - Spacing::Section.value()).max(0.0)),
+            if self.fill_window {
+                width
+            } else {
+                c.size.width.min(width)
+            },
+            if self.fill_window {
+                height
+            } else {
+                c.size.height.min(height)
+            },
         )
     }
     pub fn move_by(&mut self, x: f32, y: f32) -> bool {
         self.scroll.scroll_by(x, y)
     }
+    /// Reveals a focused document-space control while preserving this page's
+    /// viewport as the clipping and scrolling boundary.
+    pub fn reveal_focus(&mut self, document_bounds: Rect, backing_scale: f32) -> bool {
+        self.scroll.reveal_focus(document_bounds, backing_scale)
+    }
     pub fn content(&self) -> Rect {
-        let p = self.scroll.visual_offset();
-        layout::PAGE_CONTENT.offset(-p.x, -p.y)
+        let geometry = self.geometry();
+        self.content_with_geometry(&geometry)
+    }
+    pub fn content_with_geometry(&self, geometry: &tekes_ui_controls::ScrollGeometry) -> Rect {
+        let mut content = layout::PAGE_CONTENT;
+        if self.fill_window {
+            content.size = self.bounds().size;
+        }
+        content.origin = geometry.content_origin();
+        content
     }
     pub fn point_in_content(&self, p: Point) -> Option<Point> {
-        let o = self.scroll.visual_offset();
-        self.bounds()
-            .contains(p)
-            .then_some(Point::new(p.x + o.x, p.y + o.y))
+        let geometry = self.geometry();
+        self.point_in_content_with_geometry(p, &geometry)
+    }
+    pub fn point_in_content_with_geometry(
+        &self,
+        p: Point,
+        geometry: &tekes_ui_controls::ScrollGeometry,
+    ) -> Option<Point> {
+        let local = geometry.viewport_to_document(p)?;
+        let origin = self.bounds().origin;
+        Some(Point::new(origin.x + local.x, origin.y + local.y))
+    }
+    /// The shared viewport/document mapping for this page, optionally clipped
+    /// by an ancestor container. Rendering and input code should retain and use
+    /// the same snapshot for one pass.
+    pub fn geometry(&self) -> tekes_ui_controls::ScrollGeometry {
+        self.scroll.geometry(self.bounds(), None)
+    }
+    pub fn geometry_with_ancestor_clip(
+        &self,
+        ancestor_clip: Rect,
+    ) -> tekes_ui_controls::ScrollGeometry {
+        self.scroll.geometry(self.bounds(), Some(ancestor_clip))
     }
     pub fn track(&self, vertical: bool) -> Rect {
         let c = self.bounds();
-        let w = Spacing::Tight.value();
+        let w = tekes_ui_tokens::proposal::SCROLLBAR_WIDTH;
         if vertical {
             Rect::new(
                 c.max_x() + Spacing::Regular.value(),
@@ -93,8 +137,7 @@ impl Viewport {
     }
     pub fn pointer_down(&mut self, p: Point) -> bool {
         for vertical in [true, false] {
-            let limit = self.limit();
-            if (if vertical { limit.y } else { limit.x }) > 0.0 {
+            if self.scroll.scrollbar_visible(vertical) {
                 let track = self.track(vertical).inset(-Spacing::Micro.value());
                 if self
                     .scroll
@@ -115,15 +158,23 @@ impl Viewport {
             false
         }
     }
-    pub fn append_visible(&self, source: &Scene, target: &mut Scene, _scale: f32, theme: Theme) {
-        target.push_clip(self.bounds());
+    pub fn append_visible_with_geometry(
+        &self,
+        source: &Scene,
+        target: &mut Scene,
+        theme: Theme,
+        geometry: &tekes_ui_controls::ScrollGeometry,
+    ) {
+        let Some(clip) = geometry.visible_viewport_rect() else {
+            return;
+        };
+        target.push_clip(clip);
         for p in source.primitives() {
             target.push(p.clone());
         }
         target.pop_clip();
-        let limit = self.limit();
         for vertical in [true, false] {
-            if (if vertical { limit.y } else { limit.x }) > 0.0 {
+            if self.scroll.scrollbar_visible(vertical) {
                 let track = self.track(vertical);
                 let thumb = self
                     .scroll
@@ -170,5 +221,37 @@ mod regression {
         assert!(viewport.limit().y > 6000.0);
         viewport.set_document_extent(layout::PAGE_CONTENT.size);
         assert_eq!(viewport.offset.y, 133.0);
+    }
+
+    #[test]
+    fn one_snapshot_drives_gallery_content_transform_and_ancestor_hit_clip() {
+        let mut viewport = Viewport::default();
+        viewport.resize(1440.0, 827.0);
+        viewport.set_document_extent(Size::new(1200.0, 1200.0));
+        viewport.move_by(40.0, 90.0);
+        let bounds = viewport.bounds();
+        let ancestor = Rect::new(bounds.min_x() + 20.0, bounds.min_y() + 10.0, 500.0, 400.0);
+        let geometry = viewport.geometry_with_ancestor_clip(ancestor);
+        let content = viewport.content_with_geometry(&geometry);
+        assert_eq!(content.origin, geometry.content_origin());
+        let hit = Point::new(ancestor.min_x() + 4.0, ancestor.min_y() + 5.0);
+        let document = viewport
+            .point_in_content_with_geometry(hit, &geometry)
+            .unwrap();
+        assert_eq!(
+            document,
+            Point::new(
+                layout::PAGE_CONTENT.min_x() + 24.0 + 40.0,
+                layout::PAGE_CONTENT.min_y() + 15.0 + 90.0
+            )
+        );
+        assert!(
+            viewport
+                .point_in_content_with_geometry(
+                    Point::new(bounds.min_x() + 2.0, bounds.min_y() + 2.0),
+                    &geometry
+                )
+                .is_none()
+        );
     }
 }

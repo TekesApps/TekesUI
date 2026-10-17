@@ -26,6 +26,17 @@ pub enum Action {
         w: f64,
         h: f64,
     },
+    /// Synthetic public AppKit live-resize callbacks; not a physical drag.
+    BeginLiveResize,
+    EndLiveResize,
+    /// Enable presented receipts and reset the interval baseline.
+    FrameMark(&'static str),
+    /// Require real presented frames since the last mark, then reset it.
+    FrameExpect {
+        label: &'static str,
+        min: u64,
+        max: u64,
+    },
     Miniaturize,
     Deminiaturize,
     /// 用 `screencapture -o -l <窗口号> -x <path>` 截取窗口（设备像素，不含阴影）。
@@ -35,6 +46,8 @@ pub enum Action {
     },
     /// 只打一行日志，用来在日志里标记阶段。
     Log(String),
+    /// Wake a benchmark's receipt poll independently of display-link callbacks.
+    WakeRedraw,
     /// `performClose`：走 `CloseRequested` 路径。
     Close,
     /// 触发菜单项（`tag` 是 `CommandId` 的值）：与点菜单走同一个 `sendAction`，
@@ -127,6 +140,8 @@ fn key_event(w: &NSWindow, ty: NSEventType, key_code: u16) -> Option<objc2::rc::
     )
 }
 
+thread_local! { static FRAME_MARK: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
+
 extern "C" fn run_step(ctx: *mut c_void) {
     // SAFETY: ctx 是 run_script 里 Box::into_raw 出来的 Action，每个只消费一次。
     let action = *unsafe { Box::from_raw(ctx.cast::<Action>()) };
@@ -139,9 +154,43 @@ extern "C" fn run_step(ctx: *mut c_void) {
     eprintln!("selftest: {action:?}");
     match action {
         Action::Resize { w: nw, h: nh } => w.setContentSize(NSSize::new(nw, nh)),
+        Action::BeginLiveResize => w
+            .contentView()
+            .expect("selftest view")
+            .viewWillStartLiveResize(),
+        Action::EndLiveResize => w
+            .contentView()
+            .expect("selftest view")
+            .viewDidEndLiveResize(),
+        Action::FrameMark(label) => {
+            let view = w.contentView().expect("selftest view");
+            let view = view
+                .downcast_ref::<crate::view::TekesView>()
+                .expect("TekesView");
+            let count = view.selftest_presented_count();
+            FRAME_MARK.with(|mark| mark.set(count));
+            eprintln!("frame-mark {label}: presented={count}");
+        }
+        Action::FrameExpect { label, min, max } => {
+            let view = w.contentView().expect("selftest view");
+            let view = view
+                .downcast_ref::<crate::view::TekesView>()
+                .expect("TekesView");
+            let count = view.selftest_presented_count();
+            let delta = FRAME_MARK.with(|mark| count.saturating_sub(mark.replace(count)));
+            eprintln!("frame-expect {label}: presented_delta={delta} required={min}..={max}");
+            if !(min..=max).contains(&delta) {
+                std::process::exit(2);
+            }
+        }
         Action::Miniaturize => w.miniaturize(None),
         Action::Deminiaturize => w.deminiaturize(None),
         Action::Log(_) => {}
+        Action::WakeRedraw => {
+            if let Some(view) = w.contentView() {
+                view.updateLayer();
+            }
+        }
         Action::TypeAscii(text) => {
             for c in text.chars() {
                 let string = NSString::from_str(&c.to_string());

@@ -1,0 +1,13 @@
+{
+  "note": "Measured binary stayed frozen during priority scroll fixes; this does not reassign the result to later source changes.",
+  "changed_since_packaging": {
+    "crates/tekes-ui-controls/src/scroll_view.rs": {
+      "measured_sha256": "80b6fcbb85530237a845d1bce88c9a59b1d31faf3e63bef1c7cc91f76ef39259",
+      "current_sha256": "2c95c3857151dd7327616e7d09cf27083111ab6a90968d00416d0adf1619d944"
+    },
+    "crates/tekes-ui-platform-macos/examples/scroll_oracle.rs": {
+      "measured_sha256": "85995dd570d7958717d646f8d3e303242366805d6a399eb88fe4f18e650cb27c",
+      "current_sha256": "ddb0871ea3c311b0fb8b163576a7863cbcb67cd57229bf260738c9ea01506d82"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "check": "tests-final",
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "tekes-ui-controls",
+      "-p",
+      "tekes-ui-gallery",
+      "-p",
+      "tekes-ui-motion",
+      "-p",
+      "tekes-ui-icons",
+      "-p",
+      "tekes-ui-design-export",
+      "-p",
+      "tekes-ui-tokens",
+      "-p",
+      "tekes-ui-scene",
+      "-p",
+      "tekes-ui-render",
+      "-p",
+      "tekes-ui-text",
+      "--release",
+      "--locked",
+      "--offline"
+    ],
+    "exit": 101,
+    "seconds": 41.97
+  }
+]

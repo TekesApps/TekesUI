@@ -1,0 +1,178 @@
+{
+  "title": "Slider, RadioGroup, and Switch production view integration",
+  "date": "2026-10-17",
+  "scope": [
+    "Move selection-control layout, drawing, clipping, hit geometry, pointer state, focus, and keyboard activation into production control views.",
+    "Keep existing Slider, RadioGroup, and Switch public model structs and Gallery component identifiers.",
+    "Keep Gallery examples on the production control views and use its text engine only through ButtonTextRenderer."
+  ],
+  "behavior": [
+    "Slider retains a full component frame for drawing, uses visible geometry for hit testing, clamps captured drags at either end, and cancels on hide, disable, blur, or window deactivation.",
+    "RadioGroup computes row height from shaped label metrics, supports wrapped labels, aligns its indicator to the first line, exposes one roving tab stop, and cancels stale pointer arms when focus changes or rows are fully hidden.",
+    "Whole-group RadioGroup disabled state preserves the selected model value; per-item enabled state remains on the existing model.",
+    "Switch owns the labeled row and toggle geometry, preserves the existing single-line optical offset, aligns wrapped labels by the first line, and activates on matching pointer release or Space release.",
+    "Focus rings are clipped to the ancestor viewport while component hits and label drawing remain clipped to their own visible geometry.",
+    "Gallery routes host focus changes from Tab and pointer input through a shared adapter; disabled selection-control hits do not fall through to generic Button state."
+  ],
+  "key_files": {
+    "crates/tekes-ui-controls/src/selection.rs": "Production presentation/input runtimes SliderView, RadioGroupView and SwitchView; measured and clipped label layouts reuse ButtonTextRenderer.",
+    "crates/tekes-ui-controls/src/extended.rs": "Add read-only per-item enabled query and export existing control runtime types; preserve existing public models and fields.",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "Gallery delegates paint, layout and component input; fixtures/model values and event log remain host-owned.",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "Immediate host focus handoff, roving Radio stop, disabled traversal/click guards and real-event regressions.",
+    "docs/gallery.md": "Shared ownership and behavior conventions; no navigation/ID changes."
+  },
+  "validation": {
+    "root_checks": [
+      {
+        "check": "tests-final",
+        "command": [
+          "cargo",
+          "test",
+          "-p",
+          "tekes-ui-controls",
+          "-p",
+          "tekes-ui-gallery",
+          "-p",
+          "tekes-ui-motion",
+          "--release",
+          "--locked"
+        ],
+        "exit": 0,
+        "seconds": 5.37
+      },
+      {
+        "check": "clippy-final",
+        "command": [
+          "cargo",
+          "clippy",
+          "-p",
+          "tekes-ui-controls",
+          "-p",
+          "tekes-ui-gallery",
+          "-p",
+          "tekes-ui-motion",
+          "--all-targets",
+          "--release",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit": 0,
+        "seconds": 0.15
+      },
+      {
+        "check": "build-final",
+        "command": [
+          "cargo",
+          "build",
+          "-p",
+          "tekes-ui-gallery",
+          "--release",
+          "--locked"
+        ],
+        "exit": 0,
+        "seconds": 5.02
+      },
+      {
+        "check": "fmt-final",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 0.4
+      },
+      {
+        "check": "pure-rust-final",
+        "command": [
+          "python3",
+          "scripts/check-pure-rust.py"
+        ],
+        "exit": 0,
+        "seconds": 0.29
+      },
+      {
+        "check": "design-system-final",
+        "command": [
+          "target/design-check-venv/bin/python",
+          "scripts/check-design-system.py"
+        ],
+        "exit": 0,
+        "seconds": 0.3
+      },
+      {
+        "check": "diff-final",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 0.05
+      }
+    ],
+    "tests": {
+      "passed": 407,
+      "failed": 0,
+      "ignored": 1
+    },
+    "ignored_reason": "Existing full icon catalogue review requires explicit assets/environment.",
+    "component_selection_regressions": 10,
+    "visual_default": {
+      "captures": 672,
+      "pixel_identical": 672,
+      "coverage": "84 pages x4 existing themes x1x/2x, default text scale; actual packaged executable."
+    },
+    "visual_interaction": {
+      "captures": 24,
+      "pixel_identical": 16,
+      "expected_changed": 8,
+      "coverage": "3 real Gallery routes x4themes x1x/2x; pointer events set Slider75/Radio2/Switchtrue.",
+      "expected_difference": "Only Slider track fill: old pointer-down at unchanged50 returned false, creating a fallback Button pointer arm; old captured pointer-up returned before clearing that Button. Track retained accent-pressed after release. Production runtime consumes the press and restores existing accent default after release. No token, geometry, label or log differences in final captures.",
+      "evidence": "visual-interaction.json"
+    },
+    "additional_offscreen": {
+      "keyboard_focus_captures": 24,
+      "text_scale_150_captures": 24,
+      "visual_baseline_equality_claimed": false,
+      "input_method": "Frozen-source target-only reader locates actual rendered hits; all changes are real Gallery mouse/key events, never direct value writes. Keyboard scope performs Shift-Tab then Tab; large text uses existing TextScale2 command.",
+      "manual_root_inspection": "Light-standard2x keyboard Slider/Switch and150% RadioGroup/Switch; no native display/timing acceptance inferred."
+    }
+  },
+  "visual_fixture_history": "Initial rest fixture exposed stale old proxy Button hover on Radio/Switch. Final before/after both deliver two identical pointer moves outside to compare settled appearance; initial comparison retained. Slider stale pressed appearance remains the expected eight differences.",
+  "provenance": {
+    "source_freeze": "source-freeze.json",
+    "source_archive": "changed-sources.tar.gz",
+    "baseline_sources": "baseline-sources.tar.gz matched before-source.json hashes",
+    "baseline_packaged_binary_sha256": "6bec407a09c564b07c9a881a1f7e9429c24c23e454920716ec24225e06c410f1",
+    "final_packaged_binary_sha256": "3af76ec6e6eebe3b0e808fa610302d924c1e2b88b8b12a532de3caee56657d78",
+    "final_release_binary_sha256": "ea60241bcba25407c4034e9cec76af075abf3921c135e6e9ead0035a1a639c32",
+    "probe_helpers": "Injected only into ignored frozen source copies; public Gallery API unchanged. Probe source inventories and reproduction scripts included. To repeat, copy saved scripts/baseline-sources.tar.gz/before-source.json into target/selection-components-20261017, then run prepare_probe.py baseline/current from repo root with isolated caches.",
+    "package": "Existing packaging script rebuilt and ad-hoc signed local app. No native launch or release."
+  },
+  "protected_wip": {
+    "original_files": 1158,
+    "missing_files": [],
+    "existing_changed_paths": [
+      "crates/tekes-ui-controls/src/extended.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+      "crates/tekes-ui-controls/src/lib.rs",
+      "docs/gallery.md"
+    ],
+    "other_original_files_unchanged": 1153,
+    "new_runtime": "crates/tekes-ui-controls/src/selection.rs",
+    "design_system_registry_and_ids": "All original files outside five listed paths unchanged, including JSON authority, generated tokens, registry and routes. No new component entries.",
+    "git_actions": "No staging, commits, push, release or cleanup."
+  },
+  "pending": [
+    "External-display native tests deferred at user request. No native window launched.",
+    "120Hz/8.33ms frame pacing, isolated drops, CPU, drawable lifecycle and NSScrollView rebound performance remain open; this is component encapsulation and offscreen correctness evidence.",
+    "Physical IME and screen reader/native accessibility checks remain unverified.",
+    "Other existing component migrations and full lazy text/provider work continue separately."
+  ]
+}

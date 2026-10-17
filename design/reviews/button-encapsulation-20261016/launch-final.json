@@ -1,0 +1,14 @@
+{
+  "pid": 30725,
+  "window": 51650,
+  "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app/Contents/MacOS/TekesUI-Gallery",
+  "binary_sha256": "80154c2313c55cbb95e5469c5834d186c01dea768c44cca704ebd832e51d1262",
+  "page": "foundation-motion",
+  "explicit_env": {
+    "TEKESUI_WINDOW_PLACEMENT": "external",
+    "TEKESUI_GALLERY_PAGE": "foundation-motion",
+    "TEKES_LOG_EVENTS": "1",
+    "TEKES_METAL_DISPLAY_LINK": "0"
+  },
+  "start_new_session": true
+}

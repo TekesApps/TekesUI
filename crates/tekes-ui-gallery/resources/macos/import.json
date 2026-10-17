@@ -1,0 +1,11 @@
+{
+  "source_archive": "Gallery-macOS-Icon-Pack.zip",
+  "archive_sha256": "6612856d8cc17d1266247ad400f489471301754028d2ca772450ac3d15288518",
+  "policy": "Original user-supplied PNG/ICNS/source files retained byte-for-byte. macOS 26 uses the locally authored Gallery.icon composition compiled by actool; its 1.40 scale clips the baked outer plate/shadow. Original ICNS remains the older-macOS fallback. No Swift build step.",
+  "files": {
+    "SOURCE-README.md": "ebab126d1cad5218a8471774722d483cd43baed477f01174e974e4bf370b2048",
+    "Gallery-1024.png": "e75074ae49887d146d7c1afff56d7ff7d7bab62c81f0053938a3b9fdd70848c4",
+    "Gallery.icns": "4e4d9ea39845db35faf20b21f2d203ab5a4fec6fc9206d0f30aa5fb154b00018",
+    "Source/Gallery-original.png": "6b14a821ca7c1d6e0faaf5f68fb16813e9063ee5124ff9c830e6da433e669030"
+  }
+}

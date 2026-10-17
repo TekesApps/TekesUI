@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-17",
+  "scope": "Builtin-only 120Hz strict-test preflight; native measurement not launched",
+  "requested_window_placement": "builtin",
+  "ordinary_visual_interaction_placement": "external",
+  "driver": "default CAD",
+  "workbench": true,
+  "content": "scroll-area",
+  "binary": "target/presentation-repair-20261016/build/release/tekes-ui-gallery",
+  "binary_sha256": "8919e6c9081332ff4e702c0ecedaf7422741bbf16337608249a64f4059d1b682",
+  "preflight_exit_code": 3,
+  "gate_passed": false,
+  "limits": {
+    "stable_seconds": 15,
+    "wait_seconds": 30,
+    "total_cpu_percent": 100,
+    "per_process_cpu_percent": 30
+  },
+  "cpu_unit": "100 percent equals one logical CPU core",
+  "preflight_samples": 10,
+  "external_cpu_percent": {
+    "minimum": 177.70350935952735,
+    "median": 387.5533693349234,
+    "maximum": 615.1422054129729
+  },
+  "native_samples": 0,
+  "actual_120hz_presentation": "not measured",
+  "displays_observed": [
+    {
+      "name": "Color LCD",
+      "connection": "internal",
+      "refresh_rate": "not established by this inventory"
+    },
+    {
+      "name": "U2790B",
+      "refresh_rate_hz": 30
+    }
+  ],
+  "full_ambient_receipt": "target/builtin-120hz-retest-20261017/builtin-default-cad-scroll-area-ambient.json",
+  "other_processes_stopped": false
+}

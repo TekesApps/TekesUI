@@ -1,0 +1,200 @@
+{
+  "binary_sha256": "6f3bcfc32dee901fca1c9bb342ca10bfcbc7c7cab4fb1b0053ce6f8385f14c0f",
+  "archive_sha256": "163502eccc4a2133130282e60a48751646b27b63a0bf4d8ee64d6403977c27a0",
+  "raw_files": [
+    {
+      "path": "target/metal-lifecycle/after-correct-controls.log",
+      "sha256": "3d9ef73f99c010bc0d18c3fd0a07edbaa9ea7164fe916fe90c2bf177c1b8b73d"
+    },
+    {
+      "path": "target/metal-lifecycle/after-live-present.log",
+      "sha256": "3554c7e8066df2f8616e715afeca75f9856d5b75da5726ba6389335778d61c1b"
+    },
+    {
+      "path": "target/metal-lifecycle/after.log",
+      "sha256": "0f43edb2fa92d36a2ede3817380c9269714d6071df108f0d99de965220d5be87"
+    },
+    {
+      "path": "target/metal-lifecycle/before.log",
+      "sha256": "ef9b64cc04497cc5758c9014a8f6acd6c9f62eed5a92da248d8466f9b5f3c766"
+    },
+    {
+      "path": "target/metal-lifecycle/clippy-final.log",
+      "sha256": "7566d4c324d9db45940cad89302510829281693679a79c5d931c71dcd564f8dc"
+    },
+    {
+      "path": "target/metal-lifecycle/clippy.log",
+      "sha256": "afb37258d948a2c076526f07d30855290aaa2fed760d0423c000d14266a9d4d5"
+    },
+    {
+      "path": "target/metal-lifecycle/final-build.log",
+      "sha256": "01f4037ccbced9eadff74a50ed99981cbc1a09b27585d39958e70db947236b16"
+    },
+    {
+      "path": "target/metal-lifecycle/final-driver-0.log",
+      "sha256": "43219071cdc409bc52dbbd509f9eda319cf47c7ea21abedf09dca2b5be1cccb6"
+    },
+    {
+      "path": "target/metal-lifecycle/final-driver-1.log",
+      "sha256": "ecd281c6ccd6a087fedb4049cb8a0524977780496a7d4885f087c2169f9e886e"
+    },
+    {
+      "path": "target/metal-lifecycle/final-manual.log",
+      "sha256": "63dd50e8e9996f5be81ab9d2143c36400e5ff676f9b6136c4ba546e879e33318"
+    },
+    {
+      "path": "target/metal-lifecycle/manual.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "target/metal-lifecycle/perf-final.log",
+      "sha256": "87379d4abab1e6f5d98b17cf11ed79efb39b3ec2e634efe345d493d129c3a145"
+    },
+    {
+      "path": "target/metal-lifecycle/platform-final.log",
+      "sha256": "17d5e4b6ec4f184c368742896a1da4520797301e186cb03476cf40353dad336b"
+    },
+    {
+      "path": "target/metal-lifecycle/reentrant-final.log",
+      "sha256": "50d26aa86579ed57f85fc3c542de1e0ad15e9a68e19cbee2f22f6a708a1c13c3"
+    },
+    {
+      "path": "target/metal-lifecycle/reentrant.log",
+      "sha256": "50d26aa86579ed57f85fc3c542de1e0ad15e9a68e19cbee2f22f6a708a1c13c3"
+    },
+    {
+      "path": "target/metal-lifecycle/tests.log",
+      "sha256": "5ca0d0bd13fe383787ae17ff7be7be1a8ff871cb9faa12840f467f3207d8fd99"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed/fixed-cad-multi-24-ambient.json",
+      "sha256": "f6f7809a920fa92d07a7c1f42d0dcf226ef6232fa6748fd4baae1d95d01497b0"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed/retry-cad-multi-24-ambient.json",
+      "sha256": "dc9b84ddbd24716db90d8cdb7b26b862ddda79d83c653c9ff12155c892e1b4d7"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-cad-multi-24-ambient.json",
+      "sha256": "91e5120e477d75748382cfa104f35f95cc95d70ec6bdc9a486ed3b0e20ce2f5d"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-cad-multi-24-run.json",
+      "sha256": "1e9b1bfe290155331a64b64c42088f82284114e366783872fd8a1b89878bdda7"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-cad-multi-24.json",
+      "sha256": "a299b9f46f80de410a9a5575690af62c9ae151deb5270e5b9ca09e706b893758"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-cad-multi-24.log",
+      "sha256": "982cdd9e26707bef2ba10a97afd60d4c839574f723c8f7761a5b860f1dffbffe"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-combined-72-ambient.json",
+      "sha256": "740bcf2ecacde483c7f18ebfda4698cd76f75625a22adb9c13d5dd853d6fe22c"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-combined-72-run.json",
+      "sha256": "b307534ea822f87fa3c8adfe858428ef51425e03aacd879a82a44d34ad2104ba"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-combined-72.json",
+      "sha256": "312170e4f05e36803985254feb4065013c814dfe9f184d9ee7ca04691667358f"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-combined-72.log",
+      "sha256": "102c99062cd14518dfa8ce7742ed845a4f28bf7946fcaa5cfe3073dd66d279b7"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-gpu-24-ambient.json",
+      "sha256": "14f1aa06f0cc2277652332086ccae0cbddc057d8a9c8065fb48e89be76686ba4"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-gpu-24-run.json",
+      "sha256": "85a1ebede208c7bc83d976c9ff1e439398245bb42a6393048dbbe9f7627bc831"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-gpu-24.json",
+      "sha256": "9348d6beac9d3b301a91279b9dbca3389d5af9a5fcaa4c30ec3446e8a4dfc8d0"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-gpu-24.log",
+      "sha256": "2b4b673a439f1ff9c49fb46a3c08aaede478aa8b9cbde0c9b0b4ebbc4968a0d1"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-linear-24-ambient.json",
+      "sha256": "0442b8502a64d23c735486ca1aad00ba3100d1df072968563d6a1cfc6b6dd212"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-linear-24-run.json",
+      "sha256": "8c3787d9aeff75002e4b722049f1e9ad502970bd933311a5e933b2753ebd6d98"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-linear-24.json",
+      "sha256": "26e48ca9dfa00fdcf9c8f9c93358404abb9d52b04e3b67d8dbea35a652891e05"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-linear-24.log",
+      "sha256": "da88fe89cf087a211b54e0dbd761d63dc98fc31798aacd07cea7c1a8df5743a5"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-multi-24-ambient.json",
+      "sha256": "59904e71cc84c7bf885964c0053586f1fd183b4a16bc7c62beed743e229dba14"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-multi-24-run.json",
+      "sha256": "14dd147dcabea745ff594f08efcee22b16ce83b03e64a89fec2c20db776338e6"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-multi-24.json",
+      "sha256": "c4a1c2a71675ed9c2741820834a607e0495bcaec4e0b3fc65b685dc9071d0668"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-multi-24.log",
+      "sha256": "7d7763d71affffc303e9ea4b9b06a73cfd990b74b4abf91ab439fef306008355"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-parameters-24-ambient.json",
+      "sha256": "02aaee7624124423e832f40766ca56fd592204a8fd13578ede4237d4dfe42025"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-parameters-24-run.json",
+      "sha256": "1ac883ca43e328c0ad63a50ffdf85a21b6b4ed6e40defd18766015424748da97"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-parameters-24.json",
+      "sha256": "560b7b30e3bd71e42bd13c88d54d3d30e232c22128281997baba398062a57f71"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-parameters-24.log",
+      "sha256": "728388c57c1a7100945c4181c987a4c63737ed319ed74b6272694ea3dece2d14"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-retarget-24-ambient.json",
+      "sha256": "a5bd2b9aad534d4e29cc8fbd55e5d1095f016bcb2f83ff2f1c883d9918faba5e"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-retarget-24-run.json",
+      "sha256": "99a7af597ed8747f57e3f0d2254e4312e3f6d6197134fd65879808e36f3f3662"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-retarget-24.json",
+      "sha256": "ec183690c8460dae4f5b9b7ee025577aae4b70ca821cda600972b9d0a76ad966"
+    },
+    {
+      "path": "target/symbol-perf-metal-fixed-shared/shared-metal-retarget-24.log",
+      "sha256": "346ab659bf513ad74aaf637055586a8b4d059c29f800d266335b8825441a3809"
+    }
+  ],
+  "analysis_scripts": [
+    {
+      "path": "scripts/finalize-symbol-performance.py",
+      "sha256": "ff4f15986acf61dce9d297af471ccfa9e92f5ebafa16e97af4b95b56009c2496"
+    },
+    {
+      "path": "scripts/test-symbol-final-gates.py",
+      "sha256": "3c1c6a151efbb0e656ec7b0686424acead46320a6e203075976c80807a10e690"
+    }
+  ]
+}

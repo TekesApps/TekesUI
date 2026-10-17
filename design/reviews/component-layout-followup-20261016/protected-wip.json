@@ -1,0 +1,17 @@
+{
+  "initial_files": 1068,
+  "missing": [],
+  "changed": [
+    "crates/tekes-ui-controls/src/extended.rs",
+    "crates/tekes-ui-controls/src/lib.rs",
+    "crates/tekes-ui-controls/src/widgets.rs",
+    "crates/tekes-ui-gallery/src/gallery/chrome.rs",
+    "crates/tekes-ui-gallery/src/gallery/navigation.rs",
+    "crates/tekes-ui-gallery/src/gallery/text.rs",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+    "docs/gallery.md"
+  ],
+  "design_and_registry_files_checked": 78,
+  "design_and_registry_changed": []
+}

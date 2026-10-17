@@ -1,0 +1,317 @@
+{
+  "format": "tekesui-presentation-repair/1",
+  "scope": "Nine sequential 60s shared-desktop diagnostics, never quiet certification or strict causal CPU A/B. Time Profiler run is separate. No new threads or components; normal CAD/FIFO/latency2 retained.",
+  "strict_120hz_zero_drop_accepted": false,
+  "cases": [
+    {
+      "case": "metal-headroom2",
+      "seconds": 60.0,
+      "binary_sha256": "e5679a354d463ba48d98601ef85b3dfbb795d07b486d5b4d4b62678b613c50c2",
+      "cpu_percent": 14.166441519123488,
+      "build_mean_ms": 0.2472885774198033,
+      "encode_mean_ms": 0.16199032870434657,
+      "acquire_max_ms": 0.046583,
+      "cpu_wall_max_ms": 1.720292,
+      "presentation_gaps": 12,
+      "unpresented": 11,
+      "idle": {
+        "cpu_ms": 0.7779999999986131,
+        "cpu_percent": 0.015623223523218701,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.005363708
+      },
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            590147.6552690002,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "quiet_certified": false,
+      "ambient_under_limits_throughout": false
+    },
+    {
+      "case": "metal-headroom1",
+      "seconds": 60.0,
+      "binary_sha256": "e5679a354d463ba48d98601ef85b3dfbb795d07b486d5b4d4b62678b613c50c2",
+      "cpu_percent": 12.555596969666816,
+      "build_mean_ms": 0.16295487500000053,
+      "encode_mean_ms": 0.14819772513888965,
+      "acquire_max_ms": 0.048958,
+      "cpu_wall_max_ms": 1.730583,
+      "presentation_gaps": 7,
+      "unpresented": 6,
+      "idle": {
+        "cpu_ms": 2.383000000000024,
+        "cpu_percent": 0.04769042382052859,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.005192333
+      },
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            590240.2961230002,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "quiet_certified": false,
+      "ambient_under_limits_throughout": false
+    },
+    {
+      "case": "cad-before",
+      "seconds": 60.0,
+      "binary_sha256": "e5679a354d463ba48d98601ef85b3dfbb795d07b486d5b4d4b62678b613c50c2",
+      "cpu_percent": 9.041999832638064,
+      "build_mean_ms": 0.13368522635745048,
+      "encode_mean_ms": 0.09991619372309404,
+      "acquire_max_ms": 15.595917,
+      "cpu_wall_max_ms": 15.904209,
+      "presentation_gaps": 2,
+      "unpresented": 0,
+      "idle": {
+        "cpu_ms": 1.9249999999999545,
+        "cpu_percent": 0.0386064239351699,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.006922
+      },
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            590351.5575577918,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "quiet_certified": false,
+      "ambient_under_limits_throughout": false
+    },
+    {
+      "case": "cad-cache-scroll",
+      "seconds": 60.0,
+      "binary_sha256": "441e2a9ba719623fe5f18749b0ff3c7317d538a74a3beb5f1e12d601d4d16319",
+      "cpu_percent": 9.488833226791522,
+      "build_mean_ms": 0.14674535269594224,
+      "encode_mean_ms": 0.06689287409672036,
+      "acquire_max_ms": 18.442583,
+      "cpu_wall_max_ms": 18.921875,
+      "presentation_gaps": 5,
+      "unpresented": 0,
+      "idle": {
+        "cpu_ms": 1.0599999999998388,
+        "cpu_percent": 0.02123652302380235,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.005521959
+      },
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            590626.0509101251,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "quiet_certified": false,
+      "ambient_under_limits_throughout": false
+    },
+    {
+      "case": "cad-cache-editor",
+      "seconds": 60.0,
+      "binary_sha256": "441e2a9ba719623fe5f18749b0ff3c7317d538a74a3beb5f1e12d601d4d16319",
+      "cpu_percent": 12.34247392358608,
+      "build_mean_ms": 0.18984546896264415,
+      "encode_mean_ms": 0.14234484057769736,
+      "acquire_max_ms": 9.680291,
+      "cpu_wall_max_ms": 10.271417,
+      "presentation_gaps": 1,
+      "unpresented": 0,
+      "idle": {
+        "cpu_ms": 0.912000000000468,
+        "cpu_percent": 0.01828023328030212,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.005401375
+      },
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            590698.7418768335,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "quiet_certified": false,
+      "ambient_under_limits_throughout": false
+    },
+    {
+      "case": "cad-cache-icons",
+      "seconds": 60.0,
+      "binary_sha256": "441e2a9ba719623fe5f18749b0ff3c7317d538a74a3beb5f1e12d601d4d16319",
+      "cpu_percent": 11.222183270994398,
+      "build_mean_ms": 0.16211981655325533,
+      "encode_mean_ms": 0.11288189126510174,
+      "acquire_max_ms": 10.132875,
+      "cpu_wall_max_ms": 10.609459,
+      "presentation_gaps": 1,
+      "unpresented": 0,
+      "idle": {
+        "cpu_ms": 0.9329999999998506,
+        "cpu_percent": 0.01868257927575977,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.004657875
+      },
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            590769.0453810835,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "quiet_certified": false,
+      "ambient_under_limits_throughout": false
+    },
+    {
+      "case": "cad-cache-repeat",
+      "seconds": 60.0,
+      "binary_sha256": "441e2a9ba719623fe5f18749b0ff3c7317d538a74a3beb5f1e12d601d4d16319",
+      "cpu_percent": 13.726520485591479,
+      "build_mean_ms": 0.277025014728359,
+      "encode_mean_ms": 0.09891803821036523,
+      "acquire_max_ms": 16.225291,
+      "cpu_wall_max_ms": 16.565707999999997,
+      "presentation_gaps": 5,
+      "unpresented": 0,
+      "idle": {
+        "cpu_ms": 2.4519999999998987,
+        "cpu_percent": 0.049107885471305776,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.009364709
+      },
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            590856.3487278335,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "quiet_certified": false,
+      "ambient_under_limits_throughout": false
+    },
+    {
+      "case": "cad-control-repeat",
+      "seconds": 60.0,
+      "binary_sha256": "e5679a354d463ba48d98601ef85b3dfbb795d07b486d5b4d4b62678b613c50c2",
+      "cpu_percent": 17.578850920414354,
+      "build_mean_ms": 0.3186703995278435,
+      "encode_mean_ms": 0.20630504374392503,
+      "acquire_max_ms": 10.72325,
+      "cpu_wall_max_ms": 11.50075,
+      "presentation_gaps": 1,
+      "unpresented": 0,
+      "idle": {
+        "cpu_ms": 1.326999999999856,
+        "cpu_percent": 0.026566313025330267,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.010097208
+      },
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            590926.8814562084,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "quiet_certified": false,
+      "ambient_under_limits_throughout": false
+    },
+    {
+      "case": "final-icons",
+      "seconds": 60.0,
+      "binary_sha256": "8576b7c74d2a3c164650456b108a1ec4ec0fc920caaa6fe5c079643f6b26d510",
+      "cpu_percent": 8.928924955455614,
+      "build_mean_ms": 0.11257741769690223,
+      "encode_mean_ms": 0.09016281969717999,
+      "acquire_max_ms": 15.573416,
+      "cpu_wall_max_ms": 15.982292,
+      "presentation_gaps": 3,
+      "unpresented": 0,
+      "idle": {
+        "cpu_ms": 0.7999999999999119,
+        "cpu_percent": 0.016022899694896807,
+        "display_link_callbacks": 0,
+        "ordinary_drawable_acquisitions": 0,
+        "provided_drawable_consumptions": 0,
+        "wait_s": 5.005332333
+      },
+      "visibility": {
+        "changes_target_s_occluded_key": [
+          [
+            591421.5935457085,
+            false,
+            true
+          ]
+        ],
+        "non_key_callbacks": 0,
+        "occluded_callbacks": 0
+      },
+      "quiet_certified": false,
+      "ambient_under_limits_throughout": false
+    }
+  ],
+  "rust_checks": {
+    "passed": 267,
+    "ignored_existing": 1
+  },
+  "python_checks_passed": 25,
+  "final_pixel_comparison": {
+    "images": 672,
+    "byte_identical": 672
+  },
+  "historical_guard": {
+    "passed": false,
+    "reason": "Legacy JSON authority bytes/semantics mismatch; goldens not updated. Current merged DS check passes."
+  }
+}

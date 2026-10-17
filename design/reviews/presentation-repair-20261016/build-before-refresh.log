@@ -1,0 +1,543 @@
+   0.049121500s  INFO prepare_target{force=false package_id=tekes-ui-gallery v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery) target="tekes-ui-gallery"}: cargo::core::compiler::fingerprint: fingerprint error for tekes-ui-gallery v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery)/Build/TargetInner { name: "tekes-ui-gallery", doc: true, ..: with_path("/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/main.rs", Edition2024) }
+   0.049378167s  INFO prepare_target{force=false package_id=tekes-ui-gallery v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery) target="tekes-ui-gallery"}: cargo::core::compiler::fingerprint:     err: failed to read `/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/release/.fingerprint/tekes-ui-gallery-2087004aafdac310/bin-tekes-ui-gallery`
+
+Caused by:
+    No such file or directory (os error 2)
+   Compiling tekes-ui-gallery v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery)
+error[E0433]: cannot find `symbols` in `tekes_ui_motion`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:589:34
+    |
+589 |             use tekes_ui_motion::symbols::SymbolEffect::*;
+    |                                  ^^^^^^^ could not find `symbols` in `tekes_ui_motion`
+
+error[E0432]: unresolved imports `tekes_ui_motion::symbols`, `tekes_ui_motion::symbols`
+ --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:8:5
+  |
+8 |     symbols::{self, SymbolCapabilities, SymbolEffect, SymbolOptions, SymbolScope},
+  |     ^^^^^^^   ^^^^ no `symbols` in the root
+  |     |
+  |     could not find `symbols` in `tekes_ui_motion`
+
+error[E0432]: unresolved import `tekes_ui_motion::symbols`
+  --> crates/tekes-ui-gallery/src/symbol_perf.rs:10:22
+   |
+10 | use tekes_ui_motion::symbols::SymbolEffect;
+   |                      ^^^^^^^ could not find `symbols` in `tekes_ui_motion`
+
+error[E0433]: cannot find `symbols` in `tekes_ui_motion`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:347:65
+    |
+347 |                 let mut presets: Vec<Preset> = tekes_ui_motion::symbols::SymbolEffect::ALL
+    |                                                                 ^^^^^^^ could not find `symbols` in `tekes_ui_motion`
+
+error[E0408]: variable `Pulse` is not bound in all patterns
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:598:56
+    |
+598 |                 Parameter::Damping => matches!(effect, Bounce | Pulse | Breathe | Scale | Wiggle),
+    |                                                        ^^^^^^   -----   ^^^^^^^   ^^^^^   ^^^^^^ pattern doesn't bind `Pulse`
+    |                                                        |        |       |         |
+    |                                                        |        |       |         pattern doesn't bind `Pulse`
+    |                                                        |        |       pattern doesn't bind `Pulse`
+    |                                                        |        variable not in all patterns
+    |                                                        pattern doesn't bind `Pulse`
+    |
+help: if you meant to match on a unit struct, unit variant or a `const` item, consider making the path in the pattern qualified: `path::to::ModOrType::Pulse`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:598:65
+    |
+598 |                 Parameter::Damping => matches!(effect, Bounce | Pulse | Breathe | Scale | Wiggle),
+    |                                                                 ^^^^^
+
+error[E0408]: variable `Breathe` is not bound in all patterns
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:598:56
+    |
+598 |                 Parameter::Damping => matches!(effect, Bounce | Pulse | Breathe | Scale | Wiggle),
+    |                                                        ^^^^^^   ^^^^^   -------   ^^^^^   ^^^^^^ pattern doesn't bind `Breathe`
+    |                                                        |        |       |         |
+    |                                                        |        |       |         pattern doesn't bind `Breathe`
+    |                                                        |        |       variable not in all patterns
+    |                                                        |        pattern doesn't bind `Breathe`
+    |                                                        pattern doesn't bind `Breathe`
+    |
+help: if you meant to match on a unit struct, unit variant or a `const` item, consider making the path in the pattern qualified: `path::to::ModOrType::Breathe`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:598:73
+    |
+598 |                 Parameter::Damping => matches!(effect, Bounce | Pulse | Breathe | Scale | Wiggle),
+    |                                                                         ^^^^^^^
+
+error[E0408]: variable `Scale` is not bound in all patterns
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:598:56
+    |
+598 |                 Parameter::Damping => matches!(effect, Bounce | Pulse | Breathe | Scale | Wiggle),
+    |                                                        ^^^^^^   ^^^^^   ^^^^^^^   -----   ^^^^^^ pattern doesn't bind `Scale`
+    |                                                        |        |       |         |
+    |                                                        |        |       |         variable not in all patterns
+    |                                                        |        |       pattern doesn't bind `Scale`
+    |                                                        |        pattern doesn't bind `Scale`
+    |                                                        pattern doesn't bind `Scale`
+    |
+help: if you meant to match on a unit struct, unit variant or a `const` item, consider making the path in the pattern qualified: `path::to::ModOrType::Scale`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:598:83
+    |
+598 |                 Parameter::Damping => matches!(effect, Bounce | Pulse | Breathe | Scale | Wiggle),
+    |                                                                                   ^^^^^
+
+error[E0408]: variable `Wiggle` is not bound in all patterns
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:598:56
+    |
+598 |                 Parameter::Damping => matches!(effect, Bounce | Pulse | Breathe | Scale | Wiggle),
+    |                                                        ^^^^^^   ^^^^^   ^^^^^^^   ^^^^^   ------ variable not in all patterns
+    |                                                        |        |       |         |
+    |                                                        |        |       |         pattern doesn't bind `Wiggle`
+    |                                                        |        |       pattern doesn't bind `Wiggle`
+    |                                                        |        pattern doesn't bind `Wiggle`
+    |                                                        pattern doesn't bind `Wiggle`
+    |
+help: if you meant to match on a unit struct, unit variant or a `const` item, consider making the path in the pattern qualified: `path::to::ModOrType::Wiggle`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:598:91
+    |
+598 |                 Parameter::Damping => matches!(effect, Bounce | Pulse | Breathe | Scale | Wiggle),
+    |                                                                                           ^^^^^^
+
+error[E0408]: variable `Bounce` is not bound in all patterns
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:598:65
+    |
+598 |                 Parameter::Damping => matches!(effect, Bounce | Pulse | Breathe | Scale | Wiggle),
+    |                                                        ------   ^^^^^   ^^^^^^^   ^^^^^   ^^^^^^ pattern doesn't bind `Bounce`
+    |                                                        |        |       |         |
+    |                                                        |        |       |         pattern doesn't bind `Bounce`
+    |                                                        |        |       pattern doesn't bind `Bounce`
+    |                                                        |        pattern doesn't bind `Bounce`
+    |                                                        variable not in all patterns
+    |
+help: if you meant to match on a unit struct, unit variant or a `const` item, consider making the path in the pattern qualified: `path::to::ModOrType::Bounce`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:598:56
+    |
+598 |                 Parameter::Damping => matches!(effect, Bounce | Pulse | Breathe | Scale | Wiggle),
+    |                                                        ^^^^^^
+
+error[E0408]: variable `Pulse` is not bound in all patterns
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:600:38
+    |
+600 |                     matches!(effect, Bounce | Pulse | Breathe | Wiggle | Rotate)
+    |                                      ^^^^^^   -----   ^^^^^^^   ^^^^^^   ^^^^^^ pattern doesn't bind `Pulse`
+    |                                      |        |       |         |
+    |                                      |        |       |         pattern doesn't bind `Pulse`
+    |                                      |        |       pattern doesn't bind `Pulse`
+    |                                      |        variable not in all patterns
+    |                                      pattern doesn't bind `Pulse`
+    |
+help: if you meant to match on a unit struct, unit variant or a `const` item, consider making the path in the pattern qualified: `path::to::ModOrType::Pulse`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:600:47
+    |
+600 |                     matches!(effect, Bounce | Pulse | Breathe | Wiggle | Rotate)
+    |                                               ^^^^^
+
+error[E0408]: variable `Breathe` is not bound in all patterns
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:600:38
+    |
+600 |                     matches!(effect, Bounce | Pulse | Breathe | Wiggle | Rotate)
+    |                                      ^^^^^^   ^^^^^   -------   ^^^^^^   ^^^^^^ pattern doesn't bind `Breathe`
+    |                                      |        |       |         |
+    |                                      |        |       |         pattern doesn't bind `Breathe`
+    |                                      |        |       variable not in all patterns
+    |                                      |        pattern doesn't bind `Breathe`
+    |                                      pattern doesn't bind `Breathe`
+    |
+help: if you meant to match on a unit struct, unit variant or a `const` item, consider making the path in the pattern qualified: `path::to::ModOrType::Breathe`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:600:55
+    |
+600 |                     matches!(effect, Bounce | Pulse | Breathe | Wiggle | Rotate)
+    |                                                       ^^^^^^^
+
+error[E0408]: variable `Wiggle` is not bound in all patterns
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:600:38
+    |
+600 |                     matches!(effect, Bounce | Pulse | Breathe | Wiggle | Rotate)
+    |                                      ^^^^^^   ^^^^^   ^^^^^^^   ------   ^^^^^^ pattern doesn't bind `Wiggle`
+    |                                      |        |       |         |
+    |                                      |        |       |         variable not in all patterns
+    |                                      |        |       pattern doesn't bind `Wiggle`
+    |                                      |        pattern doesn't bind `Wiggle`
+    |                                      pattern doesn't bind `Wiggle`
+    |
+help: if you meant to match on a unit struct, unit variant or a `const` item, consider making the path in the pattern qualified: `path::to::ModOrType::Wiggle`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:600:65
+    |
+600 |                     matches!(effect, Bounce | Pulse | Breathe | Wiggle | Rotate)
+    |                                                                 ^^^^^^
+
+error[E0408]: variable `Rotate` is not bound in all patterns
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:600:38
+    |
+600 |                     matches!(effect, Bounce | Pulse | Breathe | Wiggle | Rotate)
+    |                                      ^^^^^^   ^^^^^   ^^^^^^^   ^^^^^^   ------ variable not in all patterns
+    |                                      |        |       |         |
+    |                                      |        |       |         pattern doesn't bind `Rotate`
+    |                                      |        |       pattern doesn't bind `Rotate`
+    |                                      |        pattern doesn't bind `Rotate`
+    |                                      pattern doesn't bind `Rotate`
+    |
+help: if you meant to match on a unit struct, unit variant or a `const` item, consider making the path in the pattern qualified: `path::to::ModOrType::Rotate`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:600:74
+    |
+600 |                     matches!(effect, Bounce | Pulse | Breathe | Wiggle | Rotate)
+    |                                                                          ^^^^^^
+
+error[E0408]: variable `Bounce` is not bound in all patterns
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:600:47
+    |
+600 |                     matches!(effect, Bounce | Pulse | Breathe | Wiggle | Rotate)
+    |                                      ------   ^^^^^   ^^^^^^^   ^^^^^^   ^^^^^^ pattern doesn't bind `Bounce`
+    |                                      |        |       |         |
+    |                                      |        |       |         pattern doesn't bind `Bounce`
+    |                                      |        |       pattern doesn't bind `Bounce`
+    |                                      |        pattern doesn't bind `Bounce`
+    |                                      variable not in all patterns
+    |
+help: if you meant to match on a unit struct, unit variant or a `const` item, consider making the path in the pattern qualified: `path::to::ModOrType::Bounce`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:600:38
+    |
+600 |                     matches!(effect, Bounce | Pulse | Breathe | Wiggle | Rotate)
+    |                                      ^^^^^^
+
+error[E0433]: cannot find `symbols` in `tekes_ui_motion`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:671:50
+    |
+671 |                     if index == tekes_ui_motion::symbols::SymbolEffect::ALL.len() {
+    |                                                  ^^^^^^^ could not find `symbols` in `tekes_ui_motion`
+
+error[E0433]: cannot find `symbols` in `tekes_ui_motion`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:675:46
+    |
+675 | ...                   tekes_ui_motion::symbols::SymbolEffect::ALL[index],
+    |                                        ^^^^^^^ could not find `symbols` in `tekes_ui_motion`
+
+error[E0433]: cannot find `symbols` in `tekes_ui_motion`
+   --> crates/tekes-ui-gallery/src/gallery/pages/motion.rs:846:30
+    |
+846 |     effect: tekes_ui_motion::symbols::SymbolEffect,
+    |                              ^^^^^^^ could not find `symbols` in `tekes_ui_motion`
+
+error[E0433]: cannot find `symbols` in `tekes_ui_motion`
+   --> crates/tekes-ui-gallery/src/gallery/pages/motion.rs:905:30
+    |
+905 |             tekes_ui_motion::symbols::SymbolEffect::Rotate,
+    |                              ^^^^^^^ could not find `symbols` in `tekes_ui_motion`
+
+error[E0425]: cannot find value `SIDEBAR_PADDING` in module `proposal`
+  --> crates/tekes-ui-gallery/src/gallery/layout.rs:28:40
+   |
+28 | pub const ROW_INSET_X: f32 = proposal::SIDEBAR_PADDING;
+   |                                        ^^^^^^^^^^^^^^^ not found in `proposal`
+
+error[E0425]: cannot find value `SCROLLBAR_WIDTH` in module `proposal`
+   --> crates/tekes-ui-gallery/src/gallery/navigation.rs:200:23
+    |
+200 |             proposal::SCROLLBAR_WIDTH,
+    |                       ^^^^^^^^^^^^^^^
+    |
+   ::: /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/release/build/tekes-ui-tokens-2e70c0df2a7bbb18/out/tokens.rs:419:1
+    |
+419 | pub const SIDEBAR_WIDTH: f32 = f32::from_bits(0x43900000);
+    | ---------------------------- similarly named constant `SIDEBAR_WIDTH` defined here
+    |
+help: a constant with a similar name exists
+    |
+200 -             proposal::SCROLLBAR_WIDTH,
+200 +             proposal::SIDEBAR_WIDTH,
+    |
+
+error[E0425]: cannot find value `SCROLL_CONTENT_PADDING` in module `proposal`
+  --> crates/tekes-ui-gallery/src/gallery/text_demo.rs:87:33
+   |
+87 |         let padding = proposal::SCROLL_CONTENT_PADDING;
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^ not found in `proposal`
+
+error[E0425]: cannot find value `SCROLL_SINGLE_LINE_PADDING_Y` in module `proposal`
+  --> crates/tekes-ui-gallery/src/gallery/text_demo.rs:91:23
+   |
+91 |             proposal::SCROLL_SINGLE_LINE_PADDING_Y
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in `proposal`
+
+error[E0425]: cannot find value `SCROLLBAR_WIDTH` in module `proposal`
+   --> crates/tekes-ui-gallery/src/gallery/text_demo.rs:334:27
+    |
+334 |         let t = proposal::SCROLLBAR_WIDTH;
+    |                           ^^^^^^^^^^^^^^^
+    |
+   ::: /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/release/build/tekes-ui-tokens-2e70c0df2a7bbb18/out/tokens.rs:419:1
+    |
+419 | pub const SIDEBAR_WIDTH: f32 = f32::from_bits(0x43900000);
+    | ---------------------------- similarly named constant `SIDEBAR_WIDTH` defined here
+    |
+help: a constant with a similar name exists
+    |
+334 -         let t = proposal::SCROLLBAR_WIDTH;
+334 +         let t = proposal::SIDEBAR_WIDTH;
+    |
+
+error[E0425]: cannot find value `SCROLLBAR_INSET` in module `proposal`
+   --> crates/tekes-ui-gallery/src/gallery/text_demo.rs:337:52
+    |
+337 |                 self.outer.max_x() - t - proposal::SCROLLBAR_INSET,
+    |                                                    ^^^^^^^^^^^^^^^ not found in `proposal`
+
+error[E0425]: cannot find value `SCROLLBAR_INSET` in module `proposal`
+   --> crates/tekes-ui-gallery/src/gallery/text_demo.rs:345:52
+    |
+345 |                 self.outer.max_y() - t - proposal::SCROLLBAR_INSET,
+    |                                                    ^^^^^^^^^^^^^^^ not found in `proposal`
+
+error[E0425]: cannot find value `SCROLLBAR_WIDTH` in module `tekes_ui_tokens::proposal`
+   --> crates/tekes-ui-gallery/src/gallery/viewport.rs:93:44
+    |
+ 93 |         let w = tekes_ui_tokens::proposal::SCROLLBAR_WIDTH;
+    |                                            ^^^^^^^^^^^^^^^
+    |
+   ::: /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/release/build/tekes-ui-tokens-2e70c0df2a7bbb18/out/tokens.rs:419:1
+    |
+419 | pub const SIDEBAR_WIDTH: f32 = f32::from_bits(0x43900000);
+    | ---------------------------- similarly named constant `SIDEBAR_WIDTH` defined here
+    |
+help: a constant with a similar name exists
+    |
+ 93 -         let w = tekes_ui_tokens::proposal::SCROLLBAR_WIDTH;
+ 93 +         let w = tekes_ui_tokens::proposal::SIDEBAR_WIDTH;
+    |
+
+error[E0599]: no method named `animation_layers` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:125:10
+    |
+124 |       let layers = icon
+    |  __________________-
+125 | |         .animation_layers()
+    | |         -^^^^^^^^^^^^^^^^ method not found in `tekes_ui_icons::Icon`
+    | |_________|
+    |
+
+error[E0599]: no method named `animation_partner` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:321:28
+    |
+321 |         let partner = icon.animation_partner();
+    |                            ^^^^^^^^^^^^^^^^^ method not found in `tekes_ui_icons::Icon`
+
+error[E0599]: no method named `animation_layers` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:324:35
+    |
+324 |         let correspondence = icon.animation_layers().iter().enumerate().any(|(i, l)| {
+    |                                   ^^^^^^^^^^^^^^^^ method not found in `tekes_ui_icons::Icon`
+
+error[E0599]: no method named `animation_partner` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:368:27
+    |
+368 |         let target = icon.animation_partner();
+    |                           ^^^^^^^^^^^^^^^^^ method not found in `tekes_ui_icons::Icon`
+
+error[E0609]: no field `symbol_strength` on type `RecipeParameters`
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:372:30
+    |
+372 |             strength: params.symbol_strength,
+    |                              ^^^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `duration`, `damping`, `delay`, `amount`, `scan_angle` ... and 5 others
+
+error[E0609]: no field `symbol_cycles` on type `RecipeParameters`
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:373:28
+    |
+373 |             cycles: params.symbol_cycles,
+    |                            ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `duration`, `damping`, `delay`, `amount`, `scan_angle` ... and 5 others
+
+error[E0599]: no method named `animation_layers` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:381:29
+    |
+381 |         let identity = icon.animation_layers().iter().enumerate().all(|(i, _)| {
+    |                             ^^^^^^^^^^^^^^^^ method not found in `tekes_ui_icons::Icon`
+
+error[E0599]: no method named `animation_layers` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:386:22
+    |
+386 |                 icon.animation_layers().len(),
+    |                      ^^^^^^^^^^^^^^^^ method not found in `tekes_ui_icons::Icon`
+
+error[E0599]: no method named `animation_layers` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:431:22
+    |
+431 |                 icon.animation_layers()[i].anchor
+    |                      ^^^^^^^^^^^^^^^^ method not found in `tekes_ui_icons::Icon`
+
+error[E0599]: no method named `animation_layers` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:502:28
+    |
+502 |             let key = icon.animation_layers()[i].shared_key;
+    |                            ^^^^^^^^^^^^^^^^ method not found in `tekes_ui_icons::Icon`
+
+error[E0609]: no field `symbol_strength` on type `RecipeParameters`
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:757:30
+    |
+757 |             strength: params.symbol_strength,
+    |                              ^^^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `duration`, `damping`, `delay`, `amount`, `scan_angle` ... and 5 others
+
+error[E0609]: no field `symbol_cycles` on type `RecipeParameters`
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:758:28
+    |
+758 |             cycles: params.symbol_cycles,
+    |                            ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `duration`, `damping`, `delay`, `amount`, `scan_angle` ... and 5 others
+
+error[E0599]: no method named `animation_partner` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:764:42
+    |
+764 |         for (which, icon) in [icon, icon.animation_partner()].into_iter().enumerate() {
+    |                                          ^^^^^^^^^^^^^^^^^ method not found in `tekes_ui_icons::Icon`
+
+error[E0599]: no method named `animation_layers` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:830:30
+    |
+830 |                         icon.animation_layers()[layer].anchor,
+    |                              ^^^^^^^^^^^^^^^^ method not found in `tekes_ui_icons::Icon`
+
+error[E0599]: no method named `animation_partner` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:875:47
+    |
+875 | ...                   && k.icon == icon.animation_partner()))
+    |                                         ^^^^^^^^^^^^^^^^^ method not found in `tekes_ui_icons::Icon`
+
+error[E0599]: no method named `animation_partner` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/symbol_assets.rs:888:36
+    |
+888 |                         icon: icon.animation_partner(),
+    |                                    ^^^^^^^^^^^^^^^^^ method not found in `tekes_ui_icons::Icon`
+
+error[E0599]: no variant or associated item named `Symbol` found for enum `RecipeKind` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:306:51
+    |
+306 |             tekes_ui_motion::recipes::RecipeKind::Symbol(effect) => self.symbol_assets.prepare(
+    |                                                   ^^^^^^ variant or associated item not found in `RecipeKind`
+
+error[E0599]: no variant or associated item named `LinearRotation` found for enum `RecipeKind` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:316:51
+    |
+316 |             tekes_ui_motion::recipes::RecipeKind::LinearRotation => {
+    |                                                   ^^^^^^^^^^^^^^ variant or associated item not found in `RecipeKind`
+    |
+help: there is a method `is_rotation` with a similar name
+   --> crates/tekes-ui-motion/src/recipes.rs:61:4
+
+error[E0599]: no variant or associated item named `LinearRotation` found for enum `RecipeKind` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:397:74
+    |
+397 |             && self.recipe.kind == tekes_ui_motion::recipes::RecipeKind::LinearRotation
+    |                                                                          ^^^^^^^^^^^^^^ variant or associated item not found in `RecipeKind`
+    |
+help: there is a method `is_rotation` with a similar name
+   --> crates/tekes-ui-motion/src/recipes.rs:61:4
+
+error[E0599]: no variant or associated item named `LinearRotation` found for enum `RecipeKind` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:590:74
+    |
+590 |             if self.recipe.kind == tekes_ui_motion::recipes::RecipeKind::LinearRotation {
+    |                                                                          ^^^^^^^^^^^^^^ variant or associated item not found in `RecipeKind`
+    |
+help: there is a method `is_rotation` with a similar name
+   --> crates/tekes-ui-motion/src/recipes.rs:61:4
+
+error[E0599]: no variant or associated item named `Symbol` found for enum `RecipeKind` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:593:55
+    |
+593 |             let tekes_ui_motion::recipes::RecipeKind::Symbol(effect) = self.recipe.kind else {
+    |                                                       ^^^^^^ variant or associated item not found in `RecipeKind`
+
+error[E0599]: no variant or associated item named `LinearRotation` found for enum `RecipeKind` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:672:63
+    |
+672 |                         tekes_ui_motion::recipes::RecipeKind::LinearRotation
+    |                                                               ^^^^^^^^^^^^^^ variant or associated item not found in `RecipeKind`
+    |
+help: there is a method `is_rotation` with a similar name
+   --> crates/tekes-ui-motion/src/recipes.rs:61:4
+
+error[E0599]: no variant or associated item named `Symbol` found for enum `RecipeKind` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:674:63
+    |
+674 |                         tekes_ui_motion::recipes::RecipeKind::Symbol(
+    |                                                               ^^^^^^ variant or associated item not found in `RecipeKind`
+
+error[E0609]: no field `symbol_strength` on type `RecipeParameters`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:778:46
+    |
+778 |                 Parameter::Damping => params.symbol_strength,
+    |                                              ^^^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `duration`, `damping`, `delay`, `amount`, `scan_angle` ... and 5 others
+
+error[E0609]: no field `symbol_cycles` on type `RecipeParameters`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:780:64
+    |
+780 |                 Parameter::ReleaseVelocity => f64::from(params.symbol_cycles),
+    |                                                                ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `duration`, `damping`, `delay`, `amount`, `scan_angle` ... and 5 others
+
+error[E0609]: no field `symbol_strength` on type `RecipeParameters`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:839:50
+    |
+839 |                     Parameter::Damping => params.symbol_strength = value,
+    |                                                  ^^^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `duration`, `damping`, `delay`, `amount`, `scan_angle` ... and 5 others
+
+error[E0609]: no field `symbol_cycles` on type `RecipeParameters`
+   --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:841:58
+    |
+841 |                     Parameter::ReleaseVelocity => params.symbol_cycles = value.round() as u8,
+    |                                                          ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `duration`, `damping`, `delay`, `amount`, `scan_angle` ... and 5 others
+
+error[E0599]: no variant or associated item named `LinearRotation` found for enum `RecipeKind` in the current scope
+    --> crates/tekes-ui-gallery/src/gallery/motion_preview.rs:1054:78
+     |
+1054 |                 && self.recipe.kind == tekes_ui_motion::recipes::RecipeKind::LinearRotation
+     |                                                                              ^^^^^^^^^^^^^^ variant or associated item not found in `RecipeKind`
+     |
+help: there is a method `is_rotation` with a similar name
+    --> crates/tekes-ui-motion/src/recipes.rs:61:4
+
+error[E0599]: no method named `label` found for enum `tekes_ui_icons::Icon` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/pages/motion.rs:480:68
+    |
+480 |             Action::SymbolIcon(i) => tekes_ui_icons::Icon::ALL[*i].label(),
+    |                                                                    ^^^^^ method not found in `tekes_ui_icons::Icon`
+
+error[E0599]: no variant or associated item named `LinearRotation` found for enum `RecipeKind` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/pages/motion.rs:862:49
+    |
+862 |             if state.recipe.kind == RecipeKind::LinearRotation && column == 2 {
+    |                                                 ^^^^^^^^^^^^^^ variant or associated item not found in `RecipeKind`
+    |
+help: there is a method `is_rotation` with a similar name
+   --> crates/tekes-ui-motion/src/recipes.rs:61:4
+
+error[E0599]: no variant or associated item named `Symbol` found for enum `RecipeKind` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/pages/motion.rs:900:21
+    |
+900 |         RecipeKind::Symbol(effect) => build_symbol_stage(p, area, state, effect),
+    |                     ^^^^^^ variant or associated item not found in `RecipeKind`
+
+error[E0599]: no variant or associated item named `LinearRotation` found for enum `RecipeKind` in the current scope
+   --> crates/tekes-ui-gallery/src/gallery/pages/motion.rs:901:21
+    |
+901 |         RecipeKind::LinearRotation => build_symbol_stage(
+    |                     ^^^^^^^^^^^^^^ variant or associated item not found in `RecipeKind`
+    |
+help: there is a method `is_rotation` with a similar name
+   --> crates/tekes-ui-motion/src/recipes.rs:61:4
+
+Some errors have detailed explanations: E0408, E0425, E0432, E0433, E0599, E0609.
+For more information about an error, try `rustc --explain E0408`.
+error: could not compile `tekes-ui-gallery` (bin "tekes-ui-gallery") due to 58 previous errors

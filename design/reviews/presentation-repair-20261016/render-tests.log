@@ -1,0 +1,109 @@
+   Compiling tekes-ui-render v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-render)
+    Finished `release` profile [optimized] target(s) in 1.82s
+     Running unittests src/lib.rs (target/presentation-repair-20261016/build/release/deps/tekes_ui_render-de863da46afaa7e4)
+
+running 22 tests
+test common::upload_tests::multiple_changes_and_float_bit_patterns_are_preserved ... ok
+test instance::tests::instance_is_80_bytes ... ok
+test frame::tests::consecutive_same_kind_merge_and_order_is_kept ... ok
+test common::upload_tests::changes_are_exact_aligned_and_include_new_tail ... ok
+test instance::tests::negative_size_and_border_are_clamped ... ok
+test instance::tests::radii_are_clamped_to_half_the_short_side ... ok
+test stats::tests::consecutive_missed_refreshes_in_one_gap ... ok
+test stats::tests::alternating_drops_are_isolated_but_form_a_late_streak ... ok
+test stats::tests::cpu_active_excludes_the_drawable_wait ... ok
+test stats::tests::distribution_basics ... ok
+test stats::tests::empty_stats_are_zero ... ok
+test stats::tests::frame_stats_aggregate ... ok
+test stats::tests::frame_stats_detect_a_missed_refresh ... ok
+test stats::tests::frame_stats_without_gpu_and_with_skipped_frames ... ok
+test stats::tests::gap_exactly_at_threshold_is_not_late ... ok
+test stats::tests::jitter_below_threshold_is_not_a_drop ... ok
+test stats::tests::percentile_is_nearest_rank ... ok
+test stats::tests::single_missed_refresh_counts_once ... ok
+test stats::tests::steady_cadence_has_no_drops ... ok
+test stats::tests::two_late_runs_are_separated_by_an_on_time_frame ... ok
+test stats::tests::unusable_interval_reports_gaps_only ... ok
+test common::upload_tests::cached_buffer_queues_only_changed_bytes_and_invalidates_on_growth ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
+
+     Running tests/frame_timing.rs (target/presentation-repair-20261016/build/release/deps/frame_timing-a3481e969a56df94)
+
+running 3 tests
+test timing_is_off_by_default_and_costs_nothing_to_drain ... ok
+test cpu_segments_are_consistent_and_frames_are_numbered ... ok
+test gpu_time_agrees_with_wall_clock_on_a_heavy_frame ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.85s
+
+     Running tests/glyphs.rs (target/presentation-repair-20261016/build/release/deps/glyphs-eca1fbaf18f2cb38)
+
+running 18 tests
+test checker_mask_at_scale_2_is_not_scaled ... ok
+test half_pixel_origins_round_away_from_zero ... ok
+test color_glyph_keeps_its_own_colors ... ok
+test image_draws_into_its_rect ... ok
+test consecutive_primitives_of_a_kind_form_one_draw ... ok
+test empty_and_missing_glyph_inputs_draw_nothing ... ok
+test checker_mask_lands_on_the_rounded_pixel_at_scale_1 ... ok
+test atlas_stats_follow_the_frames ... ok
+test eviction_then_reinsert_uploads_the_new_pixels ... ok
+test image_scales_with_scale_and_respects_opacity ... ok
+test atlas_texture_grows_with_pages_and_keeps_old_pages ... ok
+test mask_coverage_blends_in_gamma_space ... ok
+test premultiplied_image_alpha_blends_over_the_background ... ok
+test unregistered_images_are_skipped_and_bad_input_is_rejected ... ok
+test transformed_images_rotate_select_atlas_region_and_keep_zero_angle_pixels ... ok
+test painters_order_holds_across_primitive_kinds ... ok
+test two_renderers_can_share_one_atlas ... ok
+test rendering_twice_is_byte_identical ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/offscreen.rs (target/presentation-repair-20261016/build/release/deps/offscreen-4fca1005d0d16f17)
+
+running 24 tests
+test empty_scene_is_all_clear_color ... ok
+test hover_wash_token_over_background ... ok
+test border_follows_rounded_outline ... ok
+test bordered_outer_edge_is_antialiased_once ... ok
+test half_pixel_edges_get_half_coverage ... ok
+test border_band_has_border_color_and_correct_width ... ok
+test invalid_arguments_are_errors_not_panics ... ok
+test fill_matches_token_srgb_at_scale_1_and_2 ... ok
+test oversized_radius_is_clamped_to_a_pill ... ok
+test per_corner_radii_only_round_the_requested_corners ... ok
+test nested_scissors_preserve_quad_geometry_and_restore_parent ... ok
+test pixel_aligned_edges_are_crisp_at_scale_1 ... ok
+test later_quads_paint_over_earlier_ones ... ok
+test quads_partially_or_fully_outside_the_target_are_clipped ... ok
+test non_multiple_of_64_widths_read_back_correctly ... ok
+test rounded_corner_is_clear_and_edge_midpoints_are_filled ... ok
+test rounded_corner_is_symmetric ... ok
+test ten_point_rect_covers_exactly_20_pixels_at_scale_2 ... ok
+test cached_uploads_keep_edits_resize_and_growing_buffers_correct ... ok
+test instance_buffer_is_reused_across_frames_and_grows_when_needed ... ok
+test translucent_border_shows_the_fill_underneath ... ok
+test translucent_fill_blends_in_gamma_space ... ok
+test update_image_reuses_registered_texture_and_validates_before_upload ... ok
+test fractional_scroll_keeps_hairline_brightness_constant ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/surface.rs (target/presentation-repair-20261016/build/release/deps/surface-705530b05b95ca84)
+
+running 4 tests
+test rejects_invalid_scale ... ok
+test zero_size_pauses_rendering_and_recovers ... ok
+test presents_with_transaction_when_the_layer_asks_for_it ... ok
+test configures_the_layer_and_keeps_srgb_colorspace_across_resizes ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+   Doc-tests tekes_ui_render
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

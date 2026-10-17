@@ -1,0 +1,446 @@
+{
+  "captures": 40,
+  "pixel_identical": 40,
+  "cases": [
+    {
+      "file": "component-dialog-playground-dark-increased-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "a0f17173511598820a02c88bed5c10c4c7745fadfddcfa9557723679ac048501",
+      "after_sha256": "a0f17173511598820a02c88bed5c10c4c7745fadfddcfa9557723679ac048501",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-dialog-playground-dark-increased-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "21b5b01ed69875132aac9fd747a1dd86f4863e9fc9d90acb8d93bb030fb19b99",
+      "after_sha256": "21b5b01ed69875132aac9fd747a1dd86f4863e9fc9d90acb8d93bb030fb19b99",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-dialog-playground-dark-standard-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "8ee927e3f8c56763e1b7fa63282fb78fefffbc8257d5d37b4e53c0d116b32a90",
+      "after_sha256": "8ee927e3f8c56763e1b7fa63282fb78fefffbc8257d5d37b4e53c0d116b32a90",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-dialog-playground-dark-standard-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "aa620e312b1411d00d780ecb9c3297bf0c157178896e62cc0801569c0bb58048",
+      "after_sha256": "aa620e312b1411d00d780ecb9c3297bf0c157178896e62cc0801569c0bb58048",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-dialog-playground-light-increased-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "d921e1c71f5341456062555cd2a52fc442c602d59c50c4ab068f85fcadcacd50",
+      "after_sha256": "d921e1c71f5341456062555cd2a52fc442c602d59c50c4ab068f85fcadcacd50",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-dialog-playground-light-increased-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "e20c50beabffa8119bdff327a88c2333b9bf394e88540a8d493c6da4b7d907e0",
+      "after_sha256": "e20c50beabffa8119bdff327a88c2333b9bf394e88540a8d493c6da4b7d907e0",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-dialog-playground-light-standard-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "7bfacd70e4f923e215a3389d77183c496e342d442a19137ab27e88e2d2da74d2",
+      "after_sha256": "7bfacd70e4f923e215a3389d77183c496e342d442a19137ab27e88e2d2da74d2",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-dialog-playground-light-standard-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "9c9461b0073881e13d88d24b611ba80389837837d2b5fdf0c0925cb9dfaa6d86",
+      "after_sha256": "9c9461b0073881e13d88d24b611ba80389837837d2b5fdf0c0925cb9dfaa6d86",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-menu-playground-dark-increased-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "f859351e939c597f0ad9df487b8b3f40436b23872f2641f9e350d23098942d06",
+      "after_sha256": "f859351e939c597f0ad9df487b8b3f40436b23872f2641f9e350d23098942d06",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-menu-playground-dark-increased-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "aee88814f095e362f57579391c29f8dd6dc782cfcdae7a18ad93254f33cc34df",
+      "after_sha256": "aee88814f095e362f57579391c29f8dd6dc782cfcdae7a18ad93254f33cc34df",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-menu-playground-dark-standard-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "df9433b496b33103c211550afc66b94dfbaeabac513a7e1b7ea72047a05b08ab",
+      "after_sha256": "df9433b496b33103c211550afc66b94dfbaeabac513a7e1b7ea72047a05b08ab",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-menu-playground-dark-standard-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "627eb7abe3bf27114d351a452ec22751508f6d771592be3cfcc1ad4794679402",
+      "after_sha256": "627eb7abe3bf27114d351a452ec22751508f6d771592be3cfcc1ad4794679402",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-menu-playground-light-increased-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "2b176ef4ebaeba4c019757ff541a6e262c8b00b27eaef4dab294d3570da03e90",
+      "after_sha256": "2b176ef4ebaeba4c019757ff541a6e262c8b00b27eaef4dab294d3570da03e90",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-menu-playground-light-increased-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "c092c1b3b159758d8d75b370b6159d9f741fd9f499f8d4e806b83572afc23f78",
+      "after_sha256": "c092c1b3b159758d8d75b370b6159d9f741fd9f499f8d4e806b83572afc23f78",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-menu-playground-light-standard-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "5d0e6dd0a4d0c2586e9bd69efd2013370acc59f92b3c50de21f79e58c4b83345",
+      "after_sha256": "5d0e6dd0a4d0c2586e9bd69efd2013370acc59f92b3c50de21f79e58c4b83345",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-menu-playground-light-standard-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "19c78be6f1fa972bf11fb8d3b228994c346b0231f706d1cb4651221784443861",
+      "after_sha256": "19c78be6f1fa972bf11fb8d3b228994c346b0231f706d1cb4651221784443861",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-select-playground-dark-increased-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "0e6dca269a3a108944ed258e8a99431cdd500f006aa8eb4289d138a99fe54083",
+      "after_sha256": "0e6dca269a3a108944ed258e8a99431cdd500f006aa8eb4289d138a99fe54083",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-select-playground-dark-increased-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "7c9d4f228b9a832f55a27d014ba59756987e133aa4493d8450a02ae996ffa815",
+      "after_sha256": "7c9d4f228b9a832f55a27d014ba59756987e133aa4493d8450a02ae996ffa815",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-select-playground-dark-standard-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "35883139d5e0db07fd12be2fbe757636723670db96221614f6700b9dc92c2896",
+      "after_sha256": "35883139d5e0db07fd12be2fbe757636723670db96221614f6700b9dc92c2896",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-select-playground-dark-standard-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "e6567550319ad703810392cd0cf67d2a7ce874e2c1529adaf14476ecb6f08fb8",
+      "after_sha256": "e6567550319ad703810392cd0cf67d2a7ce874e2c1529adaf14476ecb6f08fb8",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-select-playground-light-increased-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "52e16fb0b917145ea80a8329782aa19abc853da3651deb9ec88bdfa92abed1f2",
+      "after_sha256": "52e16fb0b917145ea80a8329782aa19abc853da3651deb9ec88bdfa92abed1f2",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-select-playground-light-increased-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "0c01e3c0c0d64f9f5bae3cc065dc23af1065ba0060c64600deb40a9149568864",
+      "after_sha256": "0c01e3c0c0d64f9f5bae3cc065dc23af1065ba0060c64600deb40a9149568864",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-select-playground-light-standard-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "61e5edac135dd0769039bb361634235fda7484715295d85f03b34cb63a47c36c",
+      "after_sha256": "61e5edac135dd0769039bb361634235fda7484715295d85f03b34cb63a47c36c",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-select-playground-light-standard-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "5db88bde3c21998f33b89d525090f632f7c167dda33293d9f5a2e3511c3d4b8c",
+      "after_sha256": "5db88bde3c21998f33b89d525090f632f7c167dda33293d9f5a2e3511c3d4b8c",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-tabs-playground-dark-increased-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "d822cc54621853764b302e2bb38553db9843a9bab2830ec4b723a7603389079f",
+      "after_sha256": "d822cc54621853764b302e2bb38553db9843a9bab2830ec4b723a7603389079f",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-tabs-playground-dark-increased-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "9551bc95e21223ffcf9593bd15a49aac2b762d65de6c4127e447b35a66175d06",
+      "after_sha256": "9551bc95e21223ffcf9593bd15a49aac2b762d65de6c4127e447b35a66175d06",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-tabs-playground-dark-standard-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "1534ba1e353a15079d72c5e4769644122e595388a90d0352519be5b4b0f59640",
+      "after_sha256": "1534ba1e353a15079d72c5e4769644122e595388a90d0352519be5b4b0f59640",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-tabs-playground-dark-standard-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "ddf039507f96298a2fad71a8902682f2b230604de0966df7ee306f26826541ed",
+      "after_sha256": "ddf039507f96298a2fad71a8902682f2b230604de0966df7ee306f26826541ed",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-tabs-playground-light-increased-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "94d75b7554e02c84f3f1a9820267be2c38cfb11742f0e37666f7a84a8e72c0cd",
+      "after_sha256": "94d75b7554e02c84f3f1a9820267be2c38cfb11742f0e37666f7a84a8e72c0cd",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-tabs-playground-light-increased-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "4b3069e8514d536f307cab103f01899150984fbff371c93d7676e8d1a60b2c4a",
+      "after_sha256": "4b3069e8514d536f307cab103f01899150984fbff371c93d7676e8d1a60b2c4a",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-tabs-playground-light-standard-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "2f814897ad81c77c8c8f3790eaa501735a2b36d5afe38525ceb1b59244553875",
+      "after_sha256": "2f814897ad81c77c8c8f3790eaa501735a2b36d5afe38525ceb1b59244553875",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "component-tabs-playground-light-standard-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "4424a42cedbc610ae7c170e785d67b26cf626c5541993901dde27634330e412a",
+      "after_sha256": "4424a42cedbc610ae7c170e785d67b26cf626c5541993901dde27634330e412a",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "pattern-danger-playground-dark-increased-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "64031906998a4f2bd039524cc81af0ba15b5b97dbf072a24e27c2f2e7a4f228c",
+      "after_sha256": "64031906998a4f2bd039524cc81af0ba15b5b97dbf072a24e27c2f2e7a4f228c",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "pattern-danger-playground-dark-increased-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "f71479ff0205c8f05be0bf163e2b8f503d5eaa6d001deb6ed3aedd81cd6ffeaa",
+      "after_sha256": "f71479ff0205c8f05be0bf163e2b8f503d5eaa6d001deb6ed3aedd81cd6ffeaa",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "pattern-danger-playground-dark-standard-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "8542afe32670ee8cd78c9755c71cbc224209b4a30365074bfae098f0a32b15a8",
+      "after_sha256": "8542afe32670ee8cd78c9755c71cbc224209b4a30365074bfae098f0a32b15a8",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "pattern-danger-playground-dark-standard-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "ff741fa79f523697eab7f9c4cd1e3129b61bccce4e20c897d48e4c3200e87bc7",
+      "after_sha256": "ff741fa79f523697eab7f9c4cd1e3129b61bccce4e20c897d48e4c3200e87bc7",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "pattern-danger-playground-light-increased-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "b5945fbf191a7f17e44dfa430ad088e48865fbb19607b4615e81c4b593715e96",
+      "after_sha256": "b5945fbf191a7f17e44dfa430ad088e48865fbb19607b4615e81c4b593715e96",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "pattern-danger-playground-light-increased-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "f39957f8c52ff2c5879c9408ebaaa51a889666f7d43256d47df9e9fc19d9ad41",
+      "after_sha256": "f39957f8c52ff2c5879c9408ebaaa51a889666f7d43256d47df9e9fc19d9ad41",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "pattern-danger-playground-light-standard-t100-1x.png",
+      "size_px": [
+        1440,
+        960
+      ],
+      "before_sha256": "8f38fc017120b6138d194bc627ccc669501c6a41e659b4a26871219168e413d1",
+      "after_sha256": "8f38fc017120b6138d194bc627ccc669501c6a41e659b4a26871219168e413d1",
+      "pixel_identical": true,
+      "diff_bbox": null
+    },
+    {
+      "file": "pattern-danger-playground-light-standard-t100-2x.png",
+      "size_px": [
+        2880,
+        1920
+      ],
+      "before_sha256": "271b9ff48c0d14e3e314ef498649b3558b62040495adabc5e015af5a14323eec",
+      "after_sha256": "271b9ff48c0d14e3e314ef498649b3558b62040495adabc5e015af5a14323eec",
+      "pixel_identical": true,
+      "diff_bbox": null
+    }
+  ]
+}

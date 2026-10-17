@@ -1,0 +1,38 @@
+[
+  {
+    "mode": "text",
+    "exit": 0,
+    "seconds": 11.97,
+    "captures": 6,
+    "selftest_fail": false,
+    "missing_menu_command": false,
+    "external": false,
+    "binary_sha256": "a7ea2eadf08341492e5c776de969db0df7df2cbe55d3d3e5f506ee3c6f9e2b7c",
+    "capture_successes": 6,
+    "valid_run": false
+  },
+  {
+    "mode": "scroll-repair",
+    "exit": 0,
+    "seconds": 11.94,
+    "captures": 13,
+    "selftest_fail": false,
+    "missing_menu_command": false,
+    "external": false,
+    "binary_sha256": "a7ea2eadf08341492e5c776de969db0df7df2cbe55d3d3e5f506ee3c6f9e2b7c",
+    "capture_successes": 13,
+    "valid_run": false
+  },
+  {
+    "mode": "reflow",
+    "exit": 0,
+    "seconds": 14.22,
+    "captures": 6,
+    "selftest_fail": false,
+    "missing_menu_command": false,
+    "external": false,
+    "binary_sha256": "a7ea2eadf08341492e5c776de969db0df7df2cbe55d3d3e5f506ee3c6f9e2b7c",
+    "capture_successes": 6,
+    "valid_run": false
+  }
+]

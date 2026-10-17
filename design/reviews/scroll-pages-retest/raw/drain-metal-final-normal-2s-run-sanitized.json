@@ -1,0 +1,16 @@
+{
+  "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Presentation Drain Final Benchmark.app/Contents/MacOS/TekesUI-Presentation-Drain-Final-Benchmark",
+  "binary_sha256": "0d19db7609ef9ad29e4ab9aafc0a30a1d5901d28d52a85438c234e17306be3c4",
+  "sources": 8,
+  "animated_views": 24,
+  "mode": "steady",
+  "display_driver": "metal",
+  "frame_latency": "2",
+  "seconds": 2.0,
+  "gpu_timing": "0",
+  "linear": true,
+  "freeze_raster": false,
+  "started_unix": 1792116021.5132601,
+  "exit_code": 0,
+  "wall_s": 9.016424894332886
+}

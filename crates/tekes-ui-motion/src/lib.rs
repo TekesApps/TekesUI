@@ -16,10 +16,16 @@
 //! # Ok::<(), tekes_ui_motion::MotionError>(())
 //! ```
 
+pub mod apple_defaults;
 mod channel;
 mod curve;
+pub mod linear_rotation;
 mod model;
 pub mod presets;
+pub mod recipes;
+pub mod state_transition;
+pub mod symbols;
+pub mod typing;
 mod value;
 
 pub use channel::{Animated, CancelBehavior, CancelReason, Event, EventKind, FinishReason, Frame};

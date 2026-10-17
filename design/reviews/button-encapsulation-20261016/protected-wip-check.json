@@ -1,0 +1,22 @@
+{
+  "prior_freeze_files": 146,
+  "missing": [],
+  "changed_since_prior_performance_freeze": [
+    "crates/tekes-ui-controls/src/paint.rs",
+    "crates/tekes-ui-controls/src/widgets.rs",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+    "crates/tekes-ui-controls/src/lib.rs",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs",
+    "crates/tekes-ui-gallery/src/gallery/motion_preview.rs",
+    "crates/tekes-ui-gallery/src/gallery/pages/mod.rs",
+    "crates/tekes-ui-gallery/src/gallery/pages/motion.rs",
+    "crates/tekes-ui-gallery/src/gallery/pages/showcase.rs",
+    "crates/tekes-ui-gallery/src/gallery/pages/static_text.rs",
+    "crates/tekes-ui-gallery/src/gallery/snapshot.rs",
+    "crates/tekes-ui-gallery/src/gallery/static_text.rs",
+    "crates/tekes-ui-gallery/src/gallery/text.rs",
+    "crates/tekes-ui-gallery/src/main.rs"
+  ],
+  "unchanged_performance_sources": true,
+  "scope_note": "Freeze predates component completion and Motion origin repair; changed paths include that authorized earlier work. No checkout cleanup or Git staging performed."
+}

@@ -1,0 +1,29 @@
+[
+  {
+    "route": "component-text",
+    "size": [
+      2880,
+      1984
+    ],
+    "content_bbox": null,
+    "content_equal": true
+  },
+  {
+    "route": "component-scroll-area",
+    "size": [
+      2880,
+      1984
+    ],
+    "content_bbox": null,
+    "content_equal": true
+  },
+  {
+    "route": "lab-internal-text",
+    "size": [
+      2880,
+      1984
+    ],
+    "content_bbox": null,
+    "content_equal": true
+  }
+]

@@ -1,0 +1,106 @@
+{
+  "format": "tekesui-scroll-viewport-contract/1",
+  "status": "required-foundation; implementation-incomplete",
+  "scope": "ScrollArea 的 viewport、变化通知和虚拟化内容契约；不新增 Gallery 组件或改变现有视觉设计。",
+  "timing": {
+    "nominal_hz": {
+      "$ref": "./scroll.json#/nominal_hz"
+    },
+    "frame_budget": "1000 / nominal_hz milliseconds; measure complete frames and actual presentation, not layout alone"
+  },
+  "geometry": {
+    "units": "逻辑 pt；只在光栅化边界转换为设备像素。",
+    "container_viewport": "容器局部坐标中的实际裁剪矩形，排除边框和固定容器 inset；overlay 滚动条不挤占它，reserved 滚动条需要显式扣除。",
+    "document_bounds": "文档坐标范围，包含文档自身 padding；必须区分估算 extent 与已测量 extent，不依赖创建全部子项来求总高度。",
+    "offset": "正常文档范围内的逻辑滚动位置，与 elastic overscroll 分开。",
+    "visual_offset": "offset + overscroll；用于绘制、可见性和命中测试的同一坐标变换。",
+    "visible_document_rect": "文档 bounds 与 Rect(visual_offset, viewport_size) 的交集；回弹露出的空白不创建虚构条目。",
+    "realization_region": "可见范围加可配置 overscan，限制在文档范围内；与可见范围、预取范围分开。",
+    "prefetch_region": "用于异步数据预取，可按方向/速度调整；有上限且可取消，不阻塞显示。",
+    "precision": "长文档全局位置和累计测量值使用足够精度（目标 f64/整数逻辑索引）；渲染采用 viewport 相对局部坐标，避免 f32 大偏移损失像素精度。",
+    "axis_policy": "横纵 Enabled/Disabled/Auto 各自生效；自动换行文本默认禁止横向滚动。",
+    "empty_or_hidden": "零尺寸、隐藏或空文档不创建可见内容；保留业务状态所需的模型与锚点。",
+    "effective_visibility": "布局 viewport 与实际可见子区域分开；实际可见范围还需与祖先裁剪区域求交并组合嵌套坐标变换。隐藏或已知完全不可见时暂停非必要实现/绘制，不把桌面遮挡状态假定为总能精确获知。"
+  },
+  "change_delivery": {
+    "reasons": [
+      "initial",
+      "scroll",
+      "elastic-motion",
+      "container-resize",
+      "scale-change",
+      "insets-or-axis-policy",
+      "content-insert-delete-update",
+      "measurement-refinement",
+      "font-or-style-change",
+      "programmatic-reveal"
+    ],
+    "snapshot_fields": [
+      "revision",
+      "content_revision",
+      "reason_set",
+      "container_viewport",
+      "document_extent_and_accuracy",
+      "offset",
+      "overscroll",
+      "visible_document_rect",
+      "realization_region",
+      "prefetch_region",
+      "scale",
+      "direction_and_velocity",
+      "gesture_or_momentum_or_settling_phase",
+      "anchor"
+    ],
+    "scheduling": "同一显示周期内合并变化，向消费者提供一致快照；回调不能递归触发布局或执行重数据加载。",
+    "two_levels": "geometry 变化驱动位置/绘制；条目范围变化才驱动 enter/update/exit，不能每个像素位移都重建全部组件。",
+    "stale_work": "异步结果必须校验内容和布局 revision；旧宽度、旧内容或已取消请求的结果不可覆盖当前快照。"
+  },
+  "content_provider": {
+    "responsibilities": "ScrollArea 提供几何、交互、裁剪和变化快照；内容适配器负责数据索引、定位、测量、创建/复用/回收及估算 extent。",
+    "indexing": "等高项用直接定位；变高项用累计高度索引或等价结构，以 O(log N + K) 或更好定位所需范围，禁止每帧扫描 N 项。",
+    "stable_identity": "使用稳定 key；复用视图不能把上一项的输入、选中、焦点或异步资源状态串给下一项。",
+    "lifecycle": [
+      "locate-required-items",
+      "realize-or-reuse",
+      "measure-required-items",
+      "publish-refined-extent",
+      "retain-pinned-interaction-items",
+      "recycle-or-evict-outside-budget"
+    ],
+    "budgets": "实例、排版块、纹理和预取都有明确可配置预算；滚过更多内容不能导致缓存无限增长。",
+    "anchor": "用稳定 item key 或文本逻辑位置及 viewport 内相对偏移保持阅读位置；估算高度修正、上方插入/删除及重排不能突然跳动；已贴底时按明确策略保留贴底。",
+    "model_survives_recycling": "全文数据、选择、撤销、IME、拖动捕获及无障碍语义不依赖离屏视图存活；交互必要条目可临时固定保留。"
+  },
+  "text_adapter": {
+    "document_model": "全文、段落/块索引、UTF-16 位置独立于可见行；复制全文不要求创建全文视图。",
+    "layout": "按段落/块增量排版可见和 overscan 内容；现有整篇 PreparedText 复用仅是优化，不等于虚拟化。",
+    "resize": "宽度或字体变化先使相关测量失效，保留阅读/光标锚点，按预算推进新排版；不能在主线程同步重排整篇超长文档。",
+    "no_blank_frames": "保持可用内容直到替代布局就绪；高速滚动、跳转、选区拖动、跨块文字与输入法不能因回收出现文字空白或闪烁。",
+    "native_ownership": "后台排版如有需要，使用独立的原生字体/排版状态与明确结果合并；不得直接跨线程传递当前非 Send 的 CoreText/字体注册表。"
+  },
+  "acceptance": [
+    "同一 viewport 分别加载短、中、极长文档；披露 cold-open、首次显示、随机跳转、持续滚动、resize 的耗时与内存。",
+    "报告实际创建/保留/回收项数、排版块数及缓存大小；可见工作量受 viewport 和预算控制，不能随总条目数线性增长。",
+    "覆盖两种倍率、横纵策略、回弹、空内容、零尺寸、嵌套滚动、变高项、上方插入/删除、估算修正、滚至末尾及连续缩窄/加宽。",
+    "覆盖跨虚拟块选择/复制/搜索/跳转、IME 组合输入、撤销、焦点与无障碍按需定位，确保回收不丢模型状态。",
+    "按共享 nominal_hz 检查整帧及实际 presentation，保留峰值和失败帧；同时采样 CPU 平均/峰值/静置与内存，不能只给 p99 或 GPU 耗时。"
+  ],
+  "implementation_audit": {
+    "present": [
+      "ContainerLayout 提供 border/content inset 与祖先裁切的不可变几何快照",
+      "ScrollArea::geometry 提供共享 viewport/document 坐标变换、实际可见范围和两轴策略几何",
+      "Gallery Viewport、Workbench 预览和 TextSurface 的绘制/文字命中消费同一有效 viewport 裁切",
+      "ScrollView 私有 viewport/document size、offset/overscroll、两轴策略及 resize clamp",
+      "文字可见行采用二分范围定位后才生成 glyph；已有行级 overscan",
+      "live Text/TextEditor 复用当前整篇文档准备数据和最近一次完整排版，保留重排锚点"
+    ],
+    "missing": [
+      "带 revision/reason-set 的变化快照、按帧合并调度和消费者变化交付",
+      "通用 lazy 内容 provider 与 enter/exit/reuse 生命周期",
+      "变高项估算及测量索引、锚点修正、资源预算",
+      "超长文本按块增量排版；当前首次加载和换宽仍完整排版",
+      "极长文档的全局坐标精度、端到端虚拟化和性能验收"
+    ],
+    "warning": "裁剪、可见 glyph 提交和 PreparedText 缓存都不能单独作为 lazy display 已完成的证据。"
+  }
+}

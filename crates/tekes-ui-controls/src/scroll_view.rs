@@ -1,4 +1,25 @@
+use crate::ScrollGeometry;
 use tekes_ui_scene::{Point, Rect, Size};
+use tekes_ui_tokens::proposal;
+include!(concat!(env!("OUT_DIR"), "/scroll_tokens.rs"));
+#[derive(Debug)]
+struct Rebound {
+    initial: Point,
+    velocity: Point,
+    elapsed: f64,
+}
+
+/// Per-axis scrolling policy, independent of scrollbar appearance.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum ScrollPolicy {
+    /// Accept input and allow elastic movement even when the document fits.
+    Enabled,
+    /// Reject input, elastic movement, and programmatic scrolling on this axis.
+    Disabled,
+    /// Accept input only while the document exceeds the viewport on this axis.
+    #[default]
+    Auto,
+}
 
 /// Two-axis document viewport. Momentum deltas come from the operating system;
 /// only the elastic boundary return is animated locally.
@@ -6,15 +27,71 @@ use tekes_ui_scene::{Point, Rect, Size};
 pub struct ScrollView {
     pub offset: Point,
     pub overscroll: Point,
+    horizontal: ScrollPolicy,
+    vertical: ScrollPolicy,
+    hidden_scrollbars: (bool, bool),
     viewport: Size,
     document: Size,
     gesture: bool,
+    clock: f64,
+    last_input: f64,
+    last_motion: f64,
+    last_velocity: Point,
+    rebound: Option<Rebound>,
+    ignore_momentum: bool,
+    entry_x: bool,
+    entry_y: bool,
     momentum: bool,
     reduced_motion: bool,
     axis: Option<bool>,
     drag: Option<(bool, f32, f32)>,
 }
 impl ScrollView {
+    /// Configure each direction independently. Changing policy ends any active
+    /// gesture and clamps offsets immediately, including a disabled direction.
+    pub fn set_scroll_policy(&mut self, horizontal: ScrollPolicy, vertical: ScrollPolicy) {
+        if (self.horizontal, self.vertical) != (horizontal, vertical) {
+            self.cancel();
+            self.horizontal = horizontal;
+            self.vertical = vertical;
+            self.scroll_by(0.0, 0.0);
+        }
+    }
+    pub fn scroll_policy(&self) -> (ScrollPolicy, ScrollPolicy) {
+        (self.horizontal, self.vertical)
+    }
+    /// Show overflow indicators independently of scrolling permissions. Both are
+    /// shown by default; hiding one removes its pointer target, not its range.
+    pub fn set_scrollbar_visibility(&mut self, horizontal: bool, vertical: bool) {
+        self.hidden_scrollbars = (!horizontal, !vertical);
+        if self
+            .drag
+            .is_some_and(|(axis, _, _)| !self.scrollbar_visible(axis))
+        {
+            self.drag = None;
+        }
+    }
+    pub fn scrollbar_visible(&self, vertical: bool) -> bool {
+        let (hidden, limit) = if vertical {
+            (self.hidden_scrollbars.1, self.limit().y)
+        } else {
+            (self.hidden_scrollbars.0, self.limit().x)
+        };
+        !hidden && limit > 0.0
+    }
+    pub fn axis_enabled(&self, vertical: bool) -> bool {
+        let (policy, document, viewport) = if vertical {
+            (self.vertical, self.document.height, self.viewport.height)
+        } else {
+            (self.horizontal, self.document.width, self.viewport.width)
+        };
+        match policy {
+            ScrollPolicy::Enabled => true,
+            ScrollPolicy::Disabled => false,
+            ScrollPolicy::Auto => document > viewport,
+        }
+    }
+
     pub fn layout(&mut self, viewport: Size, document: Size) {
         let valid = |value: f32| {
             if value.is_finite() {
@@ -23,8 +100,13 @@ impl ScrollView {
                 0.0
             }
         };
-        self.viewport = Size::new(valid(viewport.width), valid(viewport.height));
-        self.document = Size::new(valid(document.width), valid(document.height));
+        let viewport = Size::new(valid(viewport.width), valid(viewport.height));
+        let document = Size::new(valid(document.width), valid(document.height));
+        if viewport != self.viewport || document != self.document {
+            self.cancel();
+        }
+        self.viewport = viewport;
+        self.document = document;
         self.scroll_by(0.0, 0.0);
     }
     pub fn set_reduced_motion(&mut self, reduced: bool) -> bool {
@@ -32,6 +114,7 @@ impl ScrollView {
         if reduced {
             let dirty = self.overscroll != Point::default();
             self.overscroll = Point::default();
+            self.rebound = None;
             dirty
         } else {
             false
@@ -39,8 +122,16 @@ impl ScrollView {
     }
     pub fn limit(&self) -> Point {
         Point::new(
-            (self.document.width - self.viewport.width).max(0.0),
-            (self.document.height - self.viewport.height).max(0.0),
+            if self.axis_enabled(false) {
+                (self.document.width - self.viewport.width).max(0.0)
+            } else {
+                0.0
+            },
+            if self.axis_enabled(true) {
+                (self.document.height - self.viewport.height).max(0.0)
+            } else {
+                0.0
+            },
         )
     }
     pub fn visual_offset(&self) -> Point {
@@ -48,6 +139,26 @@ impl ScrollView {
             self.offset.x + self.overscroll.x,
             self.offset.y + self.overscroll.y,
         )
+    }
+    /// Capture the current scroll transform for a single layout/render/input
+    /// pass. Consumers should reuse this value for content placement, clipping,
+    /// and hit conversion so those paths cannot drift apart.
+    pub fn geometry(&self, viewport: Rect, ancestor_clip: Option<Rect>) -> ScrollGeometry {
+        ScrollGeometry::new(
+            viewport,
+            self.document,
+            self.offset,
+            self.overscroll,
+            ancestor_clip,
+        )
+    }
+
+    pub fn viewport_size(&self) -> Size {
+        self.viewport
+    }
+
+    pub fn document_size(&self) -> Size {
+        self.document
     }
     pub fn scroll_by(&mut self, x: f32, y: f32) -> bool {
         if !x.is_finite() || !y.is_finite() {
@@ -61,21 +172,52 @@ impl ScrollView {
     }
     pub fn wheel(
         &mut self,
-        mut x: f32,
-        mut y: f32,
+        x: f32,
+        y: f32,
         precise: bool,
         begin: bool,
         end: bool,
         momentum: bool,
     ) -> bool {
-        if !x.is_finite() || !y.is_finite() {
+        self.wheel_at(Point::new(x, y), precise, begin, end, momentum, self.clock)
+    }
+    /// Same input delta and timestamp domain as the operating system. No
+    /// synthetic in-bounds inertia: incoming momentum is already integrated.
+    pub fn wheel_at(
+        &mut self,
+        delta: Point,
+        precise: bool,
+        begin: bool,
+        end: bool,
+        momentum: bool,
+        time: f64,
+    ) -> bool {
+        let (mut x, mut y) = (delta.x, delta.y);
+        if !x.is_finite() || !y.is_finite() || !time.is_finite() {
             return false;
         }
+        if self.drag.is_some() {
+            return false;
+        }
+        if !self.axis_enabled(false) {
+            x = 0.0;
+        }
+        if !self.axis_enabled(true) {
+            y = 0.0;
+        }
         let before = (self.offset, self.overscroll);
+        let elapsed = (time - self.last_motion).max(0.0);
+        self.clock = self.clock.max(time);
         if begin {
+            let limit = self.limit();
+            self.entry_x = self.offset.x > 0.0 && self.offset.x < limit.x;
+            self.entry_y = self.offset.y > 0.0 && self.offset.y < limit.y;
             self.momentum = false;
             self.gesture = true;
             self.axis = None;
+            self.rebound = None;
+            self.ignore_momentum = false;
+            self.last_velocity = Point::default();
         }
         if precise && !momentum && self.gesture {
             if self.axis.is_none() && x.abs() + y.abs() > 2.0 {
@@ -91,67 +233,143 @@ impl ScrollView {
                 None => {}
             }
         }
+        if x != 0.0 || y != 0.0 {
+            let dt = if elapsed > 0.0001 && elapsed < VELOCITY_TIMEOUT_S {
+                elapsed
+            } else {
+                1.0 / NOMINAL_HZ
+            };
+            self.last_velocity = Point::new((f64::from(x) / dt) as f32, (f64::from(y) / dt) as f32);
+        } else if elapsed > VELOCITY_TIMEOUT_S {
+            self.last_velocity = Point::default();
+        }
+        if x != 0.0 || y != 0.0 || begin {
+            self.last_motion = time;
+        }
+        self.last_input = time;
+        if momentum && self.rebound.is_some() {
+            self.ignore_momentum = true;
+        }
         if momentum && !end {
             self.momentum = true;
         }
-        // Reverse movement first pulls the stretched paper back to its boundary;
-        // only the remaining delta enters the document. Never move both at once.
-        if precise && !momentum {
-            fn consume(stretch: &mut f32, delta: &mut f32) {
-                if *stretch * *delta < 0.0 {
-                    let pull = delta.abs().min(stretch.abs() / 0.35) * delta.signum();
-                    *stretch += pull * 0.35;
-                    *delta -= pull;
-                    if stretch.abs() < 0.001 {
-                        *stretch = 0.0;
+        if !(momentum && self.ignore_momentum) {
+            if precise && !momentum {
+                fn consume(stretch: &mut f32, delta: &mut f32) {
+                    if *stretch * *delta < 0.0 {
+                        let pull =
+                            delta.abs().min(stretch.abs() * STIFFNESS as f32) * delta.signum();
+                        *stretch += pull / STIFFNESS as f32;
+                        *delta -= pull;
+                        if stretch.abs() < 0.001 {
+                            *stretch = 0.0;
+                        }
                     }
                 }
+                consume(&mut self.overscroll.x, &mut x);
+                consume(&mut self.overscroll.y, &mut y);
             }
-            consume(&mut self.overscroll.x, &mut x);
-            consume(&mut self.overscroll.y, &mut y);
+            let wanted = Point::new(self.offset.x + x, self.offset.y + y);
+            self.scroll_by(x, y);
+            if precise && (self.gesture || momentum) && !self.reduced_motion {
+                let rubber = |value: f32, delta: f32, extent: f32, entry: &mut bool| {
+                    // Only momentum carries its first interior delta across the
+                    // edge. Finger input is resisted from the first excess:
+                    // displaying it 1:1 but unwinding at 1/STIFFNESS would turn
+                    // a 10pt excess into 200pt of reverse travel.
+                    let gain = if *entry && value == 0.0 && delta != 0.0 {
+                        *entry = false;
+                        if momentum {
+                            1.0
+                        } else {
+                            1.0 / STIFFNESS as f32
+                        }
+                    } else {
+                        1.0 / STIFFNESS as f32
+                    };
+                    (value + delta * gain).clamp(
+                        -extent * MAXIMUM_STRETCH_FRACTION as f32,
+                        extent * MAXIMUM_STRETCH_FRACTION as f32,
+                    )
+                };
+                self.overscroll.x = rubber(
+                    self.overscroll.x,
+                    wanted.x - self.offset.x,
+                    self.viewport.width,
+                    &mut self.entry_x,
+                );
+                self.overscroll.y = rubber(
+                    self.overscroll.y,
+                    wanted.y - self.offset.y,
+                    self.viewport.height,
+                    &mut self.entry_y,
+                );
+                if momentum && self.overscroll != Point::default() {
+                    self.ignore_momentum = true;
+                    self.start_rebound();
+                }
+            }
         }
-        let wanted = Point::new(self.offset.x + x, self.offset.y + y);
-        self.scroll_by(x, y);
-        if precise && self.gesture && !momentum && !self.reduced_motion {
-            let rubber = |value: f32, delta: f32, extent: f32| {
-                (value + delta * 0.35).clamp(-extent * 0.25, extent * 0.25)
-            };
-            self.overscroll.x = rubber(
-                self.overscroll.x,
-                wanted.x - self.offset.x,
-                self.viewport.width,
-            );
-            self.overscroll.y = rubber(
-                self.overscroll.y,
-                wanted.y - self.offset.y,
-                self.viewport.height,
-            );
+        let limit = self.limit();
+        if self.overscroll.x == 0.0 && self.offset.x > 0.0 && self.offset.x < limit.x {
+            self.entry_x = true;
+        }
+        if self.overscroll.y == 0.0 && self.offset.y > 0.0 && self.offset.y < limit.y {
+            self.entry_y = true;
         }
         if end {
             self.gesture = false;
             self.momentum = false;
             self.axis = None;
+            if self.rebound.is_none() {
+                self.start_rebound();
+            }
         }
         before != (self.offset, self.overscroll)
     }
+    fn start_rebound(&mut self) {
+        if self.clock - self.last_motion > VELOCITY_TIMEOUT_S {
+            self.last_velocity = Point::default();
+        }
+        if self.overscroll != Point::default() && !self.reduced_motion {
+            self.rebound = Some(Rebound {
+                initial: self.overscroll,
+                velocity: self.last_velocity,
+                elapsed: 0.0,
+            });
+        }
+    }
     pub fn needs_animation(&self) -> bool {
-        self.gesture || self.momentum || self.overscroll != Point::default()
+        self.rebound.is_some()
+            || ((self.gesture || self.momentum)
+                && (self.clock - self.last_input) < VELOCITY_TIMEOUT_S)
     }
     pub fn tick(&mut self, dt: f32) -> bool {
-        if !dt.is_finite()
-            || dt <= 0.0
-            || self.gesture
-            || self.momentum
-            || self.overscroll == Point::default()
-        {
+        if !dt.is_finite() || dt <= 0.0 {
             return false;
         }
-        let factor = (-22.0 * dt.clamp(0.0, 0.05)).exp();
-        for value in [&mut self.overscroll.x, &mut self.overscroll.y] {
-            *value *= factor;
-            if value.abs() < 0.1 {
-                *value = 0.0;
+        self.clock += f64::from(dt);
+        let Some(rebound) = &mut self.rebound else {
+            return false;
+        };
+        rebound.elapsed += f64::from(dt);
+        let t = rebound.elapsed;
+        let decay = (-STIFFNESS * t / RELEASE_PERIOD).exp();
+        let axis = |initial: f32, velocity: f32| {
+            let p =
+                ((f64::from(initial) + f64::from(velocity) * RELEASE_AMPLITUDE * t) * decay) as f32;
+            if p * initial <= 0.0 || p.abs() < SETTLE_POSITION_PT as f32 {
+                0.0
+            } else {
+                p
             }
+        };
+        self.overscroll = Point::new(
+            axis(rebound.initial.x, rebound.velocity.x),
+            axis(rebound.initial.y, rebound.velocity.y),
+        );
+        if self.overscroll == Point::default() {
+            self.rebound = None;
         }
         true
     }
@@ -160,6 +378,9 @@ impl ScrollView {
         self.gesture = false;
         self.momentum = false;
         self.axis = None;
+        if self.rebound.is_none() {
+            self.start_rebound();
+        }
     }
     pub fn cancel(&mut self) {
         self.gesture = false;
@@ -167,6 +388,9 @@ impl ScrollView {
         self.axis = None;
         self.drag = None;
         self.overscroll = Point::default();
+        self.rebound = None;
+        self.last_velocity = Point::default();
+        self.ignore_momentum = false;
     }
     pub fn reveal(&mut self, rect: Rect) -> bool {
         let dx = if rect.min_x() < self.offset.x {
@@ -180,6 +404,37 @@ impl ScrollView {
             (rect.max_y() - self.offset.y - self.viewport.height).max(0.0)
         };
         self.scroll_by(dx, dy)
+    }
+
+    /// Scrolls enough to expose the complete keyboard focus ring, including a
+    /// one-physical-pixel antialiasing guard, while respecting this real
+    /// viewport's bounds. `rect` uses document coordinates.
+    pub fn reveal_focus(&mut self, rect: Rect, backing_scale: f32) -> bool {
+        if !rect.origin.x.is_finite()
+            || !rect.origin.y.is_finite()
+            || !rect.size.width.is_finite()
+            || !rect.size.height.is_finite()
+            || rect.size.width < 0.0
+            || rect.size.height < 0.0
+        {
+            return false;
+        }
+        let ring_width = proposal::metric("stroke", "c-focus-width").expect("focus width token");
+        let ring_gap = proposal::metric("spacing", "c-focus-offset").expect("focus offset token");
+        let scale = if backing_scale.is_finite() && backing_scale > 0.0 {
+            backing_scale
+        } else {
+            1.0
+        };
+        let outset =
+            ring_width + ring_gap + proposal::FOCUS_ANTIALIAS_GUARD_PHYSICAL_PIXELS / scale;
+        let bounds = Rect::new(
+            rect.min_x() - outset,
+            rect.min_y() - outset,
+            rect.size.width + outset * 2.0,
+            rect.size.height + outset * 2.0,
+        );
+        self.reveal(bounds)
     }
     pub fn thumb(&self, vertical: bool, track: Rect, minimum: f32) -> Rect {
         let (view, doc, offset, limit, length) = if vertical {
@@ -199,10 +454,23 @@ impl ScrollView {
                 track.size.width,
             )
         };
-        let size = if doc > 0.0 {
-            (length * view / doc).max(minimum).min(length)
+        let stretch = if vertical {
+            self.overscroll.y
         } else {
-            length
+            self.overscroll.x
+        };
+        // Native NSScroller uses (viewport - elastic excess) / document.
+        // Apply the same visible fraction to minimum-sized thumbs as well;
+        // otherwise long documents would show no feedback at their boundaries.
+        let visible_fraction = if view > 0.0 {
+            ((view - stretch.abs()) / view).clamp(0.0, 1.0)
+        } else {
+            1.0
+        };
+        let size = if doc > 0.0 {
+            (length * view / doc).max(minimum).min(length) * visible_fraction
+        } else {
+            length * visible_fraction
         };
         let pos = if limit > 0.0 {
             (length - size) * offset / limit
@@ -216,9 +484,10 @@ impl ScrollView {
         }
     }
     pub fn pointer_down(&mut self, p: Point, vertical: bool, track: Rect, minimum: f32) -> bool {
-        if !track.contains(p) {
+        if !self.scrollbar_visible(vertical) || !track.contains(p) {
             return false;
         }
+        self.cancel();
         let thumb = self.thumb(vertical, track, minimum);
         let coordinate = if vertical { p.y } else { p.x };
         if thumb.contains(p) {
@@ -285,18 +554,314 @@ impl ScrollView {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn hidden_scrollbars_preserve_range_and_input_but_cannot_capture() {
+        let mut view = ScrollView::default();
+        view.layout(Size::new(100., 100.), Size::new(400., 400.));
+        let track = Rect::new(95., 0., 5., 100.);
+        assert!(view.scrollbar_visible(true));
+        view.set_scrollbar_visibility(true, false);
+        assert!(view.scrollbar_visible(false));
+        assert!(!view.scrollbar_visible(true));
+        assert!(!view.pointer_down(Point::new(97., 10.), true, track, 20.));
+        assert!(view.wheel(0., 20., true, true, true, false));
+        assert!(view.offset.y > 0.);
+        view.scroll_by(20., 30.);
+        assert_eq!(view.limit(), Point::new(300., 300.));
+        let offset = view.offset;
+        view.set_scrollbar_visibility(true, true);
+        assert_eq!(view.offset, offset);
+        assert!(view.pointer_down(
+            Point::new(97., view.thumb(true, track, 20.).center().y),
+            true,
+            track,
+            20.
+        ));
+        view.set_scrollbar_visibility(false, false);
+        assert_eq!(view.dragging_axis(), None);
+    }
+
+    #[test]
+    fn replay_measured_native_top_and_bottom_momentum_traces() {
+        for (source, tolerance) in [
+            (
+                include_str!("../../../design/reviews/scroll-repair/native-top.json"),
+                2.0,
+            ),
+            (
+                include_str!("../../../design/reviews/scroll-repair/native-momentum.json"),
+                6.0,
+            ),
+        ] {
+            let data: serde_json::Value = serde_json::from_str(source).unwrap();
+            let inputs = data["inputs"].as_array().unwrap();
+            let samples = data["samples"].as_array().unwrap();
+            let mut model = ScrollView::default();
+            model.layout(Size::new(600.0, 400.0), Size::new(600.0, 3000.0));
+            model.scroll_by(0.0, data["start"].as_f64().unwrap() as f32);
+            let mut input_index = 0;
+            let mut target = samples[0][1].as_f64().unwrap() - 1.0 / 120.0;
+            let mut errors = Vec::new();
+            for row in samples {
+                let time = row[0].as_f64().unwrap();
+                while input_index < inputs.len() && inputs[input_index][0].as_f64().unwrap() <= time
+                {
+                    let event = &inputs[input_index];
+                    let phase = event[3].as_u64().unwrap();
+                    let momentum = event[4].as_u64().unwrap();
+                    model.wheel_at(
+                        Point::new(
+                            -event[1].as_f64().unwrap() as f32,
+                            -event[2].as_f64().unwrap() as f32,
+                        ),
+                        true,
+                        phase == 1,
+                        phase == 8 || momentum == 8,
+                        momentum != 0,
+                        event[0].as_f64().unwrap(),
+                    );
+                    input_index += 1;
+                }
+                let next = row[1].as_f64().unwrap();
+                model.tick((next - target) as f32);
+                target = next;
+                if time >= 0.0 {
+                    errors.push(f64::from(model.visual_offset().y) - row[2].as_f64().unwrap());
+                }
+            }
+            let rmse = (errors.iter().map(|x| x * x).sum::<f64>() / errors.len() as f64).sqrt();
+            assert!(
+                rmse < tolerance,
+                "native trace RMSE {rmse} pt exceeds {tolerance}"
+            );
+        }
+    }
+
+    #[test]
+    fn elastic_thumb_matches_native_visible_proportion_and_stays_edge_anchored() {
+        let mut view = ScrollView::default();
+        view.layout(Size::new(600.0, 400.0), Size::new(600.0, 3000.0));
+        let track = Rect::new(590.0, 0.0, 4.0, 400.0);
+        let rest = view.thumb(true, track, 20.0);
+        view.overscroll.y = -31.0; // native capture: knobProportion = 0.123
+        let top = view.thumb(true, track, 20.0);
+        assert!((top.size.height / track.size.height - 0.123).abs() < 0.00001);
+        assert_eq!(top.min_y(), track.min_y());
+        assert!(top.size.height < rest.size.height);
+        view.offset.y = view.limit().y;
+        view.overscroll.y = 31.0;
+        let bottom = view.thumb(true, track, 20.0);
+        assert_eq!(bottom.size.height, top.size.height);
+        assert!((bottom.max_y() - track.max_y()).abs() < 0.0001);
+        view.end_gesture();
+        for _ in 0..240 {
+            view.tick(1.0 / 120.0);
+        }
+        assert_eq!(view.thumb(true, track, 20.0).size.height, rest.size.height);
+        view.layout(Size::new(600.0, 400.0), Size::new(600.0, 30000.0));
+        view.overscroll.y = -31.0;
+        assert!(view.thumb(true, track, 32.0).size.height < 32.0);
+    }
+
+    #[test]
+    fn elastic_return_is_refresh_independent_and_stationary_release_loses_velocity() {
+        fn sample(hz: u32, stationary: bool) -> f32 {
+            let mut view = ScrollView::default();
+            view.layout(Size::new(100.0, 400.0), Size::new(100.0, 3000.0));
+            view.wheel_at(Point::new(0.0, -400.0), true, true, false, false, 1.0);
+            if stationary {
+                view.tick(0.2);
+            }
+            view.end_gesture();
+            for _ in 0..hz / 5 {
+                view.tick(1.0 / hz as f32);
+            }
+            view.visual_offset().y
+        }
+        assert!((sample(60, false) - sample(120, false)).abs() < 0.001);
+        assert!(sample(120, true).abs() < sample(120, false).abs());
+    }
+
+    #[test]
+    fn policies_are_independent_for_all_nine_axis_combinations() {
+        for horizontal in [
+            ScrollPolicy::Enabled,
+            ScrollPolicy::Disabled,
+            ScrollPolicy::Auto,
+        ] {
+            for vertical in [
+                ScrollPolicy::Enabled,
+                ScrollPolicy::Disabled,
+                ScrollPolicy::Auto,
+            ] {
+                let mut view = ScrollView::default();
+                view.set_scroll_policy(horizontal, vertical);
+                view.layout(Size::new(100.0, 100.0), Size::new(300.0, 300.0));
+                view.wheel(30.0, 30.0, true, true, false, false);
+                assert_eq!(
+                    view.offset.x,
+                    if horizontal == ScrollPolicy::Disabled {
+                        0.0
+                    } else {
+                        30.0
+                    }
+                );
+                assert_eq!(
+                    view.offset.y,
+                    if vertical == ScrollPolicy::Disabled {
+                        0.0
+                    } else {
+                        30.0
+                    }
+                );
+                view.wheel(-500.0, -500.0, true, false, true, false);
+                assert_eq!(
+                    view.overscroll.x != 0.0,
+                    horizontal != ScrollPolicy::Disabled
+                );
+                assert_eq!(view.overscroll.y != 0.0, vertical != ScrollPolicy::Disabled);
+            }
+        }
+    }
+
+    #[test]
+    fn auto_tracks_overflow_and_enabled_allows_elasticity_on_fitting_content() {
+        let mut view = ScrollView::default();
+        view.layout(Size::new(100.0, 100.0), Size::new(100.0, 100.0));
+        assert!(!view.wheel(-50.0, -50.0, true, true, true, false));
+        assert_eq!(view.visual_offset(), Point::default());
+        view.set_scroll_policy(ScrollPolicy::Enabled, ScrollPolicy::Auto);
+        view.wheel(-50.0, -50.0, true, true, true, false);
+        assert!(view.overscroll.x < 0.0);
+        assert_eq!(view.overscroll.y, 0.0);
+        view.layout(Size::new(50.0, 50.0), Size::new(100.0, 100.0));
+        view.scroll_by(30.0, 30.0);
+        assert_eq!(view.offset, Point::new(30.0, 30.0));
+        view.layout(Size::new(200.0, 200.0), Size::new(100.0, 100.0));
+        assert_eq!(view.visual_offset(), Point::default());
+        assert!(!view.axis_enabled(true));
+    }
+
+    #[test]
+    fn disabling_axis_clears_rebound_and_blocks_reveal_and_scrollbar_capture() {
+        let mut view = ScrollView::default();
+        view.layout(Size::new(100.0, 100.0), Size::new(400.0, 400.0));
+        view.wheel(-100.0, -100.0, true, true, true, false);
+        assert!(view.needs_animation());
+        view.set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Auto);
+        assert_eq!(view.visual_offset(), Point::default());
+        view.reveal(Rect::new(200.0, 200.0, 10.0, 10.0));
+        assert_eq!(view.offset.x, 0.0);
+        assert_eq!(view.offset.y, 110.0);
+        assert!(!view.pointer_down(
+            Point::new(10.0, 97.0),
+            false,
+            Rect::new(0.0, 95.0, 100.0, 5.0),
+            20.0
+        ));
+        view.wheel(100.0, 10.0, true, true, false, false);
+        assert_eq!(view.offset.x, 0.0);
+        assert_eq!(view.offset.y, 120.0); // Filter disabled X before dominant-axis locking.
+    }
+
+    #[test]
+    fn finger_edge_reversal_matches_native_active_phase() {
+        let data: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../design/reviews/scroll-repair/native-edge-reverse.json"
+        ))
+        .unwrap();
+        let mut s = ScrollView::default();
+        s.layout(Size::new(600.0, 400.0), Size::new(600.0, 3000.0));
+        s.scroll_by(0.0, data["start"].as_f64().unwrap() as f32);
+        let inputs = data["inputs"].as_array().unwrap();
+        let mut index = 0;
+        let mut previous = s.visual_offset().y;
+        for row in data["samples"].as_array().unwrap() {
+            let time = row[0].as_f64().unwrap();
+            while index < inputs.len() && inputs[index][0].as_f64().unwrap() <= time {
+                let e = &inputs[index];
+                s.wheel_at(
+                    Point::new(0.0, -e[2].as_f64().unwrap() as f32),
+                    true,
+                    e[3] == 1,
+                    e[3] == 8,
+                    false,
+                    e[0].as_f64().unwrap(),
+                );
+                index += 1;
+            }
+            // Native bounds publication trails input by one captured display
+            // sample. This comparison excludes all post-release coasting.
+            assert!((f64::from(previous) - row[2].as_f64().unwrap()).abs() <= 1.0);
+            previous = s.visual_offset().y;
+        }
+    }
+
+    #[test]
+    fn finger_reversal_at_either_edge_does_not_accumulate_reverse_travel() {
+        for bottom in [false, true] {
+            let mut s = ScrollView::default();
+            s.layout(Size::new(100.0, 400.0), Size::new(100.0, 3000.0));
+            let initial = if bottom { s.limit().y - 20.0 } else { 20.0 };
+            let outward = if bottom { 30.0 } else { -30.0 };
+            s.scroll_by(0.0, initial);
+            for gesture in 0..100 {
+                let time = gesture as f64;
+                s.wheel_at(Point::default(), true, true, false, false, time);
+                s.wheel_at(
+                    Point::new(0.0, outward),
+                    true,
+                    false,
+                    false,
+                    false,
+                    time + 0.01,
+                );
+                assert!((s.overscroll.y.abs() - 0.5).abs() < 0.001);
+                s.wheel_at(
+                    Point::new(0.0, -outward),
+                    true,
+                    false,
+                    false,
+                    false,
+                    time + 0.02,
+                );
+                assert_eq!(s.overscroll.y, 0.0);
+                assert!((s.offset.y - initial).abs() < 0.001, "gesture {gesture}");
+                s.wheel_at(Point::default(), true, false, true, false, time + 0.03);
+                assert!(!s.needs_animation());
+            }
+            // Reversing repeatedly without lifting the fingers must also keep
+            // the same response after every crossing of the boundary.
+            s.wheel_at(Point::default(), true, true, false, false, 101.0);
+            for step in 0..100 {
+                let time = 101.0 + step as f64 * 0.02;
+                s.wheel_at(Point::new(0.0, outward), true, false, false, false, time);
+                s.wheel_at(
+                    Point::new(0.0, -outward),
+                    true,
+                    false,
+                    false,
+                    false,
+                    time + 0.01,
+                );
+                assert_eq!(s.overscroll.y, 0.0);
+                assert!((s.offset.y - initial).abs() < 0.001);
+            }
+        }
+    }
+
+    #[test]
     fn reverse_gesture_consumes_elastic_stretch_before_scrolling_document() {
         let mut s = ScrollView::default();
         s.layout(Size::new(100.0, 100.0), Size::new(100.0, 500.0));
         s.wheel(0.0, -100.0, true, true, false, false);
         assert_eq!(s.offset.y, 0.0);
-        assert_eq!(s.overscroll.y, -25.0);
+        assert_eq!(s.overscroll.y, -5.0);
         s.wheel(0.0, 30.0, true, false, false, false);
         assert_eq!(s.offset.y, 0.0);
-        assert!((s.overscroll.y + 14.5).abs() < 0.001);
-        s.wheel(0.0, 60.0, true, false, false, false);
+        assert!((s.overscroll.y + 3.5).abs() < 0.001);
+        s.wheel(0.0, 80.0, true, false, false, false);
         assert_eq!(s.overscroll.y, 0.0);
-        assert!((s.offset.y - 18.57143).abs() < 0.001);
+        assert!((s.offset.y - 10.0).abs() < 0.001);
     }
 
     use super::*;
@@ -331,5 +896,46 @@ mod tests {
         v.pointer_up();
         v.reveal(Rect::new(0., 20., 50., 10.));
         assert_eq!(v.offset.y, 20.);
+    }
+
+    #[test]
+    fn reveal_focus_keeps_ring_gap_and_one_physical_pixel_inside_viewport() {
+        let ring_outset = proposal::metric("spacing", "c-focus-offset").unwrap()
+            + proposal::metric("stroke", "c-focus-width").unwrap();
+        for scale in [1.0_f32, 2.0] {
+            let mut view = ScrollView::default();
+            view.layout(Size::new(100.0, 100.0), Size::new(100.0, 500.0));
+            let control = Rect::new(10.0, 94.0, 30.0, 20.0);
+            assert!(view.reveal_focus(control, scale));
+            let guard = 1.0 / scale;
+            let expected = control.max_y() + ring_outset + guard - 100.0;
+            assert!((view.offset.y - expected).abs() < 0.001);
+            assert!(!view.reveal_focus(Rect::new(f32::NAN, 0.0, 1.0, 1.0), scale));
+        }
+    }
+
+    #[test]
+    fn geometry_snapshot_is_shared_by_content_clip_and_hit_coordinates() {
+        let mut scroll = ScrollView::default();
+        scroll.layout(Size::new(100.0, 80.0), Size::new(300.0, 400.0));
+        scroll.scroll_by(40.0, 50.0);
+        scroll.overscroll.y = -10.0;
+        let snapshot = scroll.geometry(
+            Rect::new(20.0, 30.0, 100.0, 80.0),
+            Some(Rect::new(30.0, 40.0, 70.0, 50.0)),
+        );
+        assert_eq!(snapshot.content_origin(), Point::new(-20.0, -10.0));
+        assert_eq!(
+            snapshot.visible_viewport_rect(),
+            Some(Rect::new(30.0, 40.0, 70.0, 50.0))
+        );
+        assert_eq!(
+            snapshot.viewport_to_document(Point::new(40.0, 50.0)),
+            Some(Point::new(60.0, 60.0))
+        );
+        assert_eq!(
+            snapshot.document_to_viewport(Rect::new(60.0, 60.0, 5.0, 5.0)),
+            Some(Rect::new(40.0, 50.0, 5.0, 5.0))
+        );
     }
 }

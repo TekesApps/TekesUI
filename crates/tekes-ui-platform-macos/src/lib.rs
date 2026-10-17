@@ -41,3 +41,8 @@ mod view;
 pub use app::App;
 #[cfg(target_os = "macos")]
 pub use shared::{Window, WindowHandler};
+
+#[cfg(target_os = "macos")]
+mod presentation;
+#[cfg(target_os = "macos")]
+pub use presentation::PresentedFrame;

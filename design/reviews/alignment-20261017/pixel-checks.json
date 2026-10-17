@@ -1,0 +1,255 @@
+{
+  "component_count": 45,
+  "rendered_cases": 727,
+  "default_cases": 720,
+  "actual_input_open_cases": 7,
+  "out_of_preview_hit_rects": 0,
+  "chart_labels": 128,
+  "chart_max_value_ink_center_error_pt": 1.0,
+  "chart_max_category_ink_center_error_pt": 1.0,
+  "iconbutton_symmetry": [
+    {
+      "id": "component-icon-button-default-light-1x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        6,
+        6,
+        18,
+        18
+      ],
+      "button_center_pixel": [
+        334.0,
+        278.0
+      ]
+    },
+    {
+      "id": "component-icon-button-default-light-2x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        12,
+        12,
+        36,
+        36
+      ],
+      "button_center_pixel": [
+        668.0,
+        556.0
+      ]
+    },
+    {
+      "id": "component-icon-button-large-narrow-light-1x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        6,
+        6,
+        18,
+        18
+      ],
+      "button_center_pixel": [
+        334.0,
+        350.0
+      ]
+    },
+    {
+      "id": "component-icon-button-large-narrow-light-2x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        12,
+        12,
+        36,
+        36
+      ],
+      "button_center_pixel": [
+        668.0,
+        700.0
+      ]
+    },
+    {
+      "id": "component-icon-button-default-dark-1x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        6,
+        6,
+        18,
+        18
+      ],
+      "button_center_pixel": [
+        334.0,
+        278.0
+      ]
+    },
+    {
+      "id": "component-icon-button-default-dark-2x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        12,
+        12,
+        36,
+        36
+      ],
+      "button_center_pixel": [
+        668.0,
+        556.0
+      ]
+    },
+    {
+      "id": "component-icon-button-large-narrow-dark-1x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        6,
+        6,
+        18,
+        18
+      ],
+      "button_center_pixel": [
+        334.0,
+        350.0
+      ]
+    },
+    {
+      "id": "component-icon-button-large-narrow-dark-2x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        12,
+        12,
+        36,
+        36
+      ],
+      "button_center_pixel": [
+        668.0,
+        700.0
+      ]
+    },
+    {
+      "id": "component-icon-button-default-light-ic-1x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        6,
+        6,
+        18,
+        18
+      ],
+      "button_center_pixel": [
+        334.0,
+        278.0
+      ]
+    },
+    {
+      "id": "component-icon-button-default-light-ic-2x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        12,
+        12,
+        36,
+        36
+      ],
+      "button_center_pixel": [
+        668.0,
+        556.0
+      ]
+    },
+    {
+      "id": "component-icon-button-large-narrow-light-ic-1x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        6,
+        6,
+        18,
+        18
+      ],
+      "button_center_pixel": [
+        334.0,
+        350.0
+      ]
+    },
+    {
+      "id": "component-icon-button-large-narrow-light-ic-2x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        12,
+        12,
+        36,
+        36
+      ],
+      "button_center_pixel": [
+        668.0,
+        700.0
+      ]
+    },
+    {
+      "id": "component-icon-button-default-dark-ic-1x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        6,
+        6,
+        18,
+        18
+      ],
+      "button_center_pixel": [
+        334.0,
+        278.0
+      ]
+    },
+    {
+      "id": "component-icon-button-default-dark-ic-2x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        12,
+        12,
+        36,
+        36
+      ],
+      "button_center_pixel": [
+        668.0,
+        556.0
+      ]
+    },
+    {
+      "id": "component-icon-button-large-narrow-dark-ic-1x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        6,
+        6,
+        18,
+        18
+      ],
+      "button_center_pixel": [
+        334.0,
+        350.0
+      ]
+    },
+    {
+      "id": "component-icon-button-large-narrow-dark-ic-2x",
+      "horizontal_symmetric": true,
+      "vertical_symmetric": true,
+      "ink_bbox_in_crop": [
+        12,
+        12,
+        36,
+        36
+      ],
+      "button_center_pixel": [
+        668.0,
+        700.0
+      ]
+    }
+  ],
+  "disclosure_label_closed_open_core_ink_identical": true,
+  "disclosure_label_closed_open_raw_rgb_identical": false,
+  "note": "Center error measures visible glyph ink, not just slot frames. Antialiased glyph bearings/pixel rounding permit up to 1 logical point; Disclosure raw RGB differs because actual pointer input changes the background; fully covered label ink stays identical. No physical display or timing claim."
+}

@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-16",
+  "selftest": "TEKES_SELFTEST=motion-layout",
+  "result": "functional-smoke-passed",
+  "exit_code": 0,
+  "display": {
+    "name": "U2790B",
+    "builtin": false,
+    "scale": 2,
+    "max_fps": 30
+  },
+  "captures": {
+    "count": 11,
+    "failures": 0,
+    "directory": "native-final"
+  },
+  "logs": {
+    "native": "native-final.log.gz",
+    "result": "native-final.json",
+    "tests": "tests-final.log.gz",
+    "build": "build-verified.log.gz",
+    "clippy": "clippy-verified.log.gz",
+    "earlier_clippy_failure_preserved": "clippy-final.log.gz"
+  },
+  "visual_review": {
+    "checked": [
+      "Symbols Linear rotation hover and selected states",
+      "Design System catalog",
+      "Scrolled target hover, collapsed and expanded states"
+    ],
+    "findings": [
+      "No independent control overlap was observed.",
+      "Long labels clip in a narrow window at 150% text scale.",
+      "Native target label changed 0.00 to 1.00 after reverse/expand."
+    ]
+  },
+  "limitations": [
+    "The external display ran at 30 Hz; this is not 120 Hz / 8.33 ms acceptance.",
+    "The general headless snapshot does not append the live Motion renderer."
+  ],
+  "launch": {
+    "pid": 62152,
+    "alive_at_capture": true,
+    "detached_session": true,
+    "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Gallery.app/Contents/MacOS/TekesUI-Gallery",
+    "binary_sha256": "a4863249103abf125f34495d98db55a3a8401c56f5ffe538450b1c498685e18b",
+    "window": 50486,
+    "placement": [
+      "[   0.113] placement: \"U2790B\" builtin=false scale=2 max_fps=30\uff1bScreen(External)"
+    ],
+    "page": "foundation-motion",
+    "capture_exit": 0,
+    "verified_in_separate_command": true
+  },
+  "checks": {
+    "tests": 0,
+    "clippy": 0,
+    "build": 0,
+    "pure_rust": 0,
+    "design_system": 0,
+    "diff_check": 0
+  },
+  "tests": {
+    "gallery_passed": 189,
+    "controls_passed": 47,
+    "gallery_existing_ignored": 1
+  },
+  "source_sha256": {
+    "crates/tekes-ui-gallery/src/main.rs": "5693d6ecda5c9f4c8dc4fde3cf8c7811d87a34fb3e7b00652c64c0d8745894e2",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs": "c46d869b5cd082300fab51132f5e838331080ff4e67c8392adf9aaa7e076f036",
+    "crates/tekes-ui-gallery/src/gallery/pages/motion.rs": "5961c7214cb58a1fb58aa024dbc5f58cc436abcb8feb01d07e8a92bb99661349",
+    "docs/gallery.md": "47bc84a39a7c775061eb28737d165a1e1a0f4235e42371e5b649408c260fefd8"
+  },
+  "prior_component_sources_changed": [
+    "crates/tekes-ui-gallery/src/main.rs",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs"
+  ]
+}

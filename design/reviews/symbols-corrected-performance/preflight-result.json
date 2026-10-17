@@ -1,0 +1,56 @@
+{
+  "status": "blocked_by_background_load",
+  "formal_native_runs": 0,
+  "strict_120hz": "unverified; no formal quiet measurements launched",
+  "created_unix": 1792107837.335337,
+  "audits": [
+    {
+      "audit_local_path": "target/symbol-perf-corrected/await-final-gate-only-ambient.json",
+      "sha256": "8b6c35571a5d75a4f41ee7acc01203b4a384dbd4fad261a2ac56084b3cf850cd",
+      "sample_count": 36,
+      "wait_seconds": 182.93104570894502,
+      "gate_passed": false,
+      "quiet_samples": 0,
+      "external_cpu_min_percent": 389.32741608922936,
+      "external_cpu_max_percent": 954.9217057131326,
+      "started_native": false
+    },
+    {
+      "audit_local_path": "target/symbol-perf-corrected/corrected-multi-24-ambient.json",
+      "sha256": "0aa70695065c6d3291e6ed08117c11b7751774a9f3b3f998ad01efb0e46e1b2b",
+      "sample_count": 197,
+      "wait_seconds": 602.432284999988,
+      "gate_passed": false,
+      "quiet_samples": 0,
+      "external_cpu_min_percent": 122.08087175326071,
+      "external_cpu_max_percent": 821.2438831438341,
+      "started_native": false
+    },
+    {
+      "audit_local_path": "target/symbol-perf-corrected/probe-gate-only-ambient.json",
+      "sha256": "4e5dc9840e01e6a5f0d5466b65f130966f7ea9d50d39088082418177a6c85de7",
+      "sample_count": 10,
+      "wait_seconds": 30.93949695804622,
+      "gate_passed": false,
+      "quiet_samples": 0,
+      "external_cpu_min_percent": 304.0960161824258,
+      "external_cpu_max_percent": 900.008995408702,
+      "started_native": false
+    },
+    {
+      "audit_local_path": "target/symbol-perf-corrected/wait-gate-only-ambient.json",
+      "sha256": "f3519c120ecada075072170b5e8134d52b5e2e7b10e295a5d6d7622eccd0901d",
+      "sample_count": 36,
+      "wait_seconds": 182.2017056660261,
+      "gate_passed": false,
+      "quiet_samples": 0,
+      "external_cpu_min_percent": 213.14460637945706,
+      "external_cpu_max_percent": 828.1686455618631,
+      "started_native": false
+    }
+  ],
+  "scripts_regressions": {
+    "passed": 7,
+    "failed": 0
+  }
+}

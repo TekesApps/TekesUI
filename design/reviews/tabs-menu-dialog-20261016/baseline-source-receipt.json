@@ -1,0 +1,10 @@
+{
+  "source_kind": "baseline",
+  "workspace": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/tabs-menu-dialog-20261016/sources/baseline",
+  "baseline_restored": {
+    "crates/tekes-ui-controls/src/lib.rs": "f04d5f565e684990e0b6f9cd821a0f428d7d3d97fd4a2c88bbeef5fb0a762b59",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "5921e9a3e0280eb96fe9c1077b88bae275b2aab3fb737cdbd877d3699f0a8e05"
+  },
+  "workbench_sha_after_probe_wrapper": "8a3177559043c0796d6ffd10606c0c7cad8933c42e9703a994bba6e5165e18d7",
+  "controls_lib_sha": "f04d5f565e684990e0b6f9cd821a0f428d7d3d97fd4a2c88bbeef5fb0a762b59"
+}

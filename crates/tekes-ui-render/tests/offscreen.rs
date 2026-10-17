@@ -4,7 +4,7 @@
 //! 没有 GPU 适配器时（例如没有 Metal 的环境）测试打印原因后跳过，不算失败。
 
 use tekes_ui_render::{RenderError, Renderer};
-use tekes_ui_scene::{CornerRadii, GlyphAtlas, Quad, Rect, Scene};
+use tekes_ui_scene::{CornerRadii, GlyphAtlas, Point, Quad, Rect, Scene, ShadowQuad};
 use tekes_ui_tokens::{ColorRole, Rgba, Theme};
 
 /// 创建无 surface 的渲染器；没有适配器就返回 `None`，调用方直接 return。
@@ -471,6 +471,69 @@ fn instance_buffer_is_reused_across_frames_and_grows_when_needed() {
 }
 
 #[test]
+fn cached_uploads_keep_edits_resize_and_growing_buffers_correct() {
+    let Some(mut r) = renderer() else { return };
+    let red = Rgba::new(1.0, 0.0, 0.0, 1.0);
+    let blue = Rgba::new(0.0, 0.0, 1.0, 1.0);
+    let make_scene = |colors: &[Rgba]| {
+        let mut scene = Scene::new();
+        for (i, &color) in colors.iter().enumerate() {
+            scene.push_quad(Quad::new(
+                Rect::new(2.0 + i as f32 * 10.0, 2.0, 6.0, 6.0),
+                color,
+            ));
+        }
+        scene
+    };
+    let scene = make_scene(&[BLACK, BLACK, BLACK]);
+    let first = render(&mut r, &scene, (40, 16), 1.0, WHITE);
+    assert_eq!(
+        first.data,
+        render(&mut r, &scene, (40, 16), 1.0, WHITE).data
+    );
+    // Equal prefix/suffix, changed middle; no stale color in the shared buffer.
+    let img = render(
+        &mut r,
+        &make_scene(&[BLACK, red, BLACK]),
+        (40, 16),
+        1.0,
+        WHITE,
+    );
+    assert_eq!(img.px(4, 4), [0, 0, 0, 255]);
+    assert_eq!(img.px(14, 4), [255, 0, 0, 255]);
+    assert_eq!(img.px(24, 4), [0, 0, 0, 255]);
+    render(&mut r, &make_scene(&[BLACK, red]), (40, 16), 1.0, WHITE);
+    let img = render(
+        &mut r,
+        &make_scene(&[BLACK, red, blue]),
+        (80, 32),
+        2.0,
+        WHITE,
+    );
+    assert_eq!(img.px(48, 8), [0, 0, 255, 255]);
+    // Same logical scene, another viewport/scale must update the uniform.
+    let img = render(
+        &mut r,
+        &make_scene(&[BLACK, red, blue]),
+        (40, 16),
+        1.0,
+        WHITE,
+    );
+    assert_eq!(img.px(24, 4), [0, 0, 255, 255]);
+    let mut grown = make_scene(&[BLACK, red, blue]);
+    for _ in 0..r.instance_capacity() {
+        grown.push_quad(Quad::new(Rect::new(100.0, 100.0, 1.0, 1.0), BLACK));
+    }
+    let img = render(&mut r, &grown, (40, 16), 1.0, WHITE);
+    assert_eq!(img.px(14, 4), [255, 0, 0, 255]);
+    assert_eq!(img.px(24, 4), [0, 0, 255, 255]);
+    render(&mut r, &Scene::new(), (40, 16), 1.0, WHITE);
+    let img = render(&mut r, &make_scene(&[blue]), (40, 16), 1.0, WHITE);
+    assert_eq!(img.px(4, 4), [0, 0, 255, 255]);
+    assert_eq!(img.px(24, 4), [255, 255, 255, 255]);
+}
+
+#[test]
 fn invalid_arguments_are_errors_not_panics() {
     let Some(mut r) = renderer() else { return };
     let s = Scene::new();
@@ -548,4 +611,517 @@ fn nested_scissors_preserve_quad_geometry_and_restore_parent() {
             assert_px(&image, x * scale as u32, y * scale as u32, c, 0);
         }
     }
+}
+
+/// Scroll through every subpixel phase: a hairline must retain its integrated
+/// brightness rather than pulse as its inner and outer AA ramps overlap.
+#[test]
+fn fractional_scroll_keeps_hairline_brightness_constant() {
+    let Some(mut r) = renderer() else { return };
+    for scale in [1.0, 2.0] {
+        let width = 0.5 / scale;
+        let mut energies = Vec::new();
+        for phase in 0..16 {
+            let mut scene = Scene::new();
+            scene.push_quad(
+                Quad::new(
+                    Rect::new(10.0, 10.0 + phase as f32 / 16.0 / scale, 40.0, 20.0),
+                    BLACK,
+                )
+                .with_border(width, WHITE),
+            );
+            let image = render(&mut r, &scene, (128, 96), scale, BLACK);
+            let x = (30.0 * scale) as u32;
+            let energy: u32 = (5 * scale as u32..18 * scale as u32)
+                .map(|y| u32::from(image.px(x, y)[0]))
+                .sum();
+            energies.push(energy);
+        }
+        assert!(
+            energies.iter().max().unwrap() - energies.iter().min().unwrap() <= 2,
+            "scale {scale}, energies {energies:?}"
+        );
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct EdgePixels {
+    profile: Vec<u8>,
+    integrated: u32,
+    peak: u8,
+}
+
+/// Read a short one-pixel-wide cross-section through a straight edge, away
+/// from the corners. The profile includes transparent-side and interior
+/// samples so both the AA ramp and the stroke peak are visible.
+fn edge_pixels(
+    image: &Image,
+    edge_px: f32,
+    tangent_px: f32,
+    stroke_px: f32,
+    vertical_edge: bool,
+) -> EdgePixels {
+    let tangent = tangent_px.floor() as u32;
+    let first = (edge_px - 2.0).floor() as i32;
+    let last = (edge_px + stroke_px + 2.0).ceil() as i32;
+    let profile: Vec<u8> = (first..last)
+        .map(|normal| {
+            let (x, y) = if vertical_edge {
+                (normal.max(0) as u32, tangent)
+            } else {
+                (tangent, normal.max(0) as u32)
+            };
+            image.px(x, y)[0]
+        })
+        .collect();
+    let integrated = profile.iter().map(|&sample| u32::from(sample)).sum();
+    let peak = profile.iter().copied().max().unwrap_or(0);
+    EdgePixels {
+        profile,
+        integrated,
+        peak,
+    }
+}
+
+fn edge_profiles(
+    renderer: &mut Renderer,
+    rect: Rect,
+    stroke: f32,
+    scale: f32,
+    origin: (f32, f32),
+) -> [EdgePixels; 4] {
+    edge_profiles_with_frame_clip(renderer, rect, stroke, scale, origin, false)
+}
+
+fn edge_profiles_with_frame_clip(
+    renderer: &mut Renderer,
+    rect: Rect,
+    stroke: f32,
+    scale: f32,
+    origin: (f32, f32),
+    clip_to_frame: bool,
+) -> [EdgePixels; 4] {
+    let mut scene = Scene::new();
+    let rect = Rect::new(
+        rect.origin.x + origin.0,
+        rect.origin.y + origin.1,
+        rect.size.width,
+        rect.size.height,
+    );
+    if clip_to_frame {
+        scene.push_clip(rect);
+    }
+    scene.push_quad(
+        Quad::new(rect, BLACK)
+            .with_corner_radii(CornerRadii::uniform(0.0))
+            .with_border(stroke, WHITE),
+    );
+    if clip_to_frame {
+        scene.pop_clip();
+    }
+    let image = render(
+        renderer,
+        &scene,
+        ((160.0 * scale) as u32, (120.0 * scale) as u32),
+        scale,
+        BLACK,
+    );
+    let x0 = rect.origin.x * scale;
+    let y0 = rect.origin.y * scale;
+    let x1 = rect.max_x() * scale;
+    let y1 = rect.max_y() * scale;
+    let center_x = (x0 + x1) * 0.5;
+    let center_y = (y0 + y1) * 0.5;
+    let stroke_px = stroke * scale;
+    [
+        edge_pixels(&image, x0, center_y, stroke_px, true),
+        edge_pixels(&image, x1, center_y, stroke_px, true),
+        edge_pixels(&image, y0, center_x, stroke_px, false),
+        edge_pixels(&image, y1, center_x, stroke_px, false),
+    ]
+}
+
+/// Compare a view whose rectangular clip ends exactly at its painted frame
+/// with the same quad rendered without a clip. This exercises scissor
+/// quantization separately from the quad's distance-field coverage.
+#[test]
+fn frame_edge_clip_is_measured_against_unclipped_hairline() {
+    let Some(mut renderer) = renderer() else {
+        return;
+    };
+    let mut clipped_cases = 0;
+    for scale in [1.0, 2.0] {
+        for stroke in [1.0 / scale, 1.0] {
+            for rect in [
+                Rect::new(24.0, 24.0, 48.0, 28.0),
+                Rect::new(24.0, 24.0, 48.375, 28.625),
+            ] {
+                for step in [0, 8, 3, 11] {
+                    let phase = step as f32 / (16.0 * scale);
+                    for origin in [(phase, 0.0), (0.0, phase)] {
+                        let unclipped = edge_profiles(&mut renderer, rect, stroke, scale, origin);
+                        let clipped = edge_profiles_with_frame_clip(
+                            &mut renderer,
+                            rect,
+                            stroke,
+                            scale,
+                            origin,
+                            true,
+                        );
+                        let deltas: Vec<_> = unclipped
+                            .iter()
+                            .zip(&clipped)
+                            .map(|(before, after)| {
+                                (
+                                    after.integrated as i32 - before.integrated as i32,
+                                    after.peak as i32 - before.peak as i32,
+                                )
+                            })
+                            .collect();
+                        assert!(
+                            deltas
+                                .iter()
+                                .all(|(integral, peak)| *integral <= 0 && *peak <= 0)
+                        );
+                        if deltas.iter().any(|delta| *delta != (0, 0)) {
+                            clipped_cases += 1;
+                            eprintln!(
+                                "hairline clip scale={scale} stroke={stroke}pt ({} physical px) geometry={} phase={step}/16 origin={origin:?} [left,right,top,bottom] integral/peak deltas={deltas:?}",
+                                stroke * scale,
+                                if rect.size.width.fract() == 0.0 {
+                                    "integer"
+                                } else {
+                                    "fractional"
+                                },
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+    assert!(
+        clipped_cases > 0,
+        "the edge-aligned clip case must be exercised"
+    );
+}
+
+/// Inspect all four straight edges across independent x/y subpixel phases.
+/// Report integrated coverage and peak intensity separately: equal integrated
+/// brightness does not imply equally dark-looking individual pixels.
+#[test]
+fn hairline_edge_matrix_reports_four_sides_phase_and_peak_coverage() {
+    let Some(mut renderer) = renderer() else {
+        return;
+    };
+    let phase = |step: u32, scale: f32| step as f32 / (16.0 * scale);
+    let geometries = [
+        ("integer", Rect::new(24.0, 24.0, 48.0, 28.0)),
+        ("fractional", Rect::new(24.0, 24.0, 48.375, 28.625)),
+    ];
+
+    for scale in [1.0, 2.0] {
+        for (stroke_name, stroke) in [("1px", 1.0 / scale), ("1pt", 1.0)] {
+            for (geometry_name, rect) in geometries {
+                let mut phases: [Vec<EdgePixels>; 4] = std::array::from_fn(|_| Vec::new());
+                for step in 0..16 {
+                    // Sweep x and y independently. Each render probes all four
+                    // sides, while the corresponding normal axis spans all 16
+                    // subpixel phases over the two sweeps.
+                    let x_edges = edge_profiles(
+                        &mut renderer,
+                        rect,
+                        stroke,
+                        scale,
+                        (phase(step, scale), 0.0),
+                    );
+                    phases[0].push(x_edges[0].clone());
+                    phases[1].push(x_edges[1].clone());
+                    let y_edges = edge_profiles(
+                        &mut renderer,
+                        rect,
+                        stroke,
+                        scale,
+                        (0.0, phase(step, scale)),
+                    );
+                    phases[2].push(y_edges[2].clone());
+                    phases[3].push(y_edges[3].clone());
+                }
+
+                for (name, readings) in [
+                    ("left", &phases[0]),
+                    ("right", &phases[1]),
+                    ("top", &phases[2]),
+                    ("bottom", &phases[3]),
+                ] {
+                    let min_integral = readings
+                        .iter()
+                        .enumerate()
+                        .min_by_key(|(_, p)| p.integrated)
+                        .unwrap();
+                    let max_integral = readings
+                        .iter()
+                        .enumerate()
+                        .max_by_key(|(_, p)| p.integrated)
+                        .unwrap();
+                    let min_peak = readings
+                        .iter()
+                        .enumerate()
+                        .min_by_key(|(_, p)| p.peak)
+                        .unwrap();
+                    let max_peak = readings
+                        .iter()
+                        .enumerate()
+                        .max_by_key(|(_, p)| p.peak)
+                        .unwrap();
+                    eprintln!(
+                        "hairline scale={scale} stroke={stroke_name} geometry={geometry_name} edge={name}: integral={}@phase{}..={}@phase{}, peak={}@phase{}..={}@phase{}",
+                        min_integral.1.integrated,
+                        min_integral.0,
+                        max_integral.1.integrated,
+                        max_integral.0,
+                        min_peak.1.peak,
+                        min_peak.0,
+                        max_peak.1.peak,
+                        max_peak.0,
+                    );
+                    assert!(
+                        max_integral.1.integrated - min_integral.1.integrated <= 1,
+                        "scale={scale} stroke={stroke_name} geometry={geometry_name} edge={name}: integrated coverage differs by >1; min phase {}={:?}, max phase {}={:?}",
+                        min_integral.0,
+                        min_integral.1,
+                        max_integral.0,
+                        max_integral.1,
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// A quarter turn must transpose the pixel profiles exactly. This separates
+/// axis-dependent renderer behavior from changes caused by subpixel phase.
+#[test]
+fn hairline_edge_profiles_are_rotation_transpose_equivalent() {
+    let Some(mut renderer) = renderer() else {
+        return;
+    };
+    for scale in [1.0, 2.0] {
+        for stroke in [1.0 / scale, 1.0] {
+            for (width, height) in [(48.0, 28.0), (48.375, 28.625)] {
+                for (x_step, y_step) in [(0, 0), (3, 11), (8, 4), (15, 15)] {
+                    let x_phase = x_step as f32 / (16.0 * scale);
+                    let y_phase = y_step as f32 / (16.0 * scale);
+                    let original = edge_profiles(
+                        &mut renderer,
+                        Rect::new(24.0, 24.0, width, height),
+                        stroke,
+                        scale,
+                        (x_phase, y_phase),
+                    );
+                    let transposed = edge_profiles(
+                        &mut renderer,
+                        Rect::new(24.0, 24.0, height, width),
+                        stroke,
+                        scale,
+                        (y_phase, x_phase),
+                    );
+                    for (edge, rotated_edge) in [
+                        (&original[0], &transposed[2]),
+                        (&original[1], &transposed[3]),
+                        (&original[2], &transposed[0]),
+                        (&original[3], &transposed[1]),
+                    ] {
+                        assert_eq!(edge, rotated_edge);
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn update_image_reuses_registered_texture_and_validates_before_upload() {
+    use tekes_ui_scene::{ImageId, ImageQuad};
+    let Some(mut r) = renderer() else {
+        return;
+    };
+    let red = [255, 0, 0, 255];
+    let green = [0, 255, 0, 255];
+    let id = r.register_image(&red, 1, 1).unwrap();
+    let count = r.image_count();
+    let mut scene = Scene::new();
+    scene.push_image(ImageQuad {
+        rect: Rect::new(0.0, 0.0, 8.0, 8.0),
+        image: id,
+        opacity: 1.0,
+    });
+    assert_eq!(
+        render(&mut r, &scene, (8, 8), 1.0, Rgba::gray(0.0)).px(4, 4),
+        red
+    );
+    r.update_image(id, &green).unwrap();
+    assert_eq!(r.image_count(), count);
+    assert_eq!(
+        render(&mut r, &scene, (8, 8), 1.0, Rgba::gray(0.0)).px(4, 4),
+        green
+    );
+    assert!(r.update_image(id, &[]).is_err());
+    assert!(r.update_image(ImageId(u32::MAX), &green).is_err());
+    assert_eq!(
+        render(&mut r, &scene, (8, 8), 1.0, Rgba::gray(0.0)).px(4, 4),
+        green
+    );
+}
+
+#[test]
+fn rounded_shadow_has_gaussian_decay_symmetry_scale_and_clip() {
+    let Some(mut r) = renderer() else { return };
+    let clear = WHITE;
+    let shadow = ShadowQuad::new(
+        Rect::new(24.0, 24.0, 24.0, 24.0),
+        Rgba::new(0.0, 0.0, 0.0, 0.6),
+    )
+    .with_corner_radius(8.0)
+    .with_offset(Point::new(2.0, 2.0))
+    .with_outset(2.0)
+    .with_blur_radius(8.0); // CSS radius 8pt -> sigma 4pt.
+    let mut scene = Scene::new();
+    scene.push_shadow(shadow);
+
+    let mut one_x = None;
+    for scale in [1.0_f32, 2.0] {
+        let size = ((80.0 * scale) as u32, (80.0 * scale) as u32);
+        let img = render(&mut r, &scene, size, scale, clear);
+        let center = 38.0 * scale;
+        let px = |logical: f32| (logical * scale) as u32;
+        // Horizontal and vertical profiles around the shadow center agree.
+        for offset in [0.0_f32, 2.0, 5.0, 9.0] {
+            let left = img.px(px(center - offset - 0.5), px(center - 0.5))[0];
+            let top = img.px(px(center - 0.5), px(center - offset - 0.5))[0];
+            assert!(
+                left.abs_diff(top) <= 2,
+                "x/y symmetry at scale {scale}, offset {offset}: {left} vs {top}"
+            );
+        }
+        let edge = img.px(px(24.5), px(38.5))[0];
+        let one_sigma_out = img.px(px(20.5), px(38.5))[0];
+        let two_sigma_out = img.px(px(16.5), px(38.5))[0];
+        assert!(
+            edge < one_sigma_out && one_sigma_out < two_sigma_out && two_sigma_out < 255,
+            "shadow should continuously decay outward at scale {scale}: {edge}, {one_sigma_out}, {two_sigma_out}"
+        );
+        let center_value = img.px(px(38.5), px(38.5))[0];
+        assert!(
+            center_value.abs_diff(102) <= 3,
+            "shadow peak alpha should follow color alpha at scale {scale}: {center_value}"
+        );
+        // A rounded corner excludes more source area than a flat edge at the same offset.
+        let corner = img.px(px(19.5), px(19.5))[0];
+        let side = img.px(px(19.5), px(33.5))[0];
+        assert!(
+            corner > side,
+            "rounded corner should have lower coverage than the straight side: {corner} vs {side}"
+        );
+        if scale == 1.0 {
+            one_x = Some(img);
+        }
+    }
+
+    // Compare the same logical query after 2x sampling; a 2x pixel block average
+    // approximates the single 1x pixel without making the test backend-dependent.
+    let one_x = one_x.expect("1x capture");
+    let two_x = render(&mut r, &scene, (160, 160), 2.0, clear);
+    for (x, y) in [(20, 38), (24, 38), (16, 38), (19, 19)] {
+        let mut sum = 0_u16;
+        for dy in 0..2 {
+            for dx in 0..2 {
+                sum += two_x.px(2 * x + dx, 2 * y + dy)[0] as u16;
+            }
+        }
+        let average = sum / 4;
+        assert!(
+            one_x.px(x, y)[0].abs_diff(average as u8) <= 5,
+            "scale consistency at ({x}, {y}): 1x={}, 2x average={average}",
+            one_x.px(x, y)[0]
+        );
+    }
+
+    let mut clipped = Scene::new();
+    clipped.push_clip(Rect::new(31.0, 20.0, 12.0, 40.0));
+    clipped.push_shadow(shadow);
+    clipped.pop_clip();
+    let clipped = render(&mut r, &clipped, (80, 80), 1.0, clear);
+    assert_eq!(clipped.px(30, 38), rgba8(clear));
+    assert_eq!(clipped.px(31, 38), one_x.px(31, 38));
+    assert_eq!(clipped.px(43, 38), rgba8(clear));
+}
+
+#[test]
+fn ordinary_quad_output_is_unchanged_by_shadow_primitive_support() {
+    let Some(mut r) = renderer() else { return };
+    let mut scene = Scene::new();
+    scene.push_quad(
+        Quad::new(Rect::new(10.0, 10.0, 24.0, 20.0), Rgba::rgb8(32, 128, 220))
+            .with_corner_radius(5.0),
+    );
+    let image = render(&mut r, &scene, (48, 40), 1.0, WHITE);
+    assert_eq!(image.px(20, 20), rgba8(Rgba::rgb8(32, 128, 220)));
+    assert_eq!(image.px(10, 10), rgba8(WHITE));
+    assert_eq!(image.px(40, 20), rgba8(WHITE));
+}
+
+#[test]
+fn rectangle_shadow_uses_gaussian_cdf_and_paints_below_its_surface() {
+    let Some(mut r) = renderer() else { return };
+    let shadow = ShadowQuad::new(
+        Rect::new(20.0, 20.0, 24.0, 24.0),
+        Rgba::new(0.0, 0.0, 0.0, 0.5),
+    )
+    .with_blur_radius(8.0);
+    let mut shadow_only = Scene::new();
+    shadow_only.push_shadow(shadow);
+    let shadow_image = render(&mut r, &shadow_only, (64, 64), 1.0, WHITE);
+    // Flat-edge convolution of a unit step is Phi(-d/sigma). Pixel center is 0.5pt
+    // outside, sigma is 4pt, so the 50% shadow yields an output near 198/255.
+    assert!((shadow_image.px(19, 32)[0] as i16 - 198).abs() <= 3);
+    assert!(shadow_image.px(16, 32)[0] > shadow_image.px(19, 32)[0]);
+    assert_eq!(shadow_image.px(0, 0), rgba8(WHITE));
+
+    let mut surface = Scene::new();
+    surface.push_shadow(shadow);
+    surface.push_quad(Quad::new(Rect::new(20.0, 20.0, 24.0, 24.0), WHITE));
+    let surface_image = render(&mut r, &surface, (64, 64), 1.0, WHITE);
+    assert_eq!(surface_image.px(32, 32), rgba8(WHITE));
+    assert!(
+        surface_image.px(19, 32)[0] < 255,
+        "shadow remains visible outside the source surface"
+    );
+}
+
+#[test]
+fn hard_shadow_right_corners_select_radius_by_vertical_quadrant() {
+    let Some(mut r) = renderer() else { return };
+    let clear = WHITE;
+    let shadow = ShadowQuad::new(
+        Rect::new(20.0, 20.0, 32.0, 32.0),
+        Rgba::new(0.0, 0.0, 0.0, 1.0),
+    )
+    .with_corner_radii(CornerRadii {
+        top_left: 2.0,
+        top_right: 12.0,
+        bottom_right: 2.0,
+        bottom_left: 2.0,
+    });
+    let mut scene = Scene::new();
+    scene.push_shadow(shadow);
+    let image = render(&mut r, &scene, (64, 64), 1.0, clear);
+
+    // Both samples lie on the right side at the same x. With the render
+    // Both samples lie on the right side at the same x. The large top-right
+    // radius cuts out (49.5, 21.5), while the small bottom-right radius covers
+    // (49.5, 46.5). Selecting the corner from x alone incorrectly uses the
+    // bottom-right radius for both pixels.
+    assert_eq!(image.px(49, 21), rgba8(clear));
+    assert_eq!(image.px(49, 46), [0, 0, 0, 255]);
 }

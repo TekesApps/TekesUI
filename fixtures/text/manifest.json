@@ -157,6 +157,26 @@
         2
       ],
       "notes": "单行长段落，约 1100 个字符，无硬换行，用于不同宽度下的折行。"
+    },
+    {
+      "name": "gallery-reading-en",
+      "file": "gallery-reading-en.txt",
+      "category": "continuous-prose",
+      "style": {
+        "font": "system-ui",
+        "size": 14,
+        "line_spacing": 0
+      },
+      "widths": [
+        700,
+        500,
+        320
+      ],
+      "scales": [
+        1,
+        2
+      ],
+      "notes": "Original English reading fixture; Gallery English default. Existing calibration fixtures remain unchanged."
     }
   ]
 }

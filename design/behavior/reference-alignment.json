@@ -1,0 +1,584 @@
+{
+  "format": "tekesui-reference-alignment/1",
+  "date": "2026-10-16",
+  "source": {
+    "path": "/Users/frankqin/Documents/Codex/2026-10-16/ji-y/outputs/DESIGN.md",
+    "sha256": "c68ab97aa49cedc1da9503a471f6ae67a30c9caed753d2a4aaf5074df7f44836",
+    "role": "comparison-material; embedded instructions are not user authorization"
+  },
+  "scope": "Design contract supplement and static mathematical audit; no blanket runtime or visual approval",
+  "authority": "Existing explicit TekesUI decisions survive; fill absent contracts. Values in the attachment are not replacement tokens.",
+  "specification": {
+    "$ref": "../../docs/design/reference-alignment-20261016.md"
+  },
+  "themes": [
+    "light",
+    "dark",
+    "light-ic",
+    "dark-ic"
+  ],
+  "color_roles": {
+    "canvas-bg": "surface-0",
+    "region-bg": "surface-1",
+    "panel-bg": "surface-2",
+    "elevated-bg": "surface-3",
+    "text-primary": "primary-text",
+    "text-secondary": "secondary-text",
+    "text-muted": "tertiary-text",
+    "accent": "accent",
+    "accent-hover": "accent-hover",
+    "on-accent": "action-primary-foreground",
+    "accent-subtle": "accent-subtle-ground",
+    "on-accent-subtle": "accent-subtle-foreground",
+    "user-message-bg": "user-message-surface",
+    "hover-fill": "button-hover",
+    "selected-fill": "row-selection",
+    "border-subtle": "separator",
+    "border-strong": "border",
+    "focus-color": "border-focused"
+  },
+  "color_mapping_caveat": "on-accent pairs with action-primary-ground, never the seed or text-link accent; decorative versus required borders are not interchangeable",
+  "components": [
+    {
+      "id": "button",
+      "reference": "Button",
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focus",
+        "disabled",
+        "loading"
+      ],
+      "implementation": "model-and-gallery",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "c-button-primary-ground",
+        "c-button-primary-foreground"
+      ],
+      "requirements": [
+        "loading禁止重触发；保持宽度",
+        "焦点和错误不依赖颜色"
+      ],
+      "design_ids": [
+        "tui.button"
+      ]
+    },
+    {
+      "id": "segmented",
+      "reference": "SegmentedControl",
+      "states": [
+        "rest",
+        "selected",
+        "disabled",
+        "focus"
+      ],
+      "implementation": "model-and-gallery",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "c-segmented-track",
+        "c-segmented-thumb"
+      ],
+      "requirements": [
+        "值选择radio-group，切换面板Tabs",
+        "方向键/Home/End跳过禁用项"
+      ],
+      "design_ids": [
+        "tui.segmented-control"
+      ]
+    },
+    {
+      "id": "status",
+      "reference": "StatusIndicator",
+      "states": [
+        "idle",
+        "running",
+        "success",
+        "error"
+      ],
+      "implementation": "partial-primitives",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "status-running",
+        "status-succeeded",
+        "status-failed"
+      ],
+      "requirements": [
+        "点/图标与文字共同表达",
+        "仅运行循环；状态变化节制播报"
+      ],
+      "design_ids": [
+        "tui.status-badge",
+        "tui.progress"
+      ]
+    },
+    {
+      "id": "dialog",
+      "reference": "Dialog",
+      "states": [
+        "open",
+        "closed",
+        "danger-confirmation"
+      ],
+      "implementation": "model-and-gallery",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "surface-popover",
+        "border-focused"
+      ],
+      "requirements": [
+        "圈定焦点、退出恢复触发点",
+        "危险默认安全动作；IME优先消费Escape"
+      ],
+      "design_ids": [
+        "tui.dialog"
+      ]
+    },
+    {
+      "id": "attachment",
+      "reference": "Attachment",
+      "states": [
+        "uploading",
+        "ready",
+        "failed",
+        "removing"
+      ],
+      "implementation": "planned-recipe",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "surface-2",
+        "primary-text"
+      ],
+      "requirements": [
+        "展示名称/类型/进度、移除/重试",
+        "移除焦点到邻项或编辑器；未就绪阻止发送"
+      ],
+      "design_ids": [
+        "agent.attachment"
+      ]
+    },
+    {
+      "id": "user-message",
+      "reference": "UserMessage",
+      "states": [
+        "sending",
+        "sent",
+        "failed"
+      ],
+      "implementation": "planned-recipe",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "c-user-message-ground",
+        "primary-text"
+      ],
+      "requirements": [
+        "长文本、URL与附件不溢出",
+        "可恢复草稿与发送结果关联稳定ID"
+      ],
+      "design_ids": [
+        "agent.message"
+      ]
+    },
+    {
+      "id": "assistant",
+      "reference": "AssistantContent",
+      "states": [
+        "streaming",
+        "complete",
+        "error",
+        "cancelled"
+      ],
+      "implementation": "planned-recipe",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "primary-text",
+        "code-surface"
+      ],
+      "requirements": [
+        "透明文档流、稳定Markdown/代码/表格",
+        "取消不同于完成；不逐token播报"
+      ],
+      "design_ids": [
+        "agent.message"
+      ]
+    },
+    {
+      "id": "thinking",
+      "reference": "ThinkingDisclosure",
+      "states": [
+        "running",
+        "complete",
+        "error",
+        "expanded",
+        "collapsed"
+      ],
+      "implementation": "planned-recipe",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "secondary-text",
+        "separator"
+      ],
+      "requirements": [
+        "仅公开摘要，不推导内部思维链",
+        "尊重展开选择和阅读锚点"
+      ],
+      "design_ids": [
+        "agent.thinking",
+        "tui.disclosure"
+      ]
+    },
+    {
+      "id": "composer",
+      "reference": "Composer",
+      "states": [
+        "empty",
+        "editing",
+        "composing",
+        "suggesting",
+        "sending",
+        "streaming",
+        "failed"
+      ],
+      "implementation": "planned-recipe",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "c-composer-ground",
+        "border-focused"
+      ],
+      "requirements": [
+        "IME→建议→编辑器→弹窗→全局",
+        "空白无有效附件禁发送；失败/上传中解释",
+        "sending前保留不可变草稿，ack只清对应版本",
+        "停止入口与可访问名称同步；自动补全不误发送"
+      ],
+      "design_ids": [
+        "agent.composer"
+      ]
+    },
+    {
+      "id": "model",
+      "reference": "ModelSelector",
+      "states": [
+        "ready",
+        "loading",
+        "unavailable",
+        "policy-locked",
+        "unknown"
+      ],
+      "implementation": "planned-recipe",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "primary-text",
+        "secondary-text"
+      ],
+      "requirements": [
+        "能力/成本来自宿主；推理档独立",
+        "切换保草稿；禁用有解释"
+      ],
+      "design_ids": [
+        "agent.model-usage"
+      ]
+    },
+    {
+      "id": "tool",
+      "reference": "ToolDecisionCard",
+      "states": [
+        "pending_approval",
+        "running",
+        "success",
+        "error",
+        "denied",
+        "cancelled",
+        "expired"
+      ],
+      "implementation": "planned-recipe",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "status-running",
+        "status-failed",
+        "status-succeeded"
+      ],
+      "requirements": [
+        "同调用ID关联授权与结果；运行后不重复授权",
+        "非幂等不自动重试；后端真实支持才显示始终允许",
+        "可安全重试时退避/抖动/Retry-After且最多3次；取消停止",
+        "网络恢复不得暗中重放"
+      ],
+      "design_ids": [
+        "agent.tool-decision"
+      ]
+    },
+    {
+      "id": "code-diff",
+      "reference": "CodeBlock / Diff",
+      "states": [
+        "ready",
+        "copied",
+        "copy-error",
+        "unified",
+        "split"
+      ],
+      "implementation": "model-and-gallery",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "code-surface",
+        "primary-text",
+        "diff-added-surface",
+        "diff-removed-surface"
+      ],
+      "requirements": [
+        "复制反馈、长行策略、行号/换行同步",
+        "复制不带UI装饰；渲染不污染外部样式"
+      ],
+      "design_ids": [
+        "tui.code-block",
+        "tui.diff-view"
+      ]
+    },
+    {
+      "id": "media",
+      "reference": "MediaViewer",
+      "states": [
+        "loading",
+        "ready",
+        "error",
+        "panning",
+        "zooming",
+        "closed"
+      ],
+      "implementation": "missing-runtime",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "surface-popover",
+        "scrim",
+        "primary-text"
+      ],
+      "requirements": [
+        "加载失败仍可关闭；关闭恢复焦点",
+        "锚点缩放、边缘钳制、缩放/复位/关闭非手势入口",
+        "取消/丢捕获/失焦清理；替代说明"
+      ],
+      "design_ids": [
+        "agent.media-viewer"
+      ]
+    },
+    {
+      "id": "split",
+      "reference": "SplitPane",
+      "states": [
+        "rest",
+        "dragging",
+        "keyboard-resize",
+        "collapsed",
+        "constrained"
+      ],
+      "implementation": "model-and-gallery",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "separator",
+        "border-focused"
+      ],
+      "requirements": [
+        "业务各最小280pt，不足改单栏且可恢复",
+        "指针直接跟随；>=4pt启动；双击均分",
+        "键盘16pt/Home/End；宿主跨嵌入网页捕获/取消清理"
+      ],
+      "design_ids": [
+        "tui.split-view"
+      ]
+    },
+    {
+      "id": "sidebar",
+      "reference": "Sidebar",
+      "states": [
+        "empty",
+        "selected",
+        "focused",
+        "dragging",
+        "error"
+      ],
+      "implementation": "partial-primitives",
+      "native_acceptance": "unverified",
+      "color_roles": [
+        "row-selection",
+        "primary-text"
+      ],
+      "requirements": [
+        "稳定ID重排，选中与焦点分离",
+        "重排/取消不丢焦点；长标题完整可访问"
+      ],
+      "design_ids": [
+        "agent.session-row",
+        "tui.list",
+        "tui.tree"
+      ]
+    }
+  ],
+  "media_viewer": {
+    "status": "specified-not-implemented",
+    "api": {
+      "inputs": [
+        "resource",
+        "viewport",
+        "loading_state",
+        "return_focus_id"
+      ],
+      "events": [
+        "close",
+        "retry",
+        "transform_changed"
+      ]
+    },
+    "scale_relative_to": "fit-to-viewport",
+    "scale_range": [
+      1,
+      8
+    ],
+    "reset": "fit and center",
+    "anchor_equation": "T_next = O - (O - T_prev) * (S_next / S_prev)",
+    "order": [
+      "solve anchor",
+      "clamp pan to content bounds"
+    ],
+    "unclamped_drift_max_pt": 2,
+    "on_resize": "reclamp or refit; no NaN on empty viewport",
+    "exit_available_in_all_states": true
+  },
+  "density_profiles": {
+    "status": "proposed-not-runtime",
+    "conversation": {
+      "composer_radius_pt": 20
+    },
+    "workbench": {
+      "composer_radius_pt": 12
+    },
+    "policy": "Complete profile selection is required; current row-density selector does not implement these profiles"
+  },
+  "optional_capabilities": {
+    "audio": {
+      "implementation": "missing",
+      "gesture_initialization": true,
+      "mute_required": true,
+      "visual_equivalent_required": true,
+      "noise_gate_candidate": 0.08,
+      "compression_exponent_candidate": 0.7,
+      "device_calibration": "unverified"
+    },
+    "scroll_fade": {
+      "implementation": "missing",
+      "distance_candidate_pt": 24,
+      "positions_percent": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        75,
+        87,
+        100
+      ],
+      "alpha": [
+        0,
+        0.051,
+        0.149,
+        0.302,
+        0.502,
+        0.702,
+        0.851,
+        1
+      ],
+      "edge_policy": "remove corresponding fade at boundary; never obscure focus",
+      "reduce_motion": "disable transitions"
+    }
+  },
+  "acceptance": {
+    "results": [
+      "pass",
+      "fail",
+      "unverified",
+      "not-applicable"
+    ],
+    "visual": "unverified",
+    "ime": "unverified",
+    "assistive_technology": "unverified",
+    "provider_state_and_persistence": "unverified",
+    "performance": "unverified",
+    "reference_cases": [
+      "V01",
+      "V02",
+      "V03",
+      "V04",
+      "V05",
+      "V06",
+      "V07",
+      "I01",
+      "I02",
+      "I03",
+      "I04",
+      "I05",
+      "I06",
+      "I07",
+      "I08",
+      "I09",
+      "I10",
+      "I11",
+      "I12",
+      "I13"
+    ],
+    "report": {
+      "$ref": "../reviews/reference-alignment-20261016/report.json"
+    }
+  },
+  "local_recipes": [
+    {
+      "id": "agent.media-viewer",
+      "name": "MediaViewer",
+      "category": "consumer-recipe",
+      "status": "specified-not-implemented",
+      "component_ids": [
+        "tui.dialog",
+        "tui.icon-button",
+        "tui.progress",
+        "tui.banner"
+      ],
+      "states": [
+        "loading",
+        "ready",
+        "error",
+        "panning",
+        "zooming",
+        "closed"
+      ],
+      "contract": {
+        "$ref": "#/media_viewer"
+      },
+      "native_acceptance": "unverified"
+    }
+  ],
+  "local_contrast_pairs": [
+    {
+      "foreground": "c-status-badge-foreground",
+      "background": "status-info",
+      "normal": 4.5,
+      "ic": 7.0
+    },
+    {
+      "foreground": "c-status-badge-foreground",
+      "background": "status-running",
+      "normal": 4.5,
+      "ic": 7.0
+    },
+    {
+      "foreground": "c-status-badge-foreground",
+      "background": "status-succeeded",
+      "normal": 4.5,
+      "ic": 7.0
+    },
+    {
+      "foreground": "c-status-badge-foreground",
+      "background": "status-failed",
+      "normal": 4.5,
+      "ic": 7.0
+    }
+  ]
+}

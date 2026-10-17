@@ -1,0 +1,20 @@
+[
+  {
+    "file": "cad-3-linear-24.json.gz",
+    "sha256": "07c1c0e5e95d95c7e36d5556e14ec4f3c58ae1051f110b1051d445484d84c228",
+    "uncompressed_sha256": "2efec267ab96904d436270a63139e6ef280556da1a1d274f2d9f432372d81cc1",
+    "uncompressed_bytes": 1003155
+  },
+  {
+    "file": "cad-2-linear-24.json.gz",
+    "sha256": "e64cf7a154cdc08409b472f5ddb84eab7392e1a6b374dadcea3ef1e023fed873",
+    "uncompressed_sha256": "dfdd28b7fb0faedda1d0a9ad6b05d04d60d9681d6394602d3a4f72b8e310ad0b",
+    "uncompressed_bytes": 1000415
+  },
+  {
+    "file": "metal-deferred-debug.json.gz",
+    "sha256": "13163a0997c067aa8ae67a4a31227ffbd5ec4b99c98313b5461db620c80fcb55",
+    "uncompressed_sha256": "9a96de5708abf565780eaeea2ab48b0771f3f654395b602cab1dfa6c606ba523",
+    "uncompressed_bytes": 298222
+  }
+]

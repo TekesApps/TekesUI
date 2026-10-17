@@ -1,0 +1,10 @@
+{
+  "cases": 192,
+  "errors": [],
+  "checks": [
+    "frame within preview width",
+    "label height fits content",
+    "no pairwise button frame overlap"
+  ],
+  "scope": "Real Gallery Motion scenes, 4 themes x 2 locales x 3 widths x 2 text scales x 4 catalogs; top captures. Not complete pixel or accessibility acceptance."
+}

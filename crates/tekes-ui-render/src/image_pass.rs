@@ -8,10 +8,10 @@ use crate::error::RenderError;
 use bytemuck::{Pod, Zeroable};
 use std::collections::HashMap;
 use std::mem::size_of;
-use tekes_ui_scene::{ImageId, ImageQuad};
+use tekes_ui_scene::{ImageId, ImageQuad, TransformedImageQuad};
 use wgpu::util::DeviceExt as _;
 
-/// 一个图像绘制的实例数据，32 字节。
+/// Image instance data: rectangle, opacity/rotation, and atlas UVs (48 bytes).
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Pod, Zeroable)]
 pub(crate) struct ImageInstance {
@@ -19,6 +19,7 @@ pub(crate) struct ImageInstance {
     pub rect: [f32; 4],
     /// x：不透明度（钳到 0..=1），其余保留。
     pub params: [f32; 4],
+    pub uv: [f32; 4],
 }
 
 impl ImageInstance {
@@ -36,7 +37,23 @@ impl ImageInstance {
                 q.rect.size.height.max(0.0),
             ],
             params: [opacity, 0.0, 0.0, 0.0],
+            uv: [0.0, 0.0, 1.0, 1.0],
         }
+    }
+    pub fn from_transformed(q: &TransformedImageQuad) -> ImageInstance {
+        let mut instance = Self::from_quad(&q.quad);
+        instance.params[1] = if q.rotation.is_finite() {
+            q.rotation
+        } else {
+            0.0
+        };
+        instance.uv = [
+            q.uv.origin.x,
+            q.uv.origin.y,
+            q.uv.size.width,
+            q.uv.size.height,
+        ];
+        instance
     }
 }
 
@@ -87,7 +104,7 @@ impl ImagePass {
             bind_group_layouts: &[Some(globals_layout), Some(&image_layout)],
             immediate_size: 0,
         });
-        let attributes = wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4];
+        let attributes = wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4, 2 => Float32x4];
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("tekes image sampler"),
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -150,7 +167,7 @@ impl ImagePass {
                 dimension: wgpu::TextureDimension::D2,
                 // 不用 sRGB 格式：数值原样当作编码值，不让硬件转换。
                 format: wgpu::TextureFormat::Rgba8Unorm,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
                 view_formats: &[],
             },
             wgpu::util::TextureDataOrder::LayerMajor,
@@ -181,6 +198,35 @@ impl ImagePass {
             },
         );
         Ok(ImageId(id))
+    }
+
+    pub fn update(&self, queue: &wgpu::Queue, id: ImageId, data: &[u8]) -> Result<(), RenderError> {
+        let image = self
+            .images
+            .get(&id.0)
+            .ok_or(RenderError::InvalidArgument("未登记的图像"))?;
+        let size = image._texture.size();
+        if data.len() as u64 != u64::from(size.width) * u64::from(size.height) * 4 {
+            return Err(RenderError::InvalidArgument(
+                "图像更新尺寸必须与已登记纹理相同",
+            ));
+        }
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &image._texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            data,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(size.width * 4),
+                rows_per_image: Some(size.height),
+            },
+            size,
+        );
+        Ok(())
     }
 
     pub fn unregister(&mut self, id: ImageId) -> bool {

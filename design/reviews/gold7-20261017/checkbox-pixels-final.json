@@ -1,0 +1,82 @@
+[
+  {
+    "id": "component-checkbox-default-light-1x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-default-light-2x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-large-narrow-light-1x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-large-narrow-light-2x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-default-dark-1x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-default-dark-2x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-large-narrow-dark-1x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-large-narrow-dark-2x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-default-light-ic-1x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-default-light-ic-2x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-large-narrow-light-ic-1x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-large-narrow-light-ic-2x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-default-dark-ic-1x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-default-dark-ic-2x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-large-narrow-dark-ic-1x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  },
+  {
+    "id": "component-checkbox-large-narrow-dark-ic-2x",
+    "label_pixels_identical": true,
+    "actual_pointer_activation": true
+  }
+]

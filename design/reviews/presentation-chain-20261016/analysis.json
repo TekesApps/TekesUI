@@ -1,0 +1,196 @@
+{
+  "format": "tekesui-metal-trace-analysis/1",
+  "pid": 4908,
+  "diagnostic_only": true,
+  "quiet_certified": false,
+  "scope": "Instrumented run only. Overlap is not causality; GPU spans exclude display scanout and compositor. Unmatched IDs are omitted, never assigned zero cost. Display-wide surfaces are not attributed to Gallery.",
+  "target_submissions": 9107,
+  "target_gpu_intervals": 3913,
+  "excluded_non_active_gpu_intervals": 0,
+  "submission_labels": {
+    "Committed \" (wgpu internal) PendingWrites \" with  1  encoders": 1301,
+    "Committed \" tekes frame pass \" with  1  encoders": 1301,
+    "Committed \" (wgpu internal) Pre Pass \" without encoders": 1301,
+    "Committed \" (wgpu internal) Transit \" without encoders": 1301,
+    "Committed \" (wgpu internal) Present \" without encoders": 2405,
+    "Committed \" (wgpu internal) PendingWrites \" without encoders": 1115,
+    "Committed \" (wgpu internal) Signal \" without encoders": 383
+  },
+  "joined_render_buffers": 1300,
+  "render_submissions_without_gpu_match": 1,
+  "render_buffers_without_completion": 0,
+  "gpu_channel_execution": {
+    "Compute": {
+      "count": 1301,
+      "mean_ms": 0.010057747117601845,
+      "p50_ms": 0.010334,
+      "p99_ms": 0.011667,
+      "max_ms": 0.061125
+    },
+    "Vertex": {
+      "count": 1300,
+      "mean_ms": 0.08224036461538461,
+      "p50_ms": 0.086834,
+      "p99_ms": 0.089792,
+      "max_ms": 0.340875
+    },
+    "Fragment": {
+      "count": 1312,
+      "mean_ms": 1.2167837416158536,
+      "p50_ms": 1.292375,
+      "p99_ms": 1.736,
+      "max_ms": 3.005709
+    }
+  },
+  "render_gpu_span": {
+    "count": 1300,
+    "mean_ms": 1.3114996015384615,
+    "p50_ms": 1.37975,
+    "p99_ms": 1.947542,
+    "max_ms": 3.13675
+  },
+  "render_commit_to_gpu_start": {
+    "count": 1300,
+    "mean_ms": 0.5556449984615385,
+    "p50_ms": 0.507084,
+    "p99_ms": 1.596917,
+    "max_ms": 6.056708
+  },
+  "render_commit_to_completion": {
+    "count": 1300,
+    "mean_ms": 2.057315193076923,
+    "p50_ms": 2.049333,
+    "p99_ms": 4.653084,
+    "max_ms": 8.516
+  },
+  "drawable_wait": {
+    "count": 1301,
+    "mean_ms": 5.070276897002306,
+    "p50_ms": 7.649208,
+    "p99_ms": 7.98925,
+    "max_ms": 32.245167
+  },
+  "drawable_waits_over_8_33ms": 11,
+  "longest_drawable_wait_context": [
+    {
+      "start_s": 10.490561166,
+      "duration_ms": 32.245167,
+      "overlapping_target_render_gpu_spans": 1,
+      "overlapping_render_span_ms": {
+        "count": 1,
+        "mean_ms": 1.374,
+        "p50_ms": 1.374,
+        "p99_ms": 1.374,
+        "max_ms": 1.374
+      }
+    },
+    {
+      "start_s": 5.493174208,
+      "duration_ms": 25.540833,
+      "overlapping_target_render_gpu_spans": 0,
+      "overlapping_render_span_ms": null
+    },
+    {
+      "start_s": 0.460879708,
+      "duration_ms": 24.57375,
+      "overlapping_target_render_gpu_spans": 1,
+      "overlapping_render_span_ms": {
+        "count": 1,
+        "mean_ms": 1.391334,
+        "p50_ms": 1.391334,
+        "p99_ms": 1.391334,
+        "max_ms": 1.391334
+      }
+    },
+    {
+      "start_s": 2.710985708,
+      "duration_ms": 19.629542,
+      "overlapping_target_render_gpu_spans": 1,
+      "overlapping_render_span_ms": {
+        "count": 1,
+        "mean_ms": 0.593958,
+        "p50_ms": 0.593958,
+        "p99_ms": 0.593958,
+        "max_ms": 0.593958
+      }
+    },
+    {
+      "start_s": 6.738987458,
+      "duration_ms": 17.208875,
+      "overlapping_target_render_gpu_spans": 0,
+      "overlapping_render_span_ms": null
+    },
+    {
+      "start_s": 11.231756791,
+      "duration_ms": 15.977084,
+      "overlapping_target_render_gpu_spans": 1,
+      "overlapping_render_span_ms": {
+        "count": 1,
+        "mean_ms": 1.38975,
+        "p50_ms": 1.38975,
+        "p99_ms": 1.38975,
+        "max_ms": 1.38975
+      }
+    },
+    {
+      "start_s": 10.523481583,
+      "duration_ms": 11.99,
+      "overlapping_target_render_gpu_spans": 1,
+      "overlapping_render_span_ms": {
+        "count": 1,
+        "mean_ms": 1.379709,
+        "p50_ms": 1.379709,
+        "p99_ms": 1.379709,
+        "max_ms": 1.379709
+      }
+    },
+    {
+      "start_s": 5.5192975,
+      "duration_ms": 11.928875,
+      "overlapping_target_render_gpu_spans": 1,
+      "overlapping_render_span_ms": {
+        "count": 1,
+        "mean_ms": 0.505166,
+        "p50_ms": 0.505166,
+        "p99_ms": 0.505166,
+        "max_ms": 0.505166
+      }
+    },
+    {
+      "start_s": 10.536207875,
+      "duration_ms": 11.513833,
+      "overlapping_target_render_gpu_spans": 1,
+      "overlapping_render_span_ms": {
+        "count": 1,
+        "mean_ms": 1.382458,
+        "p50_ms": 1.382458,
+        "p99_ms": 1.382458,
+        "max_ms": 1.382458
+      }
+    },
+    {
+      "start_s": 1.526503708,
+      "duration_ms": 8.952083,
+      "overlapping_target_render_gpu_spans": 0,
+      "overlapping_render_span_ms": null
+    },
+    {
+      "start_s": 0.293258,
+      "duration_ms": 8.813375,
+      "overlapping_target_render_gpu_spans": 0,
+      "overlapping_render_span_ms": null
+    },
+    {
+      "start_s": 9.840172666,
+      "duration_ms": 8.056625,
+      "overlapping_target_render_gpu_spans": 1,
+      "overlapping_render_span_ms": {
+        "count": 1,
+        "mean_ms": 1.378833,
+        "p50_ms": 1.378833,
+        "p99_ms": 1.378833,
+        "max_ms": 1.378833
+      }
+    }
+  ]
+}

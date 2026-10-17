@@ -37,7 +37,8 @@
         "design_baseline_name",
         "release_tag",
         "change_policy",
-        "proposal"
+        "proposal",
+        "gold7"
       ],
       "properties": {
         "policy": {
@@ -56,6 +57,9 @@
           "type": "string"
         },
         "proposal": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "gold7": {
           "$ref": "#/$defs/projectReference"
         },
         "historical_visual_baseline_commit": {
@@ -186,6 +190,9 @@
           "type": "object"
         },
         "proposal": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "package_source": {
           "$ref": "#/$defs/projectReference"
         }
       },

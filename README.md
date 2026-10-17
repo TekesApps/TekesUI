@@ -8,7 +8,7 @@
 
 已接入用户提供的 [v0.3.0-proposal1 完整设计包](design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/README.md)。包有的定义优先，包没有的保留现有补集；原始 ZIP、代码、文档、研究和报告全部保存。提案标识不等于仓库发布版本。
 
-[design/system.json](design/system.json) 是机器入口，[DESIGN.md](DESIGN.md) 说明权威与边界。基础 token、显式消费者品牌配置与统一 policy 生成四主题，再生成 Rust 兼容 API；原生 Gallery 仍为纯 Rust。原有三页与上下往返滚动保留；新增八类展示页覆盖 40 个组件的固定状态样本，可点击切换基础状态。这不等于 40 个原生控件及 10 个组合模式已全部实现。
+[design/system.json](design/system.json) 是机器入口，[DESIGN.md](DESIGN.md) 说明权威与边界。基础 token、显式消费者品牌配置与统一 policy 生成四主题，再生成 Rust 兼容 API；原生 Gallery 仍为纯 Rust。Gallery 已改为 Overview、Foundations、Components、Patterns、Examples 和 Quality lab 的原生工作台；组件注册、搜索、Story 路由与成熟度集中在 `design/gallery/workbench.json`。关键控件使用真实 Rust 状态模型，Settings 和组合场景可操作；缺失组件保留明确的 planned 坑位。历史状态插图只作为 Quality lab 的比较夹具，不计为真实组件实现。详见 [Gallery 使用与扩展约定](docs/gallery.md)。
 
 使用、品牌定制与检查命令见 [design/README.md](design/README.md)。原版 24 张 golden 与历史性能结果保留，新提案画面另行审查，不覆盖历史证据。
 

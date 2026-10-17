@@ -1,0 +1,390 @@
+{
+  "format": "tekesui-gold7-alignment-worklist/1",
+  "date": "2026-10-17",
+  "catalog": "./gold7.json",
+  "scope": "All 23 Gold7 requirements, current pure Rust project; no new public components; performance acceptance remains deferred.",
+  "status_policy": "Implemented code and deterministic tests do not establish native experience. Missing is never not-applicable. A requirement stays partial until all its child gaps are closed.",
+  "repairs": [
+    {
+      "id": "measured-search-action-row",
+      "state": "verified-code",
+      "description": "Real input/Button shared ROW/COLUMN layout, JSON gap, narrow wrapping, actual Clear action",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+      }
+    },
+    {
+      "id": "standalone-button-content-center",
+      "state": "verified-code",
+      "description": "Standalone action/state-matrix/brand-preview buttons follow BUTTON_CONTENT center; navigation/menu/list leading preserved",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+      }
+    },
+    {
+      "id": "independent-focus-ring",
+      "state": "verified-code",
+      "description": "JSON 2pt width/2pt offset, neutral ring independent of required/error boundary, actual ancestor clipping",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+      }
+    },
+    {
+      "id": "split-cancel-capture",
+      "state": "verified-code",
+      "description": "Capture only on successful drag; cancel/rollback/late-event coverage at model/view/adapter",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+      }
+    },
+    {
+      "id": "owned-popup-scroll-clock",
+      "state": "verified-code",
+      "description": "Menu-owned scroll tick/needs_animation/ReducedMotion through Menu/Select/ComboBox/CommandPalette",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+      }
+    },
+    {
+      "id": "navigation-search-preference",
+      "state": "verified-code",
+      "description": "Gallery preference propagation now includes navigation search",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+      }
+    },
+    {
+      "id": "composition-pointer-submit-guard",
+      "state": "verified-code",
+      "description": "Marked composition sampled before blur, matching pointer submit/confirmation blocked; committed later input remains usable",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+      }
+    },
+    {
+      "id": "button-size-radius-roles",
+      "state": "verified-code",
+      "description": "Real Button paint consumes c-button-xs/sm/md/lg-radius; legacy direct painters use md alias without breaking callers",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+      }
+    },
+    {
+      "id": "split-keyboard-restore",
+      "state": "verified-code",
+      "description": "Arrow/Home/End restore a feasible two-pane layout after narrow-mode selection, including clamped endpoints",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+      }
+    },
+    {
+      "id": "filtered-popup-wheel-routing",
+      "state": "verified-code",
+      "description": "ComboBox/CommandPalette popup owns wheel events and consumes them before background scrolling; 24-item actual overflow fixtures test Reduced Motion and elastic paths",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+      }
+    },
+    {
+      "id": "focus-paint-space-and-reveal",
+      "state": "verified-code",
+      "description": "Real ancestor clips, token focus gutter, full owned control frames, keyboard scroll reveal and Menu/Dialog spacing",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass2/receipt.json"
+      }
+    },
+    {
+      "id": "semantic-gaussian-elevation",
+      "state": "verified-code",
+      "description": "JSON Menu/Popover/Dialog elevation reaches actual Gaussian GPU pixels; panels and increased-contrast themes stay shadow-free",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass2/receipt.json"
+      }
+    },
+    {
+      "id": "production-control-state-transitions",
+      "state": "verified-code",
+      "description": "Production Button hover/press, Switch thumb and Disclosure body use JSON bindings, interruption and Reduced Motion",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass2/receipt.json"
+      }
+    },
+    {
+      "id": "post-build-frame-scheduling",
+      "state": "verified-code",
+      "description": "Host starts animation requests discovered by the first scene build and stops when completed",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass2/receipt.json"
+      }
+    },
+    {
+      "id": "inactive-control-motion-cancellation",
+      "state": "verified-code",
+      "description": "Deactivation and late inactive MouseUp clear stale hover/capture/presentation channels",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass2/receipt.json"
+      }
+    }
+  ],
+  "requirements": [
+    {
+      "id": "G1/warm-neutral-reading-foundation",
+      "requirement_ref": "./gold7.json#/items/0/requirements/0",
+      "implementation": "implemented-unverified",
+      "experience": "unverified",
+      "observation": "Warm neutral roles are brand-independent; verify sustained page appearance in four themes.",
+      "next_action": "Review long text, normal/disabled text and neutral hierarchy on actual screens.",
+      "repairs": []
+    },
+    {
+      "id": "G1/consumer-brand-derivation",
+      "requirement_ref": "./gold7.json#/items/0/requirements/1",
+      "implementation": "implemented-unverified",
+      "experience": "unverified",
+      "observation": "13 registered compiler-generated presets and explicit draft/confirm preview are wired.",
+      "next_action": "Keep semantic role and 13-brand contrast guards; verify real overlays under every applied preset.",
+      "repairs": []
+    },
+    {
+      "id": "G1/whole-page-reading-composition",
+      "requirement_ref": "./gold7.json#/items/0/requirements/2",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Long-form fixture exists, but complete page-by-page spacing/reading review is outstanding.",
+      "next_action": "Review every registered page at normal/narrow/150% text; track any layout defects as child tasks.",
+      "repairs": []
+    },
+    {
+      "id": "G2/four-semantic-surface-roles",
+      "requirement_ref": "./gold7.json#/items/1/requirements/0",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Four semantic roles exist; document-canvas intentionally maps surface-1 rather than attachment surface-0.",
+      "next_action": "Document the role mapping difference and validate real canvas/region/panel/overlay hierarchy before changing approved background.",
+      "repairs": []
+    },
+    {
+      "id": "G2/same-color-geometric-distinction",
+      "requirement_ref": "./gold7.json#/items/1/requirements/1",
+      "implementation": "implemented-unverified",
+      "experience": "unverified",
+      "observation": "Menu/Popover/Dialog consume JSON two-layer Gaussian elevation through shared production surface paint; panels remain flat and IC has explicit boundaries without shadow.",
+      "next_action": "Review physical screen appearance and overlay edge placement; GPU raster checks cover 4 themes at 1x/2x.",
+      "repairs": [
+        "semantic-gaussian-elevation"
+      ]
+    },
+    {
+      "id": "G3/hairline-and-required-boundary-roles",
+      "requirement_ref": "./gold7.json#/items/2/requirements/0",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Independent 2pt + 2pt neutral focus ring preserves error/required boundaries; scoped focus gutter and true ancestor clips are implemented.",
+      "next_action": "Finish page-by-page physical boundary/focus review without changing required-control contrast.",
+      "repairs": [
+        "independent-focus-ring",
+        "focus-paint-space-and-reveal"
+      ]
+    },
+    {
+      "id": "G3/component-role-radius-map",
+      "requirement_ref": "./gold7.json#/items/2/requirements/1",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Button size aliases are now consumed by production paint; row/column surface radius roles still need semantic audit.",
+      "next_action": "Bind Button size to its component radius aliases, then audit row/column surfaces by semantic role.",
+      "repairs": [
+        "button-size-radius-roles"
+      ]
+    },
+    {
+      "id": "G3/nested-radius-geometry",
+      "requirement_ref": "./gold7.json#/items/2/requirements/2",
+      "implementation": "implemented-unverified",
+      "experience": "unverified",
+      "observation": "Concentric formula is corrected and tested; real nested component coverage remains incomplete.",
+      "next_action": "Add real concentric fixtures where actually applicable; do not force the rule onto unrelated adjacent shapes.",
+      "repairs": []
+    },
+    {
+      "id": "G3/real-scale-rendering",
+      "requirement_ref": "./gold7.json#/items/2/requirements/3",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Focus paint space and document-space reveal are wired for existing workbench controls; GPU focus/shadow evidence covers 1x/2x; physical display review remains.",
+      "next_action": "Audit remaining offscreen roving focus and fractional/physical display edges, without promoting untested experience.",
+      "repairs": [
+        "focus-paint-space-and-reveal"
+      ]
+    },
+    {
+      "id": "G4/named-press-expansion-snap-presets",
+      "requirement_ref": "./gold7.json#/items/3/requirements/0",
+      "implementation": "implemented-unverified",
+      "experience": "unverified",
+      "observation": "Explicit JSON production bindings: Button press60/hover200ms, Switch thumb120ms, Disclosure reveal300ms; legacy recipes preserved.",
+      "next_action": "Review timing on real interactions before any shared visual tuning; no performance acceptance in this phase.",
+      "repairs": [
+        "production-control-state-transitions",
+        "post-build-frame-scheduling",
+        "inactive-control-motion-cancellation"
+      ]
+    },
+    {
+      "id": "G4/real-component-motion-integration",
+      "requirement_ref": "./gold7.json#/items/3/requirements/1",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Production Button/Switch/Disclosure own StateTransition progress and real GPU output; Gallery host collects frame requests after scene build.",
+      "next_action": "Continue per-component coverage including overlay enter/exit lifecycle; do not infer every component is animated.",
+      "repairs": [
+        "production-control-state-transitions",
+        "post-build-frame-scheduling",
+        "inactive-control-motion-cancellation"
+      ]
+    },
+    {
+      "id": "G4/direct-manipulation-and-interruption",
+      "requirement_ref": "./gold7.json#/items/3/requirements/2",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Direct tracking exists; SplitView view/adapter cancellation and capture ownership need regression coverage.",
+      "next_action": "Close Escape/invalid layout/focus loss cancellation chain; audit explicit lost capture delivery separately.",
+      "repairs": [
+        "split-cancel-capture",
+        "production-control-state-transitions",
+        "post-build-frame-scheduling",
+        "inactive-control-motion-cancellation"
+      ]
+    },
+    {
+      "id": "G4/reduced-motion-path",
+      "requirement_ref": "./gold7.json#/items/3/requirements/3",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Menu scroll and real Button/Switch/Disclosure paths receive system/manual Reduced Motion; finite transitions snap and do not replay on re-enable.",
+      "next_action": "Audit remaining component/overlay state channels and VoiceOver/system setting behavior in native sessions.",
+      "repairs": [
+        "owned-popup-scroll-clock",
+        "navigation-search-preference",
+        "filtered-popup-wheel-routing",
+        "production-control-state-transitions",
+        "post-build-frame-scheduling",
+        "inactive-control-motion-cancellation"
+      ]
+    },
+    {
+      "id": "G5/ime-and-suggestion-priority",
+      "requirement_ref": "./gold7.json#/items/4/requirements/0",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Pointer submission can blur/unmark preedit before submit guard observes composition.",
+      "next_action": "Capture composition before focus transfer and suppress the matching submit/confirm activation; verify next committed input can submit.",
+      "repairs": [
+        "composition-pointer-submit-guard"
+      ]
+    },
+    {
+      "id": "G5/durable-draft-recovery",
+      "requirement_ref": "./gold7.json#/items/4/requirements/1",
+      "implementation": "missing",
+      "experience": "unverified",
+      "observation": "Only in-memory text and fixture phases exist; no durable draft/outbox/version-specific acknowledgment.",
+      "next_action": "Define consumer-owned storage contract and runnable interruption/retry/ack fixture using actual editor; do not mark missing persistence N/A.",
+      "repairs": []
+    },
+    {
+      "id": "G5/manual-scroll-reading-anchor",
+      "requirement_ref": "./gold7.json#/items/4/requirements/2",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Same-document reflow anchor exists; changed/streaming text has no following-vs-history controller.",
+      "next_action": "Preserve a stable content anchor on append while reading history; explicitly track user upward intent.",
+      "repairs": []
+    },
+    {
+      "id": "G5/explicit-return-to-latest",
+      "requirement_ref": "./gold7.json#/items/4/requirements/3",
+      "implementation": "missing",
+      "experience": "unverified",
+      "observation": "No live-edge state and explicit jump-to-latest workflow.",
+      "next_action": "Compose an existing Button with reading-state controller; incoming data/timers never repin the reader.",
+      "repairs": []
+    },
+    {
+      "id": "G6/zoom-preserves-reading-anchor",
+      "requirement_ref": "./gold7.json#/items/5/requirements/0",
+      "implementation": "missing",
+      "experience": "unverified",
+      "observation": "Media viewer contract is specified-not-implemented.",
+      "next_action": "Requires media capability outside current no-new-component phase; retain explicit missing status and required zoom/pan/resize tests.",
+      "repairs": []
+    },
+    {
+      "id": "G6/bounded-split-and-pan-geometry",
+      "requirement_ref": "./gold7.json#/items/5/requirements/1",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Split minima and keyboard restore after constrained resize are implemented; media pan remains missing.",
+      "next_action": "Provide keyboard-accessible recovery to two panes; retain media pan gap separately.",
+      "repairs": [
+        "split-keyboard-restore"
+      ]
+    },
+    {
+      "id": "G6/cancel-and-non-gesture-alternatives",
+      "requirement_ref": "./gold7.json#/items/5/requirements/2",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Focus loss cancels many gestures; explicit lost-capture delivery and Split double-click reset are not integrated. Media alternatives missing.",
+      "next_action": "Audit host capture lifecycle, wire reset/recovery alternatives for existing Split; media remains a separate missing capability.",
+      "repairs": []
+    },
+    {
+      "id": "G7/reusable-real-component-contract",
+      "requirement_ref": "./gold7.json#/items/6/requirements/0",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Real components/registry exist, but explicit Leading overrides made standalone Button labels misaligned.",
+      "next_action": "Remove standalone action Leading overrides; retain semantic leading for navigation/menu/list; audit all Gallery content ownership.",
+      "repairs": [
+        "standalone-button-content-center"
+      ]
+    },
+    {
+      "id": "G7/component-documentation-and-runnable-preview",
+      "requirement_ref": "./gold7.json#/items/6/requirements/1",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Canonical routes and real previews exist; applicable states/keyboard/large text coverage is not complete for every component.",
+      "next_action": "Track per-component contract/state coverage; use actual events and glyphs, never simulated focus as keyboard acceptance.",
+      "repairs": []
+    },
+    {
+      "id": "G7/business-combinations-are-real",
+      "requirement_ref": "./gold7.json#/items/6/requirements/2",
+      "implementation": "partial",
+      "experience": "unverified",
+      "observation": "Five patterns and Settings exist; search action row was manually positioned and IME submit flow was unsafe.",
+      "next_action": "Use shared measured layout for combinations; exercise form, filtering, master-detail, error retry and danger cancel end-to-end.",
+      "repairs": [
+        "measured-search-action-row",
+        "composition-pointer-submit-guard"
+      ]
+    }
+  ],
+  "deferred_acceptance": [
+    "physical display visual review",
+    "native physical IME and VoiceOver",
+    "CPU/drop frames/continuous built-in 120Hz and 8.33ms"
+  ],
+  "next_implementation_order": [
+    "per-component focus paint outset/reveal and radius-role audit",
+    "shared elevation rendering",
+    "production Button/Switch/Disclosure motion with ReducedMotion/interruption",
+    "existing Split constrained-layout recovery and host capture",
+    "draft/outbox and live-edge reading fixture",
+    "remaining per-component/page state and composition audit",
+    "media capability after explicit no-new-component scope changes"
+  ]
+}

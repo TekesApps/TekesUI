@@ -1,0 +1,1010 @@
+{
+  "cpu_unit": "100% = one logical CPU core, user+system",
+  "drop_definition": "actual presented interval > 1.5 refreshes; do not infer no drops from p99",
+  "rows": [
+    {
+      "case": "baseline-before-smoke",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf/baseline-before-smoke.json",
+      "seconds": 10.0,
+      "gpu_timing": true,
+      "sources": 1,
+      "animated_views": 3,
+      "mode": "Steady",
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": null,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 25.884270212335657,
+      "cpu_peak_250ms_percent": 40.64408150207765,
+      "model_ms": {
+        "count": 1202,
+        "max": 0.021209,
+        "mean": 0.005070846921797005,
+        "p95": 0.009209,
+        "p99": 0.012958
+      },
+      "raster_upload_ms": {
+        "count": 1202,
+        "max": 2.521,
+        "mean": 1.0723759825291184,
+        "p95": 1.89375,
+        "p99": 2.208125
+      },
+      "cpu_frame_ms": {
+        "count": 1202,
+        "max": 9.649083,
+        "mean": 1.623844913477538,
+        "min": 0.577375,
+        "p50": 1.5692080000000002,
+        "p95": 2.5390420000000002,
+        "p99": 2.873583
+      },
+      "cpu_active_ms": {
+        "count": 1202,
+        "max": 3.086207,
+        "mean": 1.380131336106489,
+        "min": 0.515958,
+        "p50": 1.390375,
+        "p95": 2.327959,
+        "p99": 2.747042
+      },
+      "build_ms": {
+        "count": 1202,
+        "max": 2.530916,
+        "mean": 1.080103760399334,
+        "min": 0.39275,
+        "p50": 1.073708,
+        "p95": 1.902917,
+        "p99": 2.220166
+      },
+      "acquire_ms": {
+        "count": 1202,
+        "max": 8.648249999999999,
+        "mean": 0.24371357737104843,
+        "min": 0.011958,
+        "p50": 0.056541,
+        "p95": 1.125292,
+        "p99": 1.817166
+      },
+      "gpu_ms": {
+        "count": 1202,
+        "max": 5.0610409999999995,
+        "mean": 0.20909042512479192,
+        "min": 0.083625,
+        "p50": 0.10562500000000001,
+        "p95": 0.7853330000000001,
+        "p99": 2.0255
+      },
+      "presentation_interval_ms": {
+        "count": 1201,
+        "max": 16.666458337567747,
+        "mean": 8.340194004996494,
+        "min": 8.333124918863177,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "presentation_gap_events": 1,
+      "presentation_missed_refreshes_estimate": 1,
+      "presented_fps": 119.90128759605759,
+      "callback_dropped_refreshes": 0,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 1.7529999999998935,
+        "cpu_percent": 0.03518341013304048,
+        "display_link_callbacks": 0,
+        "wait_s": 5.005187625
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 3,
+      "strict_zero_drop_pass": false
+    },
+    {
+      "case": "diagnostic-gpu-timing-24",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf/diagnostic-gpu-timing-24.json",
+      "seconds": 30.0,
+      "gpu_timing": true,
+      "sources": 8,
+      "animated_views": 24,
+      "mode": "Steady",
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 48.51185937996636,
+      "cpu_peak_250ms_percent": 50.13250799496538,
+      "model_ms": {
+        "count": 3599,
+        "max": 0.04,
+        "mean": 0.007868686023895507,
+        "p95": 0.019834,
+        "p99": 0.02175
+      },
+      "raster_upload_ms": {
+        "count": 3599,
+        "max": 3.682583,
+        "mean": 3.2447259477632775,
+        "p95": 3.4510840000000003,
+        "p99": 3.525916
+      },
+      "cpu_frame_ms": {
+        "count": 3599,
+        "max": 15.407291,
+        "mean": 6.453632522645197,
+        "min": 2.91225,
+        "p50": 6.931041,
+        "p95": 7.119208,
+        "p99": 7.216708
+      },
+      "cpu_active_ms": {
+        "count": 3599,
+        "max": 4.149000000000001,
+        "mean": 3.4772398438455134,
+        "min": 2.9007919999999996,
+        "p50": 3.4770420000000004,
+        "p95": 3.6989170000000007,
+        "p99": 3.791043
+      },
+      "build_ms": {
+        "count": 3599,
+        "max": 3.691625,
+        "mean": 3.2529851503195375,
+        "min": 2.7144169999999996,
+        "p50": 3.248,
+        "p95": 3.4608339999999997,
+        "p99": 3.5331669999999997
+      },
+      "acquire_ms": {
+        "count": 3599,
+        "max": 11.776708000000001,
+        "mean": 2.976392678799666,
+        "min": 0.008041,
+        "p50": 3.434041,
+        "p95": 3.685791,
+        "p99": 3.7959579999999997
+      },
+      "gpu_ms": {
+        "count": 3599,
+        "max": 10.898916999999999,
+        "mean": 0.4179089627674358,
+        "min": 0.150375,
+        "p50": 0.39729099999999995,
+        "p95": 0.40375,
+        "p99": 1.5371670000000002
+      },
+      "presentation_interval_ms": {
+        "count": 3598,
+        "max": 16.666541690938175,
+        "mean": 8.340216057544358,
+        "min": 8.333166595548391,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.333374978974462
+      },
+      "presentation_gap_events": 3,
+      "presentation_missed_refreshes_estimate": 3,
+      "presented_fps": 119.90097056243815,
+      "callback_dropped_refreshes": 3,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 2.9199999999995896,
+        "cpu_percent": 0.0585619686129909,
+        "display_link_callbacks": 0,
+        "wait_s": 5.006645167
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 24,
+      "strict_zero_drop_pass": false
+    },
+    {
+      "case": "diagnostic-static-24",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf/diagnostic-static-24.json",
+      "seconds": 30.0,
+      "gpu_timing": false,
+      "sources": 8,
+      "animated_views": 24,
+      "mode": "Steady",
+      "static_diagnostic": true,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 16.84639181329959,
+      "cpu_peak_250ms_percent": 20.312089513461395,
+      "model_ms": {
+        "count": 3600,
+        "max": 0.04575,
+        "mean": 0.017730094722222322,
+        "p95": 0.028166,
+        "p99": 0.038083
+      },
+      "raster_upload_ms": {
+        "count": 3600,
+        "max": 0.059750000000000004,
+        "mean": 0.027472531388888936,
+        "p95": 0.040166,
+        "p99": 0.048124999999999994
+      },
+      "cpu_frame_ms": {
+        "count": 3600,
+        "max": 1.046,
+        "mean": 0.5611488733333331,
+        "min": 0.129375,
+        "p50": 0.504833,
+        "p95": 0.866916,
+        "p99": 0.925292
+      },
+      "cpu_active_ms": {
+        "count": 3600,
+        "max": 0.9292090000000001,
+        "mean": 0.5051766319444448,
+        "min": 0.11775,
+        "p50": 0.453792,
+        "p95": 0.7782910000000001,
+        "p99": 0.8266249999999999
+      },
+      "build_ms": {
+        "count": 3600,
+        "max": 0.09025,
+        "mean": 0.04730761055555566,
+        "min": 0.012792000000000001,
+        "p50": 0.042292,
+        "p95": 0.07166700000000001,
+        "p99": 0.082666
+      },
+      "acquire_ms": {
+        "count": 3600,
+        "max": 0.131791,
+        "mean": 0.055972241388888816,
+        "min": 0.011625,
+        "p50": 0.050291999999999996,
+        "p95": 0.088792,
+        "p99": 0.10225000000000001
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 3599,
+        "max": 16.66658336762339,
+        "mean": 8.337898953392363,
+        "min": 8.333166595548391,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.333374978974462
+      },
+      "presentation_gap_events": 2,
+      "presentation_missed_refreshes_estimate": 2,
+      "presented_fps": 119.93429107139028,
+      "callback_dropped_refreshes": 2,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 3.449999999999953,
+        "cpu_percent": 0.06909654462679678,
+        "display_link_callbacks": 0,
+        "wait_s": 5.006024583
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 24,
+      "strict_zero_drop_pass": false
+    },
+    {
+      "case": "final-all-effects-42",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf/final-all-effects-42.json",
+      "seconds": 20.0,
+      "gpu_timing": false,
+      "sources": 14,
+      "animated_views": 42,
+      "mode": "Steady",
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 62.38219779079358,
+      "cpu_peak_250ms_percent": 84.28355499022804,
+      "model_ms": {
+        "count": 2401,
+        "max": 0.061417,
+        "mean": 0.01592709371095371,
+        "p95": 0.036125,
+        "p99": 0.040833
+      },
+      "raster_upload_ms": {
+        "count": 2401,
+        "max": 10.361541,
+        "mean": 4.328664838817166,
+        "p95": 4.888624999999999,
+        "p99": 6.084916
+      },
+      "cpu_frame_ms": {
+        "count": 2401,
+        "max": 10.918583,
+        "mean": 5.419996845481045,
+        "min": 3.780916,
+        "p50": 4.617458,
+        "p95": 7.941375000000001,
+        "p99": 9.443332999999999
+      },
+      "cpu_active_ms": {
+        "count": 2401,
+        "max": 10.876542,
+        "mean": 4.6226156018325595,
+        "min": 3.769499,
+        "p50": 4.495084,
+        "p95": 5.350458,
+        "p99": 6.659834
+      },
+      "build_ms": {
+        "count": 2401,
+        "max": 10.388417,
+        "mean": 4.345736358184093,
+        "min": 3.610333,
+        "p50": 4.23425,
+        "p95": 4.90325,
+        "p99": 6.106625
+      },
+      "acquire_ms": {
+        "count": 2401,
+        "max": 5.4951669999999995,
+        "mean": 0.7973812436484806,
+        "min": 0.006583,
+        "p50": 0.022667000000000003,
+        "p95": 2.776709,
+        "p99": 4.5149159999999995
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 2400,
+        "max": 8.33345833234489,
+        "mean": 8.333265520826293,
+        "min": 8.333083242177963,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "presentation_gap_events": 0,
+      "presentation_missed_refreshes_estimate": 0,
+      "presented_fps": 120.00097650804773,
+      "callback_dropped_refreshes": 1,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 2.6170000000007576,
+        "cpu_percent": 0.052471211113260204,
+        "display_link_callbacks": 0,
+        "wait_s": 5.006539709
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 42,
+      "strict_zero_drop_pass": false
+    },
+    {
+      "case": "final-baseline-3",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf/final-baseline-3.json",
+      "seconds": 30.0,
+      "gpu_timing": false,
+      "sources": 1,
+      "animated_views": 3,
+      "mode": "Steady",
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 32.20530329345629,
+      "cpu_peak_250ms_percent": 40.215321552989664,
+      "model_ms": {
+        "count": 3600,
+        "max": 0.027708,
+        "mean": 0.005261774722222286,
+        "p95": 0.006791,
+        "p99": 0.007458
+      },
+      "raster_upload_ms": {
+        "count": 3600,
+        "max": 2.6159999999999997,
+        "mean": 1.494603298888884,
+        "p95": 2.287083,
+        "p99": 2.416125
+      },
+      "cpu_frame_ms": {
+        "count": 3600,
+        "max": 3.271875,
+        "mean": 1.8986951694444423,
+        "min": 0.431666,
+        "p50": 1.9535,
+        "p95": 2.796375,
+        "p99": 2.951291
+      },
+      "cpu_active_ms": {
+        "count": 3600,
+        "max": 3.184834,
+        "mean": 1.8426461147222213,
+        "min": 0.423708,
+        "p50": 1.895334,
+        "p95": 2.7200010000000003,
+        "p99": 2.874208
+      },
+      "build_ms": {
+        "count": 3600,
+        "max": 2.6272499999999996,
+        "mean": 1.502835515000001,
+        "min": 0.360416,
+        "p50": 1.515458,
+        "p95": 2.296625,
+        "p99": 2.425292
+      },
+      "acquire_ms": {
+        "count": 3600,
+        "max": 1.942083,
+        "mean": 0.05604905472222221,
+        "min": 0.007125,
+        "p50": 0.05775,
+        "p95": 0.08,
+        "p99": 0.091667
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 3599,
+        "max": 16.666541574522853,
+        "mean": 8.335580913693894,
+        "min": 8.333124918863177,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.333374978974462
+      },
+      "presentation_gap_events": 1,
+      "presentation_missed_refreshes_estimate": 1,
+      "presented_fps": 119.9676435696492,
+      "callback_dropped_refreshes": 2,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 2.1110000000010842,
+        "cpu_percent": 0.042212905518131796,
+        "display_link_callbacks": 0,
+        "wait_s": 5.005573875
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 3,
+      "strict_zero_drop_pass": false
+    },
+    {
+      "case": "final-combined-72",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf/final-combined-72.json",
+      "seconds": 30.0,
+      "gpu_timing": false,
+      "sources": 24,
+      "animated_views": 72,
+      "mode": "Combined",
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 98.89683979318279,
+      "cpu_peak_250ms_percent": 111.06172287435527,
+      "model_ms": {
+        "count": 3559,
+        "max": 0.29854200000000003,
+        "mean": 0.1474032452936219,
+        "p95": 0.191167,
+        "p99": 0.218334
+      },
+      "raster_upload_ms": {
+        "count": 3559,
+        "max": 16.495083,
+        "mean": 7.092457549592571,
+        "p95": 7.797083,
+        "p99": 10.646583
+      },
+      "cpu_frame_ms": {
+        "count": 3559,
+        "max": 17.395792,
+        "mean": 7.728828348131514,
+        "min": 6.826208,
+        "p50": 7.527875,
+        "p95": 8.813166,
+        "p99": 11.448
+      },
+      "cpu_active_ms": {
+        "count": 3559,
+        "max": 17.323584,
+        "mean": 7.631908646810907,
+        "min": 6.800916000000001,
+        "p50": 7.465707999999999,
+        "p95": 8.444374999999999,
+        "p99": 11.421125
+      },
+      "build_ms": {
+        "count": 3559,
+        "max": 16.655959000000003,
+        "mean": 7.240914639786451,
+        "min": 6.493916,
+        "p50": 7.107417000000001,
+        "p95": 7.940875,
+        "p99": 10.799916
+      },
+      "acquire_ms": {
+        "count": 3559,
+        "max": 2.63175,
+        "mean": 0.09691970132059567,
+        "min": 0.007208,
+        "p50": 0.015792,
+        "p95": 0.6557499999999999,
+        "p99": 1.9017089999999999
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 3558,
+        "max": 24.999874993227422,
+        "mean": 8.431636113452265,
+        "min": 8.333124918863177,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 16.66650001425296
+      },
+      "presentation_gap_events": 40,
+      "presentation_missed_refreshes_estimate": 42,
+      "presented_fps": 118.60094370113394,
+      "callback_dropped_refreshes": 43,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 1.886999999999972,
+        "cpu_percent": 0.03775941052164982,
+        "display_link_callbacks": 0,
+        "wait_s": 5.005369292
+      },
+      "edits_including_warmup": 223980,
+      "targets_including_warmup": 4224,
+      "images_per_frame": 72,
+      "strict_zero_drop_pass": false
+    },
+    {
+      "case": "final-multi-24",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf/final-multi-24.json",
+      "seconds": 60.0,
+      "gpu_timing": false,
+      "sources": 8,
+      "animated_views": 24,
+      "mode": "Steady",
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 46.23625110406982,
+      "cpu_peak_250ms_percent": 50.53144697100894,
+      "model_ms": {
+        "count": 7200,
+        "max": 0.039959,
+        "mean": 0.006968949305555748,
+        "p95": 0.008084,
+        "p99": 0.019875
+      },
+      "raster_upload_ms": {
+        "count": 7200,
+        "max": 5.619083000000001,
+        "mean": 3.200820804583333,
+        "p95": 3.530583,
+        "p99": 3.6162080000000003
+      },
+      "cpu_frame_ms": {
+        "count": 7200,
+        "max": 16.75925,
+        "mean": 7.864683146805531,
+        "min": 2.274709,
+        "p50": 8.309624999999999,
+        "p95": 8.549041,
+        "p99": 8.863959
+      },
+      "cpu_active_ms": {
+        "count": 7200,
+        "max": 6.172084,
+        "mean": 3.400561653055564,
+        "min": 2.265167,
+        "p50": 3.4959159999999994,
+        "p95": 3.7262499999999994,
+        "p99": 3.838001
+      },
+      "build_ms": {
+        "count": 7200,
+        "max": 5.628959,
+        "mean": 3.2081188379166683,
+        "min": 2.112542,
+        "p50": 3.3195419999999998,
+        "p95": 3.537833,
+        "p99": 3.623833
+      },
+      "acquire_ms": {
+        "count": 7200,
+        "max": 13.390459,
+        "mean": 4.464121493750002,
+        "min": 0.007375,
+        "p50": 4.796916,
+        "p95": 5.475583,
+        "p99": 5.842415999999999
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 7199,
+        "max": 16.66658336762339,
+        "mean": 8.33673790340255,
+        "min": 8.333166595548391,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "presentation_gap_events": 3,
+      "presentation_missed_refreshes_estimate": 3,
+      "presented_fps": 119.95099421223986,
+      "callback_dropped_refreshes": 2,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 4.348000000000241,
+        "cpu_percent": 0.0869258995428206,
+        "display_link_callbacks": 0,
+        "wait_s": 5.011152
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 24,
+      "strict_zero_drop_pass": false
+    },
+    {
+      "case": "final-parameters-24",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf/final-parameters-24.json",
+      "seconds": 60.0,
+      "gpu_timing": false,
+      "sources": 8,
+      "animated_views": 24,
+      "mode": "Parameters",
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 45.814844799730274,
+      "cpu_peak_250ms_percent": 53.211995180666996,
+      "model_ms": {
+        "count": 7200,
+        "max": 0.137541,
+        "mean": 0.07290032333333328,
+        "p95": 0.103958,
+        "p99": 0.112167
+      },
+      "raster_upload_ms": {
+        "count": 7200,
+        "max": 6.874458,
+        "mean": 3.103039953333333,
+        "p95": 3.452292,
+        "p99": 3.5578749999999997
+      },
+      "cpu_frame_ms": {
+        "count": 7200,
+        "max": 7.69025,
+        "mean": 3.379064301250009,
+        "min": 2.266708,
+        "p50": 3.448,
+        "p95": 3.7422079999999998,
+        "p99": 3.9
+      },
+      "cpu_active_ms": {
+        "count": 7200,
+        "max": 7.601542,
+        "mean": 3.364108400833333,
+        "min": 2.258041,
+        "p50": 3.4361260000000002,
+        "p95": 3.7251659999999998,
+        "p99": 3.8777080000000006
+      },
+      "build_ms": {
+        "count": 7200,
+        "max": 6.9815830000000005,
+        "mean": 3.176561952083337,
+        "min": 2.099083,
+        "p50": 3.2708749999999998,
+        "p95": 3.533542,
+        "p99": 3.632334
+      },
+      "acquire_ms": {
+        "count": 7200,
+        "max": 0.101584,
+        "mean": 0.014955900416666628,
+        "min": 0.0065,
+        "p50": 0.011667,
+        "p95": 0.032375,
+        "p99": 0.040833
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 7199,
+        "max": 16.66658336762339,
+        "mean": 8.335580751953815,
+        "min": 8.333166595548391,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.333374978974462
+      },
+      "presentation_gap_events": 2,
+      "presentation_missed_refreshes_estimate": 2,
+      "presented_fps": 119.96764589745057,
+      "callback_dropped_refreshes": 2,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 2.1489999999992904,
+        "cpu_percent": 0.0430630875979667,
+        "display_link_callbacks": 0,
+        "wait_s": 5.011239208
+      },
+      "edits_including_warmup": 147600,
+      "targets_including_warmup": 416,
+      "images_per_frame": 24,
+      "strict_zero_drop_pass": false
+    },
+    {
+      "case": "final-retarget-24",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf/final-retarget-24.json",
+      "seconds": 60.0,
+      "gpu_timing": false,
+      "sources": 8,
+      "animated_views": 24,
+      "mode": "Retarget",
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": true,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 46.48523313112394,
+      "cpu_peak_250ms_percent": 51.32917075498725,
+      "model_ms": {
+        "count": 7199,
+        "max": 0.08650000000000001,
+        "mean": 0.03391945728573413,
+        "p95": 0.05575,
+        "p99": 0.068625
+      },
+      "raster_upload_ms": {
+        "count": 7199,
+        "max": 6.4665,
+        "mean": 3.263608241422409,
+        "p95": 3.4955410000000002,
+        "p99": 3.6087089999999997
+      },
+      "cpu_frame_ms": {
+        "count": 7199,
+        "max": 12.3935,
+        "mean": 4.2110587688568,
+        "min": 2.3695,
+        "p50": 3.5302919999999998,
+        "p95": 8.361584,
+        "p99": 8.523166999999999
+      },
+      "cpu_active_ms": {
+        "count": 7199,
+        "max": 7.20075,
+        "mean": 3.4616135666064634,
+        "min": 2.36075,
+        "p50": 3.4855,
+        "p95": 3.719042,
+        "p99": 3.861292
+      },
+      "build_ms": {
+        "count": 7199,
+        "max": 6.4858340000000005,
+        "mean": 3.2978868377552555,
+        "min": 2.2138750000000003,
+        "p50": 3.326042,
+        "p95": 3.5282500000000003,
+        "p99": 3.6389590000000003
+      },
+      "acquire_ms": {
+        "count": 7199,
+        "max": 8.853959,
+        "mean": 0.749445202250312,
+        "min": 0.006375,
+        "p50": 0.010875,
+        "p95": 4.903625,
+        "p99": 5.223459
+      },
+      "gpu_ms": null,
+      "presentation_interval_ms": {
+        "count": 7198,
+        "max": 16.666541690938175,
+        "mean": 8.337897662537612,
+        "min": 8.333166595548391,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "presentation_gap_events": 4,
+      "presentation_missed_refreshes_estimate": 4,
+      "presented_fps": 119.93430963935018,
+      "callback_dropped_refreshes": 3,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 1.8540000000015766,
+        "cpu_percent": 0.037178284294899354,
+        "display_link_callbacks": 0,
+        "wait_s": 5.010976542
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 2736,
+      "images_per_frame": 24,
+      "strict_zero_drop_pass": false
+    },
+    {
+      "case": "multi-before-smoke",
+      "report": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/symbol-perf/multi-before-smoke.json",
+      "seconds": 10.0,
+      "gpu_timing": true,
+      "sources": 8,
+      "animated_views": 24,
+      "mode": "Steady",
+      "static_diagnostic": false,
+      "completed": true,
+      "all_models_stopped": null,
+      "errors": [],
+      "display": {
+        "builtin": true,
+        "max_fps": 120,
+        "scale": 2.0,
+        "screen": "Built-in Retina Display"
+      },
+      "refresh_ms": 8.333333333333336,
+      "cpu_percent": 42.96812655000794,
+      "cpu_peak_250ms_percent": 45.40979715634113,
+      "model_ms": {
+        "count": 1199,
+        "max": 0.031167,
+        "mean": 0.010303110925771481,
+        "p95": 0.019041,
+        "p99": 0.023458
+      },
+      "raster_upload_ms": {
+        "count": 1199,
+        "max": 4.428208000000001,
+        "mean": 2.7478051734778997,
+        "p95": 3.01675,
+        "p99": 3.179792
+      },
+      "cpu_frame_ms": {
+        "count": 1199,
+        "max": 16.369374999999998,
+        "mean": 3.112762135946623,
+        "min": 2.514167,
+        "p50": 3.020959,
+        "p95": 3.341583,
+        "p99": 8.126332999999999
+      },
+      "cpu_active_ms": {
+        "count": 1199,
+        "max": 4.729915999999999,
+        "mean": 3.0054179032527104,
+        "min": 2.501084,
+        "p50": 2.9987500000000002,
+        "p95": 3.2888330000000003,
+        "p99": 3.4547499999999998
+      },
+      "build_ms": {
+        "count": 1199,
+        "max": 4.442166,
+        "mean": 2.7609476588824005,
+        "min": 2.308459,
+        "p50": 2.755458,
+        "p95": 3.0325830000000003,
+        "p99": 3.188916
+      },
+      "acquire_ms": {
+        "count": 1199,
+        "max": 13.532416,
+        "mean": 0.10734423269391165,
+        "min": 0.01175,
+        "p50": 0.019083,
+        "p95": 0.025834,
+        "p99": 5.129167
+      },
+      "gpu_ms": {
+        "count": 1199,
+        "max": 3.446333,
+        "mean": 0.6949508940783993,
+        "min": 0.089584,
+        "p50": 0.118916,
+        "p95": 2.55075,
+        "p99": 3.057083
+      },
+      "presentation_interval_ms": {
+        "count": 1198,
+        "max": 16.66658336762339,
+        "mean": 8.35412277407456,
+        "min": 8.333124918863177,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "presentation_gap_events": 3,
+      "presentation_missed_refreshes_estimate": 3,
+      "presented_fps": 119.7013770378514,
+      "callback_dropped_refreshes": 3,
+      "missing_receipts": 0,
+      "not_presented": 0,
+      "idle_after": {
+        "cpu_ms": 2.6440000000000907,
+        "cpu_percent": 0.052878166482415265,
+        "display_link_callbacks": 0,
+        "wait_s": 5.00584175
+      },
+      "edits_including_warmup": 0,
+      "targets_including_warmup": 0,
+      "images_per_frame": 24,
+      "strict_zero_drop_pass": false
+    }
+  ]
+}

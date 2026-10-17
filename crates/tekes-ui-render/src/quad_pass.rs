@@ -32,6 +32,8 @@ impl QuadPass {
             2 => Float32x4,
             3 => Float32x4,
             4 => Float32x4,
+            5 => Float32x4,
+            6 => Float32x4,
         ];
         QuadPass {
             pipeline: instanced_pipeline(

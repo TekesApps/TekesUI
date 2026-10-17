@@ -1,0 +1,55 @@
+{
+  "format": "tekesui-container-reflow-review/1",
+  "source_manifest": "target/scroll-repair/reflow-source-sha256.json",
+  "source_manifest_sha256": "e2783cc25f27a00656c9dcbc989828292b0adce6f6650eaf78af49d83e8304f9",
+  "build_target": "target/scroll-repair/reflow-target",
+  "app": "target/TekesUI Layout Review.app",
+  "signed_executable_sha256": "bf78c7d83a6c6980e64c4da824771c1b1f7a18c7eedaa3bc0f5b91a493b3fc5e",
+  "live_owned_sources_match_candidate": [
+    "crates/tekes-ui-gallery/src/main.rs",
+    "crates/tekes-ui-gallery/src/gallery/text_demo.rs",
+    "crates/tekes-ui-gallery/src/gallery/text.rs",
+    "crates/tekes-ui-text/src/coretext/shaper.rs",
+    "crates/tekes-ui-text/src/coretext/mod.rs",
+    "crates/tekes-ui-text/tests/shape.rs"
+  ],
+  "candidate_scope": "previous frozen delivery source plus current container reflow changes; subsequent Symbols workload development remains in live workspace",
+  "tests": {
+    "passed": 182,
+    "failed": 0,
+    "ignored": 1,
+    "scope": "tekes-ui-gallery and tekes-ui-text release tests in independent target directory"
+  },
+  "strict_clippy": "release all-targets for gallery and text passed in independent target directory",
+  "prepared_layout_pixel_parity": {
+    "images": 68,
+    "changed": 0,
+    "scope": "before/after prepared document reuse, prior to horizontal scroll policy repair"
+  },
+  "layout_timing": {
+    "max_ms": 5.677708,
+    "p50_ms": 3.402875,
+    "p95_ms": 5.185917,
+    "p99_ms": 5.677708,
+    "samples": 68,
+    "scope": "synchronous text layout only; excludes GPU and native presentation"
+  },
+  "native_resize_script": {
+    "exit_code": 0,
+    "elapsed_s": 15.041640667011961,
+    "cpu_s": 4.225058,
+    "mean_cpu_percent": 28.0890768070669,
+    "scope": "entire resize script including startup and idle capture intervals; 100%=one logical core",
+    "executable_sha256": "29d00ebe921e9ebd4715d53b2b6915bb111e7a3defa1ff58187ec8ec32ecfe7b"
+  },
+  "native_cua_review": {
+    "narrow_and_wide_text_editor": "checked by native container drag",
+    "selection_and_end_of_document": "checked after width changes",
+    "unwanted_horizontal_bar": "reproduced before fix, absent in final candidate after select-all and 1440 -> 720 -> 1080pt resize",
+    "panel_bottom": "inside available container; final line and padding visible",
+    "app_left_open": "TextEditor in Layout Review"
+  },
+  "strict_120hz_zero_drops": "not passed; earlier outstanding presentation gaps remain",
+  "native_fast_reverse_release": "not passed; earlier outstanding oracle mismatch remains",
+  "continuous_resize_all_presented_frames": "not certified; screenshots and reflow pixel tests do not prove every physical refresh"
+}

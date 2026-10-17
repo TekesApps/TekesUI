@@ -1,0 +1,11 @@
+{
+  "binary_sha256": "a4863249103abf125f34495d98db55a3a8401c56f5ffe538450b1c498685e18b",
+  "design_sha256": {
+    "design/system.json": "807c605a3eac5f831e10c789e90acc5451836187a7171ac9b5cec45d626984cb",
+    "design/source/layout.json": "ed3da7a0f36d674f7e9afb03fa6eab58ea969579889ff4f9b943b6b8107037d0",
+    "design/source/base.tokens.json": "6f5893cdf91db3b3cba9cf9f1c781f61754100c5661334f382849e1606634217",
+    "design/tokens.json": "3abea67b9cdbe2c25adec5babb2ad501078d703b628ae0d8596f6815d8f2ed38",
+    "design/brand/policy.json": "8ab0d7c6c9605a72ace5af335cf90ffa8abe3243534ac9c4ca68f3fc39bf488c"
+  },
+  "baseline_evidence": "design/reviews/motion-layout-20261016"
+}

@@ -26,10 +26,22 @@
       "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json"
     },
     "layout": {
-      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/layout.json"
+      "$ref": "./source/layout.json",
+      "package_source": {
+        "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/layout.json"
+      }
     },
     "interaction": {
-      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/interaction-contracts.json"
+      "$ref": "./source/interaction-contracts.json",
+      "package_source": {
+        "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/interaction-contracts.json"
+      }
+    },
+    "motion": {
+      "$ref": "./source/motion.json",
+      "package_source": {
+        "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/tokens/motion.toml"
+      }
     },
     "brand": {
       "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/gallery.json"
@@ -42,6 +54,15 @@
     },
     "adapters": {
       "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/adapters/contract.json"
+    },
+    "scroll_behavior": {
+      "$ref": "./behavior/scroll.json"
+    },
+    "scroll_viewport_contract": {
+      "$ref": "./behavior/scroll-viewport.json"
+    },
+    "gallery_localization": {
+      "$ref": "./gallery/localization.json"
     }
   },
   "tools": {
@@ -83,6 +104,15 @@
     },
     "navigation": {
       "$ref": "./gallery/navigation.json"
+    },
+    "workbench_registry": {
+      "$ref": "./gallery/workbench.json"
+    },
+    "workbench_brand_projection": {
+      "$ref": "./gallery/brands.json"
+    },
+    "reference_alignment_20261016": {
+      "$ref": "./behavior/reference-alignment.json"
     }
   },
   "acceptance": {
@@ -102,6 +132,7 @@
     "foundation_integration": "reviewed candidate: 16 unified pages, real scroll/text/motion interactions; p99 performance and peak/untested limits recorded separately",
     "foundation_evidence": {
       "$ref": "./reviews/text-foundation/verification.json"
-    }
+    },
+    "workbench": "experimental native workbench; planned components explicit; see docs/gallery.md and reviews/workbench/evidence.json; no stable or sustained-120Hz acceptance claimed"
   }
 }

@@ -710,3 +710,66 @@ fn unregistered_images_are_skipped_and_bad_input_is_rejected() {
     assert_ne!(a, b);
     assert_ne!(a, id);
 }
+
+#[test]
+fn transformed_images_rotate_select_atlas_region_and_keep_zero_angle_pixels() {
+    use tekes_ui_scene::TransformedImageQuad;
+    let Some(mut r) = renderer() else {
+        return;
+    };
+    let mut atlas = GlyphAtlas::default();
+    let id = r.register_image(&four_color_image(), 2, 2).unwrap();
+    let quad = ImageQuad {
+        rect: Rect::new(5.0, 5.0, 10.0, 10.0),
+        image: id,
+        opacity: 1.0,
+    };
+    let mut legacy = Scene::new();
+    legacy.push_image(quad);
+    let mut transformed = Scene::new();
+    transformed.push_transformed_image(TransformedImageQuad::new(quad, 0.0));
+    assert_eq!(
+        render(&mut r, &legacy, &mut atlas, (20, 20), 1.0, Rgba::gray(0.0)).data,
+        render(
+            &mut r,
+            &transformed,
+            &mut atlas,
+            (20, 20),
+            1.0,
+            Rgba::gray(0.0)
+        )
+        .data
+    );
+    transformed.clear();
+    transformed
+        .push_transformed_image(TransformedImageQuad::new(quad, std::f32::consts::FRAC_PI_2));
+    let image = render(
+        &mut r,
+        &transformed,
+        &mut atlas,
+        (20, 20),
+        1.0,
+        Rgba::gray(0.0),
+    );
+    assert_px(&image, 5, 5, [0, 0, 255, 255], 2);
+    assert_px(&image, 14, 5, [255, 0, 0, 255], 2);
+    assert_px(&image, 14, 14, [0, 255, 0, 255], 2);
+    let id = r
+        .register_image(&[255, 0, 0, 255, 0, 255, 0, 255], 2, 1)
+        .unwrap();
+    transformed.clear();
+    transformed.push_transformed_image(TransformedImageQuad {
+        quad: ImageQuad { image: id, ..quad },
+        rotation: 0.0,
+        uv: Rect::new(0.5, 0.0, 0.5, 1.0),
+    });
+    let image = render(
+        &mut r,
+        &transformed,
+        &mut atlas,
+        (20, 20),
+        1.0,
+        Rgba::gray(0.0),
+    );
+    assert_px(&image, 13, 10, [0, 255, 0, 255], 0);
+}

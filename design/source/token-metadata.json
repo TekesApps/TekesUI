@@ -1381,6 +1381,22 @@
       "source": "this-proposal",
       "owner_role": "design-maintainer"
     },
+    "size:c-checkbox-size": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:c-checkbox-row-min": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
     "radius:c-input-radius": {
       "tier": "component",
       "unit": "logical-pt",
@@ -1389,7 +1405,23 @@
       "source": "this-proposal",
       "owner_role": "design-maintainer"
     },
+    "radius:c-checkbox-radius": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
     "spacing:c-field-gap": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:c-checkbox-label-gap": {
       "tier": "component",
       "unit": "logical-pt",
       "status": "proposed",
@@ -2516,6 +2548,46 @@
       "status": "proposed",
       "since": "0.3.0-proposal.1",
       "source": "DS-007",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-status-solid-foreground": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:c-status-badge-foreground": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:c-focus-offset": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-shadow-ink": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:shadow-ink": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "this-proposal",
       "owner_role": "design-maintainer"
     }
   }

@@ -1,0 +1,213 @@
+{
+  "format": "tekesui-scroll-repair-evidence/1",
+  "cpu_unit": "100% = one logical core; process user + system CPU",
+  "latency_note": "8.333ms is refresh cadence, not input-to-display latency; target-to-present is reported separately.",
+  "runs": [
+    {
+      "report": "target/scroll-repair/perf-scroll-60s.json",
+      "sha256": "c71fcc1926fb7c50f8f844c54fb3eb98df4acaedf285b8e30274c68588d481f2",
+      "content": "scroll-area",
+      "seconds": 60.0,
+      "frames": 7199,
+      "passed_presentation_gate": false,
+      "gpu_counters_enabled": true,
+      "passed_strict_gate": false,
+      "failures": [
+        "display callback skipped refreshes",
+        "actual presentation skipped refreshes",
+        "cpu_ms peak exceeds refresh budget"
+      ],
+      "refresh_budget_ms": 8.333333333333336,
+      "actual_interval_ms": {
+        "count": 7198,
+        "max": 16.66658336762339,
+        "mean": 8.336732095725514,
+        "min": 8.333124918863177,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "actual_gaps": 3,
+      "callback_dropped_refreshes": 3,
+      "cpu_frame_ms": {
+        "count": 7199,
+        "max": 10.816875,
+        "mean": 1.2667712926795434,
+        "min": 0.16025,
+        "p50": 1.067625,
+        "p95": 1.9985419999999998,
+        "p99": 8.38975
+      },
+      "acquire_ms": {
+        "count": 7199,
+        "max": 10.14775,
+        "mean": 0.6465227937213505,
+        "min": 0.007083,
+        "p50": 0.063792,
+        "p95": 1.439792,
+        "p99": 7.9970419999999995
+      },
+      "gpu_ms": {
+        "count": 7199,
+        "max": 7.371959,
+        "mean": 1.6656264163078225,
+        "min": 0.522833,
+        "p50": 1.628333,
+        "p95": 2.1811249999999998,
+        "p99": 2.5508330000000004
+      },
+      "cpu_percent": 16.317516734664235,
+      "cpu_peak_250ms_percent": 29.536071702463563,
+      "idle": {
+        "cpu_ms": 2.509999999999124,
+        "cpu_percent": 0.05028253962782459,
+        "display_link_callbacks": 0,
+        "wait_s": 5.005704042
+      },
+      "target_to_present_ms": {
+        "count": 7199,
+        "max": 41.64783330634236,
+        "mean": 23.05258482181745,
+        "min": 16.6337916161865,
+        "p50": 16.660624998621643,
+        "p95": 33.32833340391517,
+        "p99": 33.33212493453175
+      }
+    },
+    {
+      "report": "target/scroll-repair/perf-scroll-validated-cpu-only.json",
+      "sha256": "aec1e3a897a1cd48271b2a12c5af84caac1d6237603cfd9d618c48f427c292b8",
+      "content": "scroll-area",
+      "seconds": 60.0,
+      "frames": 7198,
+      "passed_presentation_gate": false,
+      "gpu_counters_enabled": false,
+      "passed_strict_gate": false,
+      "failures": [
+        "display callback skipped refreshes",
+        "actual presentation skipped refreshes",
+        "cpu_ms peak exceeds refresh budget",
+        "GPU counters disabled; GPU time unverified in this run"
+      ],
+      "refresh_budget_ms": 8.333333333333336,
+      "actual_interval_ms": {
+        "count": 7197,
+        "max": 16.666541690938175,
+        "mean": 8.33788789888075,
+        "min": 8.3331250352785,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "actual_gaps": 4,
+      "callback_dropped_refreshes": 4,
+      "cpu_frame_ms": {
+        "count": 7198,
+        "max": 16.483874999999998,
+        "mean": 2.4462639255348746,
+        "min": 0.15495799999999998,
+        "p50": 3.242083,
+        "p95": 3.9473750000000005,
+        "p99": 4.195667
+      },
+      "acquire_ms": {
+        "count": 7198,
+        "max": 16.020917,
+        "mean": 2.0766027685468185,
+        "min": 0.008833,
+        "p50": 2.9835830000000003,
+        "p95": 3.312,
+        "p99": 3.455167
+      },
+      "gpu_ms": null,
+      "cpu_percent": 9.959187557723542,
+      "cpu_peak_250ms_percent": 24.647641711216007,
+      "idle": {
+        "cpu_ms": 1.0620000000001184,
+        "cpu_percent": 0.021257163607704375,
+        "display_link_callbacks": 0,
+        "wait_s": 5.005367625
+      },
+      "target_to_present_ms": {
+        "count": 7198,
+        "max": 41.66195832658559,
+        "mean": 30.57548525595945,
+        "min": 16.656375024467707,
+        "p50": 33.308499958366156,
+        "p95": 33.330666716210544,
+        "p99": 33.33254158496857
+      }
+    },
+    {
+      "report": "target/scroll-repair/perf-editor-validated.json",
+      "sha256": "0b919b1eb6761e5b33ffaeb5db86d35aa39aeb82fc4ff8d3f7c6a66e279c5729",
+      "content": "editor",
+      "seconds": 30.0,
+      "frames": 3601,
+      "passed_presentation_gate": false,
+      "gpu_counters_enabled": true,
+      "passed_strict_gate": false,
+      "failures": [
+        "display callback skipped refreshes",
+        "actual presentation skipped refreshes",
+        "cpu_ms peak exceeds refresh budget"
+      ],
+      "refresh_budget_ms": 8.333333333333336,
+      "actual_interval_ms": {
+        "count": 3600,
+        "max": 16.66658336762339,
+        "mean": 8.335568576391475,
+        "min": 8.333124918863177,
+        "p50": 8.333250065334141,
+        "p95": 8.333333302289248,
+        "p99": 8.33333341870457
+      },
+      "actual_gaps": 1,
+      "callback_dropped_refreshes": 1,
+      "cpu_frame_ms": {
+        "count": 3601,
+        "max": 12.217833,
+        "mean": 5.02830499472369,
+        "min": 0.401041,
+        "p50": 4.379250000000001,
+        "p95": 8.374209,
+        "p99": 8.645334
+      },
+      "acquire_ms": {
+        "count": 3601,
+        "max": 11.802834,
+        "mean": 4.367173428492081,
+        "min": 0.026917,
+        "p50": 3.61625,
+        "p95": 7.999959,
+        "p99": 8.211125
+      },
+      "gpu_ms": {
+        "count": 3601,
+        "max": 6.314208,
+        "mean": 1.9994812096639838,
+        "min": 0.556209,
+        "p50": 2.264833,
+        "p95": 2.586458,
+        "p99": 3.1110830000000003
+      },
+      "cpu_percent": 18.117915504407343,
+      "cpu_peak_250ms_percent": 27.89032545385754,
+      "idle": {
+        "cpu_ms": 1.5739999999997423,
+        "cpu_percent": 0.031514053427229446,
+        "display_link_callbacks": 0,
+        "wait_s": 5.004111792
+      },
+      "target_to_present_ms": {
+        "count": 3601,
+        "max": 41.6444584261626,
+        "mean": 33.32317792449066,
+        "min": 32.176375039853156,
+        "p50": 33.316291752271354,
+        "p95": 33.33137498702854,
+        "p99": 33.33266661502421
+      }
+    }
+  ]
+}

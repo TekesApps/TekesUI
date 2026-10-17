@@ -1,0 +1,18 @@
+{
+  "before": {
+    "native_adapter": "public NSEvent adapter, not physical trackpad",
+    "scope": "active finger phase only; native publication aligned to previous model display sample",
+    "samples": 16,
+    "rmse_pt": 150.58526446834034,
+    "max_error_pt": 190.0,
+    "raw_report": "target/scroll-repair/native-edge-reverse-before.json"
+  },
+  "after": {
+    "native_adapter": "public NSEvent adapter, not physical trackpad",
+    "scope": "active finger phase only; native publication aligned to previous model display sample",
+    "samples": 16,
+    "rmse_pt": 0.125,
+    "max_error_pt": 0.5,
+    "raw_report": "target/scroll-repair/native-edge-reverse-after.json"
+  }
+}

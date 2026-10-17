@@ -1,0 +1,13 @@
+{
+  "invalid_modes": [
+    "text",
+    "scroll-repair",
+    "reflow"
+  ],
+  "reason": "Legacy menu IDs failed to navigate. These runs are retained as failed/stale harness evidence; neither exit0 nor screenshot count establishes component validation. Scroll-repair canonical tail also did not focus before its bottom command.",
+  "valid_modes": [
+    "workbench",
+    "workbench-extended"
+  ],
+  "replacement": "native-corrected"
+}

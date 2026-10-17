@@ -1,0 +1,6 @@
+{
+  "reason": "lib module registration occurred immediately after dispatch; restored exact prior verified source only in baseline archive",
+  "restored": {
+    "crates/tekes-ui-controls/src/lib.rs": "c82643c6c207976ea855c5d412fe63d1ae6ffe61f8889488804e130f1a42ceb6"
+  }
+}

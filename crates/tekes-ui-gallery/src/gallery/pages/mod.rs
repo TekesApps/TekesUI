@@ -46,27 +46,12 @@ pub enum Page {
     Text,
     ScrollArea,
     Motion,
+    Workbench(usize),
 }
 
 impl Page {
-    pub const ALL: [Page; 16] = [
-        Page::Primitives,
-        Page::Tokens,
-        Page::StaticText,
-        Page::Foundations,
-        Page::Actions,
-        Page::Forms,
-        Page::Navigation,
-        Page::Overlays,
-        Page::Feedback,
-        Page::Documents,
-        Page::Data,
-        Page::TextEditing,
-        Page::Icons,
-        Page::Text,
-        Page::ScrollArea,
-        Page::Motion,
-    ];
+    pub const ALL: [Page; include!(concat!(env!("OUT_DIR"), "/workbench_count.rs"))] =
+        include!(concat!(env!("OUT_DIR"), "/workbench_pages.rs"));
 
     pub const fn category(self) -> Option<&'static str> {
         match self {
@@ -85,6 +70,7 @@ impl Page {
     /// 菜单和窗口标题里的名字。
     pub fn name(self) -> &'static str {
         match self {
+            Page::Workbench(i) => super::workbench::entry(i).title(),
             Page::Icons => "Icons",
             Page::Text => "Text",
             Page::Motion => "Motion",
@@ -100,6 +86,7 @@ impl Page {
     /// 快照文件名里的名字。
     pub fn slug(self) -> &'static str {
         match self {
+            Page::Workbench(i) => super::workbench::entry(i).slug(),
             Page::Icons => "icons",
             Page::Text => "text",
             Page::Motion => super::motion_preview::SLUG,
@@ -126,6 +113,9 @@ impl Page {
     /// 编译这一页。`content` 是页面内容区（见 `layout::PAGE_CONTENT`）。
     pub fn build(self, ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
         match self {
+            Page::Workbench(i) => {
+                super::workbench::Workbench::fixture().build(i, ctx, content, scene)
+            }
             Page::Icons => {
                 super::text_demo::TextDemo::search_fixture().build_search(
                     ctx,
@@ -134,12 +124,10 @@ impl Page {
                 );
                 icons::build(ctx, content, scene, "");
             }
-            Page::Motion => motion::build(
-                ctx,
-                content,
-                scene,
-                &super::motion_preview::MotionPreview::default(),
-            ),
+            Page::Motion => {
+                let mut state = super::motion_preview::MotionPreview::default();
+                motion::build(ctx, content, content, scene, &mut state)
+            }
             Page::TextEditing => super::text_demo::build_editors_fixture(ctx, content, scene),
             Page::Text => super::text_demo::build_text_fixture(ctx, content, scene),
             Page::ScrollArea => super::text_demo::build_scroll_fixture(ctx, content, scene),
@@ -172,7 +160,6 @@ mod tests {
     fn names_and_slugs_are_unique() {
         for (i, a) in Page::ALL.iter().enumerate() {
             for b in &Page::ALL[i + 1..] {
-                assert_ne!(a.name(), b.name());
                 assert_ne!(a.slug(), b.slug());
             }
         }

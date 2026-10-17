@@ -5,6 +5,7 @@
 
 use serde_json::{Map, Value, json};
 use std::{collections::BTreeSet, fmt::Write};
+mod effects;
 mod freshness;
 mod proposal;
 mod validator;
@@ -766,6 +767,45 @@ assert_eq!(Motion::Expansion.resolve(true).to_bits(),Motion::Instant.seconds().t
         assert!(validate_document(&invalid).is_err());
         let mut invalid = d.clone();
         invalid["proposal"]["motion"]["duration"]["geometry"] = json!("invalid");
+        assert!(validate_document(&invalid).is_err());
+    }
+
+    #[test]
+    fn alignment_policy_is_typed_and_generated_from_layout_json() {
+        let mut d = document();
+        let baseline = generate_rust(&d).unwrap();
+        assert!(baseline.contains("pub const CHART_LABEL:AlignmentPolicy"));
+        assert!(baseline.contains("pub const TEXT_ROW:AlignmentPolicy"));
+        d["proposal"]["layout"]["alignment"]["presets"]["row"]["main_axis"] = json!("center");
+        let changed = generate_rust(&d).unwrap();
+        assert!(changed.contains(
+            "AlignmentPreset::Row=>AlignmentPolicy{main_axis:MainAxisDistribution::Center"
+        ));
+        d["proposal"]["layout"]["alignment"]["presets"]["chart_label"]["cross_axis"] =
+            json!("baseline-ish");
+        assert!(validate_document(&d).is_err());
+    }
+    #[test]
+    fn effect_bindings_are_validated_and_generated_from_authoritative_json() {
+        let mut d = document();
+        let baseline = generate_rust(&d).unwrap();
+        assert!(baseline.contains("pub fn elevation("));
+        assert!(baseline.contains("pub fn control_duration("));
+        d["proposal"]["motion"]["control_duration"]["press_feedback"] = json!(0.08);
+        d["proposal"]["layout"]["elevation"]["levels"]["modal"]["dark"][0]["alpha"] = json!(0.35);
+        assert_ne!(generate_rust(&d).unwrap(), baseline);
+        for path in [
+            "/proposal/motion/control_transitions/button_press/easing",
+            "/proposal/motion/control_transitions/switch_thumb/duration",
+            "/proposal/layout/elevation/roles/menu",
+        ] {
+            let mut invalid = d.clone();
+            *invalid.pointer_mut(path).unwrap() = json!("unknown");
+            assert!(validate_document(&invalid).is_err(), "{path}");
+        }
+        let mut invalid = d;
+        invalid["proposal"]["layout"]["elevation"]["levels"]["modal"]["dark"][0]["blur_radius"] =
+            json!(-1);
         assert!(validate_document(&invalid).is_err());
     }
     #[test]

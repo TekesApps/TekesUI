@@ -117,6 +117,11 @@ impl Pipelines {
                     self.quad.staging.push(QuadInstance::from_quad(q));
                     push_batch(&mut self.batches, Kind::Quads, start, start + 1);
                 }
+                Primitive::Shadow(shadow) => {
+                    let start = self.quad.staging.len() as u32;
+                    self.quad.staging.push(QuadInstance::from_shadow(shadow));
+                    push_batch(&mut self.batches, Kind::Quads, start, start + 1);
+                }
                 Primitive::Glyphs(run) => {
                     let start = self.glyph.staging.len() as u32;
                     for g in &run.glyphs {
@@ -142,6 +147,19 @@ impl Pipelines {
                     let start = self.image.staging.len() as u32;
                     self.image.staging.push(ImageInstance::from_quad(q));
                     push_batch(&mut self.batches, Kind::Image(q.image), start, start + 1);
+                }
+                Primitive::TransformedImage(q) => {
+                    if !self.image.contains(q.quad.image) {
+                        continue;
+                    }
+                    let start = self.image.staging.len() as u32;
+                    self.image.staging.push(ImageInstance::from_transformed(q));
+                    push_batch(
+                        &mut self.batches,
+                        Kind::Image(q.quad.image),
+                        start,
+                        start + 1,
+                    );
                 }
                 // Primitive 是 non_exhaustive，新增的图元种类在这里要显式处理。
                 _ => {}

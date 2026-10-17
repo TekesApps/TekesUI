@@ -7,14 +7,16 @@
 //!    到头折返）垂直滚动，滚动位置按回调的 `target_timestamp` 算，所以掉帧会表现为画面跳变而不是被时间平滑掉；
 //! 3. 每帧记录 CPU 时间（宿主量）、`nextDrawable` 等待、编码、提交（渲染器量）、GPU 时间（时间戳查询）、
 //!    显示链接的时间戳，见 `tekes_ui_render::stats` 的说明；
-//! 4. 到时间关闭动画，**等 5 秒**，确认显示链接没有再回调、进程 CPU 没有在跑（空闲回归），然后写 JSON 报告并退出。
+//! 4. 到时间停止提交新帧，收齐在途呈现收据（最多 500ms），再关闭动画，**等 5 秒**确认空闲。
 //!
 //! 环境变量：
 //! - `TEKES_PERF=scroll` 或 `scroll:10`：开启并指定测量秒数；
 //! - `TEKES_PERF_OUT=路径`：JSON 报告的路径，默认当前目录 `tekes-perf-<unix 秒>.json`；
-//! - `TEKES_PERF_CONTENT=quads|text|mixed|editor|icons|motion`：滚动的内容，默认 `mixed`；
+//! - `TEKES_PERF_CONTENT=quads|text|mixed|editor|scroll-area|icons|motion`：滚动的内容，默认 `mixed`；
 //! - `TEKES_PERF_SPEED=点/秒`：滚动速度，默认 1200；
 //! - `TEKES_PERF_COMMIT=...`：写进报告的提交标识（`scripts/f1-scroll-gate.sh` 会设置）。
+//! - `TEKES_PERF_DRAIN_TIMER_ONLY=1`：仅诊断停止阶段的独立唤醒，不用于性能验收。
+//! - `TEKES_PERF_TEST_EARLY_CLOSE_MS=...`：仅诊断提前关闭的失败边界。
 //!
 //! 窗口放哪块屏幕：perf 模式请求 120Hz，摆放规则选内建屏；`TEKESUI_WINDOW_PLACEMENT=builtin` 也可以显式指定。
 //!
@@ -28,6 +30,7 @@
 //! 但整屏的 Gallery 页每帧都重新 `build_scene`（计入 CPU 时间），不缓存。
 //! 文字的排版结果缓存，每帧只做 `push_paragraph`。
 
+use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicI32, Ordering};
@@ -71,8 +74,10 @@ pub enum ContentKind {
     Text,
     Mixed,
     Editor,
+    ScrollArea,
     Icons,
     Motion,
+    Symbols,
 }
 
 impl ContentKind {
@@ -82,8 +87,10 @@ impl ContentKind {
             ContentKind::Text => "text",
             ContentKind::Mixed => "mixed",
             ContentKind::Editor => "editor",
+            ContentKind::ScrollArea => "scroll-area",
             ContentKind::Icons => "icons",
             ContentKind::Motion => "motion",
+            ContentKind::Symbols => "symbols",
         }
     }
 }
@@ -153,11 +160,13 @@ impl PerfConfig {
             Some("quads") => ContentKind::Quads,
             Some("text") => ContentKind::Text,
             Some("editor") => ContentKind::Editor,
+            Some("scroll-area") => ContentKind::ScrollArea,
             Some("icons") => ContentKind::Icons,
             Some("motion") => ContentKind::Motion,
+            Some("symbols") => ContentKind::Symbols,
             Some(other) => {
                 return Err(format!(
-                    "TEKES_PERF_CONTENT 取 quads、text、mixed、editor、icons、motion，收到 {other:?}"
+                    "TEKES_PERF_CONTENT 取 quads、text、mixed、editor、scroll-area、icons、motion、symbols，收到 {other:?}"
                 ));
             }
         };
@@ -222,9 +231,12 @@ fn plan_document(content: ContentKind, para_heights: &[f32]) -> Plan {
     for i in 0..SEGMENTS {
         let want_text = match content {
             ContentKind::Quads => false,
-            ContentKind::Text | ContentKind::Editor | ContentKind::Icons | ContentKind::Motion => {
-                true
-            }
+            ContentKind::Text
+            | ContentKind::Editor
+            | ContentKind::ScrollArea
+            | ContentKind::Icons
+            | ContentKind::Motion
+            | ContentKind::Symbols => true,
             ContentKind::Mixed => i % 2 == 1,
         };
         if !want_text || para_heights.is_empty() {
@@ -260,6 +272,18 @@ fn plan_document(content: ContentKind, para_heights: &[f32]) -> Plan {
 fn translate_into(dst: &mut Scene, src: &Scene, dy: f32, view_h: f32) {
     for p in src.primitives() {
         match p {
+            Primitive::Shadow(shadow) => {
+                let mut moved = *shadow;
+                moved.rect = moved.rect.offset(0.0, dy);
+                let tail = moved.outset.max(0.0) + moved.blur_radius * 2.5 + 1.0;
+                let bounds = moved
+                    .rect
+                    .offset(moved.offset.x, moved.offset.y)
+                    .inset(-tail);
+                if bounds.max_y() >= 0.0 && bounds.min_y() <= view_h {
+                    dst.push_shadow(moved);
+                }
+            }
             Primitive::Quad(q) => {
                 let rect = q.rect.offset(0.0, dy);
                 if rect.max_y() < 0.0 || rect.min_y() > view_h {
@@ -290,6 +314,14 @@ fn translate_into(dst: &mut Scene, src: &Scene, dy: f32, view_h: f32) {
                     continue;
                 }
                 dst.push_image(ImageQuad { rect, ..*im });
+            }
+            Primitive::TransformedImage(im) => {
+                let mut moved = *im;
+                moved.quad.rect = moved.quad.rect.offset(0.0, dy);
+                let bounds = moved.bounds();
+                if bounds.max_y() >= 0.0 && bounds.min_y() <= view_h {
+                    dst.push_transformed_image(moved);
+                }
             }
             Primitive::PushClip(rect) => dst.push_clip(rect.offset(0.0, dy)),
             Primitive::PopClip => dst.pop_clip(),
@@ -358,6 +390,8 @@ enum Phase {
     WarmUp,
     /// 记录样本。
     Measure,
+    /// 不再提交新帧；让最后的已提交 drawable 完成呈现，避免 invalidate 取消它。
+    PresentationDrain,
     /// 动画已关，等 5 秒的空闲确认。
     Cooldown,
     Done,
@@ -365,8 +399,64 @@ enum Phase {
 
 struct Stop {
     callbacks: u64,
+    drawable_counts: (u64, u64),
     cpu: f64,
     at: Instant,
+}
+
+fn measurement_complete(phase: Phase, idle: Option<&Value>) -> bool {
+    phase == Phase::Cooldown
+        && idle
+            .and_then(|idle| idle["wait_s"].as_f64())
+            .is_some_and(|wait| wait.is_finite() && wait >= IDLE_WAIT_MS as f64 / 1000.0)
+}
+
+const PRESENTATION_DRAIN_TIMEOUT_S: f64 = 0.5;
+
+struct PresentationDrain {
+    started: Instant,
+    expected: HashSet<u64>,
+    received: usize,
+    unpresented: usize,
+    timed_out: bool,
+    wait_ms: Option<f64>,
+}
+
+impl PresentationDrain {
+    fn new(expected: impl IntoIterator<Item = u64>) -> Self {
+        Self {
+            started: Instant::now(),
+            expected: expected.into_iter().collect(),
+            received: 0,
+            unpresented: 0,
+            timed_out: false,
+            wait_ms: None,
+        }
+    }
+
+    fn poll(
+        &mut self,
+        receipts: &[tekes_ui_platform_macos::PresentedFrame],
+        elapsed_s: f64,
+    ) -> bool {
+        let matching: HashMap<_, _> = receipts
+            .iter()
+            .filter(|receipt| self.expected.contains(&receipt.serial))
+            .map(|receipt| (receipt.serial, receipt.presented_at))
+            .collect();
+        self.received = matching.len();
+        self.unpresented = matching
+            .values()
+            .filter(|time| !time.is_finite() || **time <= 0.0)
+            .count();
+        self.timed_out =
+            self.received < self.expected.len() && elapsed_s >= PRESENTATION_DRAIN_TIMEOUT_S;
+        if self.received == self.expected.len() || self.timed_out {
+            self.wait_ms = Some(elapsed_s * 1000.0);
+            return true;
+        }
+        false
+    }
 }
 
 /// 每帧要用到的宿主部件。
@@ -377,8 +467,13 @@ pub struct FrameCtx<'a> {
     pub theme: Theme,
 }
 
+#[path = "symbol_perf.rs"]
+mod symbol_perf;
+
 pub struct Perf {
+    symbols: Option<symbol_perf::SymbolWorkload>,
     cfg: PerfConfig,
+    measure_gpu: bool,
     plan: Plan,
     paragraphs: Vec<Paragraph>,
     /// 私有的 Gallery（自带文字引擎和 atlas，窗口里的那个 Gallery 不参与），用来逐页编整屏，不影响窗口里的那个。
@@ -391,13 +486,23 @@ pub struct Perf {
     measure_start: Option<Instant>,
     measure_end_cpu: f64,
     measure_end: Option<Instant>,
+    cpu_rate_last: Option<(Instant, f64)>,
+    cpu_rates: Vec<[f64; 2]>,
     prev_render_id: Option<u64>,
     samples: Vec<FrameSample>,
+    dispatch_delays: Vec<f64>,
     render_ids: Vec<Option<u64>>,
+    drawable_serials: Vec<u64>,
+    visibility_counts: [usize; 2],
+    visibility_changes: Vec<(f64, bool, bool)>,
+    scroll_cycle: Option<u64>,
+    scroll_stage: u8,
     /// 每帧（quads, glyphs, images, draws）。
     counts: Vec<[u32; 4]>,
     timings: Vec<FrameTiming>,
     stop: Option<Stop>,
+    presentation_drain: Option<PresentationDrain>,
+    drain_timer_only: bool,
     prewarm_ms: f64,
     started: Instant,
     motion_step: Option<u64>,
@@ -446,7 +551,12 @@ impl Perf {
                 .map_or(0, |d| d.as_secs());
             PathBuf::from(format!("tekes-perf-{t}.json"))
         });
+        let capacity = (cfg.seconds.mul_add(132.0, 240.0).min(100_000.0)) as usize;
+        let symbols =
+            (cfg.content == ContentKind::Symbols).then(symbol_perf::SymbolWorkload::from_env);
         Perf {
+            symbols,
+            measure_gpu: std::env::var("TEKES_PERF_GPU_TIMING").as_deref() != Ok("0"),
             cfg,
             plan,
             paragraphs,
@@ -459,12 +569,22 @@ impl Perf {
             measure_start: None,
             measure_end_cpu: 0.0,
             measure_end: None,
+            cpu_rate_last: None,
+            cpu_rates: Vec::new(),
             prev_render_id: None,
-            samples: Vec::new(),
-            render_ids: Vec::new(),
-            counts: Vec::new(),
-            timings: Vec::new(),
+            samples: Vec::with_capacity(capacity),
+            dispatch_delays: Vec::with_capacity(capacity),
+            render_ids: Vec::with_capacity(capacity),
+            drawable_serials: Vec::with_capacity(capacity),
+            visibility_counts: [0; 2],
+            visibility_changes: Vec::new(),
+            scroll_cycle: None,
+            scroll_stage: 0,
+            counts: Vec::with_capacity(capacity),
+            timings: Vec::with_capacity(capacity),
             stop: None,
+            presentation_drain: None,
+            drain_timer_only: std::env::var("TEKES_PERF_DRAIN_TIMER_ONLY").as_deref() == Ok("1"),
             prewarm_ms: 0.0,
             started: Instant::now(),
             motion_step: None,
@@ -488,19 +608,46 @@ impl Perf {
 
     /// 窗口和渲染器就绪后调用：开计时、预热 atlas、打开动画，并装一个看门狗，
     /// 防止窗口被遮挡等原因导致显示链接不回调时无限等下去。
+    /// Window placement may resize after Created. The benchmark must use the
+    /// same live content viewport as normal Gallery rendering and hit testing.
+    pub fn resize(&mut self, width: f32, height: f32) {
+        self.view_h = height;
+        self.gallery.set_view_size(width, height);
+    }
+
     pub fn begin(&mut self, window: &mut Window, renderer: &mut Renderer) {
+        window.set_presentation_timing(true);
         self.scale = window.scale() as f32;
         self.view_h = window.size().height as f32;
-        renderer.set_frame_timing(true);
+        if self.measure_gpu {
+            renderer.set_frame_timing(true);
+        } else {
+            renderer.set_frame_timing_cpu_only();
+        }
         let t = Instant::now();
         self.prewarm(renderer);
         if let Some(page) = match self.cfg.content {
             ContentKind::Editor => Some(Page::TextEditing),
+            ContentKind::ScrollArea => Some(Page::ScrollArea),
             ContentKind::Icons => Some(Page::Icons),
             ContentKind::Motion => Some(Page::Motion),
             _ => None,
         } {
-            self.gallery.apply(Command::Page(page));
+            if std::env::var("TEKES_PERF_WORKBENCH").as_deref() == Ok("1") {
+                let route = match self.cfg.content {
+                    ContentKind::Editor => "lab-internal-text",
+                    ContentKind::ScrollArea => "component-scroll-area",
+                    ContentKind::Icons => "component-icon",
+                    ContentKind::Motion => "foundation-motion",
+                    _ => unreachable!(),
+                };
+                assert!(
+                    self.gallery.open_route(route),
+                    "benchmark must exercise a real registered route"
+                );
+            } else {
+                self.gallery.apply(Command::Page(page));
+            }
             self.gallery
                 .set_view_size(window.size().width as f32, window.size().height as f32);
             self.gallery.prepare(renderer, self.scale);
@@ -535,6 +682,12 @@ impl Perf {
         );
         let limit_ms = ((self.cfg.seconds + WARMUP_S + 30.0) * 1000.0) as u64;
         selftest::run_script(vec![(limit_ms, Action::Close)]);
+        if let Ok(delay) = std::env::var("TEKES_PERF_TEST_EARLY_CLOSE_MS") {
+            let delay = delay
+                .parse()
+                .expect("TEKES_PERF_TEST_EARLY_CLOSE_MS must be unsigned milliseconds");
+            selftest::run_script(vec![(delay, Action::Close)]);
+        }
         if !on {
             window.close();
         }
@@ -557,16 +710,20 @@ impl Perf {
 
     fn document_height(&self) -> f32 {
         match self.cfg.content {
-            ContentKind::Editor => {
+            ContentKind::Editor | ContentKind::ScrollArea => {
                 let (limit, view) = self.gallery.editor_scroll_metrics();
                 limit + view
             }
+            ContentKind::Symbols => self.view_h,
             ContentKind::Icons | ContentKind::Motion => self.gallery.page_document_height(),
             _ => self.plan.height,
         }
     }
     fn scroll_at(&self, elapsed: f64) -> f32 {
-        let range = if self.cfg.content == ContentKind::Editor {
+        let range = if matches!(
+            self.cfg.content,
+            ContentKind::Editor | ContentKind::ScrollArea
+        ) {
             self.gallery.editor_scroll_metrics().0 as f64
         } else if self.cfg.content == ContentKind::Icons {
             self.gallery.page_scroll_range() as f64
@@ -578,9 +735,22 @@ impl Perf {
 
     /// 编这一帧的可见内容。
     fn build(&mut self, ctx: &mut FrameCtx<'_>, scroll: f32) {
+        if let Some(symbols) = &mut self.symbols {
+            symbols.build(
+                &mut self.gallery,
+                ctx.renderer,
+                ctx.scene,
+                ctx.theme,
+                self.scale,
+            );
+            return;
+        }
         if matches!(
             self.cfg.content,
-            ContentKind::Editor | ContentKind::Icons | ContentKind::Motion
+            ContentKind::Editor
+                | ContentKind::ScrollArea
+                | ContentKind::Icons
+                | ContentKind::Motion
         ) {
             if self.cfg.content == ContentKind::Editor {
                 self.gallery.scroll_editor_to(scroll);
@@ -639,6 +809,12 @@ impl Perf {
 
     /// 处理一个显示链接回调：画一帧，记录样本，推进阶段。
     pub fn frame(&mut self, f: AnimationFrame, ctx: &mut FrameCtx<'_>) {
+        if self.phase == Phase::PresentationDrain {
+            if !self.drain_timer_only {
+                self.poll_presentation_drain(ctx);
+            }
+            return;
+        }
         if self.phase == Phase::Cooldown || self.phase == Phase::Done {
             return;
         }
@@ -646,6 +822,13 @@ impl Perf {
         let first = *self.first_target.get_or_insert(f.target_timestamp);
         let elapsed = f.target_timestamp - first;
         let scroll = self.scroll_at(elapsed);
+        if let Some(symbols) = &mut self.symbols {
+            let dt = self.animation_target.map_or(f.refresh_interval, |last| {
+                (f.target_timestamp - last).max(0.0)
+            });
+            self.animation_target = Some(f.target_timestamp);
+            symbols.tick(elapsed, dt);
+        }
         if self.cfg.content == ContentKind::Motion {
             let dt = self
                 .animation_target
@@ -662,6 +845,62 @@ impl Perf {
             }
         }
 
+        if self.cfg.content == ContentKind::ScrollArea {
+            use tekes_ui_platform_macos::{
+                Modifiers, Point as Pt, ScrollEvent, ScrollPhase as P, Vec2,
+            };
+            let dt = self
+                .animation_target
+                .map_or(f.refresh_interval, |t| (f.target_timestamp - t).max(0.0));
+            self.animation_target = Some(f.target_timestamp);
+            self.gallery.animate(dt as f32);
+            let cycle = (elapsed / 2.0).floor() as u64;
+            let t = elapsed % 2.0;
+            let direction = if cycle.is_multiple_of(2) { 1.0 } else { -1.0 };
+            let event = |delta, phase, momentum_phase| {
+                tekes_ui_platform_macos::Event::Scroll(ScrollEvent {
+                    timestamp: f.target_timestamp,
+                    delta: Vec2 { x: 0.0, y: delta },
+                    precise: true,
+                    phase,
+                    momentum_phase,
+                    inverted: false,
+                    position: Pt { x: 600.0, y: 400.0 },
+                    modifiers: Modifiers::NONE,
+                })
+            };
+            if self.scroll_cycle != Some(cycle) {
+                self.scroll_cycle = Some(cycle);
+                self.scroll_stage = 0;
+                let limit = self.gallery.editor_scroll_metrics().0;
+                self.gallery.scroll_editor_to(if direction > 0.0 {
+                    (limit - 200.0).max(0.0)
+                } else {
+                    200.0
+                });
+                self.gallery.handle_input(&event(0.0, P::Began, P::None));
+            }
+            if t < 0.35 {
+                self.gallery.handle_input(&event(
+                    -direction * self.cfg.speed * dt,
+                    P::Changed,
+                    P::None,
+                ));
+            } else if t < 1.0 {
+                if self.scroll_stage == 0 {
+                    self.gallery.handle_input(&event(0.0, P::Ended, P::None));
+                    self.scroll_stage = 1;
+                }
+                self.gallery.handle_input(&event(
+                    -direction * self.cfg.speed * (-8.0 * (t - 0.35)).exp() * dt,
+                    P::None,
+                    P::Changed,
+                ));
+            } else if self.scroll_stage == 1 {
+                self.gallery.handle_input(&event(0.0, P::None, P::Ended));
+                self.scroll_stage = 2;
+            }
+        }
         self.gallery.text_mut().set_scale(self.scale);
         self.gallery.text_mut().begin_frame();
         ctx.scene.clear();
@@ -688,11 +927,41 @@ impl Perf {
             self.measure_start_target = Some(f.target_timestamp);
             self.measure_start_cpu = process_cpu_seconds();
             self.measure_start = Some(Instant::now());
+            self.cpu_rate_last = Some((Instant::now(), process_cpu_seconds()));
+        }
+        if let Some((at, cpu)) = self.cpu_rate_last
+            && at.elapsed().as_secs_f64() >= 0.25
+        {
+            let now = Instant::now();
+            let current = process_cpu_seconds();
+            self.cpu_rates.push([
+                self.measure_start.unwrap().elapsed().as_secs_f64(),
+                (current - cpu) / now.duration_since(at).as_secs_f64() * 100.0,
+            ]);
+            self.cpu_rate_last = Some((now, current));
         }
         let c = ctx.renderer.last_frame_counts();
         self.counts
             .push([c.0 as u32, c.1 as u32, c.2 as u32, c.3 as u32]);
         self.render_ids.push(if rendered { id } else { None });
+        self.drawable_serials.push(if rendered {
+            ctx.window.drawable_serial()
+        } else {
+            0
+        });
+        let occluded = ctx.window.is_occluded();
+        let key = ctx.window.is_key_window();
+        self.visibility_counts[0] += usize::from(occluded);
+        self.visibility_counts[1] += usize::from(!key);
+        if self
+            .visibility_changes
+            .last()
+            .is_none_or(|v| (v.1, v.2) != (occluded, key))
+        {
+            self.visibility_changes
+                .push((f.target_timestamp, occluded, key));
+        }
+        self.dispatch_delays.push(f.queue_delay() * 1000.0);
         self.samples.push(FrameSample {
             target_timestamp: f.target_timestamp,
             callback_time: f.callback_time,
@@ -705,18 +974,59 @@ impl Perf {
         });
         let start = self.measure_start_target.unwrap_or(f.target_timestamp);
         if f.target_timestamp - start >= self.cfg.seconds {
-            self.finish_measure(ctx);
+            self.finish_measure();
         }
     }
 
-    fn finish_measure(&mut self, ctx: &mut FrameCtx<'_>) {
-        ctx.window.set_animating(false);
+    fn finish_measure(&mut self) {
+        if let Some(symbols) = &mut self.symbols {
+            symbols.stop();
+        }
         self.measure_end_cpu = process_cpu_seconds();
         self.measure_end = Some(Instant::now());
+        self.presentation_drain = Some(PresentationDrain::new(
+            self.drawable_serials
+                .iter()
+                .zip(&self.samples)
+                .filter(|(_, sample)| sample.rendered)
+                .map(|(serial, _)| *serial),
+        ));
+        self.phase = Phase::PresentationDrain;
+        // Metal may stop issuing updates when no more supplied drawables are
+        // consumed. The timeout must therefore have an independent wake source.
+        selftest::run_script(vec![(
+            (PRESENTATION_DRAIN_TIMEOUT_S * 1000.0) as u64,
+            Action::WakeRedraw,
+        )]);
+        eprintln!(
+            "perf：测量结束（{} 帧），停止提交新帧，等待在途呈现收据……",
+            self.samples.len()
+        );
+    }
+
+    pub fn poll_presentation_drain(&mut self, ctx: &mut FrameCtx<'_>) {
+        if self.phase != Phase::PresentationDrain {
+            return;
+        }
+        let drain = self
+            .presentation_drain
+            .as_mut()
+            .expect("drain phase has state");
+        if drain.poll(
+            &ctx.window.presented_frames(),
+            drain.started.elapsed().as_secs_f64(),
+        ) {
+            self.begin_cooldown(ctx);
+        }
+    }
+
+    fn begin_cooldown(&mut self, ctx: &mut FrameCtx<'_>) {
+        ctx.window.set_animating(false);
         // 等 GPU 做完并收齐所有结果。
         ctx.renderer.drain_frame_timings(&mut self.timings, true);
         self.stop = Some(Stop {
             callbacks: ctx.window.display_link_callbacks(),
+            drawable_counts: ctx.window.drawable_acquisition_counts(),
             cpu: process_cpu_seconds(),
             at: Instant::now(),
         });
@@ -731,14 +1041,17 @@ impl Perf {
 
     /// 窗口收到关闭请求（空闲确认到时、看门狗、用户手动关）。写报告并关窗。
     pub fn on_close_requested(&mut self, window: &mut Window, renderer: &mut Renderer) {
-        let completed = self.phase == Phase::Cooldown;
         let idle = self.stop.as_ref().map(|s| {
             json!({
                 "wait_s": s.at.elapsed().as_secs_f64(),
                 "display_link_callbacks": window.display_link_callbacks().saturating_sub(s.callbacks),
+                "provided_drawable_consumptions": window.drawable_acquisition_counts().0.saturating_sub(s.drawable_counts.0),
+                "ordinary_drawable_acquisitions": window.drawable_acquisition_counts().1.saturating_sub(s.drawable_counts.1),
                 "cpu_ms": (process_cpu_seconds() - s.cpu) * 1e3,
+                "cpu_percent": (process_cpu_seconds() - s.cpu) / s.at.elapsed().as_secs_f64() * 100.0,
             })
         });
+        let completed = measurement_complete(self.phase, idle.as_ref());
         window.set_animating(false);
         renderer.drain_frame_timings(&mut self.timings, true);
         let atlas_stats = self.gallery.atlas_mut().stats();
@@ -809,10 +1122,43 @@ impl Perf {
                 "p50": d.p50, "p95": d.p95, "p99": d.p99, "max": d.max,
             })
         };
+        let receipts: std::collections::HashMap<_, _> = window
+            .presented_frames()
+            .into_iter()
+            .map(|r| (r.serial, r))
+            .collect();
+        let mut unique_serials = std::collections::HashSet::new();
+        let duplicate_serials = self
+            .drawable_serials
+            .iter()
+            .zip(&samples)
+            .filter(|(serial, sample)| {
+                sample.rendered && **serial != 0 && !unique_serials.insert(**serial)
+            })
+            .count();
+        let actual = presentation_rows(&self.drawable_serials, &samples, &receipts);
+        let positive: Vec<_> = actual.iter().filter(|frame| frame.1 > 0.0).collect();
+        let intervals: Vec<_> = positive
+            .windows(2)
+            .map(|p| (p[1].1 - p[0].1) * 1000.0)
+            .collect();
+        let late: Vec<_> = actual
+            .iter()
+            .filter(|r| r.1 > 0.0)
+            .map(|r| (r.1 - r.0) * 1000.0)
+            .collect();
+        let presentation = json!({"method":"public CAMetalLayer subclass nextDrawable + MTLDrawable.addPresentedHandler; optional benchmark-only receipts",
+            "receipts":actual.len(),"missing_receipts":samples.iter().filter(|s|s.rendered).count().saturating_sub(actual.len()),
+            "skipped_render_callbacks": samples.iter().filter(|s|!s.rendered).count(),
+            "duplicate_drawable_serials": duplicate_serials,"not_presented":actual.iter().filter(|r|r.1<=0.0).count(),
+            "interval_ms":dist(&Distribution::from_samples(&intervals)),"target_lateness_ms":dist(&Distribution::from_samples(&late)),
+            "gaps_over_1_5_refresh":intervals.iter().filter(|&&v|v>stats.refresh_interval_ms*1.5).count(),
+            "columns":["target_s","presented_s","acquired_s"],"samples":actual.iter().map(|r|[r.0,r.1,r.2]).collect::<Vec<_>>()});
         let rows: Vec<Value> = samples
             .iter()
             .zip(&self.counts)
-            .map(|(s, c)| {
+            .enumerate()
+            .map(|(index, (s, c))| {
                 json!([
                     s.target_timestamp,
                     s.callback_time,
@@ -829,6 +1175,7 @@ impl Perf {
                     c[1],
                     c[2],
                     c[3],
+                    self.dispatch_delays[index],
                 ])
             })
             .collect();
@@ -842,28 +1189,43 @@ impl Perf {
             },
             "machine": machine_info(),
             "display": self.window_info,
+            "display_driver": if std::env::var("TEKES_METAL_DISPLAY_LINK").as_deref() == Ok("1") { "CAMetalDisplayLink" } else { "NSView CADisplayLink" },
+            "metal_reentrant_updates_queued": window.metal_reentrant_queued(),
+            "drawable_acquisitions_including_warmup": {"provided":window.drawable_acquisition_counts().0,"ordinary":window.drawable_acquisition_counts().1},
+            "visibility": {"occluded_callbacks": self.visibility_counts[0], "non_key_callbacks": self.visibility_counts[1], "changes_target_s_occluded_key": self.visibility_changes},
+            "render_queue": {
+                "present_mode": "Fifo",
+                "requested_maximum_frame_latency": match std::env::var("TEKES_PERF_FRAME_LATENCY").as_deref() { Ok("1") => 1, _ => 2 },
+                "configured_metal_drawables_before_display_link": match std::env::var("TEKES_PERF_FRAME_LATENCY").as_deref() { Ok("1") => 2, _ => 3 },
+                "metal_display_link_requested_frame_latency": if std::env::var("TEKES_METAL_DISPLAY_LINK").as_deref() == Ok("1") { Some(1.0) } else { None },
+                "metal_display_link_pool_size_measured": false,
+            },
             "config": {
                 "seconds": self.cfg.seconds,
                 "warmup_s": WARMUP_S,
                 "speed_pt_s": self.cfg.speed,
                 "content": self.cfg.content.name(),
+                "gallery_route": self.gallery.page().slug(),
+                "scroll_area_workload": "2s alternating top/bottom cycles: 0.35s finger, 0.65s OS-style momentum, 1s return/settle; routed through actual Gallery input",
                 "view_pt": [window.size().width, window.size().height],
                 "drawable_px": [window.drawable_size().0, window.drawable_size().1],
                 "scale": window.scale(),
                 "present_mode": "Fifo",
-                "max_drawable_count": 2,
+                "max_drawable_count": match std::env::var("TEKES_PERF_FRAME_LATENCY").as_deref() { Ok("1") => 2, _ => 3 },
+                "max_drawable_count_scope": "wgpu configuration before optional CAMetalDisplayLink; not a measured Metal display-link pool size",
                 "document_height_pt": self.document_height(),
-                "scroll_range_pt": if self.cfg.content==ContentKind::Editor {self.gallery.editor_scroll_metrics().0}else if self.cfg.content==ContentKind::Icons {self.gallery.page_scroll_range()}else if self.cfg.content==ContentKind::Motion {0.0}else{(self.plan.height-self.view_h).max(0.0)},
-                "segments": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::Icons|ContentKind::Motion) {Value::Null}else{json!(self.plan.segments.len())},
+                "scroll_range_pt": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea) {self.gallery.editor_scroll_metrics().0}else if self.cfg.content==ContentKind::Icons {self.gallery.page_scroll_range()}else if matches!(self.cfg.content,ContentKind::Motion|ContentKind::Symbols) {0.0}else{(self.plan.height-self.view_h).max(0.0)},
+                "segments": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea|ContentKind::Icons|ContentKind::Motion|ContentKind::Symbols) {Value::Null}else{json!(self.plan.segments.len())},
             },
             "gpu_timing": {
                 "supported": renderer.gpu_timing_supported(),
+                "enabled": self.measure_gpu,
                 "method": "wgpu TIMESTAMP_QUERY：render pass 开始/结束时间戳，Metal stage boundary 计数器采样",
                 "covers": "只有我们的 render pass；不含合成器和 drawable 等待",
             },
             "drop_detection": {
                 "method": "显示链接 target_timestamp 间隔 > 1.5 x 刷新间隔",
-                "presented_time": "不可用：wgpu 30 不暴露 CAMetalDrawable，接不上 addPresentedHandler",
+                "presented_time": "见 presentation：owned CAMetalLayer 的公开 addPresentedHandler 收据，另行统计实际呈现间隔",
             },
             "scene_per_frame_median": {
                 "quads": med(|c| c[0]), "glyphs": med(|c| c[1]),
@@ -875,15 +1237,31 @@ impl Perf {
                 "hits": st.hits, "misses": st.misses, "dropped": st.dropped,
                 "prewarm_ms": self.prewarm_ms,
             },
+            "presentation": presentation,
+            "presentation_drain": self.presentation_drain.as_ref().map(|drain| json!({
+                "expected_unique_serials": drain.expected.len(),
+                "received": drain.received,
+                "unpresented": drain.unpresented,
+                "timed_out": drain.timed_out,
+                "finished": drain.wait_ms.is_some(),
+                "wait_ms": drain.wait_ms,
+                "timeout_ms": PRESENTATION_DRAIN_TIMEOUT_S * 1000.0,
+                "timer_only_diagnostic": self.drain_timer_only,
+            })),
+            "symbols_workload": self.symbols.as_ref().map(|s|s.report()),
             "process": {
                 "cpu_percent_while_scrolling": cpu_busy,
                 "measure_wall_s": wall,
+                "cpu_rate_unit": "100% = one logical CPU core; getrusage user + system, sampled every 250ms",
+                "cpu_rate_peak_250ms_percent": self.cpu_rates.iter().map(|s|s[1]).fold(0.0,f64::max),
+                "cpu_rate_samples_elapsed_s_percent": self.cpu_rates,
             },
             "stats": {
                 "frames": stats.frames,
                 "rendered_frames": stats.rendered_frames,
                 "refresh_interval_ms": stats.refresh_interval_ms,
                 "cpu_ms": dist(&stats.cpu),
+                "dispatch_delay_ms": dist(&Distribution::from_samples(&self.dispatch_delays)),
                 "cpu_active_ms": dist(&stats.cpu_active),
                 "build_ms": dist(&stats.build),
                 "acquire_ms": dist(&stats.acquire),
@@ -906,13 +1284,35 @@ impl Perf {
                 "columns": [
                     "target_timestamp_s", "callback_time_s", "refresh_interval_ms", "budget_ms",
                     "cpu_ms", "build_ms", "acquire_ms", "encode_ms", "submit_ms", "gpu_ms",
-                    "rendered", "quads", "glyphs", "images", "draws",
+                    "rendered", "quads", "glyphs", "images", "draws", "dispatch_delay_ms",
                 ],
                 "rows": rows,
             },
             "total_run_s": self.started.elapsed().as_secs_f64(),
         })
     }
+}
+
+// A skipped render has no acquisition. Never duplicate its previous drawable's
+// receipt, even if an older harness accidentally supplied a stale serial.
+fn presentation_rows(
+    serials: &[u64],
+    samples: &[FrameSample],
+    receipts: &std::collections::HashMap<u64, tekes_ui_platform_macos::PresentedFrame>,
+) -> Vec<(f64, f64, f64)> {
+    let mut seen = std::collections::HashSet::new();
+    serials
+        .iter()
+        .zip(samples)
+        .filter_map(|(&serial, sample)| {
+            if !sample.rendered || serial == 0 || !seen.insert(serial) {
+                return None;
+            }
+            receipts
+                .get(&serial)
+                .map(|r| (sample.target_timestamp, r.presented_at, r.acquired_at))
+        })
+        .collect()
 }
 
 /// 报告的一屏摘要（打印到 stderr）。
@@ -956,7 +1356,137 @@ fn summary(r: &Value) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn early_close_cannot_complete_the_five_second_idle_observation() {
+        assert!(!measurement_complete(
+            Phase::Cooldown,
+            Some(&json!({"wait_s":4.999}))
+        ));
+        assert!(!measurement_complete(Phase::Cooldown, None));
+        assert!(!measurement_complete(
+            Phase::PresentationDrain,
+            Some(&json!({"wait_s":5.0}))
+        ));
+        assert!(measurement_complete(
+            Phase::Cooldown,
+            Some(&json!({"wait_s":5.0}))
+        ));
+    }
+
+    fn drain_receipt(serial: u64, presented_at: f64) -> tekes_ui_platform_macos::PresentedFrame {
+        tekes_ui_platform_macos::PresentedFrame {
+            serial,
+            acquired_at: 1.0,
+            presented_at,
+        }
+    }
+
+    #[test]
+    fn presentation_drain_waits_for_the_final_submitted_drawable() {
+        let mut drain = PresentationDrain::new([11, 12]);
+        assert!(!drain.poll(&[drain_receipt(11, 1.01)], 0.01));
+        assert_eq!(drain.wait_ms, None);
+        assert!(drain.poll(&[drain_receipt(11, 1.01), drain_receipt(12, 1.02)], 0.04));
+        assert_eq!(drain.received, 2);
+        assert_eq!(drain.unpresented, 0);
+        assert!(!drain.timed_out);
+    }
+
+    #[test]
+    fn presentation_drain_does_not_count_duplicates_or_unrelated_receipts() {
+        let mut drain = PresentationDrain::new([11, 12]);
+        assert!(!drain.poll(
+            &[
+                drain_receipt(11, 1.01),
+                drain_receipt(11, 1.01),
+                drain_receipt(99, 1.02)
+            ],
+            0.04
+        ));
+        assert_eq!(drain.received, 1);
+    }
+
+    #[test]
+    fn presentation_drain_preserves_a_terminal_unpresented_receipt() {
+        let mut drain = PresentationDrain::new([11, 12]);
+        assert!(drain.poll(&[drain_receipt(11, 1.01), drain_receipt(12, 0.0)], 0.04));
+        assert_eq!(drain.unpresented, 1);
+        assert!(!drain.timed_out);
+    }
+
+    #[test]
+    fn presentation_drain_timeout_is_explicit_and_keeps_missing_evidence() {
+        let mut drain = PresentationDrain::new([11, 12]);
+        assert!(drain.poll(&[drain_receipt(11, 1.01)], PRESENTATION_DRAIN_TIMEOUT_S));
+        assert!(drain.timed_out);
+        assert_eq!(drain.received, 1);
+        assert_eq!(drain.expected.len(), 2);
+    }
+
+    #[test]
+    fn presentation_receipts_exclude_skipped_and_duplicate_acquisitions() {
+        use tekes_ui_platform_macos::PresentedFrame;
+        let samples: Vec<_> = [
+            (1.0, true),
+            (2.0, false),
+            (3.0, true),
+            (4.0, true),
+            (5.0, true),
+        ]
+        .into_iter()
+        .map(|(target_timestamp, rendered)| FrameSample {
+            target_timestamp,
+            rendered,
+            ..Default::default()
+        })
+        .collect();
+        let receipts = [
+            (
+                7,
+                PresentedFrame {
+                    serial: 7,
+                    acquired_at: 1.0,
+                    presented_at: 1.01,
+                },
+            ),
+            (
+                8,
+                PresentedFrame {
+                    serial: 8,
+                    acquired_at: 3.0,
+                    presented_at: 3.01,
+                },
+            ),
+        ]
+        .into_iter()
+        .collect();
+        let rows = presentation_rows(&[7, 7, 8, 8, 0], &samples, &receipts);
+        assert_eq!(rows, vec![(1.0, 1.01, 1.0), (3.0, 3.01, 3.0)]);
+    }
+
     use super::*;
+
+    #[test]
+    fn perf_scroll_area_tracks_the_post_placement_window_viewport() {
+        let config = PerfConfig::parse("scroll:1", None, Some("scroll-area"), None).unwrap();
+        let mut perf = Perf::new(config);
+        perf.gallery.apply(Command::Page(Page::ScrollArea));
+        for (width, height) in [(1440.0, 960.0), (1440.0, 827.0), (720.0, 480.0)] {
+            perf.resize(width, height);
+            perf.gallery.build_scene(&mut Scene::new());
+            let regular = tekes_ui_tokens::Spacing::Regular.value();
+            let expected = height
+                - crate::gallery::layout::PAGE_CONTENT.min_y()
+                - tekes_ui_tokens::Spacing::Section.value()
+                - tekes_ui_tokens::proposal::TextRole::UiHeading
+                    .style()
+                    .line_height
+                - regular
+                - 2.0 * tekes_ui_tokens::proposal::SCROLL_CONTENT_PADDING;
+            assert!((perf.gallery.editor_scroll_metrics().1 - expected).abs() < 0.01);
+            assert_eq!(perf.view_h, height);
+        }
+    }
 
     #[test]
     fn parse_spec() {
@@ -1054,6 +1584,27 @@ mod tests {
                 .iter()
                 .all(|s| matches!(s.kind, Kind::Screen(_)))
         );
+    }
+
+    #[test]
+    fn scene_translation_preserves_visible_shadow_tails_and_offsets() {
+        use tekes_ui_scene::{Rect, ShadowQuad};
+        let shadow = ShadowQuad::new(Rect::new(20., -30., 40., 10.), Rgba::new(0., 0., 0., 0.2))
+            .with_blur_radius(16.)
+            .with_offset(Point::new(2., 3.));
+        let mut source = Scene::new();
+        source.push_shadow(shadow);
+        let mut visible = Scene::new();
+        translate_into(&mut visible, &source, 5., 100.);
+        assert_eq!(visible.len(), 1, "visible blur tail must survive culling");
+        let Primitive::Shadow(moved) = visible.primitives()[0] else {
+            panic!("shadow lost")
+        };
+        assert_eq!(moved.rect, shadow.rect.offset(0., 5.));
+        assert_eq!(moved.offset, shadow.offset);
+        let mut invisible = Scene::new();
+        translate_into(&mut invisible, &source, -100., 100.);
+        assert!(invisible.is_empty());
     }
 
     #[test]

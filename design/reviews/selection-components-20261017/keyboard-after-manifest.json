@@ -1,0 +1,458 @@
+[
+  {
+    "id": "component-slider-playground-light-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-slider/playground",
+    "scale": 1,
+    "scene_primitive_count": 89,
+    "state": {
+      "value": 75.0
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-radio-group-playground-light-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-radio-group/playground",
+    "scale": 1,
+    "scene_primitive_count": 101,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-switch-playground-light-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-switch/playground",
+    "scale": 1,
+    "scene_primitive_count": 89,
+    "state": {
+      "checked": true
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-slider-playground-light-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-slider/playground",
+    "scale": 2,
+    "scene_primitive_count": 89,
+    "state": {
+      "value": 75.0
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-radio-group-playground-light-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-radio-group/playground",
+    "scale": 2,
+    "scene_primitive_count": 101,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-switch-playground-light-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-switch/playground",
+    "scale": 2,
+    "scene_primitive_count": 89,
+    "state": {
+      "checked": true
+    },
+    "text_scale_percent": 100,
+    "theme": "light-standard"
+  },
+  {
+    "id": "component-slider-playground-dark-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-slider/playground",
+    "scale": 1,
+    "scene_primitive_count": 89,
+    "state": {
+      "value": 75.0
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-radio-group-playground-dark-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-radio-group/playground",
+    "scale": 1,
+    "scene_primitive_count": 101,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-switch-playground-dark-standard-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-switch/playground",
+    "scale": 1,
+    "scene_primitive_count": 89,
+    "state": {
+      "checked": true
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-slider-playground-dark-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-slider/playground",
+    "scale": 2,
+    "scene_primitive_count": 89,
+    "state": {
+      "value": 75.0
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-radio-group-playground-dark-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-radio-group/playground",
+    "scale": 2,
+    "scene_primitive_count": 101,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-switch-playground-dark-standard-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-switch/playground",
+    "scale": 2,
+    "scene_primitive_count": 89,
+    "state": {
+      "checked": true
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-standard"
+  },
+  {
+    "id": "component-slider-playground-light-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-slider/playground",
+    "scale": 1,
+    "scene_primitive_count": 89,
+    "state": {
+      "value": 75.0
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-radio-group-playground-light-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-radio-group/playground",
+    "scale": 1,
+    "scene_primitive_count": 101,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-switch-playground-light-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-switch/playground",
+    "scale": 1,
+    "scene_primitive_count": 89,
+    "state": {
+      "checked": true
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-slider-playground-light-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-slider/playground",
+    "scale": 2,
+    "scene_primitive_count": 89,
+    "state": {
+      "value": 75.0
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-radio-group-playground-light-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-radio-group/playground",
+    "scale": 2,
+    "scene_primitive_count": 101,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-switch-playground-light-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-switch/playground",
+    "scale": 2,
+    "scene_primitive_count": 89,
+    "state": {
+      "checked": true
+    },
+    "text_scale_percent": 100,
+    "theme": "light-increased"
+  },
+  {
+    "id": "component-slider-playground-dark-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-slider/playground",
+    "scale": 1,
+    "scene_primitive_count": 89,
+    "state": {
+      "value": 75.0
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "component-radio-group-playground-dark-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-radio-group/playground",
+    "scale": 1,
+    "scene_primitive_count": 101,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "component-switch-playground-dark-increased-t100-1x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      1440,
+      960
+    ],
+    "route": "component-switch/playground",
+    "scale": 1,
+    "scene_primitive_count": 89,
+    "state": {
+      "checked": true
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "component-slider-playground-dark-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-slider/playground",
+    "scale": 2,
+    "scene_primitive_count": 89,
+    "state": {
+      "value": 75.0
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "component-radio-group-playground-dark-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-radio-group/playground",
+    "scale": 2,
+    "scene_primitive_count": 101,
+    "state": {
+      "selected": 2
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  },
+  {
+    "id": "component-switch-playground-dark-increased-t100-2x",
+    "logical_size": [
+      1440,
+      960
+    ],
+    "pixel_size": [
+      2880,
+      1920
+    ],
+    "route": "component-switch/playground",
+    "scale": 2,
+    "scene_primitive_count": 89,
+    "state": {
+      "checked": true
+    },
+    "text_scale_percent": 100,
+    "theme": "dark-increased"
+  }
+]

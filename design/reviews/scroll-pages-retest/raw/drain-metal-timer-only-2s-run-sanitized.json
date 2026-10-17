@@ -1,0 +1,16 @@
+{
+  "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/TekesUI Presentation Drain Timer Benchmark.app/Contents/MacOS/TekesUI-Presentation-Drain-Timer-Benchmark",
+  "binary_sha256": "df21b248b87d8ea940c94d5ef4405932f6f6cafcb75b863c34d701b585bf1ced",
+  "sources": 8,
+  "animated_views": 24,
+  "mode": "steady",
+  "display_driver": "metal",
+  "frame_latency": "2",
+  "seconds": 2.0,
+  "gpu_timing": "0",
+  "linear": true,
+  "freeze_raster": false,
+  "started_unix": 1792115630.163032,
+  "exit_code": 0,
+  "wall_s": 10.592551946640015
+}

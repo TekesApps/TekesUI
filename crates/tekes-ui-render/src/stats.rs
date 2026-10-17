@@ -17,8 +17,8 @@
 //!
 //! # 掉帧检测
 //!
-//! wgpu 30 不暴露 `CAMetalDrawable`，接不上 `addPresentedHandler`，拿不到真正的上屏时刻。
-//! 所以退而用显示链接的节奏：每次回调带 `target_timestamp`（这一帧预计上屏的刷新时刻），
+//! 本模块统计显示链接回调的节奏；Gallery 另用平台层公开的 Metal presented 回调记录实际呈现。
+//! 两种数据分别报告，不能把回调及时等同于帧已上屏。每次回调带 `target_timestamp`（预计刷新时刻），
 //! 连续两次回调的 `target_timestamp` 之差超过 [`DROP_THRESHOLD`]（1.5）个刷新间隔，
 //! 就认为中间至少有一次刷新没有得到新帧。主线程来不及（CPU 超时）、`nextDrawable` 阻塞
 //! （GPU 超时、drawable 没释放）都会表现为回调被跳过，所以这个检测同时覆盖 CPU 和 GPU 两种

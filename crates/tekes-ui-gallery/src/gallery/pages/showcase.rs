@@ -207,6 +207,9 @@ impl Painter<'_> {
         }
     }
     fn line(&mut self, a: Point, b: Point, ink: &str) {
+        // Preserve the existing line-sample geometry used by charts and other
+        // Gallery calibration fixtures. Production icon strokes use the
+        // centered `line_with_color` path below.
         let stroke = metric("size", "size-icon-artboard-stroke");
         let dx = b.x - a.x;
         let dy = b.y - a.y;
@@ -235,30 +238,72 @@ impl Painter<'_> {
             );
         }
     }
+    fn line_with_color(&mut self, a: Point, b: Point, ink: Rgba) {
+        let stroke = metric("size", "size-icon-artboard-stroke");
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        if dx.abs() < 0.01 {
+            self.quad(
+                Rect::new(a.x - stroke * 0.5, a.y.min(b.y), stroke, dy.abs()),
+                ink,
+                0.,
+                None,
+            );
+            return;
+        }
+        if dy.abs() < 0.01 {
+            self.quad(
+                Rect::new(a.x.min(b.x), a.y - stroke * 0.5, dx.abs(), stroke),
+                ink,
+                0.,
+                None,
+            );
+            return;
+        }
+        let steps = dx.abs().max(dy.abs()).ceil().max(1.) as usize;
+        for i in 0..=steps {
+            let t = i as f32 / steps as f32;
+            let center = Point::new(a.x + dx * t, a.y + dy * t);
+            self.quad(
+                Rect::new(
+                    center.x - stroke * 0.5,
+                    center.y - stroke * 0.5,
+                    stroke,
+                    stroke,
+                ),
+                ink,
+                0.,
+                None,
+            );
+        }
+    }
     fn icon(&mut self, r: Rect, kind: Icon, ink: &str) {
+        self.icon_with_color(r, kind, color(self.theme, ink));
+    }
+    fn icon_with_color(&mut self, r: Rect, kind: Icon, ink: Rgba) {
         let p = |x: f32, y: f32| {
             Point::new(r.min_x() + r.size.width * x, r.min_y() + r.size.height * y)
         };
         match kind {
             Icon::Check => {
-                self.line(p(0.15, 0.5), p(0.4, 0.75), ink);
-                self.line(p(0.4, 0.75), p(0.85, 0.2), ink);
+                self.line_with_color(p(0.15, 0.5), p(0.4, 0.75), ink);
+                self.line_with_color(p(0.4, 0.75), p(0.85, 0.2), ink);
             }
             Icon::Chevron => {
-                self.line(p(0.3, 0.2), p(0.65, 0.5), ink);
-                self.line(p(0.65, 0.5), p(0.3, 0.8), ink);
+                self.line_with_color(p(0.3, 0.2), p(0.65, 0.5), ink);
+                self.line_with_color(p(0.65, 0.5), p(0.3, 0.8), ink);
             }
             Icon::Down => {
-                self.line(p(0.2, 0.35), p(0.5, 0.65), ink);
-                self.line(p(0.5, 0.65), p(0.8, 0.35), ink);
+                self.line_with_color(p(0.2, 0.35), p(0.5, 0.65), ink);
+                self.line_with_color(p(0.5, 0.65), p(0.8, 0.35), ink);
             }
             Icon::Close => {
-                self.line(p(0.25, 0.25), p(0.75, 0.75), ink);
-                self.line(p(0.75, 0.25), p(0.25, 0.75), ink);
+                self.line_with_color(p(0.25, 0.25), p(0.75, 0.75), ink);
+                self.line_with_color(p(0.75, 0.25), p(0.25, 0.75), ink);
             }
             Icon::Plus => {
-                self.line(p(0.5, 0.2), p(0.5, 0.8), ink);
-                self.line(p(0.2, 0.5), p(0.8, 0.5), ink);
+                self.line_with_color(p(0.5, 0.2), p(0.5, 0.8), ink);
+                self.line_with_color(p(0.2, 0.5), p(0.8, 0.5), ink);
             }
             Icon::Search => {
                 self.quad(
@@ -270,9 +315,9 @@ impl Painter<'_> {
                     ),
                     clear(self.theme),
                     r.size.width,
-                    Some(color(self.theme, ink)),
+                    Some(ink),
                 );
-                self.line(p(0.57, 0.57), p(0.9, 0.9), ink);
+                self.line_with_color(p(0.57, 0.57), p(0.9, 0.9), ink);
             }
             Icon::Folder => {
                 self.quad(
@@ -284,11 +329,11 @@ impl Painter<'_> {
                     ),
                     clear(self.theme),
                     metric("radius", "radius-agent-marker"),
-                    Some(color(self.theme, ink)),
+                    Some(ink),
                 );
-                self.line(p(0.1, 0.3), p(0.1, 0.15), ink);
-                self.line(p(0.1, 0.15), p(0.45, 0.15), ink);
-                self.line(p(0.45, 0.15), p(0.6, 0.3), ink);
+                self.line_with_color(p(0.1, 0.3), p(0.1, 0.15), ink);
+                self.line_with_color(p(0.1, 0.15), p(0.45, 0.15), ink);
+                self.line_with_color(p(0.45, 0.15), p(0.6, 0.3), ink);
             }
             Icon::File => {
                 self.quad(
@@ -300,27 +345,22 @@ impl Painter<'_> {
                     ),
                     clear(self.theme),
                     metric("radius", "radius-agent-marker"),
-                    Some(color(self.theme, ink)),
+                    Some(ink),
                 );
-                self.line(p(0.35, 0.4), p(0.65, 0.4), ink);
-                self.line(p(0.35, 0.6), p(0.65, 0.6), ink);
+                self.line_with_color(p(0.35, 0.4), p(0.65, 0.4), ink);
+                self.line_with_color(p(0.35, 0.6), p(0.65, 0.6), ink);
             }
             Icon::Info => {
-                self.quad(
-                    r,
-                    clear(self.theme),
-                    r.size.width,
-                    Some(color(self.theme, ink)),
-                );
-                self.line(p(0.5, 0.42), p(0.5, 0.75), ink);
+                self.quad(r, clear(self.theme), r.size.width, Some(ink));
+                self.line_with_color(p(0.5, 0.42), p(0.5, 0.75), ink);
                 self.quad(
                     Rect::new(
-                        p(0.5, 0.23).x,
-                        p(0.5, 0.23).y,
+                        p(0.5, 0.23).x - Stroke::Emphasis.value() * 0.5,
+                        p(0.5, 0.23).y - Stroke::Emphasis.value() * 0.5,
                         Stroke::Emphasis.value(),
                         Stroke::Emphasis.value(),
                     ),
-                    color(self.theme, ink),
+                    ink,
                     0.,
                     None,
                 );
@@ -328,8 +368,13 @@ impl Painter<'_> {
             Icon::Spinner => {
                 for (x, y) in [(0.2, 0.2), (0.5, 0.1), (0.8, 0.3), (0.8, 0.7), (0.5, 0.85)] {
                     self.quad(
-                        Rect::new(p(x, y).x, p(x, y).y, Stroke::Emphasis.value(), INSET / 2.),
-                        color(self.theme, ink),
+                        Rect::new(
+                            p(x, y).x - Stroke::Emphasis.value() * 0.5,
+                            p(x, y).y - INSET / 4.,
+                            Stroke::Emphasis.value(),
+                            INSET / 2.,
+                        ),
+                        ink,
                         Stroke::Rule.value(),
                         None,
                     );
@@ -364,8 +409,8 @@ impl Painter<'_> {
         }
     }
 }
-#[derive(Clone, Copy)]
-pub(super) enum Icon {
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Icon {
     Check,
     Chevron,
     Down,
@@ -391,14 +436,25 @@ impl Icon {
         (Self::Spinner, "spinner"),
     ];
 }
-pub(super) fn draw_icon(ctx: &mut PageCtx<'_>, scene: &mut Scene, rect: Rect, icon: Icon) {
+pub(crate) fn draw_icon(ctx: &mut PageCtx<'_>, scene: &mut Scene, rect: Rect, icon: Icon) {
+    let tint = color(ctx.theme, "primary-text");
+    draw_icon_tinted(ctx, scene, rect, icon, tint);
+}
+
+pub(crate) fn draw_icon_tinted(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    rect: Rect,
+    icon: Icon,
+    tint: Rgba,
+) {
     Painter {
         text: ctx.text,
         scene,
         theme: ctx.theme,
         clip: rect.inset(-Stroke::Emphasis.value()),
     }
-    .icon(rect, icon, "primary-text");
+    .icon_with_color(rect, icon, tint);
 }
 fn at(r: Rect, x: f32, y: f32, w: f32, h: f32) -> Rect {
     Rect::new(r.min_x() + x, r.min_y() + y, w.max(0.), h.max(0.))
@@ -2224,6 +2280,8 @@ fn chart(p: &mut Painter<'_>, s: State<'_>, r: Rect) {
 mod tests {
     use super::*;
     use crate::gallery::layout::PAGE_CONTENT;
+    use crate::gallery::static_text::StaticText;
+    use tekes_ui_render::Renderer;
     use tekes_ui_scene::Primitive;
 
     const GROUPS: [&str; 8] = [
@@ -2236,6 +2294,178 @@ mod tests {
         "documents",
         "data",
     ];
+
+    fn render_icon_pixels(
+        renderer: &mut Renderer,
+        icon: Icon,
+        frame: Rect,
+        scale: f32,
+        theme: Theme,
+        tint: Rgba,
+    ) -> Vec<u8> {
+        let mut text = TextEngine::new();
+        text.set_scale(scale);
+        text.begin_frame();
+        let mut static_text = StaticText::new(None);
+        let mut scene = Scene::new();
+        let surface = Rect::new(0.0, 0.0, 48.0, 48.0);
+        scene.push_clip(surface);
+        {
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            draw_icon_tinted(&mut ctx, &mut scene, frame, icon, tint);
+        }
+        scene.pop_clip();
+        let pixels = (48.0 * scale).round() as u32;
+        renderer
+            .render_to_rgba8(
+                &scene,
+                text.atlas_mut(),
+                (pixels, pixels),
+                scale,
+                Rgba::gray(0.92),
+            )
+            .expect("render actual Gallery icon artwork offscreen")
+    }
+
+    fn ink_bounds(rgba: &[u8], width: u32, tint: Rgba) -> Option<(u32, u32, u32, u32)> {
+        let target = [
+            (tint.r * 255.0).round() as i16,
+            (tint.g * 255.0).round() as i16,
+            (tint.b * 255.0).round() as i16,
+        ];
+        let mut bounds = (u32::MAX, u32::MAX, 0, 0);
+        let mut found = false;
+        for (index, pixel) in rgba.chunks_exact(4).enumerate() {
+            // Measure solid ink pixels while ignoring antialiased edges, the
+            // neutral offscreen canvas, and unrelated text or controls.
+            let distance = (0..3)
+                .map(|channel| (i16::from(pixel[channel]) - target[channel]).abs())
+                .sum::<i16>();
+            if distance > 150 {
+                continue;
+            }
+            let x = index as u32 % width;
+            let y = index as u32 / width;
+            bounds.0 = bounds.0.min(x);
+            bounds.1 = bounds.1.min(y);
+            bounds.2 = bounds.2.max(x);
+            bounds.3 = bounds.3.max(y);
+            found = true;
+        }
+        found.then_some(bounds)
+    }
+
+    #[test]
+    fn plus_ink_is_mirrored_about_its_actual_center_at_odd_even_frames_and_scales() {
+        let mut renderer = Renderer::new_headless().expect("headless renderer");
+        let tint = Rgba::rgb8(18, 66, 148);
+        for scale in [1.0, 2.0] {
+            for side in [17.0, 18.0] {
+                let frame = Rect::new(8.0, 10.0, side, side);
+                let pixels =
+                    render_icon_pixels(&mut renderer, Icon::Plus, frame, scale, Theme::LIGHT, tint);
+                let width = (48.0 * scale).round() as u32;
+                let center_x = frame.center().x * scale;
+                let center_y = frame.center().y * scale;
+                // Pixel centers are at n + 0.5; reflect indices around the
+                // same subpixel center used by the logical artboard.
+                let reflect_x = (2.0 * center_x).round() as i32 - 1;
+                let reflect_y = (2.0 * center_y).round() as i32 - 1;
+                let radius = ((side * 0.4 + 2.0) * scale).ceil() as i32;
+                for y in (center_y.floor() as i32 - radius)..=(center_y.ceil() as i32 + radius) {
+                    for x in (center_x.floor() as i32 - radius)..=(center_x.ceil() as i32 + radius)
+                    {
+                        let reflected_x = reflect_x - x;
+                        let reflected_y = reflect_y - y;
+                        if x < 0
+                            || y < 0
+                            || reflected_x < 0
+                            || reflected_y < 0
+                            || x >= width as i32
+                            || y >= width as i32
+                            || reflected_x >= width as i32
+                            || reflected_y >= width as i32
+                        {
+                            continue;
+                        }
+                        let offset =
+                            |x: i32, y: i32| (y as usize * width as usize + x as usize) * 4;
+                        let a = offset(x, y);
+                        let b = offset(reflected_x, reflected_y);
+                        assert_eq!(
+                            &pixels[a..a + 4],
+                            &pixels[b..b + 4],
+                            "+ must be pixel symmetric at {side}pt/{scale}x around {center_x},{center_y}"
+                        );
+                    }
+                }
+                let bounds = ink_bounds(&pixels, width, tint).expect("plus draws ink");
+                let left = (frame.min_x() * scale).floor() as u32;
+                let top = (frame.min_y() * scale).floor() as u32;
+                let right = (frame.max_x() * scale).ceil() as u32;
+                let bottom = (frame.max_y() * scale).ceil() as u32;
+                assert!(
+                    bounds.0 >= left && bounds.1 >= top,
+                    "{bounds:?} outside {frame:?}"
+                );
+                assert!(
+                    bounds.2 < right && bounds.3 < bottom,
+                    "{bounds:?} outside {frame:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn semantic_icon_tint_is_used_in_light_and_dark_appearances() {
+        let mut renderer = Renderer::new_headless().expect("headless renderer");
+        let frame = Rect::new(8.0, 10.0, 18.0, 18.0);
+        let tint = Rgba::rgb8(18, 66, 148);
+        for theme in Theme::ALL {
+            for icon in [Icon::Plus, Icon::Check, Icon::Chevron, Icon::Folder] {
+                let pixels = render_icon_pixels(&mut renderer, icon, frame, 2.0, theme, tint);
+                let bounds = ink_bounds(&pixels, 96, tint)
+                    .unwrap_or_else(|| panic!("icon did not use supplied tint in {theme:?}"));
+                assert!(bounds.0 > 0 && bounds.1 > 0);
+                assert!(bounds.2 < 96 && bounds.3 < 96);
+            }
+        }
+    }
+
+    #[test]
+    fn check_chevron_and_folder_ink_bounds_stay_inside_odd_even_artboards() {
+        let mut renderer = Renderer::new_headless().expect("headless renderer");
+        let tint = Rgba::rgb8(18, 66, 148);
+        for scale in [1.0, 2.0] {
+            for side in [17.0, 18.0] {
+                let frame = Rect::new(8.0, 10.0, side, side);
+                for icon in [Icon::Check, Icon::Chevron, Icon::Folder] {
+                    let pixels =
+                        render_icon_pixels(&mut renderer, icon, frame, scale, Theme::DARK, tint);
+                    let width = (48.0 * scale).round() as u32;
+                    let bounds = ink_bounds(&pixels, width, tint)
+                        .unwrap_or_else(|| panic!("{icon:?} draws no solid ink"));
+                    let artboard = (
+                        (frame.min_x() * scale).floor() as i32,
+                        (frame.min_y() * scale).floor() as i32,
+                        (frame.max_x() * scale).ceil() as i32,
+                        (frame.max_y() * scale).ceil() as i32,
+                    );
+                    assert!(
+                        bounds.0 as i32 >= artboard.0 - 1
+                            && bounds.1 as i32 >= artboard.1 - 1
+                            && bounds.2 as i32 <= artboard.2
+                            && bounds.3 as i32 <= artboard.3,
+                        "{icon:?} ink {bounds:?} escaped {artboard:?} at {side}pt/{scale}x"
+                    );
+                }
+            }
+        }
+    }
 
     #[test]
     fn all_forty_tiles_and_every_chip_fit_and_share_hit_geometry() {

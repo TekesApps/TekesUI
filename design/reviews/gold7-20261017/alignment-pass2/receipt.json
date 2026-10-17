@@ -1,0 +1,214 @@
+{
+  "format": "tekesui-gold7-alignment-pass/1",
+  "date": "2026-10-17",
+  "source_state": "uncommitted worktree; no commit/push/publication",
+  "base_commit": "6ca8295dc398f68ba4d5d1fc333346f40fafee2b",
+  "source_manifest": "source-manifest.json",
+  "source_recovery": {
+    "archives_in_order": [
+      "../source-snapshot.tar.gz",
+      "../alignment-pass1/sources-delta.tar.gz",
+      "sources-delta.tar.gz"
+    ],
+    "verify": "source-manifest.json"
+  },
+  "requirements_all_complete": false,
+  "verified_code_repairs": [
+    "focus-paint-space-and-reveal",
+    "semantic-gaussian-elevation",
+    "production-control-state-transitions",
+    "post-build-frame-scheduling",
+    "inactive-control-motion-cancellation"
+  ],
+  "checks": [
+    {
+      "check": "tests-final",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-gallery",
+        "-p",
+        "tekes-ui-motion",
+        "-p",
+        "tekes-ui-icons",
+        "-p",
+        "tekes-ui-design-export",
+        "-p",
+        "tekes-ui-tokens",
+        "-p",
+        "tekes-ui-scene",
+        "-p",
+        "tekes-ui-render",
+        "-p",
+        "tekes-ui-text",
+        "--release",
+        "--locked",
+        "--offline"
+      ],
+      "exit": 0,
+      "seconds": 83.39
+    },
+    {
+      "check": "clippy-final",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-gallery",
+        "-p",
+        "tekes-ui-motion",
+        "-p",
+        "tekes-ui-icons",
+        "-p",
+        "tekes-ui-design-export",
+        "-p",
+        "tekes-ui-tokens",
+        "-p",
+        "tekes-ui-scene",
+        "-p",
+        "tekes-ui-render",
+        "-p",
+        "tekes-ui-text",
+        "--all-targets",
+        "--release",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 8.14
+    },
+    {
+      "check": "build-final",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "tekes-ui-gallery",
+        "--release",
+        "--locked",
+        "--offline"
+      ],
+      "exit": 0,
+      "seconds": 10.04
+    },
+    {
+      "check": "fmt-final",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.68
+    },
+    {
+      "check": "pure-rust-final",
+      "command": [
+        "python3",
+        "scripts/check-pure-rust.py"
+      ],
+      "exit": 0,
+      "seconds": 0.53
+    },
+    {
+      "check": "design-system-final",
+      "command": [
+        "target/design-check-venv/bin/python",
+        "scripts/check-design-system.py"
+      ],
+      "exit": 0,
+      "seconds": 0.45
+    },
+    {
+      "check": "diff-final",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.09
+    },
+    {
+      "check": "gold7-mechanical",
+      "command": [
+        "python3",
+        "scripts/check-gold7.py",
+        "--json"
+      ],
+      "exit": 0,
+      "seconds": 0.1
+    },
+    {
+      "check": "gold7-checker-tests",
+      "command": [
+        "python3",
+        "scripts/test-check-gold7.py"
+      ],
+      "exit": 0,
+      "seconds": 1.0
+    },
+    {
+      "check": "reference-colors",
+      "command": [
+        "target/design-check-venv/bin/python",
+        "scripts/check-reference-alignment.py",
+        "--output",
+        "target/gold7-alignment-pass2/reference-colors.json"
+      ],
+      "exit": 0,
+      "seconds": 1.34
+    }
+  ],
+  "rust_test_totals": {
+    "passed": 743,
+    "failed": 0,
+    "ignored": 1
+  },
+  "gpu": {
+    "production_overlay_images": 24,
+    "actual_control_motion_frames": 4,
+    "focus_images": 8,
+    "themes": 4,
+    "scales": [
+      1,
+      2
+    ],
+    "path": "effects",
+    "no_adapter_skip": false,
+    "scope": "Actual production Menu/Popover/Dialog views and Button/Switch/Disclosure use CoreText and the real renderer. No performance measurements."
+  },
+  "native_observation": {
+    "packaged_build_restarted": true,
+    "app": "target/TekesUI Gallery.app",
+    "bundle_id": "com.tekesui.gallery.dev",
+    "final_page": "Disclosure",
+    "observed": [
+      "Button pointer action logged activation; subsequent Tab showed full Docs ring including left edge",
+      "Menu opened with soft external shadow; Down moved focus to Duplicate document and showed complete ring",
+      "Dialog showed soft shadow and centered Cancel/Confirm labels; Tab focused Confirm; Escape restored visible ring to Open dialog and logged focus restoration",
+      "Switch pointer toggled checked, then Space toggled back; label and thumb stayed aligned",
+      "Disclosure pointer expanded clipped body and Space collapsed it; event log recorded true/false"
+    ],
+    "screenshot_files_saved": false,
+    "scope": "Qualitative native window observations through CUA; intermediate animation pixels separately verified by actual GPU tests. Not a physical-display matrix, IME or screen-reader acceptance.",
+    "performance_measured": false
+  },
+  "package_identity": "package-binary-comparison.json",
+  "limitations": [
+    "Remaining offscreen roving-focus traversal is not a blanket all-components acceptance",
+    "Overlay enter/exit transitions and full state coverage remain on the Gold7 list",
+    "Physical display matrix, VoiceOver and physical IME not accepted by these GPU/native samples",
+    "CPU, dropped frames and sustained 120Hz/8.33ms deliberately not measured"
+  ]
+}

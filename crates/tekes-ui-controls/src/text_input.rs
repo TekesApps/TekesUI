@@ -17,6 +17,7 @@ pub struct TextInput {
     pub marked: Option<Range<usize>>,
     pub multiline: bool,
     pub read_only: bool,
+    pub disabled: bool,
     undo: Vec<Snapshot>,
     redo: Vec<Snapshot>,
     composition: Option<Snapshot>,
@@ -30,6 +31,7 @@ impl TextInput {
             marked: None,
             multiline,
             read_only: false,
+            disabled: false,
             undo: Vec::new(),
             redo: Vec::new(),
             composition: None,
@@ -132,7 +134,7 @@ impl TextInput {
         range.start..end
     }
     pub fn insert(&mut self, value: &str, replacement: Option<Range<usize>>) -> bool {
-        if self.read_only {
+        if self.read_only || self.disabled {
             return false;
         }
         let before = self.snapshot();
@@ -154,7 +156,7 @@ impl TextInput {
         selection: Range<usize>,
         replacement: Option<Range<usize>>,
     ) -> bool {
-        if self.read_only {
+        if self.read_only || self.disabled {
             return false;
         }
         if self.composition.is_none() {
@@ -220,7 +222,7 @@ impl TextInput {
         self.select(next, extend);
     }
     pub fn delete(&mut self, backward: bool, word: bool) -> bool {
-        if self.read_only {
+        if self.read_only || self.disabled {
             return false;
         }
         if self.marked.is_some() {
@@ -240,7 +242,7 @@ impl TextInput {
         changed
     }
     pub fn undo(&mut self) -> bool {
-        if self.read_only {
+        if self.read_only || self.disabled {
             return false;
         }
         self.cancel_composition();
@@ -253,7 +255,7 @@ impl TextInput {
         }
     }
     pub fn redo(&mut self) -> bool {
-        if self.read_only {
+        if self.read_only || self.disabled {
             return false;
         }
         if let Some(s) = self.redo.pop() {
