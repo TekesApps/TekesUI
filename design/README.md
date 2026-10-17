@@ -30,4 +30,8 @@ cargo run --locked -p tekes-ui-gallery
 
 正常 Cargo 构建从合并 JSON 生成 `OUT_DIR` Rust 实现；UI、渲染器不加载 Python。包内其余 brand/context/adapter/generate/validate 工具完整保留，是否可用于原生产品以对应验收为准。不要在原样导入目录执行会写文件的 `generate`/`seal`/`--write-report`；需要复现时复制到自己拥有的临时目录。
 
-包静态 schema/颜色检查与项目 Rust 测试、实际截图、人工目测、真实输入及性能分别验收。导入包 reports 不自动成为当前原生实现的通过证据。版本与发布规则仍适用，本次 Git 保存不创建 tag 或执行发布。
+包静态 schema/颜色检查与项目 Rust 测试、实际截图、人工目测、真实输入及性能分别验收。导入包 reports 不自动成为当前原生实现的通过证据。版本与发布规则仍适用；Design System 提案编号不是项目 SemVer。Git 提交、阶段标签与正式发布分别由用户授权。
+
+## 主线历史约定的承接
+
+此前主线的私有 artifact 导出、motion.toml 和手动 generated.rs 方案保留在 Git 历史中；当前实现以本文的作者 JSON → 合并投影 → Cargo OUT_DIR Rust 生成链为准，不维护第二套 token 真源。主线要求的单一 registry、统一 Story 模板、可重复审计与稳定寻址继续适用，见 [章程](../docs/charter.md)。

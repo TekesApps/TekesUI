@@ -26,6 +26,7 @@ F7 依赖 F1 至 F5 的 trait 边界稳定
 - **范围**：tekes-ui-platform-macos 的 NSApplication、窗口、菜单、事件泵；tekes-ui-render 的 wgpu 初始化与帧循环；tekes-ui-gallery 的骨架（导航、固定布局的页面容器、状态矩阵切换、并排参照图容器）。
 - **对照对象**：无（基础设施）。
 - **通过标准**：窗口可开关缩放、菜单可用；空闲时不重绘（0 CPU）；Gallery 里有一个占位页，能切换 light/dark/increase contrast，并展示参照图并排槽位。
+- **token 占位**：Design 交付之前，token 先用 Tekes 现有数值做临时占位，这是历史阶段安排；现行输入、生成与来源规则见 [design/README.md](../design/README.md)。
 
 ## F1：CoreText 加 atlas 渲染静态文字
 
@@ -36,10 +37,11 @@ F7 依赖 F1 至 F5 的 trait 边界稳定
 ## F2：设计 token 和基础控件
 
 - **范围**：tekes-ui-tokens；按钮、开关、文本标签、滚动条、分隔条等基础控件；界面 chrome 的 taffy 布局。
+- **设计产出工具链**：早期计划为 `cargo xtask design import` / checked-in generated.rs；当前已采用作者 JSON、离线合并工具、Cargo OUT_DIR 生成与新鲜度守卫，约定见 [design/README.md](../design/README.md)。
 - **依赖**：[icons-and-tokens-brief.md](design/icons-and-tokens-brief.md) 的结论决定 token 与图标的来源。
 - **退路**：若用户决定不做自有 token，则 tekes-ui-tokens 退化为对系统语义色、系统字体和 SF Symbols 的薄封装（mac 上直接读取系统值），控件外观跟随系统；自有 token 部分推迟，不阻塞后续阶段。
 - **对照对象**：现有 Swift 客户端对应控件及系统控件。
-- **通过标准**：每个控件的 Gallery 页覆盖完整状态矩阵（hover、pressed、disabled、focus、light/dark、increase contrast）并有参照并排；拖动分隔条时 CPU 显著低于 AppKit 视图树方案（数值门槛见对比方法文档）。
+- **通过标准**：每个控件的 Gallery 页覆盖完整状态矩阵（hover、pressed、disabled、focus、light/dark、increase contrast）并有参照并排；拖动分隔条时 CPU 显著低于 AppKit 视图树方案（数值门槛见对比方法文档）。完成真实 Design System 交付的导入与来源校验；现已导入的 v0.3.0-proposal1 与原生体验验收分别记录。
 
 ## F3：只读虚拟文档、选择、复制、滚动
 

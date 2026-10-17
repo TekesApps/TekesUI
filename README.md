@@ -38,6 +38,7 @@ cargo run --locked -p tekes-ui-gallery
 - [docs/gallery.md](docs/gallery.md)：Gallery 的布局、页面、菜单与快照
 - [docs/handoffs/](docs/handoffs/)：各阶段交接与测量记录
 - [docs/design/icons-and-tokens-brief.md](docs/design/icons-and-tokens-brief.md)：图标与设计 token 的调研任务书
+- [design/README.md](design/README.md)：设计产出的保存约定与导入流转
 
 ## 许可
 

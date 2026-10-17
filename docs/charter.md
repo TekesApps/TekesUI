@@ -32,6 +32,17 @@ Gallery 是一个类似 Storybook 的 Rust 应用（`tekes-ui-gallery`），是�
 - 每次确认都看同一个 Gallery，不再临时弹出一堆没有排版、看不出所以然的 view。
 - 自动化对比（截图差分、性能、输入法矩阵）与 Gallery 共用同一批夹具，见 [roadmap.md](roadmap.md) 各阶段的 Gallery 页面要求。
 
+### 长期可用、可查（原则）
+
+组件越多，越要严格审计，保证 Gallery 长期可用、可查：
+
+- **单一 registry**：Gallery 由一个 registry 驱动，每个公开组件都必须在其中登记并有页面。没有 Gallery 页面的组件不算完成。
+- **统一模板**：所有页面使用同一个模板，包括规范展示、状态矩阵、主题（light / dark / light-ic / dark-ic），以及该组件使用的 token 列表。不为个别组件另起版式。
+- **自动审计**：覆盖审计自动化并纳入 `cargo test`，检查公开组件与 registry 是否一一对应、页面是否用了统一模板、状态矩阵是否齐全。每次阶段交接都要附上 Gallery 审计报告。
+- **稳定寻址**：页面的 slug 一经发布就不再改，目录支持按类别和状态过滤。废弃的页面保留，并标注"已废弃"及替代者，不得悄悄删除。
+
+具体实现见随 F0 合入的 `docs/gallery.md`。
+
 ## 3. 终态
 
 TekesUI 本仓库保持纯 Rust 实现，不引入 Swift 源码、Swift package 构建或 Swift 启动/运行垫片。macOS 平台能力通过 Rust 可调用的接口接入，例如 objc2 与 security-framework crate；无法这样接入的能力单独评估并推迟，不预设 `tekes-apple-shim`，也不承诺 StoreKit 2 已可纯 Rust 接入。
