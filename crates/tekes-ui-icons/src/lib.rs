@@ -1,8 +1,10 @@
-//! User-approved default icons, embedded as platform-neutral SVG.
-//! Resolve by canonical name with `Icon::named`; old artwork belongs only in Gallery comparisons.
+//! Platform-neutral public TekesUI icons. `Glyph` exposes the full canonical catalog.
+//! The eight-variant `Icon` API retains its approved animated subset for compatibility.
 //! SVGs use a 24 pt viewBox, currentColor and 1.5 pt rounded strokes.
 
 pub mod animation;
+mod catalog;
+pub use catalog::Glyph;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Icon {

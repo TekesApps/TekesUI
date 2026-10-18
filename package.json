@@ -1,0 +1,31 @@
+{
+  "name": "@tekesui/icons",
+  "version": "0.1.1",
+  "description": "Complete platform-neutral TekesUI SVG icon catalog",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TekesApps/TekesUI.git"
+  },
+  "exports": {
+    ".": {
+      "types": "./crates/tekes-ui-icons/web/index.d.ts",
+      "import": "./crates/tekes-ui-icons/web/index.mjs"
+    },
+    "./catalog.json": "./crates/tekes-ui-icons/catalog.json",
+    "./assets/*": "./crates/tekes-ui-icons/assets/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "crates/tekes-ui-icons/assets",
+    "crates/tekes-ui-icons/catalog.json",
+    "crates/tekes-ui-icons/web/index.mjs",
+    "crates/tekes-ui-icons/web/index.d.ts",
+    "crates/tekes-ui-icons/README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test:icons": "node --test crates/tekes-ui-icons/web/icons.test.mjs"
+  }
+}

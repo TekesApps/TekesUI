@@ -1,0 +1,1253 @@
+{
+  "format": "tekesui-icons/1",
+  "version": "0.1.1",
+  "license": "MIT",
+  "viewBox": [
+    0,
+    0,
+    24,
+    24
+  ],
+  "strokeWidth": 1.5,
+  "retired": [
+    "tekes-annotation",
+    "tekes-computer-use",
+    "tekes-perm-full-access",
+    "tekes-perm-read-only",
+    "tekes-perm-workspace-write"
+  ],
+  "icons": [
+    {
+      "name": "tekes-access-full",
+      "file": "assets/tekes-access-full.svg",
+      "sha256": "ef1ad882763b22dc0e58ddf81a473baf54071cd8e2a66144a1ca2c745820052c",
+      "origin": "published-proposal",
+      "sourceSha256": "ef1ad882763b22dc0e58ddf81a473baf54071cd8e2a66144a1ca2c745820052c"
+    },
+    {
+      "name": "tekes-access-read",
+      "file": "assets/tekes-access-read.svg",
+      "sha256": "335c0a5618e0ae5f9b102c5723eabb5cc3189db9ad821e1861ab733f0d3559e5",
+      "origin": "published-proposal",
+      "sourceSha256": "335c0a5618e0ae5f9b102c5723eabb5cc3189db9ad821e1861ab733f0d3559e5"
+    },
+    {
+      "name": "tekes-access-workspace",
+      "file": "assets/tekes-access-workspace.svg",
+      "sha256": "6c7812760ec90c2ecd666482e3a3a99f12503dc5f8f9a3367c9a511586b59d64",
+      "origin": "published-proposal",
+      "sourceSha256": "6c7812760ec90c2ecd666482e3a3a99f12503dc5f8f9a3367c9a511586b59d64"
+    },
+    {
+      "name": "tekes-advanced-params",
+      "file": "assets/tekes-advanced-params.svg",
+      "sha256": "293e80f1516fee6fce785839ffcfeba7691e59a0dbbecc587570f72ca133f70f",
+      "origin": "promoted-catalog",
+      "sourceSha256": "4ad756368cb141df0618e1e400a03e261b43d6b265986650759c2b8113309aa8"
+    },
+    {
+      "name": "tekes-agent-question",
+      "file": "assets/tekes-agent-question.svg",
+      "sha256": "9f11a52ae5a9f9088d2e18d35c753e35aafa837259ba20a7ee3794aed513579c",
+      "origin": "promoted-catalog",
+      "sourceSha256": "20118712faf2c324e3f6245b3a28aeb1a3e0cb9eaf7affb0fd724f30a8ab3bea"
+    },
+    {
+      "name": "tekes-ahead-behind",
+      "file": "assets/tekes-ahead-behind.svg",
+      "sha256": "d1d94fab3465a15e0adfc0e17d3c3521e1b6cb31bfd4b327e0eafd9d9da68618",
+      "origin": "promoted-catalog",
+      "sourceSha256": "55c06513dd920b4138f41aab34687b114e0e94b81c7d30a2f93170b23e3309cd"
+    },
+    {
+      "name": "tekes-annotate",
+      "file": "assets/tekes-annotate.svg",
+      "sha256": "29310dc793a9035fccd36ffcead097ecf4284434710a294d5f8d4da39fa6f219",
+      "origin": "published-proposal",
+      "sourceSha256": "29310dc793a9035fccd36ffcead097ecf4284434710a294d5f8d4da39fa6f219"
+    },
+    {
+      "name": "tekes-app-server",
+      "file": "assets/tekes-app-server.svg",
+      "sha256": "038030199219b7a991a0f9f135e2a3f1329b43d45fdc5729477293f868c1a716",
+      "origin": "promoted-catalog",
+      "sourceSha256": "9671502a9ff86c506999bdff0abbaa867c74e7e52f4a76bf55737b87caa6f622"
+    },
+    {
+      "name": "tekes-appearance",
+      "file": "assets/tekes-appearance.svg",
+      "sha256": "05e6d29820da9acade156d3bb8cefbb16ec1711ce96db1c5d44a71b5d66e3bf6",
+      "origin": "approved-default",
+      "sourceSha256": "05e6d29820da9acade156d3bb8cefbb16ec1711ce96db1c5d44a71b5d66e3bf6"
+    },
+    {
+      "name": "tekes-approval",
+      "file": "assets/tekes-approval.svg",
+      "sha256": "37d769bcff320d6bd979a9b215aa0f290d96e8cb58f875c8892fcc33a1d29ed5",
+      "origin": "promoted-catalog",
+      "sourceSha256": "1e8fb8c63f77c88cfd37978fd4b60a229f5816b0e6372998e5f8cf4470c6d680"
+    },
+    {
+      "name": "tekes-archive",
+      "file": "assets/tekes-archive.svg",
+      "sha256": "a0a067492fe590e204fe3498e4d42762336014c5938877ab9c4f1c75852334bc",
+      "origin": "promoted-catalog",
+      "sourceSha256": "b6ed555e7d70b328406d762f8d0a399bff57abb102a574e219ac78edf916e3bc"
+    },
+    {
+      "name": "tekes-ask-user",
+      "file": "assets/tekes-ask-user.svg",
+      "sha256": "a59230759d382381d79360cdfd6df8195ade4fe36fb78ca5775c13d7d9895a03",
+      "origin": "promoted-catalog",
+      "sourceSha256": "e707da02abee4b69498e631602ccdf4bc35f62b8650f888e7b9d4b5693b57820"
+    },
+    {
+      "name": "tekes-attach",
+      "file": "assets/tekes-attach.svg",
+      "sha256": "1d6736475e7369148d32063026ea74c4f78f25eb89e172685fa6191492c77688",
+      "origin": "published-proposal",
+      "sourceSha256": "1d6736475e7369148d32063026ea74c4f78f25eb89e172685fa6191492c77688"
+    },
+    {
+      "name": "tekes-authorized-fill",
+      "file": "assets/tekes-authorized-fill.svg",
+      "sha256": "502f78c5664930b262611c400620838a6ac566b7de015a49bd3801631be88b8d",
+      "origin": "promoted-catalog",
+      "sourceSha256": "be6c613a1788713e445a91a149ec17053e804d153fb8e9f72778030963e3a835"
+    },
+    {
+      "name": "tekes-back",
+      "file": "assets/tekes-back.svg",
+      "sha256": "01515e34fcea830cbe33e462aa018edaadbda85aebc682eb1596806fd09f0347",
+      "origin": "promoted-catalog",
+      "sourceSha256": "12b1341f7d0fd7a939127d975a205b12658fee0dcf82cb0d64202a6d63532230"
+    },
+    {
+      "name": "tekes-branch",
+      "file": "assets/tekes-branch.svg",
+      "sha256": "169f40ee24c6751f605533f6de6d5b76f9b317cd5142c230054fa6a55574fb96",
+      "origin": "promoted-catalog",
+      "sourceSha256": "a5b8f5c6875b6e240f1b5771cae0df57b2f2fcf90031c57668fc74110edfd2a0"
+    },
+    {
+      "name": "tekes-brief",
+      "file": "assets/tekes-brief.svg",
+      "sha256": "c57578617725683ab8dd82c1cc2a546cdc51f7fef99b2268e96108139b349680",
+      "origin": "promoted-catalog",
+      "sourceSha256": "41b9971e3465eec255281b57cfab47e8eb2c702e47bdf2058444cced1e045478"
+    },
+    {
+      "name": "tekes-cad-arc",
+      "file": "assets/tekes-cad-arc.svg",
+      "sha256": "a8197b6c8c0a9ed795c9876693abacb97a4dbb2784b6693340e85b7852ccb27c",
+      "origin": "published-proposal",
+      "sourceSha256": "a8197b6c8c0a9ed795c9876693abacb97a4dbb2784b6693340e85b7852ccb27c"
+    },
+    {
+      "name": "tekes-cad-block",
+      "file": "assets/tekes-cad-block.svg",
+      "sha256": "5693462cb432ea94f2b79d0c8d3cddedd01d68d591e39b5485b2f65e9e068bfa",
+      "origin": "published-proposal",
+      "sourceSha256": "5693462cb432ea94f2b79d0c8d3cddedd01d68d591e39b5485b2f65e9e068bfa"
+    },
+    {
+      "name": "tekes-cad-compare",
+      "file": "assets/tekes-cad-compare.svg",
+      "sha256": "c1e337caf943d651c341b290354ee2b4471e321a30e4644329253453193a3e7d",
+      "origin": "published-proposal",
+      "sourceSha256": "c1e337caf943d651c341b290354ee2b4471e321a30e4644329253453193a3e7d"
+    },
+    {
+      "name": "tekes-cad-crossing-select",
+      "file": "assets/tekes-cad-crossing-select.svg",
+      "sha256": "bc77022e35548c885b95074342da46ccf9972c2930c9be1b6bc282cd68a4e0a4",
+      "origin": "published-proposal",
+      "sourceSha256": "bc77022e35548c885b95074342da46ccf9972c2930c9be1b6bc282cd68a4e0a4"
+    },
+    {
+      "name": "tekes-cad-dimension",
+      "file": "assets/tekes-cad-dimension.svg",
+      "sha256": "852e9840bcf9989294553518e03af5d83eb4e0ab7875969c5e23de6b68802d5a",
+      "origin": "published-proposal",
+      "sourceSha256": "852e9840bcf9989294553518e03af5d83eb4e0ab7875969c5e23de6b68802d5a"
+    },
+    {
+      "name": "tekes-cad-export",
+      "file": "assets/tekes-cad-export.svg",
+      "sha256": "24f0e92c2a5b9f6c5cd06b087fe1111a20f5306520e910c930535bfb4b538106",
+      "origin": "published-proposal",
+      "sourceSha256": "24f0e92c2a5b9f6c5cd06b087fe1111a20f5306520e910c930535bfb4b538106"
+    },
+    {
+      "name": "tekes-cad-layers",
+      "file": "assets/tekes-cad-layers.svg",
+      "sha256": "698f048ddc1ddc4699c60ff7080cc93c8fbb730d4090729cbf4065fa6175363c",
+      "origin": "published-proposal",
+      "sourceSha256": "698f048ddc1ddc4699c60ff7080cc93c8fbb730d4090729cbf4065fa6175363c"
+    },
+    {
+      "name": "tekes-cad-layout",
+      "file": "assets/tekes-cad-layout.svg",
+      "sha256": "599fe4a77c14ba2cf5405681801a59a0b724d9499b35c388173ecebf9c80f141",
+      "origin": "published-proposal",
+      "sourceSha256": "599fe4a77c14ba2cf5405681801a59a0b724d9499b35c388173ecebf9c80f141"
+    },
+    {
+      "name": "tekes-cad-line",
+      "file": "assets/tekes-cad-line.svg",
+      "sha256": "bf733325d95f118c31db9cbfd0bb468e85895b557d9c65574cb3db8381463237",
+      "origin": "published-proposal",
+      "sourceSha256": "bf733325d95f118c31db9cbfd0bb468e85895b557d9c65574cb3db8381463237"
+    },
+    {
+      "name": "tekes-cad-pdf-import",
+      "file": "assets/tekes-cad-pdf-import.svg",
+      "sha256": "9631d50fb98fa0772d979214f9cc57e951d8ce7524cdbee0d454366c3b93ab0d",
+      "origin": "published-proposal",
+      "sourceSha256": "9631d50fb98fa0772d979214f9cc57e951d8ce7524cdbee0d454366c3b93ab0d"
+    },
+    {
+      "name": "tekes-cad-polyline",
+      "file": "assets/tekes-cad-polyline.svg",
+      "sha256": "010cb6ab0cd0c37bb3d53c38e8fb0d7b7f0d537db140e5d9b3241cca76c1d091",
+      "origin": "published-proposal",
+      "sourceSha256": "010cb6ab0cd0c37bb3d53c38e8fb0d7b7f0d537db140e5d9b3241cca76c1d091"
+    },
+    {
+      "name": "tekes-cad-snap",
+      "file": "assets/tekes-cad-snap.svg",
+      "sha256": "fca86c83b2bb56133926b83ce8a56cc8b8ad7dc0170d997880a215fa9ad3e50c",
+      "origin": "published-proposal",
+      "sourceSha256": "fca86c83b2bb56133926b83ce8a56cc8b8ad7dc0170d997880a215fa9ad3e50c"
+    },
+    {
+      "name": "tekes-cad-table-extract",
+      "file": "assets/tekes-cad-table-extract.svg",
+      "sha256": "33aa759c61fb318a9ca13c1f324db984366091ecff240b6d291bb6d98de89b53",
+      "origin": "published-proposal",
+      "sourceSha256": "33aa759c61fb318a9ca13c1f324db984366091ecff240b6d291bb6d98de89b53"
+    },
+    {
+      "name": "tekes-cad-window-select",
+      "file": "assets/tekes-cad-window-select.svg",
+      "sha256": "1e2b29b8b8b15017679e593c2d3900f254856ca96aba2c255a54e65f3e7d36fa",
+      "origin": "published-proposal",
+      "sourceSha256": "1e2b29b8b8b15017679e593c2d3900f254856ca96aba2c255a54e65f3e7d36fa"
+    },
+    {
+      "name": "tekes-clear-group",
+      "file": "assets/tekes-clear-group.svg",
+      "sha256": "0ab6445d9c537ab13e96de605bbc82c5ae58bc6ce4889fba2566e21981d1db39",
+      "origin": "promoted-catalog",
+      "sourceSha256": "f154ab3ea4bb8afda06c3f5d860951f94605efc6bd9320f96f7c3994d7127916"
+    },
+    {
+      "name": "tekes-collapse",
+      "file": "assets/tekes-collapse.svg",
+      "sha256": "72bffd4d9fb7af66c37543fb376a388cc5b6ef574ce2fdd4466bab194b911765",
+      "origin": "promoted-catalog",
+      "sourceSha256": "9c144bb6441a8f5c6737938b98a14bd5767be7740b91e36f0add85faaf201bce"
+    },
+    {
+      "name": "tekes-command",
+      "file": "assets/tekes-command.svg",
+      "sha256": "c6df2a2b67e529839cf97f3817f519e91f94124300f9a9ee8b46a83d82b0a83e",
+      "origin": "promoted-catalog",
+      "sourceSha256": "f857256b809552b528a0c9f3e17ad2b6f50fdc6921c076a8efa8184c52991f9a"
+    },
+    {
+      "name": "tekes-commands",
+      "file": "assets/tekes-commands.svg",
+      "sha256": "0e2ea4cd7c5c3d8ef12259e457943788bc0b28644edf033e611580e1ac15d670",
+      "origin": "promoted-catalog",
+      "sourceSha256": "8f7a5897b89c43725993b8ac3d9a545b78f76d6e03c866df65eb9c68883c3bc4"
+    },
+    {
+      "name": "tekes-commit",
+      "file": "assets/tekes-commit.svg",
+      "sha256": "f458bf0047b287640faab47dfe5e6d51a16216cab0db626d3fefb508d8733c7c",
+      "origin": "promoted-catalog",
+      "sourceSha256": "2b48a71484b65ada61777a33a363a519d0cb5d285d3cfb2890280ad5fb17aafd"
+    },
+    {
+      "name": "tekes-compact",
+      "file": "assets/tekes-compact.svg",
+      "sha256": "73d0733aa2eadc27db124edb60ad4cef924cefe0ffadd89ed6354727d5b98293",
+      "origin": "promoted-catalog",
+      "sourceSha256": "6bf051cc93c5be7eeb18a4f4dbbcbe22ac51c0f78a31fc341fdf15066aa01867"
+    },
+    {
+      "name": "tekes-compare",
+      "file": "assets/tekes-compare.svg",
+      "sha256": "b6fec2bbfa4b8fdb817a0be3f1c0012d10183a83bd77ee8cc0251a5237a2826e",
+      "origin": "promoted-catalog",
+      "sourceSha256": "1433aef464cdefe6e7ecbe4276691768e620c40b1bb59338441a732f7ccd208f"
+    },
+    {
+      "name": "tekes-confirm",
+      "file": "assets/tekes-confirm.svg",
+      "sha256": "4cca1126777d85f5ca2b14c91bdf4aa8aace7925053715a3a1c061df849f8b4d",
+      "origin": "promoted-catalog",
+      "sourceSha256": "4321178a356432b0914132000df7156902824005f0d18e7017c5c1ce5f8b01b9"
+    },
+    {
+      "name": "tekes-context",
+      "file": "assets/tekes-context.svg",
+      "sha256": "a6393e30e82c54228dddca14d69a6a768417582a1df04eca35c6b13b3430cb72",
+      "origin": "promoted-catalog",
+      "sourceSha256": "78bd56df5db88ae7a4a2289ca29f71dcb73baa94bd172c54268b479979644671"
+    },
+    {
+      "name": "tekes-context-usage",
+      "file": "assets/tekes-context-usage.svg",
+      "sha256": "87b69e0d25d6408dfff2b2e973978cde7f2b681d5544c9c6d1e11e51cd81587c",
+      "origin": "promoted-catalog",
+      "sourceSha256": "b7f40a7ba1641a02b919895c31185bf8b32379c76be98afa63b35d3b6af9a124"
+    },
+    {
+      "name": "tekes-copy",
+      "file": "assets/tekes-copy.svg",
+      "sha256": "b12e98ddd14336b09c9cfc28302f14bd4c062d4223d0a75ff51510fb63ab07bb",
+      "origin": "promoted-catalog",
+      "sourceSha256": "16fafe857f1afde4cd17b35c84582f8d58d0b1c5b37e7997cb82b5f18ace79f5"
+    },
+    {
+      "name": "tekes-delete",
+      "file": "assets/tekes-delete.svg",
+      "sha256": "de3a87ae78be5f72a556e9cef0306a5c16cc77be71a46199d8a955005ab96d64",
+      "origin": "promoted-catalog",
+      "sourceSha256": "fa0178f46581dbeb38759bb3438135af1bdde5533a32fa3fee9682bca1f7dda0"
+    },
+    {
+      "name": "tekes-desktop-control",
+      "file": "assets/tekes-desktop-control.svg",
+      "sha256": "0747781099b2bb15ba121b4904e9fb0d76008fe2dc145f9434e9a15c242a3736",
+      "origin": "published-proposal",
+      "sourceSha256": "0747781099b2bb15ba121b4904e9fb0d76008fe2dc145f9434e9a15c242a3736"
+    },
+    {
+      "name": "tekes-diff-annotation",
+      "file": "assets/tekes-diff-annotation.svg",
+      "sha256": "a6cfc6ff92df4205799721dc0e921d7475a276da94aceca78d8845df48d02b08",
+      "origin": "published-proposal",
+      "sourceSha256": "a6cfc6ff92df4205799721dc0e921d7475a276da94aceca78d8845df48d02b08"
+    },
+    {
+      "name": "tekes-diff-list",
+      "file": "assets/tekes-diff-list.svg",
+      "sha256": "264c977f20383415e8161f3d50046862d557dfdcc5c8f5d9d9e75672681310fb",
+      "origin": "promoted-catalog",
+      "sourceSha256": "ac01db7965bc9161488508c613f48c9261e7e108d14a71fa2b3869f037d5a248"
+    },
+    {
+      "name": "tekes-diff-split-h",
+      "file": "assets/tekes-diff-split-h.svg",
+      "sha256": "38b6429b53b9951efb6d3d31d9b0ba4b4840bad6737cf01c90e8804c457ae282",
+      "origin": "promoted-catalog",
+      "sourceSha256": "44bf6512b8b18dac4a47fc637fbbb2d7e50780bb163cefa578c3c19eaacb5688"
+    },
+    {
+      "name": "tekes-diff-split-v",
+      "file": "assets/tekes-diff-split-v.svg",
+      "sha256": "beddb66e19f99bb2acdec3e6b4acffa351699a4302acc4d316cd8c5d8438c120",
+      "origin": "promoted-catalog",
+      "sourceSha256": "b6924d25db17eff613aef8022bb7ef69a587bf5d71b62a8c8532eb344e1a945c"
+    },
+    {
+      "name": "tekes-drama-audience",
+      "file": "assets/tekes-drama-audience.svg",
+      "sha256": "25148ff46a817504d0845e253aab4c96b445e967edf98ff1eac96bfca048419b",
+      "origin": "published-proposal",
+      "sourceSha256": "25148ff46a817504d0845e253aab4c96b445e967edf98ff1eac96bfca048419b"
+    },
+    {
+      "name": "tekes-drama-audio",
+      "file": "assets/tekes-drama-audio.svg",
+      "sha256": "cd6b9567d2be23f8344dbd440e2b6056e305e9372580bab0c69e00d4cf92b466",
+      "origin": "published-proposal",
+      "sourceSha256": "cd6b9567d2be23f8344dbd440e2b6056e305e9372580bab0c69e00d4cf92b466"
+    },
+    {
+      "name": "tekes-drama-brief",
+      "file": "assets/tekes-drama-brief.svg",
+      "sha256": "6c1f450c641ab0ab567da2b2f63cc6375827615972a62f9081eebe6a00854f03",
+      "origin": "published-proposal",
+      "sourceSha256": "6c1f450c641ab0ab567da2b2f63cc6375827615972a62f9081eebe6a00854f03"
+    },
+    {
+      "name": "tekes-drama-character",
+      "file": "assets/tekes-drama-character.svg",
+      "sha256": "677ff2edea561a0ad870ef915ec6cb34bec6f49c2658483010706edc13480b35",
+      "origin": "published-proposal",
+      "sourceSha256": "677ff2edea561a0ad870ef915ec6cb34bec6f49c2658483010706edc13480b35"
+    },
+    {
+      "name": "tekes-drama-collaboration",
+      "file": "assets/tekes-drama-collaboration.svg",
+      "sha256": "f7e6d3574edf4ae8932fc61e089a6ecc60abbb332ebd606d04230468342b5562",
+      "origin": "published-proposal",
+      "sourceSha256": "f7e6d3574edf4ae8932fc61e089a6ecc60abbb332ebd606d04230468342b5562"
+    },
+    {
+      "name": "tekes-drama-delivery",
+      "file": "assets/tekes-drama-delivery.svg",
+      "sha256": "77e44de4aabd8c0b148c70a1fbbd8a3c48d72898ba7e8e1affe6d2ad06dfba1c",
+      "origin": "published-proposal",
+      "sourceSha256": "77e44de4aabd8c0b148c70a1fbbd8a3c48d72898ba7e8e1affe6d2ad06dfba1c"
+    },
+    {
+      "name": "tekes-drama-directing",
+      "file": "assets/tekes-drama-directing.svg",
+      "sha256": "67d10ccf7d0914183cfe49c7650be59a7a49782c171b7e8de72c95e2096f9d27",
+      "origin": "published-proposal",
+      "sourceSha256": "67d10ccf7d0914183cfe49c7650be59a7a49782c171b7e8de72c95e2096f9d27"
+    },
+    {
+      "name": "tekes-drama-editing",
+      "file": "assets/tekes-drama-editing.svg",
+      "sha256": "cb107ac899241e22fff7989966c72502b92db385c989f7a76a0284aef9d631cc",
+      "origin": "published-proposal",
+      "sourceSha256": "cb107ac899241e22fff7989966c72502b92db385c989f7a76a0284aef9d631cc"
+    },
+    {
+      "name": "tekes-drama-production",
+      "file": "assets/tekes-drama-production.svg",
+      "sha256": "acb629e88ef0b39c88eb69817123ddeec0d8df8ba39916dd40f2147302e9188a",
+      "origin": "published-proposal",
+      "sourceSha256": "acb629e88ef0b39c88eb69817123ddeec0d8df8ba39916dd40f2147302e9188a"
+    },
+    {
+      "name": "tekes-drama-references",
+      "file": "assets/tekes-drama-references.svg",
+      "sha256": "1a752bf2bb853cb95faf08eb853479dd8912b9060fd4005b46e5e470711967d9",
+      "origin": "published-proposal",
+      "sourceSha256": "1a752bf2bb853cb95faf08eb853479dd8912b9060fd4005b46e5e470711967d9"
+    },
+    {
+      "name": "tekes-drama-script",
+      "file": "assets/tekes-drama-script.svg",
+      "sha256": "a7a6fe32db92606c1362957ed37f07f402d6152a41a8be64b4a807eb2f4b7759",
+      "origin": "published-proposal",
+      "sourceSha256": "a7a6fe32db92606c1362957ed37f07f402d6152a41a8be64b4a807eb2f4b7759"
+    },
+    {
+      "name": "tekes-drama-shot",
+      "file": "assets/tekes-drama-shot.svg",
+      "sha256": "928d880943e8a44e17915f9f6b84a6c558d2ff3647faa3938de08255cf81bed5",
+      "origin": "published-proposal",
+      "sourceSha256": "928d880943e8a44e17915f9f6b84a6c558d2ff3647faa3938de08255cf81bed5"
+    },
+    {
+      "name": "tekes-drama-storyboard",
+      "file": "assets/tekes-drama-storyboard.svg",
+      "sha256": "df6d70971e4f474fa9cec4cfbe2b9db2ddb82f2585104189a97831021332f35a",
+      "origin": "published-proposal",
+      "sourceSha256": "df6d70971e4f474fa9cec4cfbe2b9db2ddb82f2585104189a97831021332f35a"
+    },
+    {
+      "name": "tekes-drama-subtitles",
+      "file": "assets/tekes-drama-subtitles.svg",
+      "sha256": "0459aef5dda10590cd66f9945716d58fe221dcb4c5e9bd99685b1e97650b0ff4",
+      "origin": "published-proposal",
+      "sourceSha256": "0459aef5dda10590cd66f9945716d58fe221dcb4c5e9bd99685b1e97650b0ff4"
+    },
+    {
+      "name": "tekes-edit",
+      "file": "assets/tekes-edit.svg",
+      "sha256": "60a9b9f2569477938c4949f026a5b856c879719feb2fafff9e1c25a02d70b7d3",
+      "origin": "promoted-catalog",
+      "sourceSha256": "9d22e385fcb479d61700651ab110f7504a7c3e159384c77b33487ece42c43fe2"
+    },
+    {
+      "name": "tekes-error",
+      "file": "assets/tekes-error.svg",
+      "sha256": "d1d6bce8c2a3e97c5e89897a968b479987077dcda3a98d46e1612d26b947a383",
+      "origin": "promoted-catalog",
+      "sourceSha256": "954d84860e50b7f8ea6acba636d51fef36672a262ab381bf4bf5e58e09d5dec3"
+    },
+    {
+      "name": "tekes-error-fill",
+      "file": "assets/tekes-error-fill.svg",
+      "sha256": "8c2610ce88fa7d79fa2409a915c650a6d65d8cc0de7d91d5fa4da1f6164c4c38",
+      "origin": "promoted-catalog",
+      "sourceSha256": "ae5626ba510b7a7642c16bd9216a00a4e5ac98423e03b30a175346716ab5d9c9"
+    },
+    {
+      "name": "tekes-expand",
+      "file": "assets/tekes-expand.svg",
+      "sha256": "6a6097de9722375c65403e2001bbfd9f9e5d822056a2694140e7ce8d28efb060",
+      "origin": "promoted-catalog",
+      "sourceSha256": "0b8e1d8437cdd03368a2fd40cf88b48fa50b3a998c8a69f6a5707418cef790d8"
+    },
+    {
+      "name": "tekes-file-added",
+      "file": "assets/tekes-file-added.svg",
+      "sha256": "037301407c5599775a54a237d31bb7dc150603fb70be4f68743f861d4ed0818f",
+      "origin": "promoted-catalog",
+      "sourceSha256": "315898f2a9dcb2ae0fbcbb2bf314b7fdb8635c7354821876f29a93e75a55e6a3"
+    },
+    {
+      "name": "tekes-file-code",
+      "file": "assets/tekes-file-code.svg",
+      "sha256": "6aa17b648200c608594d318c1eea539313c963ca0a2bf146e078586a5ff5bc7d",
+      "origin": "promoted-catalog",
+      "sourceSha256": "31f4b09d6e3c513180d5bb8f10d6b01933bc96294048cf782bd71d784fd7e481"
+    },
+    {
+      "name": "tekes-file-generic",
+      "file": "assets/tekes-file-generic.svg",
+      "sha256": "28948b1716a79980304b883a5bef342a2a9a3afe4d1a6d6268a3c4666f5f9d80",
+      "origin": "promoted-catalog",
+      "sourceSha256": "e0f3886c22e8167c69928d94b71251e397c0c80fec8c3eeecaa36b5dc4387450"
+    },
+    {
+      "name": "tekes-file-link",
+      "file": "assets/tekes-file-link.svg",
+      "sha256": "cf3870b282297f2492fce0b2332f5cdc2a57e73ce70beced6590ea84835c636d",
+      "origin": "published-proposal",
+      "sourceSha256": "cf3870b282297f2492fce0b2332f5cdc2a57e73ce70beced6590ea84835c636d"
+    },
+    {
+      "name": "tekes-file-rich",
+      "file": "assets/tekes-file-rich.svg",
+      "sha256": "d44db98e329128d22f3b0bb210ece355822fb689385441b07e77f0810affed74",
+      "origin": "promoted-catalog",
+      "sourceSha256": "19c0f13ddcd5b8fddc055390460908bdfbcbcf21ef13c72222d07f668dd7d986"
+    },
+    {
+      "name": "tekes-file-text",
+      "file": "assets/tekes-file-text.svg",
+      "sha256": "9bcbb7ad264a531336ef4d7bf8abdb482329744ce1443c7b2d88000303d528b7",
+      "origin": "promoted-catalog",
+      "sourceSha256": "5eae8834f06cbafa81dc95accf7b83a2cbd017f656cb21412bc1365306d0f265"
+    },
+    {
+      "name": "tekes-files",
+      "file": "assets/tekes-files.svg",
+      "sha256": "123b19b61028058d09529a9d72da7ae52b9763f1d3d33b2d4879e4468be14b5f",
+      "origin": "promoted-catalog",
+      "sourceSha256": "d67d4dfd3603867683ce3137cb53efa6d4add1efd750369aed12d5d09c90be6b"
+    },
+    {
+      "name": "tekes-filter",
+      "file": "assets/tekes-filter.svg",
+      "sha256": "4e8f7c6e9cd175de8bbfb18ea2abea0bfbabb72fc4527ac51a0cccc5156ea9e4",
+      "origin": "published-proposal",
+      "sourceSha256": "4e8f7c6e9cd175de8bbfb18ea2abea0bfbabb72fc4527ac51a0cccc5156ea9e4"
+    },
+    {
+      "name": "tekes-flash",
+      "file": "assets/tekes-flash.svg",
+      "sha256": "a35fae10ec77cce93f51042ad515a025918b3c00ca05aff4b356d816bcd7e152",
+      "origin": "promoted-catalog",
+      "sourceSha256": "ee000c7d0a5633ef9baaffce4fc420eceefb3bd94a54135248695c7beda777c4"
+    },
+    {
+      "name": "tekes-flash-fill",
+      "file": "assets/tekes-flash-fill.svg",
+      "sha256": "eef40e187d42450a541c49e76d697111d5af881b658bf0c3ec8ff4fbebfc3043",
+      "origin": "promoted-catalog",
+      "sourceSha256": "e931fc22501212efcecbf0a788d5b4a7829874e9abb352203555f535c26ec724"
+    },
+    {
+      "name": "tekes-folder",
+      "file": "assets/tekes-folder.svg",
+      "sha256": "9c1670496c7f81d2c3cb809e96e82be03f8485a40c1ed7c3b506f555c3f5ce3e",
+      "origin": "promoted-catalog",
+      "sourceSha256": "e76973bd2bf74691ef38b34bceca83e18c107f8d65e072a728ea870b22adf24a"
+    },
+    {
+      "name": "tekes-folder-open",
+      "file": "assets/tekes-folder-open.svg",
+      "sha256": "2f4539e31e464a80d79dd706a226a9e7149afb3dbf06caab22384b2033eafec0",
+      "origin": "promoted-catalog",
+      "sourceSha256": "84b61466a0d93bce34f41b0838f5c6c8f8961763bcf3b99e0658418c9e764d9b"
+    },
+    {
+      "name": "tekes-fork",
+      "file": "assets/tekes-fork.svg",
+      "sha256": "1972f1027787334cd8f6a186b1e015bd034b793ab3cbc4089c93633c27914678",
+      "origin": "promoted-catalog",
+      "sourceSha256": "c2a386d28c197e42b5f27695da778685b9efe7a929812b0e00bfa59c1a37fe04"
+    },
+    {
+      "name": "tekes-forward",
+      "file": "assets/tekes-forward.svg",
+      "sha256": "fcf7abef65864e5b583f897d22b93c755b1a6a7a9f5729aebe1603f3ab81c363",
+      "origin": "promoted-catalog",
+      "sourceSha256": "3a81f079d18488566fa02314f84b9df78c49c9d467c80ea5d5029a4ccdcd2de6"
+    },
+    {
+      "name": "tekes-fullscreen",
+      "file": "assets/tekes-fullscreen.svg",
+      "sha256": "d642920a49d2849cb84c9e6502421b99ed311d258fdfd74acbd724050781b35c",
+      "origin": "promoted-catalog",
+      "sourceSha256": "df19a72302291fdce7194cb25a2abe9e615e82ac488282341284073dd98b045d"
+    },
+    {
+      "name": "tekes-goal",
+      "file": "assets/tekes-goal.svg",
+      "sha256": "76d2d369117c334cb3e83759ae2d98012b5ce5385d2b691abe70928dd1315ef0",
+      "origin": "promoted-catalog",
+      "sourceSha256": "7a1e2b9ed6b49f74b4b7d9ca86e296a24983bc5a2d2e4579f1f8f1c362253866"
+    },
+    {
+      "name": "tekes-goal-completed",
+      "file": "assets/tekes-goal-completed.svg",
+      "sha256": "13bbd3053b4af1cd0ea9f8dfde05b6c13a3d96567e9c0ba03830afa03ee4b947",
+      "origin": "approved-default",
+      "sourceSha256": "13bbd3053b4af1cd0ea9f8dfde05b6c13a3d96567e9c0ba03830afa03ee4b947"
+    },
+    {
+      "name": "tekes-goal-state-active",
+      "file": "assets/tekes-goal-state-active.svg",
+      "sha256": "93410c44a1169cd3df7c62ac24b96f4e740daa1f0813ef1af267e692de6bfb34",
+      "origin": "promoted-catalog",
+      "sourceSha256": "2cd75dedf6323e0c00c5bfe35f7d4a1ba6813af2d739ee33a12e1f2e952a49b6"
+    },
+    {
+      "name": "tekes-goal-state-blocked",
+      "file": "assets/tekes-goal-state-blocked.svg",
+      "sha256": "19abedcfd95514767945ca12d9a22d2e2a4194b0edac2b87b175b54d4fb2c0fc",
+      "origin": "promoted-catalog",
+      "sourceSha256": "3dd5a1e0eee1607608bcc50eef1302e6cbbc4e8852e4612d2db323071153dd7e"
+    },
+    {
+      "name": "tekes-goal-state-completed",
+      "file": "assets/tekes-goal-state-completed.svg",
+      "sha256": "81057c4800964b9d8ead5ce6d08575d9ef179100082981105354cbbfe2600961",
+      "origin": "promoted-catalog",
+      "sourceSha256": "785fa10ba57054a2ceccb86d7f1b1a1419acc081bdce3b9ca4ec8cd03f2008c4"
+    },
+    {
+      "name": "tekes-goal-state-stopped",
+      "file": "assets/tekes-goal-state-stopped.svg",
+      "sha256": "cde2e5d1c1710be3188bff5e7f693c1dcbe3f664aa5adc1f179af2926210e852",
+      "origin": "promoted-catalog",
+      "sourceSha256": "f8a062d8320ff6391bdb2492f66685c7d2226516f5c3ceb954a5c8840437b552"
+    },
+    {
+      "name": "tekes-hide",
+      "file": "assets/tekes-hide.svg",
+      "sha256": "0706cde0583ef7e5c764b84d5e2d65860c7d6ecd7d69c67f4b32ce403efe56a8",
+      "origin": "promoted-catalog",
+      "sourceSha256": "9be90b4d2fd7fe8c56b8e6f1f4cc1fd66d73e8c3f07468335bbcb81fb9b6efd8"
+    },
+    {
+      "name": "tekes-image",
+      "file": "assets/tekes-image.svg",
+      "sha256": "71060b6f0bd30310b71b6f0baa9feb032ade397bf3684927e83fe2f1ab1a9822",
+      "origin": "promoted-catalog",
+      "sourceSha256": "1961870e75a455cc3e718f6c5b7d55f083fb9f4e4e3336d3cf2a55f27e04b716"
+    },
+    {
+      "name": "tekes-info",
+      "file": "assets/tekes-info.svg",
+      "sha256": "0871ba05f6cec1e7093f9a17bee9e14b31eb622f985cd0a6a1e53828f3f6d0f5",
+      "origin": "promoted-catalog",
+      "sourceSha256": "f0fbf58f56e0f3945d43c04736389281d0afffc4190e72c97411c9c94224b5f9"
+    },
+    {
+      "name": "tekes-job",
+      "file": "assets/tekes-job.svg",
+      "sha256": "f53b6b7257e8732776d0c6999559e4a8ec318525913a81a1fd6b4e5cf7117e4c",
+      "origin": "promoted-catalog",
+      "sourceSha256": "29dded5f12542388154bf91ab4b6f6cbdf492948f1a73c64a27daaecfec4993b"
+    },
+    {
+      "name": "tekes-jump-bottom",
+      "file": "assets/tekes-jump-bottom.svg",
+      "sha256": "40ebec8a9f40e51e9f0e7c95b5fecb29b23e17b5fde8022ad64274f826939e2f",
+      "origin": "promoted-catalog",
+      "sourceSha256": "3a5962d83227066c3e02ebaee895119bfa03b19ed3f45c1bcf174f79eda15de5"
+    },
+    {
+      "name": "tekes-lock-fill",
+      "file": "assets/tekes-lock-fill.svg",
+      "sha256": "75e8bb23fd86c9c532b1176aa369f1eff5649180b9cbac19b902a9968dc1e597",
+      "origin": "promoted-catalog",
+      "sourceSha256": "5fb4e8383d4b01b5a2b73e2467d4cb6131f1972cac53e702bfe623779e294204"
+    },
+    {
+      "name": "tekes-logout",
+      "file": "assets/tekes-logout.svg",
+      "sha256": "adc5a449eecb334bae0954d7c69302de3a7469a57e075daee0e4468c6e3d7309",
+      "origin": "promoted-catalog",
+      "sourceSha256": "c0d2317032b7f62f3ead436a8a34b2b65db2a74fe9543c5f43a250efd10cf84d"
+    },
+    {
+      "name": "tekes-mcp",
+      "file": "assets/tekes-mcp.svg",
+      "sha256": "547828e5fd1d4819b0b23196fe5826a597edb914c01ee7dd729d9e4d797769eb",
+      "origin": "promoted-catalog",
+      "sourceSha256": "bc147071c4e8ccfca75a40216fdc2bfd5f196eb68a6d30aa3d2726d1eb57bc6b"
+    },
+    {
+      "name": "tekes-memorize",
+      "file": "assets/tekes-memorize.svg",
+      "sha256": "931ac7963c1047fddb8a0a291d864f615495fb9365611bfd63ae546a788b2995",
+      "origin": "promoted-catalog",
+      "sourceSha256": "dc4508eec9f8c1906c75b1dc7baf0aa8fd11cb10bd46ff9053cac7109a4d0400"
+    },
+    {
+      "name": "tekes-memory",
+      "file": "assets/tekes-memory.svg",
+      "sha256": "41c0add7c8042c6142a4b54dceb3375ee1408ffdf1c5dac17583d085b8cb1775",
+      "origin": "approved-default",
+      "sourceSha256": "41c0add7c8042c6142a4b54dceb3375ee1408ffdf1c5dac17583d085b8cb1775"
+    },
+    {
+      "name": "tekes-mention",
+      "file": "assets/tekes-mention.svg",
+      "sha256": "92801b0ad59ead95a57b31da461fecb146e5c3c740c5033c4386980d2d57340a",
+      "origin": "promoted-catalog",
+      "sourceSha256": "75e0a3a3c10ec4a1ddf24a74196124710481a152074307a21e7f138e316cab26"
+    },
+    {
+      "name": "tekes-merge",
+      "file": "assets/tekes-merge.svg",
+      "sha256": "7c81d6ddf846065329648cec5835a1120bcd0a5fcbffeb38ccd482b25900b9cb",
+      "origin": "promoted-catalog",
+      "sourceSha256": "2c22663b9beae5a49e76e573b8ab518bbd993690ba088532c1082f5d19ba4f16"
+    },
+    {
+      "name": "tekes-more",
+      "file": "assets/tekes-more.svg",
+      "sha256": "af9b44e26bb6964682b456e7b58e0c64fab27bac3028bb0472822d56daea6d8f",
+      "origin": "promoted-catalog",
+      "sourceSha256": "ab866696585e0a5b9cf24e935cb8ddf3c2fccf862573cb5a9a109c96b68089a9"
+    },
+    {
+      "name": "tekes-new",
+      "file": "assets/tekes-new.svg",
+      "sha256": "b15b5d70ad7f5052d93f038bf97a18be6ff5970c19d9c0290e57a8b2553a7e48",
+      "origin": "promoted-catalog",
+      "sourceSha256": "5ba3414184c8900fbc9af5e1a500a5c5f047ba85935c8870c06eef57dea47346"
+    },
+    {
+      "name": "tekes-new-goal",
+      "file": "assets/tekes-new-goal.svg",
+      "sha256": "e3ff1f1e71e7a3cbbc4c0ffd333293025c1daf5bf88811cd63cf489c082eeef3",
+      "origin": "approved-default",
+      "sourceSha256": "e3ff1f1e71e7a3cbbc4c0ffd333293025c1daf5bf88811cd63cf489c082eeef3"
+    },
+    {
+      "name": "tekes-new-project",
+      "file": "assets/tekes-new-project.svg",
+      "sha256": "ea83f280ab90cca68228a96fbf161559ce572dc0b19c3c11cc998fe1aea4689a",
+      "origin": "promoted-catalog",
+      "sourceSha256": "6906f4cfbef68918e40a8182391c42cbc9c90b7ff3f79f34a7dc7f4656b1aef6"
+    },
+    {
+      "name": "tekes-no-default-app",
+      "file": "assets/tekes-no-default-app.svg",
+      "sha256": "fe18d654055b62e9255cc47fc05d0fec0a7d149d318c6967e65c902a695acbaf",
+      "origin": "promoted-catalog",
+      "sourceSha256": "67158e320973d62e9b09f731b28b23b82bf28be5ae016f670a6a4f5f208e657d"
+    },
+    {
+      "name": "tekes-note",
+      "file": "assets/tekes-note.svg",
+      "sha256": "a6328fc3a9cbc98400bd3b9880f4eac10b22629f07bab50ffd56660ed9d1f2de",
+      "origin": "promoted-catalog",
+      "sourceSha256": "ffa8b12f6de90fe559308c3904656fd43d2cbfc0f20c759914bd41ae987c16f7"
+    },
+    {
+      "name": "tekes-oauth-key",
+      "file": "assets/tekes-oauth-key.svg",
+      "sha256": "47292c197a2e5d25c540098a27286745958256dcde212dac9502b684acb05f60",
+      "origin": "promoted-catalog",
+      "sourceSha256": "460d6e81525d555de976ddedc3b8e6a35815cd52780ac20e8718827eeab2d2f8"
+    },
+    {
+      "name": "tekes-open-external",
+      "file": "assets/tekes-open-external.svg",
+      "sha256": "80e871bc15281f580ef5f0f714e0a397fd51bb2a0f908236ffa99b495b0e44f4",
+      "origin": "published-proposal",
+      "sourceSha256": "80e871bc15281f580ef5f0f714e0a397fd51bb2a0f908236ffa99b495b0e44f4"
+    },
+    {
+      "name": "tekes-pause",
+      "file": "assets/tekes-pause.svg",
+      "sha256": "ef5f946704355aefb8076d327010f601cfa395ea506ec7ca0ad3cabc2d97a956",
+      "origin": "promoted-catalog",
+      "sourceSha256": "955283f45bf8e6d89f04aa56982dd8e467e08ddbcf7b8210d457ca7b1422495e"
+    },
+    {
+      "name": "tekes-pending-task",
+      "file": "assets/tekes-pending-task.svg",
+      "sha256": "880c666fb812f6d202ab7b4c65cb4a53f0922fc09b49789dbd489428013a811f",
+      "origin": "promoted-catalog",
+      "sourceSha256": "7370d808382667a5bc5685d42b42490111bb1693c669918090170800848db99f"
+    },
+    {
+      "name": "tekes-pin",
+      "file": "assets/tekes-pin.svg",
+      "sha256": "4f96af1a8c58b95b5da027e5b5a94355b6c065f02d4a272ece8911b1efceae4f",
+      "origin": "promoted-catalog",
+      "sourceSha256": "bb160eb3c36107a848c42cca969cc3c0d0925a0d4c8d9d20276591fffa3381fa"
+    },
+    {
+      "name": "tekes-pinned",
+      "file": "assets/tekes-pinned.svg",
+      "sha256": "0509347b23af829163bb9d5f19ca876b1cf337a5eae4b5baaf48dedf43926274",
+      "origin": "promoted-catalog",
+      "sourceSha256": "1395f2d4f9fca21623293c56fbed1ea0d4c411437319d0ba40956f7be9e1f34d"
+    },
+    {
+      "name": "tekes-plugin",
+      "file": "assets/tekes-plugin.svg",
+      "sha256": "48c7ae9ee5100a6d2a6ca31ca0ce8c9c37a61c86d62f7f7409e814a7c7f67ea5",
+      "origin": "promoted-catalog",
+      "sourceSha256": "f3553ca8425b2f694888693e63798ba9a4848a56502a7f0a0ec76677a3a3c231"
+    },
+    {
+      "name": "tekes-plugins",
+      "file": "assets/tekes-plugins.svg",
+      "sha256": "48c7ae9ee5100a6d2a6ca31ca0ce8c9c37a61c86d62f7f7409e814a7c7f67ea5",
+      "origin": "promoted-catalog",
+      "sourceSha256": "f3553ca8425b2f694888693e63798ba9a4848a56502a7f0a0ec76677a3a3c231"
+    },
+    {
+      "name": "tekes-popup-menu",
+      "file": "assets/tekes-popup-menu.svg",
+      "sha256": "c66524e63d3f9652f44718f0ec174645bb490d19952dfbf3402c262628e3e13a",
+      "origin": "promoted-catalog",
+      "sourceSha256": "4782150cce67d7444cfc87b8aa162069d413a0534114d4128a0a197149acbe91"
+    },
+    {
+      "name": "tekes-profile",
+      "file": "assets/tekes-profile.svg",
+      "sha256": "eec213d2d6057e1bcfc5059abb255685af4cd859afbeef8038bf432485d4bb40",
+      "origin": "promoted-catalog",
+      "sourceSha256": "38afab83c76ceab4de6e35bb3c66627329b53495e4c0ad6bb546feca7e99f479"
+    },
+    {
+      "name": "tekes-progress",
+      "file": "assets/tekes-progress.svg",
+      "sha256": "6360db961bdb30ab31cc94d388a57c7cb1d0a50e54199fa7d6783749e2417089",
+      "origin": "promoted-catalog",
+      "sourceSha256": "4c847d647ac449e2acba7a308f057e3374d2562076219b7ce8274dd28226b6da"
+    },
+    {
+      "name": "tekes-provider",
+      "file": "assets/tekes-provider.svg",
+      "sha256": "ba287fdc8903f525fcaf93229562cb6e3277c2909a111eb81d2e9ac9b1f76808",
+      "origin": "approved-default",
+      "sourceSha256": "ba287fdc8903f525fcaf93229562cb6e3277c2909a111eb81d2e9ac9b1f76808"
+    },
+    {
+      "name": "tekes-pull-request",
+      "file": "assets/tekes-pull-request.svg",
+      "sha256": "0284c42509b06bf4e6864e69f77c4b98ba5cfbdfd9b39c63993c804e5de6b8d2",
+      "origin": "promoted-catalog",
+      "sourceSha256": "b3e1662226b35f64803526f0e898d687a509e9460845e36ffbeebc0d3f23cbcf"
+    },
+    {
+      "name": "tekes-queued-input",
+      "file": "assets/tekes-queued-input.svg",
+      "sha256": "f3061bcdde140b02050f80f5cd018a1cb59dab81f7b35335f566ca690d0eae37",
+      "origin": "promoted-catalog",
+      "sourceSha256": "4fcf3bf4bd9f2a47ed7cfecb1433fd09745503cfe4ffa848fea1daf957b32df4"
+    },
+    {
+      "name": "tekes-quick-panel",
+      "file": "assets/tekes-quick-panel.svg",
+      "sha256": "379f1ee1a1e12cee810984a990fa50f6442d7e8ec8f08e26d6444bee7f4813f3",
+      "origin": "promoted-catalog",
+      "sourceSha256": "91e0a7bc79db2d40b01b1699aad47b532ab834f74579ce8bc9faa4300340550a"
+    },
+    {
+      "name": "tekes-quote",
+      "file": "assets/tekes-quote.svg",
+      "sha256": "450d3f5fb2ca9c9f0ab766444a3599156e192dc16744b59c38f9f440136c063f",
+      "origin": "promoted-catalog",
+      "sourceSha256": "c8903c8a6ec30dfc32972e71327036560edd859ce9d54fed1d43c0e483b59f78"
+    },
+    {
+      "name": "tekes-read",
+      "file": "assets/tekes-read.svg",
+      "sha256": "9bcbb7ad264a531336ef4d7bf8abdb482329744ce1443c7b2d88000303d528b7",
+      "origin": "promoted-catalog",
+      "sourceSha256": "5eae8834f06cbafa81dc95accf7b83a2cbd017f656cb21412bc1365306d0f265"
+    },
+    {
+      "name": "tekes-rebuild",
+      "file": "assets/tekes-rebuild.svg",
+      "sha256": "92ed7314cc7966abc902e5bd55aa6c589490582974216f94a82080b2d445b69f",
+      "origin": "promoted-catalog",
+      "sourceSha256": "c8caf0311aa331605d1418c9e42eb3262eac5340ba9c7e3e0f7cd7ba198137c6"
+    },
+    {
+      "name": "tekes-recall",
+      "file": "assets/tekes-recall.svg",
+      "sha256": "7b28a5ef2cec3ed538ea14783a59904ffc7d676001b5601ac16ed8f138b4f66c",
+      "origin": "promoted-catalog",
+      "sourceSha256": "9214e7f924906074bf048bc39a1c5ef2840dcf5032f7401ca7d218c9179526b0"
+    },
+    {
+      "name": "tekes-redo",
+      "file": "assets/tekes-redo.svg",
+      "sha256": "b86d319bdbea6ded2ffc3951eb92a005b9087cf6e43d1d21c63c1cf286046766",
+      "origin": "published-proposal",
+      "sourceSha256": "b86d319bdbea6ded2ffc3951eb92a005b9087cf6e43d1d21c63c1cf286046766"
+    },
+    {
+      "name": "tekes-refresh",
+      "file": "assets/tekes-refresh.svg",
+      "sha256": "f96d905b1ba249db26610e0d7e68fc79d3dde535a33a6a782502d5031660f5bb",
+      "origin": "promoted-catalog",
+      "sourceSha256": "b68fcef08f6b2c3235b889a6b22f6adaaaa1e7b1873d317e487cee78601cabc0"
+    },
+    {
+      "name": "tekes-remove-one",
+      "file": "assets/tekes-remove-one.svg",
+      "sha256": "34fb01b500397c5d6451c7f42ffc8dac5c9632fad41a21669f320559aef5b4b8",
+      "origin": "promoted-catalog",
+      "sourceSha256": "237fe43c6669c64e981445848391c269328019202b63e2c0956cb87f733dda89"
+    },
+    {
+      "name": "tekes-report",
+      "file": "assets/tekes-report.svg",
+      "sha256": "866d41722ca7e48497155ca1c76b6d6a7770ffd94e7ec667684b14676fd78727",
+      "origin": "promoted-catalog",
+      "sourceSha256": "5a20f02d3d462218f5251de6131514d5b9f0c8387c383625960ba2164c402897"
+    },
+    {
+      "name": "tekes-resume",
+      "file": "assets/tekes-resume.svg",
+      "sha256": "507723cffeb876f584db5d11fa2293a29bd41c955eebcb719cb07249f9cf0464",
+      "origin": "promoted-catalog",
+      "sourceSha256": "f3804c61c941bb0a2781e825255369f2ad3aed0663ec39cb7aa7acb3f66f4255"
+    },
+    {
+      "name": "tekes-review-plan",
+      "file": "assets/tekes-review-plan.svg",
+      "sha256": "1ffe5238a0b4e66a5245cb87e58abbb47d7a49db643ae6f26b54190d2be7dcbb",
+      "origin": "promoted-catalog",
+      "sourceSha256": "eb901ce1e3ed1bfe4475670ebb5c1a883be81d827236b44bb54d6385c4827128"
+    },
+    {
+      "name": "tekes-rewind",
+      "file": "assets/tekes-rewind.svg",
+      "sha256": "4ec24a73d86e470afc89179a54fb98a707adb9eb34b7dc204e2a442715b8ba1e",
+      "origin": "promoted-catalog",
+      "sourceSha256": "ef7888c49a86773143c0369760c301222f727e772aefb0bd906e1b79b6423344"
+    },
+    {
+      "name": "tekes-router",
+      "file": "assets/tekes-router.svg",
+      "sha256": "9f9fd657434f785e7a9924fa1a8e3081dd97b1abffda6a9ef0528a189e010495",
+      "origin": "approved-default",
+      "sourceSha256": "9f9fd657434f785e7a9924fa1a8e3081dd97b1abffda6a9ef0528a189e010495"
+    },
+    {
+      "name": "tekes-scheduled",
+      "file": "assets/tekes-scheduled.svg",
+      "sha256": "a75f884cb99b15ae7f545a3c7d93fc51826b651b4f6b92a4849d8c2dc0853e38",
+      "origin": "promoted-catalog",
+      "sourceSha256": "51ef2c10579ff745f5e42aca6c3e7f7e9a084449d610854a855f58c0ee9a9f23"
+    },
+    {
+      "name": "tekes-search",
+      "file": "assets/tekes-search.svg",
+      "sha256": "10c806e61e3040e800bb9481075445fe42fc5fcf2b2e7b0dc338ff536df7109f",
+      "origin": "promoted-catalog",
+      "sourceSha256": "160853250253f5b3509f8e3330c61d68cdeb3be092ea35e3c536f71dc79eb6dc"
+    },
+    {
+      "name": "tekes-send",
+      "file": "assets/tekes-send.svg",
+      "sha256": "083a6c2d6f55920aeb6547277496217bf146b562b261147b81e32aa3edb9da28",
+      "origin": "promoted-catalog",
+      "sourceSha256": "065e1b16fd0b025853476d3e442fda235fdfaa14ed3ebf55c5181b264e755240"
+    },
+    {
+      "name": "tekes-settings",
+      "file": "assets/tekes-settings.svg",
+      "sha256": "2bc1ae68873e019174cb4c78ace1d5a3c32ad15573e87748e22d2ee85b813ce0",
+      "origin": "approved-default",
+      "sourceSha256": "2bc1ae68873e019174cb4c78ace1d5a3c32ad15573e87748e22d2ee85b813ce0"
+    },
+    {
+      "name": "tekes-shell",
+      "file": "assets/tekes-shell.svg",
+      "sha256": "c6df2a2b67e529839cf97f3817f519e91f94124300f9a9ee8b46a83d82b0a83e",
+      "origin": "promoted-catalog",
+      "sourceSha256": "f857256b809552b528a0c9f3e17ad2b6f50fdc6921c076a8efa8184c52991f9a"
+    },
+    {
+      "name": "tekes-show",
+      "file": "assets/tekes-show.svg",
+      "sha256": "d050a2c2c9400cc7520213134b5ee1bcb0b145f2db518bf4d3938e673fcad867",
+      "origin": "promoted-catalog",
+      "sourceSha256": "ababda9234d7cff4521085abdbff7a5c2b691bf28c81408863c5c037a8256f04"
+    },
+    {
+      "name": "tekes-side-bar",
+      "file": "assets/tekes-side-bar.svg",
+      "sha256": "d961241d33d73fc2dd8f2564bc60dea545d0c0ca478e96f1a67a8fe207956948",
+      "origin": "promoted-catalog",
+      "sourceSha256": "3a4d340a41c7b43234dea991a2fc999636112d0ee16fee5fbfb2b59594daad43"
+    },
+    {
+      "name": "tekes-side-chat",
+      "file": "assets/tekes-side-chat.svg",
+      "sha256": "dc751cc5314dcd64f9af75da94cbb3c20738d9e4d7f22992009bc70dc5fda351",
+      "origin": "promoted-catalog",
+      "sourceSha256": "c115093267943b0eabb1b3f9b61e009f68045783f1b09bd6e53356e565cb0317"
+    },
+    {
+      "name": "tekes-side-panel",
+      "file": "assets/tekes-side-panel.svg",
+      "sha256": "8d2c1b6c3821ba792bdcd13d7b74c944c404549b160459e3bd5d490d4e8e1d32",
+      "origin": "promoted-catalog",
+      "sourceSha256": "68a7a8894929128a52975b3d3f44b2a4872e353ed8ea6060ef17e767ca70b992"
+    },
+    {
+      "name": "tekes-skill",
+      "file": "assets/tekes-skill.svg",
+      "sha256": "69fb60fda1e977d12cba289f5e78643f1dbead06f6191e6e512d9f890b035ecf",
+      "origin": "promoted-catalog",
+      "sourceSha256": "e60f8bf3a29be9e0188b39c7ade0a48bbedfa5311194d7bb0e2a2302974cf811"
+    },
+    {
+      "name": "tekes-skills",
+      "file": "assets/tekes-skills.svg",
+      "sha256": "6dd375e67266f232172916c834e4f958aab0d403374458980bedb44012302ff5",
+      "origin": "promoted-catalog",
+      "sourceSha256": "a8500eb5b670ce1ab6cbf152b7b9f41fc6f7ec7bd53872c323b82640eba482af"
+    },
+    {
+      "name": "tekes-slash-command",
+      "file": "assets/tekes-slash-command.svg",
+      "sha256": "3f9d0351eabfab80dba2e0933272de3fd22a8294cd365e2fda5ef662cc00044c",
+      "origin": "promoted-catalog",
+      "sourceSha256": "1f9b3e7515769581afb1218e5fcbce1e4c5ffb7cfa80fa7cfa2afb6c4a2c0d2f"
+    },
+    {
+      "name": "tekes-sort",
+      "file": "assets/tekes-sort.svg",
+      "sha256": "740c5320ac067975dcfd2d6a5a025cd64c919f199779ac7d4b3918988e8dd8ff",
+      "origin": "published-proposal",
+      "sourceSha256": "740c5320ac067975dcfd2d6a5a025cd64c919f199779ac7d4b3918988e8dd8ff"
+    },
+    {
+      "name": "tekes-steer",
+      "file": "assets/tekes-steer.svg",
+      "sha256": "de9c5769c99c7f06eba7a0954a58b4237ebe9d271da4e0744c9b4d69a0c833b3",
+      "origin": "promoted-catalog",
+      "sourceSha256": "2b097cea83a7d531f18426b8cd0bd1bb2f6342ca13832b3e06f13eb22f97f93f"
+    },
+    {
+      "name": "tekes-steering",
+      "file": "assets/tekes-steering.svg",
+      "sha256": "1f5f0b3e182e2b9ef5f403c2a97d408dc608123e8513c66aede0d4cade7f16f1",
+      "origin": "promoted-catalog",
+      "sourceSha256": "f772658b16ebf8a38215f0526f80be59bfb62a83d165305eb58c4dacb29529d9"
+    },
+    {
+      "name": "tekes-stop",
+      "file": "assets/tekes-stop.svg",
+      "sha256": "8796e8799a5f72f674b19911adc5f50691248cb06c6d216e4814f2d363e2c956",
+      "origin": "promoted-catalog",
+      "sourceSha256": "fb56b4be42074153a0e3d16560e2be732c2763f9e2a9e1bc53bd2663d9473611"
+    },
+    {
+      "name": "tekes-subagent",
+      "file": "assets/tekes-subagent.svg",
+      "sha256": "82b967476987fd68c1fd957e9a7b91040d3d90415c99e8d57d6e4fd84a1af43d",
+      "origin": "promoted-catalog",
+      "sourceSha256": "a7772a191ab8ab7d91414c72f69cd76c0a832717fadc0b015cfde94f82718413"
+    },
+    {
+      "name": "tekes-tab-diffs",
+      "file": "assets/tekes-tab-diffs.svg",
+      "sha256": "f4fe30e73458fcfc39a62aa42dd2fe971f3b0546a2e207e3b763858972e5cce4",
+      "origin": "promoted-catalog",
+      "sourceSha256": "6c0b3a89aca1b3f4169bf9bc2e6384509d901a3a30c1ea034ebc9a469568c8c1"
+    },
+    {
+      "name": "tekes-tab-summary",
+      "file": "assets/tekes-tab-summary.svg",
+      "sha256": "9d2278ec1070c722b77a99b273713cdff831d2818af6c8a0750e95fbb955b279",
+      "origin": "promoted-catalog",
+      "sourceSha256": "2c4ca11633bb2840430b2dc7013a2f1c96ae35cdab90a6d8ba35b5072cdfa7cc"
+    },
+    {
+      "name": "tekes-tag",
+      "file": "assets/tekes-tag.svg",
+      "sha256": "19cb6b1b46da897e354685a5c293ee570d1d9508f43938ad19555ae89eb7a06a",
+      "origin": "promoted-catalog",
+      "sourceSha256": "8b32ea471db651e75e694b3d6791d1665c541cfc9c576a8072cbf86dc6cbcef4"
+    },
+    {
+      "name": "tekes-task",
+      "file": "assets/tekes-task.svg",
+      "sha256": "35c1c1d6c8a186dd035e5e820307b9078962977930dc3c416de3dafbb90b8608",
+      "origin": "promoted-catalog",
+      "sourceSha256": "a93629e9478d35d761789dd291e7bf5ba74fe4bd79d05b709d422b0ed1587e0b"
+    },
+    {
+      "name": "tekes-test-connection",
+      "file": "assets/tekes-test-connection.svg",
+      "sha256": "580b6abdc9de9bb200400918063d60cb955378134860376b3837d2eed71470cf",
+      "origin": "promoted-catalog",
+      "sourceSha256": "606469deb8d5e1d669e389beef1e5630e4473a6dbbb6c265263ec01a9c04ad08"
+    },
+    {
+      "name": "tekes-think",
+      "file": "assets/tekes-think.svg",
+      "sha256": "2469ed55708e9dbab091479fb96370011338230f0d16f4bbf6825fe118aef590",
+      "origin": "approved-default",
+      "sourceSha256": "2469ed55708e9dbab091479fb96370011338230f0d16f4bbf6825fe118aef590"
+    },
+    {
+      "name": "tekes-thumbs-down",
+      "file": "assets/tekes-thumbs-down.svg",
+      "sha256": "c2d5d802db730e7360799a4e32391bd402bf7b12b61e7a41aa7073f4c7a0bf6d",
+      "origin": "promoted-catalog",
+      "sourceSha256": "d06cfc06b3de0b9c0b1acac9ec1dc82c90197720c1cf6f57d030b15709815d49"
+    },
+    {
+      "name": "tekes-thumbs-down-fill",
+      "file": "assets/tekes-thumbs-down-fill.svg",
+      "sha256": "9db8d85375f4beac95b3722c73d0b9914c4e7ada0f035e58682a685f36541971",
+      "origin": "promoted-catalog",
+      "sourceSha256": "375034a35104556f232f92d3c3771e8bf117fb19a9fbed6269ae4343007b23fd"
+    },
+    {
+      "name": "tekes-thumbs-up",
+      "file": "assets/tekes-thumbs-up.svg",
+      "sha256": "71fe0e2df8b45d31f847157f520fdd3a9fadf26aab1d680914db4461c077632a",
+      "origin": "promoted-catalog",
+      "sourceSha256": "feb8bfa7383a4d1cb82d4d1ea8ca07da236a2e248fb0bd1da624d0528dbf18c0"
+    },
+    {
+      "name": "tekes-thumbs-up-fill",
+      "file": "assets/tekes-thumbs-up-fill.svg",
+      "sha256": "d1957fe430bcf17df5673970bf0edb489796ccee4d6b642ee173f71add25d15c",
+      "origin": "promoted-catalog",
+      "sourceSha256": "3e783bbf7a0416af286ad2d9979a7d09d4fa57eb14681c1fb4652a0f453c111b"
+    },
+    {
+      "name": "tekes-time",
+      "file": "assets/tekes-time.svg",
+      "sha256": "7b3ee7dd00e903b01dd5ef476045e2d578a3e26400f06eddf06c038af450a6a3",
+      "origin": "promoted-catalog",
+      "sourceSha256": "2226fc4915638b26a5f7f791ccfe270c450adf9406ccf9f3a6b8acfc6e4c2306"
+    },
+    {
+      "name": "tekes-tools",
+      "file": "assets/tekes-tools.svg",
+      "sha256": "3c3310aaf5db0ea5578eb51e625901c70c8d4e035804ae0c219d854a4daf407b",
+      "origin": "promoted-catalog",
+      "sourceSha256": "db43af1c548b0142456bf37d76f7f4d92fd43236a06a06d5b13a2506b6a0f1f3"
+    },
+    {
+      "name": "tekes-trust",
+      "file": "assets/tekes-trust.svg",
+      "sha256": "fb9399ea5feb8cb509fbba8d489c1ae9571ddce290dec236df23d90db31cf780",
+      "origin": "promoted-catalog",
+      "sourceSha256": "d8b07720cc937bf686d2d5c934abc2ce7e1bc399ae6a1dda1fc77592084c018b"
+    },
+    {
+      "name": "tekes-undo",
+      "file": "assets/tekes-undo.svg",
+      "sha256": "0f38d9c4a813818cfc4df3ed7ec50e627c39b4b6e73bdc6c21db4351e76346c0",
+      "origin": "published-proposal",
+      "sourceSha256": "0f38d9c4a813818cfc4df3ed7ec50e627c39b4b6e73bdc6c21db4351e76346c0"
+    },
+    {
+      "name": "tekes-unknown-fallback",
+      "file": "assets/tekes-unknown-fallback.svg",
+      "sha256": "3c3310aaf5db0ea5578eb51e625901c70c8d4e035804ae0c219d854a4daf407b",
+      "origin": "promoted-catalog",
+      "sourceSha256": "db43af1c548b0142456bf37d76f7f4d92fd43236a06a06d5b13a2506b6a0f1f3"
+    },
+    {
+      "name": "tekes-unknown-tool",
+      "file": "assets/tekes-unknown-tool.svg",
+      "sha256": "87587a0303eef0cead5d596cf34b045bf5d8cdea81016547426e3ddc4fb194cc",
+      "origin": "promoted-catalog",
+      "sourceSha256": "c8a41b03b688ff723479a7cd6df543f9586c509e794a23c6c5fa2bb10af1fc53"
+    },
+    {
+      "name": "tekes-unpushed",
+      "file": "assets/tekes-unpushed.svg",
+      "sha256": "67c9eadd884d0202fd6045e9675f0f77901f4845529aa5fa7cf8e33c63df9755",
+      "origin": "promoted-catalog",
+      "sourceSha256": "b62cf1ff0dfb04269bdb0966cb41aeba99618a6326c0e9d1924434dd8cc49e43"
+    },
+    {
+      "name": "tekes-untracked-folder",
+      "file": "assets/tekes-untracked-folder.svg",
+      "sha256": "2bc3c7d51ff1036da86c765e9cc9031efab65d1f0be777bcb2fe43823d1ce8f8",
+      "origin": "promoted-catalog",
+      "sourceSha256": "36b7783df126fc0a5af9d12782f925bf54e01269097e286d060b9d3bcb072ace"
+    },
+    {
+      "name": "tekes-verify",
+      "file": "assets/tekes-verify.svg",
+      "sha256": "a98934d9782dac21763559a3c19f6da7984dfeef14f81eab302fb2340a4f2908",
+      "origin": "promoted-catalog",
+      "sourceSha256": "1e7c0267e023b0064a5c7a1b0a3e0aadc7bbc4ffdd67962e09242e3c267bd539"
+    },
+    {
+      "name": "tekes-waiting-user",
+      "file": "assets/tekes-waiting-user.svg",
+      "sha256": "8df3b10dc873b9a6f0395d47c0d9b041f80021959084a3060708bf4d5dff63ab",
+      "origin": "promoted-catalog",
+      "sourceSha256": "7469c8ae25c5b0ea840a8358b83dc72dd32ed04008772b0a43e3601b57e5732d"
+    },
+    {
+      "name": "tekes-warning",
+      "file": "assets/tekes-warning.svg",
+      "sha256": "909d26a9541c6fc9c772907d76aac173cb276638272aaff587c8841aedca1edf",
+      "origin": "promoted-catalog",
+      "sourceSha256": "4a4e63a52c859147ac5eb7030f071d8567d51ca8595c0706bacdcf5c1fb853ec"
+    },
+    {
+      "name": "tekes-warning-fill",
+      "file": "assets/tekes-warning-fill.svg",
+      "sha256": "48a9cea0786d86e19f86ffc54149efd36be905e5388b41f3d502838be9f81b5b",
+      "origin": "promoted-catalog",
+      "sourceSha256": "9126587e035bd1cc796e4f9d6f32575a3127ba7d3bd3e37597ed0e759941dab4"
+    },
+    {
+      "name": "tekes-web-fetch",
+      "file": "assets/tekes-web-fetch.svg",
+      "sha256": "f514bac0900cf9eda85834cf6baa2e07d35222da8f92b80cb402abbff729d93d",
+      "origin": "promoted-catalog",
+      "sourceSha256": "c34fbca195221dd2f071613fa120653b0cb140f34d4bb6845414545015f8bc52"
+    },
+    {
+      "name": "tekes-web-search",
+      "file": "assets/tekes-web-search.svg",
+      "sha256": "3f9dc38f853dd418bf0417207b848776c1255d1d640cb0543919f52d22a98fe6",
+      "origin": "promoted-catalog",
+      "sourceSha256": "e2d518513739377874dc8dc781d7751a225c083af8dcffe7d2583826960faa53"
+    },
+    {
+      "name": "tekes-write",
+      "file": "assets/tekes-write.svg",
+      "sha256": "bad8b5da6a29715902436ee55cddb38c4880b7ce8385c4c20c85f6613e99c94e",
+      "origin": "promoted-catalog",
+      "sourceSha256": "424c1ca270cae0a331929d9acf629ac117aaf1b1821d3a61ad35f36e6c343857"
+    },
+    {
+      "name": "tekes-zoom-in",
+      "file": "assets/tekes-zoom-in.svg",
+      "sha256": "9ea695089c5a7739876dc4ff98c2b27039842ca5b3cb3b679a5771305a9ae102",
+      "origin": "published-proposal",
+      "sourceSha256": "9ea695089c5a7739876dc4ff98c2b27039842ca5b3cb3b679a5771305a9ae102"
+    },
+    {
+      "name": "tekes-zoom-out",
+      "file": "assets/tekes-zoom-out.svg",
+      "sha256": "04aa009722af496f6d4607f9f06041b73a090d13f9ebda3fdd4f9a1341f1db37",
+      "origin": "published-proposal",
+      "sourceSha256": "04aa009722af496f6d4607f9f06041b73a090d13f9ebda3fdd4f9a1341f1db37"
+    }
+  ]
+}

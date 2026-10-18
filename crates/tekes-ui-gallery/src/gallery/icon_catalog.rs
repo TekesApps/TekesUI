@@ -51,17 +51,12 @@ impl IconCatalog {
         if let Some(path) = std::env::var_os("TEKESUI_ICON_DIR") {
             return Self::load(Path::new(&path));
         }
-        let project = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let relative = "Tekes/Tekes/Assets.xcassets/TekesIcons";
-        let mut paths = vec![project.join(relative)];
-        if let Some(home) = std::env::var_os("HOME") {
-            paths.push(PathBuf::from(home).join("dev").join(relative));
-        }
-        paths
-            .into_iter()
-            .find(|p| p.is_dir())
-            .map_or_else(Self::default, |p| Self::load(&p))
+        Self::load(&Self::shared_assets_dir())
     }
+    fn shared_assets_dir() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../tekes-ui-icons/assets")
+    }
+
     pub fn load(dir: &Path) -> Self {
         let mut catalog = Self {
             source: Some(dir.to_owned()),
@@ -150,11 +145,15 @@ impl IconCatalog {
         }
         catalog
     }
-    /// Proposals are embedded; legacy source remains read-only and external.
+    /// Published artwork is self-contained; an explicit external directory is only for comparisons.
     pub fn add_proposals(&mut self) {
         if self.entries.iter().any(|e| !e.kind.is_empty()) {
             return;
         }
+        let shared_source = self
+            .source
+            .as_ref()
+            .is_some_and(|p| *p == Self::shared_assets_dir());
         for &(name, label, kind, svg) in proposal_assets::ASSETS {
             let tree = usvg::Tree::from_str(svg, &usvg::Options::default())
                 .expect("validated embedded proposal SVG");
@@ -163,6 +162,8 @@ impl IconCatalog {
                 .iter()
                 .position(|e| e.name == name)
                 .map(|i| Box::new(self.entries.remove(i)));
+            // Shared assets already contain the current artwork, not a historical "before".
+            let before = if shared_source { None } else { before };
             self.entries.push(Entry {
                 name: name.into(),
                 label: label.into(),
@@ -276,6 +277,15 @@ impl IconCatalog {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn shared_catalog_is_complete_without_an_application_directory() {
+        let mut catalog = IconCatalog::load(&IconCatalog::shared_assets_dir());
+        assert_eq!(catalog.entries.len(), tekes_ui_icons::Glyph::ALL.len());
+        assert!(catalog.notices.is_empty());
+        catalog.add_proposals();
+        assert_eq!(catalog.entries.len(), 176);
+        assert!(catalog.entries.iter().all(|entry| entry.before.is_none()));
+    }
     #[test]
     fn approved_defaults_preserve_the_original_comparison_after_merging() {
         let names: Vec<_> = tekes_ui_icons::Icon::ALL
