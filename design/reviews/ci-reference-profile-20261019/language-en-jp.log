@@ -1,0 +1,81 @@
+process AppleLanguages: Some(<__NSArrayM: 0x1010078a0>)
+Paragraph {
+    lines: [
+        Line {
+            index: 0,
+            utf16: 0..2,
+            bytes: 0..6,
+            ascent: 10.634765625,
+            descent: 2.3203125,
+            leading: 0.0,
+            height: 13.0,
+            top: 0.0,
+            baseline_y: 10.634765625,
+            width: 19.837691614066724,
+            width_trimmed: 19.837691614066724,
+            runs: [
+                ShapedRun {
+                    font: FontKey(
+                        1,
+                    ),
+                    utf16: 0..2,
+                    glyphs: [
+                        ShapedGlyph {
+                            id: 4341,
+                            x: 0.0,
+                            y: -0.0,
+                            utf16_index: 0,
+                            cluster_utf16: 0..1,
+                        },
+                        ShapedGlyph {
+                            id: 2200,
+                            x: 9.918845807033362,
+                            y: -0.0,
+                            utf16_index: 1,
+                            cluster_utf16: 1..2,
+                        },
+                    ],
+                },
+            ],
+            carets: [
+                (
+                    0,
+                    0.0,
+                ),
+                (
+                    1,
+                    9.918845807033362,
+                ),
+                (
+                    2,
+                    19.837691614066724,
+                ),
+            ],
+            has_newline: false,
+        },
+    ],
+    height: 13.0,
+    width: 19.837691614066724,
+    default_line_height: 13.0,
+    fonts: [
+        FontInfo {
+            key: FontKey(
+                0,
+            ),
+            post_script_name: ".SFNS-Bold",
+            size: 11.0,
+            is_color: false,
+        },
+        FontInfo {
+            key: FontKey(
+                1,
+            ),
+            post_script_name: ".HiraginoSansGBInterface-W6",
+            size: 11.0,
+            is_color: false,
+        },
+    ],
+    utf16_len: 2,
+}
+bitmap 22x23 offset -1,-19 sha256 190bc9a35e8893cb377110690c1fff294c1fa7a40ec6dede57ef1e3b7b2e37a2
+bitmap 22x24 offset -2,-20 sha256 30ec3f1051f7bfeb602805e53e5d2067583e96c2a5112b007f04624b7ba5fc06

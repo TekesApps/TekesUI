@@ -1,0 +1,43 @@
+   Compiling tekes-ui-gallery v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery)
+    Finished `test` profile [unoptimized] target(s) in 4.47s
+     Running unittests src/main.rs (target/review-cache/debug/deps/tekes_ui_gallery-95e02a1de07514df)
+
+running 1 test
+
+running 1 test
+test gallery::snapshot::tests::original_three_page_content_matches_the_committed_proposal_review ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 412 filtered out; finished in 8.60s
+
+reference AppleLanguages: Some(["en-JP", "ja-JP"])
+primitives-light@2x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 0 current-AA overlap pixels; other original content exact
+primitives-light@1x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 216 current-AA overlap pixels; other original content exact
+primitives-dark@2x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 0 current-AA overlap pixels; other original content exact
+primitives-dark@1x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 224 current-AA overlap pixels; other original content exact
+primitives-light-ic@2x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 0 current-AA overlap pixels; other original content exact
+primitives-light-ic@1x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 264 current-AA overlap pixels; other original content exact
+primitives-dark-ic@2x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 0 current-AA overlap pixels; other original content exact
+primitives-dark-ic@1x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 264 current-AA overlap pixels; other original content exact
+tokens-light@2x.png: 3344 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 0 current-AA overlap pixels; other original content exact
+tokens-light@1x.png pixel (819,92) matched swatch Rect { origin: Point { x: 816.0, y: 92.0 }, size: Size { width: 80.0, height: 48.0 } } SDF: outer=1.0->0.9644661, inner=0.5->0.4644661, historical AA delta=[2, 2, 2, 0]
+tokens-light@1x.png: 1048 exact concentric-radius pixels, 456 radius/legacy-AA pixels, 24 quantized-radius/legacy-AA pixels, 672 current-AA overlap pixels; other original content exact
+tokens-dark@2x.png: 3328 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 0 current-AA overlap pixels; other original content exact
+tokens-dark@1x.png: 1956 exact concentric-radius pixels, 452 radius/legacy-AA pixels, 16 quantized-radius/legacy-AA pixels, 672 current-AA overlap pixels; other original content exact
+tokens-light-ic@2x.png: 3328 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 0 current-AA overlap pixels; other original content exact
+tokens-light-ic@1x.png pixel (819,92) matched swatch Rect { origin: Point { x: 816.0, y: 92.0 }, size: Size { width: 80.0, height: 48.0 } } SDF: outer=1.0->0.9644661, inner=0.5->0.4644661, historical AA delta=[2, 2, 3, 0]
+tokens-light-ic@1x.png: 388 exact concentric-radius pixels, 444 radius/legacy-AA pixels, 32 quantized-radius/legacy-AA pixels, 672 current-AA overlap pixels; other original content exact
+tokens-dark-ic@2x.png: 3360 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 0 current-AA overlap pixels; other original content exact
+tokens-dark-ic@1x.png: 1048 exact concentric-radius pixels, 472 radius/legacy-AA pixels, 16 quantized-radius/legacy-AA pixels, 672 current-AA overlap pixels; other original content exact
+static-text-light@2x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 0 current-AA overlap pixels; other original content exact
+static-text-light@1x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 192 current-AA overlap pixels; other original content exact
+static-text-dark@2x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 0 current-AA overlap pixels; other original content exact
+static-text-dark@1x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 192 current-AA overlap pixels; other original content exact
+static-text-light-ic@2x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 0 current-AA overlap pixels; other original content exact
+static-text-light-ic@1x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 192 current-AA overlap pixels; other original content exact
+static-text-dark-ic@2x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 0 current-AA overlap pixels; other original content exact
+static-text-dark-ic@1x.png: 0 exact concentric-radius pixels, 0 radius/legacy-AA pixels, 0 quantized-radius/legacy-AA pixels, 192 current-AA overlap pixels; other original content exact
+
+test gallery::snapshot::tests::original_three_page_content_matches_the_committed_proposal_review ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 412 filtered out; finished in 8.61s
+

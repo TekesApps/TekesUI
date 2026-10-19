@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "codex/agentkit-public-pin-*"]
+    branches: [main, "codex/agentkit-public-pin-*", "codex/ci-reference-profile-*"]
   pull_request:
 
 jobs:

@@ -1,0 +1,71 @@
+[
+  {
+    "name": "resolve",
+    "command": [
+      "cargo",
+      "check",
+      "--workspace",
+      "--all-targets",
+      "--offline",
+      "-j",
+      "2"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "fmt",
+    "command": [
+      "cargo",
+      "fmt",
+      "--check"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "clippy",
+    "command": [
+      "cargo",
+      "clippy",
+      "--workspace",
+      "--all-targets",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "tests",
+    "command": [
+      "cargo",
+      "test",
+      "--workspace",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--message-format=json"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "public-consumer",
+    "command": [
+      "cargo",
+      "test",
+      "--manifest-path",
+      "examples/composition-consumer/Cargo.toml",
+      "--all-targets",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--message-format=json"
+    ],
+    "exit_code": 0
+  }
+]

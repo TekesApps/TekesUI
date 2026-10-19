@@ -1,0 +1,81 @@
+process AppleLanguages: Some(<__NSArrayM: 0x1055d37b0>)
+Paragraph {
+    lines: [
+        Line {
+            index: 0,
+            utf16: 0..2,
+            bytes: 0..6,
+            ascent: 10.634765625,
+            descent: 2.3203125,
+            leading: 0.0,
+            height: 13.0,
+            top: 0.0,
+            baseline_y: 10.634765625,
+            width: 21.8715953307393,
+            width_trimmed: 21.8715953307393,
+            runs: [
+                ShapedRun {
+                    font: FontKey(
+                        1,
+                    ),
+                    utf16: 0..2,
+                    glyphs: [
+                        ShapedGlyph {
+                            id: 2240,
+                            x: 0.0,
+                            y: -0.0,
+                            utf16_index: 0,
+                            cluster_utf16: 0..1,
+                        },
+                        ShapedGlyph {
+                            id: 1409,
+                            x: 10.93579766536965,
+                            y: -0.0,
+                            utf16_index: 1,
+                            cluster_utf16: 1..2,
+                        },
+                    ],
+                },
+            ],
+            carets: [
+                (
+                    0,
+                    0.0,
+                ),
+                (
+                    1,
+                    10.93579766536965,
+                ),
+                (
+                    2,
+                    21.8715953307393,
+                ),
+            ],
+            has_newline: false,
+        },
+    ],
+    height: 13.0,
+    width: 21.8715953307393,
+    default_line_height: 13.0,
+    fonts: [
+        FontInfo {
+            key: FontKey(
+                0,
+            ),
+            post_script_name: ".SFNS-Bold",
+            size: 11.0,
+            is_color: false,
+        },
+        FontInfo {
+            key: FontKey(
+                1,
+            ),
+            post_script_name: ".PingFangUITextSC-Bold",
+            size: 11.0,
+            is_color: false,
+        },
+    ],
+    utf16_len: 2,
+}
+bitmap 23x24 offset -1,-19 sha256 2b6fc0389e2e213521d81587f27673b44b6885869441ebc5b42f44092aa429fb
+bitmap 24x25 offset -2,-20 sha256 9e56594233cff2eb5ec2d323da1a0a44e491ef61d99474557d77e42f573298e6
