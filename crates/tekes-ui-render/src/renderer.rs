@@ -53,6 +53,7 @@ struct SurfaceState {
 /// 时会读窗口的 occlusionState，AppKit 对象只能在主线程访问；
 /// 并且 `presentsWithTransaction` 的同步上屏也要求在主线程。
 pub struct Renderer {
+    id: u64,
     instance: wgpu::Instance,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -167,6 +168,7 @@ impl Renderer {
         let id = NEXT_RENDERER_ID.fetch_add(1, Ordering::Relaxed);
         let gpu = Pipelines::new(&device, id);
         let mut r = Renderer {
+            id,
             instance,
             device,
             queue,
@@ -194,6 +196,7 @@ impl Renderer {
         let id = NEXT_RENDERER_ID.fetch_add(1, Ordering::Relaxed);
         let gpu = Pipelines::new(&device, id);
         Ok(Renderer {
+            id,
             instance,
             device,
             queue,
@@ -639,6 +642,45 @@ impl Renderer {
     /// 当前登记着多少张图像。
     pub fn image_count(&self) -> usize {
         self.gpu.image.len()
+    }
+
+    /// Opt into wgpu interop on this renderer's device and submission queue.
+    pub fn gpu_context(&self) -> crate::gpu::GpuContext {
+        crate::gpu::GpuContext {
+            owner: self.id,
+            device: self.device.clone(),
+            queue: self.queue.clone(),
+        }
+    }
+
+    /// Register GPU storage directly. No pixel copy, readback, mapping or wait.
+    /// Only images created from this renderer's context are accepted.
+    pub fn register_gpu_image(
+        &mut self,
+        image: &crate::gpu::GpuImage,
+    ) -> Result<ImageId, RenderError> {
+        self.check_gpu_image(image)?;
+        Ok(self.gpu.image.register_gpu(&self.device, image))
+    }
+
+    /// Replace a GPU image's backing storage (e.g. after resize), retaining ImageId.
+    /// Ordinary CPU-uploaded images cannot be replaced through this method.
+    pub fn replace_gpu_image(
+        &mut self,
+        id: ImageId,
+        image: &crate::gpu::GpuImage,
+    ) -> Result<(), RenderError> {
+        self.check_gpu_image(image)?;
+        self.gpu.image.replace_gpu(&self.device, id, image)
+    }
+
+    fn check_gpu_image(&self, image: &crate::gpu::GpuImage) -> Result<(), RenderError> {
+        if image.owner != self.id {
+            return Err(RenderError::InvalidArgument(
+                "GPU image belongs to a different renderer",
+            ));
+        }
+        Ok(())
     }
 
     /// atlas 的 GPU 数组纹理到目前为止建过几次（首次、换 atlas、页数超过层数时重建）。

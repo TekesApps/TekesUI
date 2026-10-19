@@ -84,7 +84,9 @@ impl Entry {
                     || (!self.planned() && extended::supports_story(self.renderer(), story))
             }
             "behaviors" | "edge-cases" => {
-                if extended::supports(self.renderer()) {
+                if self.renderer() == "scene3d" {
+                    false
+                } else if extended::supports(self.renderer()) {
                     extended::supports_story(self.renderer(), story)
                 } else {
                     !self.planned()
@@ -150,6 +152,7 @@ pub enum Phase {
 }
 #[derive(Debug)]
 pub struct StoryState {
+    scene3d_reset: bool,
     input: TextDemo,
     detail: TextDemo,
     pub checkbox: Checkbox,
@@ -197,6 +200,7 @@ pub struct StoryState {
 impl Default for StoryState {
     fn default() -> Self {
         Self {
+            scene3d_reset: false,
             input: TextDemo::field("Studio", false, false),
             detail: TextDemo::field(
                 include_str!("../../../../fixtures/text/gallery-reading-en.txt"),
@@ -505,6 +509,7 @@ impl StoryState {
                 let section = self.section;
                 *self = Self::for_entry_renderer(renderer);
                 self.section = section;
+                self.scene3d_reset = renderer == "scene3d";
                 self.record("reset: initial fixture");
             }
             1..=6 => {
@@ -937,6 +942,10 @@ fn event_log(
     Rect::new(x, y, width, 24. + visible_count as f32 * 22.)
 }
 impl Workbench {
+    pub(super) fn take_scene3d_reset(&mut self, i: usize) -> bool {
+        std::mem::take(&mut self.state(i).scene3d_reset)
+    }
+
     /// Current focused control frame in window coordinates. Hosts can reveal
     /// it through the outer page viewport without expanding it a second time;
     /// `Viewport::reveal_focus` adds the Design System focus-ring outset.
@@ -2817,7 +2826,7 @@ impl Workbench {
                     Point::new(r.min_x(), r.min_y() + height + 32.),
                 );
             }
-            "internal-text" | "motion" => {}
+            "internal-text" | "motion" | "scene3d" => {}
             "typography" => {
                 for (n, (title, role)) in [
                     ("Heading — Aa", proposal::TextRole::UiHeading),
@@ -6303,5 +6312,20 @@ mod interaction_tests {
                 .scroll_offset,
             0.0
         );
+    }
+}
+
+#[cfg(test)]
+mod scene3d_contract {
+    use super::*;
+    #[test]
+    fn scene3d_reset_is_consumed_once_and_only_implemented_stories_are_exposed() {
+        let i = entries().iter().position(|e| e.renderer() == "scene3d").unwrap();
+        assert!(!entry(i).supports_story("behaviors"));
+        let mut workbench = Workbench::default();
+        assert!(!workbench.take_scene3d_reset(i));
+        workbench.state(i).activate(0,"scene3d");
+        assert!(workbench.take_scene3d_reset(i));
+        assert!(!workbench.take_scene3d_reset(i));
     }
 }

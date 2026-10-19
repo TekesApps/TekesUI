@@ -2,7 +2,8 @@
 //!
 //! 接口保持窄，留出换成 objc2-metal 的余地。
 //! 例如 mac 上需要更直接地控制 CAMetalLayer 和帧节奏时。
-//! 公开 API 里没有 wgpu 的类型；输入是 [`tekes_ui_scene::Scene`]，错误是 [`RenderError`]。
+//! 普通 API 输入是 [`tekes_ui_scene::Scene`]，错误是 [`RenderError`]。
+//! 可选的 [`gpu`] 互操作接口向 GPU 组件共享 wgpu 设备和纹理，避免像素读回。
 //!
 //! # 颜色管线：在 sRGB 编码空间里混合
 //!
@@ -126,6 +127,7 @@ mod common;
 mod error;
 mod frame;
 mod glyph_pass;
+pub mod gpu;
 mod image_pass;
 mod instance;
 mod quad_pass;

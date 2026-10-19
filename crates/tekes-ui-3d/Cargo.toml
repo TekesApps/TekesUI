@@ -1,0 +1,23 @@
+[package]
+name = "tekes-ui-3d"
+description = "TekesUI3D standalone model viewer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+tekes-ui-scene3d = { path = "../tekes-ui-scene3d" }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+tekes-ui-platform-macos.workspace = true
+tekes-ui-render.workspace = true
+tekes-ui-scene.workspace = true
+tekes-ui-tokens.workspace = true
+tekes-ui-text.workspace = true
+png.workspace = true
+
+[lints]
+workspace = true

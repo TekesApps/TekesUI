@@ -32,6 +32,7 @@ pub mod pages;
 #[cfg(test)]
 mod quality_effects;
 pub mod snapshot;
+mod scene3d_preview;
 pub mod static_text;
 pub mod text;
 pub mod text_demo;
@@ -111,6 +112,7 @@ pub struct Gallery {
     workbench: workbench::Workbench,
     navigation_search: text_demo::TextDemo,
     motion_now: Duration,
+    scene3d: scene3d_preview::Preview3D,
 }
 
 impl Default for Gallery {
@@ -157,6 +159,7 @@ impl Gallery {
             workbench: workbench::Workbench::default(),
             navigation_search: text_demo::TextDemo::search(),
             motion_now: Duration::ZERO,
+            scene3d: scene3d_preview::Preview3D::default(),
         }
     }
 
@@ -318,10 +321,22 @@ impl Gallery {
         &mut self.text
     }
 
+    fn scene3d_visible(&self) -> bool {
+        matches!(self.page, Page::Workbench(i) if workbench::entry(i).renderer() == "scene3d" && self.workbench.show_live(i))
+    }
+
     /// 每次重绘之前调用：记下窗口倍率，给静态文字页备好参照图和差异（状态没变时什么都不做）。
     pub fn prepare(&mut self, renderer: &mut Renderer, scale: f32) {
         self.layout_page_extent();
         self.text.set_scale(scale);
+        if self.scene3d_visible() {
+            if let Page::Workbench(i) = self.page
+                && self.workbench.take_scene3d_reset(i)
+            {
+                self.scene3d.reset();
+            }
+            self.scene3d.prepare(renderer, self.workbench.reduced, scale);
+        }
         if self.content_page() == Page::Icons {
             let icon_type_scale = if matches!(self.page, Page::Workbench(_)) {
                 [1.0, 1.25, 1.5][self.workbench.text_scale]
@@ -497,6 +512,9 @@ impl Gallery {
                     viewport_clip,
                     &mut layer,
                 );
+                if workbench::entry(i).renderer() == "scene3d" && self.workbench.show_live(i) {
+                    self.scene3d.paint(&mut layer, self.workbench.preview_rect(i), ctx.text, theme);
+                }
                 if !self.workbench.show_live(i) {
                     self.viewport.append_visible_with_geometry(
                         &layer,
@@ -601,8 +619,18 @@ impl Gallery {
             .append_visible_with_geometry(&layer, scene, ctx.theme, &viewport_geometry);
     }
 
+    pub(crate) fn start_scene3d_rotation(&mut self, animate_clip: bool) {
+        self.scene3d.start_rotation(animate_clip);
+    }
+    pub(crate) fn scene3d_frame_work(&self) -> (u64, usize) {
+        self.scene3d.frame_work()
+    }
+    pub(crate) fn scene3d_diagnostics(&self) -> serde_json::Value {
+        self.scene3d.diagnostics()
+    }
     pub fn needs_animation(&self) -> bool {
-        self.text.motion_frame_requested()
+        (self.scene3d_visible() && self.scene3d.needs_frame(self.workbench.reduced))
+            || self.text.motion_frame_requested()
             || self.viewport.needs_animation()
             || self.navigation_search.needs_animation()
             || (self.content_page() == Page::Icons && self.icon_search.needs_animation())
@@ -624,6 +652,7 @@ impl Gallery {
             self.text
                 .set_motion_context(self.motion_now, self.workbench.reduced);
         }
+        let scene3d_dirty = self.scene3d_visible() && self.scene3d.advance(dt, self.workbench.reduced);
         let component_frame_pending = self.text.motion_frame_requested();
         let mut dirty = self.viewport.tick(dt)
             | self.sidebar.scroll.tick(dt)
@@ -641,7 +670,7 @@ impl Gallery {
             Page::Motion => self.motion.animate(dt),
             _ => false,
         };
-        dirty || component_frame_pending
+        dirty || component_frame_pending || scene3d_dirty
     }
     fn layout_page_extent(&mut self) {
         self.viewport.set_fill_window(matches!(
@@ -959,6 +988,7 @@ impl Gallery {
                     return Change::NONE;
                 }
                 self.end_scroll_gestures();
+                self.scene3d.blur();
                 self.workbench.blur();
                 self.navigation_search.blur();
                 self.editor.blur();
@@ -1126,6 +1156,7 @@ impl Gallery {
             self.icon_search.set_window_active(*active);
             self.navigation_search.set_window_active(*active);
             if !active {
+                self.scene3d.blur();
                 self.end_scroll_gestures();
                 self.motion.deactivate();
                 self.static_text.blur();
@@ -1179,6 +1210,16 @@ impl Gallery {
                     Change::NONE
                 };
             }
+        }
+        if self.scene3d_visible()
+            && let Page::Workbench(i) = self.page
+            && self.scene3d.handle(
+                event,
+                self.workbench.preview_rect(i),
+                self.viewport.bounds(),
+            )
+        {
+            return Change::REDRAW;
         }
         if let Page::Workbench(i) = self.page {
             let in_preview = point.is_none_or(|p| p.x >= layout::CATALOG_W);

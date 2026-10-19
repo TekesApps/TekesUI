@@ -776,6 +776,17 @@
       "docs": "Calibration and diagnostics are not production component acceptance. Native VoiceOver, physical IME and sustained 120 Hz require separate verification.",
       "keywords": "",
       "status": "experimental"
+    },
+    {
+      "title": "Rubik's Cube",
+      "section": "3D",
+      "kind": "example",
+      "component": null,
+      "renderer": "scene3d",
+      "slug": "component-scene3d",
+      "docs": "Independent tekes-ui-scene3d component. glTF 2.0 .glb/.gltf; wgpu animation preview. Default: local indexed Rubik cube GLB. Drag to orbit; right/Shift-drag to rotate; scroll to zoom. Click preview then arrows, +/- or R; Space toggles the layer animation, A auto-rotates. Reduced Motion freezes playback. Optional local asset: TEKESUI_SCENE3D_ASSET. Preview lighting, direct shared GPU texture composition; full PBR remains future work.",
+      "keywords": "3d animation gltf glb blender metal rubik cube 三维 动画 模型 骨骼 morph 魔方 缩放 旋转",
+      "status": "experimental"
     }
   ]
 }

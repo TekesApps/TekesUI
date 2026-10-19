@@ -60,6 +60,7 @@ impl ImageInstance {
 struct GpuImage {
     _texture: wgpu::Texture,
     bind_group: wgpu::BindGroup,
+    cpu_upload: bool,
 }
 
 pub(crate) struct ImagePass {
@@ -195,6 +196,7 @@ impl ImagePass {
             GpuImage {
                 _texture: texture,
                 bind_group,
+                cpu_upload: true,
             },
         );
         Ok(ImageId(id))
@@ -206,6 +208,11 @@ impl ImagePass {
             .get(&id.0)
             .ok_or(RenderError::InvalidArgument("未登记的图像"))?;
         let size = image._texture.size();
+        if !image.cpu_upload {
+            return Err(RenderError::InvalidArgument(
+                "GPU image does not accept CPU pixel uploads",
+            ));
+        }
         if data.len() as u64 != u64::from(size.width) * u64::from(size.height) * 4 {
             return Err(RenderError::InvalidArgument(
                 "图像更新尺寸必须与已登记纹理相同",
@@ -231,6 +238,56 @@ impl ImagePass {
 
     pub fn unregister(&mut self, id: ImageId) -> bool {
         self.images.remove(&id.0).is_some()
+    }
+
+    fn gpu_binding(&self, device: &wgpu::Device, image: &crate::gpu::GpuImage) -> GpuImage {
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("tekes direct GPU image"),
+            layout: &self.image_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&image.sample_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
+            ],
+        });
+        GpuImage {
+            _texture: image.texture.clone(),
+            bind_group,
+            cpu_upload: false,
+        }
+    }
+
+    pub fn register_gpu(&mut self, device: &wgpu::Device, image: &crate::gpu::GpuImage) -> ImageId {
+        let binding = self.gpu_binding(device, image);
+        let id = self.next_id;
+        self.next_id += 1;
+        self.images.insert(id, binding);
+        ImageId(id)
+    }
+
+    pub fn replace_gpu(
+        &mut self,
+        device: &wgpu::Device,
+        id: ImageId,
+        image: &crate::gpu::GpuImage,
+    ) -> Result<(), RenderError> {
+        let old = self
+            .images
+            .get(&id.0)
+            .ok_or(RenderError::InvalidArgument("GPU image is not registered"))?;
+        if old.cpu_upload {
+            return Err(RenderError::InvalidArgument(
+                "cannot replace a CPU image with GPU storage",
+            ));
+        }
+        let binding = self.gpu_binding(device, image);
+        self.images.insert(id.0, binding);
+        Ok(())
     }
 
     pub fn contains(&self, id: ImageId) -> bool {
