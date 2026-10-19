@@ -946,6 +946,7 @@ dependencies = [
 name = "tekes-ui-gallery"
 version = "0.1.0"
 dependencies = [
+ "objc2-foundation",
  "png 0.17.16",
  "resvg",
  "serde_json",

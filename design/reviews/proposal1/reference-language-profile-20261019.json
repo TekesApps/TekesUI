@@ -1,0 +1,36 @@
+{
+  "format": "tekesui-reference-render-environment/1",
+  "scope": "isolated historical golden comparison only; normal product text continues using system fallback",
+  "preferred_languages": [
+    "en-JP",
+    "ja-JP"
+  ],
+  "provenance": "Recovered 2026-10-19 by controlled process-only language probes: en-US reproduces the exact CI pixel mismatch; en-JP/ja-JP reproduces the existing local reference. Not a newly claimed original capture environment record.",
+  "original_metadata": "verification.json and original images remain untouched",
+  "historical_images_sha256": {
+    "primitives-dark-ic@1x.png": "a425db02b4f13bd87b21c2e038f393f8ea36a295835e98e5c0c87ccc9dcb69f9",
+    "primitives-dark-ic@2x.png": "1ab239287b305a73bcffdf3dc5c15208fd41e75f5af384c73fdbebce7963a282",
+    "primitives-dark@1x.png": "8d40ba21ebf978263b7b6706cdad7b70a6c747a6bed575d35183801f82092ab2",
+    "primitives-dark@2x.png": "4accc9fd6da437ffadd562c217d8448620e6302089d60b4e39c07454a564a8d2",
+    "primitives-light-ic@1x.png": "7c5a6754940a57bf35b2b41ce5928742a98978cb06fea0d40725ed99c962f225",
+    "primitives-light-ic@2x.png": "fd5ce53e2e8fbea275080b87ca2d282a0e565e87238f29bbf98729e91caed241",
+    "primitives-light@1x.png": "fd844092fd576858d84339cfbb0a244888ed871464fb3c4d613967a0a6ee57d0",
+    "primitives-light@2x.png": "47a12df478631b038f74b014894e6c8fb4b13477b8ce3881f59561a12d57d234",
+    "static-text-dark-ic@1x.png": "cd8ab2cf3903eb20c552f3eb9c729777d93b021ad994c46652514f49f4848c81",
+    "static-text-dark-ic@2x.png": "1ba08260583ee879a0d26c0bc5a1309e8c8b63472fad985668920e7b2477556d",
+    "static-text-dark@1x.png": "a3dfbc6e1a06c7372ff9013cdca188e9b4d947321fca31a01bc6763b5c4f2907",
+    "static-text-dark@2x.png": "6c17867a19fc3811860d9ae6fe47c0bd610301d26a72caf79e4e467d86467b1a",
+    "static-text-light-ic@1x.png": "b7abba448b7864a2ebe0a2c430654154325bd9f1b39cbd69db0d445bd0daac89",
+    "static-text-light-ic@2x.png": "c851f8c47526a90fae33d3ddf0512ced60c8fc576c5e0797650be54da7b8379f",
+    "static-text-light@1x.png": "665becb1fb2e70f85795faef13859b999edcf54135deeb145fe7eb0c4794f25e",
+    "static-text-light@2x.png": "0a52b33a4c95c1a87cb2529c56d636082ddd8c0488d4a9db5cf3903ce76e34fb",
+    "tokens-dark-ic@1x.png": "a8b7c42d3ab17955c4b735a653686babd7fa45d2506046430664184157c0329c",
+    "tokens-dark-ic@2x.png": "618a46e836bd36696f44779c138417300a320a706354c897472f52bb76491408",
+    "tokens-dark@1x.png": "5d1616e8ce3dce61e3ec84008a8c4a831264af474561376845fbec35b2e74211",
+    "tokens-dark@2x.png": "6f80954fb3230ec39b34187025ff9ee6246764ae5f98c2b8542863ff2d698d32",
+    "tokens-light-ic@1x.png": "4321b5eb8ad5997b6d5e717226e91599a01fcc40741d281d6688c5fd6cdbb23c",
+    "tokens-light-ic@2x.png": "1fc3344afb21bd46d178e72b58b83a52dcca16232df46408a9501c85f17ed131",
+    "tokens-light@1x.png": "c98705509a971adcd3d7b84f82e9fd933e8ff8542bc6b2622dc47521e6a7abe4",
+    "tokens-light@2x.png": "f8b4b65b2f07c5223f6ff71cd8b9fa1380d19a15d07c859044f22c080305b531"
+  }
+}

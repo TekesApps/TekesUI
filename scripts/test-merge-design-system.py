@@ -23,11 +23,31 @@ class MergeTests(unittest.TestCase):
             path=root/file;path.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(ROOT/file,path)
         imported=root/merge.UPSTREAM;imported.parent.mkdir(parents=True,exist_ok=True);imported.symlink_to(ROOT/merge.UPSTREAM,target_is_directory=True)
         return root
-    def test_selected_neutral_exactly_matches_full_package_bundle(self):
-        expected=merge.load(ROOT/merge.UPSTREAM/'design/brand/generated/example-neutral/tokens.json')
+    def current_bundle(self, config):
+        # Active author inputs can evolve; the imported ZIP is checked separately.
+        brand=sys.modules['brand']
+        return brand.compile_config(config,
+            base=merge.load(ROOT/'design/source/base.tokens.json'),
+            policy=merge.load(ROOT/'design/brand/policy.json'),
+            metadata=merge.load(ROOT/'design/source/token-metadata.json'))[0]
+    def test_selected_neutral_matches_current_author_inputs(self):
+        expected=self.current_bundle(merge.load(ROOT/'design/brand/config.json'))
         self.assertEqual(self.reference['proposal']['tokens'],expected)
         self.assertEqual(self.reference['proposal']['brand']['config']['brand_id'],'example-neutral')
         self.assertEqual(len(self.report['text_profiles']),16)
+    def test_current_inputs_are_used_instead_of_historical_generated_tokens(self):
+        root=self.fixture()
+        base=merge.load(root/'design/source/base.tokens.json')
+        token=next(t for t in base['color']['tokens'] if t['name']=='p-separator')
+        token['value']={'light':'#DADAD8','dark':'#41413E','light-ic':'#737370','dark-ic':'#A3A39E'}
+        (root/'design/source/base.tokens.json').write_bytes(merge.bytes_json(base))
+        changed,_=merge.merge(root)
+        self.assertEqual(merge.token_value(changed['proposal']['tokens'],'color','separator'),'#DADAD8')
+        self.assertNotEqual(changed['proposal']['tokens'],self.reference['proposal']['tokens'])
+    def test_historical_import_remains_byte_identical_to_original_archive(self):
+        spec=importlib.util.spec_from_file_location('check_design',ROOT/'scripts/check-design-system.py')
+        check=importlib.util.module_from_spec(spec);spec.loader.exec_module(check)
+        self.assertEqual(check.archive_errors(ROOT),[])
     def test_generated_projection_is_deterministic_and_all_169_mappings_resolve(self):
         again,report=merge.merge();self.assertEqual(merge.bytes_json(again),merge.bytes_json(self.reference));self.assertEqual(report,self.report)
         self.assertEqual(len(report['bindings']),169)
@@ -42,7 +62,7 @@ class MergeTests(unittest.TestCase):
     def test_consumer_blue_brand_propagates_only_through_permitted_graph(self):
         root=self.fixture();config=merge.load(ROOT/merge.UPSTREAM/'design/brand/examples/example-blue.json')
         (root/'design/brand/config.json').write_bytes(merge.bytes_json(config));blue,_=merge.merge(root)
-        expected=merge.load(ROOT/merge.UPSTREAM/'design/brand/generated/example-blue/tokens.json')
+        expected=self.current_bundle(config)
         self.assertEqual(blue['proposal']['tokens'],expected)
         self.assertNotEqual(blue['sets']['light']['color']['accent'],self.reference['sets']['light']['color']['accent'])
         for role in ['primary-text','button-hover','row-selection','border-focused','text-selection','status-failed','diff-added-surface']:

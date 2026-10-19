@@ -27,3 +27,6 @@ workspace = true
 
 [build-dependencies]
 serde_json.workspace = true
+
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+objc2-foundation = { workspace = true, features = ["NSUserDefaults", "NSString", "NSArray"] }
