@@ -34,5 +34,7 @@ jobs:
       - name: Independent public API consumer
         run: cargo test --manifest-path examples/composition-consumer/Cargo.toml --all-targets --locked
 
-      - name: Exact AgentKit public candidate identity
-        run: python3 scripts/verify-agentkit-public-pin.py
+      - name: Frozen AgentKit public candidate identity
+        run: |
+          git fetch --no-tags --depth=1 origin 431093786de47b48cd566d0d9c0eafa088b10d68
+          python3 scripts/verify-agentkit-public-pin.py --revision 431093786de47b48cd566d0d9c0eafa088b10d68
