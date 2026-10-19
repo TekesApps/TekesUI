@@ -487,6 +487,17 @@
       "reason": "Shared editor state, reflow anchor and host shaping/painting interfaces; presentation remains TextSurface."
     },
     {
+      "api": "tekes_ui_controls::TextSurfacePresentation",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.text-field",
+        "tui.text-area",
+        "tui.search-field"
+      ],
+      "reason": "Opt-in unadorned document presentation on the existing TextSurface; default Field presentation retained. No new component, route, editor or scroll state machine."
+    },
+    {
       "api": "tekes_ui_controls::TextSurfaceTextRenderer",
       "category": "component-support",
       "components": [

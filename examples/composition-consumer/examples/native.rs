@@ -159,6 +159,7 @@ fn main() {
     struct Host {
         selftest_script: Option<Vec<(u64, tekes_ui_platform_macos::selftest::Action)>>,
         tree: ContentHost,
+        plain_value: Option<tekes_ui_controls::DraftRevision>,
         gpu: Option<Renderer>,
         text: TextBackend,
         scene: Scene,
@@ -317,7 +318,7 @@ fn main() {
                 let directory = std::path::PathBuf::from(directory);
                 std::fs::create_dir_all(&directory).expect("component evidence directory");
                 let screen = w.screen_info();
-                let snapshot = serde_json::json!({
+                let mut snapshot = serde_json::json!({
                     "mode": self.mode, "window_active": w.is_active(),
                     "screen": screen.map(|s| serde_json::json!({"name":s.name,"builtin":s.builtin,"scale":s.scale})),
                     "nodes": nodes.iter().map(|n| serde_json::json!({
@@ -326,6 +327,40 @@ fn main() {
                         "frame":{"x":n.frame.origin.x,"y":n.frame.origin.y,"width":n.frame.size.width,"height":n.frame.size.height}
                     })).collect::<Vec<_>>()
                 });
+                snapshot["text_input"] = self.tree.focused_text().map_or(
+                    serde_json::Value::Null,
+                    |surface| {
+                        let selection = surface.input.selection();
+                        serde_json::json!({
+                            "text": surface.input.text,
+                            "selection": [selection.start, selection.end],
+                            "marked": surface.input.marked.as_ref().map(|range| [range.start, range.end]),
+                        })
+                    },
+                );
+                if let Some(value) = &self.plain_value {
+                    use tekes_ui_composition_consumer::plain_text::{BODY, SCROLLER};
+                    let surface = self.tree.text_surface(BODY).unwrap();
+                    let parent = self
+                        .tree
+                        .get(SCROLLER)
+                        .unwrap()
+                        .component::<tekes_ui_controls::composition::ScrollContent>()
+                        .unwrap();
+                    snapshot["plain_document"] = serde_json::json!({
+                        "version": value.version,
+                        "parent_offset": parent.scroll.offset.y,
+                        "nested_offset": surface.scroll.offset.y,
+                        "wrap_width": surface.width,
+                        "body_height": surface.outer.size.height,
+                    });
+                    if std::env::var("TEKES_SELFTEST").as_deref() == Ok("text") {
+                        // The existing platform test pasteboard is private to
+                        // this process; never log the user's general clipboard.
+                        snapshot["plain_document"]["copied_text"] =
+                            serde_json::json!(w.clipboard_text());
+                    }
+                }
                 std::fs::write(
                     directory.join("current.json"),
                     serde_json::to_vec_pretty(&snapshot).unwrap(),
@@ -391,6 +426,9 @@ fn main() {
             w.set_animating(self.text.frame_requested);
         }
         fn update_dialog_actions(&mut self) {
+            if let Some(value) = &mut self.plain_value {
+                tekes_ui_composition_consumer::plain_text::process_actions(&mut self.tree, value);
+            }
             if self.mode == "dialog" {
                 let count = |id| {
                     self.tree
@@ -422,6 +460,20 @@ fn main() {
                 self.invoker_activations = invoker;
                 self.cancel_activations = cancel;
                 self.save_activations = save;
+            }
+        }
+        fn copy_selection(&self, w: &Window) {
+            if !w.is_active() {
+                return;
+            }
+            if let Some(surface) = self.tree.focused_text()
+                && !surface.input.disabled
+                && surface.input.marked.is_none()
+            {
+                let selected = surface.input.selected_text();
+                if !selected.is_empty() {
+                    w.set_clipboard_text(&selected);
+                }
             }
         }
         fn dispatch(&mut self, e: Event) -> bool {
@@ -521,6 +573,18 @@ fn main() {
     impl WindowHandler for Host {
         fn handle(&mut self, e: Event, w: &mut Window) {
             match e {
+                Event::Key(key)
+                    if key.kind == KeyEventKind::Down
+                        && key.modifiers.command
+                        && key.key_code == 8 =>
+                {
+                    self.copy_selection(w);
+                    self.publish(w);
+                }
+                Event::TextCommand(command) if command == "copy:" => {
+                    self.copy_selection(w);
+                    self.publish(w);
+                }
                 Event::Accessibility { target, action } => {
                     if !w.is_active() {
                         return;
@@ -639,12 +703,24 @@ fn main() {
         }
     }
 
-    let mode = std::env::args().nth(1).unwrap_or_else(|| "list".into());
+    let mode = std::env::args()
+        .nth(1)
+        .or_else(|| std::env::var("TEKESUI_COMPONENT_CASE").ok())
+        .unwrap_or_else(|| "list".into());
     assert!(
-        mode == "list" || mode == "dialog" || mode == "slider",
-        "usage: native [list|dialog|slider]"
+        matches!(mode.as_str(), "list" | "dialog" | "slider" | "plain"),
+        "usage: native [list|dialog|slider|plain]"
     );
-    let (tree, invoker, row_activations) = if mode == "slider" {
+    let mut plain_value = None;
+    let (tree, invoker, row_activations) = if mode == "plain" {
+        let scenario = tekes_ui_composition_consumer::plain_text::Scenario::new().unwrap();
+        plain_value = Some(scenario.value);
+        (
+            scenario.host,
+            tekes_ui_composition_consumer::plain_text::BODY,
+            None,
+        )
+    } else if mode == "slider" {
         (
             tekes_ui_composition_consumer::slider_content::build().unwrap(),
             tekes_ui_composition_consumer::slider_content::RANGE,
@@ -678,6 +754,7 @@ fn main() {
     let mut host = Host {
         selftest_script: None,
         tree,
+        plain_value,
         gpu: None,
         text: backend,
         scene: Scene::new(),

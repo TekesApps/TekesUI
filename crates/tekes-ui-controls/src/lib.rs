@@ -31,7 +31,9 @@ pub use text_input::{
     ExternalSelection, ExternalUndo, ExternalValueConflict, ExternalValueResult, TextEditBaseline,
     TextInput,
 };
-pub use text_surface::{ReflowAnchor, TextSurface, TextSurfaceHost, TextSurfaceTextRenderer};
+pub use text_surface::{
+    ReflowAnchor, TextSurface, TextSurfaceHost, TextSurfacePresentation, TextSurfaceTextRenderer,
+};
 mod widgets;
 pub use widgets::{
     Button, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer, CheckState, Checkbox,

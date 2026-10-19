@@ -4,7 +4,7 @@ use crate::extended::Switch;
 use crate::feedback_view::FieldView;
 use crate::{
     Dialog, DialogView, Field, MenuEvent, MenuView, MenuWheelInput, ReadingController,
-    SelectionEvent, SwitchView, TextSurface,
+    SelectionEvent, SwitchView, TextSurface, TextSurfacePresentation,
 };
 use tekes_ui_tokens::Spacing;
 
@@ -202,6 +202,60 @@ impl TextFieldContent {
             focused: false,
         }
     }
+    /// Selectable document text without a visible form label, help, input
+    /// background or border. The parent supplies decoration and document scroll.
+    /// Native text services, controlled updates and selection reuse this field.
+    pub fn read_only_content(
+        name: impl Into<String>,
+        value: &str,
+        role: proposal::TextRole,
+    ) -> Self {
+        let mut content = Self::new(name, value);
+        content.surface = TextSurface::new(value, true, true);
+        content.surface.presentation = TextSurfacePresentation::Content;
+        content.surface.set_role(role);
+        content
+            .surface
+            .scroll
+            .set_scroll_policy(crate::ScrollPolicy::Disabled, crate::ScrollPolicy::Disabled);
+        content.viewport = TextViewport::Grow {
+            min: 0.,
+            max: f32::MAX,
+        };
+        content
+    }
+
+    fn viewport_height(
+        &self,
+        t: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        metadata: f32,
+        minimum: f32,
+    ) -> f32 {
+        let sane = |n: f32| if n.is_finite() { n.max(0.) } else { 0. };
+        match self.viewport {
+            TextViewport::Form => minimum,
+            TextViewport::Fixed(height) => sane(height).max(minimum),
+            TextViewport::Fill => (sane(frame.size.height) - metadata).max(0.),
+            TextViewport::Grow { min, max } => {
+                let min = sane(min).max(minimum);
+                let max = sane(max).max(min);
+                let scale = t.backing_scale();
+                let height = if let Some(host) = t.text_surface_host() {
+                    let role = self.surface.role;
+                    self.surface.measured_outer_height(
+                        frame.size.width,
+                        scale,
+                        host.type_scale(),
+                        |s, w| host.shape_surface(s, role, w),
+                    )
+                } else {
+                    minimum
+                };
+                height.clamp(min, max)
+            }
+        }
+    }
     fn field_presentation(
         &self,
         t: &mut dyn ButtonTextRenderer,
@@ -219,6 +273,17 @@ impl TextFieldContent {
         f: Rect,
         c: Rect,
     ) -> crate::feedback_view::FieldLayout {
+        if self.surface.presentation == TextSurfacePresentation::Content {
+            let type_scale = t.text_surface_host().map_or(1., |host| host.type_scale());
+            let minimum = self.surface.minimum_outer_height(type_scale);
+            let height = self.viewport_height(t, f, 0., minimum);
+            return crate::feedback_view::FieldLayout {
+                frame: f,
+                slot: Rect::new(f.min_x(), f.min_y(), f.size.width, height),
+                visible: f.intersection(&c),
+                ..Default::default()
+            };
+        }
         let mut presentation = self.field_presentation(t);
         if self.viewport != TextViewport::Form {
             let base = FieldView::default().render_with_presentation(
@@ -232,30 +297,8 @@ impl TextFieldContent {
                 presentation,
             );
             let metadata = base.slot.min_y() - f.min_y() + base.message.max_y() - base.slot.max_y();
-            let sane = |n: f32| if n.is_finite() { n.max(0.) } else { 0. };
             let minimum = presentation.slot_min_height.max(base.slot.size.height);
-            let height = match self.viewport {
-                TextViewport::Form => unreachable!(),
-                TextViewport::Fixed(height) => sane(height).max(minimum),
-                TextViewport::Fill => (sane(f.size.height) - metadata).max(0.),
-                TextViewport::Grow { min, max } => {
-                    let min = sane(min).max(minimum);
-                    let max = sane(max).max(min);
-                    let scale = t.backing_scale();
-                    let height = if let Some(host) = t.text_surface_host() {
-                        let role = self.surface.role;
-                        self.surface.measured_outer_height(
-                            f.size.width,
-                            scale,
-                            host.type_scale(),
-                            |s, w| host.shape_surface(s, role, w),
-                        )
-                    } else {
-                        minimum
-                    };
-                    height.clamp(min, max)
-                }
-            };
+            let height = self.viewport_height(t, f, metadata, minimum);
             presentation.slot_height = Some(height);
         }
         self.view.render_with_presentation(
@@ -363,20 +406,22 @@ impl Component for TextFieldContent {
     ) {
         // Arrangement owns the exact viewport. Paint must not shape/resize a
         // second time or derive a different slot from an unrelated height.
-        let mut presentation = self.field_presentation(t);
-        if self.viewport != TextViewport::Form {
-            presentation.slot_height = Some(self.surface.outer.size.height);
+        if self.surface.presentation == TextSurfacePresentation::Field {
+            let mut presentation = self.field_presentation(t);
+            if self.viewport != TextViewport::Form {
+                presentation.slot_height = Some(self.surface.outer.size.height);
+            }
+            self.view.render_with_presentation(
+                s,
+                &mut TextAdapter(t),
+                &self.field,
+                f,
+                Some(c),
+                theme.palette,
+                proposal::TextRole::UiBody,
+                presentation,
+            );
         }
-        self.view.render_with_presentation(
-            s,
-            &mut TextAdapter(t),
-            &self.field,
-            f,
-            Some(c),
-            theme.palette,
-            proposal::TextRole::UiBody,
-            presentation,
-        );
         if let Some(host) = t.text_surface_host() {
             let caret_visible = host.caret_visible();
             self.surface

@@ -63,12 +63,24 @@ struct Navigation {
     preferred_x: f32,
 }
 
+/// Presentation of the existing text/selection surface. Content decoration and
+/// spacing belong to its parent; editing, shaping and native ranges stay here.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum TextSurfacePresentation {
+    #[default]
+    Field,
+    /// No field chrome or insets. Selection and the shared keyboard-focus
+    /// indicator remain visible; a parent supplies decoration and scrolling.
+    Content,
+}
+
 /// A single- or multi-line text surface using the shared TextInput and
 /// ScrollArea state models. Layout receives already-shaped text so controls do
 /// not depend on a particular font backend.
 #[derive(Debug)]
 pub struct TextSurface {
     pub input: TextInput,
+    pub presentation: TextSurfacePresentation,
     /// Soft wrapping for multiline text. Single-line editing remains unwrapped.
     /// Scroll axes remain configurable on the original `scroll` model.
     pub wrap: bool,
@@ -109,6 +121,7 @@ impl TextSurface {
         );
         Self {
             input,
+            presentation: TextSurfacePresentation::Field,
             wrap: true,
             scroll,
             paragraph: None,
@@ -187,6 +200,20 @@ impl TextSurface {
         self.role = role;
     }
 
+    fn content_insets(&self) -> Insets {
+        if self.presentation == TextSurfacePresentation::Content {
+            Insets::ZERO
+        } else {
+            let x = proposal::SCROLL_CONTENT_PADDING;
+            let y = if self.input.multiline {
+                x
+            } else {
+                proposal::SCROLL_SINGLE_LINE_PADDING_Y
+            };
+            Insets::new(y, x, y, x)
+        }
+    }
+
     /// Layout and shape only when text, type scale, or pixel-snapped wrap width
     /// changes. The closure is the platform text adapter and is not called for
     /// scroll-only or unchanged frames.
@@ -207,18 +234,18 @@ impl TextSurface {
             .is_some_and(|offset| offset == self.scroll.offset);
         let scale_changed = self.type_scale != type_scale;
         let role_changed = self.shaped_role != Some(self.role);
-        let padding = proposal::SCROLL_CONTENT_PADDING;
-        let padding_y = if self.input.multiline {
-            padding
-        } else {
-            proposal::SCROLL_SINGLE_LINE_PADDING_Y
-        };
-        let insets = Insets::new(padding_y, padding, padding_y, padding);
+        let insets = self.content_insets();
         let layout = ContainerLayout::new(frame, Insets::ZERO, insets, ancestor_clip);
         // The visible content area is the real editing/scroll viewport. Keeping
         // the larger allocation here makes a clipped caret impossible to reveal
         // and gives shaping, hit testing and IME different viewport bounds.
-        let inner = layout.visible_clip().unwrap_or_else(|| layout.content());
+        let inner = if self.presentation == TextSurfacePresentation::Content {
+            // A parent document viewport clips ink, not the paragraph's wrap
+            // width or height. Scrolling past a block must not reshape it.
+            layout.content()
+        } else {
+            layout.visible_clip().unwrap_or_else(|| layout.content())
+        };
         let reveal_composition = self.input.marked.is_some()
             && (scale_changed
                 || self.inner != inner
@@ -582,21 +609,21 @@ impl TextSurface {
     }
 
     /// Minimum frame height for this text role at a chosen global type scale.
-    /// It preserves the token minimum at 100% and grows with the measured line
-    /// metric and single-line vertical content inset.
+    /// Field presentation preserves the token minimum and input insets.
+    /// Content presentation uses only the semantic line metric.
     pub fn minimum_outer_height(&self, type_scale: f32) -> f32 {
         let scale = if type_scale.is_finite() {
             type_scale.max(1.0)
         } else {
             1.0
         };
-        let inset = if self.input.multiline {
-            proposal::SCROLL_CONTENT_PADDING
+        let insets = self.content_insets();
+        let height = self.role.style().line_height * scale + insets.top + insets.bottom;
+        if self.presentation == TextSurfacePresentation::Content {
+            height
         } else {
-            proposal::SCROLL_SINGLE_LINE_PADDING_Y
-        };
-        (self.role.style().line_height * scale + 2.0 * inset)
-            .max(proposal::metric("size", "size-button-md").expect("JSON metric"))
+            height.max(proposal::metric("size", "size-button-md").expect("JSON metric"))
+        }
     }
 
     fn wrap_width(&self, inner_width: f32, scale: f32) -> Option<f32> {
@@ -615,17 +642,13 @@ impl TextSurface {
         type_scale: f32,
         mut shape: impl FnMut(&str, Option<f32>) -> Rc<Paragraph>,
     ) -> f32 {
-        let padding = proposal::SCROLL_CONTENT_PADDING;
-        let padding_y = if self.input.multiline {
-            padding
-        } else {
-            proposal::SCROLL_SINGLE_LINE_PADDING_Y
-        };
+        let insets = self.content_insets();
         let paragraph = shape(
             &self.input.text,
-            self.wrap_width((width - 2. * padding).max(0.), scale),
+            self.wrap_width((width - insets.left - insets.right).max(0.), scale),
         );
-        (paragraph.height as f32 + 2. * padding_y).max(self.minimum_outer_height(type_scale))
+        (paragraph.height as f32 + insets.top + insets.bottom)
+            .max(self.minimum_outer_height(type_scale))
     }
 
     pub fn contains_visible(&self, point: Point) -> bool {
@@ -909,6 +932,11 @@ impl TextSurface {
         shift: bool,
         captured: bool,
     ) -> Option<bool> {
+        if self.scroll.scroll_policy() == (ScrollPolicy::Disabled, ScrollPolicy::Disabled) {
+            // A non-scrolling text block cannot retain a trackpad gesture that
+            // belongs to its parent document viewport.
+            return None;
+        }
         if !captured && !self.contains_visible(point) {
             return None;
         }
@@ -953,41 +981,49 @@ impl TextSurface {
         if let Some(background_clip) = background_clip {
             scene.push_clip(background_clip);
         }
-        scene.push_quad(
-            Quad::new(
-                self.outer,
-                color(
-                    if self.input.read_only {
-                        "surface-1"
-                    } else {
-                        "transcript-input"
-                    },
-                    theme,
-                ),
-            )
-            .with_corner_radius(proposal::metric("radius", "radius-input").expect("JSON radius"))
-            .with_border(
-                Stroke::Rule.value(),
-                color(
-                    proposal::control_boundary(
-                        if self.error {
-                            "error"
+        if self.presentation == TextSurfacePresentation::Field {
+            scene.push_quad(
+                Quad::new(
+                    self.outer,
+                    color(
+                        if self.input.read_only {
+                            "surface-1"
                         } else {
-                            "required-input"
+                            "transcript-input"
                         },
-                        theme.theme,
-                    )
-                    .expect("JSON text boundary role"),
-                    theme,
+                        theme,
+                    ),
+                )
+                .with_corner_radius(
+                    proposal::metric("radius", "radius-input").expect("JSON radius"),
+                )
+                .with_border(
+                    Stroke::Rule.value(),
+                    color(
+                        proposal::control_boundary(
+                            if self.error {
+                                "error"
+                            } else {
+                                "required-input"
+                            },
+                            theme.theme,
+                        )
+                        .expect("JSON text boundary role"),
+                        theme,
+                    ),
                 ),
-            ),
-        );
+            );
+        }
         if focused && !self.input.disabled {
             crate::paint::focus_ring(
                 scene,
                 self.outer,
                 theme,
-                proposal::metric("radius", "radius-input").expect("input radius"),
+                if self.presentation == TextSurfacePresentation::Field {
+                    proposal::metric("radius", "radius-input").expect("input radius")
+                } else {
+                    0.
+                },
             );
         }
         if background_clip.is_some() {

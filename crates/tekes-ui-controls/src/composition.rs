@@ -890,15 +890,42 @@ impl ContentHost {
             let frame = {
                 let c = self.root.find_mut(id).unwrap();
                 c.component.set_focus(true, visible);
-                c.frame
+                c.component
+                    .text_surface()
+                    .filter(|surface| {
+                        surface.presentation == crate::TextSurfacePresentation::Content
+                    })
+                    .map_or(c.frame, |surface| surface.caret())
             };
             self.root.reveal(id, frame);
         }
         changed
     }
     pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+        let previous_caret = self.focused.and_then(|id| {
+            self.focused_text()
+                .filter(|surface| {
+                    surface.presentation == crate::TextSurfacePresentation::Content
+                        && surface.input.read_only
+                })
+                .map(|surface| (id, surface.input.caret))
+        });
         let result = self.key_routed_event(event);
         self.reconcile_active_inputs();
+        // Document text has no nested scroll owner. Explicit navigation/drag
+        // reveals through the same ancestor path as ordinary focus. Pointer
+        // down already called focus(), so must not reveal stale geometry twice.
+        let pointer_down = matches!(event, ContentEvent::PointerDown(_))
+            || matches!(event, ContentEvent::Pointer(p) if p.phase == PointerPhase::Down);
+        if !pointer_down
+            && let Some((id, caret)) = previous_caret
+            && self.focused == Some(id)
+            && let Some(surface) = self.focused_text()
+            && surface.input.caret != caret
+        {
+            let frame = surface.caret();
+            self.root.reveal(id, frame);
+        }
         self.dirty |= result.changed;
         result
     }

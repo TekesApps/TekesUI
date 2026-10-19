@@ -223,3 +223,5 @@ pub mod controlled_editor;
 pub mod text_viewport;
 
 pub mod content_actions;
+
+pub mod plain_text;
