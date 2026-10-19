@@ -1,0 +1,23 @@
+
+running 15 tests
+test baselines_are_not_rounded ... ok
+test line_spacing_goes_after_each_line_and_not_after_the_last ... ok
+test every_grapheme_gets_its_own_line_when_nothing_fits ... ok
+test trailing_newline_adds_an_empty_line_of_default_height ... ok
+test trailing_whitespace_is_included_in_width_and_excluded_in_trimmed ... ok
+test wrapped_lines_fit_the_width_once_trailing_whitespace_is_ignored ... ok
+test glyph_clusters_and_run_ranges_are_consistent ... ok
+test font_fallback_reports_runs_covering_the_text ... ok
+test non_system_font_fallback_line_metrics_match_coretext ... ok
+test system_font_cjk_fallback_keeps_the_line_height ... ok
+test font_keys_are_stable_and_distinguish_fonts ... ok
+test cjk_lines_never_start_with_closing_punctuation ... ok
+test surrogate_pairs_emoji_and_combining_marks_are_never_split ... ok
+test line_breaks_match_framesetter_for_latin_cjk_and_mixed ... ok
+test prepared_document_reflow_matches_fresh_layout_across_widths_and_styles ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+   Compiling tekes-ui-text v0.1.0 (/Users/frankqin/.codex/worktrees/agentkit-public-pin/TekesUI/crates/tekes-ui-text)
+    Finished `test` profile [unoptimized] target(s) in 1.01s
+     Running tests/shape.rs (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/deps/shape-c07ebf8bed620f86)
