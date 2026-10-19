@@ -1,0 +1,92 @@
+[
+  {
+    "job": "verify",
+    "exit_code": 0,
+    "command": [
+      "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+      "/private/tmp/tekesui-agentkit-replay-h0vi4g19/handoff/verify.py"
+    ]
+  },
+  {
+    "job": "independent",
+    "exit_code": 0,
+    "command": [
+      "cargo",
+      "test",
+      "--manifest-path",
+      "/private/tmp/tekesui-agentkit-replay-h0vi4g19/handoff/consumer/ui/.deps/tekesui/examples/composition-consumer/Cargo.toml",
+      "--all-targets",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--message-format=json"
+    ]
+  },
+  {
+    "job": "ui",
+    "exit_code": 0,
+    "command": [
+      "cargo",
+      "test",
+      "--manifest-path",
+      "/private/tmp/tekesui-agentkit-replay-h0vi4g19/handoff/consumer/ui/Cargo.toml",
+      "--workspace",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--message-format=json"
+    ]
+  },
+  {
+    "job": "headless",
+    "exit_code": 0,
+    "command": [
+      "cargo",
+      "test",
+      "--manifest-path",
+      "/private/tmp/tekesui-agentkit-replay-h0vi4g19/handoff/consumer/Cargo.toml",
+      "--workspace",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--message-format=json"
+    ]
+  },
+  {
+    "job": "build",
+    "exit_code": 0,
+    "command": [
+      "cargo",
+      "build",
+      "--manifest-path",
+      "/private/tmp/tekesui-agentkit-replay-h0vi4g19/handoff/consumer/ui/Cargo.toml",
+      "-p",
+      "tekes-agent-ui-demo",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--message-format=json"
+    ]
+  },
+  {
+    "job": "gpu",
+    "exit_code": 0,
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/tekes-agent-ui-demo",
+      "--offscreen",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/agentkit-final-acceptance-20261019/offscreen.png"
+    ]
+  },
+  {
+    "job": "verify-after",
+    "exit_code": 0,
+    "command": [
+      "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+      "/private/tmp/tekesui-agentkit-replay-h0vi4g19/handoff/verify.py"
+    ]
+  }
+]

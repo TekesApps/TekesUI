@@ -7,9 +7,13 @@ use std::{ops::Range, rc::Rc};
 
 use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
 use tekes_ui_text::Paragraph;
-use tekes_ui_tokens::{Spacing, Stroke, Theme, proposal};
+#[cfg(test)]
+use tekes_ui_tokens::Theme;
+use tekes_ui_tokens::{Spacing, Stroke, proposal};
 
-use crate::{ContainerLayout, Insets, ScrollArea, ScrollGeometry, ScrollPolicy, TextInput};
+use crate::{
+    ContainerLayout, ControlState, Insets, ScrollArea, ScrollGeometry, ScrollPolicy, TextInput,
+};
 
 /// Gallery or application adapter for shaping paragraphs and placing glyphs.
 pub trait TextSurfaceTextRenderer {
@@ -23,6 +27,24 @@ pub trait TextSurfaceTextRenderer {
     );
 }
 
+/// Optional application text service for composed editable controls. The host
+/// retains its font backend; TextSurface retains editing and geometry.
+pub trait TextSurfaceHost: TextSurfaceTextRenderer {
+    /// Supplied by the native text service's blink timer, not a second component clock.
+    fn caret_visible(&self) -> bool {
+        true
+    }
+    fn shape_surface(
+        &mut self,
+        text: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> Rc<Paragraph>;
+    fn type_scale(&self) -> f32 {
+        1.0
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct ReflowAnchor {
     pub utf16: usize,
@@ -31,12 +53,25 @@ pub struct ReflowAnchor {
     pub bottom: bool,
 }
 
+/// Derived caret geometry only; editor values/history remain in TextInput.
+#[derive(Clone, Copy, Debug)]
+struct Navigation {
+    revision: (u64, u64),
+    anchor: usize,
+    caret: usize,
+    line: usize,
+    preferred_x: f32,
+}
+
 /// A single- or multi-line text surface using the shared TextInput and
 /// ScrollArea state models. Layout receives already-shaped text so controls do
 /// not depend on a particular font backend.
 #[derive(Debug)]
 pub struct TextSurface {
     pub input: TextInput,
+    /// Soft wrapping for multiline text. Single-line editing remains unwrapped.
+    /// Scroll axes remain configurable on the original `scroll` model.
+    pub wrap: bool,
     pub scroll: ScrollArea,
     pub paragraph: Option<Rc<Paragraph>>,
     pub shaped: String,
@@ -51,6 +86,8 @@ pub struct TextSurface {
     pub clauses: Vec<Range<usize>>,
     ancestor_clip: Option<Rect>,
     pointer_dragging: bool,
+    pending_reveal: Option<Point>,
+    navigation: Option<Navigation>,
 }
 
 impl TextSurface {
@@ -72,6 +109,7 @@ impl TextSurface {
         );
         Self {
             input,
+            wrap: true,
             scroll,
             paragraph: None,
             shaped: String::new(),
@@ -90,11 +128,61 @@ impl TextSurface {
             clauses: Vec::new(),
             ancestor_clip: None,
             pointer_dragging: false,
+            pending_reveal: None,
+            navigation: None,
         }
     }
 
     /// Select the semantic text style used for shaping this surface.
     /// Direct writes to the public `role` field are also detected on layout.
+    /// Controlled values update the original input instance and derived surface
+    /// state atomically. No native owner or text backend is replaced.
+    pub fn apply_external_value(
+        &mut self,
+        expected: &crate::TextEditBaseline,
+        value: &crate::DraftRevision,
+        selection: crate::ExternalSelection,
+        undo: crate::ExternalUndo,
+    ) -> crate::ExternalValueResult {
+        let keep_navigation = self.navigation.is_some_and(|n| self.navigation_valid(n));
+        let explicit_selection = !matches!(selection, crate::ExternalSelection::Preserve);
+        let result = self
+            .input
+            .apply_external_value(expected, value, selection, undo);
+        if let crate::ExternalValueResult::Applied {
+            changed,
+            document_changed,
+        } = result
+            && (changed || document_changed)
+        {
+            self.clauses.clear();
+            self.pending_reveal = None;
+            self.navigation = None;
+            self.reflow_anchor = None;
+            self.cancel_interaction();
+            if document_changed {
+                self.scroll
+                    .scroll_by(-self.scroll.offset.x, -self.scroll.offset.y);
+            }
+            if explicit_selection || document_changed {
+                self.reveal();
+            }
+        }
+        if matches!(
+            result,
+            crate::ExternalValueResult::Applied {
+                changed: false,
+                document_changed: false
+            }
+        ) && keep_navigation
+            && let Some(navigation) = &mut self.navigation
+        {
+            // A newer authority acknowledgement without an editor change must
+            // not lose a soft-line caret affinity or a vertical column.
+            navigation.revision = self.input.edit_revision();
+        }
+        result
+    }
     pub fn set_role(&mut self, role: proposal::TextRole) {
         self.role = role;
     }
@@ -110,6 +198,13 @@ impl TextSurface {
         type_scale: f32,
         mut shape: impl FnMut(&str, Option<f32>) -> Rc<Paragraph>,
     ) {
+        // An edit may request caret reveal before the new paragraph exists.
+        // A later user scroll supersedes that request, including direct public
+        // ScrollArea updates; ordinary layout never invents a reveal request.
+        let reveal_after_layout = self
+            .pending_reveal
+            .take()
+            .is_some_and(|offset| offset == self.scroll.offset);
         let scale_changed = self.type_scale != type_scale;
         let role_changed = self.shaped_role != Some(self.role);
         let padding = proposal::SCROLL_CONTENT_PADDING;
@@ -120,7 +215,14 @@ impl TextSurface {
         };
         let insets = Insets::new(padding_y, padding, padding_y, padding);
         let layout = ContainerLayout::new(frame, Insets::ZERO, insets, ancestor_clip);
-        let inner = layout.content();
+        // The visible content area is the real editing/scroll viewport. Keeping
+        // the larger allocation here makes a clipped caret impossible to reveal
+        // and gives shaping, hit testing and IME different viewport bounds.
+        let inner = layout.visible_clip().unwrap_or_else(|| layout.content());
+        let reveal_composition = self.input.marked.is_some()
+            && (scale_changed
+                || self.inner != inner
+                || self.ancestor_clip != layout.ancestor_clip());
         let same_text = self.shaped == self.input.text;
         if !same_text
             || self
@@ -131,7 +233,10 @@ impl TextSurface {
         }
         let anchor = if self.input.multiline
             && same_text
-            && (inner.size != self.inner.size || scale_changed || role_changed)
+            && (inner.size != self.inner.size
+                || scale_changed
+                || role_changed
+                || self.width != self.wrap_width(inner.size.width, scale))
         {
             self.reflow_anchor.or_else(|| {
                 self.paragraph.as_ref().and_then(|p| {
@@ -171,15 +276,13 @@ impl TextSurface {
         } else {
             1.0
         };
-        let width = self
-            .input
-            .multiline
-            .then_some(((inner.size.width * scale).floor() / scale).max(1.0));
+        let width = self.wrap_width(inner.size.width, scale);
         if self.paragraph.is_none()
             || !same_text
             || self.width != width
             || self.shaped_role != Some(self.role)
         {
+            self.navigation = None;
             self.paragraph = Some(shape(&self.input.text, width));
             self.shaped.clone_from(&self.input.text);
             self.width = width;
@@ -206,6 +309,12 @@ impl TextSurface {
             anchor.applied_y = self.scroll.offset.y;
             self.reflow_anchor = Some(anchor);
         }
+        if (reveal_after_layout || reveal_composition)
+            && !self.input.disabled
+            && self.visible_frame().is_some()
+        {
+            self.scroll.reveal(self.caret_doc(self.input.caret));
+        }
     }
 
     pub fn visible_frame(&self) -> Option<Rect> {
@@ -214,6 +323,262 @@ impl TextSurface {
             None if !self.outer.is_empty() => Some(self.outer),
             None => None,
         }
+    }
+    pub fn ancestor_clip(&self) -> Option<Rect> {
+        self.ancestor_clip
+    }
+
+    fn navigation_valid(&self, navigation: Navigation) -> bool {
+        navigation.revision == self.input.edit_revision()
+            && navigation.anchor == self.input.anchor
+            && navigation.caret == self.input.caret
+            && self.layout_current()
+            && self
+                .paragraph
+                .as_ref()
+                .and_then(|p| p.lines.get(navigation.line))
+                .is_some_and(|line| {
+                    line.utf16.start <= navigation.caret && navigation.caret <= line.utf16.end
+                })
+    }
+    fn layout_current(&self) -> bool {
+        self.paragraph.is_some()
+            && self.shaped == self.input.text
+            && self.shaped_role == Some(self.role)
+            && self.width.is_some() == (self.input.multiline && self.wrap)
+    }
+    fn navigation_line(&self) -> Option<usize> {
+        if !self.layout_current() {
+            return None;
+        }
+        if let Some(n) = self.navigation.filter(|n| self.navigation_valid(*n)) {
+            return Some(n.line);
+        }
+        let p = self.paragraph.as_ref()?;
+        p.lines
+            .iter()
+            .position(|line| {
+                self.input.caret >= line.utf16.start && self.input.caret < line.utf16.end
+            })
+            .or_else(|| p.lines.len().checked_sub(1))
+    }
+    fn move_visual(&mut self, direction: isize, edge: bool, extend: bool) -> Option<()> {
+        if !self.input.multiline && !edge {
+            return None;
+        }
+        if !self.input.multiline {
+            self.navigation = None;
+            self.input
+                .select(if direction < 0 { 0 } else { self.input.len() }, extend);
+            return Some(());
+        }
+        let current = self.navigation_line()?;
+        let p = self.paragraph.as_ref()?;
+        let line_index = if edge {
+            current
+        } else {
+            current
+                .saturating_add_signed(direction)
+                .min(p.lines.len() - 1)
+        };
+        let line = &p.lines[line_index];
+        let x = self
+            .navigation
+            .filter(|n| self.navigation_valid(*n))
+            .map_or_else(
+                || self.caret_doc(self.input.caret).min_x(),
+                |n| n.preferred_x,
+            );
+        let target = if edge {
+            if direction < 0 {
+                line.utf16.start
+            } else if line.has_newline {
+                self.input
+                    .boundaries()
+                    .into_iter()
+                    .rev()
+                    .find(|i| *i >= line.utf16.start && *i < line.utf16.end)
+                    .unwrap_or(line.utf16.start)
+            } else {
+                line.utf16.end
+            }
+        } else {
+            p.hit_test(Point::new(x, (line.top + line.height / 2.) as f32))
+        };
+        let goal_x = if edge {
+            line.carets
+                .iter()
+                .find(|(i, _)| *i == target)
+                .map_or(line.width as f32, |(_, x)| *x as f32)
+        } else {
+            x
+        };
+        self.input.select(target, extend);
+        self.navigation = Some(Navigation {
+            revision: self.input.edit_revision(),
+            anchor: self.input.anchor,
+            caret: self.input.caret,
+            line: line_index,
+            preferred_x: goal_x,
+        });
+        Some(())
+    }
+    fn select_visual_point(&mut self, point: Point, extend: bool) {
+        let index = self.hit_drag(point);
+        self.navigation = None;
+        self.input.select(index, extend);
+        if !self.layout_current() {
+            return;
+        }
+        let p = self.paragraph.as_ref().expect("current paragraph");
+        let y = point.y - self.origin().y;
+        if let Some((index, line)) = p
+            .lines
+            .iter()
+            .enumerate()
+            .find(|(_, line)| f64::from(y) < line.top + line.height)
+            .or_else(|| p.lines.iter().enumerate().next_back())
+        {
+            let x = line
+                .carets
+                .iter()
+                .find(|(i, _)| *i == self.input.caret)
+                .map_or(line.width, |(_, x)| *x);
+            self.navigation = Some(Navigation {
+                revision: self.input.edit_revision(),
+                anchor: self.input.anchor,
+                caret: self.input.caret,
+                line: index,
+                preferred_x: x as f32,
+            });
+        }
+    }
+
+    /// Standard editing commands over the original input/paragraph. Some(bool)
+    /// means handled, with bool describing a visible/editor change. Unknown or
+    /// geometry-stale commands return None without applying a guessed move.
+    /// Arrange/refresh text before visual navigation; ContentHost::event_with_text
+    /// supplies that barrier using the caller's existing shaping backend.
+    /// Marked text remains owned by IME except explicit Cancel/Undo/Redo.
+    pub fn command(&mut self, command: &str) -> Option<bool> {
+        if self.input.disabled
+            || (self.input.marked.is_some()
+                && !matches!(command, "cancelOperation:" | "undo:" | "redo:"))
+        {
+            return None;
+        }
+        let before = (
+            self.input.text.clone(),
+            self.input.anchor,
+            self.input.caret,
+            self.input.marked.clone(),
+        );
+        let caret = self.caret();
+        let extend = command.contains("AndModifySelection");
+        match command {
+            "moveToBeginningOfLine:" | "moveToBeginningOfLineAndModifySelection:" => {
+                self.move_visual(-1, true, extend)?;
+            }
+            "moveToEndOfLine:" | "moveToEndOfLineAndModifySelection:" => {
+                self.move_visual(1, true, extend)?;
+            }
+            "moveUp:" | "moveUpAndModifySelection:" => {
+                self.move_visual(-1, false, extend)?;
+            }
+            "moveDown:" | "moveDownAndModifySelection:" => {
+                self.move_visual(1, false, extend)?;
+            }
+            "selectAll:" => {
+                self.navigation = None;
+                self.input.select_all();
+            }
+            "moveToBeginningOfDocument:" | "moveToBeginningOfDocumentAndModifySelection:" => {
+                self.navigation = None;
+                self.input.select(0, extend);
+            }
+            "moveToEndOfDocument:" | "moveToEndOfDocumentAndModifySelection:" => {
+                self.navigation = None;
+                self.input.select(self.input.len(), extend);
+            }
+            "moveLeft:"
+            | "moveLeftAndModifySelection:"
+            | "moveBackward:"
+            | "moveBackwardAndModifySelection:" => {
+                self.navigation = None;
+                self.input.move_by(-1, extend, false);
+            }
+            "moveRight:"
+            | "moveRightAndModifySelection:"
+            | "moveForward:"
+            | "moveForwardAndModifySelection:" => {
+                self.navigation = None;
+                self.input.move_by(1, extend, false);
+            }
+            "moveWordLeft:"
+            | "moveWordLeftAndModifySelection:"
+            | "moveWordBackward:"
+            | "moveWordBackwardAndModifySelection:" => {
+                self.navigation = None;
+                self.input.move_by(-1, extend, true);
+            }
+            "moveWordRight:"
+            | "moveWordRightAndModifySelection:"
+            | "moveWordForward:"
+            | "moveWordForwardAndModifySelection:" => {
+                self.navigation = None;
+                self.input.move_by(1, extend, true);
+            }
+            "deleteBackward:" => {
+                self.navigation = None;
+                self.input.delete(true, false);
+            }
+            "deleteForward:" => {
+                self.navigation = None;
+                self.input.delete(false, false);
+            }
+            "deleteWordBackward:" => {
+                self.navigation = None;
+                self.input.delete(true, true);
+            }
+            "deleteWordForward:" => {
+                self.navigation = None;
+                self.input.delete(false, true);
+            }
+            "undo:" => {
+                self.navigation = None;
+                self.input.undo();
+            }
+            "redo:" => {
+                self.navigation = None;
+                self.input.redo();
+            }
+            "cancelOperation:" => {
+                self.navigation = None;
+                self.input.cancel_composition();
+            }
+            "insertNewline:" | "insertLineBreak:" => {
+                self.navigation = None;
+                if self.input.multiline {
+                    self.input.insert("\n", None);
+                }
+            }
+            _ => return None,
+        }
+        if self.input.marked.is_none() {
+            self.clauses.clear();
+        }
+        let changed = before
+            != (
+                self.input.text.clone(),
+                self.input.anchor,
+                self.input.caret,
+                self.input.marked.clone(),
+            )
+            || caret != self.caret();
+        if changed {
+            self.reveal();
+        }
+        Some(changed)
     }
 
     /// Minimum frame height for this text role at a chosen global type scale.
@@ -234,12 +599,60 @@ impl TextSurface {
             .max(proposal::metric("size", "size-button-md").expect("JSON metric"))
     }
 
+    fn wrap_width(&self, inner_width: f32, scale: f32) -> Option<f32> {
+        let scale = if scale.is_finite() { scale.max(1.) } else { 1. };
+        (self.input.multiline && self.wrap)
+            .then_some(((inner_width * scale).floor() / scale).max(1.))
+    }
+
+    /// Intrinsic height using the same text role, padding and snapped wrapping
+    /// width as layout. Measurement does not mutate editing, scrolling, reading
+    /// anchors or the currently arranged paragraph/geometry.
+    pub fn measured_outer_height(
+        &self,
+        width: f32,
+        scale: f32,
+        type_scale: f32,
+        mut shape: impl FnMut(&str, Option<f32>) -> Rc<Paragraph>,
+    ) -> f32 {
+        let padding = proposal::SCROLL_CONTENT_PADDING;
+        let padding_y = if self.input.multiline {
+            padding
+        } else {
+            proposal::SCROLL_SINGLE_LINE_PADDING_Y
+        };
+        let paragraph = shape(
+            &self.input.text,
+            self.wrap_width((width - 2. * padding).max(0.), scale),
+        );
+        (paragraph.height as f32 + 2. * padding_y).max(self.minimum_outer_height(type_scale))
+    }
+
     pub fn contains_visible(&self, point: Point) -> bool {
         self.visible_frame()
             .is_some_and(|frame| frame.contains(point))
     }
 
     pub fn caret_doc(&self, index: usize) -> Rect {
+        if index == self.input.caret
+            && let Some(navigation) = self.navigation.filter(|n| self.navigation_valid(*n))
+            && let Some(line) = self
+                .paragraph
+                .as_ref()
+                .and_then(|p| p.lines.get(navigation.line))
+        {
+            let x = line
+                .carets
+                .iter()
+                .find(|(i, _)| *i == index)
+                .map_or(line.width, |(_, x)| *x);
+            return Rect::new(
+                x as f32,
+                line.top as f32,
+                Stroke::Rule.value(),
+                line.height as f32,
+            );
+        }
         self.paragraph.as_ref().map_or(Rect::default(), |p| {
             p.caret_rect(index, Stroke::Rule.value())
         })
@@ -324,6 +737,27 @@ impl TextSurface {
 
     pub fn reveal(&mut self) {
         self.scroll.reveal(self.caret_doc(self.input.caret));
+        self.pending_reveal = (self.paragraph.is_none() || self.shaped != self.input.text)
+            .then_some(self.scroll.offset);
+    }
+
+    /// Snapshot of pointer interaction using the existing hit geometry and
+    /// selection/scroll capture. `None` means the pointer is not hovering;
+    /// capture remains pressed outside the frame until release or cancellation.
+    /// Read-only text remains selectable. Disabled text reports neither state.
+    ///
+    /// Hover/press preserve input paint: feedback comes from the independent
+    /// focus, caret, selection and scrollbar, never Button activation/appearance.
+    /// Focus remains a host input to `draw`, not owned by this pointer snapshot.
+    /// Hosts call `cancel_interaction` on blur, disable, deactivation or unmount.
+    pub fn pointer_state(&self, point: Option<Point>) -> ControlState {
+        ControlState {
+            hovered: !self.input.disabled && point.is_some_and(|p| self.contains_visible(p)),
+            pressed: !self.input.disabled && self.pointer_dragging,
+            disabled: self.input.disabled,
+            error: self.error,
+            ..ControlState::default()
+        }
     }
 
     pub fn pointer_down(
@@ -347,16 +781,45 @@ impl TextSurface {
                 return Some(true);
             }
         }
-        let index = self.hit_drag(point);
-        self.input.select(index, shift);
+        self.select_visual_point(point, shift);
         if click_count >= 3 {
-            self.input.select_all();
+            self.navigation = None;
+            self.input.select_paragraph_at(self.input.caret);
         } else if click_count == 2 {
-            self.input.move_by(-1, false, true);
-            self.input.move_by(1, true, true);
+            self.navigation = None;
+            let grapheme = self.selection_hit(point, self.input.caret);
+            self.input.select_word_at(grapheme);
         }
         self.pointer_dragging = true;
         Some(true)
+    }
+
+    /// Resolve the glyph under the pointer using the existing shaped selection
+    /// rectangles. A nearest caret can be the end of the preceding grapheme or
+    /// the start of the next one; word selection must not confuse those cases.
+    fn selection_hit(&self, point: Point, caret: usize) -> usize {
+        let boundaries = self.input.boundaries();
+        if let Some(paragraph) = &self.paragraph {
+            let origin = self.origin();
+            let doc = Point::new(point.x - origin.x, point.y - origin.y);
+            for pair in boundaries
+                .windows(2)
+                .filter(|pair| pair[0] <= caret && caret <= pair[1])
+            {
+                if paragraph
+                    .selection_rects(pair[0]..pair[1], self.inner.offset(-origin.x, -origin.y))
+                    .iter()
+                    .any(|rect| rect.contains(doc))
+                {
+                    return pair[0];
+                }
+            }
+        }
+        if caret == self.input.len() {
+            boundaries.into_iter().rev().nth(1).unwrap_or(0)
+        } else {
+            caret
+        }
     }
 
     pub fn pointer_drag(&mut self, point: Point, minimum_thumb: f32) -> bool {
@@ -374,8 +837,7 @@ impl TextSurface {
                 minimum_thumb,
             );
         }
-        let index = self.hit_drag(point);
-        self.input.select(index, true);
+        self.select_visual_point(point, true);
         self.reveal();
         true
     }
@@ -468,18 +930,20 @@ impl TextSurface {
         if !changed && before == self.scroll.offset && !precise {
             None
         } else {
+            self.pending_reveal = None;
             Some(changed)
         }
     }
 
-    pub fn draw<R: TextSurfaceTextRenderer>(
+    pub fn draw<R: TextSurfaceTextRenderer + ?Sized>(
         &self,
         renderer: &mut R,
         scene: &mut Scene,
-        theme: Theme,
+        theme: impl Into<tekes_ui_tokens::Palette>,
         focused: bool,
         caret_on: bool,
     ) {
+        let theme = theme.into();
         let container =
             ContainerLayout::new(self.outer, Insets::ZERO, Insets::ZERO, self.ancestor_clip);
         let Some(frame_clip) = container.visible_clip() else {
@@ -505,11 +969,15 @@ impl TextSurface {
             .with_border(
                 Stroke::Rule.value(),
                 color(
-                    if self.error {
-                        "status-failed"
-                    } else {
-                        "border"
-                    },
+                    proposal::control_boundary(
+                        if self.error {
+                            "error"
+                        } else {
+                            "required-input"
+                        },
+                        theme.theme,
+                    )
+                    .expect("JSON text boundary role"),
                     theme,
                 ),
             ),
@@ -595,7 +1063,12 @@ impl TextSurface {
                 ));
             }
         }
-        if focused && !self.input.read_only && caret_on && self.input.selection().is_empty() {
+        if focused
+            && !self.input.disabled
+            && !self.input.read_only
+            && caret_on
+            && self.input.selection().is_empty()
+        {
             scene.push_quad(Quad::new(self.caret(), color("primary-text", theme)));
         }
         scene.pop_clip();
@@ -627,8 +1100,8 @@ impl TextSurface {
     }
 }
 
-fn color(id: &str, theme: Theme) -> tekes_ui_tokens::Rgba {
-    proposal::render_color(id, theme).expect("JSON text-surface color")
+fn color(id: &str, theme: tekes_ui_tokens::Palette) -> tekes_ui_tokens::Rgba {
+    theme.color(id).expect("JSON text-surface color")
 }
 
 #[cfg(test)]

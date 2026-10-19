@@ -923,6 +923,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tekes-ui-composition-consumer"
+version = "0.0.0"
+dependencies = [
+ "tekes-ui-controls",
+ "tekes-ui-icons",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
+]
+
+[[package]]
 name = "tekes-ui-controls"
 version = "0.1.0"
 dependencies = [
@@ -949,6 +960,7 @@ dependencies = [
  "png 0.17.16",
  "resvg",
  "serde_json",
+ "tekes-ui-composition-consumer",
  "tekes-ui-controls",
  "tekes-ui-icons",
  "tekes-ui-motion",

@@ -1,0 +1,250 @@
+{
+  "source_public_manifest": "public-source-037.json",
+  "source_public_sha256": "03721866a362b1d31261ebbbc86140eb07e9e23320871c325234a5212591213d",
+  "tests": {
+    "workspace-tests": {
+      "passed": 923,
+      "ignored": 1
+    },
+    "consumer-tests": {
+      "passed": 131,
+      "ignored": 0
+    }
+  },
+  "gates": [
+    {
+      "name": "export-generate",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--offline",
+        "-p",
+        "tekes-ui-design-export",
+        "--",
+        "--generate",
+        "design/tokens.json",
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/agentkit-public-pin-20261019/tokens.rs"
+      ],
+      "exit_code": 0,
+      "log_sha256": "75f63249c324249a92b48127ca3cdbe779838f23d69cb50359a3b1414b406010",
+      "raw_log_sha256": "75f63249c324249a92b48127ca3cdbe779838f23d69cb50359a3b1414b406010"
+    },
+    {
+      "name": "export-check",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--offline",
+        "-p",
+        "tekes-ui-design-export",
+        "--",
+        "--check",
+        "design/tokens.json",
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/agentkit-public-pin-20261019/tokens.rs"
+      ],
+      "exit_code": 0,
+      "log_sha256": "dfd6437340455a2d320f7ba693a55ef6bcf2b2b10027aca511effbcff86bf6ab",
+      "raw_log_sha256": "dfd6437340455a2d320f7ba693a55ef6bcf2b2b10027aca511effbcff86bf6ab"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "raw_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--locked",
+        "--offline",
+        "-j",
+        "2",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log_sha256": "925d1d2214b89248dd438d45b6f6c9efb7e8c050c9a91ae65fe6ee8150f6148f",
+      "raw_log_sha256": "925d1d2214b89248dd438d45b6f6c9efb7e8c050c9a91ae65fe6ee8150f6148f"
+    },
+    {
+      "name": "workspace-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--locked",
+        "--offline",
+        "-j",
+        "2",
+        "--message-format=json"
+      ],
+      "exit_code": 0,
+      "log_sha256": "178f8f93d0271edc40cfb83561cee417334ed77282921b579cecac77c2d61416",
+      "raw_log_sha256": "e18acfca8a7d0b363c63c97343774885c8afa0470a08365c907ce668a637952b"
+    },
+    {
+      "name": "consumer-clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "examples/composition-consumer/Cargo.toml",
+        "--all-targets",
+        "--locked",
+        "--offline",
+        "-j",
+        "2",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log_sha256": "de655f051df7fa1358a4399d13e873dcd2abb0dd52ba1c97f4d418b1ad5f0c19",
+      "raw_log_sha256": "de655f051df7fa1358a4399d13e873dcd2abb0dd52ba1c97f4d418b1ad5f0c19"
+    },
+    {
+      "name": "consumer-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "examples/composition-consumer/Cargo.toml",
+        "--all-targets",
+        "--locked",
+        "--offline",
+        "-j",
+        "2",
+        "--message-format=json"
+      ],
+      "exit_code": 0,
+      "log_sha256": "1f648ad753060efdd20c8aa0a6eee001e94b58b8962e872aab6c7e7891c4e57d",
+      "raw_log_sha256": "507766ff322f3970709ebe07101c769b1a1500ef925b07ab6b87b7a2d1045830"
+    },
+    {
+      "name": "unittest",
+      "command": [
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/agentkit-pin-py313-20261019/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/tests"
+      ],
+      "exit_code": 0,
+      "log_sha256": "56e03afda220e7ba78bbcecf9a2e53a0149cfc3e311fa10bbd01b25e8e5ba671",
+      "raw_log_sha256": "56e03afda220e7ba78bbcecf9a2e53a0149cfc3e311fa10bbd01b25e8e5ba671"
+    },
+    {
+      "name": "merge-regressions",
+      "command": [
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/agentkit-pin-py313-20261019/bin/python",
+        "scripts/test-merge-design-system.py"
+      ],
+      "exit_code": 0,
+      "log_sha256": "aca9de24acdbf010d11ed377fa16e2355df864936bda870d9a9568c5998e4cae",
+      "raw_log_sha256": "aca9de24acdbf010d11ed377fa16e2355df864936bda870d9a9568c5998e4cae"
+    },
+    {
+      "name": "check-pure-rust-selftest",
+      "command": [
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/agentkit-pin-py313-20261019/bin/python",
+        "-I",
+        "scripts/check-pure-rust.py",
+        "--self-test"
+      ],
+      "exit_code": 0,
+      "log_sha256": "8a15ff78574a3a9997614ab692a165a3c329e032f112324f2fe4f9b81d20a31b",
+      "raw_log_sha256": "8a15ff78574a3a9997614ab692a165a3c329e032f112324f2fe4f9b81d20a31b"
+    },
+    {
+      "name": "check-pure-rust",
+      "command": [
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/agentkit-pin-py313-20261019/bin/python",
+        "-I",
+        "scripts/check-pure-rust.py"
+      ],
+      "exit_code": 0,
+      "log_sha256": "b4ea3e39d9adc4025d339132715a0c229837a6b3ae861332034be0390e5e52d4",
+      "raw_log_sha256": "b4ea3e39d9adc4025d339132715a0c229837a6b3ae861332034be0390e5e52d4"
+    },
+    {
+      "name": "check-design-baseline-selftest",
+      "command": [
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/agentkit-pin-py313-20261019/bin/python",
+        "-I",
+        "scripts/check-design-baseline.py",
+        "--self-test"
+      ],
+      "exit_code": 0,
+      "log_sha256": "8881aeb08df59fa7a17d8fba384d9048d216de3afa2fabde58fa6389efd0d9de",
+      "raw_log_sha256": "8881aeb08df59fa7a17d8fba384d9048d216de3afa2fabde58fa6389efd0d9de"
+    },
+    {
+      "name": "merge-design-system",
+      "command": [
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/agentkit-pin-py313-20261019/bin/python",
+        "-I",
+        "scripts/merge-design-system.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log_sha256": "547981d3d9be9c8f73981bb4a68b021ba30fc922f07aef61e19678154e2a2d18",
+      "raw_log_sha256": "547981d3d9be9c8f73981bb4a68b021ba30fc922f07aef61e19678154e2a2d18"
+    },
+    {
+      "name": "check-design-system",
+      "command": [
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/agentkit-pin-py313-20261019/bin/python",
+        "-I",
+        "scripts/check-design-system.py"
+      ],
+      "exit_code": 0,
+      "log_sha256": "d368d49b19aaa89f89bbecc66e6a45e1f522db26fd527b313dd4222fa9e41b5b",
+      "raw_log_sha256": "d368d49b19aaa89f89bbecc66e6a45e1f522db26fd527b313dd4222fa9e41b5b"
+    },
+    {
+      "name": "generate-gallery-brands",
+      "command": [
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/agentkit-pin-py313-20261019/bin/python",
+        "-I",
+        "scripts/generate-gallery-brands.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log_sha256": "8e9e90cc6871e929aafbc7187def176f961e10ad1e607a2ae828d9730cf4aaa4",
+      "raw_log_sha256": "8e9e90cc6871e929aafbc7187def176f961e10ad1e607a2ae828d9730cf4aaa4"
+    },
+    {
+      "name": "verify-agentkit-public-pin",
+      "command": [
+        "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/agentkit-pin-py313-20261019/bin/python",
+        "-I",
+        "scripts/verify-agentkit-public-pin.py"
+      ],
+      "exit_code": 0,
+      "log_sha256": "f711a1e24ff64228b8970606b98ac1516b2778714c9b78275a31f685cafd08bc",
+      "raw_log_sha256": "f711a1e24ff64228b8970606b98ac1516b2778714c9b78275a31f685cafd08bc"
+    }
+  ],
+  "small_native_build": {
+    "passed": true,
+    "log_sha256": "2ffcf4a6b2457231878366e085993c41a6f13ebea6350d8085f147086b377660"
+  },
+  "environment_recovery": "initial local Python3.9 was below required version; Python3.13 isolated venv with pinned jsonschema passed all Python gates; initial failures retained in local batch",
+  "native_ime_voiceover": "earlier source-bound human acceptance; 188 public inputs unchanged; not claimed as new physical run",
+  "performance": "not measured",
+  "gallery_scope": "base Gallery compatibility tested; later Gallery WIP excluded",
+  "published_logs": "trailing blank lines normalized; original byte hashes separately retained"
+}

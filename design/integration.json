@@ -113,6 +113,9 @@
     },
     "reference_alignment_20261016": {
       "$ref": "./behavior/reference-alignment.json"
+    },
+    "current_capability_inventory": {
+      "$ref": "./gallery/capabilities.json"
     }
   },
   "acceptance": {

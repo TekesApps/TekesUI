@@ -279,5 +279,34 @@
       "boundary": "separator",
       "boundary_width": "stroke-rule"
     }
+  },
+  "control_emphasis": {
+    "policy": "Content and primary actions lead. Named quiet actions are identified by their label/icon and transient feedback, without a resting enclosing stroke in normal or increased contrast. Required inputs and selection/error indicators retain explicit boundaries. Keyboard focus is independent. Disabled controls never paint keyboard focus.",
+    "boundary_roles": {
+      "action-primary": {
+        "normal": "fill",
+        "increased": "fill"
+      },
+      "action-quiet": {
+        "normal": "none",
+        "increased": "none"
+      },
+      "action-panel": {
+        "normal": "none",
+        "increased": "none"
+      },
+      "required-input": {
+        "normal": "border",
+        "increased": "border"
+      },
+      "selected": {
+        "normal": "border",
+        "increased": "border"
+      },
+      "error": {
+        "normal": "status-failed",
+        "increased": "status-failed"
+      }
+    }
   }
 }

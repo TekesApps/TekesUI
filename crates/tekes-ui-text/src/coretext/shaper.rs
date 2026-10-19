@@ -314,7 +314,8 @@ impl CoreTextShaper {
             carets.push((utf16.end, unsafe {
                 line.offset_for_string_index(utf16.end as isize, std::ptr::null_mut())
             }));
-            let has_newline = text[map.byte_range(utf16.clone())].ends_with('\n');
+            let has_newline =
+                text[map.byte_range(utf16.clone())].ends_with(['\n', '\r', '\u{2028}', '\u{2029}']);
             lines.push(Line {
                 has_newline,
                 carets,
@@ -334,7 +335,7 @@ impl CoreTextShaper {
             cursor_y += height + line_spacing;
             location += length;
         }
-        if n == 0 || text.ends_with('\n') {
+        if n == 0 || text.ends_with(['\n', '\r', '\u{2028}', '\u{2029}']) {
             // SAFETY: 只读查询。
             let (ascent, descent, leading) =
                 unsafe { (base.ascent(), base.descent(), base.leading()) };

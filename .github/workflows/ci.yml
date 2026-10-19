@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, "codex/agentkit-public-pin-*"]
   pull_request:
 
 jobs:
@@ -30,3 +30,9 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+
+      - name: Independent public API consumer
+        run: cargo test --manifest-path examples/composition-consumer/Cargo.toml --all-targets --locked
+
+      - name: Exact AgentKit public candidate identity
+        run: python3 scripts/verify-agentkit-public-pin.py

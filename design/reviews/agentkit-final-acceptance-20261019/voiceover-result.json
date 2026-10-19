@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "human_feedback": "一切正常",
+  "checks": [
+    "not click body: independent entry via VO+Shift+Down",
+    "VO+L reads current history line",
+    "VO+Down reads next history line"
+  ],
+  "public_snapshot": "03721866a362b1d31261ebbbc86140eb07e9e23320871c325234a5212591213d",
+  "binary_sha256": "1f087127cecbdfa723bc4aa745f38ace547f268050f73a89ab1a440008061fbe",
+  "round": "agentkit-final-20261019-143057",
+  "automated_AX_protocol": "owners3/4 modern line/window checks passed; separate from human speech",
+  "VoiceOver_shutdown": "Activity Monitor normal Quit; process absence checked separately"
+}

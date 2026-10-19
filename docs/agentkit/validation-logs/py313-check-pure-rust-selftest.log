@@ -1,0 +1,13 @@
+test_comments_and_fixtures_are_not_invocations (__main__.GuardTests.test_comments_and_fixtures_are_not_invocations) ... ok
+test_direct_compiler_calls_fail (__main__.GuardTests.test_direct_compiler_calls_fail) ... ok
+test_foreign_sources_and_projects_fail (__main__.GuardTests.test_foreign_sources_and_projects_fail) ... ok
+test_independent_rust_compare_is_allowed_but_gallery_edge_fails (__main__.GuardTests.test_independent_rust_compare_is_allowed_but_gallery_edge_fails) ... ok
+test_indirect_gallery_compare_edge_fails (__main__.GuardTests.test_indirect_gallery_compare_edge_fails) ... ok
+test_private_dependency_and_aliased_escape_fail (__main__.GuardTests.test_private_dependency_and_aliased_escape_fail) ... ok
+test_rust_system_bindings_and_tools_are_allowed (__main__.GuardTests.test_rust_system_bindings_and_tools_are_allowed) ... ok
+test_workspace_alias_cannot_hide_gallery_compare_edge (__main__.GuardTests.test_workspace_alias_cannot_hide_gallery_compare_edge) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.017s
+
+OK

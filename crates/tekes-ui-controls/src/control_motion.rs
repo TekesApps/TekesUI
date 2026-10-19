@@ -143,3 +143,98 @@ pub(super) fn motion_for(role: &str) -> Motion {
         .expect("validated Design System easing"),
     })
 }
+
+/// Retains only paint after semantic dismissal. Input and focus remain owned by
+/// the component's open model. A host must render while `is_presented` is true,
+/// and clear this state when unmounting or replacing its text/image resources.
+/// Components rebuild the paint on every exit frame so retained glyph coordinates
+/// never outlive the host atlas frame that produced them. Alpha is applied per
+/// primitive, rather than an isolated compositing group.
+#[derive(Clone, Debug, Default)]
+pub(super) struct OverlayPresence {
+    progress: ProgressTransition,
+    retained: tekes_ui_scene::Scene,
+    context: String,
+    now: Duration,
+}
+
+impl OverlayPresence {
+    pub(super) fn is_presented(&self) -> bool {
+        !self.retained.is_empty()
+            && (self.progress.value() > 0.0 || self.progress.needs_animation())
+    }
+
+    pub(super) fn needs_animation(&self) -> bool {
+        self.progress.needs_animation()
+    }
+
+    pub(super) fn clear(&mut self) {
+        self.retained.clear();
+        self.context.clear();
+        let _ = self.progress.snap(0.0, self.now);
+    }
+
+    pub(super) fn paint(
+        &mut self,
+        destination: &mut tekes_ui_scene::Scene,
+        text: &mut impl crate::ButtonTextRenderer,
+        open: bool,
+        context: String,
+        current: Option<tekes_ui_scene::Scene>,
+    ) {
+        let clock = text.motion_context();
+        if let Some(clock) = clock {
+            self.now = self.now.max(clock.now);
+        }
+        if !open && self.context != context {
+            self.clear();
+            return;
+        }
+        if let Some(current) = current {
+            if current.is_empty() {
+                self.clear();
+                return;
+            }
+            self.retained = current;
+            self.context = context;
+        }
+        let target = if open { 1.0 } else { 0.0 };
+        let value = if let Some(clock) = clock {
+            self.progress.retarget(
+                target,
+                motion_for("overlay_presence"),
+                self.now,
+                clock.reduced_motion,
+            )
+        } else {
+            self.progress.snap(target, self.now)
+        }
+        .unwrap_or(target)
+        .clamp(0.0, 1.0) as f32;
+        if value > 0.0 {
+            for primitive in self.retained.primitives() {
+                let mut primitive = primitive.clone();
+                use tekes_ui_scene::Primitive;
+                match &mut primitive {
+                    Primitive::Quad(quad) => {
+                        quad.fill.a *= value;
+                        quad.border_color.a *= value;
+                    }
+                    Primitive::Shadow(shadow) => shadow.color.a *= value,
+                    Primitive::Glyphs(run) => run.color.a *= value,
+                    Primitive::Image(image) => image.opacity *= value,
+                    Primitive::TransformedImage(image) => image.quad.opacity *= value,
+                    Primitive::PushClip(_) | Primitive::PopClip => {}
+                    // Future primitives must explicitly support retained fading.
+                    _ => return,
+                }
+                destination.push(primitive);
+            }
+        }
+        if self.progress.needs_animation() {
+            text.request_animation_frame();
+        } else if !open {
+            self.retained.clear();
+        }
+    }
+}

@@ -1,0 +1,16 @@
+test_changed_golden_or_duplicate_entry_fails (__main__.BaselineTests.test_changed_golden_or_duplicate_entry_fails) ... ok
+test_changed_or_added_token_source_always_fails (__main__.BaselineTests.test_changed_or_added_token_source_always_fails) ... ok
+test_different_missing_or_extra_candidate_fails (__main__.BaselineTests.test_different_missing_or_extra_candidate_fails) ... ok
+test_exact_source_migration_and_fresh_generated_content_pass (__main__.BaselineTests.test_exact_source_migration_and_fresh_generated_content_pass) ... ok
+test_migration_json_numeric_change_is_not_baseline_approval (__main__.BaselineTests.test_migration_json_numeric_change_is_not_baseline_approval) ... ok
+test_migration_receipt_and_generator_drift_are_rejected (__main__.BaselineTests.test_migration_receipt_and_generator_drift_are_rejected) ... ok
+test_original_metadata_and_candidate_pass_without_writing (__main__.BaselineTests.test_original_metadata_and_candidate_pass_without_writing) ... ok
+test_other_environment_requires_review_even_when_pngs_match (__main__.BaselineTests.test_other_environment_requires_review_even_when_pngs_match) ... ok
+test_resolved_contract_preserves_original_f32_bits (__main__.BaselineTests.test_resolved_contract_preserves_original_f32_bits) ... ok
+test_source_migration_does_not_approve_other_visual_changes (__main__.BaselineTests.test_source_migration_does_not_approve_other_visual_changes) ... ok
+test_visual_source_change_requires_candidate_but_same_pixels_can_pass (__main__.BaselineTests.test_visual_source_change_requires_candidate_but_same_pixels_can_pass) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.517s
+
+OK

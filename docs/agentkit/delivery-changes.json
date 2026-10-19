@@ -1,0 +1,1094 @@
+{
+  "base_commit": "80d6b05649234f953ea452d42e1cbed369fdddbb",
+  "reviewed_public_files": 188,
+  "extra_files_in_reviewed_crates": [],
+  "metadata_self_exclusion": "this inventory file does not include itself",
+  "changes": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "d1efebdffabe88815615d2f5389175969a8d9c3a6663fc33645319a7ebf53c3b",
+      "previous_sha256": "a622fdc3dda1e6f92c6a482e403b2b4f38a339f774c3bb5582db50951e5c435a",
+      "reason": "verify delivery branches, exact188 identity, and second public consumer in addition to all original gates"
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "00d769a922bb8fb114f49dec09822fc7271a791847e8ec95506c69893cf39075",
+      "previous_sha256": "b232c8f7505ce3692f3215a87da48ff9905b21c6fc775d1e220257b975a6c9c1",
+      "reason": "necessary workspace lock or authored DS projection gate support"
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "8bf3aac48349a5ae8a65fbccd97bd3daf061e650d52386a7ab07920f40a28614",
+      "previous_sha256": "ae05d032416aa599d6ff98bfae0c1834efecb16b3d13c3b7918c5d6604460cb1",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/Cargo.toml",
+      "sha256": "2440aadfcbdb1e1fec9c86444ac3e07ec2ad2ea04022999ba2b464752e13e0bd",
+      "previous_sha256": "19244736156ea59a04b9a8b27d1d066ac2ed55ec85788daa04ebf72b841b6f41",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/collections_view.rs",
+      "sha256": "01e5da3b23d1fe67e76b336145225200591385963570515274c3b5cf58d22ca6",
+      "previous_sha256": "57fd9ba46e4e2c8df69a10b27d81b76a638e5d0eb54031f69998caa7fc67fa43",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composite.rs",
+      "sha256": "2ae0023698bb3f001e7a3c284981977eac64ca13563658f59aa34b165654f373",
+      "previous_sha256": "24f8604bf799b0fd93da5582284af091d14905c78d3929ce7e52c8e4236ac7c6",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "sha256": "f2b1128eaac3120464e1be365166a88b93bfa8f21221d6fbffc9b39db0ab9ab4",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/actions.rs",
+      "sha256": "a89bb560148cfe341adfbf53a4af1c7c1bf10b8786fa1dba924d0b1c741624f4",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
+      "sha256": "40043626489bffe143e04c119f2e984e16857bdc79a8532188ddd587b745ccf4",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/key.rs",
+      "sha256": "9c78585d2d39165f07c74c416165b130ba95d324e7c651b0b0f1c8057844524e",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/pointer.rs",
+      "sha256": "bab363a222d7c6195349569a4a317ca4586070463964a3503212c3c7aa3927d6",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/control_motion.rs",
+      "sha256": "9749a3ab805ec8e58b78e117e6c3db3f92e9c780da0826f286390c634e1f5053",
+      "previous_sha256": "94223059cb8a77b5ff133540e5938e0520d757bbf638def3683256c2244ef93f",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/draft.rs",
+      "sha256": "e1632400d3010211fd9718b92b02149c2ba115d587309367d424738117152994",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/extended.rs",
+      "sha256": "b6349672e80369c38761c93774e904386d44760e31854e466c2cd03f822b4478",
+      "previous_sha256": "92ca8bd4f16315d48c018b68abb7e6c706c1fccabc5594ac8b560fbdc65054c4",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+      "sha256": "2b47f88e4b0320a7daf5be02f3d7157256cdfce8c814e424b25d7d21e69965e5",
+      "previous_sha256": "19ae83e1b38a40bfdfa8de5a8bc52a69d9b84f39915bbc151c1710dbebccd01a",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/layout_view.rs",
+      "sha256": "4af3340464789eae6fdb09eee26f26bfdb2e4246fece2152dd9dabed90dcbae0",
+      "previous_sha256": "427f0612dae3b71681cea97acbb3752959e25cd604f1fb4b4344fe8554165692",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/lib.rs",
+      "sha256": "00008c078fcaa579f6afeb63542a448ed267c946fcb553cdcafc88f107979b05",
+      "previous_sha256": "0077f702affeeef56fca9caef84bf75417e0eba377bdf3ad12471128dfb39534",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/paint.rs",
+      "sha256": "f586b50e5d9e1e65226b7b13d9e34d1cbf985557acec13fa256dc5c8ba10ad55",
+      "previous_sha256": "70c3b0fa5b233f687729f0f403b7750887ba79bd1379a15125561d56ece51c22",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/reading.rs",
+      "sha256": "b791308f9bbbceba29294575c70401170aa2f3d7f51696039b290c1c262c30f8",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/selection.rs",
+      "sha256": "de7ae03c17632624f1670506417856800f9665165a52d88bf3c7550e1d8f7333",
+      "previous_sha256": "df3e77e86f4f4e4096786be414c7a5fcc10c24b8d890e4e6dec0cc800bbee7e9",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/text_input.rs",
+      "sha256": "fd25003400dbf9ed92c94e354d8fed4aa12e737e14eb2ade26c34e1002801b4a",
+      "previous_sha256": "c59b65438e861dc608b86681ae3a92ac965adbb6deb634355998e09f061f3cf7",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/text_input/external.rs",
+      "sha256": "dc0ca1d0052a27a07da47fdcf65c6ae3aeab097a1eebe15d0d78730614763f45",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/text_surface.rs",
+      "sha256": "54c68fd3e168655fd6d93ec1f916076533c735a2964d2ea6bd9249c84154d5c2",
+      "previous_sha256": "9bd8aea98531ef5b9365c16d4f5704aded5e4f19b200e1b9688f683668422082",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/widgets.rs",
+      "sha256": "8c22a4bc965f66a1c5a1d2d7bb30d29698cbab6b16c92abbb4db0aa2cd7b5605",
+      "previous_sha256": "63f7914e0d05bc0323b5c2f88a46207d4821c183145caf7604a30cfca9252110",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/action_contract.rs",
+      "sha256": "1e37f31aa7c0f0213127a3e1ccaa66506260629ccf08a15af33e040350f6b66e",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/choice_contract.rs",
+      "sha256": "4ee09801a24dd52ffc229e45c7ed7adbb2e5ad25b61fea71fb233ec63787a564",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/choice_selection_states.rs",
+      "sha256": "f3677639bcb21f1312db3a08d35a804884ba06fe04510ff128a1953fcd100649",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/choice_trigger_states.rs",
+      "sha256": "39ee0437dae7b2af56247c91cc3de2db4f091ea0c9e82c1234b2efdafac88aa0",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/command_result_states.rs",
+      "sha256": "edb45a43138cd0ea757ea6905455d318ab15deabf15433e8a78311f61638087d",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/component_registry_api.rs",
+      "sha256": "1f64ccb9855316d1047c976c6c41363796cf32e4658a2f4e5c8e668d773c463c",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/composition.rs",
+      "sha256": "7699f62d65c69d40fb063c084e157730cfbd478c03ed9a0912c7e4798e2b31fb",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/composition_adapters.rs",
+      "sha256": "da1d59d102a34b16a268e2325ad3beaa3880300daaa20d29e0780ca0299f84a6",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/draft_contract.rs",
+      "sha256": "6fb5b1b9e76e10be1f261b0335dacfdc3970a6b0ce1d44b2d254f441045337a4",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/input_contract.rs",
+      "sha256": "7e4e2d882d9edc7d629519ae763ef1d0b6694559b908aa8f76e2a19babe6a173",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/navigation_contract.rs",
+      "sha256": "fa9f923d0ccea329a20e2b7a1244c1b98990667ddbeb9953137a76352770e59d",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/pointer_contract.rs",
+      "sha256": "fb35a5294c9d927797e0412dc696a8764ca67f1a104de84a39e52ba01810f200",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/popup_placement.rs",
+      "sha256": "ebdf7d43ac05605fd22b5a110c6e0fe6793198baf00b12ae421ea4a843ab98c0",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/reading_contract.rs",
+      "sha256": "4cbafd6bac117f0a8e763ba6e40d504b132615d5d062e760418e222fe66c2524",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/selection_availability.rs",
+      "sha256": "6b7bd61cd844364ffbe5fd29d9b5b6cb32dc9ff07044194d54b484f59f392d78",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/selection_contract.rs",
+      "sha256": "0d71ee2c2042dc0ca86091851b3cc23d49f56a621890a3c3582914de54036f28",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-design-export/src/effects.rs",
+      "sha256": "a0bd22ee1869cae0f6546db84cd818e501cc8eb2da0d83401060bf77cba333da",
+      "previous_sha256": "008b906dc990f86b639fc7193bfcf0b61bc0ffbf922eef9a077c84c3bc3d56a4",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-design-export/src/freshness.rs",
+      "sha256": "c4b3e0448d5f68531e54bc6563db9e26b41da11265b7392a9e759b44184c2b74",
+      "previous_sha256": "510f9034aa5c5a4331b3aef5f07b19f354e53ea093a29656f52e9d4b7e991027",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-design-export/src/gallery_brands.rs",
+      "sha256": "289dfb15d825e9f2c325488f08506ffcdf7aa14145f5a10de07ced96d4486c93",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-design-export/src/lib.rs",
+      "sha256": "39cfc4bb5636f2202468821a119bdf6c6f60e8291ba4e77ad0a701fea54fd0a7",
+      "previous_sha256": "4a2f6d29b6c142aa3a458d044c3b1d3e6a116cf0b8577ac4af045f6b85cb8222",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-design-export/src/proposal.rs",
+      "sha256": "ca9f87cd401f281b89fe01a6c8bfe7ce63ee2ce9c80caee63cd5ddb06a519267",
+      "previous_sha256": "48744d02d903552ed4a27ff9d0fa6adf68445babbbee557a2dc1d0347d584395",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-design-export/tests/consumer_artifact.rs",
+      "sha256": "b646a48f3c6d4800da0c37ac563af49ef0814ff6118c1cf1b98feb9dae09a351",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/Cargo.toml",
+      "sha256": "22ab42d9eec6dcdde2c060350d45d043d3a73dcc59df31e76e6fbb805d15989e",
+      "previous_sha256": "a3b5892affd052e12f5d900d0da8f5cbbf4621aacfc409c4b5e61acc3c320fad",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/accessibility.rs",
+      "sha256": "cb9fb8c3f2c50226062386188cf1f2a446acd9d50bfc2a864aefd91d1542b5da",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/app.rs",
+      "sha256": "c3307ae78c2b8b381ed783909255051771ac9c511e0e03fbefbcb4d8196e0d42",
+      "previous_sha256": "4ce4d898e9922483b59a957814703a2ad91be18ad1c5ef7db62b3a179ecf0066",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/event.rs",
+      "sha256": "f6ca08eafed88b257b9e987c8c0f6cf575e513ee5d22df46028f3948ba5d2557",
+      "previous_sha256": "e0e55d4b53707c04c148fec8d1b03b0e7e92e4f5cdba59ac8cc6909aac3d80a9",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/lib.rs",
+      "sha256": "2003ad6eca3825bae0a7fa359c2e5d8498b7841617d996108996bbe0a7acb3a0",
+      "previous_sha256": "d7a4e92d95fe02cb949c0533b38a830dc3e81eac75afa7e68a11a9a4017880b6",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/selftest.rs",
+      "sha256": "288d6e191389b7ae9dbc11e68aaa953c84df87c3b3e2c866c8d63a64da934a64",
+      "previous_sha256": "c7f3dcabd12ad7ed5b078ec110eb2135ab3b72411d0499851380a3bca00650fc",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/shared.rs",
+      "sha256": "5fdf7b84ab41efc254030455c773ee98fe571a7465bcc258a01bfbde7be62dde",
+      "previous_sha256": "999708c179309b3499e01d5f0cc6d379a1d04335c963e5a2f9aaa4cb6454c38f",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/text_key.rs",
+      "sha256": "9546715dcec3acd93f938866702f0f3c7653a5e2c776db88ccbd2907fb6e4773",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/view.rs",
+      "sha256": "b23ebacec55d689dffa7028c8fe3dd0985c6fd95eab96cbc4c17cd52b280c277",
+      "previous_sha256": "622f128cb4d4b861ff69b02678c25428d1d7dd819fd0315c7056def6eedf13c7",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/wake.rs",
+      "sha256": "84a2b77a4f31181b4d7f42e19a9eeeff584c8c0cd417abc4231457f64d3f4ddd",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-text/src/coretext/shaper.rs",
+      "sha256": "f7d1358c3e667be2c9b98af2f9955494a119ba2dee9d9b9985c323b9a97a3d25",
+      "previous_sha256": "35e02f3602eb32fb84977c8b83d84036e8ea3f0bbd641dd12f2b4a3102487576",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-tokens/Cargo.toml",
+      "sha256": "4c647031d8e4054f8645bbc21b9fd6b2bc98043075d6f7dd8d58c2e6cbedf6f2",
+      "previous_sha256": "bc50e6ed40f6174ec669556b9536b141cef114dcaf79d7216fd7238f5dd15e67",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-tokens/build.rs",
+      "sha256": "0c8aa2d6e747a5af1695c89b23fcc41de47cafb0e9999517de213a6f6ef6332f",
+      "previous_sha256": "7682ddc85f8dcb43dfb9567d84022694373cea5bafa8da42cdd816bae818af7c",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-tokens/src/audit.rs",
+      "sha256": "f0af9c25388a6d3d170a918958b15238daf6efc537dfa8c663a08c6fb14070d7",
+      "previous_sha256": null,
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-tokens/src/lib.rs",
+      "sha256": "21f4239091bbb47834f9b4315dd4f753fc0a249e4ed5104f67b8fb874386cd6e",
+      "previous_sha256": "876eafdbc3a69e677b2ccbdd2c696acd834ad86d83322d2710b569b844af64d3",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "crates/tekes-ui-tokens/src/palette.rs",
+      "sha256": "8bd75a15da0d00de2fe34bd5e7f50a0a8541239d82fe9eea599ca20fff3005ed",
+      "previous_sha256": "4c8e0a45cafc9164e2794bff328096b007a8ba4fbb687f0b51aff8522219a750",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "design/gallery/capabilities.json",
+      "sha256": "28b31cb9733c5866cbed8b1a7cc014206a23076edc4ff22a4a1ae80935911c90",
+      "previous_sha256": null,
+      "reason": "existing registry inputs required by unchanged037 public compilation tests"
+    },
+    {
+      "path": "design/gallery/component-coverage.json",
+      "sha256": "131ddd5d964871a0885995ec70dedac9eb4ab2c7bc9b17a63454dc7edb2248a0",
+      "previous_sha256": null,
+      "reason": "existing registry inputs required by unchanged037 public compilation tests"
+    },
+    {
+      "path": "design/gallery/public-api-surface.json",
+      "sha256": "8ba91788d8b10951bb370ea9c8762094c1582a12bd72fd993a8e3402b572092a",
+      "previous_sha256": null,
+      "reason": "existing registry inputs required by unchanged037 public compilation tests"
+    },
+    {
+      "path": "design/gallery/workbench.json",
+      "sha256": "5d28d0867324f56dee97df2875419ff4a85665ec2bcba64c4d4a450023d12463",
+      "previous_sha256": "2e2cd603cc8ad93180a9f5074eda5fe646bfd62e1db867b63382b1c930504cad",
+      "reason": "existing registry inputs required by unchanged037 public compilation tests"
+    },
+    {
+      "path": "design/integration.json",
+      "sha256": "15010ac6b2b301e8aec387fc37995c11663c633e14716db45372ed12f72eee5b",
+      "previous_sha256": "fdc8022164a1320f34e65e93d7948b358307afc60e0e0a53e2aaf9d87eb1a32f",
+      "reason": "necessary workspace lock or authored DS projection gate support"
+    },
+    {
+      "path": "design/reviews/agentkit-final-acceptance-20261019/copy-round.json",
+      "sha256": "02c127436f9f382079bcad64284910c2ce76574c6f60a60831d2fc13bf8da1c0",
+      "previous_sha256": null,
+      "reason": "historical source-bound issue acceptance evidence, not relabeled as a new native run"
+    },
+    {
+      "path": "design/reviews/agentkit-final-acceptance-20261019/native-anchor-result.json",
+      "sha256": "a08b5a4543950c29162ba43cdedd23c23e2070cddfd1929fcc756a364a3edde7",
+      "previous_sha256": null,
+      "reason": "historical source-bound issue acceptance evidence, not relabeled as a new native run"
+    },
+    {
+      "path": "design/reviews/agentkit-final-acceptance-20261019/public-source.json",
+      "sha256": "04163d5365444912c6aa6705d6204292a01d75e9742fa5cf73d07bf5f30674c7",
+      "previous_sha256": null,
+      "reason": "historical source-bound issue acceptance evidence, not relabeled as a new native run"
+    },
+    {
+      "path": "design/reviews/agentkit-final-acceptance-20261019/replay-independent.log",
+      "sha256": "d440826952add3c631d77516f0c30ef1ae0c8458485d3f030ebad4ad5389de8c",
+      "previous_sha256": null,
+      "reason": "historical source-bound issue acceptance evidence, not relabeled as a new native run"
+    },
+    {
+      "path": "design/reviews/agentkit-final-acceptance-20261019/replay-results.json",
+      "sha256": "227bd163f39513361b47c0a7e8bc29a77d77ac89ff2cb8f5eeea3eb2a7e3d1f1",
+      "previous_sha256": null,
+      "reason": "historical source-bound issue acceptance evidence, not relabeled as a new native run"
+    },
+    {
+      "path": "design/reviews/agentkit-final-acceptance-20261019/replay-ui.log",
+      "sha256": "ec410fb685ef03acf3cf43a32dce058090ae4648f0764dfe89118ecd7f730a8f",
+      "previous_sha256": null,
+      "reason": "historical source-bound issue acceptance evidence, not relabeled as a new native run"
+    },
+    {
+      "path": "design/reviews/agentkit-final-acceptance-20261019/voiceover-result.json",
+      "sha256": "8dd65b11fe7ef1bd4561b55ac2c10e668d62457c9f361f7b6c8a4792e06e7fe0",
+      "previous_sha256": null,
+      "reason": "historical source-bound issue acceptance evidence, not relabeled as a new native run"
+    },
+    {
+      "path": "design/reviews/composing-viewport-fix-20261019/physical-native-result.json",
+      "sha256": "6517ff3f7eb6ad80b59d3b2ec040ee634ecc7afb5bb8641fccfa83133da31afd",
+      "previous_sha256": null,
+      "reason": "historical source-bound issue acceptance evidence, not relabeled as a new native run"
+    },
+    {
+      "path": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/action.json",
+      "sha256": "e7b5d37092d480153d657ebd2ae3a3bcd0970cbb29b58284d5e52b36094a6797",
+      "previous_sha256": null,
+      "reason": "runtime token receipts referenced by required registry test inputs; no native maturity promotion"
+    },
+    {
+      "path": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/combo-async.json",
+      "sha256": "524517490cf60e71002ae97601e5b705db8585715f30dd2ed89d8f6cbf817c65",
+      "previous_sha256": null,
+      "reason": "runtime token receipts referenced by required registry test inputs; no native maturity promotion"
+    },
+    {
+      "path": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/command-async.json",
+      "sha256": "d2567bda313612b6acc8d204dda6eee29e486da6e1d75bc0f70ecd94d879331a",
+      "previous_sha256": null,
+      "reason": "runtime token receipts referenced by required registry test inputs; no native maturity promotion"
+    },
+    {
+      "path": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/content-status.json",
+      "sha256": "0ed932d5043e154c098d19186e1004a7654ce337fec234abb9a69c66ddf9be3c",
+      "previous_sha256": null,
+      "reason": "runtime token receipts referenced by required registry test inputs; no native maturity promotion"
+    },
+    {
+      "path": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/input.json",
+      "sha256": "d6d3906af09374dbfc8a91e9ae2e7b8ca4fbe99d07ec172d3c7be4a6d45cef1e",
+      "previous_sha256": null,
+      "reason": "runtime token receipts referenced by required registry test inputs; no native maturity promotion"
+    },
+    {
+      "path": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/selection.json",
+      "sha256": "45b93965de0d6106759614dec4978f95748138656e437779fa5bbfb723f35b5e",
+      "previous_sha256": null,
+      "reason": "runtime token receipts referenced by required registry test inputs; no native maturity promotion"
+    },
+    {
+      "path": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/slider-composition.json",
+      "sha256": "cd15ecab53ee01be6a282ac5735bdf9f8e2a3da5ade40af69f4505d7b37baeb1",
+      "previous_sha256": null,
+      "reason": "runtime token receipts referenced by required registry test inputs; no native maturity promotion"
+    },
+    {
+      "path": "design/reviews/p0-live-windows-20261019/acceptance-matrix.json",
+      "sha256": "d17681218e920693d37cc9365a2c097a9875961b395f9dad49e973ac900a593b",
+      "previous_sha256": null,
+      "reason": "historical source-bound issue acceptance evidence, not relabeled as a new native run"
+    },
+    {
+      "path": "design/reviews/physical-ime-voiceover-20261019/physical-result.json",
+      "sha256": "b75a5aac536aa9b5ec1ee87da4dc436dccde8708e6071ed7c9d61b59264ef38e",
+      "previous_sha256": null,
+      "reason": "historical source-bound issue acceptance evidence, not relabeled as a new native run"
+    },
+    {
+      "path": "design/source/interaction-contracts.json",
+      "sha256": "43e3f957838db569c0544d4878c6b3c18decd6aa83113aa0823967caede748c4",
+      "previous_sha256": "5c56c0298dac965cdda2ffdf910ba582bd9a221228f5c96df6eb39d8bec7c8ac",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "design/source/layout.json",
+      "sha256": "d556ee23cea3b35122f54f2f843436d3f0b0eb47f49ce7df91a4ca6eb2ebc2b9",
+      "previous_sha256": "805a9f782f7fa1018e37d4bc2c54b7c8f1242a88ecb4b202bafe7b97544204cd",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "design/source/motion.json",
+      "sha256": "73b22d880193b33b0d35ce20e26e4196cf2dab2a116af573823d4d82ace3c53c",
+      "previous_sha256": "5bb3870e6ebe92625edb145962536e19437d3abdc23636d2a30a28e04c13cb33",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "design/system.json",
+      "sha256": "283d254f98fca371cb470935db6b1d85161777c51f37eeb33f7db0feb0d41409",
+      "previous_sha256": "49398ce5853257d0fe53acc2cbc1b929d4464fc585378d2b083b1cdbde06f6d5",
+      "reason": "necessary workspace lock or authored DS projection gate support"
+    },
+    {
+      "path": "design/system.schema.json",
+      "sha256": "c9826f4b088480763d1a644187a0c569857a654ee017de516f921004e5775c26",
+      "previous_sha256": "7ad3cbee7ee91184bbf0f422c04fb8d22103ef5f51c596e33b8aa81d97ee7c3e",
+      "reason": "necessary workspace lock or authored DS projection gate support"
+    },
+    {
+      "path": "design/tokens.json",
+      "sha256": "6cdfd88064cb2f0f4bac398876fcf4a037903bd17cf0748d76ca1f1b1d409c20",
+      "previous_sha256": "eff71b79ad769e38f9dea93d4c613db382af466c867e093efb908aa42fcb3c80",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "docs/agentkit/README.md",
+      "sha256": "c66a26dceb37015e9c3103a758e7f6d437460a7fedd0925d94129411afe8e793",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/acceptance-matrix.json",
+      "sha256": "85f059b754375d002d939ee32a7c04978f461f50f96ee612ce01d412a2b32177",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/development-consumer-review.json",
+      "sha256": "72cb1ca0049f21d6f8c088aa042bac205b430145532a3180c8748bc42189d254",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/public-source-037.json",
+      "sha256": "04163d5365444912c6aa6705d6204292a01d75e9742fa5cf73d07bf5f30674c7",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/clippy.log",
+      "sha256": "925d1d2214b89248dd438d45b6f6c9efb7e8c050c9a91ae65fe6ee8150f6148f",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/consumer-clippy.log",
+      "sha256": "de655f051df7fa1358a4399d13e873dcd2abb0dd52ba1c97f4d418b1ad5f0c19",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/consumer-tests.log",
+      "sha256": "1f648ad753060efdd20c8aa0a6eee001e94b58b8962e872aab6c7e7891c4e57d",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/export-check.log",
+      "sha256": "dfd6437340455a2d320f7ba693a55ef6bcf2b2b10027aca511effbcff86bf6ab",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/export-generate.log",
+      "sha256": "75f63249c324249a92b48127ca3cdbe779838f23d69cb50359a3b1414b406010",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/fmt.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/native-build.log",
+      "sha256": "2ffcf4a6b2457231878366e085993c41a6f13ebea6350d8085f147086b377660",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/py313-check-design-baseline-selftest.log",
+      "sha256": "8881aeb08df59fa7a17d8fba384d9048d216de3afa2fabde58fa6389efd0d9de",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/py313-check-design-system.log",
+      "sha256": "d368d49b19aaa89f89bbecc66e6a45e1f522db26fd527b313dd4222fa9e41b5b",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/py313-check-pure-rust-selftest.log",
+      "sha256": "8a15ff78574a3a9997614ab692a165a3c329e032f112324f2fe4f9b81d20a31b",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/py313-check-pure-rust.log",
+      "sha256": "b4ea3e39d9adc4025d339132715a0c229837a6b3ae861332034be0390e5e52d4",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/py313-generate-gallery-brands.log",
+      "sha256": "8e9e90cc6871e929aafbc7187def176f961e10ad1e607a2ae828d9730cf4aaa4",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/py313-merge-design-system.log",
+      "sha256": "547981d3d9be9c8f73981bb4a68b021ba30fc922f07aef61e19678154e2a2d18",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/py313-merge-regressions.log",
+      "sha256": "aca9de24acdbf010d11ed377fa16e2355df864936bda870d9a9568c5998e4cae",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/py313-unittest.log",
+      "sha256": "56e03afda220e7ba78bbcecf9a2e53a0149cfc3e311fa10bbd01b25e8e5ba671",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/py313-verify-agentkit-public-pin.log",
+      "sha256": "f711a1e24ff64228b8970606b98ac1516b2778714c9b78275a31f685cafd08bc",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation-logs/workspace-tests.log",
+      "sha256": "178f8f93d0271edc40cfb83561cee417334ed77282921b579cecac77c2d61416",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/agentkit/validation.json",
+      "sha256": "84ceff9eb0be4a1cf9e32810775d5b47f6462a9adace8fea4a1e324fb0ff2414",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    },
+    {
+      "path": "docs/design/composing-viewport-fix-20261019.md",
+      "sha256": "2fdb27f7063ef2d3b604fb212fc3f67ec812cef4ecfe3f61e576771702fcc464",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/composition-input-session-20261017.md",
+      "sha256": "6a2f949b16e99cccba020b9d2a1537abb632f55a23f01362cbaee1b00d1202d1",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/composition-list-dialog-20261017.md",
+      "sha256": "1a10cc3143459913f908ba1ea471c9352989e76a719b0a508b9a5db355632d05",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/composition-minimum-protocol-20261017.md",
+      "sha256": "251eea460917b8e8bbb5c88d45ec85641e8d120bf8dee7a7ae4e8f4af757bb46",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/composition-presence-20261017.md",
+      "sha256": "366cc53c8047ae6b70db0ce1d264305dafcf32213fe75c036b74c7e685fb8cc2",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/controlled-editor-20261018.md",
+      "sha256": "f2fe95a10397eb3a71056971c58759949d0b92a63ca707f719105dbaa9240c57",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/draft-protocol-20261018.md",
+      "sha256": "115f4da40949924dadaad3459de3e804f3fd93ce08ecd2bbbc51cd2b31d1ecd7",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/editor-keys-20261018.md",
+      "sha256": "f5175310fd211488efe71fee3c29d128b5598030345a094d0a11d38f92f78247",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/held-pointer-cancel-20261019.md",
+      "sha256": "a227a6c061f1d4e6ffe4344de622b73c394440f86919b8f7abf0c12a9974e7e7",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/p0-live-windows-20261019.md",
+      "sha256": "88585244fd83362c2fa2cb26151c206f6f63e82d42de8db5a89cc23c3e85a5f9",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/physical-ime-voiceover-20261019.md",
+      "sha256": "3e4bda3dc16322bd0a317c45e36645b9fb3809ba8a426aca119a38c218ee16ae",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/pointer-action-native-20261019.md",
+      "sha256": "af47111f8f0ec5a1c68531e88845bbac95d8cdf6b39717732d0faad9256cf7fc",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/pointer-metadata-20261018.md",
+      "sha256": "ef31ea90d16fb42df1f1250b1e0a31330907ab0e9652c26eaeb929c48bf9a278",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/prepend-reading-20261018.md",
+      "sha256": "47512ee566e0a5df17ea5dddda8d89b51c321748a84167c4b59f247ec8d2e171",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/reading-controller-20261018.md",
+      "sha256": "b18aaca6b5139c9d703d91d799f4af26966b755466da3bcffc67de267c21f687",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/text-ax-lines-20261019.md",
+      "sha256": "3fd1f58c22b86e868c47495fabe2c2803556511113ca4a0e6c9b7b24c0b55b39",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/text-ax-navigation-20261019.md",
+      "sha256": "627a5ce72fa0638203dc615c27fcc4ac2e4c69d442295a3d9e1a3df179a3f127",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/text-input-context-20261019.md",
+      "sha256": "d0a112f702e11c70ba98dcd04a7f9774e524839e11db8d16d699a37a33102efa",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/text-key-context-20261018.md",
+      "sha256": "ced01e954d58aa27bd9268fc4c9f433b62a976a31b089f04ef0beb9e47d65ea0",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/text-viewport-20261018.md",
+      "sha256": "6c73571228a4cb4ea2dfc71af7dcbf226af869b0fe7e7490964df77380b78b8d",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/wake-targets-20261018.md",
+      "sha256": "a3bce4cd2a9a79886baaaee9f3dc64af72159adad0199f325865994bff8409ea",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "docs/design/window-wake-20261018.md",
+      "sha256": "3bb5cfc37dca10f4e1c15686ccc3c6dbb322578a95302ddbc5b11ca0b28c01c7",
+      "previous_sha256": null,
+      "reason": "foundation API/migration or layered native evidence documentation"
+    },
+    {
+      "path": "examples/composition-consumer/Cargo.lock",
+      "sha256": "4d639fe58863aeebcc9ea2bcc9257b69490a40e431bba50cedd33b5086555689",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/Cargo.toml",
+      "sha256": "4d9bfd4db368de443abf24c53f0414ea58503a5dd128939ca64abb6add163eda",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/README.md",
+      "sha256": "00dbd3db4b9a27fb23c7005b6166cb0cea2dabfd15972345455c16baa6ca9ca2",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/examples/native.rs",
+      "sha256": "2a02f4449e74455dd05685922e18c8b74d21d0511b3fd6e8b9e1e809c72e16c5",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/examples/support/native_key.rs",
+      "sha256": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/examples/support/native_pointer.rs",
+      "sha256": "e4c1d9657a51365cb3b53f5b7946c03b5e2a71677d4502ed75c459329d7cd435",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/examples/wake.rs",
+      "sha256": "bcf65bbd3338bef02751f5cab56e2032a08b141650719081aa4b5f831d412975",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/src/choice_status.rs",
+      "sha256": "a0a064fdee0e9cd5c78bb111c241037d0aa58e066c699708a965cc6df6a16997",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/src/combo_status.rs",
+      "sha256": "f46d23276f99032038ef00392263219e7f00164e744314eb889c24e486a45f16",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/src/command_status.rs",
+      "sha256": "045f263b862024fa6762044944d8b73708a0ebe65bb7fe659352358244557b06",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/src/content_actions.rs",
+      "sha256": "525638d5c956db238c6cd420992ef4b91897f7a2233257713e569b3bc78de7c8",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/src/content_status.rs",
+      "sha256": "b20c338dadb5a9ea3db09ec941270be1c76b538e551bd67aa1afba3e7819654d",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/src/controlled_editor.rs",
+      "sha256": "fbdd6c0b97197805a3e8aa3a8406bd977d29681c4a8410bb1f30296b9fa8d703",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/src/lib.rs",
+      "sha256": "b873c6602c737c1de9c04a6f12f182594a45223865d2b27cf903b32bc4b236fa",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/src/reading_prepend.rs",
+      "sha256": "35bdf6df644a3cbc680d2e5b2010c9d51b24d16779505e37d51dd57ee3fee4df",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/src/scenarios.rs",
+      "sha256": "8bf3a88681d5df55b426aa717939973de1f629e2f470c416e0ee4883b42d68a0",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/src/slider_content.rs",
+      "sha256": "5f50ce30c305092e1f4c12e215ed26a70f08baecce5bd7b4ccc3a7569f64108e",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/src/text_viewport.rs",
+      "sha256": "c4652a815029503dc12928831675d5e36bfa52d03d40f046bd00ec1292771464",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/choice_status.rs",
+      "sha256": "974f88e3442795daf781013922292b67a029c20265a01be4109487296c65cf1c",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/collection_mount.rs",
+      "sha256": "ed8018834b32d28f44179ae6e4d5355f4dc242848a0d363ea901b5dbea19e7af",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/combo_status.rs",
+      "sha256": "968f5a0fc0548191a8d787f83b4faad38d93221764c609933ed49958324e0502",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/command_status.rs",
+      "sha256": "332ced1dcc1095afa01ff9cb2cd47871bdc5601225bfd37fb898272795a159ff",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/composing_geometry.rs",
+      "sha256": "b61389af40ae081877f1d12c74589996d774ef82eb7a28932985ec10c84815dc",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/content_actions.rs",
+      "sha256": "51f65b24f349038cf0967ecfe0f5b9af1ed946219158edfb13a6de70463cc1a8",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/controlled_fixture.rs",
+      "sha256": "11064f8c2559fa464af9eb64539dfee53f9f73c9c7621228c9aa5e65c11f4c3b",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/controlled_text.rs",
+      "sha256": "6be32bb166bc1ee560185215c621dfbf238d7fe8d187fe93c2ffeee4f3e25405",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/dialog_accessibility.rs",
+      "sha256": "154568d070669e1f388af1b84a4c48d50918f1dd902cc5db860071b76dffc7d2",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/draft_persistence.rs",
+      "sha256": "40cbf879fdb8c36b4a3f1d0251e5cb32ba6f48a2ade5552612d0db40cce1748b",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/editor_keys.rs",
+      "sha256": "76ed45394def28514e4abf9ee36e0484a91f74f9b23a17838751d1c30436fa7c",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/editor_navigation.rs",
+      "sha256": "8eee3669a7f3c87bdc73b641f2ca0db75eb5491f765456429605e1db4b8b089e",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/filtered_menu_semantics.rs",
+      "sha256": "440763c02da6b01065f8ca0d6f32ce2423be05b9ac6d73c64fcce5125b549e83",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/menu_semantics.rs",
+      "sha256": "6a2080166f308b7a3af68e7350ed75799230da007709861b8d8b8e5018cf0e73",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/native_key_translation.rs",
+      "sha256": "433e926ef16d3a248b817b95e8175f3fa1a53aea9f239e5ec5e4c2d553dfe164",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/native_pointer_translation.rs",
+      "sha256": "12488cf1b34609edb636025fec01a641f18e095e591b04bfdde8fbd6cabcf918",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/pointer_metadata.rs",
+      "sha256": "e804ffc666ec3128808a60b09e2b2007a1d3a4988193056fe2eda823a0e92679",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/reading_prepend.rs",
+      "sha256": "489f5922d77791e1e0f652da88baae199cd0b725c0ad24b10fc5ba44e7fe9071",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/scenarios.rs",
+      "sha256": "e33c7b151cb4aa5ef6be4ea63736afe52fda8890fead3f9e5bc181769b32aca5",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/slider_content.rs",
+      "sha256": "a8d5dca54eb17a24422b52912334368799c5baea71c864b7314542d82b6c10cd",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/slider_semantic_lifecycle.rs",
+      "sha256": "ae40d239040e34367c2090d215400082b947a6df3acb76b229c4aec91d6abb1f",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/slider_states.rs",
+      "sha256": "9ba39cb152181ee5ab65b94d83e5573417fc706582a67eb6dc7712db5a1fc184",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/support/reading_key.rs",
+      "sha256": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/support/reading_pointer.rs",
+      "sha256": "e4c1d9657a51365cb3b53f5b7946c03b5e2a71677d4502ed75c459329d7cd435",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/text_viewport.rs",
+      "sha256": "cebc0c5b20636ad78a13c772ce9b716b476bf7abdf0d249cac73f543e1cae252",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "examples/composition-consumer/tests/tree_table_semantics.rs",
+      "sha256": "c63415f5c06db70c2ee15c07b6897071785851cdae1e80fa70278f663801c5b4",
+      "previous_sha256": null,
+      "reason": "sealed second-consumer fixture/support"
+    },
+    {
+      "path": "scripts/merge-design-system.py",
+      "sha256": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2",
+      "previous_sha256": "8b0182887cdb7da4eaf887b6a8c52ee6d7aaa12b6ac794619de33c70741681cd",
+      "reason": "sealed037 public input"
+    },
+    {
+      "path": "scripts/test-merge-design-system.py",
+      "sha256": "93682a66e23f04045dd8a464891b58e5000f276e477b5e1738aa13d3376bb05c",
+      "previous_sha256": "b0fac27b5a926f032c9a305092a563547bad566dfbdd959e7b027c2838d5f4bf",
+      "reason": "necessary workspace lock or authored DS projection gate support"
+    },
+    {
+      "path": "scripts/verify-agentkit-public-pin.py",
+      "sha256": "2438a679a8a0077764ff99b3a820d4c3d06bad93da1e6254722a5881005fd141",
+      "previous_sha256": null,
+      "reason": "public delivery documentation, validation receipt or exact source verifier"
+    }
+  ]
+}

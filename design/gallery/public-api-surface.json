@@ -1,0 +1,1592 @@
+{
+  "format": "tekesui-public-api-surface/1",
+  "scope": "All reachable public struct/enum/trait/type paths of tekes_ui_controls, including explicit aliases. Functions/constants and other crates are outside this type audit.",
+  "review_policy": "Every new public type path requires explicit classification and rationale. Component implementations bind existing registry identity/routes; composition adapters and aliases use existing family routes, not new components. Public implementation helpers remain publicly callable, not private APIs. Classification is a reviewed semantic decision, not inferred from a name or a compiler pass.",
+  "types": [
+    {
+      "api": "tekes_ui_controls::BarChart",
+      "category": "component",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::BarGeometry",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Chart input datum and measured bar/chart geometry; not independent controls."
+    },
+    {
+      "api": "tekes_ui_controls::Button",
+      "category": "component",
+      "components": [
+        "tui.button"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::ButtonLayout",
+      "category": "component-support",
+      "components": [
+        "tui.button"
+      ],
+      "reason": "Button layout result and presentation configuration; no standalone control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::ButtonSize",
+      "category": "component-support",
+      "components": [
+        "tui.button"
+      ],
+      "reason": "Button layout result and presentation configuration; no standalone control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::ButtonTextAlign",
+      "category": "component-support",
+      "components": [
+        "tui.button"
+      ],
+      "reason": "Button layout result and presentation configuration; no standalone control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::ButtonTextRenderer",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout, event/state and host rendering contracts reused by multiple controls; public implementation support, not private and not separate Gallery components."
+    },
+    {
+      "api": "tekes_ui_controls::ChartDatum",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Chart input datum and measured bar/chart geometry; not independent controls."
+    },
+    {
+      "api": "tekes_ui_controls::ChartGeometry",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Chart input datum and measured bar/chart geometry; not independent controls."
+    },
+    {
+      "api": "tekes_ui_controls::CheckState",
+      "category": "component-support",
+      "components": [
+        "tui.checkbox"
+      ],
+      "reason": "Checkbox state and measured geometry."
+    },
+    {
+      "api": "tekes_ui_controls::Checkbox",
+      "category": "component",
+      "components": [
+        "tui.checkbox"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::CheckboxLayout",
+      "category": "component-support",
+      "components": [
+        "tui.checkbox"
+      ],
+      "reason": "Checkbox state and measured geometry."
+    },
+    {
+      "api": "tekes_ui_controls::ContainerLayout",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout, event/state and host rendering contracts reused by multiple controls; public implementation support, not private and not separate Gallery components."
+    },
+    {
+      "api": "tekes_ui_controls::ControlKey",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout, event/state and host rendering contracts reused by multiple controls; public implementation support, not private and not separate Gallery components."
+    },
+    {
+      "api": "tekes_ui_controls::ControlMotionContext",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout, event/state and host rendering contracts reused by multiple controls; public implementation support, not private and not separate Gallery components."
+    },
+    {
+      "api": "tekes_ui_controls::ControlState",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout, event/state and host rendering contracts reused by multiple controls; public implementation support, not private and not separate Gallery components."
+    },
+    {
+      "api": "tekes_ui_controls::Dialog",
+      "category": "component",
+      "components": [
+        "tui.dialog"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::DialogEvent",
+      "category": "component-support",
+      "components": [
+        "tui.dialog"
+      ],
+      "reason": "Dialog output event and measured content/overlay bounds."
+    },
+    {
+      "api": "tekes_ui_controls::DialogLayout",
+      "category": "component-support",
+      "components": [
+        "tui.dialog"
+      ],
+      "reason": "Dialog output event and measured content/overlay bounds."
+    },
+    {
+      "api": "tekes_ui_controls::DialogView",
+      "category": "component",
+      "components": [
+        "tui.dialog"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::DraftJournal",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Caller-owned draft identity/version/immutable submission and save/ack protocol used by existing form/async patterns. No new UI component, persistence implementation, network client or Gallery route."
+    },
+    {
+      "api": "tekes_ui_controls::DraftRevision",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Caller-owned draft identity/version/immutable submission and save/ack protocol used by existing form/async patterns. No new UI component, persistence implementation, network client or Gallery route."
+    },
+    {
+      "api": "tekes_ui_controls::DraftSubmission",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Caller-owned draft identity/version/immutable submission and save/ack protocol used by existing form/async patterns. No new UI component, persistence implementation, network client or Gallery route."
+    },
+    {
+      "api": "tekes_ui_controls::ExternalSelection",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared controlled plain-text synchronization on existing TextInput/TextSurface: caller-owned DraftRevision, immutable instance baseline, atomic selection/history policy and typed conflict. No standalone component or business/session ownership."
+    },
+    {
+      "api": "tekes_ui_controls::ExternalUndo",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared controlled plain-text synchronization on existing TextInput/TextSurface: caller-owned DraftRevision, immutable instance baseline, atomic selection/history policy and typed conflict. No standalone component or business/session ownership."
+    },
+    {
+      "api": "tekes_ui_controls::ExternalValueConflict",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared controlled plain-text synchronization on existing TextInput/TextSurface: caller-owned DraftRevision, immutable instance baseline, atomic selection/history policy and typed conflict. No standalone component or business/session ownership."
+    },
+    {
+      "api": "tekes_ui_controls::ExternalValueResult",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared controlled plain-text synchronization on existing TextInput/TextSurface: caller-owned DraftRevision, immutable instance baseline, atomic selection/history policy and typed conflict. No standalone component or business/session ownership."
+    },
+    {
+      "api": "tekes_ui_controls::Field",
+      "category": "component",
+      "components": [
+        "tui.field"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::Insets",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout, event/state and host rendering contracts reused by multiple controls; public implementation support, not private and not separate Gallery components."
+    },
+    {
+      "api": "tekes_ui_controls::Menu",
+      "category": "component",
+      "components": [
+        "tui.menu"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::MenuEvent",
+      "category": "component-support",
+      "components": [
+        "tui.menu"
+      ],
+      "reason": "Menu event routing input/output and measured bounds."
+    },
+    {
+      "api": "tekes_ui_controls::MenuLayout",
+      "category": "component-support",
+      "components": [
+        "tui.menu"
+      ],
+      "reason": "Menu event routing input/output and measured bounds."
+    },
+    {
+      "api": "tekes_ui_controls::MenuView",
+      "category": "component",
+      "components": [
+        "tui.menu"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::MenuWheelEvent",
+      "category": "component-support",
+      "components": [
+        "tui.menu"
+      ],
+      "reason": "Menu event routing input/output and measured bounds."
+    },
+    {
+      "api": "tekes_ui_controls::MenuWheelInput",
+      "category": "component-support",
+      "components": [
+        "tui.menu"
+      ],
+      "reason": "Menu event routing input/output and measured bounds."
+    },
+    {
+      "api": "tekes_ui_controls::NumberField",
+      "category": "component",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::RadioGroupLayout",
+      "category": "component-support",
+      "components": [
+        "tui.radio-group"
+      ],
+      "reason": "Measured radio-group bounds."
+    },
+    {
+      "api": "tekes_ui_controls::RadioGroupView",
+      "category": "component",
+      "components": [
+        "tui.radio-group"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::ReadingAnchorUpdate",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.scroll-area"
+      ],
+      "reason": "Versioned read-only history update data for existing ReadingController/TextSurface; no standalone component or route."
+    },
+    {
+      "api": "tekes_ui_controls::ReadingController",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.scroll-area"
+      ],
+      "reason": "Optional existing reading-intent and UTF-16 anchor policy over TextSurface/ScrollArea, extracted from Gallery. No new standalone component or route; ordinary editors remain opt-out."
+    },
+    {
+      "api": "tekes_ui_controls::ReadingDocumentVersion",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.scroll-area"
+      ],
+      "reason": "Versioned read-only history update data for existing ReadingController/TextSurface; no standalone component or route."
+    },
+    {
+      "api": "tekes_ui_controls::ReadingSelectionUpdate",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.scroll-area"
+      ],
+      "reason": "Versioned read-only history update data for existing ReadingController/TextSurface; no standalone component or route."
+    },
+    {
+      "api": "tekes_ui_controls::ReadingUpdate",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.scroll-area"
+      ],
+      "reason": "Versioned read-only history update data for existing ReadingController/TextSurface; no standalone component or route."
+    },
+    {
+      "api": "tekes_ui_controls::ReadingUpdateError",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.scroll-area"
+      ],
+      "reason": "Versioned read-only history update data for existing ReadingController/TextSurface; no standalone component or route."
+    },
+    {
+      "api": "tekes_ui_controls::ReflowAnchor",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.text-field",
+        "tui.text-area",
+        "tui.search-field"
+      ],
+      "reason": "Shared editor state, reflow anchor and host shaping/painting interfaces; presentation remains TextSurface."
+    },
+    {
+      "api": "tekes_ui_controls::ScrollArea",
+      "category": "component",
+      "components": [
+        "tui.scroll-area"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::ScrollGeometry",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout, event/state and host rendering contracts reused by multiple controls; public implementation support, not private and not separate Gallery components."
+    },
+    {
+      "api": "tekes_ui_controls::ScrollPolicy",
+      "category": "component-support",
+      "components": [
+        "tui.scroll-area"
+      ],
+      "reason": "Per-axis scroll policy configuration; the control is ScrollArea."
+    },
+    {
+      "api": "tekes_ui_controls::Select",
+      "category": "component",
+      "components": [
+        "tui.select"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::SelectionEvent",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout, event/state and host rendering contracts reused by multiple controls; public implementation support, not private and not separate Gallery components."
+    },
+    {
+      "api": "tekes_ui_controls::SliderLayout",
+      "category": "component-support",
+      "components": [
+        "tui.slider"
+      ],
+      "reason": "Measured slider bounds."
+    },
+    {
+      "api": "tekes_ui_controls::SliderView",
+      "category": "component",
+      "components": [
+        "tui.slider"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::SwitchLayout",
+      "category": "component-support",
+      "components": [
+        "tui.switch"
+      ],
+      "reason": "Measured switch bounds."
+    },
+    {
+      "api": "tekes_ui_controls::SwitchView",
+      "category": "component",
+      "components": [
+        "tui.switch"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::Tabs",
+      "category": "component",
+      "components": [
+        "tui.tabs"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::TabsLayout",
+      "category": "component-support",
+      "components": [
+        "tui.tabs"
+      ],
+      "reason": "Measured tab strip/panel bounds."
+    },
+    {
+      "api": "tekes_ui_controls::TabsView",
+      "category": "component",
+      "components": [
+        "tui.tabs"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::TextEditBaseline",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared controlled plain-text synchronization on existing TextInput/TextSurface: caller-owned DraftRevision, immutable instance baseline, atomic selection/history policy and typed conflict. No standalone component or business/session ownership."
+    },
+    {
+      "api": "tekes_ui_controls::TextInput",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.text-field",
+        "tui.text-area",
+        "tui.search-field"
+      ],
+      "reason": "Shared editor state, reflow anchor and host shaping/painting interfaces; presentation remains TextSurface."
+    },
+    {
+      "api": "tekes_ui_controls::TextRangeMapping",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.scroll-area"
+      ],
+      "reason": "Versioned read-only history update data for existing ReadingController/TextSurface; no standalone component or route."
+    },
+    {
+      "api": "tekes_ui_controls::TextSurface",
+      "category": "component",
+      "components": [
+        "tui.text",
+        "tui.text-field",
+        "tui.text-area",
+        "tui.search-field"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::TextSurfaceHost",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.text-field",
+        "tui.text-area",
+        "tui.search-field"
+      ],
+      "reason": "Shared editor state, reflow anchor and host shaping/painting interfaces; presentation remains TextSurface."
+    },
+    {
+      "api": "tekes_ui_controls::TextSurfaceTextRenderer",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.text-field",
+        "tui.text-area",
+        "tui.search-field"
+      ],
+      "reason": "Shared editor state, reflow anchor and host shaping/painting interfaces; presentation remains TextSurface."
+    },
+    {
+      "api": "tekes_ui_controls::Toolbar",
+      "category": "component",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::ChartView",
+      "category": "component",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::ChartViewLayout",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Chart View layout result."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::CodeBlockView",
+      "category": "component",
+      "components": [
+        "tui.code-block"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::CollectionEvent",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared collection layout/event and cancellation contracts used by production collection Views."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::CollectionItemLayout",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared collection layout/event and cancellation contracts used by production collection Views."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::CollectionLayout",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared collection layout/event and cancellation contracts used by production collection Views."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::DataTableLayout",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Table View layout result."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::DataTableView",
+      "category": "component",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::DiffViewPresenter",
+      "category": "component-alias",
+      "components": [
+        "tui.diff-view"
+      ],
+      "reason": "Compatibility alias of registered DiffViewRuntime; shares the existing DiffView route, not a new component."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::DiffViewRuntime",
+      "category": "component",
+      "components": [
+        "tui.diff-view"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::DocumentLayout",
+      "category": "component-support",
+      "components": [
+        "tui.markdown",
+        "tui.code-block",
+        "tui.diff-view"
+      ],
+      "reason": "Shared read-only document geometry; not an independently rendered document control."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::ListView",
+      "category": "component",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::MarkdownView",
+      "category": "component",
+      "components": [
+        "tui.markdown"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::PassiveCollectionView",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared collection layout/event and cancellation contracts used by production collection Views."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::TreeView",
+      "category": "component",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::composition::AccessibilityAction",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ButtonContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.button"
+      ],
+      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::Component",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ComponentId",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::CompositionError",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::CompoundButton",
+      "category": "component-adapter",
+      "components": [
+        "tui.button"
+      ],
+      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::Content",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentAction",
+      "category": "composition",
+      "components": [],
+      "reason": "Typed ordered action records at existing Component/ContentHost delivery boundary, with input provenance and mounted-instance ownership. No business destination/state, new widget or event-bus framework; legacy response/counters remain compatible."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentActionKind",
+      "category": "composition",
+      "components": [],
+      "reason": "Typed ordered action records at existing Component/ContentHost delivery boundary, with input provenance and mounted-instance ownership. No business destination/state, new widget or event-bus framework; legacy response/counters remain compatible."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentActionSource",
+      "category": "composition",
+      "components": [],
+      "reason": "Typed ordered action records at existing Component/ContentHost delivery boundary, with input provenance and mounted-instance ownership. No business destination/state, new widget or event-bus framework; legacy response/counters remain compatible."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentEvent",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentHost",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentKeyEvent",
+      "category": "composition",
+      "components": [],
+      "reason": "Shared input metadata, editor policy and once-only text-key acknowledgement at existing Component/ContentHost boundary; no editor state machine or additional component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentResponse",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentRole",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentSemantics",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentTheme",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::DialogContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.dialog"
+      ],
+      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::GridContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.grid"
+      ],
+      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::InputModifiers",
+      "category": "composition",
+      "components": [],
+      "reason": "Shared input metadata, editor policy and once-only text-key acknowledgement at existing Component/ContentHost boundary; no editor state machine or additional component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::Lifecycle",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ListContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::MenuContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.menu"
+      ],
+      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PointerButton",
+      "category": "composition",
+      "components": [],
+      "reason": "Lossless pointer input at the existing Component/ContentHost boundary, with legacy primary-pointer compatibility; data only, not a new component or selection engine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PointerEvent",
+      "category": "composition",
+      "components": [],
+      "reason": "Lossless pointer input at the existing Component/ContentHost boundary, with legacy primary-pointer compatibility; data only, not a new component or selection engine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PointerModifiers",
+      "category": "composition",
+      "components": [],
+      "reason": "Lossless pointer input at the existing Component/ContentHost boundary, with legacy primary-pointer compatibility; data only, not a new component or selection engine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PointerPhase",
+      "category": "composition",
+      "components": [],
+      "reason": "Lossless pointer input at the existing Component/ContentHost boundary, with legacy primary-pointer compatibility; data only, not a new component or selection engine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ScrollContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.scroll-area"
+      ],
+      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SemanticNode",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SemanticPart",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SliderContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.slider"
+      ],
+      "reason": "Existing Slider model/View adapted to the existing Component protocol; finite range metadata and relative semantic actions; native/experience acceptance remains separate."
+    },
+    {
+      "api": "tekes_ui_controls::composition::StackContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.stack"
+      ],
+      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SwitchContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.switch"
+      ],
+      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TextContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.text"
+      ],
+      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TextFieldContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.text-field"
+      ],
+      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TextKeyDisposition",
+      "category": "composition",
+      "components": [],
+      "reason": "Shared input metadata, editor policy and once-only text-key acknowledgement at existing Component/ContentHost boundary; no editor state machine or additional component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TextKeyOutcome",
+      "category": "composition",
+      "components": [],
+      "reason": "Shared input metadata, editor policy and once-only text-key acknowledgement at existing Component/ContentHost boundary; no editor state machine or additional component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TextSubmitPolicy",
+      "category": "composition",
+      "components": [],
+      "reason": "Shared input metadata, editor policy and once-only text-key acknowledgement at existing Component/ContentHost boundary; no editor state machine or additional component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TextTabPolicy",
+      "category": "composition",
+      "components": [],
+      "reason": "Shared input metadata, editor policy and once-only text-key acknowledgement at existing Component/ContentHost boundary; no editor state machine or additional component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TextViewport",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Viewport constraints on the existing TextFieldContent: legacy Form, Fixed, Fill and bounded intrinsic Grow, excluding Field metadata. Reuses original TextSurface/ReadingController/Stack flexible child; not a new component or layout framework."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Axis",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared axis, control frame and notification tone values used by existing components."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Banner",
+      "category": "component",
+      "components": [
+        "tui.banner"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Breadcrumb",
+      "category": "component",
+      "components": [
+        "tui.breadcrumb"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::CodeBlock",
+      "category": "component",
+      "components": [
+        "tui.code-block"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::ComboBox",
+      "category": "component",
+      "components": [
+        "tui.combo-box"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::CommandPalette",
+      "category": "component",
+      "components": [
+        "tui.command-palette"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::ControlFrame",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared axis, control frame and notification tone values used by existing components."
+    },
+    {
+      "api": "tekes_ui_controls::extended::DataTable",
+      "category": "component",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::DiffKind",
+      "category": "component-support",
+      "components": [
+        "tui.diff-view"
+      ],
+      "reason": "Diff document data and change classification, not UI nodes."
+    },
+    {
+      "api": "tekes_ui_controls::extended::DiffLine",
+      "category": "component-support",
+      "components": [
+        "tui.diff-view"
+      ],
+      "reason": "Diff document data and change classification, not UI nodes."
+    },
+    {
+      "api": "tekes_ui_controls::extended::DiffView",
+      "category": "component",
+      "components": [
+        "tui.diff-view"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Disclosure",
+      "category": "component",
+      "components": [
+        "tui.disclosure"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::EmptyState",
+      "category": "component",
+      "components": [
+        "tui.empty-state"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Grid",
+      "category": "component",
+      "components": [
+        "tui.grid"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::IconButton",
+      "category": "component",
+      "components": [
+        "tui.icon-button"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Link",
+      "category": "component",
+      "components": [
+        "tui.link"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::List",
+      "category": "component",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Markdown",
+      "category": "component",
+      "components": [
+        "tui.markdown"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::MarkdownBlock",
+      "category": "component-support",
+      "components": [
+        "tui.markdown"
+      ],
+      "reason": "Markdown document node data, not an independently composable UI component."
+    },
+    {
+      "api": "tekes_ui_controls::extended::NoticeTone",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared axis, control frame and notification tone values used by existing components."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Pane",
+      "category": "component-support",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Split pane identity and measured model geometry."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Popover",
+      "category": "component",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Progress",
+      "category": "component",
+      "components": [
+        "tui.progress"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::RadioGroup",
+      "category": "component",
+      "components": [
+        "tui.radio-group"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::SegmentedControl",
+      "category": "component",
+      "components": [
+        "tui.segmented-control"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Separator",
+      "category": "component",
+      "components": [
+        "tui.separator"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Slider",
+      "category": "component",
+      "components": [
+        "tui.slider"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::SliderGeometry",
+      "category": "component-support",
+      "components": [
+        "tui.slider"
+      ],
+      "reason": "Slider model geometry."
+    },
+    {
+      "api": "tekes_ui_controls::extended::SortDirection",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Table sort configuration."
+    },
+    {
+      "api": "tekes_ui_controls::extended::SplitView",
+      "category": "component",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::SplitViewLayout",
+      "category": "component-support",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Split pane identity and measured model geometry."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Stack",
+      "category": "component",
+      "components": [
+        "tui.stack"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::StatusBadge",
+      "category": "component",
+      "components": [
+        "tui.status-badge"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Switch",
+      "category": "component",
+      "components": [
+        "tui.switch"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Toast",
+      "category": "component",
+      "components": [
+        "tui.toast"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Tooltip",
+      "category": "component",
+      "components": [
+        "tui.tooltip"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::Tree",
+      "category": "component",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::TreeNode",
+      "category": "component-support",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Tree document/model data; the component owns interaction and rendering."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::BannerView",
+      "category": "component",
+      "components": [
+        "tui.banner"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::EmptyStateView",
+      "category": "component",
+      "components": [
+        "tui.empty-state"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::FieldLayout",
+      "category": "component-support",
+      "components": [
+        "tui.field"
+      ],
+      "reason": "Field label/control/message geometry and presentation metadata."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::FieldPresentation",
+      "category": "component-support",
+      "components": [
+        "tui.field"
+      ],
+      "reason": "Field label/control/message geometry and presentation metadata."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::FieldView",
+      "category": "component",
+      "components": [
+        "tui.field"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::NumberFieldEvent",
+      "category": "component-support",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Number-field event output and layout result."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::NumberFieldLayout",
+      "category": "component-support",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Number-field event output and layout result."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::NumberFieldView",
+      "category": "component",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::OverlayEvent",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared overlay lifecycle and measured View geometry; not independent overlay controls."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::OverlayLayout",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared overlay lifecycle and measured View geometry; not independent overlay controls."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::PopoverView",
+      "category": "component",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::ProgressView",
+      "category": "component",
+      "components": [
+        "tui.progress"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::SkeletonView",
+      "category": "component",
+      "components": [
+        "tui.skeleton"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::StatusBadgeView",
+      "category": "component",
+      "components": [
+        "tui.status-badge"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::SurfaceView",
+      "category": "component",
+      "components": [
+        "tui.surface"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::ToastView",
+      "category": "component",
+      "components": [
+        "tui.toast"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::ToolbarView",
+      "category": "component",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::TooltipEvent",
+      "category": "component-support",
+      "components": [
+        "tui.tooltip"
+      ],
+      "reason": "Tooltip lifecycle event output."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::TooltipView",
+      "category": "component",
+      "components": [
+        "tui.tooltip"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::ViewLayout",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared overlay lifecycle and measured View geometry; not independent overlay controls."
+    },
+    {
+      "api": "tekes_ui_controls::layout::AlignedChild",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout constraints, measurement and geometry; root re-exports preserve the same implementation where applicable."
+    },
+    {
+      "api": "tekes_ui_controls::layout::AlignmentOverride",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout constraints, measurement and geometry; root re-exports preserve the same implementation where applicable."
+    },
+    {
+      "api": "tekes_ui_controls::layout::ContainerLayout",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout constraints, measurement and geometry; root re-exports preserve the same implementation where applicable."
+    },
+    {
+      "api": "tekes_ui_controls::layout::Insets",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout constraints, measurement and geometry; root re-exports preserve the same implementation where applicable."
+    },
+    {
+      "api": "tekes_ui_controls::layout::MeasuredChild",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout constraints, measurement and geometry; root re-exports preserve the same implementation where applicable."
+    },
+    {
+      "api": "tekes_ui_controls::layout::ScrollGeometry",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared layout constraints, measurement and geometry; root re-exports preserve the same implementation where applicable."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::BreadcrumbLayout",
+      "category": "component-support",
+      "components": [
+        "tui.breadcrumb"
+      ],
+      "reason": "Component-specific layout result or host painting interface, not a standalone control."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::BreadcrumbView",
+      "category": "component",
+      "components": [
+        "tui.breadcrumb"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::ButtonComponentLayout",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared action layout, event output and child measurement input used by multiple production Views."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::ComboBoxView",
+      "category": "component",
+      "components": [
+        "tui.combo-box"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::CommandPaletteView",
+      "category": "component",
+      "components": [
+        "tui.command-palette"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::ComponentEvent",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared action layout, event output and child measurement input used by multiple production Views."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::DisclosureBodyLayout",
+      "category": "component-support",
+      "components": [
+        "tui.disclosure"
+      ],
+      "reason": "Component-specific layout result or host painting interface, not a standalone control."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::DisclosureView",
+      "category": "component",
+      "components": [
+        "tui.disclosure"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::FilteredMenuView",
+      "category": "component-support",
+      "components": [
+        "tui.select",
+        "tui.combo-box",
+        "tui.command-palette"
+      ],
+      "reason": "Reusable filtered-menu runtime owned by Select/ComboBox/CommandPalette Views; explicitly public implementation helper, not a distinct semantic component."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::GridView",
+      "category": "component",
+      "components": [
+        "tui.grid"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::IconButtonView",
+      "category": "component",
+      "components": [
+        "tui.icon-button"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::IconLayout",
+      "category": "component-support",
+      "components": [
+        "tui.icon"
+      ],
+      "reason": "Component-specific layout result or host painting interface, not a standalone control."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::IconRenderer",
+      "category": "component-support",
+      "components": [
+        "tui.icon"
+      ],
+      "reason": "Component-specific layout result or host painting interface, not a standalone control."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::IconView",
+      "category": "component",
+      "components": [
+        "tui.icon"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::LayoutItems",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared action layout, event output and child measurement input used by multiple production Views."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::LinkView",
+      "category": "component",
+      "components": [
+        "tui.link"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::SegmentedControlView",
+      "category": "component",
+      "components": [
+        "tui.segmented-control"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::SegmentedLayout",
+      "category": "component-support",
+      "components": [
+        "tui.segmented-control"
+      ],
+      "reason": "Component-specific layout result or host painting interface, not a standalone control."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::SelectLayout",
+      "category": "component-support",
+      "components": [
+        "tui.select"
+      ],
+      "reason": "Component-specific layout result or host painting interface, not a standalone control."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::SelectView",
+      "category": "component",
+      "components": [
+        "tui.select"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::SeparatorLayout",
+      "category": "component-support",
+      "components": [
+        "tui.separator"
+      ],
+      "reason": "Component-specific layout result or host painting interface, not a standalone control."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::SeparatorView",
+      "category": "component",
+      "components": [
+        "tui.separator"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::SplitViewLayout",
+      "category": "component-support",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Component-specific layout result or host painting interface, not a standalone control."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::SplitViewView",
+      "category": "component",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::layout_view::StackView",
+      "category": "component",
+      "components": [
+        "tui.stack"
+      ],
+      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::paint::ButtonVariant",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared semantic paint configuration; these values do not own layout, events or state."
+    },
+    {
+      "api": "tekes_ui_controls::paint::SurfaceKind",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared semantic paint configuration; these values do not own layout, events or state."
+    }
+  ],
+  "type_free_includes": [
+    {
+      "source": "crates/tekes-ui-controls/src/scroll_view.rs",
+      "statement": "include!(concat!(env!(\"OUT_DIR\"), \"/scroll_tokens.rs\"));",
+      "generator": "crates/tekes-ui-controls/build.rs",
+      "generator_sha256": "561c2afc5e6911039bc7d385847c2e4bd262cf7bc79c0f944f5da66698a747ab",
+      "reason": "Reviewed build script emits seven private numeric scroll constants only. Any generator change requires renewed review; no public types are emitted."
+    }
+  ]
+}

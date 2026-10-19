@@ -64,6 +64,51 @@ pub enum Action {
     /// Text-service bridge smoke tests; preedit is synthetic, not a physical IME session.
     Text(String),
     Preedit(String),
+    /// Exact UTF-16 ranges through NSTextInputClient, not a physical IME.
+    TextRange {
+        text: String,
+        replacement: Option<std::ops::Range<usize>>,
+    },
+    PreeditRange {
+        text: String,
+        selection: std::ops::Range<usize>,
+        replacement: Option<std::ops::Range<usize>>,
+    },
+    Unmark,
+    ExpectTextState {
+        text: String,
+        selection: std::ops::Range<usize>,
+        marked: Option<std::ops::Range<usize>>,
+        query: std::ops::Range<usize>,
+        actual: std::ops::Range<usize>,
+    },
+    ExpectNoText,
+    ExpectTextRect {
+        range: std::ops::Range<usize>,
+        actual: std::ops::Range<usize>,
+        nonzero_width: bool,
+    },
+    /// Invoke the real NSAccessibility selectors on a published native element.
+    AXSelect {
+        component: u64,
+        range: std::ops::Range<usize>,
+    },
+    AXReplace {
+        component: u64,
+        text: String,
+    },
+    ExpectAXText {
+        component: u64,
+        text: String,
+        selection: std::ops::Range<usize>,
+        selected: String,
+        query: std::ops::Range<usize>,
+        substring: Option<String>,
+    },
+    /// Read AppKit's advertised legacy AX attributes for a real published owner.
+    /// This audits protocol reachability, not VoiceOver speech or interaction.
+    AuditAXText(u64),
+    ExpectAXMissing(u64),
     TextCommand(&'static str),
     ExpectText {
         text: String,
@@ -153,6 +198,131 @@ extern "C" fn run_step(ctx: *mut c_void) {
     };
     eprintln!("selftest: {action:?}");
     match action {
+        Action::AXSelect { .. }
+        | Action::AXReplace { .. }
+        | Action::ExpectAXText { .. }
+        | Action::AuditAXText(_)
+        | Action::ExpectAXMissing(_) => {
+            use objc2::{DefinedClass, msg_send};
+            use objc2_foundation::NSRange;
+            let content = w.contentView().expect("selftest content");
+            let view = content
+                .downcast_ref::<crate::view::TekesView>()
+                .expect("TekesView");
+            let component = match &action {
+                Action::AXSelect { component, .. }
+                | Action::AXReplace { component, .. }
+                | Action::ExpectAXText { component, .. } => *component,
+                Action::AuditAXText(component) | Action::ExpectAXMissing(component) => *component,
+                _ => unreachable!(),
+            };
+            let element = view
+                .ivars()
+                .shared
+                .accessibility_elements
+                .borrow()
+                .get(&crate::AccessibilityKey {
+                    component,
+                    part: None,
+                })
+                .cloned();
+            if matches!(action, Action::ExpectAXMissing(_)) {
+                assert!(element.is_none(), "closed AX element remains published");
+                eprintln!("SELFTEST PASS AX closed owner removed");
+                return;
+            }
+            let element = element.expect("native AX text element");
+            match action {
+                Action::AuditAXText(_) => unsafe {
+                    use objc2::{rc::Retained, sel};
+                    use objc2_foundation::{NSArray, NSAttributedString, NSValue};
+                    let role: Retained<NSString> = msg_send![&*element, accessibilityRole];
+                    let selected: NSRange = msg_send![&*element, accessibilitySelectedTextRange];
+                    let selections: Option<Retained<NSArray<NSValue>>> =
+                        msg_send![&*element, accessibilitySelectedTextRanges];
+                    let selections = selections.expect("text selection array");
+                    assert_eq!(selections.count(), 1);
+                    assert_eq!(selections.firstObject().unwrap().rangeValue(), selected);
+                    let visible: NSRange = msg_send![&*element, accessibilityVisibleCharacterRange];
+                    assert_ne!(visible.location, isize::MAX as usize);
+                    let first: NSRange = msg_send![&*element, accessibilityRangeForLine:0isize];
+                    assert_eq!(first.location, 0);
+                    let character: NSRange =
+                        msg_send![&*element, accessibilityRangeForIndex:0isize];
+                    assert_eq!(character.location, 0);
+                    let fragment: Option<Retained<NSAttributedString>> =
+                        msg_send![&*element, accessibilityAttributedStringForRange:character];
+                    assert!(fragment.is_some());
+                    let frame: objc2_foundation::NSRect =
+                        msg_send![&*element, accessibilityFrameForRange:character];
+                    assert!(frame.size.height > 0.);
+                    for selector in [
+                        sel!(accessibilityRangeForIndex:),
+                        sel!(accessibilityRangeForPosition:),
+                        sel!(accessibilityVisibleCharacterRange),
+                        sel!(accessibilitySelectedTextRanges),
+                        sel!(setAccessibilitySelectedTextRanges:),
+                        sel!(setAccessibilityFocused:),
+                    ] {
+                        let allowed: objc2::runtime::Bool =
+                            msg_send![&*element, isAccessibilitySelectorAllowed:selector];
+                        assert!(allowed.as_bool(), "text selector blocked: {selector:?}");
+                    }
+                    let ax_window: Option<Retained<objc2::runtime::AnyObject>> =
+                        msg_send![&*element, accessibilityWindow];
+                    let ax_top: Option<Retained<objc2::runtime::AnyObject>> =
+                        msg_send![&*element, accessibilityTopLevelUIElement];
+                    let expected = (&*w as *const NSWindow).cast::<objc2::runtime::AnyObject>();
+                    let window_matches = ax_window
+                        .as_ref()
+                        .is_some_and(|v| std::ptr::eq(&**v, expected));
+                    let top_matches = ax_top
+                        .as_ref()
+                        .is_some_and(|v| std::ptr::eq(&**v, expected));
+                    eprintln!(
+                        "AX_WINDOW_RELATION component={component} window_matches={window_matches} top_matches={top_matches}"
+                    );
+                    let focused: bool = msg_send![&*element, isAccessibilityFocused];
+                    eprintln!(
+                        "AX_MODERN_PASS component={component} role={role} focused={focused} selected={selected:?} visible={visible:?} first={first:?} character={character:?} frame={frame:?}; not VoiceOver speech acceptance"
+                    );
+                },
+                Action::AXSelect { range, .. } => unsafe {
+                    let _: () = msg_send![&*element, setAccessibilitySelectedTextRange: NSRange::new(range.start, range.end - range.start)];
+                },
+                Action::AXReplace { text, .. } => unsafe {
+                    let _: () = msg_send![&*element, setAccessibilitySelectedText: &*NSString::from_str(&text)];
+                },
+                Action::ExpectAXText {
+                    text,
+                    selection,
+                    selected,
+                    query,
+                    substring,
+                    ..
+                } => unsafe {
+                    let count: isize = msg_send![&*element, accessibilityNumberOfCharacters];
+                    let actual: NSRange = msg_send![&*element, accessibilitySelectedTextRange];
+                    let value: objc2::rc::Retained<NSString> =
+                        msg_send![&*element, accessibilityValue];
+                    let selected_text: Option<objc2::rc::Retained<NSString>> =
+                        msg_send![&*element, accessibilitySelectedText];
+                    let sub: Option<objc2::rc::Retained<NSString>> = msg_send![&*element, accessibilityStringForRange: NSRange::new(query.start, query.end - query.start)];
+                    assert_eq!(count as usize, text.encode_utf16().count());
+                    assert_eq!(value.to_string(), text);
+                    assert_eq!(
+                        actual,
+                        NSRange::new(selection.start, selection.end - selection.start)
+                    );
+                    assert_eq!(selected_text.map(|s| s.to_string()), Some(selected));
+                    assert_eq!(sub.map(|s| s.to_string()), substring);
+                    eprintln!(
+                        "SELFTEST PASS AX text={text:?} selection={selection:?} query={query:?}"
+                    );
+                },
+                _ => unreachable!(),
+            }
+        }
         Action::Resize { w: nw, h: nh } => w.setContentSize(NSSize::new(nw, nh)),
         Action::BeginLiveResize => w
             .contentView()
@@ -198,6 +368,12 @@ extern "C" fn run_step(ctx: *mut c_void) {
             }
         }
         Action::Text(_)
+        | Action::TextRange { .. }
+        | Action::PreeditRange { .. }
+        | Action::Unmark
+        | Action::ExpectTextState { .. }
+        | Action::ExpectNoText
+        | Action::ExpectTextRect { .. }
         | Action::Preedit(_)
         | Action::TextCommand(_)
         | Action::ExpectText { .. } => {
@@ -208,6 +384,135 @@ extern "C" fn run_step(ctx: *mut c_void) {
                 .downcast_ref::<crate::view::TekesView>()
                 .expect("TekesView");
             match action {
+                Action::ExpectTextRect {
+                    range,
+                    actual,
+                    nonzero_width,
+                } => {
+                    let mut covered = NSRange::new(isize::MAX as usize, 0);
+                    let rect = unsafe {
+                        view.firstRectForCharacterRange_actualRange(
+                            NSRange::new(range.start, range.end - range.start),
+                            &mut covered,
+                        )
+                    };
+                    assert_eq!(
+                        covered,
+                        NSRange::new(actual.start, actual.end - actual.start)
+                    );
+                    assert!(
+                        rect.origin.x.is_finite()
+                            && rect.origin.y.is_finite()
+                            && rect.size.height > 0.
+                    );
+                    assert_eq!(rect.size.width > 0., nonzero_width);
+                    eprintln!(
+                        "SELFTEST PASS native range rect={range:?} actual={actual:?} rect={rect:?}"
+                    );
+                }
+                Action::TextRange { text, replacement } => unsafe {
+                    let range = replacement.map_or(NSRange::new(isize::MAX as usize, 0), |r| {
+                        NSRange::new(r.start, r.end.saturating_sub(r.start))
+                    });
+                    view.insertText_replacementRange(&NSString::from_str(&text), range);
+                },
+                Action::PreeditRange {
+                    text,
+                    selection,
+                    replacement,
+                } => unsafe {
+                    let range = replacement.map_or(NSRange::new(isize::MAX as usize, 0), |r| {
+                        NSRange::new(r.start, r.end.saturating_sub(r.start))
+                    });
+                    view.setMarkedText_selectedRange_replacementRange(
+                        &NSString::from_str(&text),
+                        NSRange::new(
+                            selection.start,
+                            selection.end.saturating_sub(selection.start),
+                        ),
+                        range,
+                    );
+                },
+                Action::Unmark => view.unmarkText(),
+                Action::ExpectNoText => {
+                    let range = view.selectedRange();
+                    assert_eq!(
+                        range.location,
+                        isize::MAX as usize,
+                        "closed dialog must unpublish text input state"
+                    );
+                    assert!(!view.hasMarkedText());
+                    eprintln!("SELFTEST PASS closed text owner is unpublished");
+                }
+                Action::ExpectTextState {
+                    text,
+                    selection,
+                    marked,
+                    query,
+                    actual,
+                } => {
+                    let selected = view.selectedRange();
+                    let native_marked = view.markedRange();
+                    assert_eq!(
+                        selected,
+                        NSRange::new(selection.start, selection.end - selection.start)
+                    );
+                    assert_eq!(
+                        native_marked,
+                        marked
+                            .as_ref()
+                            .map_or(NSRange::new(isize::MAX as usize, 0), |r| NSRange::new(
+                                r.start,
+                                r.end - r.start
+                            ))
+                    );
+                    let complete = unsafe {
+                        view.attributedSubstringForProposedRange_actualRange(
+                            NSRange::new(0, usize::MAX),
+                            std::ptr::null_mut(),
+                        )
+                    }
+                    .expect("active text query")
+                    .string()
+                    .to_string();
+                    assert_eq!(complete, text);
+                    let mut actual_range = NSRange::new(0, 0);
+                    let partial = unsafe {
+                        view.attributedSubstringForProposedRange_actualRange(
+                            NSRange::new(query.start, query.end - query.start),
+                            &mut actual_range,
+                        )
+                    }
+                    .expect("query slice")
+                    .string()
+                    .to_string();
+                    assert_eq!(
+                        actual_range,
+                        NSRange::new(actual.start, actual.end - actual.start)
+                    );
+                    assert_eq!(
+                        partial,
+                        String::from_utf16_lossy(
+                            &text.encode_utf16().collect::<Vec<_>>()[actual.clone()]
+                        )
+                    );
+                    let rect = unsafe {
+                        view.firstRectForCharacterRange_actualRange(selected, std::ptr::null_mut())
+                    };
+                    assert!(
+                        rect.origin.x.is_finite()
+                            && rect.origin.y.is_finite()
+                            && rect.size.height > 0.
+                    );
+                    let index = view.characterIndexForPoint(NSPoint::new(
+                        rect.origin.x,
+                        rect.origin.y + rect.size.height * 0.5,
+                    ));
+                    assert!(index <= text.encode_utf16().count());
+                    eprintln!(
+                        "SELFTEST PASS exact UTF16 text={text:?} selection={selection:?} marked={marked:?} query={query:?} actual={actual:?} candidate={rect:?} hit={index}"
+                    );
+                }
                 Action::Text(text) => unsafe {
                     view.insertText_replacementRange(
                         &NSString::from_str(&text),

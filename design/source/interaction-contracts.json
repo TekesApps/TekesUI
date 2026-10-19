@@ -51,6 +51,51 @@
     "OCUI-06",
     "OCUI-07"
   ],
+  "text_surface": {
+    "acceptance": "public state/transactions, real Gallery and independent consumer, GPU comparison, and physical/native experience are separate evidence",
+    "applies_to": [
+      "tui.text-field",
+      "tui.text-area",
+      "tui.search-field"
+    ],
+    "host": "pass the current pointer position to TextSurface.pointer_state; None means no hover. Host owns focus/cursor routing. Before disabling, blur, deactivation or unmount call existing cancel_interaction; disabled projection always suppresses hover/pressed immediately.",
+    "hover": {
+      "disabled": false,
+      "hit_region": "visible frame including padding, intersected with ancestor clip",
+      "mutates_editor": false,
+      "presentation": "preserve-input-surface",
+      "read_only": true
+    },
+    "ime": "hover leaves marked text and selection unchanged; accepted pointer_down retains existing unmark transaction; cancellation releases capture without rolling back the visible selection or draft",
+    "presentation": {
+      "boundary_role": "required-input",
+      "error_boundary_role": "error",
+      "fill": "transcript-input",
+      "focus": "independent existing neutral focus ring",
+      "hover_pressed_overrides": false,
+      "motion": "none; no Button wash, tint, border substitution, scaling or press animation",
+      "radius": "radius-input",
+      "read_only_fill": "surface-1",
+      "selected_text": "selected-text",
+      "selection": "text-selection",
+      "stroke": "stroke-rule"
+    },
+    "pressed": {
+      "activation": "no Button-style release activation; caret/selection/scroll feedback only",
+      "begin": "accepted primary pointer_down for caret placement, text selection or scrollbar drag",
+      "end": [
+        "pointer_up",
+        "cancel_interaction",
+        "blur",
+        "window deactivation",
+        "disable with cancellation"
+      ],
+      "outside_capture": "pressed remains true while captured even outside hover region",
+      "presentation": "preserve-input-surface",
+      "read_only": true
+    },
+    "state_source": "derive ControlState from current visible hit geometry, TextInput.disabled, and the existing pointer capture; no retained hover state or second press state machine"
+  },
   "time_unit": "seconds",
   "unit": "logical-pt",
   "version": "0.2.0-proposal.1"

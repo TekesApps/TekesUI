@@ -1,0 +1,2970 @@
+{
+  "format": "tekesui-component-coverage/1",
+  "policy": "Account for every required state from the existing authoritative package; this ledger does not redefine profiles or certify runtime/native experience. New current-only components reuse an existing profile with explicit semantic exceptions. Fixture evidence is source-reviewed only.",
+  "components": [
+    {
+      "id": "tui.stack",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.grid",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.separator",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.split-view",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "hover",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "pressed",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "focus",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "disabled",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "dragging",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.scroll-area",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "hover",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "pressed",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "focus",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "disabled",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "scrolling",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "at-start",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "at-end",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.disclosure",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"disclosure\" => vec![",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"disclosure\" => vec![",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"disclosure\" => vec![",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"disclosure\" => vec![",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"disclosure\" => vec![",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "expanded",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"disclosure\" => vec![",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "loading",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Real caller-owned public composition, distinct content status and header focus; scoped API evidence, no builtin adapter/default Gallery migration/native AX claim.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs",
+            "anchor": "pub(crate) const CASES:",
+            "story": "states",
+            "note": "Actual independent consumer appears in existing States routes for tests and explicit composition-review build.Uses public Progress/Banner/EmptyState and retained input/active contract; default Gallery remains unchanged."
+          }
+        },
+        {
+          "state": "error",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Real caller-owned public composition, distinct content status and header focus; scoped API evidence, no builtin adapter/default Gallery migration/native AX claim.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs",
+            "anchor": "pub(crate) const CASES:",
+            "story": "states",
+            "note": "Actual independent consumer appears in existing States routes for tests and explicit composition-review build.Uses public Progress/Banner/EmptyState and retained input/active contract; default Gallery remains unchanged."
+          }
+        },
+        {
+          "state": "empty",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Real caller-owned public composition, distinct content status and header focus; scoped API evidence, no builtin adapter/default Gallery migration/native AX claim.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs",
+            "anchor": "pub(crate) const CASES:",
+            "story": "states",
+            "note": "Actual independent consumer appears in existing States routes for tests and explicit composition-review build.Uses public Progress/Banner/EmptyState and retained input/active contract; default Gallery remains unchanged."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/content-status.json"
+    },
+    {
+      "id": "tui.surface",
+      "profile": "static",
+      "profile_reason": "SurfaceView owns semantic surface painting, not independent interaction; child controls own their states.",
+      "profile_exceptions": {},
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.toolbar",
+      "profile": "button",
+      "profile_reason": "Reuse existing action state vocabulary for the current grouped-action Toolbar, not window-level Toolbar.",
+      "profile_exceptions": {
+        "loading": "The action-group Toolbar is not an independently activatable action; busy state belongs to its child actions. Existing basic_states fixture explicitly excludes a group loading state."
+      },
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs",
+            "anchor": "ToolbarState::Default",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs",
+            "anchor": "ToolbarState::Hover",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs",
+            "anchor": "ToolbarState::Pressed",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs",
+            "anchor": "ToolbarState::FocusVisible",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs",
+            "anchor": "ToolbarState::Disabled",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        }
+      ]
+    },
+    {
+      "id": "tui.text",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.icon",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.button",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "(\"default\", ControlState::default())",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          },
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified."
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"hover\",\n                ControlState {",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          },
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified."
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"pressed\",\n                ControlState {",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          },
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified."
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"focus-visible\",\n                ControlState {",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          },
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified."
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"disabled\",\n                ControlState {",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          },
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified."
+        },
+        {
+          "state": "loading",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"loading\" => e.renderer() == \"button\"",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          },
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified."
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/action.json"
+    },
+    {
+      "id": "tui.icon-button",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"icon-button\" => vec![",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"icon-button\" => vec![",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"icon-button\" => vec![",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"icon-button\" => vec![",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"icon-button\" => vec![",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "loading",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"icon-button\" => vec![",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/action.json"
+    },
+    {
+      "id": "tui.link",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"link\" => vec![",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"link\" => vec![",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"link\" => vec![",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"link\" => vec![",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"link\" => vec![",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/action.json"
+    },
+    {
+      "id": "tui.text-field",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "(\"default\", ControlState::default())",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);",
+            "story": "states",
+            "note": "Shared TextSurface pointer_state derives visible hit and existing selection/scroll capture; hover/pressed preserve input skin. Real pointer-down fixture, API and GPU evidence are separate from physical/native acceptance."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);",
+            "story": "states",
+            "note": "Shared TextSurface pointer_state derives visible hit and existing selection/scroll capture; hover/pressed preserve input skin. Real pointer-down fixture, API and GPU evidence are separate from physical/native acceptance."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"focus-visible\",\n                ControlState {",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"disabled\",\n                ControlState {",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "error",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "[\"field\", \"area\", \"search\", \"field-meta\"].contains(&e.renderer())",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "read-only",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_state_fixture(name);",
+            "story": "states",
+            "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
+          }
+        },
+        {
+          "state": "composing",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_state_fixture(name);",
+            "story": "states",
+            "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
+          }
+        },
+        {
+          "state": "selection",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_state_fixture(name);",
+            "story": "states",
+            "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/input.json"
+    },
+    {
+      "id": "tui.text-area",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "(\"default\", ControlState::default())",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);",
+            "story": "states",
+            "note": "Shared TextSurface pointer_state derives visible hit and existing selection/scroll capture; hover/pressed preserve input skin. Real pointer-down fixture, API and GPU evidence are separate from physical/native acceptance."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);",
+            "story": "states",
+            "note": "Shared TextSurface pointer_state derives visible hit and existing selection/scroll capture; hover/pressed preserve input skin. Real pointer-down fixture, API and GPU evidence are separate from physical/native acceptance."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"focus-visible\",\n                ControlState {",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"disabled\",\n                ControlState {",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "error",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "[\"field\", \"area\", \"search\", \"field-meta\"].contains(&e.renderer())",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "read-only",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_state_fixture(name);",
+            "story": "states",
+            "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
+          }
+        },
+        {
+          "state": "composing",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_state_fixture(name);",
+            "story": "states",
+            "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
+          }
+        },
+        {
+          "state": "selection",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_state_fixture(name);",
+            "story": "states",
+            "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
+          }
+        }
+      ],
+      "token_contract": {
+        "owner": "tui.text-field",
+        "reason": "These input variants already share the public TextSurface editor and input boundary roles. Reuse the existing text-field JSON contract as a partial family reference; this does not assert complete per-variant runtime dependencies."
+      },
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/input.json"
+    },
+    {
+      "id": "tui.search-field",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "(\"default\", ControlState::default())",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);",
+            "story": "states",
+            "note": "Shared TextSurface pointer_state derives visible hit and existing selection/scroll capture; hover/pressed preserve input skin. Real pointer-down fixture, API and GPU evidence are separate from physical/native acceptance."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);",
+            "story": "states",
+            "note": "Shared TextSurface pointer_state derives visible hit and existing selection/scroll capture; hover/pressed preserve input skin. Real pointer-down fixture, API and GPU evidence are separate from physical/native acceptance."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"focus-visible\",\n                ControlState {",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"disabled\",\n                ControlState {",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "error",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "[\"field\", \"area\", \"search\", \"field-meta\"].contains(&e.renderer())",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "read-only",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_state_fixture(name);",
+            "story": "states",
+            "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
+          }
+        },
+        {
+          "state": "composing",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_state_fixture(name);",
+            "story": "states",
+            "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
+          }
+        },
+        {
+          "state": "selection",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "input.prepare_input_state_fixture(name);",
+            "story": "states",
+            "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
+          }
+        }
+      ],
+      "token_contract": {
+        "owner": "tui.text-field",
+        "reason": "These input variants already share the public TextSurface editor and input boundary roles. Reuse the existing text-field JSON contract as a partial family reference; this does not assert complete per-variant runtime dependencies."
+      },
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/input.json"
+    },
+    {
+      "id": "tui.combo-box",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn combo_box(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn combo_box(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn combo_box(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn combo_box(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn combo_box(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "selected",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn combo_box(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "loading",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Independent retained query refresh reuses original TextFieldContent/ComboBoxView and existing Progress/Banner. IME/draft/selection/focus/value/candidate retained for status-only updates; async failure distinct from field validation; four themes/three brands. Live native async/motion/AX incomplete.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn combo_box(",
+            "story": "states",
+            "note": "Measured independent caller with real original components mounted through ContentHost; composition-review/test gated; no new async runtime protocol or token."
+          }
+        },
+        {
+          "state": "error",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Independent retained query refresh reuses original TextFieldContent/ComboBoxView and existing Progress/Banner. IME/draft/selection/focus/value/candidate retained for status-only updates; async failure distinct from field validation; four themes/three brands. Live native async/motion/AX incomplete.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn combo_box(",
+            "story": "states",
+            "note": "Measured independent caller with real original components mounted through ContentHost; composition-review/test gated; no new async runtime protocol or token."
+          }
+        },
+        {
+          "state": "open",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn combo_box(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "empty",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn combo_box(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/combo-async.json"
+    },
+    {
+      "id": "tui.slider",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Original SliderView plus public SliderContent in independent ContentHost; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"slider\" => vec![",
+            "story": "states",
+            "note": "Original View state matrix plus composition-review/test public SliderContent specimen; independent consumer confirms original model/view and retained Content IDs. Native AX acceptance separate."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Original SliderView plus public SliderContent in independent ContentHost; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"slider\" => vec![",
+            "story": "states",
+            "note": "Original View state matrix plus composition-review/test public SliderContent specimen; independent consumer confirms original model/view and retained Content IDs. Native AX acceptance separate."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Original SliderView plus public SliderContent in independent ContentHost; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"slider\" => vec![",
+            "story": "states",
+            "note": "Original View state matrix plus composition-review/test public SliderContent specimen; independent consumer confirms original model/view and retained Content IDs. Native AX acceptance separate."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Original SliderView plus public SliderContent in independent ContentHost; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"slider\" => vec![",
+            "story": "states",
+            "note": "Original View state matrix plus composition-review/test public SliderContent specimen; independent consumer confirms original model/view and retained Content IDs. Native AX acceptance separate."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Original SliderView plus public SliderContent in independent ContentHost; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"slider\" => vec![",
+            "story": "states",
+            "note": "Original View state matrix plus composition-review/test public SliderContent specimen; independent consumer confirms original model/view and retained Content IDs. Native AX acceptance separate."
+          }
+        },
+        {
+          "state": "dragging",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Original SliderView plus public SliderContent in independent ContentHost; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "\"slider\" => vec![",
+            "story": "states",
+            "note": "Original View state matrix plus composition-review/test public SliderContent specimen; independent consumer confirms original model/view and retained Content IDs. Native AX acceptance separate."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/slider-composition.json"
+    },
+    {
+      "id": "tui.checkbox",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "(\"Unchecked\", ControlState::default(), CheckState::Unchecked)",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "Unchecked · hover",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "Unchecked · pressed",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "Unchecked · focus-visible",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "Unchecked · disabled",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "checked",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "(\"Checked\", ControlState::default(), CheckState::Checked)",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "error",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "Unchecked · error + focus-visible",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "mixed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "(\"Indeterminate\", ControlState::default(), CheckState::Mixed)",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/selection.json"
+    },
+    {
+      "id": "tui.radio-group",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Checked · default",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Checked · hover",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Checked · pressed",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Checked · focus-visible",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Checked · disabled",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "checked",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Checked · default",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "error",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Unchecked · error + focus-visible",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/selection.json"
+    },
+    {
+      "id": "tui.switch",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Checked · default",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Checked · hover",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Checked · pressed",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Checked · focus-visible",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Checked · disabled",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "checked",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Checked · default",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        },
+        {
+          "state": "error",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Unchecked · error + focus-visible",
+            "story": "states",
+            "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/selection.json"
+    },
+    {
+      "id": "tui.segmented-control",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Selected · default",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Selected · hover",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Selected · pressed",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Selected · focus-visible",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Disabled · all segments",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        },
+        {
+          "state": "selected",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+            "anchor": "Selected · alternate",
+            "story": "states",
+            "note": "Reviewed the specific real production-view state fixture and event/controlled-value setup. Per-state source review is not native input/focus acceptance."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/action.json"
+    },
+    {
+      "id": "tui.field",
+      "profile": "input",
+      "profile_reason": "Reuse input presentation states; Field is label/control/message composition, not an editor.",
+      "profile_exceptions": {
+        "hover": "FieldView owns label/help/error presentation; editor interaction is delegated to its input child, not a second editor state machine.",
+        "pressed": "FieldView owns label/help/error presentation; editor interaction is delegated to its input child, not a second editor state machine.",
+        "focus": "FieldView owns label/help/error presentation; editor interaction is delegated to its input child, not a second editor state machine.",
+        "read-only": "FieldView owns label/help/error presentation; editor interaction is delegated to its input child, not a second editor state machine.",
+        "composing": "FieldView owns label/help/error presentation; editor interaction is delegated to its input child, not a second editor state machine.",
+        "selection": "FieldView owns label/help/error presentation; editor interaction is delegated to its input child, not a second editor state machine."
+      },
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "(\"default\", ControlState::default())",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"disabled\",\n                ControlState {",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "error",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "[\"field\", \"area\", \"search\", \"field-meta\"].contains(&e.renderer())",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        }
+      ]
+    },
+    {
+      "id": "tui.select",
+      "profile": "choice",
+      "profile_reason": "Fixed-option Select reuses the existing choice/open selection contract; editable text remains ComboBox.",
+      "profile_exceptions": {},
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn select(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn select(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn select(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn select(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn select(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "selected",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn select(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "loading",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Independent caller background refresh with cached options: original SelectView split paint, ContentHost/Stack and shared Progress/Banner; retains selected value/focus/candidate; async failure differs from validation. Four themes/three brands. Live native async interaction and full motion remain unverified. Gallery consumer specimens are explicitly composition-review/test gated; default Gallery states do not include this experimental caller integration.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn select(",
+            "story": "states",
+            "note": "Measured independent public Select consumer for loading and refresh failure; real original View mounted through Component/ContentHost; no new runtime status or token. Explicit composition-review/test gate reuses existing consumer review boundary."
+          }
+        },
+        {
+          "state": "error",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Original SelectView: empty options cancel popup/press without inventing a value; validation error projects existing shared boundary and permits repair. Four themes/three brands; async content failure/loading and full experience remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn select(",
+            "story": "states",
+            "note": "Measured original View specimens; empty set has caller caption and no popup; validation uses original SelectView.set_error. No new tokens/status protocol or placeholder fake option."
+          }
+        },
+        {
+          "state": "open",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn select(",
+            "story": "states",
+            "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
+          }
+        },
+        {
+          "state": "empty",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Original SelectView: empty options cancel popup/press without inventing a value; validation error projects existing shared boundary and permits repair. Four themes/three brands; async content failure/loading and full experience remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn select(",
+            "story": "states",
+            "note": "Measured original View specimens; empty set has caller caption and no popup; validation uses original SelectView.set_error. No new tokens/status protocol or placeholder fake option."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/combo-async.json"
+    },
+    {
+      "id": "tui.number-field",
+      "profile": "split",
+      "profile_reason": "Reuse existing pointer/focus/disabled vocabulary; minimum/maximum fixture cases are bound constraints, not new state profiles.",
+      "profile_exceptions": {
+        "dragging": "The existing NumberField is a bounded +/- stepper, not a draggable splitter or editable numeric field."
+      },
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs",
+            "anchor": "NumberState::Default",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs",
+            "anchor": "NumberState::Hover",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs",
+            "anchor": "NumberState::Pressed",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs",
+            "anchor": "NumberState::FocusVisible",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs",
+            "anchor": "NumberState::Disabled",
+            "story": "states",
+            "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
+          }
+        }
+      ]
+    },
+    {
+      "id": "tui.tabs",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"Selected tab · hover\",",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"Selected tab · hover\",",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"Selected tab · hover\",",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"Selected tab · hover\",",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"Selected tab · hover\",",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "selected",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "anchor": "\"Selected tab · hover\",",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "loading",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Real caller-owned public composition, distinct content status and header focus; scoped API evidence, no builtin adapter/default Gallery migration/native AX claim.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs",
+            "anchor": "pub(crate) const CASES:",
+            "story": "states",
+            "note": "Actual independent consumer appears in existing States routes for tests and explicit composition-review build.Uses public Progress/Banner/EmptyState and retained input/active contract; default Gallery remains unchanged."
+          }
+        },
+        {
+          "state": "error",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Real caller-owned public composition, distinct content status and header focus; scoped API evidence, no builtin adapter/default Gallery migration/native AX claim.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs",
+            "anchor": "pub(crate) const CASES:",
+            "story": "states",
+            "note": "Actual independent consumer appears in existing States routes for tests and explicit composition-review build.Uses public Progress/Banner/EmptyState and retained input/active contract; default Gallery remains unchanged."
+          }
+        },
+        {
+          "state": "empty",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Real caller-owned public composition, distinct content status and header focus; scoped API evidence, no builtin adapter/default Gallery migration/native AX claim.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs",
+            "anchor": "pub(crate) const CASES:",
+            "story": "states",
+            "note": "Actual independent consumer appears in existing States routes for tests and explicit composition-review build.Uses public Progress/Banner/EmptyState and retained input/active contract; default Gallery remains unchanged."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/content-status.json"
+    },
+    {
+      "id": "tui.breadcrumb",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn breadcrumb(",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn breadcrumb(",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn breadcrumb(",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn breadcrumb(",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn breadcrumb(",
+            "story": "states",
+            "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/content-status.json"
+    },
+    {
+      "id": "tui.command-palette",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Trigger action only: production state and paint asserted across four themes/three brands. Query/candidate/content states and native AX remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn command_palette(",
+            "story": "states",
+            "note": "Closed default/hover/pressed/keyboard focus and disabled specimens invoke the original CommandPaletteView event methods. Open rows focus the query only; whole palette state coverage is not inferred."
+          }
+        },
+        {
+          "state": "hover",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Trigger action only: production state and paint asserted across four themes/three brands. Query/candidate/content states and native AX remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn command_palette(",
+            "story": "states",
+            "note": "Closed default/hover/pressed/keyboard focus and disabled specimens invoke the original CommandPaletteView event methods. Open rows focus the query only; whole palette state coverage is not inferred."
+          }
+        },
+        {
+          "state": "pressed",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Trigger action only: production state and paint asserted across four themes/three brands. Query/candidate/content states and native AX remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn command_palette(",
+            "story": "states",
+            "note": "Closed default/hover/pressed/keyboard focus and disabled specimens invoke the original CommandPaletteView event methods. Open rows focus the query only; whole palette state coverage is not inferred."
+          }
+        },
+        {
+          "state": "focus",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Trigger action only: production state and paint asserted across four themes/three brands. Query/candidate/content states and native AX remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn command_palette(",
+            "story": "states",
+            "note": "Closed default/hover/pressed/keyboard focus and disabled specimens invoke the original CommandPaletteView event methods. Open rows focus the query only; whole palette state coverage is not inferred."
+          }
+        },
+        {
+          "state": "disabled",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Trigger action only: production state and paint asserted across four themes/three brands. Query/candidate/content states and native AX remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn command_palette(",
+            "story": "states",
+            "note": "Closed default/hover/pressed/keyboard focus and disabled specimens invoke the original CommandPaletteView event methods. Open rows focus the query only; whole palette state coverage is not inferred."
+          }
+        },
+        {
+          "state": "selected",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Original CommandPaletteView and caller TextSurface: actual open, empty query with no ghost popup or activation, repeated execution preserves command value but emits each activation; four themes/three brands. Loading/error remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn command_palette(",
+            "story": "states",
+            "note": "Measured original View specimens include selected command after real Down/Enter and caller-owned last-command caption; query/candidate and trigger states remain distinct."
+          }
+        },
+        {
+          "state": "loading",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Independent caller mounts original CommandPaletteView trigger/results and TextFieldContent; existing Status/Progress/Banner; retained and initial-empty command sources; status changes preserve query/IME/selection/candidate; execute/dismiss restore original trigger focus. Four themes/three brands. Native live async/full motion/AX unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn command_palette(",
+            "story": "states",
+            "note": "Measured independent public caller specimens; composition-review/test gated. No new async protocol/token or default Gallery migration."
+          }
+        },
+        {
+          "state": "error",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Independent caller mounts original CommandPaletteView trigger/results and TextFieldContent; existing Status/Progress/Banner; retained and initial-empty command sources; status changes preserve query/IME/selection/candidate; execute/dismiss restore original trigger focus. Four themes/three brands. Native live async/full motion/AX unverified.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn command_palette(",
+            "story": "states",
+            "note": "Measured independent public caller specimens; composition-review/test gated. No new async protocol/token or default Gallery migration."
+          }
+        },
+        {
+          "state": "open",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Original CommandPaletteView and caller TextSurface: actual open, empty query with no ghost popup or activation, repeated execution preserves command value but emits each activation; four themes/three brands. Loading/error remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn command_palette(",
+            "story": "states",
+            "note": "Measured original View specimens include selected command after real Down/Enter and caller-owned last-command caption; query/candidate and trigger states remain distinct."
+          }
+        },
+        {
+          "state": "empty",
+          "fixture": "source-reviewed",
+          "runtime": "public-api-verified",
+          "experience": "unverified",
+          "note": "Original CommandPaletteView and caller TextSurface: actual open, empty query with no ghost popup or activation, repeated execution preserves command value but emits each activation; four themes/three brands. Loading/error remain separate.",
+          "evidence": {
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
+            "anchor": "fn command_palette(",
+            "story": "states",
+            "note": "Measured original View specimens include selected command after real Down/Enter and caller-owned last-command caption; query/candidate and trigger states remain distinct."
+          }
+        }
+      ],
+      "runtime_token_observation": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/command-async.json"
+    },
+    {
+      "id": "tui.list",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "hover",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "pressed",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "focus",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "disabled",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "selected",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "empty",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.tree",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "hover",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "pressed",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "focus",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "disabled",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "selected",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "empty",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "expanded",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.data-table",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "hover",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "pressed",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "focus",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "disabled",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "selected",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "empty",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.chart",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "hover",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "pressed",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "focus",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "selected",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "empty",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.menu",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "hover",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "pressed",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "focus",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "disabled",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "selected",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "open",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "empty",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.tooltip",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "open",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.popover",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "open",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "closing",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.dialog",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "open",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "closing",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.toast",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "success",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "restricted",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.banner",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "success",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "restricted",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.status-badge",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "success",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "unverified",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "cancelled",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.progress",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "success",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "indeterminate",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.empty-state",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "success",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "restricted",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.skeleton",
+      "profile": "static",
+      "profile_reason": "SkeletonView is passive placeholder painting; loading ownership belongs to the host/owning control.",
+      "profile_exceptions": {},
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.markdown",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "hover",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "pressed",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "focus",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "selection",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "empty",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.code-block",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "hover",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "pressed",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "focus",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "selection",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "empty",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    },
+    {
+      "id": "tui.diff-view",
+      "states": [
+        {
+          "state": "rest",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "hover",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "pressed",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "focus",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "loading",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "error",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "selection",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        },
+        {
+          "state": "empty",
+          "fixture": "unverified",
+          "runtime": "unverified",
+          "experience": "unverified",
+          "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
+        }
+      ]
+    }
+  ]
+}

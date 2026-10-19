@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = ["crates/*"]
+exclude = ["examples/composition-consumer"]
 
 [workspace.package]
 # 版本号的唯一权威来源；各 crate 使用 version.workspace = true。

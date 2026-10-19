@@ -223,6 +223,12 @@ impl SplitView {
         self.ratio = next;
         changed
     }
+    /// Restore an even, expanded split and finish any in-flight gesture.
+    pub fn reset(&mut self) -> bool {
+        self.drag = None;
+        let restored = self.collapsed.take().is_some();
+        self.set_ratio(0.5) || restored
+    }
     pub fn collapse(&mut self, pane: Option<Pane>) {
         self.collapsed = pane;
     }
@@ -316,6 +322,7 @@ impl SplitView {
             ControlKey::Home => self.set_ratio(0.05),
             ControlKey::End => self.set_ratio(0.95),
             ControlKey::Escape => self.cancel_drag(),
+            ControlKey::Enter | ControlKey::Space => self.reset(),
             _ => false,
         }
     }
@@ -345,6 +352,9 @@ impl SplitView {
         }
         if usable < 2. * finite_nonnegative(self.min_pane) {
             return false;
+        }
+        if matches!(key, ControlKey::Enter | ControlKey::Space) {
+            return self.reset();
         }
         let min_ratio = self.min_ratio(usable);
         let current_ratio = self.ratio_in(bounds, axis);
@@ -590,6 +600,10 @@ impl Slider {
             disabled: false,
         })
     }
+    /// The original finite bounds; no separate range state is introduced.
+    pub fn range(self) -> std::ops::RangeInclusive<f64> {
+        self.min..=self.max
+    }
     pub fn value(self) -> f64 {
         self.value
     }
@@ -601,7 +615,14 @@ impl Slider {
         if self.max <= self.min {
             0.
         } else {
-            ((self.value - self.min) / (self.max - self.min)).clamp(0., 1.)
+            let span = self.max - self.min;
+            if span.is_finite() {
+                ((self.value - self.min) / span).clamp(0., 1.)
+            } else {
+                // Halving first keeps a range spanning both finite extremes finite.
+                ((self.value * 0.5 - self.min * 0.5) / (self.max * 0.5 - self.min * 0.5))
+                    .clamp(0., 1.)
+            }
         }
     }
     pub fn set(&mut self, value: f64) -> bool {
@@ -623,8 +644,8 @@ impl Slider {
             return false;
         }
         match key {
-            ControlKey::Left | ControlKey::Down => self.set(self.value - self.step),
-            ControlKey::Right | ControlKey::Up => self.set(self.value + self.step),
+            ControlKey::Left | ControlKey::Down => self.set((self.value - self.step).max(self.min)),
+            ControlKey::Right | ControlKey::Up => self.set((self.value + self.step).min(self.max)),
             ControlKey::Home => self.set(self.min),
             ControlKey::End => self.set(self.max),
             _ => false,
@@ -635,7 +656,8 @@ impl Slider {
             return false;
         }
         let t = ((x - track.min_x()) / track.size.width).clamp(0., 1.) as f64;
-        self.set(self.min + (self.max - self.min) * t)
+        // A convex combination avoids overflowing the span for finite endpoints.
+        self.set(self.min * (1. - t) + self.max * t)
     }
 }
 
@@ -707,7 +729,10 @@ impl RadioGroup {
         true
     }
     pub fn key(&mut self, key: ControlKey) -> bool {
-        let Some(cur) = self.selected else {
+        self.key_from(key, self.selected)
+    }
+    pub(crate) fn key_from(&mut self, key: ControlKey, focused: Option<usize>) -> bool {
+        let Some(cur) = focused.filter(|index| self.is_enabled(*index)) else {
             return false;
         };
         let n = self.enabled.len();
@@ -844,7 +869,7 @@ pub struct Breadcrumb {
 }
 impl Breadcrumb {
     pub fn activate(&self, index: usize) -> Option<usize> {
-        (index + 1 < self.items.len()).then_some(index)
+        (index < self.items.len().saturating_sub(1)).then_some(index)
     }
 }
 
@@ -1283,6 +1308,9 @@ pub struct CommandPalette {
 }
 impl CommandPalette {
     pub fn open(&mut self) {
+        if self.combo.disabled {
+            return;
+        }
         self.combo.open = true;
         self.combo.query.clear();
         self.combo.active = self.combo.filtered().first().copied()
@@ -1541,7 +1569,9 @@ pub fn switch_with_state_and_thumb_progress(
     let stroke = proposal::metric("stroke", "stroke-rule").expect("Design System control stroke");
     let boundary = paint_color(
         theme,
-        if state.disabled {
+        if state.error {
+            "status-failed"
+        } else if state.disabled {
             "disabled-text"
         } else {
             "border"
@@ -1574,7 +1604,17 @@ pub fn switch_with_state_and_thumb_progress(
             paint_color(theme, thumb),
         )
         .with_corner_radius(d * 0.5)
-        .with_border(stroke, boundary),
+        .with_border(
+            stroke,
+            paint_color(
+                theme,
+                if state.disabled {
+                    "disabled-text"
+                } else {
+                    "border"
+                },
+            ),
+        ),
     );
     if state.focused && state.focus_visible && !state.disabled {
         focus_outline(scene, rect, theme);
@@ -1632,10 +1672,12 @@ pub fn radio_with_state(
         Quad::new(frame, fill)
             .with_corner_radius(size * 0.5)
             .with_border(
-                1.,
+                proposal::metric("stroke", "stroke-rule").expect("Design System control stroke"),
                 paint_color(
                     theme,
-                    if state.disabled {
+                    if state.error {
+                        "status-failed"
+                    } else if state.disabled {
                         "disabled-text"
                     } else {
                         "border"
@@ -1832,7 +1874,14 @@ fn snap_clamped(value: f64, min: f64, max: f64, step: f64) -> f64 {
     if value >= max {
         return max;
     }
-    min + ((value - min) / step).round() * step
+    let snapped = min + ((value - min) / step).round() * step;
+    if snapped.is_finite() {
+        snapped.clamp(min, max)
+    } else {
+        // Extremely fine steps or wide ranges can overflow intermediate arithmetic.
+        // The already finite, bounded input remains the closest representable value.
+        value.clamp(min, max)
+    }
 }
 
 #[cfg(test)]
@@ -2095,6 +2144,25 @@ mod tests {
         let panes = s.layout(bounds, Axis::Horizontal);
         assert!(panes.0.size.width >= s.min_pane);
         assert!(panes.2.size.width >= s.min_pane);
+    }
+    #[test]
+    fn split_reset_restores_balanced_expanded_state_and_ends_gesture() {
+        let mut split = SplitView::new(0.7);
+        let bounds = Rect::new(0., 0., 200., 100.);
+        split.collapse(Some(Pane::Leading));
+        assert!(split.begin_drag(140., bounds, Axis::Horizontal));
+        assert!(split.drag_to(160., bounds, Axis::Horizontal));
+        assert!(split.key_in(ControlKey::Enter, bounds, Axis::Horizontal));
+        assert_eq!(split.ratio(), 0.5);
+        assert_eq!(split.collapsed, None);
+        assert!(!split.drag_to(180., bounds, Axis::Horizontal));
+        assert!(
+            !split.cancel_drag(),
+            "reset cannot later roll back to the old ratio"
+        );
+        split.set_ratio(0.8);
+        assert!(split.key_in(ControlKey::Space, bounds, Axis::Vertical));
+        assert_eq!(split.ratio(), 0.5);
     }
     #[test]
     fn split_infeasible_minima_switches_single_visible_panel() {

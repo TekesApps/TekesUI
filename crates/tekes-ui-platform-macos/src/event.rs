@@ -3,6 +3,7 @@
 //! 这个模块不含任何 AppKit 类型，引擎只依赖这里的定义。
 //! 坐标约定：视图坐标，单位是点（pt），原点在左上角，y 向下，与引擎一致。
 
+use crate::accessibility::{AccessibilityAction, AccessibilityKey};
 use crate::menu::CommandId;
 
 /// 点坐标，单位 pt，原点在视图左上角。
@@ -323,6 +324,82 @@ pub struct TextInputState {
     pub carets: Vec<(usize, Point, Size)>,
 }
 
+impl TextInputState {
+    pub(crate) fn conversion_ended(previous: Option<&Self>, current: Option<&Self>) -> bool {
+        previous.is_some_and(|old| {
+            current.is_none()
+                || (old.marked.is_some() && current.is_some_and(|s| s.marked.is_none()))
+        })
+    }
+
+    /// First visible line fragment of a UTF-16 range, in content-view points.
+    /// Geometry comes from the same shaped carets used by the editor. Invalid
+    /// ranges or unavailable geometry return None instead of a different caret.
+    pub fn first_rect_for_range(
+        &self,
+        range: std::ops::Range<usize>,
+    ) -> Option<(std::ops::Range<usize>, Point, Size)> {
+        let units: Vec<_> = self.text.encode_utf16().collect();
+        units.get(range.clone())?;
+        if [range.start, range.end]
+            .iter()
+            .any(|i| units.get(*i).is_some_and(|u| (0xDC00..=0xDFFF).contains(u)))
+        {
+            return None;
+        }
+        let valid = |p: Point, s: Size| {
+            p.x.is_finite() && p.y.is_finite() && s.height.is_finite() && s.height > 0.
+        };
+        let (first, start, size) = self
+            .carets
+            .iter()
+            .filter(|c| c.0 >= range.start && c.0 <= range.end && valid(c.1, c.2))
+            .min_by_key(|c| c.0)
+            .copied()
+            .or_else(|| {
+                (range.start == self.caret_index && valid(self.caret_origin, self.caret_size))
+                    .then_some((self.caret_index, self.caret_origin, self.caret_size))
+            })?;
+        if range.is_empty() {
+            return Some((
+                range,
+                start,
+                Size {
+                    width: 0.,
+                    height: size.height,
+                },
+            ));
+        }
+        let end = self
+            .carets
+            .iter()
+            .filter(|c| {
+                c.0 > first && c.0 <= range.end && valid(c.1, c.2) && (c.1.y - start.y).abs() < 0.01
+            })
+            .max_by_key(|c| c.0)?;
+        let mut min_x = start.x.min(end.1.x);
+        let mut max_x = start.x.max(end.1.x);
+        for c in self.carets.iter().filter(|c| {
+            c.0 > first && c.0 < end.0 && valid(c.1, c.2) && (c.1.y - start.y).abs() < 0.01
+        }) {
+            min_x = min_x.min(c.1.x);
+            max_x = max_x.max(c.1.x);
+        }
+        let width = max_x - min_x;
+        width.is_finite().then_some((
+            first..end.0,
+            Point {
+                x: min_x,
+                y: start.y,
+            },
+            Size {
+                width,
+                height: size.height,
+            },
+        ))
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Event {
@@ -341,6 +418,10 @@ pub enum Event {
     },
     /// 现在应该画一帧并呈现。
     Redraw,
+    /// A background `WindowWake` requested snapshot processing. Read the latest
+    /// synchronized host data, then request redraw if needed. No animation or
+    /// automatic periodic frame polling is enabled by this notification.
+    Wake,
     /// 持续动画模式（[`Window::set_animating`](crate::Window::set_animating)）下，显示链接每次
     /// 刷新的回调。引擎在这里推进动画并画一帧，不需要再调 `request_redraw`。
     /// 只在动画模式开着的时候才会收到；关掉之后不再有回调，空闲时仍是 0 CPU。
@@ -348,6 +429,8 @@ pub enum Event {
     Mouse(MouseEvent),
     Scroll(ScrollEvent),
     Key(KeyEvent),
+    /// Opt-in ordered provenance markers around the existing text callbacks.
+    TextKey(crate::TextKeyEvent),
     TextCommit {
         text: String,
         replacement: Option<std::ops::Range<usize>>,
@@ -364,9 +447,16 @@ pub enum Event {
     /// 修饰键变化（`flagsChanged`）。
     ModifiersChanged(Modifiers),
     /// 窗口成为或不再是 key window。
+    /// Active keyboard scope: application active AND window key. Application
+    /// deactivation emits false even if this application's key window is retained.
     Focus(bool),
     /// 菜单项被选中。
     Command(CommandId),
+    /// VoiceOver 或其他辅助技术请求对宿主发布的节点执行动作。
+    Accessibility {
+        target: AccessibilityKey,
+        action: AccessibilityAction,
+    },
     /// 系统外观或“增强对比度”设置变化（含启动时的初始值）。
     SystemMotionChanged(bool),
     SystemAppearanceChanged {
@@ -381,6 +471,100 @@ pub enum Event {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn conversion_discard_tracks_cleared_marked_text_and_owner_removal() {
+        let idle = TextInputState::default();
+        let marked = TextInputState {
+            marked: Some(0..1),
+            ..Default::default()
+        };
+        assert!(!TextInputState::conversion_ended(None, Some(&idle)));
+        assert!(!TextInputState::conversion_ended(
+            Some(&idle),
+            Some(&marked)
+        ));
+        assert!(!TextInputState::conversion_ended(
+            Some(&marked),
+            Some(&marked)
+        ));
+        assert!(TextInputState::conversion_ended(Some(&marked), Some(&idle)));
+        assert!(TextInputState::conversion_ended(Some(&marked), None));
+        assert!(TextInputState::conversion_ended(Some(&idle), None));
+        assert!(!TextInputState::conversion_ended(None, None));
+    }
+
+    #[test]
+    fn candidate_rect_uses_the_first_visible_shaped_line_and_exact_utf16_fragment() {
+        let mut state = TextInputState {
+            text: "A😀BC\nDE".into(),
+            ..Default::default()
+        };
+        state.carets = [
+            (0, 0., 0.),
+            (1, 10., 0.),
+            (3, 35., 0.),
+            (4, 45., 0.),
+            (5, 55., 0.),
+            (6, 0., 20.),
+            (7, 10., 20.),
+            (8, 20., 20.),
+        ]
+        .into_iter()
+        .map(|(i, x, y)| {
+            (
+                i,
+                Point { x, y },
+                Size {
+                    width: 1.,
+                    height: 18.,
+                },
+            )
+        })
+        .collect();
+        let (actual, origin, size) = state.first_rect_for_range(1..8).unwrap();
+        assert_eq!(actual, 1..5);
+        assert_eq!(origin, Point { x: 10., y: 0. });
+        assert_eq!(size.width, 45.);
+        let (actual, _, size) = state.first_rect_for_range(3..3).unwrap();
+        assert_eq!(actual, 3..3);
+        assert_eq!(size.width, 0.);
+        assert!(state.first_rect_for_range(2..3).is_none());
+        assert!(state.first_rect_for_range(0..usize::MAX).is_none());
+        state.carets.retain(|c| c.0 >= 6);
+        let (actual, _, _) = state.first_rect_for_range(0..8).unwrap();
+        assert_eq!(actual, 6..8);
+    }
+
+    #[test]
+    fn candidate_rect_supports_reverse_visual_carets_and_rejects_missing_geometry() {
+        let mut state = TextInputState {
+            text: "אב".into(),
+            ..Default::default()
+        };
+        state.carets = vec![
+            (
+                0,
+                Point { x: 80., y: 0. },
+                Size {
+                    width: 1.,
+                    height: 18.,
+                },
+            ),
+            (
+                2,
+                Point { x: 20., y: 0. },
+                Size {
+                    width: 1.,
+                    height: 18.,
+                },
+            ),
+        ];
+        let (_, p, s) = state.first_rect_for_range(0..2).unwrap();
+        assert_eq!(p.x, 20.);
+        assert_eq!(s.width, 60.);
+        state.carets.clear();
+        assert!(state.first_rect_for_range(0..2).is_none());
+    }
 
     #[test]
     fn animation_frame_interval_is_sanitized() {

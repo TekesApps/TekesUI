@@ -44,6 +44,47 @@ fn semantic(v: &Value, out: &mut Vec<u8>) {
         }
     }
 }
+/// Validate a caller-owned offline brand artifact against this package's exact
+/// design/compiler inputs. Only BrandConfig may differ; no runtime compiler or
+/// checkout mutation is needed. Returns the artifact files Cargo must watch.
+pub fn verify_consumer_inputs(
+    package_root: &Path,
+    artifact_root: &Path,
+    document: &Value,
+) -> Result<Vec<std::path::PathBuf>, Errors> {
+    if !artifact_root.is_absolute() {
+        return Err(vec![
+            "TEKESUI_DESIGN_ARTIFACT must be an absolute directory".into(),
+        ]);
+    }
+    let mut watched = verify_inputs(artifact_root, document)?;
+    let baseline: Value = serde_json::from_slice(
+        &fs::read(package_root.join("design/tokens.json")).map_err(|e| vec![e.to_string()])?,
+    )
+    .map_err(|e| vec![e.to_string()])?;
+    watched.extend(verify_inputs(package_root, &baseline)?);
+    let expected = baseline["merge"]["inputs_sha256"].as_object().unwrap();
+    let actual = document["merge"]["inputs_sha256"].as_object().unwrap();
+    let config: Value = serde_json::from_slice(
+        &fs::read(artifact_root.join("design/brand/config.json"))
+            .map_err(|e| vec![e.to_string()])?,
+    )
+    .map_err(|e| vec![e.to_string()])?;
+    if actual.keys().ne(expected.keys())
+        || expected.iter().any(|(path, digest)| {
+            path != "design/brand/config.json" && actual.get(path) != Some(digest)
+        })
+        || document["format"] != baseline["format"]
+        || document["api"] != baseline["api"]
+        || document["proposal"]["brand"]["config"] != config
+        || config["schema_version"] != baseline["proposal"]["brand"]["config"]["schema_version"]
+    {
+        return Err(vec![
+            "consumer artifact is incompatible with this package; regenerate from this exact TekesUI source (only BrandConfig may differ)".into(),
+        ]);
+    }
+    Ok(watched)
+}
 /// Verify canonical author inputs and the projection itself. Returns watched paths.
 /// A stale input never silently falls back to a previously generated bundle.
 pub fn verify_inputs(root: &Path, d: &Value) -> Result<Vec<std::path::PathBuf>, Errors> {
@@ -84,6 +125,8 @@ pub fn verify_inputs(root: &Path, d: &Value) -> Result<Vec<std::path::PathBuf>, 
         "design/brand/policy.json",
         "design/brand/gallery.json",
         "scripts/merge-design-system.py",
+        "scripts/generate-gallery-brands.py",
+        "design/gallery/brands.json",
         "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py",
         "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py",
         "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py",

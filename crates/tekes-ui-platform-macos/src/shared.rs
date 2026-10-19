@@ -18,7 +18,7 @@
 //! 不持有任何 `RefCell` 借用，所以 `handle` 里随便调它的方法都不会二次借用。
 
 use std::cell::{Cell, OnceCell, RefCell};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::rc::Rc;
@@ -62,9 +62,23 @@ struct QueuedEvent {
 }
 
 pub(crate) struct Shared {
+    pub(crate) wake_state: std::sync::Arc<crate::wake::WakeState>,
     pub presentation: std::sync::Arc<crate::presentation::PresentationObserver>,
     pub caret_scheduled: Cell<bool>,
     pub text_input: RefCell<Option<crate::event::TextInputState>>,
+    pub accessibility_nodes: RefCell<Vec<crate::accessibility::AccessibilityNode>>,
+    pub accessibility_text_layouts: RefCell<
+        HashMap<
+            crate::accessibility::AccessibilityKey,
+            crate::accessibility::AccessibilityTextLayout,
+        >,
+    >,
+    pub accessibility_elements: RefCell<
+        HashMap<
+            crate::accessibility::AccessibilityKey,
+            Retained<crate::accessibility::NativeAccessibilityElement>,
+        >,
+    >,
     pub mtm: MainThreadMarker,
     handler: RefCell<Option<Box<dyn WindowHandler>>>,
     queue: RefCell<VecDeque<QueuedEvent>>,
@@ -99,12 +113,22 @@ impl std::fmt::Debug for Shared {
     }
 }
 
+impl Drop for Shared {
+    fn drop(&mut self) {
+        crate::wake::native::unregister(&self.wake_state);
+    }
+}
+
 impl Shared {
     pub fn new(mtm: MainThreadMarker, handler: Box<dyn WindowHandler>) -> Rc<Shared> {
         Rc::new(Shared {
+            wake_state: Default::default(),
             presentation: Default::default(),
             caret_scheduled: Cell::new(false),
             text_input: RefCell::new(None),
+            accessibility_nodes: RefCell::new(Vec::new()),
+            accessibility_text_layouts: RefCell::new(HashMap::new()),
+            accessibility_elements: RefCell::new(HashMap::new()),
             mtm,
             handler: RefCell::new(Some(handler)),
             queue: RefCell::new(VecDeque::new()),
@@ -244,6 +268,7 @@ impl Shared {
 
     /// 应用结束时丢弃处理器，让它的 Drop 在 `run()` 返回之前执行。
     pub fn finish(&self) {
+        crate::wake::native::unregister(&self.wake_state);
         self.closed.set(true);
         self.animating.set(false);
         self.discard_metal_frames();
@@ -278,6 +303,11 @@ pub struct Window {
 }
 
 impl Window {
+    /// UI-thread creation of a background-safe notification proxy. Clones do
+    /// not retain this window; queued work is discarded when it closes.
+    pub fn wake_proxy(&self) -> crate::WindowWake {
+        crate::wake::native::register(&self.shared)
+    }
     /// Visibility at this instant; a fully covered/minimized window cannot be
     /// used as evidence of visible presentation cadence.
     pub fn is_occluded(&self) -> bool {
@@ -289,6 +319,13 @@ impl Window {
 
     pub fn is_key_window(&self) -> bool {
         self.window.isKeyWindow()
+    }
+
+    /// Effective keyboard scope, including application activation. A background
+    /// application's retained key window alone does not establish active input.
+    pub fn is_active(&self) -> bool {
+        objc2_app_kit::NSApplication::sharedApplication(self.shared.mtm).isActive()
+            && self.window.isKeyWindow()
     }
 
     /// Enable optional drawable receipts for benchmarking; disabled in normal UI.
@@ -334,18 +371,86 @@ impl Window {
             .map(|v| v.clone())
             .unwrap_or_default()
     }
+    /// Enable Started/Finished provenance around text-owner key-downs. Legacy
+    /// callback events are still delivered exactly once. Default is disabled.
+    /// Reject changes during a key span, so the FIFO markers stay balanced.
+    pub fn set_text_key_events(&self, enabled: bool) -> bool {
+        !self.shared.closed.get() && self.view.set_text_key_events(enabled)
+    }
     pub fn set_text_input_state(&self, state: Option<crate::event::TextInputState>) {
+        if self.shared.closed.get() {
+            return;
+        }
         let blink = state
             .as_ref()
             .is_some_and(|s| !s.read_only && s.selection.is_empty());
+        let discard = crate::event::TextInputState::conversion_ended(
+            self.shared.text_input.borrow().as_ref(),
+            state.as_ref(),
+        );
         *self.shared.text_input.borrow_mut() = state;
         if blink && !self.shared.caret_scheduled.replace(true) {
             self.view.schedule_caret_blink();
         }
         if let Some(context) = self.view.inputContext() {
+            // Publish the cleared marked range before asking IMK to finish its
+            // conversion. No RefCell borrow may survive a native callback.
+            if discard {
+                context.discardMarkedText();
+            }
             context.invalidateCharacterCoordinates();
         }
     }
+    /// Publish the host-owned accessibility tree. Node data stays in the host
+    /// snapshot; native AX elements only expose it and route requested actions.
+    pub fn set_accessibility_nodes(&self, nodes: Vec<crate::accessibility::AccessibilityNode>) {
+        if self.shared.closed.get() {
+            return;
+        }
+        let nodes = if crate::accessibility::validate_accessibility_nodes(&nodes) {
+            nodes
+        } else {
+            Vec::new()
+        };
+        if *self.shared.accessibility_nodes.borrow() == nodes {
+            return;
+        }
+        let previous = self.shared.accessibility_nodes.replace(nodes);
+        self.view.accessibility_nodes_changed(&previous);
+    }
+    /// Replace per-owner shaped text layouts. Publish before the corresponding
+    /// node snapshot so AX notifications observe matching text and geometry.
+    /// This never changes keyboard focus, text selection, or IME ownership.
+    /// Omitted keys are removed; invalid/duplicate keys fail closed as a batch.
+    pub fn set_accessibility_text_layouts(
+        &self,
+        layouts: Vec<(
+            crate::accessibility::AccessibilityKey,
+            crate::accessibility::AccessibilityTextLayout,
+        )>,
+    ) {
+        if self.shared.closed.get() {
+            return;
+        }
+        let mut accepted = HashMap::new();
+        for (key, layout) in layouts {
+            if !layout.is_valid() || accepted.insert(key, layout).is_some() {
+                accepted.clear();
+                break;
+            }
+        }
+        *self.shared.accessibility_text_layouts.borrow_mut() = accepted;
+    }
+
+    /// Owned readback of the accepted tree, after validation. Changing this
+    /// copy never mutates native AX elements; publication still uses the setter.
+    pub fn accessibility_nodes(&self) -> Vec<crate::accessibility::AccessibilityNode> {
+        if self.shared.closed.get() {
+            return Vec::new();
+        }
+        self.shared.accessibility_nodes.borrow().clone()
+    }
+
     pub fn clipboard_text(&self) -> Option<String> {
         use objc2_app_kit::NSPasteboardTypeString;
         text_pasteboard()
