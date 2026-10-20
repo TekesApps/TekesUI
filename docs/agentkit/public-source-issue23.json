@@ -2,9 +2,9 @@
   "kind": "unpublished-development-candidate-not-release",
   "baseCommit": "431093786de47b48cd566d0d9c0eafa088b10d68",
   "acceptedPredecessorSource": "2f0902d9f90fb069696c52edc38d9b7e7f8f0d0c4a3f0141e21fe1ac3f3183d0",
-  "sha256": "31c66c8d033f75acb2c3745fd20a5b53e9bfc320e290a1959179f355b934324c",
+  "sha256": "ae0b1055118d50d4d6e28a3d47e5e40bab254c7c6721d0c483e2a49f78114a4e",
   "files": {
-    ".github/workflows/ci.yml": "3ef85e41cc7af2345ef485a4bea1ca49dcdfeb7bf872cb67024d092fa623b6f0",
+    ".github/workflows/ci.yml": "6722717c93e3f2fe54a0db7ed78f77578f6b2cbe839ece33d5294f4917683d1f",
     "Cargo.toml": "8bf3aac48349a5ae8a65fbccd97bd3daf061e650d52386a7ab07920f40a28614",
     "LICENSE": "0d295928227df2f9ecb57b44628e9bfff4f5d4287e7a9a54c0d4cb23474aae77",
     "crates/tekes-ui-controls/Cargo.toml": "2440aadfcbdb1e1fec9c86444ac3e07ec2ad2ea04022999ba2b464752e13e0bd",
@@ -37,7 +37,7 @@
     "crates/tekes-ui-controls/tests/choice_selection_states.rs": "f3677639bcb21f1312db3a08d35a804884ba06fe04510ff128a1953fcd100649",
     "crates/tekes-ui-controls/tests/choice_trigger_states.rs": "39ee0437dae7b2af56247c91cc3de2db4f091ea0c9e82c1234b2efdafac88aa0",
     "crates/tekes-ui-controls/tests/command_result_states.rs": "edb45a43138cd0ea757ea6905455d318ab15deabf15433e8a78311f61638087d",
-    "crates/tekes-ui-controls/tests/component_registry_api.rs": "1f64ccb9855316d1047c976c6c41363796cf32e4658a2f4e5c8e668d773c463c",
+    "crates/tekes-ui-controls/tests/component_registry_api.rs": "83f28086aa1a065a5b95405548e5f509012e04663f39d6515c99b2fc0a8962c9",
     "crates/tekes-ui-controls/tests/composition.rs": "7699f62d65c69d40fb063c084e157730cfbd478c03ed9a0912c7e4798e2b31fb",
     "crates/tekes-ui-controls/tests/composition_adapters.rs": "da1d59d102a34b16a268e2325ad3beaa3880300daaa20d29e0780ca0299f84a6",
     "crates/tekes-ui-controls/tests/draft_contract.rs": "6fb5b1b9e76e10be1f261b0335dacfdc3970a6b0ce1d44b2d254f441045337a4",
@@ -147,7 +147,7 @@
     "crates/tekes-ui-text/tests/e2e_oracle.rs": "4042cd4f22fca084166e7f77bbf3d4699f1fec2cde87566a4fd89aa70e5db12a",
     "crates/tekes-ui-text/tests/export.rs": "1543f4bf7d13e6abea8ed9d58d7e3ec8ba3192507168d371fb4747350c13f9a3",
     "crates/tekes-ui-text/tests/raster.rs": "5977fead9384817d196399aad58d20dbc4d1e400971f2338a0ea3b03d8cb8f4c",
-    "crates/tekes-ui-text/tests/shape.rs": "d70e801b6ca4e8bf639d3d7fce82d69a112b54ed2979c251527e9e6b81d26caa",
+    "crates/tekes-ui-text/tests/shape.rs": "a3d28eee971d245ffc66bb90934d1f7a75b85896d4cb6cc0d8fe4e63facb9611",
     "crates/tekes-ui-tokens/Cargo.toml": "4c647031d8e4054f8645bbc21b9fd6b2bc98043075d6f7dd8d58c2e6cbedf6f2",
     "crates/tekes-ui-tokens/build.rs": "0c8aa2d6e747a5af1695c89b23fcc41de47cafb0e9999517de213a6f6ef6332f",
     "crates/tekes-ui-tokens/src/alpha.rs": "aa3017df323ade39c0f6041ad2ff0a5d0d936186cc66f69c9bb6ebb67e1d780b",
@@ -201,6 +201,9 @@
     "scripts/generate-gallery-brands.py": "0a169997cc3edca32aa93d7a3f089e66c7f5a5b2ba2acce272b07a5d44013497",
     "scripts/merge-design-system.py": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2",
     "scripts/verify-agentkit-public-pin.py": "8a801819d829647fb88bfbad0110834836e1700157beec1028297bec9304125f",
-    "Cargo.lock": "00d769a922bb8fb114f49dec09822fc7271a791847e8ec95506c69893cf39075"
+    "Cargo.lock": "5c35baefbfb2469aaa110294ef7e19e0fce6f026044e6132a4c83ac4ae60bfaf",
+    "crates/tekes-ui-gallery/Cargo.toml": "c2ec8db489ddf4067377eb7094e8f7ff63a559402f641ebe0e864bbbfaacc857",
+    "crates/tekes-ui-gallery/src/gallery/snapshot.rs": "bb79d5495a49fcbe0188d925ade62e68f4686b5089b6576391a1efb58ad44dd4",
+    "design/reviews/proposal1/reference-language-profile-20261019.json": "8acfc07d908047cd965b6bc89d0282dfce6b73f2bede211ccdd01352c93849c1"
   }
 }

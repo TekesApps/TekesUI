@@ -28,7 +28,7 @@ jobs:
           cargo run --locked -p tekes-ui-design-export -- --generate design/tokens.json "$RUNNER_TEMP/tokens.rs"
           cargo run --locked -p tekes-ui-design-export -- --check design/tokens.json "$RUNNER_TEMP/tokens.rs"
       - run: cargo fmt --check
-      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Workspace correctness tests (performance deferred)
         run: >-
           cargo test --workspace --locked --

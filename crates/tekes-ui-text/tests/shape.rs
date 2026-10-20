@@ -237,26 +237,55 @@ fn system_font_cjk_fallback_keeps_the_line_height() {
 }
 
 #[test]
-fn non_system_font_cjk_fallback_makes_the_line_taller() {
-    // 参照实现的观察：主字体不是系统界面字体时，CJK 回退字体（HiraginoSans-W3）有约 7pt 的
-    // leading，所在行比纯 Latin 行高。逐行取 CTLine 的包络值，行高按行变化。
+fn non_system_font_fallback_line_metrics_match_coretext() {
+    use objc2_core_foundation::{CFMutableAttributedString, CFRange, CFString};
+    use objc2_core_text::{CTLine, kCTFontAttributeName};
+
+    // The fallback family and leading depend on preferred languages. Verify
+    // against CoreText itself instead of assuming a Hiragino-specific metric.
     let fonts = CoreTextFonts::new();
     let style = TextStyle::named("Menlo", 14.0);
+    let font = fonts.create_font(&style);
     let latin = shape_with(&fonts, "Hello world", &style, None);
-    if latin.fonts[0].post_script_name != "Menlo-Regular" {
-        eprintln!("跳过：本机没有 Menlo");
-        return;
-    }
     let cjk = shape_with(&fonts, "你好世界你好", &style, None);
     let mixed = shape_with(&fonts, "Hello 你好 world", &style, None);
-    assert!(cjk.lines[0].height > latin.lines[0].height);
-    assert!(mixed.lines[0].height >= cjk.lines[0].height - 1.0);
-    assert!(
-        cjk.lines[0].leading > 0.0,
-        "回退字体的 leading 应进入行度量"
-    );
-    assert!(cjk.fonts[1].post_script_name.starts_with("Hiragino"));
-    // 同一段落里，纯 Latin 的行不受影响：行高按行计算。
+    assert!(cjk.fonts.len() >= 2, "CJK must use actual fallback");
+    assert_ne!(cjk.fonts[0].key, cjk.fonts[1].key);
+    for (text, paragraph) in [
+        ("Hello world", &latin),
+        ("你好世界你好", &cjk),
+        ("Hello 你好 world", &mixed),
+    ] {
+        let string = CFString::from_str(text);
+        let attributed = CFMutableAttributedString::new(None, 0).unwrap();
+        // SAFETY: ranges cover the valid string; CTFont is the attribute type.
+        let reference = unsafe {
+            CFMutableAttributedString::replace_string(
+                Some(&attributed),
+                CFRange::new(0, 0),
+                Some(&string),
+            );
+            CFMutableAttributedString::set_attribute(
+                Some(&attributed),
+                CFRange::new(0, string.length()),
+                Some(kCTFontAttributeName),
+                Some(font.as_ref()),
+            );
+            CTLine::with_attributed_string(&attributed)
+        };
+        let (mut ascent, mut descent, mut leading) = (0.0, 0.0, 0.0);
+        // SAFETY: reference and all output pointers are valid.
+        unsafe { reference.typographic_bounds(&mut ascent, &mut descent, &mut leading) };
+        let line = &paragraph.lines[0];
+        assert_eq!(line.ascent, ascent, "{text}");
+        assert_eq!(line.descent, descent, "{text}");
+        assert_eq!(line.leading, leading, "{text}");
+        assert_eq!(
+            line.height,
+            (ascent + descent + leading.max(0.0)).ceil(),
+            "{text}"
+        );
+    }
     let both = shape_with(&fonts, "Hello world\n你好世界你好", &style, None);
     assert_eq!(both.lines[0].height, latin.lines[0].height);
     assert_eq!(both.lines[1].height, cjk.lines[0].height);

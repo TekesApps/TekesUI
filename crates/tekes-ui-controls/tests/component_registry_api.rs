@@ -667,8 +667,12 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     #[allow(dead_code)]
     fn public_trait_61<T: tekes_ui_controls::TextSurfaceHost + ?Sized>() {}
     actual.push("tekes_ui_controls::TextSurfaceHost");
+    public_type::<tekes_ui_controls::TextSurfacePresentation>(
+        &mut actual,
+        "tekes_ui_controls::TextSurfacePresentation",
+    );
     #[allow(dead_code)]
-    fn public_trait_62<T: tekes_ui_controls::TextSurfaceTextRenderer + ?Sized>() {}
+    fn public_trait_63<T: tekes_ui_controls::TextSurfaceTextRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::TextSurfaceTextRenderer");
     public_type::<tekes_ui_controls::Toolbar>(&mut actual, "tekes_ui_controls::Toolbar");
     public_type::<tekes_ui_controls::collections_view::ChartView>(
@@ -724,7 +728,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::collections_view::MarkdownView",
     );
     #[allow(dead_code)]
-    fn public_trait_77<T: tekes_ui_controls::collections_view::PassiveCollectionView + ?Sized>() {}
+    fn public_trait_78<T: tekes_ui_controls::collections_view::PassiveCollectionView + ?Sized>() {}
     actual.push("tekes_ui_controls::collections_view::PassiveCollectionView");
     public_type::<tekes_ui_controls::collections_view::TreeView>(
         &mut actual,
@@ -739,7 +743,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::ButtonContent",
     );
     #[allow(dead_code)]
-    fn public_trait_81<T: tekes_ui_controls::composition::Component + ?Sized>() {}
+    fn public_trait_82<T: tekes_ui_controls::composition::Component + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::Component");
     public_type::<tekes_ui_controls::composition::ComponentId>(
         &mut actual,
@@ -1194,7 +1198,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_195<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_196<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

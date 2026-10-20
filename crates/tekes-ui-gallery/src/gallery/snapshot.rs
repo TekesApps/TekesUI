@@ -493,6 +493,51 @@ mod tests {
 
     #[test]
     fn original_three_page_content_matches_the_committed_proposal_review() {
+        // CoreText's automatic CJK cascade depends on preferred languages.
+        // Run this historical fixture in its own process: changing defaults in
+        // the parallel test process would also change unrelated text tests.
+        // NSArgumentDomain is process-only; no system preference is written.
+        let profile: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../design/reviews/proposal1/reference-language-profile-20261019.json"
+        )))
+        .unwrap();
+        let expected: Vec<_> = profile["preferred_languages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|value| value.as_str().unwrap().to_owned())
+            .collect();
+        if std::env::var_os("TEKESUI_GOLDEN_REFERENCE_CHILD").is_none() {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "gallery::snapshot::tests::original_three_page_content_matches_the_committed_proposal_review",
+                    "--nocapture",
+                    "--",
+                    "-AppleLanguages",
+                    &format!("({})", expected.join(",")),
+                ])
+                .env("TEKESUI_GOLDEN_REFERENCE_CHILD", "1")
+                .output()
+                .expect("launch isolated reference render");
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            eprintln!("{stdout}{stderr}");
+            assert!(output.status.success(), "isolated historical render failed");
+            return;
+        }
+        let defaults = objc2_foundation::NSUserDefaults::standardUserDefaults();
+        let languages = defaults
+            .stringArrayForKey(&objc2_foundation::NSString::from_str("AppleLanguages"))
+            .map(|values| {
+                values
+                    .iter()
+                    .map(|value| value.to_string())
+                    .collect::<Vec<_>>()
+            });
+        eprintln!("reference AppleLanguages: {languages:?}");
+        assert_eq!(languages.as_deref(), Some(expected.as_slice()));
         let Ok(mut renderer) = Renderer::new_headless() else {
             eprintln!("UNVERIFIED: no GPU adapter for content regression");
             return;
