@@ -27,7 +27,7 @@ pub(crate) struct Skin {
     pub joints: Vec<usize>,
     pub inverse: Vec<Mat4>,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Mesh {
     pub node: usize,
     pub skin: Option<usize>,
@@ -78,6 +78,7 @@ pub(crate) struct PoseFrame {
 /// `.gltf` resolves adjacent resources; `.glb` can be self-contained.
 #[derive(Debug)]
 pub struct Asset3D {
+    pub(crate) node_names: Vec<String>,
     pub(crate) id: u64,
     nodes: Vec<Node>,
     roots: Vec<usize>,
@@ -331,6 +332,10 @@ impl Asset3D {
             .collect::<Result<_, _>>()?;
         static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
         let mut asset = Self {
+            node_names: d
+                .nodes()
+                .map(|n| n.name().unwrap_or_default().to_owned())
+                .collect(),
             id: NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             nodes,
             roots,

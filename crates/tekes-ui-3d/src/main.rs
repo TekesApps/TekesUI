@@ -1,4 +1,6 @@
 #[cfg(target_os = "macos")]
+mod district;
+#[cfg(target_os = "macos")]
 mod viewer;
 #[cfg(target_os = "macos")]
 fn main() {

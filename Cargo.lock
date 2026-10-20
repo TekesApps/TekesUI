@@ -1019,12 +1019,21 @@ name = "tekes-ui-3d"
 version = "0.1.0"
 dependencies = [
  "png 0.17.16",
+ "tekes-ui-city",
  "tekes-ui-platform-macos",
  "tekes-ui-render",
  "tekes-ui-scene",
  "tekes-ui-scene3d",
  "tekes-ui-text",
  "tekes-ui-tokens",
+]
+
+[[package]]
+name = "tekes-ui-city"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

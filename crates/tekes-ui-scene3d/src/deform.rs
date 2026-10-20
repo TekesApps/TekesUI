@@ -38,7 +38,7 @@ struct Params {
 
 #[derive(Debug)]
 pub(crate) struct MeshDeformer {
-    mesh_index: usize,
+    pub(crate) mesh_index: usize,
     last_params: Option<Params>,
     last_palette: Vec<[f32; 16]>,
     last_weights: Vec<f32>,

@@ -280,6 +280,20 @@ impl Renderer {
         atlas: &mut GlyphAtlas,
         clear: Rgba,
     ) -> Result<(), RenderError> {
+        self.render_with_gpu(scene, atlas, clear, |_| Ok(()))
+    }
+    /// Encode GPU component passes into the acquired UI frame before composition.
+    /// The closure runs once after successful acquisition, never on timeout or
+    /// occlusion; it must use this renderer's GpuContext and must not submit.
+    /// All component and UI commands are submitted together in queue order.
+    /// CPU encode timing includes the closure; GPU timestamps cover the UI pass.
+    pub fn render_with_gpu(
+        &mut self,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        clear: Rgba,
+        before_ui: impl FnOnce(&mut wgpu::CommandEncoder) -> Result<(), RenderError>,
+    ) -> Result<(), RenderError> {
         let Some(s) = &self.surface else {
             return Err(RenderError::Surface("这个渲染器没有 surface".into()));
         };
@@ -323,6 +337,7 @@ impl Renderer {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("tekes frame"),
                 });
+            before_ui(&mut encoder)?;
             let ticket =
                 self.encode_scene(&mut encoder, &view, size_px, scale, scene, atlas, clear);
             let t_encoded = t_start.map(|_| Instant::now());
@@ -438,6 +453,20 @@ impl Renderer {
         scale: f32,
         clear: Rgba,
     ) -> Result<Vec<u8>, RenderError> {
+        self.render_to_rgba8_with_gpu(scene, atlas, size_px, scale, clear, |_| Ok(()))
+    }
+    /// Offscreen counterpart of render_with_gpu, for snapshots and GPU image
+    /// regression tests. Only the final composed image is read back.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_to_rgba8_with_gpu(
+        &mut self,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        size_px: (u32, u32),
+        scale: f32,
+        clear: Rgba,
+        before_ui: impl FnOnce(&mut wgpu::CommandEncoder) -> Result<(), RenderError>,
+    ) -> Result<Vec<u8>, RenderError> {
         check_size(size_px, scale)?;
         let (w, h) = size_px;
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
@@ -473,6 +502,7 @@ impl Renderer {
                 label: Some("tekes offscreen"),
             });
         let t_start = self.timing.is_some().then(Instant::now);
+        before_ui(&mut encoder)?;
         let ticket = self.encode_scene(&mut encoder, &view, size_px, scale, scene, atlas, clear);
         let t_encoded = t_start.map(|_| Instant::now());
         encoder.copy_texture_to_buffer(

@@ -106,3 +106,71 @@ fn foreign_context_and_wrong_image_kind_are_rejected_before_gpu_binding() {
     assert!(a.replace_gpu_image(cpu, &image).is_err());
     a.update_image(cpu, &[0; 16]).unwrap();
 }
+
+#[test]
+#[ignore = "requires a real wgpu GPU adapter"]
+fn component_and_ui_passes_share_one_encoder_in_order() {
+    let mut ui = Renderer::new_headless().unwrap();
+    let context = ui.gpu_context();
+    let image = context.create_image((8, 8)).unwrap();
+    let id = ui.register_gpu_image(&image).unwrap();
+    let mut scene = Scene::new();
+    scene.push_image(ImageQuad {
+        rect: Rect::new(0., 0., 8., 8.),
+        image: id,
+        opacity: 1.,
+    });
+    let mut calls = 0;
+    for color in [wgpu::Color::RED, wgpu::Color::BLUE] {
+        let result = ui
+            .render_to_rgba8_with_gpu(
+                &scene,
+                &mut GlyphAtlas::new(Default::default()),
+                (8, 8),
+                1.,
+                Rgba::gray(0.),
+                |encoder| {
+                    calls += 1;
+                    let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: image.render_view(),
+                            depth_slice: None,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(color),
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        ..Default::default()
+                    });
+                    Ok(())
+                },
+            )
+            .unwrap();
+        let expected = if color.r == 1. {
+            [255, 0, 0, 255]
+        } else {
+            [0, 0, 255, 255]
+        };
+        assert!(result.chunks_exact(4).all(|p| p == expected));
+    }
+    assert_eq!(calls, 2);
+    let bad = ui.render_to_rgba8_with_gpu(
+        &scene,
+        &mut GlyphAtlas::new(Default::default()),
+        (0, 8),
+        1.,
+        Rgba::gray(0.),
+        |_| panic!("invalid target must not call producer"),
+    );
+    assert!(bad.is_err());
+    assert!(
+        ui.render_with_gpu(
+            &scene,
+            &mut GlyphAtlas::new(Default::default()),
+            Rgba::gray(0.),
+            |_| { panic!("missing surface must not call producer") }
+        )
+        .is_err()
+    );
+}

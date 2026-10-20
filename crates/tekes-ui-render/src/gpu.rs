@@ -1,6 +1,8 @@
 //! Opt-in wgpu interop for GPU-rendered components. Ordinary Scene/ImageId APIs
 //! remain backend-neutral. A context is issued by its UI Renderer, never assembled
-//! from unrelated device/queue handles. Submit component work before UI rendering.
+//! from unrelated device/queue handles. Prefer Renderer::render_with_gpu to encode
+//! component passes before UI sampling in one submission; standalone producers
+//! may also submit before UI rendering.
 use crate::RenderError;
 
 /// Shared UI device/queue and registration identity. Cloning retains GPU handles;

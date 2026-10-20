@@ -1,3 +1,4 @@
+use crate::district::DistrictDemo;
 use std::{collections::HashMap, path::PathBuf};
 use tekes_ui_platform_macos::*;
 use tekes_ui_render::Renderer;
@@ -23,6 +24,12 @@ fn camera_for_asset(name: &str) -> Camera3D {
     if name == "manhattan.glb" {
         let mut camera = Camera3D::default();
         camera.orbit(-0.45, 0.29).unwrap();
+        camera.zoom_by(0.56).unwrap();
+        camera.set_orthographic(true);
+        camera
+    } else if name == "city-block.glb" {
+        let mut camera = Camera3D::default();
+        camera.orbit(0.55, 0.24).unwrap();
         camera.zoom_by(0.56).unwrap();
         camera.set_orthographic(true);
         camera
@@ -55,6 +62,7 @@ pub fn run() -> Result<()> {
         .and_then(|s| s.to_str())
     {
         Some("tekes-ui-manhattan") => "manhattan",
+        Some("tekes-ui-city-block") => "city-block",
         _ => "cube",
     }
     .to_owned();
@@ -62,27 +70,35 @@ pub fn run() -> Result<()> {
     let mut snapshot = None;
     let mut auto_rotate = false;
     let mut play = false;
+    let mut scene_time = None;
     let mut args = std::env::args_os().skip(1);
     while let Some(arg) = args.next() {
         if arg == "--demo" {
             demo = args
                 .next()
-                .ok_or("--demo requires cube or manhattan")?
+                .ok_or("--demo requires cube, manhattan or city-block")?
                 .to_string_lossy()
                 .into_owned();
-            if !["cube", "manhattan"].contains(&demo.as_str()) {
-                return Err("--demo requires cube or manhattan".into());
+            if !["cube", "manhattan", "city-block"].contains(&demo.as_str()) {
+                return Err("--demo requires cube, manhattan or city-block".into());
             }
         } else if arg == "--snapshot" {
             snapshot = Some(PathBuf::from(
                 args.next().ok_or("--snapshot requires a PNG path")?,
             ));
+        } else if arg == "--time" {
+            scene_time = Some(
+                args.next()
+                    .ok_or("--time requires seconds")?
+                    .to_string_lossy()
+                    .parse::<f64>()?,
+            );
         } else if arg == "--auto-rotate" {
             auto_rotate = true;
         } else if arg == "--play" {
             play = true;
         } else if input.replace(PathBuf::from(arg)).is_some() {
-            return Err("usage: tekes-ui-3d [model.glb|model.gltf] [--demo cube|manhattan] [--snapshot output.png] [--auto-rotate] [--play]".into());
+            return Err("usage: tekes-ui-3d [model.glb|model.gltf] [--demo cube|manhattan|city-block] [--snapshot output.png] [--auto-rotate] [--play]".into());
         }
     }
     let path = input.unwrap_or_else(|| {
@@ -102,8 +118,15 @@ pub fn run() -> Result<()> {
     if auto_rotate {
         viewer.command(10)?;
     }
-    if play {
+    if play && !viewer.playing {
         viewer.command(9)?;
+    }
+    if let Some(t) = scene_time {
+        if let Some(district) = &mut viewer.district {
+            district.clock.seek(t)?;
+        } else {
+            viewer.view.seek(t as f32)?;
+        }
     }
     if let Some(path) = snapshot {
         viewer.init(Renderer::new_headless()?, (960, 720), 1.)?;
@@ -149,7 +172,11 @@ fn menus() -> MenuBar {
         menus: vec![
             Menu::new(
                 "Demo",
-                vec![item("Rubik’s Cube", 11), item("Manhattan Skyline", 12)],
+                vec![
+                    item("Rubik’s Cube", 11),
+                    item("Manhattan Skyline", 12),
+                    item("Waterfront City Block", 14),
+                ],
             ),
             Menu::new(
                 "View",
@@ -177,6 +204,7 @@ fn menus() -> MenuBar {
 }
 struct Viewer {
     view: Scene3D,
+    district: Option<DistrictDemo>,
     camera: Camera3D,
     home: Camera3D,
     name: String,
@@ -206,10 +234,19 @@ impl Viewer {
         if view.asset().clips().len() > 0 {
             view.select_clip(0)?;
         }
+        let district = if name == "city-block.glb" {
+            Some(DistrictDemo::load(
+                &demo_asset("city-block").with_extension("json"),
+            )?)
+        } else {
+            None
+        };
+        let playing = district.is_some();
         let home = camera_for_asset(&name);
         let fonts = CoreTextFonts::new();
         Ok(Self {
             view,
+            district,
             camera: home.clone(),
             home,
             name,
@@ -226,7 +263,7 @@ impl Viewer {
             drag: None,
             active: true,
             reduced: false,
-            playing: false,
+            playing,
             spin: false,
             last: None,
             pending_redraw: true,
@@ -252,21 +289,33 @@ impl Viewer {
     fn init(&mut self, mut ui: Renderer, pixels: (u32, u32), scale: f32) -> Result<()> {
         self.scale = scale;
         self.size = (pixels.0 as f32 / scale, pixels.1 as f32 / scale);
-        let gpu = if self.name == "manhattan.glb" {
+        let mut gpu = if ["manhattan.glb", "city-block.glb"].contains(&self.name.as_str()) {
             Renderer3D::new_antialiased(&ui.gpu_context(), &self.view, self.pixels())?
         } else {
             Renderer3D::new(&ui.gpu_context(), &self.view, self.pixels())?
         };
+        if let Some(district) = &self.district {
+            district.configure(&mut gpu, &self.view)?;
+        }
         self.image = Some(ui.register_gpu_image(gpu.output())?);
         self.gpu = Some(gpu);
         self.ui = Some(ui);
         Ok(())
     }
     fn scene(&mut self) -> Result<Scene> {
+        if let Some(district) = &self.district {
+            self.gpu
+                .as_mut()
+                .ok_or("GPU not initialized")?
+                .set_environment(district.environment())?;
+        }
         self.gpu
             .as_mut()
             .ok_or("GPU not initialized")?
             .render_camera(&self.view, &self.camera)?;
+        self.ui_scene()
+    }
+    fn ui_scene(&mut self) -> Result<Scene> {
         if let Some(scene) = &self.cached_scene {
             return Ok(scene.clone());
         }
@@ -276,7 +325,9 @@ impl Viewer {
             .paint(&mut scene, self.stage(), self.image.unwrap());
         let labels = [
             (
-                if self.name == "manhattan.glb" {
+                if self.name == "city-block.glb" {
+                    "WATERFRONT · Living City Block".to_owned()
+                } else if self.name == "manhattan.glb" {
                     "MANHATTAN · Skyline".to_owned()
                 } else {
                     "TekesUI3D".to_owned()
@@ -295,7 +346,13 @@ impl Viewer {
             (
                 format!(
                     "方向键：视角  ·  R：复位  ·  Space：{}  ·  A：自动旋转",
-                    if self.view.asset().clips().len() == 0 {
+                    if self.district.is_some() {
+                        if self.playing {
+                            "暂停街区动态"
+                        } else {
+                            "播放街区动态"
+                        }
+                    } else if self.view.asset().clips().len() == 0 {
                         "此场景为静态建筑"
                     } else if self.playing {
                         "暂停动画"
@@ -333,11 +390,23 @@ impl Viewer {
         Ok(scene)
     }
     fn draw(&mut self) -> Result<()> {
-        let scene = self.scene()?;
-        self.ui.as_mut().unwrap().render(
+        let scene = self.ui_scene()?;
+        let gpu = self.gpu.as_mut().ok_or("GPU not initialized")?;
+        let view = &self.view;
+        let camera = &self.camera;
+        let environment = self.district.as_ref().map(DistrictDemo::environment);
+        self.ui.as_mut().unwrap().render_with_gpu(
             &scene,
             &mut self.atlas,
             ColorRole::DocumentCanvas.resolve(self.theme),
+            |encoder| {
+                if let Some(environment) = environment {
+                    gpu.set_environment(environment)
+                        .map_err(|e| tekes_ui_render::RenderError::Surface(e.to_string()))?;
+                }
+                gpu.encode_camera(view, camera, encoder)
+                    .map_err(|e| tekes_ui_render::RenderError::Surface(e.to_string()))
+            },
         )?;
         Ok(())
     }
@@ -348,21 +417,32 @@ impl Viewer {
             view.select_clip(0)?;
         }
         let context = self.ui.as_ref().ok_or("GPU not initialized")?.gpu_context();
-        let gpu = if demo != "rubiks-cube" {
+        let mut gpu = if demo != "rubiks-cube" {
             Renderer3D::new_antialiased(&context, &view, self.pixels())?
         } else {
             Renderer3D::new(&context, &view, self.pixels())?
         };
+        let district = if demo == "city-block" {
+            Some(DistrictDemo::load(
+                &demo_asset("city-block").with_extension("json"),
+            )?)
+        } else {
+            None
+        };
+        if let Some(d) = &district {
+            d.configure(&mut gpu, &view)?;
+        }
         self.ui
             .as_mut()
             .unwrap()
             .replace_gpu_image(self.image.unwrap(), gpu.output())?;
+        self.playing = district.is_some();
+        self.district = district;
         self.view = view;
         self.gpu = Some(gpu);
         self.name = format!("{demo}.glb");
         self.home = camera_for_asset(&self.name);
         self.camera = self.home.clone();
-        self.playing = false;
         self.spin = false;
         self.drag = None;
         self.last = None;
@@ -375,6 +455,9 @@ impl Viewer {
             1 => {
                 self.camera = self.home.clone();
                 self.view.seek(0.)?;
+                if let Some(district) = &mut self.district {
+                    district.clock.reset();
+                }
             }
             2 => self.camera.zoom_by(0.85)?,
             3 => self.camera.zoom_by(1. / 0.85)?,
@@ -383,6 +466,15 @@ impl Viewer {
             6 => self.camera.orbit(0., 0.15)?,
             7 => self.camera.orbit(0., -0.15)?,
             8 => self.camera.rotate_model(0.25, 0.15, 0.)?,
+            9 if self.district.is_some() => {
+                self.playing = !self.playing;
+                self.district
+                    .as_mut()
+                    .unwrap()
+                    .clock
+                    .set_playing(self.playing);
+                self.cached_scene = None;
+            }
             9 if self.view.asset().clips().len() > 0 => {
                 self.cached_scene = None;
                 self.playing = !self.playing;
@@ -395,6 +487,7 @@ impl Viewer {
             10 => self.spin = !self.spin,
             11 => self.select_demo("rubiks-cube")?,
             12 => self.select_demo("manhattan")?,
+            14 => self.select_demo("city-block")?,
             _ => {}
         }
         Ok(())
@@ -453,6 +546,9 @@ impl Viewer {
                 let mut changed = false;
                 if self.active && !self.reduced {
                     changed = self.view.advance(dt)?;
+                    if let Some(district) = &mut self.district {
+                        changed |= district.clock.advance(dt, true)?;
+                    }
                     if self.spin {
                         self.camera.rotate_model(dt * 0.45, 0., 0.)?;
                         changed = true;
@@ -551,7 +647,10 @@ impl Viewer {
         }
         let animate = self.active
             && !self.reduced
-            && (self.view.needs_frame() || self.spin || self.drag.is_some());
+            && (self.view.needs_frame()
+                || self.district.as_ref().is_some_and(|d| d.clock.playing())
+                || self.spin
+                || self.drag.is_some());
         window.set_animating(animate);
         if !animate {
             self.last = None;
@@ -580,6 +679,306 @@ impl WindowHandler for Viewer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn shared_frame_matches_standalone_and_keeps_cached_draws_valid() {
+        for name in ["rubiks-cube", "city-block"] {
+            let mut direct = Viewer::new(
+                Asset3D::load(demo_asset(name)).unwrap(),
+                format!("{name}.glb"),
+            )
+            .unwrap();
+            let mut combined = Viewer::new(
+                Asset3D::load(demo_asset(name)).unwrap(),
+                format!("{name}.glb"),
+            )
+            .unwrap();
+            for viewer in [&mut direct, &mut combined] {
+                viewer
+                    .init(Renderer::new_headless().unwrap(), (320, 240), 1.)
+                    .unwrap();
+            }
+            for time in [0., 1.2, 24., 46., 55., 80., 0.] {
+                for viewer in [&mut direct, &mut combined] {
+                    if let Some(d) = &mut viewer.district {
+                        d.clock.seek(time).unwrap();
+                    } else if viewer.view.asset().clips().len() > 0 {
+                        viewer.view.seek(time as f32).unwrap();
+                    }
+                }
+                let scene = direct.scene().unwrap();
+                let expected = direct
+                    .ui
+                    .as_mut()
+                    .unwrap()
+                    .render_to_rgba8(
+                        &scene,
+                        &mut direct.atlas,
+                        (320, 240),
+                        1.,
+                        ColorRole::DocumentCanvas.resolve(direct.theme),
+                    )
+                    .unwrap();
+                let scene = combined.ui_scene().unwrap();
+                let environment = combined.district.as_ref().map(DistrictDemo::environment);
+                let gpu = combined.gpu.as_mut().unwrap();
+                let camera = &combined.camera;
+                let view = &combined.view;
+                let actual = combined
+                    .ui
+                    .as_mut()
+                    .unwrap()
+                    .render_to_rgba8_with_gpu(
+                        &scene,
+                        &mut combined.atlas,
+                        (320, 240),
+                        1.,
+                        ColorRole::DocumentCanvas.resolve(combined.theme),
+                        |encoder| {
+                            if let Some(environment) = environment {
+                                gpu.set_environment(environment).unwrap();
+                            }
+                            gpu.encode_camera(view, camera, encoder)
+                                .map_err(|e| tekes_ui_render::RenderError::Surface(e.to_string()))
+                        },
+                    )
+                    .unwrap();
+                assert!(
+                    actual == expected,
+                    "{name} time {time}: shared submission must match standalone"
+                );
+                assert_eq!(combined.gpu.as_ref().unwrap().draw_bundle_builds(), 1);
+                assert_eq!(combined.gpu.as_ref().unwrap().camera_upload_bytes(), 128);
+            }
+            if let Some(d) = &combined.district {
+                d.configure(combined.gpu.as_mut().unwrap(), &combined.view)
+                    .unwrap();
+                combined.scene().unwrap();
+                assert_eq!(combined.gpu.as_ref().unwrap().draw_bundle_builds(), 2);
+            }
+            combined.camera.orbit(0.1, 0.1).unwrap();
+            combined.scene().unwrap();
+            assert_eq!(combined.gpu.as_ref().unwrap().camera_upload_bytes(), 256);
+            let builds = combined.gpu.as_ref().unwrap().draw_bundle_builds();
+            combined.gpu.as_mut().unwrap().resize((400, 300)).unwrap();
+            combined.scene().unwrap();
+            assert_eq!(combined.gpu.as_ref().unwrap().draw_bundle_builds(), builds);
+        }
+    }
+    #[test]
+    fn district_gpu_motion_is_visible_independent_and_does_not_upload_geometry() {
+        let mut viewer = Viewer::new(
+            Asset3D::load(demo_asset("city-block")).unwrap(),
+            "city-block.glb".into(),
+        )
+        .unwrap();
+        viewer
+            .init(Renderer::new_headless().unwrap(), (960, 720), 1.)
+            .unwrap();
+        let capture = |v: &mut Viewer| {
+            let scene = v.scene().unwrap();
+            v.ui.as_mut()
+                .unwrap()
+                .render_to_rgba8(
+                    &scene,
+                    &mut v.atlas,
+                    (960, 720),
+                    1.,
+                    ColorRole::DocumentCanvas.resolve(v.theme),
+                )
+                .unwrap()
+        };
+        let first = capture(&mut viewer);
+        let (upload, geometry, allocations) = {
+            let gpu = viewer.gpu.as_ref().unwrap();
+            (
+                gpu.instance_upload_bytes(),
+                gpu.geometry_resident_bytes(),
+                gpu.vertex_buffer_allocations(),
+            )
+        };
+        assert!(upload > 0);
+        // Isolate each feature by disabling all other dynamic batches.
+        let mut delta = std::collections::BTreeMap::new();
+        for feature in [
+            "car",
+            "person",
+            "tree",
+            "water",
+            "construction-frame",
+            "construction-facade",
+            "construction-scaffold",
+            "crane-boom",
+        ] {
+            let district = viewer.district.as_ref().unwrap();
+            district
+                .configure(viewer.gpu.as_mut().unwrap(), &viewer.view)
+                .unwrap();
+            let mut config = crate::district::instance_recipe_for_test(district);
+            for batch in &mut config.batches {
+                let selected = if feature == "person" {
+                    batch.node.starts_with("person-")
+                } else if feature == "tree" {
+                    batch.node.starts_with("tree-")
+                } else if feature == "water" {
+                    batch.node == "water" || batch.node == "pond"
+                } else {
+                    batch.node == feature
+                };
+                if feature == "construction-frame" && batch.node == "construction-facade" {
+                    batch.instances.clear();
+                }
+                if !selected {
+                    for instance in &mut batch.instances {
+                        instance.route = None;
+                        instance.deformation = tekes_ui_scene3d::Deformation3D::None;
+                    }
+                }
+            }
+            viewer
+                .gpu
+                .as_mut()
+                .unwrap()
+                .configure_instances(&viewer.view, &config)
+                .unwrap();
+            viewer.district.as_mut().unwrap().clock.seek(0.).unwrap();
+            let a = capture(&mut viewer);
+            viewer
+                .district
+                .as_mut()
+                .unwrap()
+                .clock
+                .seek(if feature.starts_with("construction-") {
+                    20.
+                } else {
+                    1.2
+                })
+                .unwrap();
+            let b = capture(&mut viewer);
+            let changed = a
+                .chunks_exact(4)
+                .zip(b.chunks_exact(4))
+                .filter(|(a, b)| a != b)
+                .count();
+            assert!(
+                changed > 10,
+                "feature must change actual pixels: {feature} ({changed})"
+            );
+            if feature == "construction-frame" {
+                viewer.district.as_mut().unwrap().clock.seek(120.).unwrap();
+                let completed = capture(&mut viewer);
+                viewer.district.as_mut().unwrap().clock.seek(240.).unwrap();
+                assert!(
+                    completed == capture(&mut viewer),
+                    "completed building must stop growing"
+                );
+            }
+            if feature == "construction-scaffold" {
+                viewer.district.as_mut().unwrap().clock.seek(55.).unwrap();
+                let removing = capture(&mut viewer);
+                viewer.district.as_mut().unwrap().clock.seek(80.).unwrap();
+                let removed = capture(&mut viewer);
+                assert!(
+                    removing != removed,
+                    "scaffold must dismantle after completion"
+                );
+                config
+                    .batches
+                    .iter_mut()
+                    .find(|b| b.node == "construction-scaffold")
+                    .unwrap()
+                    .instances
+                    .clear();
+                viewer
+                    .gpu
+                    .as_mut()
+                    .unwrap()
+                    .configure_instances(&viewer.view, &config)
+                    .unwrap();
+                assert!(
+                    removed == capture(&mut viewer),
+                    "finished removal must leave no scaffold pixels"
+                );
+            }
+            delta.insert(feature, changed);
+        }
+        viewer
+            .district
+            .as_ref()
+            .unwrap()
+            .configure(viewer.gpu.as_mut().unwrap(), &viewer.view)
+            .unwrap();
+        viewer.district.as_mut().unwrap().clock.seek(0.).unwrap();
+        assert!(
+            first == capture(&mut viewer),
+            "reset must reproduce the original scene"
+        );
+        let bytes = viewer.gpu.as_ref().unwrap().instance_upload_bytes();
+        for i in 1..=120 {
+            viewer
+                .district
+                .as_mut()
+                .unwrap()
+                .clock
+                .seek(f64::from(i) / 60.)
+                .unwrap();
+            viewer.scene().unwrap();
+            let gpu = viewer.gpu.as_ref().unwrap();
+            assert_eq!(gpu.instance_upload_bytes(), bytes);
+            assert_eq!(gpu.geometry_resident_bytes(), geometry);
+            assert_eq!(gpu.vertex_buffer_allocations(), allocations);
+            assert_eq!(gpu.last_frame_pose_upload_bytes(), 0);
+            assert_eq!(gpu.last_frame_deformed_meshes(), 0);
+        }
+        assert!(first != capture(&mut viewer), "animated scene must differ");
+        viewer.command(9).unwrap();
+        assert!(!viewer.playing);
+        let frozen = capture(&mut viewer);
+        assert!(
+            !viewer
+                .district
+                .as_mut()
+                .unwrap()
+                .clock
+                .advance(10., true)
+                .unwrap()
+        );
+        assert!(
+            frozen == capture(&mut viewer),
+            "paused scene must be unchanged"
+        );
+        viewer.command(9).unwrap();
+        let enabled_frozen = capture(&mut viewer);
+        assert!(
+            !viewer
+                .district
+                .as_mut()
+                .unwrap()
+                .clock
+                .advance(10., false)
+                .unwrap()
+        );
+        assert!(
+            enabled_frozen == capture(&mut viewer),
+            "reduced/hidden motion must freeze scene"
+        );
+        viewer.command(1).unwrap();
+        assert!(
+            first == capture(&mut viewer),
+            "reset must reproduce the original scene"
+        );
+        let image = viewer.image;
+        let count = viewer.ui.as_ref().unwrap().image_count();
+        for command in [11, 12, 14] {
+            viewer.command(command).unwrap();
+            viewer.scene().unwrap();
+            assert_eq!(viewer.image, image);
+            assert_eq!(viewer.ui.as_ref().unwrap().image_count(), count);
+        }
+        eprintln!(
+            "CITY_BLOCK_GPU_CHECK: feature_changed_pixels={delta:?}, geometry_bytes={geometry}, instance_route_upload_bytes={bytes}; 120 frames: vertex/pose/instance uploads=0"
+        );
+    }
+
     #[test]
     fn manhattan_demo_keeps_static_geometry_on_gpu_and_switches_without_image_leaks() {
         let asset = Asset3D::load(demo_asset("manhattan")).unwrap();

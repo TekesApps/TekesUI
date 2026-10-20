@@ -56,3 +56,26 @@ cargo run -p tekes-ui-3d --release --locked -- --demo manhattan --auto-rotate
 城市默认使用正交俯视相机和 4× MSAA。MSAA 在 GPU 上解析到共享纹理，不读回 CPU；可继续环绕、缩放、旋转。抗锯齿比单采样多占显存：RGBA8 色彩 + Depth32Float 的 4× 目标约 32 bytes/px，另有共享的单采样输出 4 bytes/px；魔方及 Gallery 原有默认渲染不启用它。纹理 / 几何仅导入时上传，旋转帧只更新相机 uniform。当前没有实时阴影、PBR 反射或波浪模拟。城市没有资产动画，Space 保持暂停；A 可旋转整个场景。
 
 GPU 回归覆盖城市导入、缩放、视角、旋转、复位、120 次旋转不产生 pose 上传 / 变形计算、MSAA 目标 resize，以及两个 Demo 来回切换时 ImageId 和注册图像数量保持稳定。离屏图像与原生窗口检查分别进行，不以它们代表大规模城市 / 持续帧率性能验收。
+
+## Living City Block
+
+```sh
+cargo +1.95.0 run -p tekes-ui-3d --release --locked -- --demo city-block
+TEKESUI3D_DEMO=city-block crates/tekes-ui-3d/scripts/build-app.sh
+open "target/TekesUI City Block.app"
+# Reproducible construction stage (seconds)
+target/release/tekes-ui-3d --demo city-block --time 20 --snapshot /tmp/city-block.png
+```
+
+原创滨水街区：四栋已建成建筑、一处逐层施工工地及回转塔吊、10 辆车、28 位行人、18 株树（三种树形与带叶脉的叶片）、口袋公园、池塘和动态滨水水面。人车与树缩小到街区比例；行人各自速度不同，车辆用有界、错相的速度变化保持同车道间距。工地约每 8 秒长一层，完成后停留；`R` 可重新开始。`Space` 暂停 / 播放，拖动环绕、滚轮缩放、`A` 自动旋转，失焦 / Reduced Motion 冻结。
+
+模块边界：`tekes-ui-city` 只保存配置与时钟，`district.rs` 做宿主适配，`tekes-ui-scene3d` 提供通用 GPU 实例、路径、摆动、风、水波和渐进显露；模型生成器与 GLB/JSON 独立。`assets/generate_city_block.py` 需要离线 Pillow，可确定性重建约 1.3 MB 自包含 GLB；运行应用无需 Python。未使用第三方模型或游戏资源。
+
+实例、路径、索引网格和纹理在导入 / 配置时上传。动态帧更新 16 字节环境时间 uniform；相机矩阵变化时才更新 128 字节相机 uniform；不逐帧上传人物、车辆、树叶或施工顶点。叶片使用 glTF MASK，避免透明实例排序；材质 mipmap 在导入时由 GPU 生成，使用三线性及 8× 各向异性过滤，配合 4× MSAA 缓解缩小时的锯齿与纹理闪烁。mipmap 约增加三分之一纹理显存。当前光照仍为简化漫反射，没有实时阴影、PBR 反射或完整交通模拟。
+
+测试分别隔离车流、行人、树木、水面、施工高度和塔吊，比较真实 GPU 图像；持续 120 帧检查实例 / 几何上传保持为零，并回归暂停、Reduced Motion、复位及 Demo 切换。离屏测试不代表原生窗口持续帧率或城市规模性能验收。
+
+
+2026-10-20 街区 CPU 优化：通用 Scene3D 缓存不透明/MASK 绘制指令和目标视图，静止相机不重复上传 uniform；独立 3D 宿主通过 UI 的 `render_with_gpu` 把组件与 UI 编入同一帧、一次提交。保持画面与刷新策略；详情、可复用测量脚本和对照证据见 `docs/design/gpu-component-performance.md`。
+
+施工分三个独立节点：主体框架、稍后跟进的外立面、外挂脚手架。脚手架包含钢管、斜撑、踏板与护栏，随楼层逐段搭高；外立面完工后保留约 6 秒，再从顶层向下拆除，楼体保持完整。当前配置约第 49 秒开始拆架、约第 63 秒拆完；`--time 46` / `--time 55` / `--time 80` 可分别查看建成带架、拆架中与拆完的状态。`R` 重新开始，暂停与 Reduced Motion 同时冻结全流程。

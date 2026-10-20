@@ -17,16 +17,31 @@ pub struct Renderer3D {
     queue: wgpu::Queue,
     pipeline: wgpu::RenderPipeline,
     flat_pipeline: wgpu::RenderPipeline,
+    opaque_order: Vec<usize>,
+    opaque_bundle: Option<wgpu::RenderBundle>,
+    bundle_builds: u64,
+    last_camera: Option<[[[f32; 4]; 4]; 2]>,
+    camera_upload_bytes: u64,
     flat_bindings: Vec<wgpu::BindGroup>,
     camera: wgpu::Buffer,
     camera_bind: wgpu::BindGroup,
     materials: Vec<wgpu::BindGroup>,
     deformer: Deformer,
     last_frame_pose_upload_bytes: u64,
+    camera_layout: wgpu::BindGroupLayout,
+    environment_buffer: wgpu::Buffer,
+    environment_state: crate::Environment3D,
+    identity_instances: wgpu::Buffer,
+    route_buffer: wgpu::Buffer,
+    instance_batches: Vec<Option<GpuBatch>>,
+    instance_upload_bytes: u64,
+    environment_upload_bytes: u64,
     size: (u32, u32),
     color: GpuImage,
     depth: wgpu::Texture,
+    depth_view: wgpu::TextureView,
     msaa: Option<wgpu::Texture>,
+    msaa_view: Option<wgpu::TextureView>,
     samples: u32,
 }
 impl Renderer3D {
@@ -55,7 +70,12 @@ impl Renderer3D {
         check_size(size, &device)?;
         let camera_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("3D camera"),
-            entries: &[buffer_entry(0, wgpu::ShaderStages::VERTEX)],
+            entries: &[
+                buffer_entry(0, wgpu::ShaderStages::VERTEX),
+                buffer_entry(1, wgpu::ShaderStages::VERTEX),
+                storage_entry(2),
+                storage_entry(3),
+            ],
         });
         let camera = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("3D camera"),
@@ -63,14 +83,30 @@ impl Renderer3D {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        let camera_bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
-            layout: &camera_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: camera.as_entire_binding(),
-            }],
+        let environment_state = crate::Environment3D::default();
+        let environment_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("3D environment clock"),
+            contents: bytemuck::cast_slice(&[0_f32, 0.8, 0.4, 1.]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
+        let identity_instances = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("3D identity instance"),
+            contents: bytemuck::bytes_of(&crate::instances::GpuInstance::identity()),
+            usage: wgpu::BufferUsages::STORAGE,
+        });
+        let route_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("3D default route"),
+            contents: bytemuck::cast_slice(&[0_f32; 4]),
+            usage: wgpu::BufferUsages::STORAGE,
+        });
+        let camera_bind = instance_binding(
+            &device,
+            &camera_layout,
+            &camera,
+            &environment_buffer,
+            &identity_instances,
+            &route_buffer,
+        );
         let material_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("3D material"),
             entries: &[
@@ -96,7 +132,14 @@ impl Renderer3D {
         let materials = upload_materials(&device, &queue, &material_layout, &component.asset)?;
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Scene3D"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("scene3d.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                format!(
+                    "{}\n{}",
+                    include_str!("instance_motion.wgsl"),
+                    include_str!("scene3d.wgsl")
+                )
+                .into(),
+            ),
         });
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
@@ -131,6 +174,7 @@ impl Renderer3D {
         let pipeline = render_pipeline(&device, &shader, &layout, false, "fs", samples);
         let flat_pipeline = render_pipeline(&device, &shader, &flat_layout, true, "fs", samples);
         let deformer = Deformer::new(&device, &component.asset)?;
+        let opaque_order = (0..deformer.meshes.len()).collect();
         let flat_bindings = deformer
             .meshes
             .iter()
@@ -161,15 +205,30 @@ impl Renderer3D {
             queue,
             pipeline,
             flat_pipeline,
+            opaque_order,
+            opaque_bundle: None,
+            bundle_builds: 0,
+            last_camera: None,
+            camera_upload_bytes: 0,
             flat_bindings,
             camera,
             camera_bind,
             materials,
             deformer,
             last_frame_pose_upload_bytes: 0,
+            camera_layout,
+            environment_buffer,
+            environment_state,
+            identity_instances,
+            route_buffer,
+            instance_batches: vec![None; component.asset.meshes.len()],
+            instance_upload_bytes: 0,
+            environment_upload_bytes: 0,
             size,
             color,
+            depth_view: depth.create_view(&Default::default()),
             depth,
+            msaa_view: msaa.as_ref().map(|t| t.create_view(&Default::default())),
             msaa,
             samples,
         })
@@ -184,6 +243,12 @@ impl Renderer3D {
             self.depth = depth_target(&self.device, size, self.samples);
             self.msaa =
                 (self.samples > 1).then(|| multisample_target(&self.device, size, self.samples));
+
+            self.depth_view = self.depth.create_view(&Default::default());
+            self.msaa_view = self
+                .msaa
+                .as_ref()
+                .map(|t| t.create_view(&Default::default()));
             self.size = size;
         }
         Ok(())
@@ -197,42 +262,60 @@ impl Renderer3D {
     }
     /// Render an orbit/elevation/zoom view with independent model orientation.
     pub fn render_camera(&mut self, component: &Scene3D, camera: &Camera3D) -> Result<(), Error> {
+        let mut encoder = self.device.create_command_encoder(&Default::default());
+        self.encode_camera(component, camera, &mut encoder)?;
+        self.queue.submit([encoder.finish()]);
+        Ok(())
+    }
+    /// Encode into the host's frame on the same GpuContext. Submit this encoder
+    /// exactly once, before the UI samples output(). No CPU synchronization.
+    /// Do not drop encoded deformation work: call only after acquiring a frame.
+    pub fn encode_camera(
+        &mut self,
+        component: &Scene3D,
+        camera: &Camera3D,
+        encoder: &mut wgpu::CommandEncoder,
+    ) -> Result<(), Error> {
         let asset = &component.asset;
         if self.asset_id != asset.id {
             return Err(err("renderer asset mismatch"));
+        }
+        if self.opaque_bundle.is_none() {
+            self.rebuild_opaque_bundle();
         }
         let matrices = camera.matrices(
             asset.center,
             asset.radius,
             self.size.0 as f32 / self.size.1 as f32,
         )?;
-        self.queue
-            .write_buffer(&self.camera, 0, bytemuck::cast_slice(&matrices));
+        if self.last_camera.as_ref() != Some(&matrices) {
+            self.queue
+                .write_buffer(&self.camera, 0, bytemuck::cast_slice(&matrices));
+            self.last_camera = Some(matrices);
+            self.camera_upload_bytes += 128;
+        }
         self.last_frame_pose_upload_bytes =
             self.deformer
                 .update_pose(&self.queue, asset, component.clip, component.time);
-        let mut encoder = self.device.create_command_encoder(&Default::default());
-        self.deformer.encode(&mut encoder);
-        let msaa_view = self
-            .msaa
-            .as_ref()
-            .map(|t| t.create_view(&Default::default()));
-        let color_view = msaa_view.as_ref().unwrap_or(self.color.render_view());
-        let depth_view = self.depth.create_view(&Default::default());
+        self.deformer.encode(encoder);
+        let msaa_view = &self.msaa_view;
+        let resolved_view = self.color.render_view();
+        let color_view = msaa_view.as_ref().unwrap_or(resolved_view);
+
         {
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Scene3D"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: color_view,
                     depth_slice: None,
-                    resolve_target: msaa_view.as_ref().map(|_| self.color.render_view()),
+                    resolve_target: msaa_view.as_ref().map(|_| resolved_view),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &depth_view,
+                    view: &self.depth_view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(0.),
                         store: wgpu::StoreOp::Discard,
@@ -241,26 +324,197 @@ impl Renderer3D {
                 }),
                 ..Default::default()
             });
-            for (i, draw) in self.deformer.meshes.iter().enumerate() {
-                pass.set_pipeline(if draw.flat_normals {
-                    &self.flat_pipeline
-                } else {
-                    &self.pipeline
+            pass.execute_bundles(self.opaque_bundle.iter());
+        }
+
+        Ok(())
+    }
+    /// Number of immutable opaque command-list builds (not frame count).
+    pub fn draw_bundle_builds(&self) -> u64 {
+        self.bundle_builds
+    }
+    pub fn camera_upload_bytes(&self) -> u64 {
+        self.camera_upload_bytes
+    }
+    fn rebuild_opaque_bundle(&mut self) {
+        let mut bundle =
+            self.device
+                .create_render_bundle_encoder(&wgpu::RenderBundleEncoderDescriptor {
+                    label: Some("3D cached opaque draws"),
+                    color_formats: &[Some(wgpu::TextureFormat::Rgba8UnormSrgb)],
+                    depth_stencil: Some(wgpu::RenderBundleDepthStencil {
+                        format: wgpu::TextureFormat::Depth32Float,
+                        depth_read_only: false,
+                        stencil_read_only: true,
+                    }),
+                    sample_count: self.samples,
+                    multiview: None,
                 });
-                pass.set_bind_group(0, &self.camera_bind, &[]);
-                pass.set_bind_group(1, &self.materials[draw.material], &[]);
-                if draw.flat_normals {
-                    pass.set_bind_group(2, &self.flat_bindings[i], &[]);
-                    pass.draw(0..draw.index_count, 0..1);
-                } else {
-                    pass.set_vertex_buffer(0, draw.output.slice(..));
-                    pass.set_index_buffer(draw.indices.slice(..), wgpu::IndexFormat::Uint32);
-                    pass.draw_indexed(0..draw.index_count, 0, 0..1);
-                }
+        for &i in &self.opaque_order {
+            let draw = &self.deformer.meshes[i];
+            let batch = self.instance_batches.get(i).and_then(Option::as_ref);
+            let count = batch.map_or(1, |b| b.count);
+            if count == 0 {
+                continue;
+            }
+            bundle.set_pipeline(if draw.flat_normals {
+                &self.flat_pipeline
+            } else {
+                &self.pipeline
+            });
+            bundle.set_bind_group(0, batch.map_or(&self.camera_bind, |b| &b.bind), &[]);
+            bundle.set_bind_group(1, &self.materials[draw.material], &[]);
+            if draw.flat_normals {
+                bundle.set_bind_group(2, &self.flat_bindings[i], &[]);
+                bundle.draw(0..draw.index_count, 0..count);
+            } else {
+                bundle.set_vertex_buffer(0, draw.output.slice(..));
+                bundle.set_index_buffer(draw.indices.slice(..), wgpu::IndexFormat::Uint32);
+                bundle.draw_indexed(0..draw.index_count, 0, 0..count);
             }
         }
-        self.queue.submit([encoder.finish()]);
+        self.opaque_bundle = Some(bundle.finish(&wgpu::RenderBundleDescriptor {
+            label: Some("3D cached opaque draws"),
+        }));
+        self.bundle_builds += 1;
+    }
+    /// Upload immutable instances/routes once. Omitted nodes retain one ordinary
+    /// draw; an explicitly empty batch hides its node. Transparent instancing is
+    /// rejected because primitive-center sorting cannot order its instances.
+    pub fn configure_instances(
+        &mut self,
+        view: &Scene3D,
+        config: &crate::InstanceScene3D,
+    ) -> Result<(), Error> {
+        if view.asset.id != self.asset_id {
+            return Err(err("renderer asset mismatch"));
+        }
+        let (points, spans) = crate::instances::pack_routes(&config.routes)?;
+        let limit = self.device.limits().max_storage_buffer_binding_size;
+        let mut prepared = Vec::new();
+        let mut seen = std::collections::HashSet::new();
+        for batch in &config.batches {
+            if !seen.insert(&batch.node) {
+                return Err(err("duplicate instance node batch"));
+            }
+            let matches: Vec<_> = self
+                .deformer
+                .meshes
+                .iter()
+                .enumerate()
+                .filter(|(_, d)| {
+                    view.asset.node_names[view.asset.meshes[d.mesh_index].node] == batch.node
+                })
+                .map(|(i, _)| i)
+                .collect();
+            if matches.is_empty() {
+                return Err(err(format!("instance node not found: {}", batch.node)));
+            }
+            let packed: Vec<_> = batch
+                .instances
+                .iter()
+                .map(|i| crate::instances::GpuInstance::from_instance(i, &spans))
+                .collect::<Result<_, _>>()?;
+            if (packed.len().max(1) * std::mem::size_of::<crate::instances::GpuInstance>()) as u64
+                > limit
+            {
+                return Err(err("instance batch exceeds GPU storage limit"));
+            }
+            prepared.push((matches, packed));
+        }
+        if points.len() as u64 * 16 > limit {
+            return Err(err("routes exceed GPU storage limit"));
+        }
+        let route_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("3D route arc lengths"),
+                contents: bytemuck::cast_slice(&points),
+                usage: wgpu::BufferUsages::STORAGE,
+            });
+        let mut bytes = route_buffer.size();
+        let mut batches = vec![None; self.deformer.meshes.len()];
+        for (indices, packed) in prepared {
+            let count = packed.len() as u32;
+            let contents = if packed.is_empty() {
+                vec![crate::instances::GpuInstance::identity()]
+            } else {
+                packed
+            };
+            let buffer = self
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("3D immutable GPU instances"),
+                    contents: bytemuck::cast_slice(&contents),
+                    usage: wgpu::BufferUsages::STORAGE,
+                });
+            bytes += buffer.size();
+            let bind = instance_binding(
+                &self.device,
+                &self.camera_layout,
+                &self.camera,
+                &self.environment_buffer,
+                &buffer,
+                &route_buffer,
+            );
+            let batch = GpuBatch {
+                _buffer: buffer,
+                bind,
+                count,
+            };
+            for index in indices {
+                batches[index] = Some(batch.clone());
+            }
+        }
+        self.camera_bind = instance_binding(
+            &self.device,
+            &self.camera_layout,
+            &self.camera,
+            &self.environment_buffer,
+            &self.identity_instances,
+            &route_buffer,
+        );
+        self.route_buffer = route_buffer;
+        self.instance_batches = batches;
+        self.opaque_bundle = None;
+        self.instance_upload_bytes += bytes;
         Ok(())
+    }
+    /// A 16-byte uniform update; all motion and normal calculations execute on GPU.
+    pub fn set_environment(&mut self, environment: crate::Environment3D) -> Result<(), Error> {
+        let values = [
+            environment.time_seconds,
+            environment.wind_direction[0],
+            environment.wind_direction[1],
+            environment.wind_strength,
+        ];
+        if values.iter().any(|v| !v.is_finite())
+            || environment.time_seconds < 0.
+            || environment.wind_strength < 0.
+        {
+            return Err(err("environment parameters must be finite and nonnegative"));
+        }
+        let old = self.environment_state;
+        if values
+            != [
+                old.time_seconds,
+                old.wind_direction[0],
+                old.wind_direction[1],
+                old.wind_strength,
+            ]
+        {
+            self.queue
+                .write_buffer(&self.environment_buffer, 0, bytemuck::cast_slice(&values));
+            self.environment_upload_bytes += 16;
+            self.environment_state = environment;
+        }
+        Ok(())
+    }
+    pub fn instance_upload_bytes(&self) -> u64 {
+        self.instance_upload_bytes
+    }
+    pub fn environment_upload_bytes(&self) -> u64 {
+        self.environment_upload_bytes
     }
     /// Register once with the issuing UI renderer; after resize, replace its
     /// ImageId backing storage with this output. No per-frame re-registration.
@@ -290,6 +544,45 @@ impl Renderer3D {
     pub fn last_frame_pose_upload_bytes(&self) -> u64 {
         self.last_frame_pose_upload_bytes
     }
+}
+#[derive(Clone, Debug)]
+struct GpuBatch {
+    _buffer: wgpu::Buffer,
+    bind: wgpu::BindGroup,
+    count: u32,
+}
+fn storage_entry(binding: u32) -> wgpu::BindGroupLayoutEntry {
+    wgpu::BindGroupLayoutEntry {
+        binding,
+        visibility: wgpu::ShaderStages::VERTEX,
+        ty: wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Storage { read_only: true },
+            has_dynamic_offset: false,
+            min_binding_size: None,
+        },
+        count: None,
+    }
+}
+fn instance_binding(
+    device: &wgpu::Device,
+    layout: &wgpu::BindGroupLayout,
+    camera: &wgpu::Buffer,
+    environment: &wgpu::Buffer,
+    instances: &wgpu::Buffer,
+    routes: &wgpu::Buffer,
+) -> wgpu::BindGroup {
+    device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("3D camera and instance motion"),
+        layout,
+        entries: &[camera, environment, instances, routes]
+            .into_iter()
+            .enumerate()
+            .map(|(i, b)| wgpu::BindGroupEntry {
+                binding: i as u32,
+                resource: b.as_entire_binding(),
+            })
+            .collect::<Vec<_>>(),
+    })
 }
 fn render_pipeline(
     device: &wgpu::Device,
@@ -407,9 +700,40 @@ fn upload_materials(
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::MipmapFilterMode::Linear,
+        anisotropy_clamp: 8,
         address_mode_u: wgpu::AddressMode::Repeat,
         address_mode_v: wgpu::AddressMode::Repeat,
         ..Default::default()
+    });
+    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("3D GPU mipmaps"),
+        source: wgpu::ShaderSource::Wgsl(include_str!("mipmap.wgsl").into()),
+    });
+    let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("3D immutable texture downsampling"),
+        layout: None,
+        vertex: wgpu::VertexState {
+            module: &shader,
+            entry_point: Some("vs"),
+            compilation_options: Default::default(),
+            buffers: &[],
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &shader,
+            entry_point: Some("fs"),
+            compilation_options: Default::default(),
+            targets: &[Some(wgpu::ColorTargetState {
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                blend: None,
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        }),
+        primitive: Default::default(),
+        depth_stencil: None,
+        multisample: Default::default(),
+        multiview_mask: None,
+        cache: None,
     });
     asset
         .materials
@@ -423,14 +747,17 @@ fn upload_materials(
                 })
                 .unwrap_or(((1, 1), &[255; 4]));
             check_size(size, device)?;
+            let mip_count = 32 - size.0.max(size.1).leading_zeros();
             let texture = device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("3D base color"),
                 size: extent(size),
-                mip_level_count: 1,
+                mip_level_count: mip_count,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::COPY_DST
+                    | wgpu::TextureUsages::RENDER_ATTACHMENT,
                 view_formats: &[],
             });
             queue.write_texture(
@@ -448,6 +775,52 @@ fn upload_materials(
                 },
                 extent(size),
             );
+            if mip_count > 1 {
+                let mut encoder = device.create_command_encoder(&Default::default());
+                for level in 1..mip_count {
+                    let source = texture.create_view(&wgpu::TextureViewDescriptor {
+                        base_mip_level: level - 1,
+                        mip_level_count: Some(1),
+                        ..Default::default()
+                    });
+                    let target = texture.create_view(&wgpu::TextureViewDescriptor {
+                        base_mip_level: level,
+                        mip_level_count: Some(1),
+                        ..Default::default()
+                    });
+                    let bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                        label: None,
+                        layout: &pipeline.get_bind_group_layout(0),
+                        entries: &[
+                            wgpu::BindGroupEntry {
+                                binding: 0,
+                                resource: wgpu::BindingResource::TextureView(&source),
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 1,
+                                resource: wgpu::BindingResource::Sampler(&sampler),
+                            },
+                        ],
+                    });
+                    let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("3D mip level"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &target,
+                            depth_slice: None,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        ..Default::default()
+                    });
+                    pass.set_pipeline(&pipeline);
+                    pass.set_bind_group(0, &bind, &[]);
+                    pass.draw(0..3, 0..1);
+                }
+                queue.submit([encoder.finish()]);
+            }
             let uniform = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("3D material"),
                 contents: bytemuck::cast_slice(&[
@@ -498,6 +871,148 @@ mod tests {
         )
         .unwrap()
     }
+    #[test]
+    #[ignore = "requires a real wgpu GPU adapter"]
+    fn environment_normals_match_numerical_reference_and_reuse_buffers() {
+        use crate::{Deformation3D, Environment3D, Instance3D, InstanceBatch3D, InstanceScene3D};
+        use glam::{Mat3, Quat, Vec3};
+        let mut ui = Renderer::new_headless().unwrap();
+        for water in [false, true] {
+            let mut source = crate::asset::tests::depth_fixture(false);
+            for p in &mut source.meshes[0].positions {
+                if water {
+                    *p = Vec3::new(p.x, 0., p.y);
+                } else {
+                    p.y += 1.3;
+                }
+            }
+            if water {
+                source.meshes[0].normals.fill(Vec3::Y);
+            }
+            let mut reference = crate::asset::tests::depth_fixture(false);
+            reference.meshes = source.meshes.clone();
+            let time = 0.7_f32;
+            let amplitude = 0.08;
+            let frequency = 1.6;
+            let phase = 0.2;
+            let scale = Vec3::new(0.8, 1.1, 0.9);
+            let rotation = Quat::from_rotation_y(0.2);
+            let deform = |p: Vec3| {
+                let q = if water {
+                    let a = p.x * 1.7 + p.z * 0.9 + time * frequency + phase;
+                    let b = -p.x * 0.9 + p.z * 1.7 - time * frequency * 0.7 + phase;
+                    p + Vec3::Y * amplitude * (a.sin() + 0.5 * b.sin())
+                } else {
+                    let h = p.y.max(0.);
+                    p + Vec3::new(0.8, 0., 0.4)
+                        * amplitude
+                        * (time * frequency + phase).sin()
+                        * h
+                        * h
+                };
+                rotation * (q * scale)
+            };
+            let mesh = &mut reference.meshes[0];
+            for (p, n) in mesh.positions.iter_mut().zip(&mut mesh.normals) {
+                let original = *p;
+                let eps = 0.001;
+                let jacobian = Mat3::from_cols(
+                    (deform(original + Vec3::X * eps) - deform(original - Vec3::X * eps))
+                        / (2. * eps),
+                    (deform(original + Vec3::Y * eps) - deform(original - Vec3::Y * eps))
+                        / (2. * eps),
+                    (deform(original + Vec3::Z * eps) - deform(original - Vec3::Z * eps))
+                        / (2. * eps),
+                );
+                *p = deform(original);
+                *n = (jacobian.inverse().transpose() * *n).normalize();
+            }
+            let node = source.node_names[0].clone();
+            let view = Scene3D::new(source);
+            let reference = Scene3D::new(reference);
+            let mut gpu = Renderer3D::new(&ui.gpu_context(), &view, (192, 192)).unwrap();
+            let mut cpu = Renderer3D::new(&ui.gpu_context(), &reference, (192, 192)).unwrap();
+            normal_pipelines(&mut gpu);
+            normal_pipelines(&mut cpu);
+            let instance = Instance3D {
+                yaw: 0.2,
+                scale: scale.to_array(),
+                deformation: if water {
+                    Deformation3D::Waves {
+                        amplitude,
+                        frequency,
+                        phase,
+                    }
+                } else {
+                    Deformation3D::Wind {
+                        amplitude,
+                        frequency,
+                        phase,
+                        root_y: 0.,
+                    }
+                },
+                ..Default::default()
+            };
+            gpu.configure_instances(
+                &view,
+                &InstanceScene3D {
+                    routes: vec![],
+                    batches: vec![InstanceBatch3D {
+                        node,
+                        instances: vec![instance],
+                    }],
+                },
+            )
+            .unwrap();
+            gpu.set_environment(Environment3D {
+                time_seconds: time,
+                ..Default::default()
+            })
+            .unwrap();
+            gpu.render(&view, 0.3, 1.).unwrap();
+            cpu.render(&reference, 0.3, 1.).unwrap();
+            let image = ui.register_gpu_image(gpu.output()).unwrap();
+            let reference_image = ui.register_gpu_image(cpu.output()).unwrap();
+            let actual = capture(&mut ui, &view, image);
+            let expected = capture(&mut ui, &reference, reference_image);
+            let mut compared = 0;
+            for y in 1..191 {
+                for x in 1..191 {
+                    let offset = (y * 192 + x) * 4;
+                    if [(x, y), (x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+                        .into_iter()
+                        .all(|(x, y)| {
+                            actual[(y * 192 + x) * 4 + 3] == 255
+                                && expected[(y * 192 + x) * 4 + 3] == 255
+                        })
+                    {
+                        assert!(
+                            actual[offset..offset + 3]
+                                .iter()
+                                .zip(&expected[offset..offset + 3])
+                                .all(|(a, b)| a.abs_diff(*b) <= 3),
+                            "analytic GPU normals must match numerical Jacobian; water={water}"
+                        );
+                        compared += 1;
+                    }
+                }
+            }
+            assert!(compared > 100);
+            let bytes = gpu.instance_upload_bytes();
+            let geometry = gpu.geometry_resident_bytes();
+            gpu.set_environment(Environment3D {
+                time_seconds: 1.5,
+                ..Default::default()
+            })
+            .unwrap();
+            gpu.render(&view, 0.3, 1.).unwrap();
+            assert_eq!(bytes, gpu.instance_upload_bytes());
+            assert_eq!(geometry, gpu.geometry_resident_bytes());
+            assert_eq!(gpu.last_frame_pose_upload_bytes(), 0);
+            assert_eq!(gpu.last_frame_deformed_meshes(), 0);
+        }
+    }
+
     #[test]
     #[ignore = "requires a real wgpu GPU adapter"]
     fn distant_close_surfaces_do_not_z_fight() {
@@ -588,7 +1103,8 @@ mod tests {
                 label: Some("test-only normal direction output"),
                 source: wgpu::ShaderSource::Wgsl(
                     format!(
-                        "{}\n{}",
+                        "{}\n{}\n{}",
+                        include_str!("instance_motion.wgsl"),
                         include_str!("scene3d.wgsl"),
                         r#"
                 @fragment fn fs_test_normals(i: Out) -> @location(0) vec4<f32> {

@@ -14,7 +14,7 @@
 - 深度遮挡、透明背景、OPAQUE / MASK；固定预览光照、轨道相机 yaw / pitch / zoom、绕模型中心的 quaternion 旋转；尺寸校验、GPU 资源 resize、明确错误。
 - `paint` 把宿主持有的 `ImageId` 放入普通 UI Scene，沿用 UI 的布局、裁剪和叠放规则。
 
-当前材质是**双面漫反射预览**，不是完整 glTF PBR：metallic / roughness、normal / emissive / occlusion、灯光和文件内相机未应用。贴图采用重复寻址和线性采样；未应用资产自带 sampler、mipmaps、texture transforms。BLEND、非三角网格、超过四个骨骼权重、非 8-bit 图片和 required 扩展明确报错；不支持 Draco / Meshopt / KTX2。optional 扩展忽略并采用核心字段。动画按资产 clip 独立播放，不做 clip 混合、IK 或物理模拟。
+当前材质是**双面漫反射预览**，不是完整 glTF PBR：metallic / roughness、normal / emissive / occlusion、灯光和文件内相机未应用。贴图采用重复寻址、GPU 生成的 mipmap、三线性与各向异性采样；未应用资产自带 sampler、texture transforms。BLEND、非三角网格、超过四个骨骼权重、非 8-bit 图片和 required 扩展明确报错；不支持 Draco / Meshopt / KTX2。optional 扩展忽略并采用核心字段。动画按资产 clip 独立播放，不做 clip 混合、IK 或物理模拟。
 
 这是本地资产预览 API：`.gltf` 的相对路径按源文件目录解析；宿主负责文件授权和资产来源。加载是同步的，宿主应在工作线程载入资产；GPU / UI 合成按宿主的渲染线程约定使用。
 
@@ -97,3 +97,20 @@ gpu.render_camera(view, &camera)?;
 Gallery 的预览 target 现按实际图像区域 × backing scale 自适应（上限为设备限制与 4096 的较小值），resize 保持 ImageId 和几何 buffer；暂停 / Reduced Motion 下也完成尺寸收敛。持续原生旋转测试可用 `TEKES_PERF=scroll:60 TEKES_PERF_CONTENT=scene3d TEKES_PERF_GPU_TIMING=0 cargo run -p tekes-ui-gallery --release --locked`，增加 `TEKES_PERF_SCENE3D_ANIMATION=1` 同时播放 clip。实际前台 120Hz / Retina 测量及原始数据见 [测试记录](../../docs/design/scene3d-adaptive-20261020.md)。
 
 建筑 / 城市消费者可调用 `Camera3D::set_orthographic(true)` 使用正交投影，仍沿用缩放和反向 Z 深度；默认保持透视。`Renderer3D::new_antialiased` 提供可选的 4× MSAA，在 GPU 上 resolve 到共享输出图像；默认 `new` 仍为单采样，Gallery 现有显存预算不变。抗锯齿渲染器 resize 时重建匹配采样数的色彩和深度附件。
+
+### Generic GPU instances and environment
+
+`configure_instances` accepts named glTF-node batches of `Instance3D` and closed `Route3D` polylines. Immutable route/instance buffers upload once; omitted nodes retain one draw, empty batches hide a node. OPAQUE/MASK instancing is supported; BLEND instances are rejected until per-instance sorting is implemented. Existing single-instance consumers keep identity bindings.
+
+`set_environment` updates host-owned time/wind (16 bytes, only when changed). Vertex shaders evaluate route arc lengths, bounded speed variation/lateral offsets, rooted wind, traveling water waves, pivot swing and finite floor-by-floor `BuildUp` reveal. Wind/wave normals use the analytic inverse Jacobian; scale and rigid rotation correctly transform normals. Geometry, skin and morph buffer reuse is preserved. BuildUp clips the prebuilt structure without stretching floors; it does not create a watertight cap on the moving cut plane.
+
+Base-color textures generate their mip chain once on GPU in linear light. Trilinear + 8× anisotropic sampling reduces minification shimmer; mip chains add roughly one third of base texture storage. No per-frame texture upload or CPU downsampling is involved.
+
+
+### Reuse draw commands and share the UI frame
+
+Opaque/MASK draw commands are cached in a wgpu RenderBundle, including indexed and flat-normal paths. Uniform writes and GPU skin/morph/analytic motion remain live. Instance reconfiguration invalidates the bundle; resize only replaces attachment views. Camera matrices upload only when changed.
+
+For native GPU composition, prefer `Renderer::render_with_gpu` plus `Renderer3D::encode_camera`. Acquisition happens first, component passes precede UI sampling, and the frame uses one queue submission. `render_camera` remains available for standalone submission. The UI's `render_to_rgba8_with_gpu` supplies the same ordering for image tests and snapshots. See `docs/design/gpu-component-performance.md` for lifecycle rules, measurement and reusable regression checks.
+
+`Deformation3D::StagedReveal` generalizes the grow/hold/remove lifecycle: fixed-size steps reveal from the base, hold after completion, then disappear from the top down. Only GPU time changes; instance storage stays 112 bytes and the finite lifecycle requires no per-frame instance upload.

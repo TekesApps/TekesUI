@@ -174,3 +174,37 @@ fn rejects_invalid_scale() {
     let res = unsafe { Renderer::new_for_metal_layer(ptr(&layer), (200, 160), 0.0) };
     assert!(matches!(res, Err(RenderError::InvalidArgument(_))));
 }
+
+#[test]
+fn gpu_component_hook_runs_only_after_acquiring_a_valid_target() {
+    let layer = make_layer(100., 80., 1.);
+    let Some(mut renderer) = new_renderer(&layer, (100, 80), 1.) else {
+        return;
+    };
+    let mut calls = 0;
+    renderer
+        .render_with_gpu(
+            &scene(),
+            &mut GlyphAtlas::new(Default::default()),
+            Rgba::gray(0.),
+            |_| {
+                calls += 1;
+                Ok(())
+            },
+        )
+        .unwrap();
+    assert_eq!(calls, 1);
+    renderer.resize((0, 0), 1.);
+    renderer
+        .render_with_gpu(
+            &scene(),
+            &mut GlyphAtlas::new(Default::default()),
+            Rgba::gray(0.),
+            |_| {
+                calls += 1;
+                Ok(())
+            },
+        )
+        .unwrap();
+    assert_eq!(calls, 1, "minimized target must not consume producer work");
+}

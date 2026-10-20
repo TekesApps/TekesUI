@@ -6,10 +6,15 @@ mod asset;
 mod camera;
 mod deform;
 mod gpu;
+mod instances;
 
 pub use asset::{Asset3D, ClipInfo};
 pub use camera::Camera3D;
 pub use gpu::Renderer3D;
+pub use instances::{
+    Deformation3D, Environment3D, FollowRoute3D, Instance3D, InstanceBatch3D, InstanceScene3D,
+    Route3D,
+};
 use tekes_ui_scene::{ImageId, ImageQuad, Rect, Scene};
 
 /// Import, unsupported-feature, argument or GPU error, with actionable context.
