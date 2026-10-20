@@ -19,24 +19,61 @@ fn home_camera() -> Camera3D {
     camera.zoom_by(0.85).unwrap();
     camera
 }
-fn default_asset() -> PathBuf {
+fn camera_for_asset(name: &str) -> Camera3D {
+    if name == "manhattan.glb" {
+        let mut camera = Camera3D::default();
+        camera.orbit(-0.45, 0.29).unwrap();
+        camera.zoom_by(0.56).unwrap();
+        camera.set_orthographic(true);
+        camera
+    } else {
+        home_camera()
+    }
+}
+fn demo_asset(name: &str) -> PathBuf {
+    let filename = format!("{name}.glb");
     let bundled = std::env::current_exe().ok().and_then(|p| {
         p.parent()?
             .parent()
-            .map(|p| p.join("Resources/rubiks-cube.glb"))
+            .map(|p| p.join("Resources").join(&filename))
     });
-    bundled
-        .filter(|p| p.exists())
-        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/rubiks-cube.glb"))
+    bundled.filter(|p| p.exists()).unwrap_or_else(|| {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("assets")
+            .join(&filename)
+    })
 }
+fn default_asset() -> PathBuf {
+    demo_asset("rubiks-cube")
+}
+
 pub fn run() -> Result<()> {
+    let executable = std::env::current_exe().ok();
+    let mut demo = match executable
+        .as_ref()
+        .and_then(|p| p.file_stem())
+        .and_then(|s| s.to_str())
+    {
+        Some("tekes-ui-manhattan") => "manhattan",
+        _ => "cube",
+    }
+    .to_owned();
     let mut input = None;
     let mut snapshot = None;
     let mut auto_rotate = false;
     let mut play = false;
     let mut args = std::env::args_os().skip(1);
     while let Some(arg) = args.next() {
-        if arg == "--snapshot" {
+        if arg == "--demo" {
+            demo = args
+                .next()
+                .ok_or("--demo requires cube or manhattan")?
+                .to_string_lossy()
+                .into_owned();
+            if !["cube", "manhattan"].contains(&demo.as_str()) {
+                return Err("--demo requires cube or manhattan".into());
+            }
+        } else if arg == "--snapshot" {
             snapshot = Some(PathBuf::from(
                 args.next().ok_or("--snapshot requires a PNG path")?,
             ));
@@ -45,10 +82,16 @@ pub fn run() -> Result<()> {
         } else if arg == "--play" {
             play = true;
         } else if input.replace(PathBuf::from(arg)).is_some() {
-            return Err("usage: tekes-ui-3d [model.glb|model.gltf] [--snapshot output.png] [--auto-rotate] [--play]".into());
+            return Err("usage: tekes-ui-3d [model.glb|model.gltf] [--demo cube|manhattan] [--snapshot output.png] [--auto-rotate] [--play]".into());
         }
     }
-    let path = input.unwrap_or_else(default_asset);
+    let path = input.unwrap_or_else(|| {
+        if demo != "cube" {
+            demo_asset(&demo)
+        } else {
+            default_asset()
+        }
+    });
     let mut viewer = Viewer::new(
         Asset3D::load(&path)?,
         path.file_name()
@@ -105,6 +148,10 @@ fn menus() -> MenuBar {
     MenuBar {
         menus: vec![
             Menu::new(
+                "Demo",
+                vec![item("Rubik’s Cube", 11), item("Manhattan Skyline", 12)],
+            ),
+            Menu::new(
                 "View",
                 vec![
                     item("Reset view (R)", 1),
@@ -121,7 +168,7 @@ fn menus() -> MenuBar {
             Menu::new(
                 "Animation",
                 vec![
-                    item("Play / pause layer (Space)", 9),
+                    item("Play / pause animation (Space)", 9),
                     item("Auto rotate (A)", 10),
                 ],
             ),
@@ -131,6 +178,7 @@ fn menus() -> MenuBar {
 struct Viewer {
     view: Scene3D,
     camera: Camera3D,
+    home: Camera3D,
     name: String,
     ui: Option<Renderer>,
     gpu: Option<Renderer3D>,
@@ -158,10 +206,12 @@ impl Viewer {
         if view.asset().clips().len() > 0 {
             view.select_clip(0)?;
         }
+        let home = camera_for_asset(&name);
         let fonts = CoreTextFonts::new();
         Ok(Self {
             view,
-            camera: home_camera(),
+            camera: home.clone(),
+            home,
             name,
             ui: None,
             gpu: None,
@@ -202,7 +252,11 @@ impl Viewer {
     fn init(&mut self, mut ui: Renderer, pixels: (u32, u32), scale: f32) -> Result<()> {
         self.scale = scale;
         self.size = (pixels.0 as f32 / scale, pixels.1 as f32 / scale);
-        let gpu = Renderer3D::new(&ui.gpu_context(), &self.view, self.pixels())?;
+        let gpu = if self.name == "manhattan.glb" {
+            Renderer3D::new_antialiased(&ui.gpu_context(), &self.view, self.pixels())?
+        } else {
+            Renderer3D::new(&ui.gpu_context(), &self.view, self.pixels())?
+        };
         self.image = Some(ui.register_gpu_image(gpu.output())?);
         self.gpu = Some(gpu);
         self.ui = Some(ui);
@@ -221,7 +275,16 @@ impl Viewer {
         self.view
             .paint(&mut scene, self.stage(), self.image.unwrap());
         let labels = [
-            ("TekesUI3D".to_owned(), 24., 20., 20.),
+            (
+                if self.name == "manhattan.glb" {
+                    "MANHATTAN · Skyline".to_owned()
+                } else {
+                    "TekesUI3D".to_owned()
+                },
+                24.,
+                20.,
+                20.,
+            ),
             (format!("{} · glTF 2.0 · wgpu", self.name), 24., 48., 12.),
             (
                 "拖动：视角  ·  右键 / Shift 拖动：旋转模型  ·  滚轮 / + −：缩放".to_owned(),
@@ -232,10 +295,12 @@ impl Viewer {
             (
                 format!(
                     "方向键：视角  ·  R：复位  ·  Space：{}  ·  A：自动旋转",
-                    if self.playing {
-                        "暂停顶层动画"
+                    if self.view.asset().clips().len() == 0 {
+                        "此场景为静态建筑"
+                    } else if self.playing {
+                        "暂停动画"
                     } else {
-                        "播放顶层动画"
+                        "播放动画"
                     }
                 ),
                 24.,
@@ -276,10 +341,39 @@ impl Viewer {
         )?;
         Ok(())
     }
+    fn select_demo(&mut self, demo: &str) -> Result<()> {
+        let path = demo_asset(demo);
+        let mut view = Scene3D::new(Asset3D::load(&path)?);
+        if view.asset().clips().len() > 0 {
+            view.select_clip(0)?;
+        }
+        let context = self.ui.as_ref().ok_or("GPU not initialized")?.gpu_context();
+        let gpu = if demo != "rubiks-cube" {
+            Renderer3D::new_antialiased(&context, &view, self.pixels())?
+        } else {
+            Renderer3D::new(&context, &view, self.pixels())?
+        };
+        self.ui
+            .as_mut()
+            .unwrap()
+            .replace_gpu_image(self.image.unwrap(), gpu.output())?;
+        self.view = view;
+        self.gpu = Some(gpu);
+        self.name = format!("{demo}.glb");
+        self.home = camera_for_asset(&self.name);
+        self.camera = self.home.clone();
+        self.playing = false;
+        self.spin = false;
+        self.drag = None;
+        self.last = None;
+        self.text.clear();
+        self.cached_scene = None;
+        Ok(())
+    }
     fn command(&mut self, id: u32) -> Result<()> {
         match id {
             1 => {
-                self.camera = home_camera();
+                self.camera = self.home.clone();
                 self.view.seek(0.)?;
             }
             2 => self.camera.zoom_by(0.85)?,
@@ -289,7 +383,7 @@ impl Viewer {
             6 => self.camera.orbit(0., 0.15)?,
             7 => self.camera.orbit(0., -0.15)?,
             8 => self.camera.rotate_model(0.25, 0.15, 0.)?,
-            9 => {
+            9 if self.view.asset().clips().len() > 0 => {
                 self.cached_scene = None;
                 self.playing = !self.playing;
                 if self.playing {
@@ -299,6 +393,8 @@ impl Viewer {
                 }
             }
             10 => self.spin = !self.spin,
+            11 => self.select_demo("rubiks-cube")?,
+            12 => self.select_demo("manhattan")?,
             _ => {}
         }
         Ok(())
@@ -424,7 +520,10 @@ impl Viewer {
                     self.command(id)?;
                 }
             }
-            Event::Command(id) => self.command(id.0)?,
+            Event::Command(id) => {
+                self.command(id.0)?;
+                window.set_title(&format!("TekesUI3D — {}", self.name));
+            }
             Event::Focus(active) => {
                 self.active = active;
                 self.drag = None;
@@ -481,6 +580,76 @@ impl WindowHandler for Viewer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn manhattan_demo_keeps_static_geometry_on_gpu_and_switches_without_image_leaks() {
+        let asset = Asset3D::load(demo_asset("manhattan")).unwrap();
+        assert_eq!(asset.clips().len(), 0);
+        let mut viewer = Viewer::new(asset, "manhattan.glb".into()).unwrap();
+        viewer
+            .init(Renderer::new_headless().unwrap(), (960, 720), 1.)
+            .unwrap();
+        viewer.scene().unwrap();
+        let image = viewer.image;
+        let image_count = viewer.ui.as_ref().unwrap().image_count();
+        let gpu = viewer.gpu.as_ref().unwrap();
+        assert_eq!(gpu.vertex_buffer_allocations(), 4);
+        let bytes = gpu.geometry_resident_bytes();
+        assert!(bytes > 0);
+        let capture = |v: &mut Viewer| {
+            let scene = v.scene().unwrap();
+            v.ui.as_mut()
+                .unwrap()
+                .render_to_rgba8(
+                    &scene,
+                    &mut v.atlas,
+                    (960, 720),
+                    1.,
+                    ColorRole::DocumentCanvas.resolve(v.theme),
+                )
+                .unwrap()
+        };
+        let first = capture(&mut viewer);
+        for id in [2, 4, 6, 8] {
+            viewer.command(id).unwrap();
+            assert_ne!(first, capture(&mut viewer));
+            viewer.command(1).unwrap();
+            assert_eq!(first, capture(&mut viewer));
+        }
+        for _ in 0..120 {
+            viewer.camera.rotate_model(0.01, 0., 0.).unwrap();
+            viewer.scene().unwrap();
+            let gpu = viewer.gpu.as_ref().unwrap();
+            assert_eq!(gpu.last_frame_pose_upload_bytes(), 0);
+            assert_eq!(gpu.last_frame_deformed_meshes(), 0);
+            assert_eq!(gpu.vertex_buffer_allocations(), 4);
+            assert_eq!(gpu.geometry_resident_bytes(), bytes);
+        }
+        let original_pixels = viewer.pixels();
+        for size in [(480, 320), original_pixels] {
+            let gpu = viewer.gpu.as_mut().unwrap();
+            gpu.resize(size).unwrap();
+            viewer
+                .ui
+                .as_mut()
+                .unwrap()
+                .replace_gpu_image(image.unwrap(), gpu.output())
+                .unwrap();
+            viewer.scene().unwrap();
+            assert_eq!(viewer.image, image);
+            assert_eq!(
+                viewer.gpu.as_ref().unwrap().last_frame_pose_upload_bytes(),
+                0
+            );
+        }
+        viewer.command(9).unwrap();
+        assert!(!viewer.playing);
+        for command in [11, 12, 11, 12] {
+            viewer.command(command).unwrap();
+            viewer.scene().unwrap();
+            assert_eq!(viewer.image, image);
+            assert_eq!(viewer.ui.as_ref().unwrap().image_count(), image_count);
+        }
+    }
     #[test]
     fn demo_imports_and_controls_render_on_gpu() {
         menus().validate().unwrap();

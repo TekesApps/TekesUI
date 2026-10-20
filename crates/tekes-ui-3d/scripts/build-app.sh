@@ -7,20 +7,26 @@ case "$profile" in
   debug) cargo build -p tekes-ui-3d --locked ;;
   *) printf '%s\n' 'TEKESUI3D_PROFILE must be release or debug' >&2; exit 2 ;;
 esac
-app="$PWD/target/TekesUI3D.app"
+case "${TEKESUI3D_DEMO:-cube}" in
+  cube) app_name="TekesUI3D"; executable="tekes-ui-3d"; bundle_id="com.tekesui.3d.demo" ;;
+  manhattan) app_name="TekesUI Manhattan"; executable="tekes-ui-manhattan"; bundle_id="com.tekesui.3d.manhattan" ;;
+  *) printf '%s\n' 'TEKESUI3D_DEMO must be cube or manhattan' >&2; exit 2 ;;
+esac
+app="$PWD/target/$app_name.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 # Replace the inode: overwriting a running signed Mach-O can invalidate its
 # mapped code pages and the kernel's code-signature cache.
-cp "target/$profile/tekes-ui-3d" "$app/Contents/MacOS/tekes-ui-3d.next"
-mv -f "$app/Contents/MacOS/tekes-ui-3d.next" "$app/Contents/MacOS/tekes-ui-3d"
+cp "target/$profile/tekes-ui-3d" "$app/Contents/MacOS/$executable.next"
+mv -f "$app/Contents/MacOS/$executable.next" "$app/Contents/MacOS/$executable"
+cp crates/tekes-ui-3d/assets/manhattan.glb "$app/Contents/Resources/"
 cp crates/tekes-ui-3d/assets/rubiks-cube.glb "$app/Contents/Resources/"
-cat > "$app/Contents/Info.plist" <<'PLIST'
+cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-<key>CFBundleExecutable</key><string>tekes-ui-3d</string>
-<key>CFBundleIdentifier</key><string>com.tekesui.3d.demo</string>
-<key>CFBundleName</key><string>TekesUI3D</string>
+<key>CFBundleExecutable</key><string>$executable</string>
+<key>CFBundleIdentifier</key><string>$bundle_id</string>
+<key>CFBundleName</key><string>$app_name</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>NSHighResolutionCapable</key><true/>
 </dict></plist>

@@ -10,6 +10,7 @@ pub struct Camera3D {
     pitch: f32,
     zoom: f32,
     rotation: Quat,
+    orthographic: bool,
 }
 impl Default for Camera3D {
     fn default() -> Self {
@@ -18,10 +19,16 @@ impl Default for Camera3D {
             pitch: 0.35_f32.atan(),
             zoom: 1.,
             rotation: Quat::IDENTITY,
+            orthographic: false,
         }
     }
 }
 impl Camera3D {
+    /// Parallel projection for architectural/isometric scenes. Zoom still scales
+    /// the visible area; perspective remains the default for existing consumers.
+    pub fn set_orthographic(&mut self, enabled: bool) {
+        self.orthographic = enabled;
+    }
     pub fn yaw(&self) -> f32 {
         self.yaw
     }
@@ -81,7 +88,8 @@ impl Camera3D {
         radius: f32,
         aspect: f32,
     ) -> Result<[[[f32; 4]; 4]; 2], Error> {
-        let distance = radius * 3.2 * self.zoom / aspect.min(1.);
+        let distance =
+            radius * 3.2 * if self.orthographic { 1. } else { self.zoom } / aspect.min(1.);
         let eye = center
             + Vec3::new(
                 self.yaw.sin() * self.pitch.cos(),
@@ -90,11 +98,24 @@ impl Camera3D {
             ) * distance;
         // Reversed-Z preserves floating-point depth precision when distant
         // surfaces are close together (e.g. stickers above a cube face).
-        let view_projection = Mat4::perspective_infinite_reverse_rh(
-            45_f32.to_radians(),
-            aspect,
-            (radius * 0.001).max(0.00001),
-        ) * Mat4::look_at_rh(eye, center, Vec3::Y);
+        let projection = if self.orthographic {
+            let half_height = radius * 1.3 * self.zoom / aspect.min(1.);
+            Mat4::orthographic_rh(
+                -half_height * aspect,
+                half_height * aspect,
+                -half_height,
+                half_height,
+                radius * 16.,
+                (radius * 0.001).max(0.00001),
+            )
+        } else {
+            Mat4::perspective_infinite_reverse_rh(
+                45_f32.to_radians(),
+                aspect,
+                (radius * 0.001).max(0.00001),
+            )
+        };
+        let view_projection = projection * Mat4::look_at_rh(eye, center, Vec3::Y);
         let model = Mat4::from_translation(center)
             * Mat4::from_quat(self.rotation)
             * Mat4::from_translation(-center);
@@ -126,6 +147,21 @@ mod tests {
         assert!(c.rotate_model(0., f32::INFINITY, 0.).is_err());
         c.reset();
         assert_eq!(c, original);
+    }
+    #[test]
+    fn orthographic_zoom_preserves_depth_and_parallel_lines() {
+        let mut c = Camera3D::default();
+        c.set_orthographic(true);
+        let m = Mat4::from_cols_array_2d(&c.matrices(Vec3::ZERO, 2., 1.5).unwrap()[0]);
+        let a = m * Vec3::new(0., 0., 1.).extend(1.);
+        let b = m * Vec3::new(0., 0., -1.).extend(1.);
+        assert_eq!(a.w, b.w);
+        c.zoom_by(0.2).unwrap();
+        let zoomed = Mat4::from_cols_array_2d(&c.matrices(Vec3::ZERO, 2., 1.5).unwrap()[0]);
+        assert!((m.z_axis.z - zoomed.z_axis.z).abs() < 1e-6);
+        assert!((m.w_axis.z - zoomed.w_axis.z).abs() < 1e-6);
+        c.reset();
+        assert!(!c.orthographic);
     }
     #[test]
     fn model_rotation_preserves_the_fitted_center() {

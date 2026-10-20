@@ -95,3 +95,5 @@ gpu.render_camera(view, &camera)?;
 深度采用 `Depth32Float` + infinite reversed-Z（near→1、远处→0、清零、Greater 比较），避免缩小时紧贴的色贴和底面因传统深度映射损失精度而出现斜向黑纹。GPU 回归对多个距离及倾斜角，将紧贴表面和独立前景表面逐像素比较，排除内部穿插。
 
 Gallery 的预览 target 现按实际图像区域 × backing scale 自适应（上限为设备限制与 4096 的较小值），resize 保持 ImageId 和几何 buffer；暂停 / Reduced Motion 下也完成尺寸收敛。持续原生旋转测试可用 `TEKES_PERF=scroll:60 TEKES_PERF_CONTENT=scene3d TEKES_PERF_GPU_TIMING=0 cargo run -p tekes-ui-gallery --release --locked`，增加 `TEKES_PERF_SCENE3D_ANIMATION=1` 同时播放 clip。实际前台 120Hz / Retina 测量及原始数据见 [测试记录](../../docs/design/scene3d-adaptive-20261020.md)。
+
+建筑 / 城市消费者可调用 `Camera3D::set_orthographic(true)` 使用正交投影，仍沿用缩放和反向 Z 深度；默认保持透视。`Renderer3D::new_antialiased` 提供可选的 4× MSAA，在 GPU 上 resolve 到共享输出图像；默认 `new` 仍为单采样，Gallery 现有显存预算不变。抗锯齿渲染器 resize 时重建匹配采样数的色彩和深度附件。

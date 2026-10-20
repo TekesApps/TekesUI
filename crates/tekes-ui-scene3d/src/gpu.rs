@@ -26,11 +26,30 @@ pub struct Renderer3D {
     size: (u32, u32),
     color: GpuImage,
     depth: wgpu::Texture,
+    msaa: Option<wgpu::Texture>,
+    samples: u32,
 }
 impl Renderer3D {
     /// Renderer resources belong to this component's immutable asset. Build a new
     /// renderer after replacing an asset; pass the component to `render`.
     pub fn new(context: &GpuContext, component: &Scene3D, size: (u32, u32)) -> Result<Self, Error> {
+        Self::with_samples(context, component, size, 1)
+    }
+    /// Four-sample GPU antialiasing with direct resolve into the shared image.
+    /// Uses an additional multisampled color/depth target; no CPU readback.
+    pub fn new_antialiased(
+        context: &GpuContext,
+        component: &Scene3D,
+        size: (u32, u32),
+    ) -> Result<Self, Error> {
+        Self::with_samples(context, component, size, 4)
+    }
+    fn with_samples(
+        context: &GpuContext,
+        component: &Scene3D,
+        size: (u32, u32),
+        samples: u32,
+    ) -> Result<Self, Error> {
         let device = context.device().clone();
         let queue = context.queue().clone();
         check_size(size, &device)?;
@@ -109,8 +128,8 @@ impl Renderer3D {
             ],
             immediate_size: 0,
         });
-        let pipeline = render_pipeline(&device, &shader, &layout, false, "fs");
-        let flat_pipeline = render_pipeline(&device, &shader, &flat_layout, true, "fs");
+        let pipeline = render_pipeline(&device, &shader, &layout, false, "fs", samples);
+        let flat_pipeline = render_pipeline(&device, &shader, &flat_layout, true, "fs", samples);
         let deformer = Deformer::new(&device, &component.asset)?;
         let flat_bindings = deformer
             .meshes
@@ -133,7 +152,8 @@ impl Renderer3D {
             })
             .collect();
         let color = context.create_image(size).map_err(|e| err(e.to_string()))?;
-        let depth = depth_target(&device, size);
+        let depth = depth_target(&device, size, samples);
+        let msaa = (samples > 1).then(|| multisample_target(&device, size, samples));
         Ok(Self {
             asset_id: component.asset.id,
             context: context.clone(),
@@ -150,6 +170,8 @@ impl Renderer3D {
             size,
             color,
             depth,
+            msaa,
+            samples,
         })
     }
     pub fn resize(&mut self, size: (u32, u32)) -> Result<(), Error> {
@@ -159,7 +181,9 @@ impl Renderer3D {
                 .context
                 .create_image(size)
                 .map_err(|e| err(e.to_string()))?;
-            self.depth = depth_target(&self.device, size);
+            self.depth = depth_target(&self.device, size, self.samples);
+            self.msaa =
+                (self.samples > 1).then(|| multisample_target(&self.device, size, self.samples));
             self.size = size;
         }
         Ok(())
@@ -189,7 +213,11 @@ impl Renderer3D {
                 .update_pose(&self.queue, asset, component.clip, component.time);
         let mut encoder = self.device.create_command_encoder(&Default::default());
         self.deformer.encode(&mut encoder);
-        let color_view = self.color.render_view();
+        let msaa_view = self
+            .msaa
+            .as_ref()
+            .map(|t| t.create_view(&Default::default()));
+        let color_view = msaa_view.as_ref().unwrap_or(self.color.render_view());
         let depth_view = self.depth.create_view(&Default::default());
         {
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -197,7 +225,7 @@ impl Renderer3D {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: color_view,
                     depth_slice: None,
-                    resolve_target: None,
+                    resolve_target: msaa_view.as_ref().map(|_| self.color.render_view()),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                         store: wgpu::StoreOp::Store,
@@ -269,6 +297,7 @@ fn render_pipeline(
     layout: &wgpu::PipelineLayout,
     flat: bool,
     fragment: &str,
+    samples: u32,
 ) -> wgpu::RenderPipeline {
     let attributes = wgpu::vertex_attr_array![0=>Float32x4,1=>Float32x4,2=>Float32x4,3=>Float32x4];
     let vertex_buffers = [Some(wgpu::VertexBufferLayout {
@@ -310,7 +339,10 @@ fn render_pipeline(
             stencil: Default::default(),
             bias: Default::default(),
         }),
-        multisample: Default::default(),
+        multisample: wgpu::MultisampleState {
+            count: samples,
+            ..Default::default()
+        },
         multiview_mask: None,
         cache: None,
     })
@@ -342,12 +374,24 @@ fn extent(size: (u32, u32)) -> wgpu::Extent3d {
         depth_or_array_layers: 1,
     }
 }
-fn depth_target(device: &wgpu::Device, size: (u32, u32)) -> wgpu::Texture {
+fn multisample_target(device: &wgpu::Device, size: (u32, u32), samples: u32) -> wgpu::Texture {
+    device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("3D MSAA color"),
+        size: extent(size),
+        mip_level_count: 1,
+        sample_count: samples,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    })
+}
+fn depth_target(device: &wgpu::Device, size: (u32, u32), samples: u32) -> wgpu::Texture {
     device.create_texture(&wgpu::TextureDescriptor {
         label: Some("3D depth target"),
         size: extent(size),
         mip_level_count: 1,
-        sample_count: 1,
+        sample_count: samples,
         dimension: wgpu::TextureDimension::D2,
         format: wgpu::TextureFormat::Depth32Float,
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -573,9 +617,15 @@ mod tests {
                 bind_group_layouts: &[Some(&camera), Some(&material), Some(&geometry)],
                 immediate_size: 0,
             });
-        gpu.pipeline = render_pipeline(&gpu.device, &shader, &layout, false, "fs_test_normals");
-        gpu.flat_pipeline =
-            render_pipeline(&gpu.device, &shader, &flat_layout, true, "fs_test_normals");
+        gpu.pipeline = render_pipeline(&gpu.device, &shader, &layout, false, "fs_test_normals", 1);
+        gpu.flat_pipeline = render_pipeline(
+            &gpu.device,
+            &shader,
+            &flat_layout,
+            true,
+            "fs_test_normals",
+            1,
+        );
     }
     // Only the reference side expands triangles and uploads CPU geometry. The
     // production side being tested uses original vertices and immutable indices.

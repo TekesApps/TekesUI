@@ -35,3 +35,24 @@ cargo run -p tekes-ui-3d --locked -- --snapshot /tmp/tekesui3d.png
 可重复启动自动旋转：`cargo run -p tekes-ui-3d --release --locked -- --auto-rotate`；加 `--play` 同时播放资产首个 clip。2026-10-20 本机一次原生 Release 测量：默认魔方、960×720 pt、自动旋转、8 秒进程 CPU 时间差 / 墙钟时间约 5.7%（100% 代表占满一个逻辑核）。这是短时运行观测，不是跨设备或固定帧率性能承诺，也不是与旧 debug 构建的同配置优化比。
 
 构建脚本先复制到临时可执行文件，再原子替换并对本地 app 进行 ad-hoc 签名，避免直接覆盖运行中的签名代码页；`codesign --verify --verbose=2 target/TekesUI3D.app` 可检查打包结果。
+
+## Manhattan Skyline
+
+```sh
+cargo run -p tekes-ui-3d --release --locked -- --demo manhattan
+# 独立 Manhattan 应用，双击直接进入城市
+TEKESUI3D_DEMO=manhattan crates/tekes-ui-3d/scripts/build-app.sh
+open "target/TekesUI Manhattan.app"
+# 交互窗口的 Demo 菜单可随时切换魔方 / Manhattan Skyline
+open -n target/TekesUI3D.app --args --demo manhattan
+# 可选：自动旋转；失焦 / Reduced Motion 时停止
+cargo run -p tekes-ui-3d --release --locked -- --demo manhattan --auto-rotate
+```
+
+`assets/manhattan.glb` 是原创 MIT、自包含 glTF 2.0 资产，可由 Blender 导入。用 `python3 crates/tekes-ui-3d/assets/generate_manhattan.py` 可确定性生成。画面参考《模拟城市 4》的城市俯视表现：108 栋建筑，包含受世贸中心、帝国大厦、克莱斯勒大厦轮廓启发的高楼、公园、街道、码头、小船和绿化。建筑位置、比例、岛形均为艺术化布置，未使用真实地理数据，不能作为地图或测绘模型，也未使用游戏资产。
+
+约 4.5 MiB GLB、86,844 顶点、43,422 三角形，合批为两种材质的索引几何；三种原创幕墙 / 石材立面贴图嵌在 GLB 中，不再用随机大色块拼窗。街道与广场带有资产生成阶段烘焙的建筑阴影（不随运行时灯光变化），包含树木、屋顶设备和路面标线。
+
+城市默认使用正交俯视相机和 4× MSAA。MSAA 在 GPU 上解析到共享纹理，不读回 CPU；可继续环绕、缩放、旋转。抗锯齿比单采样多占显存：RGBA8 色彩 + Depth32Float 的 4× 目标约 32 bytes/px，另有共享的单采样输出 4 bytes/px；魔方及 Gallery 原有默认渲染不启用它。纹理 / 几何仅导入时上传，旋转帧只更新相机 uniform。当前没有实时阴影、PBR 反射或波浪模拟。城市没有资产动画，Space 保持暂停；A 可旋转整个场景。
+
+GPU 回归覆盖城市导入、缩放、视角、旋转、复位、120 次旋转不产生 pose 上传 / 变形计算、MSAA 目标 resize，以及两个 Demo 来回切换时 ImageId 和注册图像数量保持稳定。离屏图像与原生窗口检查分别进行，不以它们代表大规模城市 / 持续帧率性能验收。
