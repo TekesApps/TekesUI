@@ -10,6 +10,7 @@ publish = false
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tekes-ui-controls.workspace = true
+tekes-ui-scene3d = { path = "../tekes-ui-scene3d" }
 tekes-ui-icons = { path = "../tekes-ui-icons" }
 tekes-ui-motion = {path="../tekes-ui-motion"}
 tekes-ui-tokens.workspace = true

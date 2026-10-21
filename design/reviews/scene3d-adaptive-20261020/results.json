@@ -1,0 +1,79 @@
+{
+  "format": "tekesui-scene3d-adaptive-validation/1",
+  "build": "Release",
+  "measured_backend": "wgpu Metal",
+  "gpu_counter_readback": false,
+  "runs": [
+    {
+      "path": "design/reviews/scene3d-adaptive-20261020/rotation-60s.json",
+      "seconds": 60.006318166,
+      "mode": "rotation only",
+      "scale": 2.0,
+      "target_px": [
+        1218,
+        1218
+      ],
+      "cpu_mean_percent": 9.917015710808574,
+      "cpu_peak_250ms_percent": 25.219211749190674,
+      "presented_frames": 7195,
+      "presented_fps": 119.88441361101094,
+      "present_interval_p95_ms": 8.333333302289248,
+      "presentation_gaps_over_1_5_refresh": 7,
+      "cpu_active_p95_ms": 0.487374,
+      "pose_upload_bytes": 0,
+      "deformed_meshes": 0,
+      "idle_cpu_percent": 0.057325864716009506,
+      "foreground_qualified": true
+    },
+    {
+      "path": "design/reviews/scene3d-adaptive-20261020/rotation-animation-60s.json",
+      "seconds": 60.015893333,
+      "mode": "rotation + layer animation",
+      "scale": 2.0,
+      "target_px": [
+        1218,
+        1218
+      ],
+      "cpu_mean_percent": 14.65506636916763,
+      "cpu_peak_250ms_percent": 37.43320580210619,
+      "presented_frames": 7194,
+      "presented_fps": 119.8510843195749,
+      "present_interval_p95_ms": 8.333333302289248,
+      "presentation_gaps_over_1_5_refresh": 9,
+      "cpu_active_p95_ms": 1.3327909999999994,
+      "pose_upload_bytes": 2612160,
+      "deformed_meshes": 32652,
+      "idle_cpu_percent": 0.05525444026301097,
+      "foreground_qualified": true
+    }
+  ],
+  "excluded_runs": [
+    {
+      "path": "design/reviews/scene3d-adaptive-20261020/rotation-interrupted-60s.json",
+      "reason": "2006 non-key callbacks; excluded from strict foreground results"
+    }
+  ],
+  "measured_binary_sha256": "bacd62a2c854bacfe0b0b8dd86cc28a0ad088c4df2e1fdfb44a701b0efeee2be",
+  "implementation_sha256": {
+    "crates/tekes-ui-gallery/src/gallery/scene3d_preview.rs": "9e0efed5e04f97fc22ce538f47ca75ce353c1257f16b57bb505592d0e79962a6",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs": "6a3c99e91065f914d8853e480af51fc64f8e822caa93765924dd1b36a611b8d2",
+    "crates/tekes-ui-gallery/src/perf.rs": "3c4d2e152c37ac73dbe554d4de5727db2feca2597a37a8f31976b99e220a15a2"
+  },
+  "protected_source_files_checked": 167,
+  "protected_source_changes": [],
+  "validation": {
+    "gallery_scene3d_tests": 6,
+    "scene3d_component_tests_including_gpu": 15,
+    "performance_harness_tests": 15,
+    "capability_governance_tests": 42,
+    "public_api_binding_tests": 3,
+    "gallery_clippy_warnings_denied": "passed",
+    "capability_inventory_check": "passed"
+  },
+  "packaged_binary_sha256": "a51b1fb80d0d726be0b2903926e264d10fa67010fcc56be31cc04e37253dd4fc",
+  "packaging": {
+    "release_and_packaged_macho_uuid": "ACBE614A-E185-39E0-A826-90C511B1B4F3",
+    "signature_verified": true,
+    "note": "App signing changes executable signature bytes; packaged and pre-sign SHA256 values need not match."
+  }
+}

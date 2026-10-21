@@ -12,7 +12,7 @@
 //! 环境变量：
 //! - `TEKES_PERF=scroll` 或 `scroll:10`：开启并指定测量秒数；
 //! - `TEKES_PERF_OUT=路径`：JSON 报告的路径，默认当前目录 `tekes-perf-<unix 秒>.json`；
-//! - `TEKES_PERF_CONTENT=quads|text|mixed|editor|scroll-area|icons|motion`：滚动的内容，默认 `mixed`；
+//! - `TEKES_PERF_CONTENT=quads|text|mixed|editor|scroll-area|icons|motion|scene3d`：滚动的内容，默认 `mixed`；
 //! - `TEKES_PERF_SPEED=点/秒`：滚动速度，默认 1200；
 //! - `TEKES_PERF_COMMIT=...`：写进报告的提交标识（`scripts/f1-scroll-gate.sh` 会设置）。
 //! - `TEKES_PERF_DRAIN_TIMER_ONLY=1`：仅诊断停止阶段的独立唤醒，不用于性能验收。
@@ -78,6 +78,7 @@ pub enum ContentKind {
     Icons,
     Motion,
     Symbols,
+    Scene3d,
 }
 
 impl ContentKind {
@@ -91,6 +92,7 @@ impl ContentKind {
             ContentKind::Icons => "icons",
             ContentKind::Motion => "motion",
             ContentKind::Symbols => "symbols",
+            ContentKind::Scene3d => "scene3d",
         }
     }
 }
@@ -164,9 +166,10 @@ impl PerfConfig {
             Some("icons") => ContentKind::Icons,
             Some("motion") => ContentKind::Motion,
             Some("symbols") => ContentKind::Symbols,
+            Some("scene3d") => ContentKind::Scene3d,
             Some(other) => {
                 return Err(format!(
-                    "TEKES_PERF_CONTENT 取 quads、text、mixed、editor、scroll-area、icons、motion、symbols，收到 {other:?}"
+                    "TEKES_PERF_CONTENT 取 quads、text、mixed、editor、scroll-area、icons、motion、symbols、scene3d，收到 {other:?}"
                 ));
             }
         };
@@ -236,7 +239,8 @@ fn plan_document(content: ContentKind, para_heights: &[f32]) -> Plan {
             | ContentKind::ScrollArea
             | ContentKind::Icons
             | ContentKind::Motion
-            | ContentKind::Symbols => true,
+            | ContentKind::Symbols
+            | ContentKind::Scene3d => true,
             ContentKind::Mixed => i % 2 == 1,
         };
         if !want_text || para_heights.is_empty() {
@@ -506,6 +510,9 @@ pub struct Perf {
     prewarm_ms: f64,
     started: Instant,
     motion_step: Option<u64>,
+    scene3d_start: Value,
+    scene3d_pose_bytes: u64,
+    scene3d_deformed_meshes: u64,
     animation_target: Option<f64>,
     path: PathBuf,
     /// 窗口信息（开始时记下）。
@@ -588,6 +595,9 @@ impl Perf {
             prewarm_ms: 0.0,
             started: Instant::now(),
             motion_step: None,
+            scene3d_start: Value::Null,
+            scene3d_pose_bytes: 0,
+            scene3d_deformed_meshes: 0,
             animation_target: None,
             path,
             window_info: Value::Null,
@@ -653,6 +663,19 @@ impl Perf {
             self.gallery.prepare(renderer, self.scale);
             self.gallery.build_scene(&mut Scene::new());
         }
+        if self.cfg.content == ContentKind::Scene3d {
+            assert!(self.gallery.open_route("component-scene3d/playground"));
+            self.gallery
+                .set_view_size(window.size().width as f32, window.size().height as f32);
+            // Layout chooses the physical viewport; settle it before timing.
+            for _ in 0..2 {
+                self.gallery.prepare(renderer, self.scale);
+                self.gallery.build_scene(&mut Scene::new());
+            }
+            self.gallery.start_scene3d_rotation(
+                std::env::var("TEKES_PERF_SCENE3D_ANIMATION").as_deref() == Ok("1"),
+            );
+        }
         self.prewarm_ms = t.elapsed().as_secs_f64() * 1e3;
         self.window_info = match window.screen_info() {
             Some(s) => json!({
@@ -716,10 +739,14 @@ impl Perf {
             }
             ContentKind::Symbols => self.view_h,
             ContentKind::Icons | ContentKind::Motion => self.gallery.page_document_height(),
+            ContentKind::Scene3d => self.view_h,
             _ => self.plan.height,
         }
     }
     fn scroll_at(&self, elapsed: f64) -> f32 {
+        if self.cfg.content == ContentKind::Scene3d {
+            return 0.;
+        }
         let range = if matches!(
             self.cfg.content,
             ContentKind::Editor | ContentKind::ScrollArea
@@ -735,6 +762,11 @@ impl Perf {
 
     /// 编这一帧的可见内容。
     fn build(&mut self, ctx: &mut FrameCtx<'_>, scroll: f32) {
+        if self.cfg.content == ContentKind::Scene3d {
+            self.gallery.prepare(ctx.renderer, self.scale);
+            self.gallery.build_scene(ctx.scene);
+            return;
+        }
         if let Some(symbols) = &mut self.symbols {
             symbols.build(
                 &mut self.gallery,
@@ -828,6 +860,13 @@ impl Perf {
             });
             self.animation_target = Some(f.target_timestamp);
             symbols.tick(elapsed, dt);
+        }
+        if self.cfg.content == ContentKind::Scene3d {
+            let dt = self.animation_target.map_or(f.refresh_interval, |last| {
+                (f.target_timestamp - last).max(0.)
+            });
+            self.animation_target = Some(f.target_timestamp);
+            self.gallery.animate(dt as f32);
         }
         if self.cfg.content == ContentKind::Motion {
             let dt = self
@@ -924,6 +963,9 @@ impl Perf {
         }
         if self.phase == Phase::WarmUp {
             self.phase = Phase::Measure;
+            if self.cfg.content == ContentKind::Scene3d {
+                self.scene3d_start = self.gallery.scene3d_diagnostics();
+            }
             self.measure_start_target = Some(f.target_timestamp);
             self.measure_start_cpu = process_cpu_seconds();
             self.measure_start = Some(Instant::now());
@@ -939,6 +981,11 @@ impl Perf {
                 (current - cpu) / now.duration_since(at).as_secs_f64() * 100.0,
             ]);
             self.cpu_rate_last = Some((now, current));
+        }
+        if self.cfg.content == ContentKind::Scene3d {
+            let (bytes, meshes) = self.gallery.scene3d_frame_work();
+            self.scene3d_pose_bytes += bytes;
+            self.scene3d_deformed_meshes += meshes as u64;
         }
         let c = ctx.renderer.last_frame_counts();
         self.counts
@@ -1179,7 +1226,14 @@ impl Perf {
                 ])
             })
             .collect();
-        json!({
+        let scene3d_workload = (self.cfg.content==ContentKind::Scene3d).then(||json!({
+                "start":self.scene3d_start,"end":self.gallery.scene3d_diagnostics(),
+                "measurement_pose_upload_bytes":self.scene3d_pose_bytes,
+                "measurement_deformed_meshes":self.scene3d_deformed_meshes,
+                "pixel_readback_per_frame":false,
+                "gpu_timing_scope":"existing UI pass counters only; 3D compute/render are included in process CPU and actual presentation, not these GPU timestamps",
+            }));
+        let mut report = json!({
             "schema": "tekesui-perf/0",
             "kind": "scroll",
             "completed": completed,
@@ -1214,8 +1268,8 @@ impl Perf {
                 "max_drawable_count": match std::env::var("TEKES_PERF_FRAME_LATENCY").as_deref() { Ok("1") => 2, _ => 3 },
                 "max_drawable_count_scope": "wgpu configuration before optional CAMetalDisplayLink; not a measured Metal display-link pool size",
                 "document_height_pt": self.document_height(),
-                "scroll_range_pt": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea) {self.gallery.editor_scroll_metrics().0}else if self.cfg.content==ContentKind::Icons {self.gallery.page_scroll_range()}else if matches!(self.cfg.content,ContentKind::Motion|ContentKind::Symbols) {0.0}else{(self.plan.height-self.view_h).max(0.0)},
-                "segments": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea|ContentKind::Icons|ContentKind::Motion|ContentKind::Symbols) {Value::Null}else{json!(self.plan.segments.len())},
+                "scroll_range_pt": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea) {self.gallery.editor_scroll_metrics().0}else if self.cfg.content==ContentKind::Icons {self.gallery.page_scroll_range()}else if matches!(self.cfg.content,ContentKind::Motion|ContentKind::Symbols|ContentKind::Scene3d) {0.0}else{(self.plan.height-self.view_h).max(0.0)},
+                "segments": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea|ContentKind::Icons|ContentKind::Motion|ContentKind::Symbols|ContentKind::Scene3d) {Value::Null}else{json!(self.plan.segments.len())},
             },
             "gpu_timing": {
                 "supported": renderer.gpu_timing_supported(),
@@ -1289,7 +1343,9 @@ impl Perf {
                 "rows": rows,
             },
             "total_run_s": self.started.elapsed().as_secs_f64(),
-        })
+        });
+        report["scene3d_workload"] = scene3d_workload.unwrap_or(Value::Null);
+        report
     }
 }
 
@@ -1501,6 +1557,12 @@ mod tests {
         assert_eq!(c.speed, 600.0);
         assert_eq!(c.content, ContentKind::Text);
         assert_eq!(c.out, Some(PathBuf::from("/tmp/x.json")));
+        assert_eq!(
+            PerfConfig::parse("scroll:60", None, Some("scene3d"), None)
+                .unwrap()
+                .content,
+            ContentKind::Scene3d
+        );
         assert!(PerfConfig::parse("zoom", None, None, None).is_err());
         assert!(PerfConfig::parse("scroll:abc", None, None, None).is_err());
         assert!(PerfConfig::parse("scroll:0", None, None, None).is_err());

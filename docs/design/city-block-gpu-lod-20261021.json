@@ -1,0 +1,1318 @@
+{
+  "local_date": "2026-10-21",
+  "worktree": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI",
+  "branch": "codex/design-system-proposal-merge",
+  "binary_sha256": "ecf9d29f708138930108afe91c0e3315d72cd25d88e40037420341b6a0f8f3c7",
+  "asset_sha256": "95803949f951206c7a11793612f8d958c45426c0eae3fc7386d7adc68b1a72c6",
+  "native_pid": 92752,
+  "hardware": {
+    "chip": "Apple M4",
+    "logical_cores": 10,
+    "unified_memory_bytes": 34359738368
+  },
+  "conditions": {
+    "render_target_physical_pixels": [
+      2960,
+      1362
+    ],
+    "full_window_screenshot_pixels": [
+      3024,
+      1730
+    ],
+    "backing_scale": 2,
+    "msaa_samples": 4,
+    "night": true,
+    "animation": true,
+    "continuous_rotation": true,
+    "requested_seconds_per_case": 60,
+    "construction_clock_reset": true,
+    "clock_reset_for_each_case": true,
+    "camera_home_yaw": 0.55,
+    "menu_held_open": false,
+    "background_benchmark_enabled": true,
+    "cpu_percent_basis": "100 percent is one logical core; 1-second buckets; CPU and lightweight Metal overview sampled concurrently",
+    "gpu_scope": "Native layer frame-weighted GPU Begin to End counter, not whole-device utilization; counter windows do not establish individual-frame percentiles",
+    "memory_scope": "Process unified-memory footprint, not separately measured dedicated VRAM; do not add it to device allocations",
+    "environment": "Shared desktop; other projects can build concurrently. Near/far camera comparison is not an isolated same-view LOD-on/off benchmark."
+  },
+  "cases": {
+    "near": {
+      "prefix": "accepted-near",
+      "cpu": {
+        "label": "accepted-near",
+        "timebase_numer": 125,
+        "timebase_denom": 3,
+        "pid": 92752,
+        "utc": "2026-10-21T03:11:37.557622+00:00",
+        "seconds": 60.002281667,
+        "cpu_average": 8.920466260552923,
+        "cpu_median": 8.282237794487862,
+        "cpu_p95": 12.734352348491722,
+        "cpu_max": 17.465398503634372,
+        "footprint_start_mib": 529.2667236328125,
+        "footprint_end_mib": 529.2042236328125,
+        "footprint_min_mib": 524.5323486328125,
+        "footprint_max_mib": 529.2979736328125,
+        "samples": [
+          {
+            "elapsed": 1.000502375,
+            "cpu_percent": 7.934413948792476,
+            "footprint_mib": 529.1729736328125,
+            "resident_mib": 122.4375
+          },
+          {
+            "elapsed": 2.0038504589999997,
+            "cpu_percent": 9.778290628266818,
+            "footprint_mib": 529.1573486328125,
+            "resident_mib": 122.5625
+          },
+          {
+            "elapsed": 3.002287709,
+            "cpu_percent": 9.377884455599652,
+            "footprint_mib": 529.1573486328125,
+            "resident_mib": 122.546875
+          },
+          {
+            "elapsed": 4.00197625,
+            "cpu_percent": 9.213457114139311,
+            "footprint_mib": 529.1573486328125,
+            "resident_mib": 122.53125
+          },
+          {
+            "elapsed": 5.0050539999999994,
+            "cpu_percent": 9.547930523497978,
+            "footprint_mib": 529.1729736328125,
+            "resident_mib": 122.3125
+          },
+          {
+            "elapsed": 6.004875459,
+            "cpu_percent": 10.065038688739188,
+            "footprint_mib": 529.1729736328125,
+            "resident_mib": 121.25
+          },
+          {
+            "elapsed": 7.003805167,
+            "cpu_percent": 14.17930933467976,
+            "footprint_mib": 529.1729736328125,
+            "resident_mib": 121.234375
+          },
+          {
+            "elapsed": 8.004770625,
+            "cpu_percent": 11.121246237183678,
+            "footprint_mib": 529.1729736328125,
+            "resident_mib": 120.84375
+          },
+          {
+            "elapsed": 9.003827125,
+            "cpu_percent": 7.648866705736863,
+            "footprint_mib": 529.1729736328125,
+            "resident_mib": 120.84375
+          },
+          {
+            "elapsed": 10.002965917000001,
+            "cpu_percent": 8.341550476669576,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 70.34375
+          },
+          {
+            "elapsed": 11.005091584,
+            "cpu_percent": 8.4895623507998,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 55.59375
+          },
+          {
+            "elapsed": 12.005076709,
+            "cpu_percent": 10.585299122991119,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 57.84375
+          },
+          {
+            "elapsed": 13.005068375,
+            "cpu_percent": 9.242352025761786,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 57.875
+          },
+          {
+            "elapsed": 14.004327167000001,
+            "cpu_percent": 9.706010839549018,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 57.875
+          },
+          {
+            "elapsed": 15.004162125,
+            "cpu_percent": 9.362620225567275,
+            "footprint_mib": 529.1729736328125,
+            "resident_mib": 57.859375
+          },
+          {
+            "elapsed": 16.001107,
+            "cpu_percent": 10.66273014008589,
+            "footprint_mib": 529.1729736328125,
+            "resident_mib": 57.8125
+          },
+          {
+            "elapsed": 17.004771667,
+            "cpu_percent": 9.330224500835872,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.40625
+          },
+          {
+            "elapsed": 18.004660125,
+            "cpu_percent": 7.683786231550498,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.4375
+          },
+          {
+            "elapsed": 19.002595584,
+            "cpu_percent": 7.959612112216428,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.53125
+          },
+          {
+            "elapsed": 20.006368125,
+            "cpu_percent": 9.70575132186911,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.53125
+          },
+          {
+            "elapsed": 21.001945334000002,
+            "cpu_percent": 9.37129728930948,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.53125
+          },
+          {
+            "elapsed": 22.003902542000002,
+            "cpu_percent": 8.116805390222478,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.546875
+          },
+          {
+            "elapsed": 23.004167709,
+            "cpu_percent": 8.327221062439214,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.53125
+          },
+          {
+            "elapsed": 24.003890625,
+            "cpu_percent": 8.086294749561057,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.53125
+          },
+          {
+            "elapsed": 25.000388917000002,
+            "cpu_percent": 7.697433330539669,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.53125
+          },
+          {
+            "elapsed": 26.002000125000002,
+            "cpu_percent": 7.8481716297514375,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.53125
+          },
+          {
+            "elapsed": 27.003688042,
+            "cpu_percent": 7.265012262297274,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.578125
+          },
+          {
+            "elapsed": 28.005047042,
+            "cpu_percent": 12.734352348491722,
+            "footprint_mib": 524.5323486328125,
+            "resident_mib": 58.578125
+          },
+          {
+            "elapsed": 29.000275875,
+            "cpu_percent": 8.16972914208165,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.578125
+          },
+          {
+            "elapsed": 30.005077709000002,
+            "cpu_percent": 8.16656053197449,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.578125
+          },
+          {
+            "elapsed": 31.004501334,
+            "cpu_percent": 8.097708983682148,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.578125
+          },
+          {
+            "elapsed": 32.002413917,
+            "cpu_percent": 7.962704818737965,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.578125
+          },
+          {
+            "elapsed": 33.000304167,
+            "cpu_percent": 8.536543305572224,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.578125
+          },
+          {
+            "elapsed": 34.002797042,
+            "cpu_percent": 9.353017430007554,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.578125
+          },
+          {
+            "elapsed": 35.002211375,
+            "cpu_percent": 8.76859797847222,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.5625
+          },
+          {
+            "elapsed": 36.005072750000004,
+            "cpu_percent": 6.789198556979011,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.3125
+          },
+          {
+            "elapsed": 37.003309667,
+            "cpu_percent": 6.996869394816556,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.3125
+          },
+          {
+            "elapsed": 38.0016465,
+            "cpu_percent": 7.034453637820145,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 58.3125
+          },
+          {
+            "elapsed": 39.000314542,
+            "cpu_percent": 6.783497834208267,
+            "footprint_mib": 529.2979736328125,
+            "resident_mib": 57.984375
+          },
+          {
+            "elapsed": 40.00023825,
+            "cpu_percent": 8.268234966848722,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 57.90625
+          },
+          {
+            "elapsed": 41.0050485,
+            "cpu_percent": 8.235099612090952,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 57.875
+          },
+          {
+            "elapsed": 42.002058542,
+            "cpu_percent": 9.629725809053925,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 57.5
+          },
+          {
+            "elapsed": 43.001197334000004,
+            "cpu_percent": 8.296240622127003,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 57.34375
+          },
+          {
+            "elapsed": 44.000722334,
+            "cpu_percent": 7.905234152889301,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 56.5625
+          },
+          {
+            "elapsed": 45.005053042,
+            "cpu_percent": 10.143774441542506,
+            "footprint_mib": 529.1885986328125,
+            "resident_mib": 54.765625
+          },
+          {
+            "elapsed": 46.002680375000004,
+            "cpu_percent": 9.226992580805685,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 54.59375
+          },
+          {
+            "elapsed": 47.001642917,
+            "cpu_percent": 7.9315578247845,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 54.59375
+          },
+          {
+            "elapsed": 48.00236075,
+            "cpu_percent": 7.254563268418652,
+            "footprint_mib": 529.2198486328125,
+            "resident_mib": 54.578125
+          },
+          {
+            "elapsed": 49.00388075,
+            "cpu_percent": 7.979184140107043,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 54.578125
+          },
+          {
+            "elapsed": 50.001312167,
+            "cpu_percent": 7.780238354640333,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 54.546875
+          },
+          {
+            "elapsed": 51.000166167,
+            "cpu_percent": 7.985322012359485,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 54.453125
+          },
+          {
+            "elapsed": 52.005054,
+            "cpu_percent": 7.466376432217533,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 54.453125
+          },
+          {
+            "elapsed": 53.001450542,
+            "cpu_percent": 7.990133778150618,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 54.4375
+          },
+          {
+            "elapsed": 54.005049375,
+            "cpu_percent": 10.06500273600858,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 54.4375
+          },
+          {
+            "elapsed": 55.005040834,
+            "cpu_percent": 9.912092992519579,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 54.4375
+          },
+          {
+            "elapsed": 56.002875209,
+            "cpu_percent": 17.465398503634372,
+            "footprint_mib": 524.5479736328125,
+            "resident_mib": 54.4375
+          },
+          {
+            "elapsed": 57.003314125,
+            "cpu_percent": 14.112734861532179,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 54.4375
+          },
+          {
+            "elapsed": 58.002554709,
+            "cpu_percent": 6.928474094082639,
+            "footprint_mib": 526.4854736328125,
+            "resident_mib": 54.4375
+          },
+          {
+            "elapsed": 59.002357375,
+            "cpu_percent": 7.337560450153864,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 53.90625
+          },
+          {
+            "elapsed": 60.002281667,
+            "cpu_percent": 7.273629838634521,
+            "footprint_mib": 529.2042236328125,
+            "resident_mib": 53.84375
+          }
+        ]
+      },
+      "gpu": {
+        "pid": 92752,
+        "layer": "2950675319749949312",
+        "recorded_counter_coverage_seconds": 60.338394541,
+        "analysis_seconds": 60.338394541,
+        "gpu_metrics": {
+          "CPU Begin to Display": {
+            "frame_weighted_mean_ms": 38.644489219310486,
+            "counter_windows": 60,
+            "weighted_frames": 3575.0,
+            "minimum_window_mean_ms": 33.529280556,
+            "maximum_window_mean_ms": 54.027169076
+          },
+          "CPU Begin to Present": {
+            "frame_weighted_mean_ms": 0.8172509776137067,
+            "counter_windows": 60,
+            "weighted_frames": 3575.0,
+            "minimum_window_mean_ms": 0.631140969,
+            "maximum_window_mean_ms": 1.579163926
+          },
+          "GPU Begin to End": {
+            "frame_weighted_mean_ms": 17.587968646480558,
+            "counter_windows": 60,
+            "weighted_frames": 3575.0,
+            "minimum_window_mean_ms": 12.862909738,
+            "maximum_window_mean_ms": 33.880607357
+          },
+          "GPU Active Time": {
+            "frame_weighted_mean_ms": 17.34878668560196,
+            "counter_windows": 60,
+            "weighted_frames": 3575.0,
+            "minimum_window_mean_ms": 12.539510601,
+            "maximum_window_mean_ms": 33.660205945
+          },
+          "GPU End to Display": {
+            "frame_weighted_mean_ms": 20.246848148703503,
+            "counter_windows": 60,
+            "weighted_frames": 3575.0,
+            "minimum_window_mean_ms": 17.434870991,
+            "maximum_window_mean_ms": 22.825473752
+          },
+          "Frame Interval": {
+            "frame_weighted_mean_ms": 16.885615430666288,
+            "counter_windows": 60,
+            "weighted_frames": 3575.0,
+            "minimum_window_mean_ms": 16.263282256,
+            "maximum_window_mean_ms": 19.230580129
+          },
+          "On Display Lateness": {
+            "frame_weighted_mean_ms": 16.443930665841123,
+            "counter_windows": 60,
+            "weighted_frames": 3575.0,
+            "minimum_window_mean_ms": 9.027734722,
+            "maximum_window_mean_ms": 30.127918267
+          }
+        },
+        "layer_counters": {
+          "FPS": {
+            "time_weighted_mean": 59.21562117219785,
+            "minimum_window_value": 52.000753175,
+            "maximum_window_value": 62.114872344,
+            "counter_windows": 60
+          },
+          "Skipped Frames": {
+            "time_weighted_mean": 0.0,
+            "minimum_window_value": 0.0,
+            "maximum_window_value": 0.0,
+            "counter_windows": 60
+          },
+          "Command Buffers": {
+            "time_weighted_mean": 15.0,
+            "minimum_window_value": 15.0,
+            "maximum_window_value": 15.0,
+            "counter_windows": 60
+          },
+          "GPU Usage %": {
+            "time_weighted_mean": 0.909468275941599,
+            "minimum_window_value": 0.739831125,
+            "maximum_window_value": 1.0,
+            "counter_windows": 60
+          }
+        },
+        "scope": "GPU times are frame-weighted averages of Metal per-window frame counters; FPS is the native layer presentation counter. Window means are not individual-frame percentiles; GPU time is not whole-device utilization. Memory is actual MTLDevice allocation in the provided sample, overlapping process unified memory; a short memory sample cannot establish a 60s peak."
+      },
+      "zoom": 0.29232349999999996
+    },
+    "far": {
+      "prefix": "accepted-far",
+      "cpu": {
+        "label": "accepted-far",
+        "timebase_numer": 125,
+        "timebase_denom": 3,
+        "pid": 92752,
+        "utc": "2026-10-21T03:13:23.858514+00:00",
+        "seconds": 60.000201833,
+        "cpu_average": 15.834774372555287,
+        "cpu_median": 15.756040704119041,
+        "cpu_p95": 16.997485828539187,
+        "cpu_max": 18.517769992927267,
+        "footprint_start_mib": 524.7042236328125,
+        "footprint_end_mib": 524.7510986328125,
+        "footprint_min_mib": 524.7354736328125,
+        "footprint_max_mib": 529.4229736328125,
+        "samples": [
+          {
+            "elapsed": 1.0044437499999999,
+            "cpu_percent": 18.517769992927267,
+            "footprint_mib": 529.3917236328125,
+            "resident_mib": 62.21875
+          },
+          {
+            "elapsed": 2.0044189169999997,
+            "cpu_percent": 16.84863923559147,
+            "footprint_mib": 529.3917236328125,
+            "resident_mib": 62.1875
+          },
+          {
+            "elapsed": 3.004768667,
+            "cpu_percent": 16.74508090795244,
+            "footprint_mib": 524.7354736328125,
+            "resident_mib": 62.171875
+          },
+          {
+            "elapsed": 4.004082958000001,
+            "cpu_percent": 15.118708701291519,
+            "footprint_mib": 527.0323486328125,
+            "resident_mib": 62.171875
+          },
+          {
+            "elapsed": 5.0040988330000005,
+            "cpu_percent": 15.203550310305491,
+            "footprint_mib": 527.0479736328125,
+            "resident_mib": 61.703125
+          },
+          {
+            "elapsed": 6.004572917,
+            "cpu_percent": 15.412822194269525,
+            "footprint_mib": 529.3760986328125,
+            "resident_mib": 61.953125
+          },
+          {
+            "elapsed": 7.005053667,
+            "cpu_percent": 15.07723495262985,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 61.96875
+          },
+          {
+            "elapsed": 8.002526708,
+            "cpu_percent": 15.295981484743384,
+            "footprint_mib": 526.9854736328125,
+            "resident_mib": 61.96875
+          },
+          {
+            "elapsed": 9.004344167000001,
+            "cpu_percent": 15.316421365474834,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 61.953125
+          },
+          {
+            "elapsed": 10.002168792,
+            "cpu_percent": 15.347181708742992,
+            "footprint_mib": 529.4229736328125,
+            "resident_mib": 61.796875
+          },
+          {
+            "elapsed": 11.00190225,
+            "cpu_percent": 15.995017510623986,
+            "footprint_mib": 529.4229736328125,
+            "resident_mib": 61.796875
+          },
+          {
+            "elapsed": 12.004538583,
+            "cpu_percent": 15.216895695719817,
+            "footprint_mib": 524.7354736328125,
+            "resident_mib": 61.796875
+          },
+          {
+            "elapsed": 13.004584375,
+            "cpu_percent": 15.028228494027468,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 61.71875
+          },
+          {
+            "elapsed": 14.002789042,
+            "cpu_percent": 14.945661606155037,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 61.546875
+          },
+          {
+            "elapsed": 15.004397167,
+            "cpu_percent": 15.879526236870323,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 61.546875
+          },
+          {
+            "elapsed": 16.004386999999998,
+            "cpu_percent": 16.15012669833816,
+            "footprint_mib": 526.9854736328125,
+            "resident_mib": 61.546875
+          },
+          {
+            "elapsed": 17.005024291999998,
+            "cpu_percent": 15.856761279557288,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 61.546875
+          },
+          {
+            "elapsed": 18.004225457999997,
+            "cpu_percent": 15.079300024222233,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 61.5
+          },
+          {
+            "elapsed": 19.003086,
+            "cpu_percent": 15.675131987877933,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 58.0
+          },
+          {
+            "elapsed": 20.000531666999997,
+            "cpu_percent": 15.224012196746592,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 57.96875
+          },
+          {
+            "elapsed": 21.011243792,
+            "cpu_percent": 16.12480243405936,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 54.46875
+          },
+          {
+            "elapsed": 22.000131458,
+            "cpu_percent": 16.063772673919328,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 54.484375
+          },
+          {
+            "elapsed": 23.005065792,
+            "cpu_percent": 15.541148117776729,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 54.5
+          },
+          {
+            "elapsed": 24.001635083,
+            "cpu_percent": 16.570176620730994,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 54.4375
+          },
+          {
+            "elapsed": 25.004212332999998,
+            "cpu_percent": 15.786501738394753,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 54.40625
+          },
+          {
+            "elapsed": 26.00502525,
+            "cpu_percent": 15.527069447952229,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 54.40625
+          },
+          {
+            "elapsed": 27.001133125,
+            "cpu_percent": 15.498425977875808,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 54.40625
+          },
+          {
+            "elapsed": 28.006887666999997,
+            "cpu_percent": 14.65771821159391,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 54.234375
+          },
+          {
+            "elapsed": 29.000899042,
+            "cpu_percent": 14.927465828379766,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 54.109375
+          },
+          {
+            "elapsed": 30.005047375,
+            "cpu_percent": 15.455473051111467,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 54.109375
+          },
+          {
+            "elapsed": 31.000720958,
+            "cpu_percent": 14.803085989544313,
+            "footprint_mib": 529.3917236328125,
+            "resident_mib": 54.109375
+          },
+          {
+            "elapsed": 32.00425175,
+            "cpu_percent": 14.142249990205872,
+            "footprint_mib": 529.3917236328125,
+            "resident_mib": 54.109375
+          },
+          {
+            "elapsed": 33.002605292,
+            "cpu_percent": 14.99658291057249,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 53.65625
+          },
+          {
+            "elapsed": 34.004077957999996,
+            "cpu_percent": 16.279571461946784,
+            "footprint_mib": 529.4073486328125,
+            "resident_mib": 53.59375
+          },
+          {
+            "elapsed": 35.003958208,
+            "cpu_percent": 16.51587360919797,
+            "footprint_mib": 526.7354736328125,
+            "resident_mib": 54.359375
+          },
+          {
+            "elapsed": 36.005038917,
+            "cpu_percent": 14.971399440548671,
+            "footprint_mib": 526.7354736328125,
+            "resident_mib": 54.34375
+          },
+          {
+            "elapsed": 37.004072042,
+            "cpu_percent": 15.72557966984333,
+            "footprint_mib": 527.0010986328125,
+            "resident_mib": 54.109375
+          },
+          {
+            "elapsed": 38.000146042,
+            "cpu_percent": 16.429033719716937,
+            "footprint_mib": 527.0010986328125,
+            "resident_mib": 54.0
+          },
+          {
+            "elapsed": 39.005039249999996,
+            "cpu_percent": 15.799937618843995,
+            "footprint_mib": 527.0010986328125,
+            "resident_mib": 53.9375
+          },
+          {
+            "elapsed": 40.000537083,
+            "cpu_percent": 16.34496693742842,
+            "footprint_mib": 524.7667236328125,
+            "resident_mib": 53.828125
+          },
+          {
+            "elapsed": 41.004299083,
+            "cpu_percent": 16.036171921232295,
+            "footprint_mib": 524.7667236328125,
+            "resident_mib": 53.828125
+          },
+          {
+            "elapsed": 42.004511832999995,
+            "cpu_percent": 16.143336338527376,
+            "footprint_mib": 529.3917236328125,
+            "resident_mib": 54.15625
+          },
+          {
+            "elapsed": 43.004349292,
+            "cpu_percent": 17.031176597808624,
+            "footprint_mib": 529.4229736328125,
+            "resident_mib": 54.25
+          },
+          {
+            "elapsed": 44.001755083,
+            "cpu_percent": 17.136463902216665,
+            "footprint_mib": 529.4229736328125,
+            "resident_mib": 54.21875
+          },
+          {
+            "elapsed": 45.004178167,
+            "cpu_percent": 16.100815538149224,
+            "footprint_mib": 529.4229736328125,
+            "resident_mib": 54.234375
+          },
+          {
+            "elapsed": 46.004126542,
+            "cpu_percent": 16.997485828539187,
+            "footprint_mib": 529.4229736328125,
+            "resident_mib": 54.234375
+          },
+          {
+            "elapsed": 47.004514875,
+            "cpu_percent": 16.67924789762623,
+            "footprint_mib": 524.7667236328125,
+            "resident_mib": 54.234375
+          },
+          {
+            "elapsed": 48.004957125,
+            "cpu_percent": 16.96409762782411,
+            "footprint_mib": 524.7667236328125,
+            "resident_mib": 54.234375
+          },
+          {
+            "elapsed": 49.00453725,
+            "cpu_percent": 16.60924047150962,
+            "footprint_mib": 529.4229736328125,
+            "resident_mib": 54.21875
+          },
+          {
+            "elapsed": 50.004073958,
+            "cpu_percent": 16.00995478397176,
+            "footprint_mib": 529.4229736328125,
+            "resident_mib": 54.21875
+          },
+          {
+            "elapsed": 51.001968708,
+            "cpu_percent": 15.548466742943909,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 54.234375
+          },
+          {
+            "elapsed": 52.004555499999995,
+            "cpu_percent": 15.893158537972647,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 54.234375
+          },
+          {
+            "elapsed": 53.003859333,
+            "cpu_percent": 16.68209268908765,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 54.203125
+          },
+          {
+            "elapsed": 54.003657958,
+            "cpu_percent": 16.555658895810197,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 54.21875
+          },
+          {
+            "elapsed": 55.005031875,
+            "cpu_percent": 16.033105177567048,
+            "footprint_mib": 527.1104736328125,
+            "resident_mib": 54.234375
+          },
+          {
+            "elapsed": 56.004346458,
+            "cpu_percent": 15.688890932556316,
+            "footprint_mib": 527.1104736328125,
+            "resident_mib": 54.234375
+          },
+          {
+            "elapsed": 57.000111624999995,
+            "cpu_percent": 15.197584231222741,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 54.234375
+          },
+          {
+            "elapsed": 58.004517958,
+            "cpu_percent": 15.664887787998357,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 54.234375
+          },
+          {
+            "elapsed": 59.004512375,
+            "cpu_percent": 15.47628223741712,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 54.234375
+          },
+          {
+            "elapsed": 60.000201833,
+            "cpu_percent": 15.536215342086424,
+            "footprint_mib": 524.7510986328125,
+            "resident_mib": 54.234375
+          }
+        ]
+      },
+      "gpu": {
+        "pid": 92752,
+        "layer": "2950675319749949312",
+        "recorded_counter_coverage_seconds": 60.160073208,
+        "analysis_seconds": 60.160073208,
+        "gpu_metrics": {
+          "CPU Begin to Display": {
+            "frame_weighted_mean_ms": 28.572951748466313,
+            "counter_windows": 60,
+            "weighted_frames": 3607.0,
+            "minimum_window_mean_ms": 24.881329546,
+            "maximum_window_mean_ms": 32.193572223
+          },
+          "CPU Begin to Present": {
+            "frame_weighted_mean_ms": 1.386524708645966,
+            "counter_windows": 60,
+            "weighted_frames": 3607.0,
+            "minimum_window_mean_ms": 1.264737495,
+            "maximum_window_mean_ms": 1.501905545
+          },
+          "GPU Begin to End": {
+            "frame_weighted_mean_ms": 6.771582951028003,
+            "counter_windows": 60,
+            "weighted_frames": 3607.0,
+            "minimum_window_mean_ms": 4.244786803,
+            "maximum_window_mean_ms": 9.304235654
+          },
+          "GPU Active Time": {
+            "frame_weighted_mean_ms": 6.52379684550901,
+            "counter_windows": 60,
+            "weighted_frames": 3607.0,
+            "minimum_window_mean_ms": 3.883495824,
+            "maximum_window_mean_ms": 9.05776846
+          },
+          "GPU End to Display": {
+            "frame_weighted_mean_ms": 20.494710438513167,
+            "counter_windows": 60,
+            "weighted_frames": 3607.0,
+            "minimum_window_mean_ms": 18.895305082,
+            "maximum_window_mean_ms": 22.364389048
+          },
+          "Frame Interval": {
+            "frame_weighted_mean_ms": 16.68730252467064,
+            "counter_windows": 60,
+            "weighted_frames": 3607.0,
+            "minimum_window_mean_ms": 16.461593579,
+            "maximum_window_mean_ms": 16.948991526
+          },
+          "On Display Lateness": {
+            "frame_weighted_mean_ms": 11.972292319226375,
+            "counter_windows": 60,
+            "weighted_frames": 2677.0,
+            "minimum_window_mean_ms": 8.484776514,
+            "maximum_window_mean_ms": 15.935560676
+          }
+        },
+        "layer_counters": {
+          "FPS": {
+            "time_weighted_mean": 59.91652400654967,
+            "minimum_window_value": 58.893356551,
+            "maximum_window_value": 61.098797636,
+            "counter_windows": 60
+          },
+          "Skipped Frames": {
+            "time_weighted_mean": 0.0,
+            "minimum_window_value": 0.0,
+            "maximum_window_value": 0.0,
+            "counter_windows": 60
+          },
+          "Command Buffers": {
+            "time_weighted_mean": 15.0,
+            "minimum_window_value": 15.0,
+            "maximum_window_value": 15.0,
+            "counter_windows": 60
+          },
+          "GPU Usage %": {
+            "time_weighted_mean": 0.39213649374803,
+            "minimum_window_value": 0.233009749,
+            "maximum_window_value": 0.552523876,
+            "counter_windows": 60
+          }
+        },
+        "scope": "GPU times are frame-weighted averages of Metal per-window frame counters; FPS is the native layer presentation counter. Window means are not individual-frame percentiles; GPU time is not whole-device utilization. Memory is actual MTLDevice allocation in the provided sample, overlapping process unified memory; a short memory sample cannot establish a 60s peak."
+      },
+      "zoom": 4.631716752353209
+    }
+  },
+  "implementation": {
+    "visibility_dispatches_per_frame": 1,
+    "bounds_refresh": "GPU reduction only when deformation pose changes or policy is configured",
+    "instance_bytes": 160,
+    "window_shared_styles": 32,
+    "pixel_lod": "smooth feature/instance LOD; retained indexed geometry; no automatic replacement mesh generation",
+    "visibility": "GPU frustum/screen-size compaction and indirect draw counts; transparent objects keep sorted draws",
+    "frame_readbacks": 0
+  },
+  "validation": {
+    "viewer_tests": 16,
+    "scene3d_ordinary_tests": 10,
+    "component_ordinary_tests": 3,
+    "explicit_gpu_unit_tests": 12,
+    "explicit_gpu_component_tests": 1,
+    "strict_clippy": true,
+    "release_build": true
+  },
+  "exclusions": [
+    "All prefixes other than accepted-near and accepted-far are intermediate implementations or calibration, excluded from final performance results.",
+    "batch-far-animation had only 48.17 seconds of counter coverage and inactive CPU samples; excluded.",
+    "batch-near-animation overlapped validation/builds for the next implementation; excluded.",
+    "excluded-near-resized ended at 1514x1730 instead of 3024x1730; excluded and rerun."
+  ],
+  "cleanup": {
+    "phases": [
+      {
+        "utc": "2026-10-21T03:02:28Z",
+        "removed": [
+          {
+            "path": "/tmp/tekesui-gpu-lod-20261021/accepted-far.trace",
+            "allocated_bytes": 16285696,
+            "kind": "raw-trace"
+          },
+          {
+            "path": "/tmp/tekesui-gpu-lod-20261021/accepted-near.trace",
+            "allocated_bytes": 16596992,
+            "kind": "raw-trace"
+          },
+          {
+            "path": "/tmp/tekesui-gpu-lod-20261021/batch-far-animation.trace",
+            "allocated_bytes": 16121856,
+            "kind": "raw-trace"
+          },
+          {
+            "path": "/tmp/tekesui-gpu-lod-20261021/batch-far-spin.trace",
+            "allocated_bytes": 16723968,
+            "kind": "raw-trace"
+          },
+          {
+            "path": "/tmp/tekesui-gpu-lod-20261021/batch-near-animation.trace",
+            "allocated_bytes": 16269312,
+            "kind": "raw-trace"
+          },
+          {
+            "path": "/tmp/tekesui-gpu-lod-20261021/final-far-animation.trace",
+            "allocated_bytes": 16945152,
+            "kind": "raw-trace"
+          },
+          {
+            "path": "/tmp/tekesui-gpu-lod-20261021/final-far-spin.trace",
+            "allocated_bytes": 16633856,
+            "kind": "raw-trace"
+          },
+          {
+            "path": "/tmp/tekesui-gpu-lod-20261021/final-near-animation.trace",
+            "allocated_bytes": 16658432,
+            "kind": "raw-trace"
+          },
+          {
+            "path": "/tmp/tekesui-gpu-lod-20261021/final-near-spin.trace",
+            "allocated_bytes": 16551936,
+            "kind": "raw-trace"
+          },
+          {
+            "path": "/tmp/tekesui-gpu-lod-20261021/near-animation.trace",
+            "allocated_bytes": 16523264,
+            "kind": "raw-trace"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-1h53hxshnt027",
+            "allocated_bytes": 6459392,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2tbcu7z0ngoq1",
+            "allocated_bytes": 8691712,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2zwbpu8haknn0",
+            "allocated_bytes": 39604224,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-0bqlcl630otdc",
+            "allocated_bytes": 2928640,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-3lqa40ialirky",
+            "allocated_bytes": 90648576,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-1bosj27nmuvx9",
+            "allocated_bytes": 67645440,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-1khtxr25ck89z",
+            "allocated_bytes": 78921728,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-0c3w39up2cejq",
+            "allocated_bytes": 21610496,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-1nwpo64xt9ulo",
+            "allocated_bytes": 10297344,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-14imt4wrrhrqv",
+            "allocated_bytes": 67239936,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-100maud6vrl3i",
+            "allocated_bytes": 23113728,
+            "kind": "validated-crate-incremental"
+          }
+        ],
+        "kept": [],
+        "removed_allocated_bytes": 582471680,
+        "free_before_bytes": 61902618624,
+        "free_after_bytes": 62343139328,
+        "scope": "Only own exported raw traces and the two validated crates incremental caches, under an exclusive Cargo lock. Other processes may change system free space."
+      },
+      {
+        "utc": "2026-10-21T03:15:00Z",
+        "removed": [
+          {
+            "path": "/tmp/tekesui-gpu-lod-20261021/accepted-far.trace",
+            "allocated_bytes": 16945152,
+            "kind": "raw-trace"
+          },
+          {
+            "path": "/tmp/tekesui-gpu-lod-20261021/accepted-near.trace",
+            "allocated_bytes": 16564224,
+            "kind": "raw-trace"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-1h53hxshnt027",
+            "allocated_bytes": 3190784,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2tbcu7z0ngoq1",
+            "allocated_bytes": 4263936,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2zwbpu8haknn0",
+            "allocated_bytes": 23797760,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-0c3w39up2cejq",
+            "allocated_bytes": 10706944,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-14imt4wrrhrqv",
+            "allocated_bytes": 45387776,
+            "kind": "validated-crate-incremental"
+          },
+          {
+            "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-100maud6vrl3i",
+            "allocated_bytes": 11395072,
+            "kind": "validated-crate-incremental"
+          }
+        ],
+        "kept": [],
+        "removed_allocated_bytes": 132251648,
+        "free_before_bytes": 60662116352,
+        "free_after_bytes": 60755558400,
+        "scope": "Only own exported raw traces and the two validated crates incremental caches, under an exclusive Cargo lock. Other processes may change system free space."
+      }
+    ],
+    "removed": [
+      {
+        "path": "/tmp/tekesui-gpu-lod-20261021/accepted-far.trace",
+        "allocated_bytes": 16285696,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-gpu-lod-20261021/accepted-near.trace",
+        "allocated_bytes": 16596992,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-gpu-lod-20261021/batch-far-animation.trace",
+        "allocated_bytes": 16121856,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-gpu-lod-20261021/batch-far-spin.trace",
+        "allocated_bytes": 16723968,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-gpu-lod-20261021/batch-near-animation.trace",
+        "allocated_bytes": 16269312,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-gpu-lod-20261021/final-far-animation.trace",
+        "allocated_bytes": 16945152,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-gpu-lod-20261021/final-far-spin.trace",
+        "allocated_bytes": 16633856,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-gpu-lod-20261021/final-near-animation.trace",
+        "allocated_bytes": 16658432,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-gpu-lod-20261021/final-near-spin.trace",
+        "allocated_bytes": 16551936,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-gpu-lod-20261021/near-animation.trace",
+        "allocated_bytes": 16523264,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-1h53hxshnt027",
+        "allocated_bytes": 6459392,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2tbcu7z0ngoq1",
+        "allocated_bytes": 8691712,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2zwbpu8haknn0",
+        "allocated_bytes": 39604224,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-0bqlcl630otdc",
+        "allocated_bytes": 2928640,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-3lqa40ialirky",
+        "allocated_bytes": 90648576,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-1bosj27nmuvx9",
+        "allocated_bytes": 67645440,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-1khtxr25ck89z",
+        "allocated_bytes": 78921728,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-0c3w39up2cejq",
+        "allocated_bytes": 21610496,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-1nwpo64xt9ulo",
+        "allocated_bytes": 10297344,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-14imt4wrrhrqv",
+        "allocated_bytes": 67239936,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-100maud6vrl3i",
+        "allocated_bytes": 23113728,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/tmp/tekesui-gpu-lod-20261021/accepted-far.trace",
+        "allocated_bytes": 16945152,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-gpu-lod-20261021/accepted-near.trace",
+        "allocated_bytes": 16564224,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-1h53hxshnt027",
+        "allocated_bytes": 3190784,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2tbcu7z0ngoq1",
+        "allocated_bytes": 4263936,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2zwbpu8haknn0",
+        "allocated_bytes": 23797760,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-0c3w39up2cejq",
+        "allocated_bytes": 10706944,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-14imt4wrrhrqv",
+        "allocated_bytes": 45387776,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-100maud6vrl3i",
+        "allocated_bytes": 11395072,
+        "kind": "validated-crate-incremental"
+      }
+    ],
+    "kept": [],
+    "removed_allocated_bytes": 714723328,
+    "free_before_bytes": 61902618624,
+    "free_after_bytes": 60755558400,
+    "scope": "Only own exported raw traces and the two validated crates incremental caches, under an exclusive Cargo lock. Other processes may change system free space."
+  },
+  "receipt_directory": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/verification-receipts/city-block-gpu-lod-20261021"
+}

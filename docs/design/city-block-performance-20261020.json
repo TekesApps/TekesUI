@@ -1,0 +1,240 @@
+{
+  "date": "2026-10-20",
+  "build": "Release",
+  "window_points": [
+    960,
+    720
+  ],
+  "backing_scale": 2,
+  "cpu_unit": "100 percent = one logical CPU core; process CPU time divided by monotonic wall time",
+  "backend": "wgpu / Metal",
+  "sampling": "12-second intervals; paused interval 9 seconds",
+  "protocol_notes": [
+    "Fresh original and optimized processes used the same GLB/JSON, viewport and activation via Animation menu; Animation menu was tracking during fresh A/B samples.",
+    "Rotation sample and paused sample were taken with the menu dismissed.",
+    "Earlier 23.06 percent was not reproduced after restarting the original executable. It is excluded from attributable optimization savings.",
+    "Short CPU samples vary and overlap: no stable percentage reduction is claimed.",
+    "No change to scene complexity, resolution, MSAA, animation time policy or refresh cap. Presented-frame cadence and GPU utilization were not measured."
+  ],
+  "binary_sha256": {
+    "original": "b7b5138eb47f2229822f3233de8ab14294bf3bece845a1f7f61185b217370934",
+    "optimized": "5e891bcde71f870251cfe1b9eb9c5ef0f6f76a2ea033e703548737e7171066b5"
+  },
+  "native_cpu_samples": {
+    "original_fresh_1": {
+      "label": "Original Release animation, 960x720pt, 2x, fresh process",
+      "pid": 73893,
+      "started_utc": "2026-10-20T12:59:27.032182+00:00",
+      "process_start": "Tue Oct 20 20:59:18 2026",
+      "logical_cores": 10,
+      "wall_seconds": 12.0094,
+      "process_cpu_seconds": 0.8,
+      "average_cpu_percent_one_core": 6.661,
+      "samples": [
+        {
+          "elapsed_seconds": 3.0125,
+          "ps_cpu_percent": 7.1
+        },
+        {
+          "elapsed_seconds": 6.021,
+          "ps_cpu_percent": 4.8
+        },
+        {
+          "elapsed_seconds": 9.035,
+          "ps_cpu_percent": 7.4
+        },
+        {
+          "elapsed_seconds": 12.0094,
+          "ps_cpu_percent": 7.2
+        }
+      ]
+    },
+    "original_fresh_2": {
+      "label": "Original Release animation second interval, 960x720pt, 2x",
+      "pid": 73893,
+      "started_utc": "2026-10-20T13:01:04.330062+00:00",
+      "process_start": "Tue Oct 20 20:59:18 2026",
+      "logical_cores": 10,
+      "wall_seconds": 12.0096,
+      "process_cpu_seconds": 0.99,
+      "average_cpu_percent_one_core": 8.243,
+      "samples": [
+        {
+          "elapsed_seconds": 3.008,
+          "ps_cpu_percent": 7.5
+        },
+        {
+          "elapsed_seconds": 6.0161,
+          "ps_cpu_percent": 7.3
+        },
+        {
+          "elapsed_seconds": 9.0276,
+          "ps_cpu_percent": 6.9
+        },
+        {
+          "elapsed_seconds": 12.0096,
+          "ps_cpu_percent": 7.4
+        }
+      ]
+    },
+    "optimized_1": {
+      "pid": "70213",
+      "wall_seconds": 12.035,
+      "process_cpu_seconds": 0.73,
+      "average_cpu_percent_one_core": 6.07,
+      "ps_cpu_samples": [
+        5.0,
+        5.8,
+        6.0,
+        5.4
+      ]
+    },
+    "optimized_2": {
+      "label": "Release city-block animation, 960x720pt, 2x",
+      "pid": 70213,
+      "started_utc": "2026-10-20T12:57:02.782384+00:00",
+      "process_start": "Tue Oct 20 20:53:35 2026",
+      "logical_cores": 10,
+      "wall_seconds": 12.0101,
+      "process_cpu_seconds": 0.59,
+      "average_cpu_percent_one_core": 4.913,
+      "samples": [
+        {
+          "elapsed_seconds": 3.0093,
+          "ps_cpu_percent": 4.6
+        },
+        {
+          "elapsed_seconds": 6.0152,
+          "ps_cpu_percent": 4.3
+        },
+        {
+          "elapsed_seconds": 9.0305,
+          "ps_cpu_percent": 4.6
+        },
+        {
+          "elapsed_seconds": 12.0101,
+          "ps_cpu_percent": 5.0
+        }
+      ]
+    },
+    "optimized_fresh": {
+      "label": "Optimized Release animation, 960x720pt, 2x, fresh process",
+      "pid": 75184,
+      "started_utc": "2026-10-20T13:02:11.366536+00:00",
+      "process_start": "Tue Oct 20 21:02:02 2026",
+      "logical_cores": 10,
+      "wall_seconds": 12.0071,
+      "process_cpu_seconds": 0.85,
+      "average_cpu_percent_one_core": 7.079,
+      "samples": [
+        {
+          "elapsed_seconds": 3.015,
+          "ps_cpu_percent": 6.0
+        },
+        {
+          "elapsed_seconds": 6.0255,
+          "ps_cpu_percent": 7.5
+        },
+        {
+          "elapsed_seconds": 9.0382,
+          "ps_cpu_percent": 7.2
+        },
+        {
+          "elapsed_seconds": 12.0071,
+          "ps_cpu_percent": 6.6
+        }
+      ]
+    },
+    "optimized_animation_and_rotation": {
+      "label": "Release animation plus model rotation, 960x720pt, 2x",
+      "pid": 70213,
+      "started_utc": "2026-10-20T12:57:53.389202+00:00",
+      "process_start": "Tue Oct 20 20:53:35 2026",
+      "logical_cores": 10,
+      "wall_seconds": 12.0095,
+      "process_cpu_seconds": 0.81,
+      "average_cpu_percent_one_core": 6.745,
+      "samples": [
+        {
+          "elapsed_seconds": 3.0066,
+          "ps_cpu_percent": 6.5
+        },
+        {
+          "elapsed_seconds": 6.0167,
+          "ps_cpu_percent": 6.7
+        },
+        {
+          "elapsed_seconds": 9.0262,
+          "ps_cpu_percent": 5.3
+        },
+        {
+          "elapsed_seconds": 12.0095,
+          "ps_cpu_percent": 8.3
+        }
+      ]
+    },
+    "optimized_paused": {
+      "label": "Optimized Release paused, 960x720pt, 2x",
+      "pid": 75184,
+      "started_utc": "2026-10-20T13:04:52.503020+00:00",
+      "process_start": "Tue Oct 20 21:02:02 2026",
+      "logical_cores": 10,
+      "wall_seconds": 9.0065,
+      "process_cpu_seconds": 0.0,
+      "average_cpu_percent_one_core": 0.0,
+      "samples": [
+        {
+          "elapsed_seconds": 3.0072,
+          "ps_cpu_percent": 0.0
+        },
+        {
+          "elapsed_seconds": 6.0123,
+          "ps_cpu_percent": 0.0
+        },
+        {
+          "elapsed_seconds": 9.0065,
+          "ps_cpu_percent": 0.0
+        }
+      ]
+    }
+  },
+  "validation": {
+    "render_scene_city_host": {
+      "passed": 110,
+      "failures": false
+    },
+    "gallery_scene3d": {
+      "passed": 6,
+      "failures": false
+    }
+  },
+  "clippy": "warnings denied, passed for render/city/scene3d/3d all targets",
+  "fixed_time_image_equivalence": {
+    "demo": "city-block",
+    "seconds": 24,
+    "before_sha256": "9731992c54f5dcc8693d68ae55cd426a1cbc5381ef14ecf01713d7c5308a35bc",
+    "after_sha256": "9731992c54f5dcc8693d68ae55cd426a1cbc5381ef14ecf01713d7c5308a35bc",
+    "byte_identical": true
+  },
+  "command_work": {
+    "native_steady_state_submits_before": 2,
+    "native_steady_state_submits_after": 1,
+    "camera_uniform_bytes_after_first_frame_when_unchanged": 0,
+    "opaque_draw_bundle_rebuild_on_camera_or_time_change": false,
+    "instance_reconfiguration_invalidates_bundle": true,
+    "transparent_sorting": "dynamic, outside opaque bundle"
+  },
+  "wip_protection": {
+    "protected_baseline_files_checked": 48381,
+    "externally_changed_files": [
+      "design/gallery/capabilities.json",
+      "design/gallery/component-coverage.json",
+      "design/remediation/issue-component-batches-20261019.json",
+      "design/remediation/ledger.json",
+      "design/reviews/scroll-layout-input-20261020/consumer.log",
+      "examples/composition-consumer/tests/scenarios.rs"
+    ]
+  },
+  "measurement_scope": "Historical pre-scaffold-extension full-worktree samples; no new CPU percentage claim is made for the extended asset. Cabin and BLEND remain outside this commit.",
+  "isolated_commit_validation": "city-block-commit-validation-20261020.json"
+}

@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-20",
+  "scope": "City-block demo, scaffold assembly/removal, generic GPU instances/command caching/shared submission/mipmaps, docs and CPU measuring script",
+  "excluded": [
+    "health-cabin assets and host integration",
+    "BLEND material support and alpha resolve",
+    "unrelated Gallery, controls, platform and design-system WIP"
+  ],
+  "snapshot": "git index over HEAD; no untracked dependency files copied",
+  "toolchain": "1.95.0",
+  "target_cache": "isolated task target, not shared with the active worktree",
+  "checks": {
+    "render_city_scene_host": {
+      "passed": 109
+    },
+    "gallery_scene3d": {
+      "passed": 6
+    }
+  },
+  "clippy": "all targets, warnings denied, passed",
+  "release_build_and_app_signature": "passed",
+  "asset": {
+    "bytes": 1262092,
+    "sha256": "7d9194608ab7705364fd105450cc0b874e18673db7ce4b97c06cf27ed02482fa"
+  },
+  "scaffold_stages_seconds": {
+    "building_complete_with_scaffold": 46,
+    "partial_top_down_removal": 55,
+    "removed_building_intact": 80
+  },
+  "gpu_contracts": [
+    "independent frame/facade/scaffold nodes",
+    "112-byte instance record unchanged",
+    "zero vertex/pose/instance uploads in 120 steady-state frames",
+    "scaffold removal matches an explicitly hidden scaffold pixel-for-pixel",
+    "shared and standalone frame images match through build/hold/remove/reset",
+    "camera upload only when matrices change",
+    "opaque render bundle is reused across time/camera/resize and invalidated by instance configuration"
+  ],
+  "geometry_bytes_excluding_targets_materials_instances": 3414640,
+  "instance_route_bytes_per_configuration": 22560,
+  "cpu_note": "Earlier CPU comparison predates this scaffold extension; no new CPU/FPS claim is made here."
+}
