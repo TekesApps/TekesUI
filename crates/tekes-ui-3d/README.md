@@ -92,3 +92,11 @@ GPU presentation and invalidate a sustained rendering measurement.
 
 
 The city adapter enables `ScreenDetail3D` after configuring immutable instances.
+
+## Frame rate and display refresh
+
+The viewer defaults to following native display-link callbacks; the current macOS host requests up to 120 Hz. Moving between screens needs no manual frame-rate switch. Actual FPS depends on display scheduling and GPU load. **Animation → Limit to 60 FPS (H)** caps autonomous district animation and automatic rotation; press H again to restore automatic cadence. `--benchmark-120hz` sets a fixed 120 Hz test ceiling.
+
+The upper-right HUD updates twice per second and counts acquired, submitted drawable frames rather than animation callbacks. Its milliseconds show average frame interval, not GPU execution time or display scanout timing. Idle resets the sample without running a separate HUD timer. Numeric labels do not accumulate in the text cache.
+
+Native 60-second near/far 120 Hz measurements are in [the report](../../docs/design/city-block-120hz-20261021.md); screen switching checks are in [the automatic refresh report](../../docs/design/city-block-auto-refresh-20261021.md). Those native results use the full working demo assets and city/night WIP, not only this scoped commit.

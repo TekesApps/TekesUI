@@ -1,5 +1,5 @@
 use crate::district::DistrictDemo;
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, time::Instant};
 use tekes_ui_platform_macos::*;
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{GlyphAtlas, ImageId, Point as ScenePoint, Rect, Scene};
@@ -19,24 +19,71 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 #[derive(Default)]
 struct AnimationCadence {
     next: Option<f64>,
+    /// Zero follows every native display-link callback (including screen changes).
+    hz: u32,
 }
 impl AnimationCadence {
     fn due(&mut self, target: f64) -> bool {
-        const PERIOD: f64 = 1. / 60.;
+        if self.hz == 0 {
+            return true;
+        }
+        let period = 1. / f64::from(self.hz);
         let Some(next) = self.next else {
-            self.next = Some(target + PERIOD);
+            self.next = Some(target + period);
             return true;
         };
         if target + 1e-6 < next {
             return false;
         }
         // Preserve phase under display jitter and skip missed deadlines.
-        let steps = ((target - next + 1e-6) / PERIOD).floor().max(0.) + 1.;
-        self.next = Some(next + steps * PERIOD);
+        let steps = ((target - next + 1e-6) / period).floor().max(0.) + 1.;
+        self.next = Some(next + steps * period);
         true
+    }
+    fn set_hz(&mut self, hz: u32) {
+        if self.hz != hz {
+            self.hz = hz;
+            self.reset();
+        }
     }
     fn reset(&mut self) {
         self.next = None;
+    }
+}
+
+/// Counts submitted drawable frames, never animation callbacks or occluded draws.
+/// The half-second label cadence avoids rebuilding UI text on every GPU frame.
+#[derive(Default)]
+struct FrameRate {
+    start: Option<Instant>,
+    frames: u32,
+    fps: Option<f64>,
+}
+impl FrameRate {
+    fn refresh(&mut self, now: Instant) -> bool {
+        let Some(start) = self.start else {
+            self.start = Some(now);
+            return false;
+        };
+        let seconds = now.duration_since(start).as_secs_f64();
+        if seconds < 0.5 {
+            return false;
+        }
+        self.fps = (seconds < 1.5).then_some(f64::from(self.frames) / seconds);
+        self.frames = 0;
+        self.start = Some(now);
+        true
+    }
+    fn clear(&mut self) -> bool {
+        let changed = self.start.is_some() || self.fps.is_some();
+        *self = Self::default();
+        changed
+    }
+    fn label(&self) -> String {
+        match self.fps {
+            Some(fps) if fps > 0. => format!("FPS {fps:.1} · {:.1} ms / 帧", 1000. / fps),
+            _ => "FPS — · 静止 / 采样中".to_owned(),
+        }
     }
 }
 
@@ -96,6 +143,7 @@ pub fn run() -> Result<()> {
     let mut snapshot = None;
     let mut auto_rotate = false;
     let mut benchmark_background = false;
+    let mut benchmark_120hz = false;
     let mut play = false;
     let mut scene_time = None;
     let mut args = std::env::args_os().skip(1);
@@ -120,6 +168,8 @@ pub fn run() -> Result<()> {
                     .to_string_lossy()
                     .parse::<f64>()?,
             );
+        } else if arg == "--benchmark-120hz" {
+            benchmark_120hz = true;
         } else if arg == "--benchmark-background" {
             benchmark_background = true;
         } else if arg == "--auto-rotate" {
@@ -127,7 +177,7 @@ pub fn run() -> Result<()> {
         } else if arg == "--play" {
             play = true;
         } else if input.replace(PathBuf::from(arg)).is_some() {
-            return Err("usage: tekes-ui-3d [model.glb|model.gltf] [--demo cube|manhattan|city-block] [--snapshot output.png] [--auto-rotate] [--play] [--benchmark-background]".into());
+            return Err("usage: tekes-ui-3d [model.glb|model.gltf] [--demo cube|manhattan|city-block] [--snapshot output.png] [--auto-rotate] [--play] [--benchmark-background] [--benchmark-120hz]".into());
         }
     }
     let path = input.unwrap_or_else(|| {
@@ -145,6 +195,9 @@ pub fn run() -> Result<()> {
             .into_owned(),
     )?;
     viewer.benchmark_background = benchmark_background;
+    if benchmark_120hz {
+        viewer.cadence.set_hz(120);
+    }
     if auto_rotate {
         viewer.command(10)?;
     }
@@ -228,6 +281,7 @@ fn menus() -> MenuBar {
                     item("Play / pause animation (Space)", 9),
                     item("Auto rotate (A)", 10),
                     item("Background benchmark (B)", 18),
+                    item("Limit to 60 FPS (H)", 19),
                 ],
             ),
         ],
@@ -256,9 +310,10 @@ struct Viewer {
     playing: bool,
     spin: bool,
     cadence: AnimationCadence,
+    frame_rate: FrameRate,
     last: Option<f64>,
     pending_redraw: bool,
-    menu_state: Option<(bool, bool, bool)>,
+    menu_state: Option<(bool, bool, bool, bool)>,
     cached_scene: Option<Scene>,
 }
 impl Viewer {
@@ -300,6 +355,7 @@ impl Viewer {
             playing,
             spin: false,
             cadence: AnimationCadence::default(),
+            frame_rate: FrameRate::default(),
             last: None,
             pending_redraw: true,
             menu_state: None,
@@ -400,17 +456,36 @@ impl Viewer {
                 13.,
             ),
         ];
-        for (label, x, y, size) in labels {
-            let paragraph = self.text.entry(label.clone()).or_insert_with(|| {
-                self.shaper.shape(
+        let fps_label = self.frame_rate.label();
+        for (label, x, y, size) in labels.into_iter().chain(std::iter::once((
+            fps_label.clone(),
+            (self.size.0 - 264.).max(24.),
+            48.,
+            12.,
+        ))) {
+            let fps_paragraph;
+            let paragraph = if label == fps_label {
+                fps_paragraph = self.shaper.shape(
                     &label,
                     &TextStyle::system(size),
                     &ShapeOptions {
-                        width: Some((self.size.0 - 48.) as f64),
+                        width: Some(240.),
                         line_spacing: 0.,
                     },
-                )
-            });
+                );
+                &fps_paragraph
+            } else {
+                self.text.entry(label.clone()).or_insert_with(|| {
+                    self.shaper.shape(
+                        &label,
+                        &TextStyle::system(size),
+                        &ShapeOptions {
+                            width: Some((self.size.0 - 48.) as f64),
+                            line_spacing: 0.,
+                        },
+                    )
+                })
+            };
             push_paragraph(
                 &mut scene,
                 &mut self.atlas,
@@ -425,16 +500,21 @@ impl Viewer {
         Ok(scene)
     }
     fn draw(&mut self) -> Result<()> {
+        if self.last.is_some() && self.frame_rate.refresh(Instant::now()) {
+            self.cached_scene = None;
+        }
         let scene = self.ui_scene()?;
         let gpu = self.gpu.as_mut().ok_or("GPU not initialized")?;
         let view = &self.view;
         let camera = &self.camera;
         let environment = self.district.as_ref().map(DistrictDemo::environment);
+        let mut acquired = false;
         self.ui.as_mut().unwrap().render_with_gpu(
             &scene,
             &mut self.atlas,
             ColorRole::DocumentCanvas.resolve(self.theme),
             |encoder| {
+                acquired = true;
                 if let Some(environment) = environment {
                     gpu.set_environment(environment)
                         .map_err(|e| tekes_ui_render::RenderError::Surface(e.to_string()))?;
@@ -443,6 +523,9 @@ impl Viewer {
                     .map_err(|e| tekes_ui_render::RenderError::Surface(e.to_string()))
             },
         )?;
+        if acquired && self.last.is_some() {
+            self.frame_rate.frames += 1;
+        }
         Ok(())
     }
     fn select_demo(&mut self, demo: &str) -> Result<()> {
@@ -521,6 +604,9 @@ impl Viewer {
             }
             10 => self.spin = !self.spin,
             18 => self.benchmark_background = !self.benchmark_background,
+            19 => self
+                .cadence
+                .set_hz(if self.cadence.hz == 60 { 0 } else { 60 }),
             11 => self.select_demo("rubiks-cube")?,
             12 => self.select_demo("manhattan")?,
             14 => self.select_demo("city-block")?,
@@ -592,7 +678,7 @@ impl Viewer {
                 }
                 let autonomous_city =
                     self.district.is_some() && self.drag.is_none() && !self.pending_redraw;
-                // Automatic rotation shares the city's 60 Hz presentation
+                // Automatic rotation shares the city's selected presentation
                 // budget. Keep motion time continuous; direct manipulation and
                 // explicit redraws still bypass the autonomous cadence.
                 let due = if autonomous_city {
@@ -659,6 +745,7 @@ impl Viewer {
                         " " => 9,
                         "a" => 10,
                         "b" => 18,
+                        "h" => 19,
                         _ => 0,
                     };
                     self.command(id)?;
@@ -704,12 +791,22 @@ impl Viewer {
         window.set_animating(animate);
         if !animate {
             self.last = None;
+            if self.frame_rate.clear() {
+                self.cached_scene = None;
+                redraw = true;
+            }
         }
-        let menu_state = (self.playing, self.spin, self.benchmark_background);
+        let menu_state = (
+            self.playing,
+            self.spin,
+            self.benchmark_background,
+            self.cadence.hz == 60,
+        );
         if self.menu_state != Some(menu_state) {
             window.set_command_checked(CommandId(9), self.playing);
             window.set_command_checked(CommandId(10), self.spin);
             window.set_command_checked(CommandId(18), self.benchmark_background);
+            window.set_command_checked(CommandId(19), self.cadence.hz == 60);
             self.menu_state = Some(menu_state);
         }
         if redraw {
@@ -1148,18 +1245,63 @@ mod tests {
 mod cadence_tests {
     use super::AnimationCadence;
     #[test]
+    fn auto_follows_native_callbacks_and_screen_refresh_changes() {
+        let mut cadence = AnimationCadence::default();
+        let mut timestamp = 0.;
+        for hz in [120., 60., 90., 120.] {
+            for _ in 0..hz as usize {
+                timestamp += 1. / hz;
+                assert!(cadence.due(timestamp));
+            }
+        }
+        cadence.set_hz(60);
+        assert!(cadence.due(timestamp));
+        assert!(!cadence.due(timestamp + 1. / 120.));
+        cadence.set_hz(0);
+        assert!(cadence.due(timestamp + 1. / 120.));
+    }
+    #[test]
+    fn fps_samples_drawables_and_resets_after_idle() {
+        use super::FrameRate;
+        use std::time::{Duration, Instant};
+        let start = Instant::now();
+        let mut rate = FrameRate::default();
+        assert!(!rate.refresh(start));
+        rate.frames = 60;
+        assert!(!rate.refresh(start + Duration::from_millis(499)));
+        assert!(rate.refresh(start + Duration::from_millis(500)));
+        assert_eq!(rate.fps, Some(120.));
+        assert_eq!(rate.frames, 0);
+        assert!(rate.label().contains("120.0"));
+        assert!(rate.clear());
+        assert_eq!(rate.fps, None);
+        assert!(!rate.clear());
+        rate.refresh(start);
+        rate.frames = 1;
+        rate.refresh(start + Duration::from_secs(10));
+        assert_eq!(rate.fps, None, "idle gaps must not display a stale rate");
+    }
+    #[test]
     fn sixty_hz_on_high_refresh_and_no_half_rate_on_sixty_hz() {
-        for hz in [30., 60., 90., 120., 144.] {
-            let mut cadence = AnimationCadence::default();
-            let count = (0..hz as usize)
-                .filter(|i| cadence.due(*i as f64 / hz))
-                .count();
-            assert_eq!(count, (hz as usize).min(60), "host refresh {hz}");
+        for budget in [60, 120] {
+            for hz in [30., 60., 90., 120., 144.] {
+                let mut cadence = AnimationCadence::default();
+                cadence.set_hz(budget);
+                let count = (0..hz as usize)
+                    .filter(|i| cadence.due(*i as f64 / hz))
+                    .count();
+                assert_eq!(
+                    count,
+                    (hz as usize).min(budget as usize),
+                    "host refresh {hz}, budget {budget}"
+                );
+            }
         }
     }
     #[test]
     fn jitter_missed_deadlines_and_interaction_reset_do_not_catch_up() {
         let mut cadence = AnimationCadence::default();
+        cadence.set_hz(60);
         assert!(cadence.due(0.));
         assert!(!cadence.due(1. / 120.));
         assert!(cadence.due(1. / 60. - 1e-7));
