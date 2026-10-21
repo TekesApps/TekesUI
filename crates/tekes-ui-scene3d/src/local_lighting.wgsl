@@ -1,13 +1,28 @@
 struct LocalLight { position_radius:vec4<f32>, direction_cone:vec4<f32>, color:vec4<f32> }
 struct ShadowProxy { center:vec4<f32>, radii:vec4<f32> }
 struct ShadowList { count:u32, indices:array<u32,96> }
-struct LightScene { counts:vec4<u32>, lights:array<LocalLight,64>, shadows:array<ShadowProxy,96>, shadow_lists:array<ShadowList,64> }
+struct LightScene { counts:vec4<u32>, lights:array<LocalLight,64>, shadows:array<ShadowProxy,96>, shadow_lists:array<ShadowList,64>, grid:vec4<f32>, light_cells:array<vec2<u32>,1024> }
 @group(2) @binding(0) var<storage,read> local_scene:LightScene;
+fn light_candidates(p:vec3<f32>)->vec2<u32>{
+    // Outside bounds clamps to an edge cell, conservatively retaining extra
+    // candidates rather than risking a boundary precision false negative.
+    let cell=vec2<u32>(clamp(floor((p.xz-local_scene.grid.xy)*local_scene.grid.zw),vec2(0.0),vec2(31.0)));
+    return local_scene.light_cells[cell.y*32u+cell.x];
+}
 fn local_illumination(p:vec3<f32>,normal:vec3<f32>)->vec3<f32>{
     var result=vec3(0.0);
     if environment.ambient_emission.w<=0.0 {return result;}
     let n=normalize(normal);
-    for(var j=0u;j<local_scene.counts.x;j++){
+    var candidates=light_candidates(p);
+    loop {
+        if all(candidates==vec2(0u)) {break;}
+        var j=0u;
+        if candidates.x!=0u {
+            j=firstTrailingBit(candidates.x);candidates.x&=candidates.x-1u;
+        }else {
+            j=32u+firstTrailingBit(candidates.y);candidates.y&=candidates.y-1u;
+        }
+        if j>=local_scene.counts.x {break;}
         let light=local_scene.lights[j];
         if all(light.color.rgb<=vec3(0.0)) {continue;}
         let delta=light.position_radius.xyz-p;

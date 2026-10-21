@@ -1730,7 +1730,7 @@ mod tests {
     }
     #[test]
     #[ignore = "requires a real wgpu GPU adapter"]
-    fn culled_local_shadows_match_full_scan_with_motion_and_fades() {
+    fn culled_local_lights_and_shadows_match_full_scan_with_motion_and_fades() {
         use crate::{
             Deformation3D, Dimming3D, Environment3D, Instance3D, LocalLight3D, LocalLighting3D,
             ShadowProxy3D, Visibility3D,
@@ -1741,6 +1741,10 @@ mod tests {
         let view = Scene3D::new(asset);
         // Reference keeps the original full scan and exact shadow arithmetic.
         let reference = include_str!("local_lighting.wgsl")
+            .replace(
+                "var candidates=light_candidates(p);",
+                "var candidates=vec2(0xffffffffu);",
+            )
             .replace(
                 "candidate<local_scene.shadow_lists[j].count",
                 "candidate<local_scene.counts.y",
@@ -1852,6 +1856,21 @@ mod tests {
             shadow_difference > 100,
             "fixture must exercise visible shadows"
         );
+        // Exercise both bit-mask halves and reconfiguration without stale lights.
+        for count in [1, 31, 32, 33, 63] {
+            let mut subset = recipe.clone();
+            subset.lights.truncate(count);
+            for renderer in [&mut gpu, &mut full] {
+                renderer.configure_local_lighting(&subset).unwrap();
+                renderer.render(&view, 0.3, 1.).unwrap();
+            }
+            let actual = capture(&mut ui, &view, actual_image);
+            let expected = capture(&mut ui, &view, expected_image);
+            assert!(
+                actual.iter().zip(expected).all(|(a, b)| a.abs_diff(b) <= 1),
+                "light mask count {count}"
+            );
+        }
         // Reconfigure to zero lights/shadows; no stale candidate entries may leak.
         for renderer in [&mut gpu, &mut full] {
             renderer

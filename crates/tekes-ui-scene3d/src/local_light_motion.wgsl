@@ -2,7 +2,7 @@ struct LightInput { attachment:Instance, center_radius:vec4<f32>, direction_cone
 struct LocalLight { position_radius:vec4<f32>, direction_cone:vec4<f32>, color:vec4<f32> }
 struct ShadowProxy { center:vec4<f32>, radii:vec4<f32> }
 struct ShadowList { count:u32, indices:array<u32,96> }
-struct LightScene { counts:vec4<u32>, lights:array<LocalLight,64>, shadows:array<ShadowProxy,96>, shadow_lists:array<ShadowList,64> }
+struct LightScene { counts:vec4<u32>, lights:array<LocalLight,64>, shadows:array<ShadowProxy,96>, shadow_lists:array<ShadowList,64>, grid:vec4<f32>, light_cells:array<vec2<u32>,1024> }
 @group(1) @binding(0) var<storage,read> light_inputs:array<LightInput>;
 @group(1) @binding(1) var<storage,read_write> light_output:LightScene;
 @compute @workgroup_size(64) fn evaluate(@builtin(global_invocation_id) id:vec3<u32>){
@@ -50,4 +50,36 @@ struct LightScene { counts:vec4<u32>, lights:array<LocalLight,64>, shadows:array
         }
     }
     light_output.shadow_lists[index].count=count;
+}
+
+// Conservative world-XZ broad phase: all animated light spheres contribute to
+// bounds; each cell keeps two ordered bit masks, with no truncation/overflow.
+// Independent dispatches publish the bounds before cell construction.
+@compute @workgroup_size(1) fn grid_bounds(){
+    var lo=vec2(1e30);var hi=vec2(-1e30);
+    for(var j=0u;j<light_output.counts.x;j++){
+        let light=light_output.lights[j];
+        let radius=light.position_radius.w*1.00001+0.00001;
+        lo=min(lo,light.position_radius.xz-vec2(radius));
+        hi=max(hi,light.position_radius.xz+vec2(radius));
+    }
+    if light_output.counts.x==0u {lo=vec2(-1.0);hi=vec2(1.0);}
+    let step=max((hi-lo)/32.0,vec2(0.00001));
+    light_output.grid=vec4(lo,1.0/step);
+}
+@compute @workgroup_size(64) fn cull_lights(@builtin(global_invocation_id) id:vec3<u32>){
+    let cell=id.x;if cell>=1024u {return;}
+    let step=1.0/light_output.grid.zw;
+    let lo=light_output.grid.xy+vec2(f32(cell%32u),f32(cell/32u))*step;
+    let hi=lo+step;
+    var mask=vec2(0u);
+    for(var j=0u;j<light_output.counts.x;j++){
+        let light=light_output.lights[j];
+        let nearest=max(max(lo-light.position_radius.xz,light.position_radius.xz-hi),vec2(0.0));
+        let radius=light.position_radius.w*1.00001+0.00001;
+        if any(light.color.rgb>vec3(0.0)) && dot(nearest,nearest)<=radius*radius {
+            if j<32u {mask.x|=1u<<j;}else {mask.y|=1u<<(j-32u);}
+        }
+    }
+    light_output.light_cells[cell]=mask;
 }

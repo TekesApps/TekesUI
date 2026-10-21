@@ -59,6 +59,8 @@ pub(crate) struct LocalLightingGpu {
     output: wgpu::Buffer,
     compute: wgpu::ComputePipeline,
     cull: wgpu::ComputePipeline,
+    grid_bounds: wgpu::ComputePipeline,
+    cull_lights: wgpu::ComputePipeline,
     motion_layout: wgpu::BindGroupLayout,
     output_layout: wgpu::BindGroupLayout,
     compute_binds: Option<(wgpu::BindGroup, wgpu::BindGroup)>,
@@ -93,7 +95,14 @@ impl LocalLightingGpu {
         });
         let output = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("3D GPU evaluated lights and shadows"),
-            contents: &vec![0; 16 + LIGHTS * 48 + SHADOWS * 32 + LIGHTS * (4 + SHADOWS * 4)],
+            contents: &vec![
+                0;
+                16 + LIGHTS * 48
+                    + SHADOWS * 32
+                    + LIGHTS * (4 + SHADOWS * 4)
+                    + 16
+                    + 1024 * 8
+            ],
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         });
         let bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -151,12 +160,26 @@ impl LocalLightingGpu {
             compilation_options: Default::default(),
             cache: None,
         });
+        let grid_pipeline = |entry| {
+            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some(entry),
+                layout: Some(&pipeline_layout),
+                module: &shader,
+                entry_point: Some(entry),
+                compilation_options: Default::default(),
+                cache: None,
+            })
+        };
+        let grid_bounds = grid_pipeline("grid_bounds");
+        let cull_lights = grid_pipeline("cull_lights");
         Self {
             layout,
             bind,
             output,
             compute,
             cull,
+            grid_bounds,
+            cull_lights,
             motion_layout,
             output_layout,
             compute_binds: None,
@@ -303,5 +326,9 @@ impl LocalLightingGpu {
         // the candidate pass reads it; no CPU readback or per-frame list upload.
         pass.set_pipeline(&self.cull);
         pass.dispatch_workgroups(1, 1, 1);
+        pass.set_pipeline(&self.grid_bounds);
+        pass.dispatch_workgroups(1, 1, 1);
+        pass.set_pipeline(&self.cull_lights);
+        pass.dispatch_workgroups(16, 1, 1);
     }
 }
