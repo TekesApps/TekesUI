@@ -37,35 +37,22 @@ pub(crate) fn icon_image(
 pub(crate) struct VisibilityToolbar {
     pub host: ContentHost,
     pub rect: Rect,
-    pub pressed: bool,
     images: HashMap<(String, u32), ImageId>,
     id: u64,
     icon: &'static str,
-    secondary: Option<(u64, &'static str, &'static str, bool)>,
 }
 impl VisibilityToolbar {
     pub fn new(id: u64, icon: &'static str) -> Self {
-        let mut host = ContentHost::new(Content::new(ComponentId(1), ToolbarControl::default()))
+        let mut host = ContentHost::new(Content::new(ComponentId(1), ToolbarControl::window()))
             .expect("unique visibility contribution");
         host.set_action_events(true);
         Self {
             host,
             rect: Rect::default(),
-            pressed: false,
             images: HashMap::new(),
             id,
             icon,
-            secondary: None,
         }
-    }
-    pub fn set_secondary(
-        &mut self,
-        id: u64,
-        icon: &'static str,
-        label: &'static str,
-        enabled: bool,
-    ) {
-        self.secondary = Some((id, icon, label, enabled));
     }
     pub fn prepare(
         &mut self,
@@ -77,21 +64,12 @@ impl VisibilityToolbar {
         label: &str,
     ) -> Result<f32> {
         let image = icon_image(&mut self.images, renderer, self.icon, scale)?;
-        let mut actions = vec![];
-        if let Some((id, name, label, enabled)) = self.secondary {
-            actions.push(ToolbarIconAction {
-                id,
-                image: icon_image(&mut self.images, renderer, name, scale)?,
-                label: label.into(),
-                enabled,
-            });
-        }
-        actions.push(ToolbarIconAction {
+        let actions = vec![ToolbarIconAction {
             id: self.id,
             image,
             label: label.into(),
             enabled: true,
-        });
+        }];
         let toolbar = self
             .host
             .get_mut(ComponentId(1))
@@ -133,7 +111,6 @@ impl VisibilityToolbar {
         id
     }
     pub fn cancel(&mut self) {
-        self.pressed = false;
         self.event(&ContentEvent::Cancel);
     }
 }

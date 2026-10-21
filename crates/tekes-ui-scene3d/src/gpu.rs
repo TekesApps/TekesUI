@@ -35,7 +35,8 @@ pub struct Renderer3D {
     flat_bindings: Vec<wgpu::BindGroup>,
     camera: wgpu::Buffer,
     camera_bind: wgpu::BindGroup,
-    materials: Vec<wgpu::BindGroup>,
+    materials: Vec<UploadedMaterial>,
+    blended_emission_scale: f32,
     deformer: Deformer,
     last_frame_pose_upload_bytes: u64,
     camera_layout: wgpu::BindGroupLayout,
@@ -60,6 +61,34 @@ pub struct Renderer3D {
     alpha_resolve: Option<AlphaResolve>,
 }
 impl Renderer3D {
+    /// View-specific exposure for emissive transparent surfaces. For example,
+    /// disable exterior glass glow when looking out from inside a vehicle.
+    /// Opaque lamps and room lighting are unchanged. Cached, 16-byte material
+    /// writes occur only on a scale change; geometry/instances are never rebuilt.
+    pub fn set_blended_emission_scale(&mut self, scale: f32) -> Result<(), Error> {
+        if !scale.is_finite() || !(0.0..=1.0).contains(&scale) {
+            return Err(err("blended emission scale must be in 0..1"));
+        }
+        if self.blended_emission_scale == scale {
+            return Ok(());
+        }
+        for m in &self.materials {
+            if m.blend && m.emissive.iter().any(|v| *v > 0.) {
+                self.queue.write_buffer(
+                    &m.uniform,
+                    32,
+                    bytemuck::cast_slice(&[
+                        m.emissive[0] * scale,
+                        m.emissive[1] * scale,
+                        m.emissive[2] * scale,
+                        0.,
+                    ]),
+                );
+            }
+        }
+        self.blended_emission_scale = scale;
+        Ok(())
+    }
     /// Total shared window styles evaluated on GPU. Each changed style-bank
     /// input evaluates 32 styles, independent of the number of visible windows.
     pub fn interior_style_evaluations(&self) -> u64 {
@@ -321,6 +350,7 @@ impl Renderer3D {
             camera,
             camera_bind,
             materials,
+            blended_emission_scale: 1.,
             deformer,
             last_frame_pose_upload_bytes: 0,
             camera_layout,
@@ -537,7 +567,7 @@ impl Renderer3D {
                         .map_or_else(|| batch.map_or(&self.camera_bind, |b| &b.bind), |v| &v.draw),
                     &[],
                 );
-                pass.set_bind_group(1, &self.materials[draw.material], &[]);
+                pass.set_bind_group(1, &self.materials[draw.material].bind, &[]);
                 pass.set_bind_group(2, &self.local_lighting.bind, &[]);
                 if draw.flat_normals {
                     pass.set_bind_group(3, &self.flat_bindings[i], &[]);
@@ -635,7 +665,7 @@ impl Renderer3D {
                 camera_state = Some(camera_key);
             }
             if material_state != Some(draw.material) {
-                bundle.set_bind_group(1, &self.materials[draw.material], &[]);
+                bundle.set_bind_group(1, &self.materials[draw.material].bind, &[]);
                 material_state = Some(draw.material);
             }
             if draw.flat_normals {
@@ -1424,12 +1454,19 @@ fn depth_target(device: &wgpu::Device, size: (u32, u32), samples: u32) -> wgpu::
         view_formats: &[],
     })
 }
+#[derive(Debug)]
+struct UploadedMaterial {
+    bind: wgpu::BindGroup,
+    uniform: wgpu::Buffer,
+    emissive: [f32; 3],
+    blend: bool,
+}
 fn upload_materials(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
     layout: &wgpu::BindGroupLayout,
     asset: &Asset3D,
-) -> Result<Vec<wgpu::BindGroup>, Error> {
+) -> Result<Vec<UploadedMaterial>, Error> {
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
@@ -1588,9 +1625,9 @@ fn upload_materials(
                     m.interior_activation[2],
                     m.interior_activation[3],
                 ]),
-                usage: wgpu::BufferUsages::UNIFORM,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             });
-            Ok(device.create_bind_group(&wgpu::BindGroupDescriptor {
+            let bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: None,
                 layout,
                 entries: &[
@@ -1615,7 +1652,13 @@ fn upload_materials(
                         ),
                     },
                 ],
-            }))
+            });
+            Ok(UploadedMaterial {
+                bind,
+                uniform,
+                emissive: m.emissive,
+                blend: m.blend,
+            })
         })
         .collect()
 }
@@ -1658,6 +1701,34 @@ mod tests {
             .unwrap();
         rx.recv().unwrap().unwrap();
         buffer.slice(..).get_mapped_range().unwrap().to_vec()
+    }
+    #[test]
+    #[ignore = "requires a real wgpu GPU adapter"]
+    fn blended_emission_override_restores_image_without_geometry_or_instance_uploads() {
+        let mut ui = Renderer::new_headless().unwrap();
+        let mut asset = crate::asset::tests::depth_fixture(false);
+        for material in &mut asset.materials {
+            material.blend = true;
+            material.color[3] = 0.6;
+            material.emissive = [0.8; 3];
+        }
+        let view = Scene3D::new(asset);
+        let mut gpu = Renderer3D::new(&ui.gpu_context(), &view, (192, 192)).unwrap();
+        let image = ui.register_gpu_image(gpu.output()).unwrap();
+        let camera = Camera3D::default();
+        gpu.render_camera(&view, &camera).unwrap();
+        let lit = capture(&mut ui, &view, image);
+        let geometry = gpu.geometry_upload_bytes();
+        let instances = gpu.instance_upload_bytes();
+        gpu.set_blended_emission_scale(0.).unwrap();
+        gpu.render_camera(&view, &camera).unwrap();
+        assert_ne!(lit, capture(&mut ui, &view, image));
+        gpu.set_blended_emission_scale(1.).unwrap();
+        gpu.render_camera(&view, &camera).unwrap();
+        assert_eq!(lit, capture(&mut ui, &view, image));
+        assert!(gpu.set_blended_emission_scale(f32::NAN).is_err());
+        assert_eq!(gpu.geometry_upload_bytes(), geometry);
+        assert_eq!(gpu.instance_upload_bytes(), instances);
     }
     #[test]
     #[ignore = "requires a real wgpu GPU adapter"]
@@ -2611,7 +2682,7 @@ mod tests {
             pass.set_bind_group(0, &gpu.camera_bind, &[]);
             pass.set_bind_group(2, &gpu.local_lighting.bind, &[]);
             for (mesh, (buffer, count)) in gpu.deformer.meshes.iter().zip(&buffers) {
-                pass.set_bind_group(1, &gpu.materials[mesh.material], &[]);
+                pass.set_bind_group(1, &gpu.materials[mesh.material].bind, &[]);
                 pass.set_vertex_buffer(0, buffer.slice(..));
                 pass.draw(0..*count, 0..1);
             }

@@ -1,0 +1,18 @@
+[
+  {
+    "command": "['cargo', '+1.95.0', 'test', '-p', 'tekes-ui-controls', '--all-targets', '--locked']",
+    "passed": 449
+  },
+  {
+    "command": "['cargo', '+1.95.0', 'test', '-p', 'tekes-ui-design-export', '-p', 'tekes-ui-icons', '--locked']",
+    "passed": 27
+  },
+  {
+    "command": "['cargo', '+1.95.0', 'clippy', '--workspace', '--all-targets', '--locked', '--', '-D', 'warnings']",
+    "passed": 0
+  },
+  {
+    "command": "['cargo', '+1.95.0', 'test', '--manifest-path', 'examples/composition-consumer/Cargo.toml', '--locked']",
+    "passed": 307
+  }
+]

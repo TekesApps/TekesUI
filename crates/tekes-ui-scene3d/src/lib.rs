@@ -4,6 +4,8 @@
 mod animation;
 mod asset;
 mod camera;
+mod route_sample;
+pub use route_sample::{RoutePose3D, RouteSampler3D};
 mod deform;
 mod gpu;
 mod instances;

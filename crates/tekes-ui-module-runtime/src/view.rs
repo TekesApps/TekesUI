@@ -275,11 +275,21 @@ impl ViewConnection {
         self.core.notify();
     }
     pub(crate) fn remote_status(&self, status: ProcessStatus) {
-        self.core.state.lock().unwrap().status = status;
-        self.core.notify();
+        let mut state = self.core.state.lock().unwrap();
+        let changed = state.status != status;
+        state.status = status;
+        drop(state);
+        if changed {
+            self.core.notify();
+        }
     }
     pub(crate) fn invalidate(&self) {
-        self.core.state.lock().unwrap().invalidated = true;
+        let mut state = self.core.state.lock().unwrap();
+        if state.closed || state.invalidated {
+            return;
+        }
+        state.invalidated = true;
+        drop(state);
         self.core.notify();
     }
     pub(crate) fn take_invalidated(&self) -> bool {

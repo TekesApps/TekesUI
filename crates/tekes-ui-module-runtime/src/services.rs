@@ -2,8 +2,10 @@
 use crate::{component::*, pipes};
 use anyhow::{Result, bail, ensure};
 use serde_json::Value;
+#[cfg(target_os = "macos")]
+use std::collections::HashMap;
 use std::{
-    collections::{HashMap, HashSet, VecDeque},
+    collections::{HashSet, VecDeque},
     io::{BufReader, Write},
     sync::{
         Arc, Condvar, Mutex,
@@ -36,11 +38,14 @@ struct Sink {
     writer: Box<dyn Write + Send>,
     serial: u64,
     toolbar: Option<(u64, u64, Vec<ToolbarAction>)>,
+    view_revision: u64,
 }
 #[derive(Clone)]
 pub struct ComponentEmitter {
     session: Session,
     capabilities: Capabilities,
+    view: Option<NativeViewOptions>,
+    window: Option<u64>,
     sink: Arc<Mutex<Sink>>,
 }
 impl ComponentEmitter {
@@ -58,13 +63,43 @@ impl ComponentEmitter {
         };
         pipes::write_packet(&mut sink.writer, &serde_json::to_vec(&packet)?)
     }
+    /// Actual logical window/View IDs negotiated by this attachment. Headless
+    /// modules receive None; querying this does not allocate native/GPU objects.
+    /// Logical host window binding, including service-only attachments.
+    pub fn window_identity(&self) -> Option<u64> {
+        self.window
+    }
+    pub fn view_identity(&self) -> Option<(u64, u64)> {
+        self.view.as_ref().map(|view| (view.window, view.view))
+    }
+    /// Notify the attached View using its actual identity. A headless consumer
+    /// remains headless and returns false without manufacturing an event.
+    pub fn invalidate_view(&self, revision: u64) -> Result<bool> {
+        let Some((_, view)) = self.view_identity() else {
+            return Ok(false);
+        };
+        self.emit(ComponentEvent::ViewInvalidated { view, revision })?;
+        Ok(true)
+    }
     pub fn emit(&self, event: ComponentEvent) -> Result<()> {
         validate_event(&event, self.capabilities)?;
+        if let ComponentEvent::ViewInvalidated { view, .. } = &event {
+            ensure!(
+                self.view
+                    .as_ref()
+                    .is_some_and(|attached| attached.view == *view),
+                "invalidation does not belong to the attached View"
+            );
+        }
         // Validate and write under one lock so concurrent emitters cannot reorder registrations.
         let mut sink = self.sink.lock().unwrap();
+        if let ComponentEvent::ViewInvalidated { revision, .. } = &event {
+            ensure!(*revision > sink.view_revision, "stale View invalidation");
+            sink.view_revision = *revision;
+        }
         if let ComponentEvent::Toolbar {
             revision,
-            scope: ToolbarScope::Window { window },
+            scope,
             items,
         } = &event
         {
@@ -74,7 +109,8 @@ impl ComponentEmitter {
                     .is_none_or(|(old, _, _)| revision > old),
                 "stale toolbar registration"
             );
-            sink.toolbar = Some((*revision, *window, items.clone()));
+            let window = toolbar_window(scope, self.window, self.view.as_ref())?;
+            sink.toolbar = Some((*revision, window, items.clone()));
         }
         sink.serial = sink
             .serial
@@ -112,8 +148,11 @@ fn validate_event(event: &ComponentEvent, caps: Capabilities) -> Result<()> {
                 "toolbar not negotiated or invalid generation"
             );
             ensure!(
-                matches!(scope, ToolbarScope::Window { window } if *window != 0),
-                "View toolbar requires the View adapter"
+                match scope {
+                    ToolbarScope::Window { window } => *window != 0,
+                    ToolbarScope::View => caps.view,
+                },
+                "invalid or unnegotiated toolbar scope"
             );
             let mut ids = HashSet::new();
             for item in items {
@@ -132,6 +171,33 @@ fn validate_event(event: &ComponentEvent, caps: Capabilities) -> Result<()> {
     }
     Ok(())
 }
+// The same scope validation governs producer and receiver. A service-only
+// window binding is data, not a native Window/View allocation. Legacy unbound
+// Start remains compatible; hosts requiring isolation use spawn_in_window.
+fn toolbar_window(
+    scope: &ToolbarScope,
+    window: Option<u64>,
+    view: Option<&NativeViewOptions>,
+) -> Result<u64> {
+    match scope {
+        ToolbarScope::Window { window: target } => {
+            ensure!(
+                *target != 0 && window.is_none_or(|bound| bound == *target),
+                "toolbar belongs to another window"
+            );
+            Ok(*target)
+        }
+        ToolbarScope::View => {
+            let view =
+                view.ok_or_else(|| anyhow::anyhow!("View toolbar requires an attached View"))?;
+            ensure!(
+                view.required.independent_toolbar,
+                "View toolbar capability not negotiated"
+            );
+            Ok(view.window)
+        }
+    }
+}
 /// Call before constructing any UI/GPU object. Returns false for the ordinary host.
 pub fn run_component_worker_from_args(
     definitions: &[ComponentDefinition],
@@ -140,7 +206,15 @@ pub fn run_component_worker_from_args(
     if args.get(1).map(String::as_str) != Some("--tekesui-component") {
         return Ok(false);
     }
-    ensure!(args.len() == 3, "expected one component identifier");
+    let cli_window = match args.len() {
+        3 => None,
+        5 if args[3] == "--window" => {
+            let window = args[4].parse::<u64>()?;
+            ensure!(window != 0, "invalid bound window");
+            Some(window)
+        }
+        _ => bail!("expected one component identifier and optional --window ID"),
+    };
     let found: Vec<_> = definitions.iter().filter(|d| d.id == args[2]).collect();
     ensure!(found.len() == 1, "unknown or ambiguous component");
     let definition = found[0];
@@ -172,13 +246,26 @@ pub fn run_component_worker_from_args(
         required.view == attach.is_some() && definition.capabilities.supports(required),
         "unsupported capabilities"
     );
+    let attached_window = attach.as_ref().map(|view| view.window);
+    ensure!(
+        cli_window.zip(attached_window).is_none_or(|(a, b)| a == b),
+        "conflicting window binding"
+    );
+    let window = attached_window.or(cli_window);
     let emitter = ComponentEmitter {
         session: session.clone(),
         capabilities: required,
+        view: attach.as_ref().map(|view| NativeViewOptions {
+            window: view.window,
+            view: view.view,
+            required: view.required,
+        }),
+        window,
         sink: Arc::new(Mutex::new(Sink {
             writer: Box::new(std::io::stdout()),
             serial: 0,
             toolbar: None,
+            view_revision: 0,
         })),
     };
     if let Some(attach) = attach {
@@ -315,6 +402,8 @@ struct State {
     toolbar: Vec<ToolbarAction>,
     toolbar_revision: u64,
     toolbar_window: u64,
+    toolbar_declaration: Option<ServerMessage>,
+    view_revision: u64,
     native: Option<ViewCapabilities>,
     stop_id: Option<u64>,
     #[cfg(target_os = "macos")]
@@ -346,6 +435,7 @@ impl Shared {
             s.incoming.clear();
             s.pending.clear();
             s.toolbar.clear();
+            s.toolbar_declaration = None;
             #[cfg(target_os = "macos")]
             s.renders.clear();
         }
@@ -362,6 +452,7 @@ impl Shared {
 /// Dropping/closing never waits for pipe IO, GPU completion or child exit.
 pub struct ProcessComponent {
     session: Session,
+    window: Option<u64>,
     backend: Backend,
 }
 enum Backend {
@@ -372,6 +463,31 @@ enum Backend {
 impl ProcessComponent {
     pub fn spawn(
         options: ProcessComponentOptions,
+        wake: impl Fn() + Send + Sync + 'static,
+    ) -> Result<Self> {
+        let window = options.view.as_ref().map(|view| view.window);
+        Self::spawn_bound(options, window, wake)
+    }
+    /// Bind a headless or View component's Window toolbar to this host window.
+    /// Existing unbound spawn remains a compatibility entry.
+    pub fn spawn_in_window(
+        options: ProcessComponentOptions,
+        window: u64,
+        wake: impl Fn() + Send + Sync + 'static,
+    ) -> Result<Self> {
+        ensure!(
+            window != 0
+                && options
+                    .view
+                    .as_ref()
+                    .is_none_or(|view| view.window == window),
+            "invalid/mismatched window binding"
+        );
+        Self::spawn_bound(options, Some(window), wake)
+    }
+    fn spawn_bound(
+        options: ProcessComponentOptions,
+        window: Option<u64>,
         wake: impl Fn() + Send + Sync + 'static,
     ) -> Result<Self> {
         ensure!(
@@ -405,6 +521,8 @@ impl ProcessComponent {
                 toolbar: Vec::new(),
                 toolbar_revision: 0,
                 toolbar_window: 0,
+                toolbar_declaration: None,
+                view_revision: 0,
                 native: None,
                 stop_id: None,
                 #[cfg(target_os = "macos")]
@@ -439,7 +557,7 @@ impl ProcessComponent {
         std::thread::Builder::new()
             .name("component-launch-read".into())
             .spawn(move || {
-                let result = connection(&worker, &identity, options.required, options.view);
+                let result = connection(&worker, &identity, options.required, options.view, window);
                 if let Err(error) = result {
                     worker.fail(error.to_string());
                 }
@@ -452,6 +570,7 @@ impl ProcessComponent {
                     }
                     state.abort = true;
                     state.toolbar.clear();
+                    state.toolbar_declaration = None;
                     state.pending.clear();
                     #[cfg(target_os = "macos")]
                     state.renders.clear();
@@ -467,6 +586,7 @@ impl ProcessComponent {
             })?;
         Ok(Self {
             session,
+            window,
             backend: Backend::Service(shared),
         })
     }
@@ -492,6 +612,7 @@ impl ProcessComponent {
         };
         Ok(Self {
             session,
+            window: None,
             backend: Backend::View(crate::ViewConnection::spawn(module, wake)?),
         })
     }
@@ -556,6 +677,11 @@ impl ProcessComponent {
         );
         Ok(())
     }
+    /// Logical immutable window binding. None identifies an unbound legacy
+    /// profile, which is not an isolated Window toolbar contribution source.
+    pub fn window_identity(&self) -> Option<u64> {
+        self.window
+    }
     pub fn session(&self) -> &Session {
         &self.session
     }
@@ -566,6 +692,15 @@ impl ProcessComponent {
             Backend::View(view) => view.status(),
         }
     }
+    /// Latest accepted owner/session/scope/generation snapshot. Retain this
+    /// envelope with displayed actions; use request_from for delayed UI input.
+    pub fn toolbar_registration(&self) -> Option<ServerMessage> {
+        let state = self.service().ok()?.state.lock().unwrap();
+        if !matches!(state.status, ProcessStatus::Ready { .. }) {
+            return None;
+        }
+        state.toolbar_declaration.clone()
+    }
     pub fn drain_events(&self) -> Vec<ServerMessage> {
         let Ok(shared) = self.service() else {
             return Vec::new();
@@ -573,6 +708,12 @@ impl ProcessComponent {
         shared.state.lock().unwrap().incoming.drain(..).collect()
     }
     pub fn request(&self, body: RequestBody) -> Result<u64> {
+        self.request_from(&self.session, body)
+    }
+    /// Keep the event-time owner when callbacks outlive a mount or a process.
+    /// Latest-session convenience calls must not retarget a retained UI action.
+    pub fn request_from(&self, origin: &Session, body: RequestBody) -> Result<u64> {
+        ensure!(*origin == self.session, "stale component action owner");
         ensure!(
             !matches!(body, RequestBody::Render { .. }),
             "use the bounded enqueue_view lane"
@@ -651,6 +792,7 @@ impl ProcessComponent {
             state.incoming.clear();
             state.pending.clear();
             state.toolbar.clear();
+            state.toolbar_declaration = None;
         }
         shared.changed.notify_all();
         shared.kill();
@@ -670,6 +812,7 @@ fn connection(
     session: &Session,
     required: Capabilities,
     native: Option<NativeViewOptions>,
+    window: Option<u64>,
 ) -> Result<()> {
     #[cfg(target_os = "macos")]
     let receiver = if native.is_some() {
@@ -705,7 +848,16 @@ fn connection(
         child,
         mut input,
         mut output,
-    } = pipes::spawn(&["--tekesui-component", &session.module])?;
+    } = {
+        let binding = window.map(|window| window.to_string());
+        let mut arguments = vec!["--tekesui-component", session.module.as_str()];
+        if native.is_none()
+            && let Some(binding) = &binding
+        {
+            arguments.extend(["--window", binding.as_str()]);
+        }
+        pipes::spawn(&arguments)?
+    };
     let pid = child.id();
     shared.child.install(child)?;
     if shared.state.lock().unwrap().abort {
@@ -892,18 +1044,19 @@ fn connection(
                                     *revision > state.toolbar_revision,
                                     "stale toolbar generation"
                                 );
-                                let ToolbarScope::Window { window } = scope else {
-                                    unreachable!()
-                                };
-                                state.toolbar_window = *window;
+                                state.toolbar_window =
+                                    toolbar_window(scope, window, native.as_ref())?;
+                                state.toolbar_declaration = Some(packet.clone());
                                 state.toolbar_revision = *revision;
                                 state.toolbar = items.clone();
                             }
-                            ComponentEvent::ViewInvalidated { view, .. } => {
+                            ComponentEvent::ViewInvalidated { view, revision } => {
                                 ensure!(
                                     native.as_ref().is_some_and(|n| n.view == *view),
                                     "wrong invalidation View"
                                 );
+                                ensure!(*revision > state.view_revision, "stale View invalidation");
+                                state.view_revision = *revision;
                                 invalidated = true;
                             }
                             _ => (),
@@ -926,22 +1079,30 @@ fn connection(
                 }
             }
         }
-        ensure!(
-            state.incoming.len() < CAPACITY,
-            "component output queue full"
-        );
-        state.incoming.push_back(packet);
+        // View invalidation is a coalesced redraw signal, not business output.
+        // It must not fill the service-event queue while the View is hidden.
+        if !invalidated {
+            ensure!(
+                state.incoming.len() < CAPACITY,
+                "component output queue full"
+            );
+            state.incoming.push_back(packet);
+        }
+        #[cfg(target_os = "macos")]
         let status = state.status.clone();
         drop(state);
         #[cfg(target_os = "macos")]
         if let Some(view) = shared.view.get() {
-            view.remote_status(status);
             if invalidated {
                 view.invalidate();
+            } else {
+                view.remote_status(status);
             }
         }
         shared.changed.notify_all();
-        shared.notify();
+        if !invalidated {
+            shared.notify();
+        }
     }
     ensure!(
         shared.state.lock().unwrap().abort || stopped,
@@ -1013,10 +1174,13 @@ mod tests {
                 host_epoch: 1,
             },
             capabilities: Capabilities::HEADLESS,
+            view: None,
+            window: None,
             sink: Arc::new(Mutex::new(Sink {
                 writer: Box::new(Vec::<u8>::new()),
                 serial: 0,
                 toolbar: None,
+                view_revision: 0,
             })),
         };
         emitter.emit(toolbar(2, 4, vec![action(7)])).unwrap();
@@ -1024,6 +1188,141 @@ mod tests {
         assert!(emitter.emit(toolbar(2, 4, vec![])).is_err());
         emitter.emit(toolbar(3, 4, vec![])).unwrap();
         assert_eq!(emitter.sink.lock().unwrap().serial, 2);
+    }
+    #[test]
+    fn view_context_rejects_foreign_or_stale_invalidation_and_headless_stays_empty() {
+        let mut emitter = ComponentEmitter {
+            session: Session {
+                module: "view".into(),
+                instance: 3,
+                host_epoch: 8,
+            },
+            capabilities: Capabilities {
+                view: true,
+                ..Capabilities::HEADLESS
+            },
+            view: Some(NativeViewOptions {
+                window: 21,
+                view: 34,
+                required: ViewCapabilities {
+                    independent_toolbar: true,
+                    ..Default::default()
+                },
+            }),
+            window: Some(21),
+            sink: Arc::new(Mutex::new(Sink {
+                writer: Box::new(Vec::<u8>::new()),
+                serial: 0,
+                toolbar: None,
+                view_revision: 0,
+            })),
+        };
+        assert_eq!(emitter.view_identity(), Some((21, 34)));
+        assert!(
+            emitter
+                .emit(ComponentEvent::ViewInvalidated {
+                    view: 2,
+                    revision: 1
+                })
+                .is_err()
+        );
+        assert!(emitter.invalidate_view(0).is_err());
+        assert!(emitter.invalidate_view(1).unwrap());
+        assert!(emitter.clone().invalidate_view(1).is_err());
+        assert!(emitter.invalidate_view(2).unwrap());
+        assert_eq!(emitter.sink.lock().unwrap().serial, 2);
+        emitter.view = None;
+        emitter.capabilities = Capabilities::HEADLESS;
+        assert!(!emitter.invalidate_view(3).unwrap());
+        assert_eq!(emitter.view_identity(), None);
+        assert_eq!(emitter.sink.lock().unwrap().serial, 2);
+    }
+    #[test]
+    fn toolbar_scope_binding_preserves_prior_registration_after_foreign_clear() {
+        let emitter = ComponentEmitter {
+            session: Session {
+                module: "scope".into(),
+                instance: 3,
+                host_epoch: 8,
+            },
+            capabilities: Capabilities {
+                view: true,
+                ..Capabilities::HEADLESS
+            },
+            window: Some(21),
+            view: Some(NativeViewOptions {
+                window: 21,
+                view: 34,
+                required: ViewCapabilities {
+                    independent_toolbar: true,
+                    ..Default::default()
+                },
+            }),
+            sink: Arc::new(Mutex::new(Sink {
+                writer: Box::new(Vec::<u8>::new()),
+                serial: 0,
+                toolbar: None,
+                view_revision: 0,
+            })),
+        };
+        emitter.emit(toolbar(1, 21, vec![action(7)])).unwrap();
+        assert!(emitter.emit(toolbar(2, 22, vec![])).is_err());
+        assert_eq!(emitter.sink.lock().unwrap().serial, 1);
+        assert!(valid_invoke(
+            &RequestBody::Invoke {
+                command: 7,
+                registration: 1,
+                window: 21
+            },
+            &emitter
+        ));
+        emitter
+            .emit(ComponentEvent::Toolbar {
+                revision: 2,
+                scope: ToolbarScope::View,
+                items: vec![action(7)],
+            })
+            .unwrap();
+        assert!(!valid_invoke(
+            &RequestBody::Invoke {
+                command: 7,
+                registration: 1,
+                window: 21
+            },
+            &emitter
+        ));
+        assert!(valid_invoke(
+            &RequestBody::Invoke {
+                command: 7,
+                registration: 2,
+                window: 21
+            },
+            &emitter
+        ));
+        assert!(!valid_invoke(
+            &RequestBody::Invoke {
+                command: 7,
+                registration: 2,
+                window: 22
+            },
+            &emitter
+        ));
+        let missing_cap = NativeViewOptions {
+            window: 21,
+            view: 34,
+            required: ViewCapabilities::default(),
+        };
+        assert!(toolbar_window(&ToolbarScope::View, Some(21), Some(&missing_cap)).is_err());
+        assert!(toolbar_window(&ToolbarScope::View, Some(21), None).is_err());
+        emitter.emit(toolbar(3, 21, vec![])).unwrap();
+        assert!(!valid_invoke(
+            &RequestBody::Invoke {
+                command: 7,
+                registration: 3,
+                window: 21
+            },
+            &emitter
+        ));
     }
     #[test]
     fn ordinary_entry_never_invokes_factory_and_invalid_cli_is_rejected() {
@@ -1040,6 +1339,15 @@ mod tests {
             vec!["host", "--tekesui-component"],
             vec!["host", "--tekesui-component", "unknown"],
             vec!["host", "--tekesui-component", "navigation", "extra"],
+            vec!["host", "--tekesui-component", "navigation", "--window", "0"],
+            vec![
+                "host",
+                "--tekesui-component",
+                "navigation",
+                "--window",
+                "bad",
+            ],
+            vec!["host", "--tekesui-component", "navigation", "--fake", "12"],
         ] {
             assert!(
                 run_component_worker_from_args(

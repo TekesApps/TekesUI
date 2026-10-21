@@ -919,6 +919,7 @@ dependencies = [
  "tekes-ui-controls",
  "tekes-ui-icons",
  "tekes-ui-module-runtime",
+ "tekes-ui-motion",
  "tekes-ui-platform-macos",
  "tekes-ui-render",
  "tekes-ui-scene",

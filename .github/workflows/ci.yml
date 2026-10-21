@@ -15,6 +15,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Public icon catalog projections and assets
+        run: |
+          python3 scripts/generate-icon-web-bindings.py --check
+          node --test crates/tekes-ui-icons/web/icons.test.mjs
       - name: Fetch pinned dependencies for offline consumers
         run: |
           cargo fetch --locked

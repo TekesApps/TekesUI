@@ -118,9 +118,10 @@
     {
       "name": "tekes-back",
       "file": "assets/tekes-back.svg",
-      "sha256": "01515e34fcea830cbe33e462aa018edaadbda85aebc682eb1596806fd09f0347",
+      "sha256": "6154e319cdcdf92be465b1f197a6a016734ffe60d1677e1183d0a8f8d2fa720f",
       "origin": "promoted-catalog",
-      "sourceSha256": "12b1341f7d0fd7a939127d975a205b12658fee0dcf82cb0d64202a6d63532230"
+      "sourceSha256": "12b1341f7d0fd7a939127d975a205b12658fee0dcf82cb0d64202a6d63532230",
+      "designRevision": "window-toolbar-optical-20261021"
     },
     {
       "name": "tekes-branch",
@@ -573,9 +574,10 @@
     {
       "name": "tekes-forward",
       "file": "assets/tekes-forward.svg",
-      "sha256": "fcf7abef65864e5b583f897d22b93c755b1a6a7a9f5729aebe1603f3ab81c363",
+      "sha256": "04184600d7e56b1b40912036e6833df5da428c468afdf0e9652c95a598bb152b",
       "origin": "promoted-catalog",
-      "sourceSha256": "3a81f079d18488566fa02314f84b9df78c49c9d467c80ea5d5029a4ccdcd2de6"
+      "sourceSha256": "3a81f079d18488566fa02314f84b9df78c49c9d467c80ea5d5029a4ccdcd2de6",
+      "designRevision": "window-toolbar-optical-20261021"
     },
     {
       "name": "tekes-fullscreen",
@@ -986,9 +988,10 @@
     {
       "name": "tekes-side-bar",
       "file": "assets/tekes-side-bar.svg",
-      "sha256": "d961241d33d73fc2dd8f2564bc60dea545d0c0ca478e96f1a67a8fe207956948",
+      "sha256": "7fec5beda4076ac160944f985412372f8c755d801adbff395855ef4bf6580110",
       "origin": "promoted-catalog",
-      "sourceSha256": "3a4d340a41c7b43234dea991a2fc999636112d0ee16fee5fbfb2b59594daad43"
+      "sourceSha256": "3a4d340a41c7b43234dea991a2fc999636112d0ee16fee5fbfb2b59594daad43",
+      "designRevision": "window-toolbar-optical-20261021"
     },
     {
       "name": "tekes-side-chat",
@@ -1000,9 +1003,10 @@
     {
       "name": "tekes-side-panel",
       "file": "assets/tekes-side-panel.svg",
-      "sha256": "8d2c1b6c3821ba792bdcd13d7b74c944c404549b160459e3bd5d490d4e8e1d32",
+      "sha256": "ea1a17ff482b1542bd416f96eb78efbdb30f9be6802df210c3e2e709d7641931",
       "origin": "promoted-catalog",
-      "sourceSha256": "68a7a8894929128a52975b3d3f44b2a4872e353ed8ea6060ef17e767ca70b992"
+      "sourceSha256": "68a7a8894929128a52975b3d3f44b2a4872e353ed8ea6060ef17e767ca70b992",
+      "designRevision": "window-toolbar-optical-20261021"
     },
     {
       "name": "tekes-skill",

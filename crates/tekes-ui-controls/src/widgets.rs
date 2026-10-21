@@ -339,6 +339,11 @@ pub struct ControlState {
 pub struct Button {
     pub state: ControlState,
     pub frame_policy: ButtonFramePolicy,
+    /// Optional compact decorative height, independent of layout/hit geometry.
+    /// Larger measured labels expand this proportionally; text is never clipped
+    /// to the decorative bounds. Ordinary controls retain their original frame.
+    pub chrome_height: Option<f32>,
+    chrome_bounds: Option<Rect>,
     arm: ButtonArm,
     placement: Option<ButtonLayout>,
     last_pointer: Option<Point>,
@@ -535,6 +540,7 @@ impl Button {
         self.synchronize_activation();
         if !valid_frame(frame) || clip.is_some_and(|clip| !valid_clip(clip)) {
             self.placement = Some(ButtonLayout::empty());
+            self.chrome_bounds = None;
             self.blur();
             return ButtonLayout::empty();
         }
@@ -562,6 +568,20 @@ impl Button {
             self.frame_policy,
         );
         self.placement = Some(layout);
+        let chrome = self
+            .chrome_height
+            .filter(|h| h.is_finite() && *h > 0.)
+            .map_or(layout.frame, |height| {
+                let ratio = (layout.label_size.height / role.style().line_height.max(1.)).max(1.);
+                let height = (height * ratio).min(layout.frame.size.height);
+                Rect::new(
+                    layout.frame.min_x(),
+                    layout.frame.center().y - height * 0.5,
+                    layout.frame.size.width,
+                    height,
+                )
+            });
+        self.chrome_bounds = Some(chrome);
         if layout.visible.is_none() {
             self.blur();
         }
@@ -643,7 +663,7 @@ impl Button {
             let ink = if let Some((hover, pressed)) = transition_progress {
                 crate::paint::button_variant_with_interaction(
                     scene,
-                    layout.frame,
+                    chrome,
                     palette,
                     self.state,
                     variant,
@@ -654,7 +674,7 @@ impl Button {
             } else {
                 crate::paint::button_variant_with_radius(
                     scene,
-                    layout.frame,
+                    chrome,
                     palette,
                     self.state,
                     variant,
@@ -677,8 +697,15 @@ impl Button {
         self.placement
     }
 
+    /// Decorative bounds from the last render. Hit testing continues to use
+    /// `layout().visible`, including the larger accessible action target.
+    pub fn chrome_bounds(&self) -> Option<Rect> {
+        self.chrome_bounds
+    }
+
     pub fn clear_layout(&mut self) {
         self.placement = None;
+        self.chrome_bounds = None;
         self.blur();
     }
 

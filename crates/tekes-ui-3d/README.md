@@ -169,3 +169,14 @@ The ground railway and island station now occupy the strip between the eastern r
 Road wheels (`city_road_wheels.py`, `road_wheels.rs`) now use the same GPU rolling path as trains. Sedans/police cars and ambulances have two axles; fire and garbage trucks have three. Each wheelset clones its body instance route, phase, speed variation, scale and optional route schedule; only the wheel radius/axle and neutral tint differ. Turning speed therefore follows the exact integrated body travel, including speed changes, zero-speed parking and paused scene clocks. Vertices and normals rotate together on GPU. Six shared wheelset meshes replace static tires inside vehicle bodies; road wheels use the same GPU LOD thresholds as the bodies, and do not add lights or shadow proxies. No per-frame CPU wheel simulation or instance/vertex uploads are added.
 
 Passenger side glazing now has a 0.24-unit (0.96 m at authoring scale) height, wider solid piers and a taller sill/header; glass area is approximately 30% lower than the initial lit-window model. Door panes shrink about 25%. These are visual model proportions guided by JR East exterior photos, not asserted manufacturer dimensions. Night passenger-window emission remains enabled.
+
+
+### 街区视角 tabs
+
+街区顶部提供总览、行人、汽车驾驶、电车驾驶、电车乘客五个视角；也可按 `1`–`5` 或使用 City viewpoint 菜单。各 tab 共用同一城市时钟，切换不重置施工、车辆和灯光进度。跟随模式拖动/方向键转头，滚轮调整视野；空格暂停城市和镜头，`R` 返回总览并复位。
+
+例如：`cargo run -p tekes-ui-3d -- --demo city-block --view passenger --night`。`--view` 可选 `overview`、`pedestrian`、`driver`、`train-cab`、`passenger`，可与 `--time`、`--snapshot` 组合验收。
+
+相机由 Scene3D 的 `Camera3D::look_at` 和预编译 `RouteSampler3D` 驱动。CPU 只采样当前视角的一到两条路线，模型、车轮、乘客与城市动画继续在 GPU 上运行。进入车内时通过缓存的透明材质发光倍率关闭外观窗玻璃光晕，保留不透明车厢灯具及城市照明；切回总览恢复外观发光。
+
+当前是有限街区演示：电车驶出已建模区间时优先跟随另一方向仍在区间内的列车；两列均离开后转到站台候车，重新驶入时自动跟随。驾驶模式为自动沿原车辆路线行驶，未实现键盘驾驶或碰撞导航。

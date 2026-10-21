@@ -42,7 +42,6 @@ pub struct WindowNavigation {
     pub host: NavigationHost,
     pub toolbar: ContentHost,
     pub rect: Rect,
-    pub pressed: bool,
     pub busy: bool,
     pub publication: Option<Publication>,
     options: NavigationOptions,
@@ -81,7 +80,7 @@ impl WindowNavigation {
                 }
             }
         });
-        let mut toolbar = ContentHost::new(Content::new(ComponentId(1), ToolbarControl::default()))
+        let mut toolbar = ContentHost::new(Content::new(ComponentId(1), ToolbarControl::window()))
             .map_err(|e| anyhow::anyhow!("toolbar: {e:?}"))?;
         toolbar.set_action_events(true);
         Ok(Self {
@@ -89,7 +88,6 @@ impl WindowNavigation {
             host,
             toolbar,
             rect: Rect::default(),
-            pressed: false,
             busy: true,
             publication: None,
             options,
@@ -303,14 +301,6 @@ impl WindowNavigation {
             .get_mut(ComponentId(1))
             .unwrap()
             .paint_overlays(scene, text, Palette::from(Theme::LIGHT).into());
-    }
-    pub fn is_open(&self) -> bool {
-        self.toolbar
-            .get(ComponentId(1))
-            .unwrap()
-            .component::<ToolbarControl>()
-            .unwrap()
-            .is_open()
     }
 }
 fn document_label(target: Option<&Entry>) -> Result<String> {

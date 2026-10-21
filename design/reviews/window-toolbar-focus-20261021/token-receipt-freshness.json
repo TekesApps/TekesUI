@@ -1,0 +1,6 @@
+{
+  "observations": 18,
+  "bounded_cases": 6624,
+  "stale_inputs": [],
+  "kind": "source freshness only; does not replace actual runtime receipts or native acceptance"
+}

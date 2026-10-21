@@ -1,0 +1,37 @@
+{
+  "format": "tekesui-process-toolbar-phase/1",
+  "status": "public API, actual consumer and GPU passed; native/Gold7 pending",
+  "published_baseline": "1294987dacabb33c0e411c13ee5ea544a1123f8e",
+  "source_sha256": {
+    "crates/tekes-ui-module-runtime/src/services.rs": "d32ac0c5c5340f6c9c8a330f3b64d3d09f4aa300b1d19b7cab27a6cb6291c2b3",
+    "crates/tekes-ui-module-runtime/src/view.rs": "45e23fcebbf46ab9cc2859ea78aeaeee9cca75581041256e1fd9e2ce0d185d53",
+    "crates/tekes-ui-module-runtime/src/container.rs": "b34423866204a1ee7e0346b5609ac3c4e1e278025ef8317962f44c54bb53b5e9",
+    "crates/tekes-ui-module-runtime/src/container_toolbar.rs": "713f63473dcaa43577d31d9d02a661345ce96aee572f8ad5e5c6b24ba4742800",
+    "crates/tekes-ui-module-runtime/src/lib.rs": "276d4844375a722ee573f0ad1b6cf2e0d4e00cca87fd2e445f0902b1fd0a3e8c",
+    "crates/tekes-ui-controls/src/toolbar.rs": "bca234a3ee133404e831ecc243d8a0844d8bcbd2f590003ee6e58d306e797247",
+    "crates/tekes-ui-app-protocol/src/component.rs": "9690f9953b84c69f18e9e88c08b728cbb9c8b7fdcc2a01289cb072c0e1ea368c",
+    "crates/tekes-ui-module-runtime/examples/process_container_toolbar.rs": "ca13c939a4cca5719ac8b7a282acfea43ba9f4fcf51a621eae700a11da138976",
+    "crates/tekes-ui-module-runtime/examples/process_component_view.rs": "fc6d32a81fec3b432c899ba3cd3df4995cfeb0015b49e80dcb67e0a849d17574",
+    "crates/tekes-ui-module-runtime/examples/process_component_services.rs": "08c5e9f20386bddd896787b3d6de4f9728610b5f47603ae8eeac65e0033afe6c",
+    "crates/tekes-ui-module-runtime/Cargo.toml": "157db389d481687b03dbd5b3049b0eb9469e614566d921cc121b5b96ed6f15c0",
+    "Cargo.lock": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5"
+  },
+  "evidence": [
+    "final-verify.log",
+    "local-real-final.log",
+    "local-strict.log",
+    "local-hidden-before.log",
+    "local-hidden-final.log",
+    "cleanup.json"
+  ],
+  "regression": {
+    "before": "hidden pointer arm erroneously invokes after restore",
+    "repair": "ProcessContainer.set_visible reuses existing cancel",
+    "after": "pointer/Space across hidden/disabled/inactive restore and late release, six cases pass via service FIFO barrier"
+  },
+  "token_probes": "design/reviews/stage40-audit-refresh-20261021/probes-process-local-final",
+  "performance": false,
+  "native": "pending on matched candidate; AppHost separate animation receipts do not establish ProcessContainer local-toolbar native acceptance",
+  "gold7": "pending",
+  "git": "subsequent WIP; old published tag unchanged"
+}

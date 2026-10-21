@@ -317,17 +317,17 @@
       "content_capacity": "部分实现",
       "heterogeneous_consumer_content": "缺失",
       "runtime_profile": "owned-content",
-      "state_identity": "Original Component owner retains stable command IDs; registration refresh preserves valid focus, cancels old arm and skips disabled actions. Runtime action queue has one group owner.",
-      "limits": "Bounded action/icon descriptors, single-row measured overflow and original Component input. No arbitrary caller Content slots, complete per-action AX semantic parts, customizable toolbar groups or general window registration protocol. Native AppHost contribution routing is a separate experimental process adapter.",
+      "state_identity": "Original Component owner retains stable command IDs; registration refresh preserves matching focus, clears replaced/empty hit geometry, cancels old pointer/keyboard arms and skips disabled actions. Runtime action queue has one group owner.",
+      "limits": "Bounded action/icon descriptors, single-row measured overflow and original Component input. No arbitrary caller Content slots, complete per-action AX semantic parts, customizable toolbar groups or general window registration protocol. Native AppHost contribution routing is a separate experimental process adapter. Window default native geometry and four regular artworks plus More have bounded independent native evidence on75688ce; whole-window keyboard traversal, complete per-action AX and catalog-wide optical acceptance remain pending.",
       "native_acceptance": "未验证",
       "accessibility": "Original group semantics only; overflow reuses Menu. Complete per-action AX projection and VoiceOver hearing remain unverified.",
       "requires_internal_source_edit": "No for the public action/icon Component consumer; arbitrary Content slots and full native semantic parts still need shared implementation.",
-      "compatibility": "Additive ToolbarControl; legacy Toolbar and ToolbarView remain. New public types classified under the existing Toolbar route; no new component cohort.",
+      "compatibility": "Additive ToolbarControl; legacy Toolbar and ToolbarView remain. New public types classified under the existing Toolbar route; no new component cohort. Additive mixed action icon assignment and ancestor-clipped rendering reuse the same painter/hit state; no native maturity promotion. Window constructor is opt-in; adding generated ToolbarLabel can require source updates to exhaustive consumer TextRole matches. Existing independent consumers compile, but their success does not prove all external exhaustive matches remain compatible.",
       "evidence": [
         {
           "api": "tekes_ui_controls::Toolbar",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 2654,
+          "line": 2681,
           "anchor": "pub struct Toolbar;"
         },
         {
@@ -739,7 +739,7 @@
         {
           "api": "tekes_ui_controls::Checkbox",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 872,
+          "line": 899,
           "anchor": "pub struct Checkbox {"
         }
       ]
@@ -883,7 +883,7 @@
         {
           "api": "tekes_ui_controls::Field",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1302,
+          "line": 1329,
           "anchor": "pub struct Field {"
         },
         {
@@ -924,7 +924,7 @@
         {
           "api": "tekes_ui_controls::Select",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1237,
+          "line": 1264,
           "anchor": "pub struct Select {"
         },
         {
@@ -959,7 +959,7 @@
         {
           "api": "tekes_ui_controls::NumberField",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1258,
+          "line": 1285,
           "anchor": "pub struct NumberField {"
         },
         {
@@ -994,7 +994,7 @@
         {
           "api": "tekes_ui_controls::Tabs",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1137,
+          "line": 1164,
           "anchor": "pub struct Tabs {"
         },
         {
@@ -1253,7 +1253,7 @@
         {
           "api": "tekes_ui_controls::Menu",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1167,
+          "line": 1194,
           "anchor": "pub struct Menu {"
         },
         {
@@ -1382,7 +1382,7 @@
         {
           "api": "tekes_ui_controls::Dialog",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1211,
+          "line": 1238,
           "anchor": "pub struct Dialog {"
         },
         {
@@ -1727,12 +1727,12 @@
     "crates/tekes-ui-controls/src/scroll_view.rs": "ed31b11d668ef1c40ceed5e4312ab1df55171444f0ef9f93d0b2515263fedcb1",
     "crates/tekes-ui-controls/src/selection.rs": "0c089ab889da7bb1117039ffb22daca572a9e3526c9a04967b1266473d7a6dd8",
     "crates/tekes-ui-controls/src/text_surface.rs": "44afcd0bd4d7ed886887eefc3e5f80036c2cba60f417a34ec6e991b2750593f7",
-    "crates/tekes-ui-controls/src/widgets.rs": "654e44574e5b6cb547710fd5c568a87928f953c6f9024f3327642677fb9e6425",
+    "crates/tekes-ui-controls/src/widgets.rs": "cd57b81ce8ed1ccae232f8e03b3f6ca8354049e41929c3ee25cd0c17974ad918",
     "crates/tekes-ui-controls/tests/composition.rs": "d7f454c61b0e1d174c2d88826d5b3b69d03f45fdaac7f62b7035317b9b7fdc88",
     "crates/tekes-ui-gallery/src/gallery/composition_acceptance.rs": "5e8cc675092692b1d520c715e9c425e74b3a8a0ba1ffe394325fa80b3688554c",
     "crates/tekes-ui-gallery/src/host.rs": "133bd1d74fbc106b1a88ec356be7c5bfe5f4b7f0662bc54ec890df7e34c5c4db",
     "crates/tekes-ui-platform-macos/src/accessibility.rs": "7289ad33538964abaa6add86428f4967dc728b1fde29f480e7fccc03002a809d",
-    "crates/tekes-ui-platform-macos/src/shared.rs": "58d172c8056beb040e8997b82134dec3b959e72c4270a09f7969a270657348ad",
+    "crates/tekes-ui-platform-macos/src/shared.rs": "49de948feecdb200ceeffdfb1f9f56c5db9ee55e66140ab5471653366549efb6",
     "design/gallery/catalog.json": "4a9dde47550b1a7aa355c877649db73a8e9ec918e82bb823db19f8882a85433f",
     "design/gallery/public-api-surface.json": "7292e546b5e37f5ab16adfafce8bcb76d6d21072eb66bd05f21bf876e3656c67",
     "docs/charter.md": "acb4b7252226a228ab0b3469856cea2901c4e3b1456791167bf0b327a3cfd956",
@@ -1854,8 +1854,8 @@
     "examples/composition-consumer/tests/menu_content_tokens.rs": "01075564073562c962f4fcc8e296d7ff63b6b2c7f09d4240cbfe3c8e1209c451",
     "scripts/audit-menu-content-tokens.py": "c6c66ffd9939c61b2069cdafc9f798ea72b7aa58f1c7d8c0b3f55dc67765f867",
     "docs/design/menu-declarations-20261021.md": "af9ef303182284599150e0cd54027a9eccba2d463c36fea07228a1ebafb9f9ef",
-    "crates/tekes-ui-controls/src/toolbar.rs": "08f4009ab0664791bd8ab33a2e456d99112ee39665d40348597f8805abdb463b",
-    "crates/tekes-ui-controls/tests/toolbar_contract.rs": "9264f88b72ddebc1bd2a4679125df6876e81aae3b67ded8698754ad4af1e0ef6"
+    "crates/tekes-ui-controls/src/toolbar.rs": "c61b269954ae42bf253fa043ae70bbca3b280e9db7fef5e867cef00ecc0548c6",
+    "crates/tekes-ui-controls/tests/toolbar_contract.rs": "2d2308015cdf1332095f2a17e21654382b849573ab6efd6f70e9c1f72fda67ab"
   },
   "remaining": [
     "minimal three scenarios: public/GPU and scoped native evidence exist; full physical IME/candidate/VoiceOver/current combined acceptance still unverified",
@@ -2268,12 +2268,12 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/toolbar.rs",
-      "line": 399,
+      "line": 503,
       "anchor": "impl crate::composition::Component for ToolbarControl {"
     },
     {
       "path": "crates/tekes-ui-platform-macos/src/shared.rs",
-      "line": 630,
+      "line": 661,
       "anchor": "pub fn try_begin_titlebar_drag(&self) -> bool {"
     }
   ],

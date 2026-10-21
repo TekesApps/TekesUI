@@ -7,6 +7,8 @@ pub mod navigation;
 #[cfg(target_os = "macos")]
 mod navigation_window;
 #[cfg(target_os = "macos")]
+mod sidebar_motion;
+#[cfg(target_os = "macos")]
 mod text;
 #[cfg(target_os = "macos")]
 mod window;

@@ -1,0 +1,2383 @@
+[
+  {
+    "command": {
+      "data": {
+        "directory": "/Users/frankqin/Library/Application Support/TekesUI AppHost Prototype/navigation-documents",
+        "history_id": "three-panel-documents",
+        "window": 1
+      },
+      "op": "Open"
+    },
+    "event": "send"
+  },
+  {
+    "event": "reply",
+    "reply": {
+      "data": {
+        "history": {
+          "cursor": 1,
+          "entries": [
+            {
+              "id": "文档 A",
+              "params": {
+                "document_id": "a"
+              },
+              "route": "demo-document"
+            },
+            {
+              "id": "文档 B",
+              "params": {
+                "document_id": "b"
+              },
+              "route": "demo-document"
+            },
+            {
+              "id": "文档 C",
+              "params": {
+                "document_id": "c"
+              },
+              "route": "demo-document"
+            }
+          ],
+          "history_id": "three-panel-documents",
+          "last_commit_id": "navigation-1792578292578781000-1-38363-5",
+          "revision": 4,
+          "version": 1
+        },
+        "recovery_id": "restore-1792590003229940000-1-71960-1",
+        "session": {
+          "host_epoch": 1792590003229940000,
+          "instance": 1,
+          "module": "navigation"
+        }
+      },
+      "event": "RestoreOffer"
+    }
+  },
+  {
+    "command": {
+      "data": {
+        "context": "window:1792590003229940000:文档 B",
+        "offer": {
+          "history": {
+            "cursor": 1,
+            "entries": [
+              {
+                "id": "文档 A",
+                "params": {
+                  "document_id": "a"
+                },
+                "route": "demo-document"
+              },
+              {
+                "id": "文档 B",
+                "params": {
+                  "document_id": "b"
+                },
+                "route": "demo-document"
+              },
+              {
+                "id": "文档 C",
+                "params": {
+                  "document_id": "c"
+                },
+                "route": "demo-document"
+              }
+            ],
+            "history_id": "three-panel-documents",
+            "last_commit_id": "navigation-1792578292578781000-1-38363-5",
+            "revision": 4,
+            "version": 1
+          },
+          "recovery_id": "restore-1792590003229940000-1-71960-1",
+          "session": {
+            "host_epoch": 1792590003229940000,
+            "instance": 1,
+            "module": "navigation"
+          }
+        },
+        "target": {
+          "id": "文档 B",
+          "params": {
+            "document_id": "b"
+          },
+          "route": "demo-document"
+        }
+      },
+      "op": "RecoveryApplied"
+    },
+    "event": "send"
+  },
+  {
+    "event": "reply",
+    "reply": {
+      "data": {
+        "context": "window:1792590003229940000:文档 B",
+        "offer": {
+          "history": {
+            "cursor": 1,
+            "entries": [
+              {
+                "id": "文档 A",
+                "params": {
+                  "document_id": "a"
+                },
+                "route": "demo-document"
+              },
+              {
+                "id": "文档 B",
+                "params": {
+                  "document_id": "b"
+                },
+                "route": "demo-document"
+              },
+              {
+                "id": "文档 C",
+                "params": {
+                  "document_id": "c"
+                },
+                "route": "demo-document"
+              }
+            ],
+            "history_id": "three-panel-documents",
+            "last_commit_id": "navigation-1792578292578781000-1-38363-5",
+            "revision": 4,
+            "version": 1
+          },
+          "recovery_id": "restore-1792590003229940000-1-71960-1",
+          "session": {
+            "host_epoch": 1792590003229940000,
+            "instance": 1,
+            "module": "navigation"
+          }
+        },
+        "target": {
+          "id": "文档 B",
+          "params": {
+            "document_id": "b"
+          },
+          "route": "demo-document"
+        }
+      },
+      "event": "RecoveryReady"
+    }
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "None"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Visibility(0))",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Visibility(0))"
+  },
+  {
+    "active": true,
+    "code": 49,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Visibility(0))"
+  },
+  {
+    "active": true,
+    "code": 49,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Visibility(0))"
+  },
+  {
+    "event": "panel-visibility",
+    "leading": true,
+    "pids": [
+      null,
+      71961,
+      71962
+    ],
+    "trailing": true
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        2.0,
+        640.0
+      ],
+      [
+        2.0,
+        0.0,
+        730.6666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 0,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.005244539584964514,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        88.5,
+        640.0
+      ],
+      [
+        89.0,
+        0.0,
+        643.6666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 0,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.24203744530677795,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        145.5,
+        640.0
+      ],
+      [
+        146.0,
+        0.0,
+        586.6666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 1,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.39784321188926697,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        175.0,
+        640.0
+      ],
+      [
+        175.5,
+        0.0,
+        557.1666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 1,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.4777141511440277,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        213.0,
+        640.0
+      ],
+      [
+        213.5,
+        0.0,
+        519.1666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 1,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.5810388922691345,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        279.0,
+        640.0
+      ],
+      [
+        280.0,
+        0.0,
+        452.66668701171875,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 1,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.7618581652641296,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        326.0,
+        640.0
+      ],
+      [
+        327.0,
+        0.0,
+        405.66668701171875,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 2,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.8903207182884216,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        348.5,
+        640.0
+      ],
+      [
+        349.5,
+        0.0,
+        383.16668701171875,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 2,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.9508585333824158,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        358.0,
+        640.0
+      ],
+      [
+        359.0,
+        0.0,
+        373.66668701171875,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 3,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.9775006771087646,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        363.5,
+        640.0
+      ],
+      [
+        364.5,
+        0.0,
+        368.16668701171875,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 3,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.9922172427177429,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        365.5,
+        640.0
+      ],
+      [
+        366.5,
+        0.0,
+        366.16668701171875,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 4,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.9981151223182678,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.0,
+        640.0
+      ],
+      [
+        367.0,
+        0.0,
+        365.66668701171875,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 5,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.9997169375419617,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.5,
+        640.0
+      ],
+      [
+        367.5,
+        0.0,
+        365.16668701171875,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 6,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.9999979734420776,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": false,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        365.3333435058594,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 7,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Visibility(0))"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Navigation)",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Navigation)"
+  },
+  {
+    "active": true,
+    "code": 36,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Navigation)"
+  },
+  {
+    "action": 19969,
+    "busy": false,
+    "event": "toolbar-action",
+    "input_open": true
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "None",
+    "visible": false
+  },
+  {
+    "active": true,
+    "code": 36,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "None"
+  },
+  {
+    "event": "reply",
+    "reply": {
+      "data": {
+        "action": {
+          "action": "Back"
+        },
+        "base_revision": 4,
+        "history_id": "three-panel-documents",
+        "navigation_id": "navigation-1792590003229940000-1-71960-2",
+        "session": {
+          "host_epoch": 1792590003229940000,
+          "instance": 1,
+          "module": "navigation"
+        },
+        "target": {
+          "id": "文档 A",
+          "params": {
+            "document_id": "a"
+          },
+          "route": "demo-document"
+        }
+      },
+      "event": "Execute"
+    }
+  },
+  {
+    "command": {
+      "data": {
+        "context": "window:1792590003229940000:文档 A",
+        "target": {
+          "id": "文档 A",
+          "params": {
+            "document_id": "a"
+          },
+          "route": "demo-document"
+        },
+        "transaction": {
+          "action": {
+            "action": "Back"
+          },
+          "base_revision": 4,
+          "history_id": "three-panel-documents",
+          "navigation_id": "navigation-1792590003229940000-1-71960-2",
+          "session": {
+            "host_epoch": 1792590003229940000,
+            "instance": 1,
+            "module": "navigation"
+          },
+          "target": {
+            "id": "文档 A",
+            "params": {
+              "document_id": "a"
+            },
+            "route": "demo-document"
+          }
+        }
+      },
+      "op": "Applied"
+    },
+    "event": "send"
+  },
+  {
+    "event": "reply",
+    "reply": {
+      "data": {
+        "cursor": 0,
+        "entries": [
+          {
+            "id": "文档 A",
+            "params": {
+              "document_id": "a"
+            },
+            "route": "demo-document"
+          },
+          {
+            "id": "文档 B",
+            "params": {
+              "document_id": "b"
+            },
+            "route": "demo-document"
+          },
+          {
+            "id": "文档 C",
+            "params": {
+              "document_id": "c"
+            },
+            "route": "demo-document"
+          }
+        ],
+        "history_id": "three-panel-documents",
+        "last_commit_id": "navigation-1792590003229940000-1-71960-2",
+        "revision": 5,
+        "version": 1
+      },
+      "event": "HistoryCommitted"
+    }
+  },
+  {
+    "active": true,
+    "code": 115,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "None"
+  },
+  {
+    "active": true,
+    "code": 115,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "None"
+  },
+  {
+    "active": true,
+    "code": 36,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "None"
+  },
+  {
+    "active": true,
+    "code": 36,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "None"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "None"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Visibility(0))",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Visibility(0))"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Visibility(0))"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Navigation)",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Navigation)"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Navigation)"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Panel(0))",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(0))"
+  },
+  {
+    "active": true,
+    "code": 36,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(0))"
+  },
+  {
+    "active": true,
+    "code": 36,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(0))"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(0))"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(0))"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(0))"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(0))"
+  },
+  {
+    "active": true,
+    "event": "mouse",
+    "key_window": true,
+    "kind": "Down { button: Left, click_count: 1 }",
+    "x": 1075.0,
+    "y": 26.0
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Panel(0))",
+    "visible": false
+  },
+  {
+    "active": true,
+    "event": "mouse",
+    "key_window": true,
+    "kind": "Up { button: Left, click_count: 1 }",
+    "x": 1075.0,
+    "y": 26.0
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(0))"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Panel(1))",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(1))"
+  },
+  {
+    "active": true,
+    "code": 49,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(1))"
+  },
+  {
+    "active": true,
+    "code": 49,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(1))"
+  },
+  {
+    "active": true,
+    "code": 124,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(1))"
+  },
+  {
+    "active": true,
+    "code": 124,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(1))"
+  },
+  {
+    "active": true,
+    "code": 36,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(1))"
+  },
+  {
+    "active": true,
+    "code": 36,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(1))"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(1))"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Panel(2))",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(2))"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(2))"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Visibility(1))",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Visibility(1))"
+  },
+  {
+    "active": true,
+    "code": 49,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Visibility(1))"
+  },
+  {
+    "active": true,
+    "code": 49,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Visibility(1))"
+  },
+  {
+    "event": "panel-visibility",
+    "leading": true,
+    "pids": [
+      72048,
+      71961,
+      71962
+    ],
+    "trailing": false
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        366.6666564941406,
+        640.0
+      ],
+      [
+        735.0,
+        0.0,
+        365.0,
+        640.0
+      ]
+    ],
+    "display_link_frames": 7,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.995967447757721
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        419.1666564941406,
+        640.0
+      ],
+      [
+        787.5,
+        0.0,
+        312.5,
+        640.0
+      ]
+    ],
+    "display_link_frames": 7,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.8535463213920593
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        552.1666259765625,
+        640.0
+      ],
+      [
+        920.0,
+        0.0,
+        180.0,
+        640.0
+      ]
+    ],
+    "display_link_frames": 8,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.4912680387496948
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        651.1666259765625,
+        640.0
+      ],
+      [
+        1018.5,
+        0.0,
+        81.5,
+        640.0
+      ]
+    ],
+    "display_link_frames": 9,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.22220081090927124
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        695.1666259765625,
+        640.0
+      ],
+      [
+        1062.5,
+        0.0,
+        37.5,
+        640.0
+      ]
+    ],
+    "display_link_frames": 10,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.10189161449670792
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        715.6666259765625,
+        640.0
+      ],
+      [
+        1083.5,
+        0.0,
+        16.5,
+        640.0
+      ]
+    ],
+    "display_link_frames": 11,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.04565925523638725
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        725.6666259765625,
+        640.0
+      ],
+      [
+        1093.0,
+        0.0,
+        7.0,
+        640.0
+      ]
+    ],
+    "display_link_frames": 12,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.01913600228726864
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        730.1666259765625,
+        640.0
+      ],
+      [
+        1097.5,
+        0.0,
+        2.5,
+        640.0
+      ]
+    ],
+    "display_link_frames": 13,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.006806021556258202
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        732.1666259765625,
+        640.0
+      ],
+      [
+        1099.5,
+        0.0,
+        0.5,
+        640.0
+      ]
+    ],
+    "display_link_frames": 14,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.0017666143830865622
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        732.6666259765625,
+        640.0
+      ],
+      [
+        1100.0,
+        0.0,
+        0.0,
+        640.0
+      ]
+    ],
+    "display_link_frames": 14,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      5.040431642555632e-05
+    ]
+  },
+  {
+    "active": true,
+    "animating": false,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        732.6666259765625,
+        640.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "display_link_frames": 15,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.0
+    ]
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Visibility(1))"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Panel(1))",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(1))"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(1))"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Visibility(1))",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Visibility(1))"
+  },
+  {
+    "active": true,
+    "code": 36,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Visibility(1))"
+  },
+  {
+    "event": "panel-visibility",
+    "leading": true,
+    "pids": [
+      72048,
+      71961,
+      71962
+    ],
+    "trailing": true
+  },
+  {
+    "active": true,
+    "code": 36,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Visibility(1))"
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        731.1666259765625,
+        640.0
+      ],
+      [
+        1098.5,
+        0.0,
+        1.5,
+        640.0
+      ]
+    ],
+    "display_link_frames": 15,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.0037787985056638718
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        691.6666259765625,
+        640.0
+      ],
+      [
+        1059.5,
+        0.0,
+        40.5,
+        640.0
+      ]
+    ],
+    "display_link_frames": 15,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.11110308021306992
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        551.1666259765625,
+        640.0
+      ],
+      [
+        919.0,
+        0.0,
+        181.0,
+        640.0
+      ]
+    ],
+    "display_link_frames": 16,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.494547963142395
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        448.6666564941406,
+        640.0
+      ],
+      [
+        817.0,
+        0.0,
+        283.0,
+        640.0
+      ]
+    ],
+    "display_link_frames": 16,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.7727112770080566
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        405.6666564941406,
+        640.0
+      ],
+      [
+        774.0,
+        0.0,
+        326.0,
+        640.0
+      ]
+    ],
+    "display_link_frames": 17,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.8905664682388306
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        383.6666564941406,
+        640.0
+      ],
+      [
+        752.0,
+        0.0,
+        348.0,
+        640.0
+      ]
+    ],
+    "display_link_frames": 18,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.9506171941757202
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        372.6666564941406,
+        640.0
+      ],
+      [
+        741.0,
+        0.0,
+        359.0,
+        640.0
+      ]
+    ],
+    "display_link_frames": 19,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.9794337153434753
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        368.1666564941406,
+        640.0
+      ],
+      [
+        736.5,
+        0.0,
+        363.5,
+        640.0
+      ]
+    ],
+    "display_link_frames": 20,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.9926329255104065
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        365.6666564941406,
+        640.0
+      ],
+      [
+        734.0,
+        0.0,
+        366.0,
+        640.0
+      ]
+    ],
+    "display_link_frames": 20,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.9987542629241943
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        365.6666564941406,
+        640.0
+      ],
+      [
+        734.0,
+        0.0,
+        366.0,
+        640.0
+      ]
+    ],
+    "display_link_frames": 21,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.9997439384460449
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        365.1666564941406,
+        640.0
+      ],
+      [
+        733.5,
+        0.0,
+        366.5,
+        640.0
+      ]
+    ],
+    "display_link_frames": 22,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      0.9999994039535522
+    ]
+  },
+  {
+    "active": true,
+    "animating": false,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        366.3333435058594,
+        640.0
+      ],
+      [
+        367.3333435058594,
+        0.0,
+        365.3333435058594,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 22,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      1.0,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Visibility(1))"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Panel(2))",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(2))"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(2))"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Panel(1))",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(1))"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(1))"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Panel(0))",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Panel(0))"
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Panel(0))"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Navigation)",
+    "visible": true
+  },
+  {
+    "active": true,
+    "code": 48,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Navigation)"
+  },
+  {
+    "active": true,
+    "code": 36,
+    "event": "window-toolbar-key",
+    "kind": "Down",
+    "owner": "Some(Navigation)"
+  },
+  {
+    "action": 19970,
+    "busy": false,
+    "event": "toolbar-action",
+    "input_open": true
+  },
+  {
+    "active": true,
+    "code": 36,
+    "event": "window-toolbar-key",
+    "kind": "Up",
+    "owner": "Some(Navigation)"
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "None",
+    "visible": false
+  },
+  {
+    "event": "reply",
+    "reply": {
+      "data": {
+        "action": {
+          "action": "Forward"
+        },
+        "base_revision": 5,
+        "history_id": "three-panel-documents",
+        "navigation_id": "navigation-1792590003229940000-1-71960-3",
+        "session": {
+          "host_epoch": 1792590003229940000,
+          "instance": 1,
+          "module": "navigation"
+        },
+        "target": {
+          "id": "文档 B",
+          "params": {
+            "document_id": "b"
+          },
+          "route": "demo-document"
+        }
+      },
+      "event": "Execute"
+    }
+  },
+  {
+    "command": {
+      "data": {
+        "context": "window:1792590003229940000:文档 B",
+        "target": {
+          "id": "文档 B",
+          "params": {
+            "document_id": "b"
+          },
+          "route": "demo-document"
+        },
+        "transaction": {
+          "action": {
+            "action": "Forward"
+          },
+          "base_revision": 5,
+          "history_id": "three-panel-documents",
+          "navigation_id": "navigation-1792590003229940000-1-71960-3",
+          "session": {
+            "host_epoch": 1792590003229940000,
+            "instance": 1,
+            "module": "navigation"
+          },
+          "target": {
+            "id": "文档 B",
+            "params": {
+              "document_id": "b"
+            },
+            "route": "demo-document"
+          }
+        }
+      },
+      "op": "Applied"
+    },
+    "event": "send"
+  },
+  {
+    "event": "reply",
+    "reply": {
+      "data": {
+        "cursor": 1,
+        "entries": [
+          {
+            "id": "文档 A",
+            "params": {
+              "document_id": "a"
+            },
+            "route": "demo-document"
+          },
+          {
+            "id": "文档 B",
+            "params": {
+              "document_id": "b"
+            },
+            "route": "demo-document"
+          },
+          {
+            "id": "文档 C",
+            "params": {
+              "document_id": "c"
+            },
+            "route": "demo-document"
+          }
+        ],
+        "history_id": "three-panel-documents",
+        "last_commit_id": "navigation-1792590003229940000-1-71960-3",
+        "revision": 6,
+        "version": 1
+      },
+      "event": "HistoryCommitted"
+    }
+  },
+  {
+    "active": true,
+    "event": "mouse",
+    "key_window": true,
+    "kind": "Down { button: Left, click_count: 1 }",
+    "x": 103.5,
+    "y": 26.0
+  },
+  {
+    "event": "window-toolbar-focus",
+    "owner": "Some(Visibility(0))",
+    "visible": false
+  },
+  {
+    "active": true,
+    "event": "mouse",
+    "key_window": true,
+    "kind": "Up { button: Left, click_count: 1 }",
+    "x": 103.5,
+    "y": 26.0
+  },
+  {
+    "event": "panel-visibility",
+    "leading": false,
+    "pids": [
+      72048,
+      71961,
+      71962
+    ],
+    "trailing": true
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        365.0,
+        640.0
+      ],
+      [
+        366.0,
+        0.0,
+        366.66668701171875,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 22,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.9958444833755493,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        313.5,
+        640.0
+      ],
+      [
+        314.5,
+        0.0,
+        418.16668701171875,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 22,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.8561979532241821,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        230.0,
+        640.0
+      ],
+      [
+        230.5,
+        0.0,
+        502.16668701171875,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 22,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.6276233792304993,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        135.0,
+        640.0
+      ],
+      [
+        135.0,
+        0.0,
+        597.6666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 23,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.3681061267852783,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        61.5,
+        640.0
+      ],
+      [
+        62.0,
+        0.0,
+        670.6666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 23,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.1683075875043869,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        28.0,
+        640.0
+      ],
+      [
+        28.0,
+        0.0,
+        704.6666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 24,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.07678423821926117,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        12.5,
+        640.0
+      ],
+      [
+        12.5,
+        0.0,
+        720.1666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 25,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.03353891521692276,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        5.0,
+        640.0
+      ],
+      [
+        5.0,
+        0.0,
+        727.6666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 26,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.013251581229269505,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        1.5,
+        640.0
+      ],
+      [
+        1.5,
+        0.0,
+        731.1666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 27,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.004316385835409164,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        0.5,
+        640.0
+      ],
+      [
+        0.5,
+        0.0,
+        732.1666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 28,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.0009230021969415247,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": true,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        640.0
+      ],
+      [
+        0.0,
+        0.0,
+        732.6666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 29,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      4.7356174036394805e-05,
+      1.0
+    ]
+  },
+  {
+    "active": true,
+    "animating": false,
+    "bounds": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        732.6666870117188,
+        640.0
+      ],
+      [
+        733.6666870117188,
+        0.0,
+        366.33331298828125,
+        640.0
+      ]
+    ],
+    "display_link_frames": 30,
+    "event": "sidebar-layout-sample",
+    "progress": [
+      0.0,
+      1.0
+    ]
+  }
+]

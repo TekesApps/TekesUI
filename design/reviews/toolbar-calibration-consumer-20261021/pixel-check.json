@@ -1,0 +1,53 @@
+{
+  "traffic-red": {
+    "bounds_px": [
+      38,
+      38,
+      66,
+      66
+    ],
+    "height_pt": 14.0,
+    "center_y_pt": 26.0
+  },
+  "leading-ink": {
+    "bounds_px": [
+      192,
+      38,
+      220,
+      66
+    ],
+    "height_pt": 14.0,
+    "center_y_pt": 26.0
+  },
+  "trailing-visible-frame": {
+    "bounds_px": [
+      2120,
+      20,
+      2184,
+      84
+    ],
+    "height_pt": 32.0,
+    "center_y_pt": 26.0
+  },
+  "capital-I": {
+    "bounds_px": [
+      521,
+      39,
+      525,
+      67
+    ],
+    "height_pt": 14.0,
+    "center_y_pt": 26.5
+  },
+  "overflow-ellipsis": {
+    "bounds_px": [
+      667,
+      63,
+      691,
+      67
+    ],
+    "height_pt": 2.0,
+    "center_y_pt": 32.5
+  },
+  "scope": "2x screenshot; RGB thresholds in fixed regions; pixel bounding boxes, no screenshot editing"
+}

@@ -2589,6 +2589,14 @@
       "since": "0.3.0-proposal.1",
       "source": "this-proposal",
       "owner_role": "design-maintainer"
+    },
+    "size:size-toolbar-chrome": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.3.0-proposal.1",
+      "source": "window-toolbar-native-calibration-20261021",
+      "owner_role": "design-maintainer"
     }
   }
 }

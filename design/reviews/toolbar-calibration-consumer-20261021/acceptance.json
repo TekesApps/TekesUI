@@ -1,0 +1,45 @@
+{
+  "identity": {
+    "input": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/toolbar-native-calibration-20261021/retained/TekesAppHost.calibrated",
+    "input_sha256": "951423fbb720ac9cc2bc27e53b6cf2c9c7ac2c71479728498c414413d8cb0b4a",
+    "signed_sha256": "b04eed09e25718f5c50e529b95182fcda0567405bbc8699e15924b6e0ba0d33a",
+    "scope": "independent consumer native check; no source edits"
+  },
+  "pixel_measurement": "pixel-check.json",
+  "center_alignment": "traffic + icon 26pt; uppercase I 26.5pt at 2x raster",
+  "fixed_icon_artwork_height_pt": 14,
+  "hover_frame_height_pt": 32,
+  "hover_frame_requirement": "pending: currently more than twice 14pt traffic; not slightly taller",
+  "overflow_dot_center_y_pt": 32.5,
+  "overflow_requirement": "pending: 6.5pt below common center",
+  "native_visibility_events": [
+    [
+      true,
+      true
+    ],
+    [
+      true,
+      false
+    ],
+    [
+      true,
+      true
+    ],
+    [
+      false,
+      true
+    ]
+  ],
+  "module_toolbar_click": "Increment(1) and content count1 in module-click.png",
+  "titlebar_drag": "CUA drag exercised at empty titlebar; retained after-titlebar-drag.png, global window position not exposed by available AX snapshot; not claimed as independently measured movement",
+  "nav_json_unchanged": true,
+  "swap_present": false,
+  "source_changed_by_this_review": false,
+  "app_left_open": true,
+  "limitations": [
+    "no performance measurements",
+    "no physical external-display perception claim",
+    "no VoiceOver",
+    "full shared icon catalog normalization not accepted by these four active icons"
+  ]
+}
