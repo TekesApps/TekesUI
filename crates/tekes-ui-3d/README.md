@@ -79,3 +79,16 @@ target/release/tekes-ui-3d --demo city-block --time 20 --snapshot /tmp/city-bloc
 2026-10-20 街区 CPU 优化：通用 Scene3D 缓存不透明/MASK 绘制指令和目标视图，静止相机不重复上传 uniform；独立 3D 宿主通过 UI 的 `render_with_gpu` 把组件与 UI 编入同一帧、一次提交。保持画面与刷新策略；详情、可复用测量脚本和对照证据见 `docs/design/gpu-component-performance.md`。
 
 施工分三个独立节点：主体框架、稍后跟进的外立面、外挂脚手架。脚手架包含钢管、斜撑、踏板与护栏，随楼层逐段搭高；外立面完工后保留约 6 秒，再从顶层向下拆除，楼体保持完整。当前配置约第 49 秒开始拆架、约第 63 秒拆完；`--time 46` / `--time 55` / `--time 80` 可分别查看建成带架、拆架中与拆完的状态。`R` 重新开始，暂停与 Reduced Motion 同时冻结全流程。
+
+## Background performance measurements
+
+The standalone viewer's Animation menu includes **Background benchmark (B)**;
+the CLI equivalent is `--benchmark-background`. This explicit test mode keeps
+animation and rotation running after keyboard focus moves to another app.
+It defaults off, preserving normal focus-based pausing and reduced-motion rules.
+Keep the 3D window visible at a fixed size, for example on a second display.
+Minimizing, fully covering it, or switching away from its desktop can stop native
+GPU presentation and invalidate a sustained rendering measurement.
+
+
+The city adapter enables `ScreenDetail3D` after configuring immutable instances.

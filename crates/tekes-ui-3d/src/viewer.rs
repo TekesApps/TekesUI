@@ -14,6 +14,32 @@ use tekes_ui_text::{
 use tekes_ui_tokens::{ColorRole, Theme};
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
+/// Schedule autonomous animation without reducing input/rotation responsiveness.
+/// Uses display target timestamps; scene clocks still receive every host delta.
+#[derive(Default)]
+struct AnimationCadence {
+    next: Option<f64>,
+}
+impl AnimationCadence {
+    fn due(&mut self, target: f64) -> bool {
+        const PERIOD: f64 = 1. / 60.;
+        let Some(next) = self.next else {
+            self.next = Some(target + PERIOD);
+            return true;
+        };
+        if target + 1e-6 < next {
+            return false;
+        }
+        // Preserve phase under display jitter and skip missed deadlines.
+        let steps = ((target - next + 1e-6) / PERIOD).floor().max(0.) + 1.;
+        self.next = Some(next + steps * PERIOD);
+        true
+    }
+    fn reset(&mut self) {
+        self.next = None;
+    }
+}
+
 fn home_camera() -> Camera3D {
     let mut camera = Camera3D::default();
     camera.orbit(0.65, 0.16).unwrap();
@@ -69,6 +95,7 @@ pub fn run() -> Result<()> {
     let mut input = None;
     let mut snapshot = None;
     let mut auto_rotate = false;
+    let mut benchmark_background = false;
     let mut play = false;
     let mut scene_time = None;
     let mut args = std::env::args_os().skip(1);
@@ -93,12 +120,14 @@ pub fn run() -> Result<()> {
                     .to_string_lossy()
                     .parse::<f64>()?,
             );
+        } else if arg == "--benchmark-background" {
+            benchmark_background = true;
         } else if arg == "--auto-rotate" {
             auto_rotate = true;
         } else if arg == "--play" {
             play = true;
         } else if input.replace(PathBuf::from(arg)).is_some() {
-            return Err("usage: tekes-ui-3d [model.glb|model.gltf] [--demo cube|manhattan|city-block] [--snapshot output.png] [--auto-rotate] [--play]".into());
+            return Err("usage: tekes-ui-3d [model.glb|model.gltf] [--demo cube|manhattan|city-block] [--snapshot output.png] [--auto-rotate] [--play] [--benchmark-background]".into());
         }
     }
     let path = input.unwrap_or_else(|| {
@@ -115,6 +144,7 @@ pub fn run() -> Result<()> {
             .to_string_lossy()
             .into_owned(),
     )?;
+    viewer.benchmark_background = benchmark_background;
     if auto_rotate {
         viewer.command(10)?;
     }
@@ -197,6 +227,7 @@ fn menus() -> MenuBar {
                 vec![
                     item("Play / pause animation (Space)", 9),
                     item("Auto rotate (A)", 10),
+                    item("Background benchmark (B)", 18),
                 ],
             ),
         ],
@@ -220,12 +251,14 @@ struct Viewer {
     theme: Theme,
     drag: Option<(MouseButton, Point, bool)>,
     active: bool,
+    benchmark_background: bool,
     reduced: bool,
     playing: bool,
     spin: bool,
+    cadence: AnimationCadence,
     last: Option<f64>,
     pending_redraw: bool,
-    menu_state: Option<(bool, bool)>,
+    menu_state: Option<(bool, bool, bool)>,
     cached_scene: Option<Scene>,
 }
 impl Viewer {
@@ -262,9 +295,11 @@ impl Viewer {
             theme: Theme::LIGHT,
             drag: None,
             active: true,
+            benchmark_background: false,
             reduced: false,
             playing,
             spin: false,
+            cadence: AnimationCadence::default(),
             last: None,
             pending_redraw: true,
             menu_state: None,
@@ -485,6 +520,7 @@ impl Viewer {
                 }
             }
             10 => self.spin = !self.spin,
+            18 => self.benchmark_background = !self.benchmark_background,
             11 => self.select_demo("rubiks-cube")?,
             12 => self.select_demo("manhattan")?,
             14 => self.select_demo("city-block")?,
@@ -544,7 +580,7 @@ impl Viewer {
                     .clamp(0., 0.1) as f32;
                 self.last = Some(frame.target_timestamp);
                 let mut changed = false;
-                if self.active && !self.reduced {
+                if (self.active || self.benchmark_background) && !self.reduced {
                     changed = self.view.advance(dt)?;
                     if let Some(district) = &mut self.district {
                         changed |= district.clock.advance(dt, true)?;
@@ -554,7 +590,18 @@ impl Viewer {
                         changed = true;
                     }
                 }
-                if changed || self.pending_redraw {
+                let autonomous_city =
+                    self.district.is_some() && self.drag.is_none() && !self.pending_redraw;
+                // Automatic rotation shares the city's 60 Hz presentation
+                // budget. Keep motion time continuous; direct manipulation and
+                // explicit redraws still bypass the autonomous cadence.
+                let due = if autonomous_city {
+                    self.cadence.due(frame.target_timestamp)
+                } else {
+                    self.cadence.reset();
+                    true
+                };
+                if (changed || self.pending_redraw) && due {
                     self.draw()?;
                     self.pending_redraw = false;
                 }
@@ -611,6 +658,7 @@ impl Viewer {
                         "-" => 3,
                         " " => 9,
                         "a" => 10,
+                        "b" => 18,
                         _ => 0,
                     };
                     self.command(id)?;
@@ -624,11 +672,13 @@ impl Viewer {
                 self.active = active;
                 self.drag = None;
                 self.last = None;
+                self.cadence.reset();
             }
             Event::SystemMotionChanged(reduced) => {
                 self.reduced = reduced;
                 self.view.reduced_motion = reduced;
                 self.last = None;
+                self.cadence.reset();
             }
             Event::SystemAppearanceChanged {
                 dark,
@@ -645,7 +695,7 @@ impl Viewer {
             Event::CloseRequested => window.close(),
             _ => redraw = false,
         }
-        let animate = self.active
+        let animate = (self.active || self.benchmark_background)
             && !self.reduced
             && (self.view.needs_frame()
                 || self.district.as_ref().is_some_and(|d| d.clock.playing())
@@ -655,10 +705,11 @@ impl Viewer {
         if !animate {
             self.last = None;
         }
-        let menu_state = (self.playing, self.spin);
+        let menu_state = (self.playing, self.spin, self.benchmark_background);
         if self.menu_state != Some(menu_state) {
             window.set_command_checked(CommandId(9), self.playing);
             window.set_command_checked(CommandId(10), self.spin);
+            window.set_command_checked(CommandId(18), self.benchmark_background);
             self.menu_state = Some(menu_state);
         }
         if redraw {
@@ -1090,5 +1141,32 @@ mod tests {
             viewer.gpu.as_ref().unwrap().last_frame_pose_upload_bytes(),
             9 * 80
         );
+    }
+}
+
+#[cfg(test)]
+mod cadence_tests {
+    use super::AnimationCadence;
+    #[test]
+    fn sixty_hz_on_high_refresh_and_no_half_rate_on_sixty_hz() {
+        for hz in [30., 60., 90., 120., 144.] {
+            let mut cadence = AnimationCadence::default();
+            let count = (0..hz as usize)
+                .filter(|i| cadence.due(*i as f64 / hz))
+                .count();
+            assert_eq!(count, (hz as usize).min(60), "host refresh {hz}");
+        }
+    }
+    #[test]
+    fn jitter_missed_deadlines_and_interaction_reset_do_not_catch_up() {
+        let mut cadence = AnimationCadence::default();
+        assert!(cadence.due(0.));
+        assert!(!cadence.due(1. / 120.));
+        assert!(cadence.due(1. / 60. - 1e-7));
+        assert!(!cadence.due(1. / 40.));
+        assert!(cadence.due(10.));
+        assert!(!cadence.due(10. + 1. / 120.));
+        cadence.reset();
+        assert!(cadence.due(0.));
     }
 }

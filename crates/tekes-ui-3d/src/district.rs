@@ -24,7 +24,9 @@ impl DistrictDemo {
         gpu: &mut Renderer3D,
         view: &Scene3D,
     ) -> Result<(), tekes_ui_scene3d::Error> {
-        gpu.configure_instances(view, &self.instance_recipe())
+        let recipe = self.instance_recipe();
+        gpu.configure_instances(view, &recipe)?;
+        gpu.configure_screen_detail(view, &screen_detail(&recipe))
     }
     fn instance_recipe(&self) -> InstanceScene3D {
         let mut batches = Vec::new();
@@ -206,6 +208,40 @@ impl DistrictDemo {
             ..Default::default()
         }
     }
+}
+
+pub(crate) fn screen_detail(recipe: &InstanceScene3D) -> Vec<tekes_ui_scene3d::ScreenDetail3D> {
+    recipe
+        .batches
+        .iter()
+        .filter_map(|b| {
+            let (reference, fade, motion, padding) = if b.node.starts_with("person-") {
+                (
+                    1.2,
+                    if b.node.ends_with("headphones") {
+                        [8., 12.]
+                    } else {
+                        [3., 6.]
+                    },
+                    [6., 12.],
+                    0.35,
+                )
+            } else if b.node.starts_with("car") {
+                (1.8, [4., 8.], [0., 0.], 0.)
+            } else if b.node.starts_with("tree-") {
+                (0., [4., 8.], [8., 12.], 1.5)
+            } else {
+                return None;
+            };
+            Some(tekes_ui_scene3d::ScreenDetail3D {
+                node: b.node.clone(),
+                reference_size: reference,
+                fade_pixels: fade,
+                motion_pixels: motion,
+                motion_padding: padding,
+            })
+        })
+        .collect::<Vec<_>>()
 }
 
 #[cfg(test)]

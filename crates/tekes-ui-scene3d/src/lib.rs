@@ -7,13 +7,18 @@ mod camera;
 mod deform;
 mod gpu;
 mod instances;
+mod interiors;
+mod visibility;
+pub use visibility::ScreenDetail3D;
+mod local_lighting;
+pub use local_lighting::{Dimming3D, LocalLight3D, LocalLighting3D, ShadowProxy3D};
 
 pub use asset::{Asset3D, ClipInfo};
 pub use camera::Camera3D;
 pub use gpu::Renderer3D;
 pub use instances::{
     Deformation3D, Environment3D, FollowRoute3D, Instance3D, InstanceBatch3D, InstanceScene3D,
-    Route3D,
+    Lighting3D, Removal3D, Route3D, Visibility3D,
 };
 use tekes_ui_scene::{ImageId, ImageQuad, Rect, Scene};
 

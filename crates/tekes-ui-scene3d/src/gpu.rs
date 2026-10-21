@@ -11,17 +11,25 @@ use wgpu::util::DeviceExt;
 /// Renders into GPU storage shared with the UI renderer; no CPU pixel transfer.
 #[derive(Debug)]
 pub struct Renderer3D {
+    visibility_batch: Option<wgpu::BindGroup>,
+    visibility_bounds_dirty: bool,
+    visibility: crate::visibility::VisibilityGpu,
+    visible_draws: Vec<Option<crate::visibility::VisibleDraw>>,
     asset_id: u64,
     context: GpuContext,
     device: wgpu::Device,
     queue: wgpu::Queue,
     pipeline: wgpu::RenderPipeline,
     flat_pipeline: wgpu::RenderPipeline,
+    blend_pipeline: wgpu::RenderPipeline,
+    flat_blend_pipeline: wgpu::RenderPipeline,
     opaque_order: Vec<usize>,
     opaque_bundle: Option<wgpu::RenderBundle>,
     bundle_builds: u64,
     last_camera: Option<[[[f32; 4]; 4]; 2]>,
     camera_upload_bytes: u64,
+    transparent_order: Vec<(usize, f32)>,
+    local_centers: Vec<glam::Vec3>,
     flat_bindings: Vec<wgpu::BindGroup>,
     camera: wgpu::Buffer,
     camera_bind: wgpu::BindGroup,
@@ -31,6 +39,10 @@ pub struct Renderer3D {
     camera_layout: wgpu::BindGroupLayout,
     environment_buffer: wgpu::Buffer,
     environment_state: crate::Environment3D,
+    lighting_state: crate::Lighting3D,
+    motion_clocks: [f32; 4],
+    local_lighting: crate::local_lighting::LocalLightingGpu,
+    interiors: crate::interiors::InteriorGpu,
     identity_instances: wgpu::Buffer,
     route_buffer: wgpu::Buffer,
     instance_batches: Vec<Option<GpuBatch>>,
@@ -43,8 +55,14 @@ pub struct Renderer3D {
     msaa: Option<wgpu::Texture>,
     msaa_view: Option<wgpu::TextureView>,
     samples: u32,
+    alpha_resolve: Option<AlphaResolve>,
 }
 impl Renderer3D {
+    /// Total shared window styles evaluated on GPU. Each changed style-bank
+    /// input evaluates 32 styles, independent of the number of visible windows.
+    pub fn interior_style_evaluations(&self) -> u64 {
+        self.interiors.evaluations
+    }
     /// Renderer resources belong to this component's immutable asset. Build a new
     /// renderer after replacing an asset; pass the component to `render`.
     pub fn new(context: &GpuContext, component: &Scene3D, size: (u32, u32)) -> Result<Self, Error> {
@@ -65,6 +83,21 @@ impl Renderer3D {
         size: (u32, u32),
         samples: u32,
     ) -> Result<Self, Error> {
+        Self::with_lighting_shader(
+            context,
+            component,
+            size,
+            samples,
+            include_str!("local_lighting.wgsl"),
+        )
+    }
+    fn with_lighting_shader(
+        context: &GpuContext,
+        component: &Scene3D,
+        size: (u32, u32),
+        samples: u32,
+        local_shader: &str,
+    ) -> Result<Self, Error> {
         let device = context.device().clone();
         let queue = context.queue().clone();
         check_size(size, &device)?;
@@ -72,9 +105,13 @@ impl Renderer3D {
             label: Some("3D camera"),
             entries: &[
                 buffer_entry(0, wgpu::ShaderStages::VERTEX),
-                buffer_entry(1, wgpu::ShaderStages::VERTEX),
+                buffer_entry(1, wgpu::ShaderStages::VERTEX_FRAGMENT),
                 storage_entry(2),
                 storage_entry(3),
+                wgpu::BindGroupLayoutEntry {
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ..storage_entry(4)
+                },
             ],
         });
         let camera = device.create_buffer(&wgpu::BufferDescriptor {
@@ -86,26 +123,35 @@ impl Renderer3D {
         let environment_state = crate::Environment3D::default();
         let environment_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("3D environment clock"),
-            contents: bytemuck::cast_slice(&[0_f32, 0.8, 0.4, 1.]),
+            contents: bytemuck::cast_slice(&[
+                0_f32, 0.8, 0.4, 1., 0.3, 0.3, 0.3, 1., 0.4, 0.7, 1., 0., 0.7, 0.7, 0.7, 0., 0.,
+                0., 0., 0.,
+            ]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
         let identity_instances = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("3D identity instance"),
             contents: bytemuck::bytes_of(&crate::instances::GpuInstance::identity()),
-            usage: wgpu::BufferUsages::STORAGE,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
         });
         let route_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("3D default route"),
             contents: bytemuck::cast_slice(&[0_f32; 4]),
             usage: wgpu::BufferUsages::STORAGE,
         });
+        let interiors = crate::interiors::InteriorGpu::new(
+            &device,
+            &environment_buffer,
+            component.asset.materials.iter().any(|m| m.interior[0] > 0.),
+        );
         let camera_bind = instance_binding(
             &device,
             &camera_layout,
             &camera,
             &environment_buffer,
-            &identity_instances,
+            identity_instances.as_entire_buffer_binding(),
             &route_buffer,
+            &interiors.buffer,
         );
         let material_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("3D material"),
@@ -127,15 +173,29 @@ impl Renderer3D {
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
             ],
         });
         let materials = upload_materials(&device, &queue, &material_layout, &component.asset)?;
+        let local_lighting = crate::local_lighting::LocalLightingGpu::new(&device);
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Scene3D"),
             source: wgpu::ShaderSource::Wgsl(
                 format!(
-                    "{}\n{}",
+                    "{}\n{}\n{}\n{}\n{}",
                     include_str!("instance_motion.wgsl"),
+                    local_shader,
+                    include_str!("interior_styles.wgsl"),
+                    include_str!("interior.wgsl"),
                     include_str!("scene3d.wgsl")
                 )
                 .into(),
@@ -143,7 +203,11 @@ impl Renderer3D {
         });
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[Some(&camera_layout), Some(&material_layout)],
+            bind_group_layouts: &[
+                Some(&camera_layout),
+                Some(&material_layout),
+                Some(&local_lighting.layout),
+            ],
             immediate_size: 0,
         });
         let flat_geometry_layout =
@@ -167,14 +231,44 @@ impl Renderer3D {
             bind_group_layouts: &[
                 Some(&camera_layout),
                 Some(&material_layout),
+                Some(&local_lighting.layout),
                 Some(&flat_geometry_layout),
             ],
             immediate_size: 0,
         });
-        let pipeline = render_pipeline(&device, &shader, &layout, false, "fs", samples);
-        let flat_pipeline = render_pipeline(&device, &shader, &flat_layout, true, "fs", samples);
+        let pipeline = render_pipeline(&device, &shader, &layout, false, "fs", samples, false);
+        let flat_pipeline =
+            render_pipeline(&device, &shader, &flat_layout, true, "fs", samples, false);
+        let blend_pipeline = render_pipeline(&device, &shader, &layout, false, "fs", samples, true);
+        let flat_blend_pipeline =
+            render_pipeline(&device, &shader, &flat_layout, true, "fs", samples, true);
+        let local_centers = component
+            .asset
+            .meshes
+            .iter()
+            .map(|m| {
+                let min = m
+                    .positions
+                    .iter()
+                    .copied()
+                    .fold(glam::Vec3::splat(f32::INFINITY), glam::Vec3::min);
+                let max = m
+                    .positions
+                    .iter()
+                    .copied()
+                    .fold(glam::Vec3::splat(f32::NEG_INFINITY), glam::Vec3::max);
+                (min + max) * 0.5
+            })
+            .collect();
         let deformer = Deformer::new(&device, &component.asset)?;
-        let opaque_order = (0..deformer.meshes.len()).collect();
+        let opaque_order: Vec<_> = deformer
+            .meshes
+            .iter()
+            .enumerate()
+            .filter_map(|(i, m)| (!component.asset.materials[m.material].blend).then_some(i))
+            .collect();
+        let alpha_resolve =
+            (opaque_order.len() != deformer.meshes.len()).then(|| AlphaResolve::new(&device, size));
         let flat_bindings = deformer
             .meshes
             .iter()
@@ -198,18 +292,27 @@ impl Renderer3D {
         let color = context.create_image(size).map_err(|e| err(e.to_string()))?;
         let depth = depth_target(&device, size, samples);
         let msaa = (samples > 1).then(|| multisample_target(&device, size, samples));
+        let visibility = crate::visibility::VisibilityGpu::new(&device);
         Ok(Self {
+            visibility,
+            visibility_batch: None,
+            visibility_bounds_dirty: true,
+            visible_draws: Vec::new(),
             asset_id: component.asset.id,
             context: context.clone(),
             device,
             queue,
             pipeline,
             flat_pipeline,
+            blend_pipeline,
+            flat_blend_pipeline,
             opaque_order,
             opaque_bundle: None,
             bundle_builds: 0,
             last_camera: None,
             camera_upload_bytes: 0,
+            transparent_order: Vec::with_capacity(component.asset.meshes.len()),
+            local_centers,
             flat_bindings,
             camera,
             camera_bind,
@@ -219,6 +322,10 @@ impl Renderer3D {
             camera_layout,
             environment_buffer,
             environment_state,
+            lighting_state: crate::Lighting3D::default(),
+            motion_clocks: [0.; 4],
+            local_lighting,
+            interiors,
             identity_instances,
             route_buffer,
             instance_batches: vec![None; component.asset.meshes.len()],
@@ -231,11 +338,17 @@ impl Renderer3D {
             msaa_view: msaa.as_ref().map(|t| t.create_view(&Default::default())),
             msaa,
             samples,
+            alpha_resolve,
         })
     }
     pub fn resize(&mut self, size: (u32, u32)) -> Result<(), Error> {
         check_size(size, &self.device)?;
         if size != self.size {
+            self.queue.write_buffer(
+                &self.visibility.viewport,
+                0,
+                bytemuck::cast_slice(&[size.0 as f32, size.1 as f32, 0., 0.]),
+            );
             self.color = self
                 .context
                 .create_image(size)
@@ -243,7 +356,9 @@ impl Renderer3D {
             self.depth = depth_target(&self.device, size, self.samples);
             self.msaa =
                 (self.samples > 1).then(|| multisample_target(&self.device, size, self.samples));
-
+            if let Some(resolve) = &mut self.alpha_resolve {
+                resolve.resize(&self.device, size);
+            }
             self.depth_view = self.depth.create_view(&Default::default());
             self.msaa_view = self
                 .msaa
@@ -297,9 +412,61 @@ impl Renderer3D {
         self.last_frame_pose_upload_bytes =
             self.deformer
                 .update_pose(&self.queue, asset, component.clip, component.time);
+        // Sort transparent primitive centers back-to-front. This traverses only
+        // small node transforms, never vertices; skin/morph still stay on GPU.
+        if self.alpha_resolve.is_some() {
+            let pose = asset.sample_pose(component.clip, component.time);
+            let matrix = glam::Mat4::from_cols_array_2d(&matrices[0])
+                * glam::Mat4::from_cols_array_2d(&matrices[1]);
+            self.transparent_order.clear();
+            for (i, draw) in self.deformer.meshes.iter().enumerate() {
+                let mesh = &asset.meshes[draw.mesh_index];
+                if asset.materials[mesh.material].blend {
+                    let p = matrix
+                        * pose.world[mesh.node]
+                            .transform_point3(self.local_centers[draw.mesh_index])
+                            .extend(1.);
+                    self.transparent_order.push((i, p.z / p.w));
+                }
+            }
+            // Reversed Z: distant fragments have smaller depth.
+            self.transparent_order
+                .sort_unstable_by(|a, b| a.1.total_cmp(&b.1));
+        }
         self.deformer.encode(encoder);
+        if let Some(batch_bind) = &self.visibility_batch {
+            let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("3D GPU projected LOD and frustum culling"),
+                timestamp_writes: None,
+            });
+            if self.visibility_bounds_dirty || self.last_frame_pose_upload_bytes > 0 {
+                pass.set_pipeline(&self.visibility.bounds_pipeline);
+                for draw in self.visible_draws.iter().flatten() {
+                    pass.set_bind_group(0, &draw.compute, &[]);
+                    pass.dispatch_workgroups(1, 1, 1);
+                }
+                self.visibility_bounds_dirty = false;
+            }
+            pass.set_pipeline(&self.visibility.pipeline);
+            pass.set_bind_group(0, batch_bind, &[]);
+            pass.dispatch_workgroups(self.visible_draws.len() as u32, 1, 1);
+        }
+        self.interiors.encode(
+            encoder,
+            [
+                self.environment_state.time_seconds,
+                self.lighting_state.effect_time_origin,
+                self.lighting_state.emissive_strength,
+            ],
+        );
+        if self.lighting_state.emissive_strength > 0. {
+            self.local_lighting.encode(encoder);
+        }
         let msaa_view = &self.msaa_view;
-        let resolved_view = self.color.render_view();
+        let resolved_view = self
+            .alpha_resolve
+            .as_ref()
+            .map_or(self.color.render_view(), |r| &r.view);
         let color_view = msaa_view.as_ref().unwrap_or(resolved_view);
 
         {
@@ -325,8 +492,48 @@ impl Renderer3D {
                 ..Default::default()
             });
             pass.execute_bundles(self.opaque_bundle.iter());
+            for i in self.transparent_order.iter().map(|p| p.0) {
+                let draw = &self.deformer.meshes[i];
+                let blend = asset.materials[draw.material].blend;
+                pass.set_pipeline(match (draw.flat_normals, blend) {
+                    (false, false) => &self.pipeline,
+                    (true, false) => &self.flat_pipeline,
+                    (false, true) => &self.blend_pipeline,
+                    (true, true) => &self.flat_blend_pipeline,
+                });
+                let batch = self.instance_batches.get(i).and_then(Option::as_ref);
+                let count = batch.map_or(1, |b| b.count);
+                pass.set_bind_group(0, batch.map_or(&self.camera_bind, |b| &b.bind), &[]);
+                pass.set_bind_group(1, &self.materials[draw.material], &[]);
+                pass.set_bind_group(2, &self.local_lighting.bind, &[]);
+                if draw.flat_normals {
+                    pass.set_bind_group(3, &self.flat_bindings[i], &[]);
+                    pass.draw(0..draw.index_count, 0..count);
+                } else {
+                    pass.set_vertex_buffer(0, draw.output.slice(..));
+                    pass.set_index_buffer(draw.indices.slice(..), wgpu::IndexFormat::Uint32);
+                    pass.draw_indexed(0..draw.index_count, 0, 0..count);
+                }
+            }
         }
-
+        if let Some(resolve) = &self.alpha_resolve {
+            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("3D gamma-correct premultiplied output"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: self.color.render_view(),
+                    depth_slice: None,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                ..Default::default()
+            });
+            pass.set_pipeline(&resolve.pipeline);
+            pass.set_bind_group(0, &resolve.bind, &[]);
+            pass.draw(0..3, 0..1);
+        }
         Ok(())
     }
     /// Number of immutable opaque command-list builds (not frame count).
@@ -350,6 +557,11 @@ impl Renderer3D {
                     sample_count: self.samples,
                     multiview: None,
                 });
+        // Render bundles are replayed as backend commands on Metal. Avoid
+        // redundant state commands even though the bundle is built only once.
+        let mut pipeline_state = None;
+        let mut material_state = None;
+        let mut camera_state = None;
         for &i in &self.opaque_order {
             let draw = &self.deformer.meshes[i];
             let batch = self.instance_batches.get(i).and_then(Option::as_ref);
@@ -357,20 +569,49 @@ impl Renderer3D {
             if count == 0 {
                 continue;
             }
-            bundle.set_pipeline(if draw.flat_normals {
-                &self.flat_pipeline
+            if pipeline_state != Some(draw.flat_normals) {
+                bundle.set_pipeline(if draw.flat_normals {
+                    &self.flat_pipeline
+                } else {
+                    &self.pipeline
+                });
+                bundle.set_bind_group(2, &self.local_lighting.bind, &[]);
+                pipeline_state = Some(draw.flat_normals);
+            }
+            let visible = self.visible_draws.get(i).and_then(Option::as_ref);
+            let camera_key = if visible.is_some() {
+                Some(i)
             } else {
-                &self.pipeline
-            });
-            bundle.set_bind_group(0, batch.map_or(&self.camera_bind, |b| &b.bind), &[]);
-            bundle.set_bind_group(1, &self.materials[draw.material], &[]);
+                batch.map(|_| i)
+            };
+            if camera_state != Some(camera_key) {
+                bundle.set_bind_group(
+                    0,
+                    visible
+                        .map_or_else(|| batch.map_or(&self.camera_bind, |b| &b.bind), |v| &v.draw),
+                    &[],
+                );
+                camera_state = Some(camera_key);
+            }
+            if material_state != Some(draw.material) {
+                bundle.set_bind_group(1, &self.materials[draw.material], &[]);
+                material_state = Some(draw.material);
+            }
             if draw.flat_normals {
-                bundle.set_bind_group(2, &self.flat_bindings[i], &[]);
-                bundle.draw(0..draw.index_count, 0..count);
+                bundle.set_bind_group(3, &self.flat_bindings[i], &[]);
+                if let Some(v) = visible {
+                    bundle.draw_indirect(&v.args, v.args_offset);
+                } else {
+                    bundle.draw(0..draw.index_count, 0..count);
+                }
             } else {
                 bundle.set_vertex_buffer(0, draw.output.slice(..));
                 bundle.set_index_buffer(draw.indices.slice(..), wgpu::IndexFormat::Uint32);
-                bundle.draw_indexed(0..draw.index_count, 0, 0..count);
+                if let Some(v) = visible {
+                    bundle.draw_indexed_indirect(&v.args, v.args_offset);
+                } else {
+                    bundle.draw_indexed(0..draw.index_count, 0, 0..count);
+                }
             }
         }
         self.opaque_bundle = Some(bundle.finish(&wgpu::RenderBundleDescriptor {
@@ -410,6 +651,14 @@ impl Renderer3D {
             if matches.is_empty() {
                 return Err(err(format!("instance node not found: {}", batch.node)));
             }
+            if matches
+                .iter()
+                .any(|i| view.asset.materials[self.deformer.meshes[*i].material].blend)
+            {
+                return Err(err(
+                    "transparent instancing requires per-instance transparency sorting",
+                ));
+            }
             let packed: Vec<_> = batch
                 .instances
                 .iter()
@@ -446,7 +695,7 @@ impl Renderer3D {
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("3D immutable GPU instances"),
                     contents: bytemuck::cast_slice(&contents),
-                    usage: wgpu::BufferUsages::STORAGE,
+                    usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
                 });
             bytes += buffer.size();
             let bind = instance_binding(
@@ -454,8 +703,9 @@ impl Renderer3D {
                 &self.camera_layout,
                 &self.camera,
                 &self.environment_buffer,
-                &buffer,
+                buffer.as_entire_buffer_binding(),
                 &route_buffer,
+                &self.interiors.buffer,
             );
             let batch = GpuBatch {
                 _buffer: buffer,
@@ -471,13 +721,286 @@ impl Renderer3D {
             &self.camera_layout,
             &self.camera,
             &self.environment_buffer,
-            &self.identity_instances,
+            self.identity_instances.as_entire_buffer_binding(),
             &route_buffer,
+            &self.interiors.buffer,
         );
         self.route_buffer = route_buffer;
         self.instance_batches = batches;
+        self.visible_draws.clear();
+        self.visibility_batch = None;
         self.opaque_bundle = None;
         self.instance_upload_bytes += bytes;
+        Ok(())
+    }
+    /// Enable GPU frustum culling for opaque draws and pixel LOD for selected
+    /// nodes. Call after configuring instances; reconfigure after replacing them.
+    /// Transparent primitives retain their existing sorted rendering path.
+    pub fn configure_screen_detail(
+        &mut self,
+        view: &Scene3D,
+        policies: &[crate::ScreenDetail3D],
+    ) -> Result<(), Error> {
+        if view.asset.id != self.asset_id {
+            return Err(err("renderer asset mismatch"));
+        }
+        let mut seen = std::collections::HashSet::new();
+        for p in policies {
+            if !seen.insert(&p.node)
+                || !view.asset.node_names.contains(&p.node)
+                || [
+                    p.reference_size,
+                    p.fade_pixels[0],
+                    p.fade_pixels[1],
+                    p.motion_pixels[0],
+                    p.motion_pixels[1],
+                    p.motion_padding,
+                ]
+                .iter()
+                .any(|v| !v.is_finite() || *v < 0.)
+                || (p.fade_pixels[1] > 0. && p.fade_pixels[1] <= p.fade_pixels[0])
+                || (p.motion_pixels[1] > 0. && p.motion_pixels[1] <= p.motion_pixels[0])
+            {
+                return Err(err("invalid screen detail policy"));
+            }
+        }
+        if self.deformer.meshes.is_empty() {
+            return Ok(());
+        }
+        let stride = std::mem::size_of::<crate::instances::GpuInstance>() as u64;
+        let alignment = u64::from(self.device.limits().min_storage_buffer_offset_alignment);
+        let mut total = 0_u64;
+        let mut records = Vec::new();
+        let mut offsets = Vec::new();
+        let mut arguments = Vec::new();
+        for (i, mesh) in self.deformer.meshes.iter().enumerate() {
+            // LCM with the instance stride keeps both storage offsets and element offsets aligned.
+            let segment_alignment = alignment * stride;
+            // stride=160 and backend alignment are powers of two times five.
+            let segment_alignment = segment_alignment / 32.min(alignment);
+            total = total.div_ceil(segment_alignment) * segment_alignment;
+            offsets.push(total);
+            let count = if view.asset.materials[mesh.material].blend {
+                0
+            } else {
+                self.instance_batches
+                    .get(i)
+                    .and_then(Option::as_ref)
+                    .map_or(1, |b| b.count)
+            };
+            let node = &view.asset.node_names[view.asset.meshes[mesh.mesh_index].node];
+            let p = policies.iter().find(|p| &p.node == node);
+            let mut record = Vec::new();
+            record.extend_from_slice(bytemuck::cast_slice(&[
+                count,
+                mesh.vertex_count,
+                (total / stride) as u32,
+                i as u32,
+            ]));
+            record.extend_from_slice(bytemuck::cast_slice(&[
+                p.map_or(0., |p| p.reference_size),
+                p.map_or(0., |p| p.fade_pixels[0]),
+                p.map_or(0., |p| p.fade_pixels[1]),
+                p.map_or(0., |p| p.motion_padding),
+                p.map_or(0., |p| p.motion_pixels[0]),
+                p.map_or(0., |p| p.motion_pixels[1]),
+                0.,
+                0.,
+            ]));
+            records.extend_from_slice(&record);
+            arguments.extend([mesh.index_count, 0_u32, 0, 0, 0]);
+            total += u64::from(count.max(1)) * stride;
+        }
+        if total > self.device.limits().max_storage_buffer_binding_size {
+            return Err(err("visible instances exceed GPU storage limit"));
+        }
+        self.visibility_batch = None;
+        let make = |label, size, usage| {
+            self.device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some(label),
+                size,
+                usage,
+                mapped_at_creation: false,
+            })
+        };
+        let input = make(
+            "3D packed immutable visibility inputs",
+            total,
+            wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        );
+        let output = make(
+            "3D compact visible instance segments",
+            total,
+            wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+        );
+        let bounds = make(
+            "3D cached GPU bounds",
+            self.deformer.meshes.len() as u64 * 32,
+            wgpu::BufferUsages::STORAGE,
+        );
+        let args = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("3D packed indirect arguments"),
+                contents: bytemuck::cast_slice(&arguments),
+                usage: wgpu::BufferUsages::STORAGE
+                    | wgpu::BufferUsages::INDIRECT
+                    | wgpu::BufferUsages::COPY_SRC,
+            });
+        let policy_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("3D packed pixel policies"),
+                contents: &records,
+                usage: wgpu::BufferUsages::STORAGE,
+            });
+        let mut encoder = self.device.create_command_encoder(&Default::default());
+        let mut draws = Vec::new();
+        for (i, mesh) in self.deformer.meshes.iter().enumerate() {
+            let batch = self.instance_batches.get(i).and_then(Option::as_ref);
+            let count = batch.map_or(1, |b| b.count);
+            let source = batch.map_or(&self.identity_instances, |b| &b._buffer);
+            if view.asset.materials[mesh.material].blend {
+                draws.push(None);
+                continue;
+            }
+            if count > 0 {
+                encoder.copy_buffer_to_buffer(
+                    source,
+                    0,
+                    &input,
+                    offsets[i],
+                    u64::from(count) * stride,
+                );
+            }
+            let params = self
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("3D bounds metadata"),
+                    contents: &records[i * 48..i * 48 + 48],
+                    usage: wgpu::BufferUsages::UNIFORM,
+                });
+            let binding = |vertices: &wgpu::Buffer| {
+                self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("3D batched visibility and bounds"),
+                    layout: &self.visibility.layout,
+                    entries: &[
+                        &self.camera,
+                        &self.environment_buffer,
+                        &input,
+                        &self.route_buffer,
+                        &self.visibility.viewport,
+                        vertices,
+                        &output,
+                        &args,
+                        &params,
+                        &bounds,
+                        &policy_buffer,
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    .map(|(binding, b)| wgpu::BindGroupEntry {
+                        binding: binding as u32,
+                        resource: b.as_entire_binding(),
+                    })
+                    .collect::<Vec<_>>(),
+                })
+            };
+            let compute = binding(&mesh.output);
+            if self.visibility_batch.is_none() {
+                self.visibility_batch = Some(compute.clone());
+            }
+            let draw = instance_binding(
+                &self.device,
+                &self.camera_layout,
+                &self.camera,
+                &self.environment_buffer,
+                wgpu::BufferBinding {
+                    buffer: &output,
+                    offset: offsets[i],
+                    size: std::num::NonZeroU64::new(u64::from(count.max(1)) * stride),
+                },
+                &self.route_buffer,
+                &self.interiors.buffer,
+            );
+            draws.push(Some(crate::visibility::VisibleDraw {
+                compute,
+                draw,
+                args: args.clone(),
+                args_offset: i as u64 * 20,
+                _output: output.clone(),
+            }));
+        }
+        self.queue.submit([encoder.finish()]);
+        self.queue.write_buffer(
+            &self.visibility.viewport,
+            0,
+            bytemuck::cast_slice(&[self.size.0 as f32, self.size.1 as f32, 0., 0.]),
+        );
+        self.visible_draws = draws;
+        self.visibility_bounds_dirty = true;
+        self.opaque_bundle = None;
+        Ok(())
+    }
+    /// Upload local lights/analytic shadow proxies once. Motion evaluates on GPU
+    /// and does not invalidate cached draw bundles or depend on instance setup order.
+    pub fn configure_local_lighting(
+        &mut self,
+        recipe: &crate::LocalLighting3D,
+    ) -> Result<(), Error> {
+        self.local_lighting
+            .configure(&self.device, &self.queue, &self.environment_buffer, recipe)
+    }
+    /// Cached 48-byte update on lighting changes; no mesh/material re-upload.
+    pub fn set_lighting(&mut self, lighting: crate::Lighting3D) -> Result<(), Error> {
+        let values = [
+            lighting.ambient[0],
+            lighting.ambient[1],
+            lighting.ambient[2],
+            lighting.emissive_strength,
+            lighting.direction[0],
+            lighting.direction[1],
+            lighting.direction[2],
+            0.,
+            lighting.directional[0],
+            lighting.directional[1],
+            lighting.directional[2],
+            lighting.effect_time_origin,
+        ];
+        if values.iter().any(|v| !v.is_finite())
+            || lighting.direction.iter().map(|v| v * v).sum::<f32>() < 1e-8
+            || lighting
+                .ambient
+                .iter()
+                .chain(lighting.directional.iter())
+                .any(|v| *v < 0.)
+            || lighting.emissive_strength < 0.
+            || lighting.effect_time_origin < 0.
+        {
+            return Err(err(
+                "lighting must be finite with nonnegative energy and a nonzero direction",
+            ));
+        }
+        if self.lighting_state != lighting {
+            self.queue
+                .write_buffer(&self.environment_buffer, 16, bytemuck::cast_slice(&values));
+            self.environment_upload_bytes += 48;
+            self.lighting_state = lighting;
+        }
+        Ok(())
+    }
+    /// Four independent host clocks, shared by instance motion, visibility and
+    /// material/local-light dimming. Frozen channels require no repeated upload.
+    pub fn set_motion_clocks(&mut self, clocks: [f32; 4]) -> Result<(), Error> {
+        if clocks.iter().any(|v| !v.is_finite() || *v < 0.) {
+            return Err(err("motion clocks must be finite and nonnegative"));
+        }
+        if clocks != self.motion_clocks {
+            self.queue
+                .write_buffer(&self.environment_buffer, 64, bytemuck::cast_slice(&clocks));
+            self.motion_clocks = clocks;
+            self.environment_upload_bytes += 16;
+        }
         Ok(())
     }
     /// A 16-byte uniform update; all motion and normal calculations execute on GPU.
@@ -568,21 +1091,111 @@ fn instance_binding(
     layout: &wgpu::BindGroupLayout,
     camera: &wgpu::Buffer,
     environment: &wgpu::Buffer,
-    instances: &wgpu::Buffer,
+    instances: wgpu::BufferBinding<'_>,
     routes: &wgpu::Buffer,
+    interiors: &wgpu::Buffer,
 ) -> wgpu::BindGroup {
+    let mut entries = [camera, environment, routes, interiors]
+        .into_iter()
+        .zip([0, 1, 3, 4])
+        .map(|(b, binding)| wgpu::BindGroupEntry {
+            binding,
+            resource: b.as_entire_binding(),
+        })
+        .collect::<Vec<_>>();
+    entries.push(wgpu::BindGroupEntry {
+        binding: 2,
+        resource: wgpu::BindingResource::Buffer(instances),
+    });
     device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("3D camera and instance motion"),
         layout,
-        entries: &[camera, environment, instances, routes]
-            .into_iter()
-            .enumerate()
-            .map(|(i, b)| wgpu::BindGroupEntry {
-                binding: i as u32,
-                resource: b.as_entire_binding(),
-            })
-            .collect::<Vec<_>>(),
+        entries: &entries,
     })
+}
+// The UI consumes gamma-encoded premultiplied channels. Blend in linear light
+// first, then convert on GPU; encoding premultiplied linear channels directly
+// would make glass over a transparent background too bright in the host UI.
+#[derive(Debug)]
+struct AlphaResolve {
+    pipeline: wgpu::RenderPipeline,
+    _texture: wgpu::Texture,
+    view: wgpu::TextureView,
+    bind: wgpu::BindGroup,
+}
+impl AlphaResolve {
+    fn attachment(
+        device: &wgpu::Device,
+        size: (u32, u32),
+        layout: &wgpu::BindGroupLayout,
+    ) -> (wgpu::Texture, wgpu::TextureView, wgpu::BindGroup) {
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("3D linear alpha composition"),
+            size: extent(size),
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+        let view = texture.create_view(&Default::default());
+        let bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("3D alpha resolve"),
+            layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&view),
+            }],
+        });
+        (texture, view, bind)
+    }
+    fn new(device: &wgpu::Device, size: (u32, u32)) -> Self {
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("3D alpha resolve"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("alpha_resolve.wgsl").into()),
+        });
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("3D alpha resolve"),
+            layout: None,
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs"),
+                compilation_options: Default::default(),
+                buffers: &[],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs"),
+                compilation_options: Default::default(),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: Default::default(),
+            depth_stencil: None,
+            multisample: Default::default(),
+            multiview_mask: None,
+            cache: None,
+        });
+        let (texture, view, bind) =
+            Self::attachment(device, size, &pipeline.get_bind_group_layout(0));
+        Self {
+            pipeline,
+            _texture: texture,
+            view,
+            bind,
+        }
+    }
+    fn resize(&mut self, device: &wgpu::Device, size: (u32, u32)) {
+        let (texture, view, bind) =
+            Self::attachment(device, size, &self.pipeline.get_bind_group_layout(0));
+        self._texture = texture;
+        self.view = view;
+        self.bind = bind;
+    }
 }
 fn render_pipeline(
     device: &wgpu::Device,
@@ -591,6 +1204,7 @@ fn render_pipeline(
     flat: bool,
     fragment: &str,
     samples: u32,
+    blend: bool,
 ) -> wgpu::RenderPipeline {
     let attributes = wgpu::vertex_attr_array![0=>Float32x4,1=>Float32x4,2=>Float32x4,3=>Float32x4];
     let vertex_buffers = [Some(wgpu::VertexBufferLayout {
@@ -617,7 +1231,7 @@ fn render_pipeline(
             compilation_options: Default::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                blend: None,
+                blend: blend.then_some(wgpu::BlendState::ALPHA_BLENDING),
                 write_mask: wgpu::ColorWrites::ALL,
             })],
         }),
@@ -627,7 +1241,7 @@ fn render_pipeline(
         },
         depth_stencil: Some(wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: Some(true),
+            depth_write_enabled: Some(!blend),
             depth_compare: Some(wgpu::CompareFunction::Greater),
             stencil: Default::default(),
             bias: Default::default(),
@@ -735,16 +1349,14 @@ fn upload_materials(
         multiview_mask: None,
         cache: None,
     });
-    asset
-        .materials
+    let textures = asset
+        .images
         .iter()
-        .map(|m| {
-            let (size, pixels) = m
-                .image
-                .map(|i| {
-                    let im = &asset.images[i];
-                    ((im.width, im.height), im.rgba.as_slice())
-                })
+        .map(Some)
+        .chain(std::iter::once(None))
+        .map(|image| {
+            let (size, pixels) = image
+                .map(|im| ((im.width, im.height), im.rgba.as_slice()))
                 .unwrap_or(((1, 1), &[255; 4]));
             check_size(size, device)?;
             let mip_count = 32 - size.0.max(size.1).leading_zeros();
@@ -821,10 +1433,41 @@ fn upload_materials(
                 }
                 queue.submit([encoder.finish()]);
             }
+            Ok(texture.create_view(&Default::default()))
+        })
+        .collect::<Result<Vec<_>, Error>>()?;
+    let white = textures.len() - 1;
+    asset
+        .materials
+        .iter()
+        .map(|m| {
             let uniform = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("3D material"),
                 contents: bytemuck::cast_slice(&[
-                    m.color[0], m.color[1], m.color[2], m.color[3], m.cutoff, 0., 0., 0.,
+                    m.color[0],
+                    m.color[1],
+                    m.color[2],
+                    m.color[3],
+                    m.cutoff,
+                    if m.blend { 1. } else { 0. },
+                    0.,
+                    0.,
+                    m.emissive[0],
+                    m.emissive[1],
+                    m.emissive[2],
+                    0.,
+                    m.interior[0],
+                    m.interior[1],
+                    m.interior[2],
+                    m.interior[3],
+                    m.dimming[0],
+                    m.dimming[1],
+                    m.dimming[2],
+                    m.dimming[3],
+                    m.interior_activation[0],
+                    m.interior_activation[1],
+                    m.interior_activation[2],
+                    m.interior_activation[3],
                 ]),
                 usage: wgpu::BufferUsages::UNIFORM,
             });
@@ -839,12 +1482,18 @@ fn upload_materials(
                     wgpu::BindGroupEntry {
                         binding: 1,
                         resource: wgpu::BindingResource::TextureView(
-                            &texture.create_view(&Default::default()),
+                            &textures[m.image.unwrap_or(white)],
                         ),
                     },
                     wgpu::BindGroupEntry {
                         binding: 2,
                         resource: wgpu::BindingResource::Sampler(&sampler),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: wgpu::BindingResource::TextureView(
+                            &textures[m.emissive_image.unwrap_or(white)],
+                        ),
                     },
                 ],
             }))
@@ -870,6 +1519,350 @@ mod tests {
             Rgba::new(0., 0., 0., 0.),
         )
         .unwrap()
+    }
+    fn read_gpu_bytes(gpu: &Renderer3D, source: &wgpu::Buffer, size: u64) -> Vec<u8> {
+        let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("test-only visibility readback"),
+            size,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        encoder.copy_buffer_to_buffer(source, 0, &buffer, 0, size);
+        gpu.queue.submit([encoder.finish()]);
+        let (tx, rx) = std::sync::mpsc::channel();
+        buffer
+            .slice(..)
+            .map_async(wgpu::MapMode::Read, move |r| tx.send(r).unwrap());
+        gpu.device
+            .poll(wgpu::PollType::wait_indefinitely())
+            .unwrap();
+        rx.recv().unwrap().unwrap();
+        buffer.slice(..).get_mapped_range().unwrap().to_vec()
+    }
+    #[test]
+    #[ignore = "requires a real wgpu GPU adapter"]
+    fn gpu_visibility_bounds_follow_skin_morph_and_model_rotation() {
+        let mut ui = Renderer::new_headless().unwrap();
+        for bytes in [
+            include_bytes!("../fixtures/animated-tetra.glb").as_slice(),
+            include_bytes!("../fixtures/skinned-tetra.glb").as_slice(),
+        ] {
+            let mut view = Scene3D::new(Asset3D::from_slice(bytes).unwrap());
+            view.select_clip(0).unwrap();
+            let mut direct = Renderer3D::new(&ui.gpu_context(), &view, (192, 192)).unwrap();
+            let mut culled = Renderer3D::new(&ui.gpu_context(), &view, (192, 192)).unwrap();
+            culled.configure_screen_detail(&view, &[]).unwrap();
+            let a = ui.register_gpu_image(direct.output()).unwrap();
+            let b = ui.register_gpu_image(culled.output()).unwrap();
+            for time in [0., 0.25, 0.5, 1., 1.5] {
+                view.seek(time).unwrap();
+                let mut camera = Camera3D::default();
+                camera.orbit(time * 0.1, 0.05).unwrap();
+                camera.rotate_model(time * 0.15, 0.1, 0.).unwrap();
+                direct.render_camera(&view, &camera).unwrap();
+                culled.render_camera(&view, &camera).unwrap();
+                let expected = capture(&mut ui, &view, a);
+                let actual = capture(&mut ui, &view, b);
+                assert!(
+                    actual == expected,
+                    "indirect animated geometry differs at {time}"
+                );
+            }
+        }
+    }
+    #[test]
+    #[ignore = "requires a real wgpu GPU adapter"]
+    fn gpu_visibility_indirect_counts_fade_and_frustum_match_reference() {
+        use crate::{Instance3D, InstanceBatch3D, InstanceScene3D, ScreenDetail3D};
+        let mut ui = Renderer::new_headless().unwrap();
+        for flat in [false, true] {
+            let mut asset = crate::asset::tests::depth_fixture(false);
+            if flat {
+                asset.meshes[0].normals.clear();
+            }
+            let node = asset.node_names[asset.meshes[0].node].clone();
+            let view = Scene3D::new(asset);
+            let mut gpu = Renderer3D::new(&ui.gpu_context(), &view, (192, 192)).unwrap();
+            let image = ui.register_gpu_image(gpu.output()).unwrap();
+            let mut camera = Camera3D::default();
+            camera.set_orthographic(true);
+            gpu.render_camera(&view, &camera).unwrap();
+            let baseline = capture(&mut ui, &view, image);
+            gpu.configure_instances(
+                &view,
+                &InstanceScene3D {
+                    routes: vec![],
+                    batches: vec![InstanceBatch3D {
+                        node: node.clone(),
+                        instances: vec![
+                            Instance3D::default(),
+                            Instance3D {
+                                translation: [100., 0., 0.],
+                                ..Default::default()
+                            },
+                        ],
+                    }],
+                },
+            )
+            .unwrap();
+            gpu.configure_screen_detail(
+                &view,
+                &[ScreenDetail3D {
+                    node,
+                    reference_size: 1.,
+                    fade_pixels: [20., 40.],
+                    motion_pixels: [0., 0.],
+                    motion_padding: 0.,
+                }],
+            )
+            .unwrap();
+            let uploaded = gpu.instance_upload_bytes();
+            let geometry = gpu.geometry_upload_bytes();
+            camera.zoom_by(0.2).unwrap();
+            gpu.render_camera(&view, &camera).unwrap();
+            let visible = gpu.visible_draws[0].as_ref().unwrap();
+            assert_eq!(
+                bytemuck::cast_slice::<u8, u32>(&read_gpu_bytes(&gpu, &visible.args, 20))[1],
+                1
+            );
+            // Identical full-detail image to direct rendering, at the same camera.
+            camera = Camera3D::default();
+            camera.set_orthographic(true);
+            // Disable size fade, retain offscreen culling, compare exact pixels.
+            let policies = [ScreenDetail3D {
+                node: view.asset.node_names[view.asset.meshes[0].node].clone(),
+                reference_size: 1.,
+                fade_pixels: [0., 0.],
+                motion_pixels: [0., 0.],
+                motion_padding: 0.,
+            }];
+            gpu.configure_screen_detail(&view, &policies).unwrap();
+            gpu.render_camera(&view, &camera).unwrap();
+            assert_eq!(capture(&mut ui, &view, image), baseline);
+            let mut p = policies[0].clone();
+            p.fade_pixels = [20., 40.];
+            gpu.configure_screen_detail(&view, &[p]).unwrap();
+            let mut fades = Vec::new();
+            for zoom in [0.5_f32, 0.75, 1., 1.25, 1.5, 2., 4., 8.] {
+                let mut c = Camera3D::default();
+                c.set_orthographic(true);
+                c.zoom_by(zoom).unwrap();
+                gpu.render_camera(&view, &c).unwrap();
+                let d = gpu.visible_draws[0].as_ref().unwrap();
+                let count = bytemuck::cast_slice::<u8, u32>(&read_gpu_bytes(&gpu, &d.args, 20))[1];
+                let fade = if count == 0 {
+                    0.
+                } else {
+                    bytemuck::cast_slice::<u8, f32>(&read_gpu_bytes(&gpu, &d._output, 160))[36]
+                };
+                fades.push(fade);
+            }
+            assert!(fades.windows(2).all(|w| w[0] >= w[1]), "{fades:?}");
+            assert!(
+                fades.iter().any(|x| *x > 0. && *x < 1.),
+                "fade band exercised: {fades:?}"
+            );
+            assert_eq!(fades.last(), Some(&0.));
+            assert_eq!(gpu.instance_upload_bytes(), uploaded);
+            assert_eq!(gpu.geometry_upload_bytes(), geometry);
+            assert_eq!(gpu.bundle_builds, 4); // direct, then three explicit reconfigurations
+        }
+    }
+    #[test]
+    #[ignore = "requires a real wgpu GPU adapter"]
+    fn shared_window_bank_updates_once_and_reuses_states_across_camera_frames() {
+        let mut ui = Renderer::new_headless().unwrap();
+        let mut asset = crate::asset::tests::depth_fixture(false);
+        asset.meshes[0].colors.fill([1.; 4]);
+        let mesh = &mut asset.meshes[0];
+        for (p, uv) in mesh.positions.iter().zip(&mut mesh.uv) {
+            *uv = [(p.x + 1.) * 0.5, (p.y + 1.) * 0.5];
+        }
+        asset.materials[0].interior = [4., 4., 5., 0.5];
+        asset.materials[0].emissive = [0.8; 3];
+        let view = Scene3D::new(asset);
+        let mut gpu = Renderer3D::new_antialiased(&ui.gpu_context(), &view, (192, 192)).unwrap();
+        let image = ui.register_gpu_image(gpu.output()).unwrap();
+        let mut camera = Camera3D::default();
+        gpu.render_camera(&view, &camera).unwrap();
+        assert_eq!(gpu.interior_style_evaluations(), 32);
+        let initial = capture(&mut ui, &view, image);
+        for _ in 0..4 {
+            camera.rotate_model(0.1, 0., 0.).unwrap();
+            gpu.render_camera(&view, &camera).unwrap();
+            assert_eq!(
+                gpu.interior_style_evaluations(),
+                32,
+                "camera motion must reuse the bank"
+            );
+        }
+        camera = Camera3D::default();
+        gpu.set_environment(crate::Environment3D {
+            time_seconds: 18.,
+            ..Default::default()
+        })
+        .unwrap();
+        gpu.render_camera(&view, &camera).unwrap();
+        assert_eq!(gpu.interior_style_evaluations(), 64);
+        assert_ne!(
+            initial,
+            capture(&mut ui, &view, image),
+            "shared styles must produce visible animation"
+        );
+        gpu.render_camera(&view, &camera).unwrap();
+        assert_eq!(
+            gpu.interior_style_evaluations(),
+            64,
+            "frozen time must not reevaluate styles"
+        );
+        let lighting = crate::Lighting3D {
+            emissive_strength: 0.,
+            ..Default::default()
+        };
+        gpu.set_lighting(lighting).unwrap();
+        gpu.render_camera(&view, &camera).unwrap();
+        assert_eq!(
+            gpu.interior_style_evaluations(),
+            96,
+            "day/night changes invalidate the bank"
+        );
+    }
+    #[test]
+    #[ignore = "requires a real wgpu GPU adapter"]
+    fn culled_local_shadows_match_full_scan_with_motion_and_fades() {
+        use crate::{
+            Deformation3D, Dimming3D, Environment3D, Instance3D, LocalLight3D, LocalLighting3D,
+            ShadowProxy3D, Visibility3D,
+        };
+        let mut ui = Renderer::new_headless().unwrap();
+        let mut asset = crate::asset::tests::depth_fixture(false);
+        asset.meshes[0].colors.fill([1.; 4]);
+        let view = Scene3D::new(asset);
+        // Reference keeps the original full scan and exact shadow arithmetic.
+        let reference = include_str!("local_lighting.wgsl")
+            .replace(
+                "candidate<local_scene.shadow_lists[j].count",
+                "candidate<local_scene.counts.y",
+            )
+            .replace(
+                "let k=local_scene.shadow_lists[j].indices[candidate];",
+                "let k=candidate;",
+            );
+        let mut gpu = Renderer3D::new_antialiased(&ui.gpu_context(), &view, (192, 192)).unwrap();
+        let mut full =
+            Renderer3D::with_lighting_shader(&ui.gpu_context(), &view, (192, 192), 4, &reference)
+                .unwrap();
+        let actual_image = ui.register_gpu_image(gpu.output()).unwrap();
+        let expected_image = ui.register_gpu_image(full.output()).unwrap();
+        let mut recipe = LocalLighting3D::default();
+        for i in 0..64 {
+            recipe.lights.push(LocalLight3D {
+                attachment: Instance3D {
+                    deformation: Deformation3D::Swing {
+                        amplitude: 0.3,
+                        frequency: 1.,
+                        phase: i as f32 * 0.1,
+                        pivot: [0.; 3],
+                        axis: [0., 0., 1.],
+                    },
+                    ..Default::default()
+                },
+                position: [
+                    ((i % 8) as f32 - 3.5) * 0.9,
+                    ((i / 8) as f32 - 3.5) * 0.8,
+                    0.7,
+                ],
+                direction: [0., 0., -1.],
+                color: [0.06, 0.04, 0.03],
+                radius: 0.6 + (i % 5) as f32 * 0.7,
+                outer_cos: if i % 2 == 0 { -1. } else { 0.5 },
+                dimming: Some(Dimming3D {
+                    clock: 0,
+                    start_seconds: 0.,
+                    end_seconds: 10.,
+                    minimum: 0.1,
+                }),
+            });
+        }
+        for i in 0..96 {
+            recipe.shadows.push(ShadowProxy3D {
+                attachment: Instance3D {
+                    scale: [0.7, 1.3, 0.9],
+                    deformation: Deformation3D::Swing {
+                        amplitude: 0.45,
+                        frequency: 1.2,
+                        phase: i as f32 * 0.2,
+                        pivot: [0.; 3],
+                        axis: [0., 0., 1.],
+                    },
+                    visibility: Some(Visibility3D {
+                        clock: 0,
+                        start_seconds: 2.,
+                        fade_seconds: 4.,
+                    }),
+                    ..Default::default()
+                },
+                center: [
+                    ((i % 12) as f32 - 5.5) * 0.29,
+                    ((i / 12) as f32 - 3.5) * 0.3,
+                    0.25,
+                ],
+                radii: [0.10, 0.16, 0.07],
+            });
+        }
+        let mut shadow_difference = 0;
+        for time in [0., 3., 5.9, 6., 10.] {
+            for renderer in [&mut gpu, &mut full] {
+                renderer.configure_local_lighting(&recipe).unwrap();
+                renderer.set_motion_clocks([time, 0., 0., 0.]).unwrap();
+                renderer
+                    .set_environment(Environment3D {
+                        time_seconds: time,
+                        ..Default::default()
+                    })
+                    .unwrap();
+                renderer.render(&view, 0.3, 1.).unwrap();
+            }
+            let actual = capture(&mut ui, &view, actual_image);
+            let expected = capture(&mut ui, &view, expected_image);
+            let maximum_error = actual
+                .iter()
+                .zip(&expected)
+                .map(|(a, b)| a.abs_diff(*b))
+                .max()
+                .unwrap();
+            assert!(
+                maximum_error <= 1,
+                "full-scan reference differs at t={time}: max={maximum_error}"
+            );
+            if time == 0. {
+                let mut unshadowed = recipe.clone();
+                unshadowed.shadows.clear();
+                full.configure_local_lighting(&unshadowed).unwrap();
+                full.render(&view, 0.3, 1.).unwrap();
+                shadow_difference = actual
+                    .iter()
+                    .zip(capture(&mut ui, &view, expected_image))
+                    .filter(|(a, b)| a.abs_diff(*b) > 2)
+                    .count();
+            }
+        }
+        assert!(
+            shadow_difference > 100,
+            "fixture must exercise visible shadows"
+        );
+        // Reconfigure to zero lights/shadows; no stale candidate entries may leak.
+        for renderer in [&mut gpu, &mut full] {
+            renderer
+                .configure_local_lighting(&LocalLighting3D::default())
+                .unwrap();
+            renderer.render(&view, 0.3, 1.).unwrap();
+        }
+        assert_eq!(
+            capture(&mut ui, &view, actual_image),
+            capture(&mut ui, &view, expected_image)
+        );
     }
     #[test]
     #[ignore = "requires a real wgpu GPU adapter"]
@@ -1012,7 +2005,55 @@ mod tests {
             assert_eq!(gpu.last_frame_deformed_meshes(), 0);
         }
     }
-
+    #[test]
+    #[ignore = "requires a real wgpu GPU adapter"]
+    fn glass_alpha_is_premultiplied_in_ui_space_and_skipped_meshes_are_safe() {
+        let mut ui = Renderer::new_headless().unwrap();
+        let mut asset = crate::asset::tests::depth_fixture(false);
+        let mut skipped = asset.meshes[0].clone();
+        skipped.indices.clear();
+        asset.meshes.insert(0, skipped);
+        let opaque = Scene3D::new(asset);
+        let mut opaque_gpu = Renderer3D::new(&ui.gpu_context(), &opaque, (192, 192)).unwrap();
+        opaque_gpu.render(&opaque, 0., 1.).unwrap();
+        let opaque_id = ui.register_gpu_image(opaque_gpu.output()).unwrap();
+        let expected = capture(&mut ui, &opaque, opaque_id);
+        let middle = (96 * 192 + 96) * 4;
+        assert_eq!(expected[middle + 3], 255);
+        for msaa in [false, true] {
+            let mut asset = crate::asset::tests::depth_fixture(false);
+            let mut skipped = asset.meshes[0].clone();
+            skipped.indices.clear();
+            asset.meshes.insert(0, skipped);
+            asset.materials[0].blend = true;
+            asset.materials[0].color[3] = 0.25;
+            let view = Scene3D::new(asset);
+            let mut gpu = if msaa {
+                Renderer3D::new_antialiased(&ui.gpu_context(), &view, (192, 192))
+            } else {
+                Renderer3D::new(&ui.gpu_context(), &view, (192, 192))
+            }
+            .unwrap();
+            let id = ui.register_gpu_image(gpu.output()).unwrap();
+            for size in [(192, 192), (240, 180)] {
+                gpu.resize(size).unwrap();
+                ui.replace_gpu_image(id, gpu.output()).unwrap();
+                gpu.render(&view, 0., 1.).unwrap();
+                let actual = capture(&mut ui, &view, id);
+                assert!(actual[middle + 3].abs_diff(64) <= 1);
+                assert!(
+                    actual[middle].abs_diff((expected[middle] as f32 * 0.25).round() as u8) <= 3,
+                    "glass over transparent UI must not brighten: {:?}",
+                    &actual[middle..middle + 4]
+                );
+                assert_eq!(actual[middle + 1], 0);
+                assert_eq!(actual[middle + 2], 0);
+                gpu.render(&view, 0.2, 1.).unwrap();
+                assert_eq!(gpu.last_frame_pose_upload_bytes(), 0);
+                assert_eq!(gpu.last_frame_deformed_meshes(), 0);
+            }
+        }
+    }
     #[test]
     #[ignore = "requires a real wgpu GPU adapter"]
     fn distant_close_surfaces_do_not_z_fight() {
@@ -1103,8 +2144,11 @@ mod tests {
                 label: Some("test-only normal direction output"),
                 source: wgpu::ShaderSource::Wgsl(
                     format!(
-                        "{}\n{}\n{}",
+                        "{}\n{}\n{}\n{}\n{}\n{}",
                         include_str!("instance_motion.wgsl"),
+                        include_str!("local_lighting.wgsl"),
+                        include_str!("interior_styles.wgsl"),
+                        include_str!("interior.wgsl"),
                         include_str!("scene3d.wgsl"),
                         r#"
                 @fragment fn fs_test_normals(i: Out) -> @location(0) vec4<f32> {
@@ -1118,22 +2162,39 @@ mod tests {
             });
         let camera = gpu.pipeline.get_bind_group_layout(0);
         let material = gpu.pipeline.get_bind_group_layout(1);
-        let geometry = gpu.flat_pipeline.get_bind_group_layout(2);
+        let geometry = gpu.flat_pipeline.get_bind_group_layout(3);
         let layout = gpu
             .device
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: None,
-                bind_group_layouts: &[Some(&camera), Some(&material)],
+                bind_group_layouts: &[
+                    Some(&camera),
+                    Some(&material),
+                    Some(&gpu.local_lighting.layout),
+                ],
                 immediate_size: 0,
             });
         let flat_layout = gpu
             .device
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: None,
-                bind_group_layouts: &[Some(&camera), Some(&material), Some(&geometry)],
+                bind_group_layouts: &[
+                    Some(&camera),
+                    Some(&material),
+                    Some(&gpu.local_lighting.layout),
+                    Some(&geometry),
+                ],
                 immediate_size: 0,
             });
-        gpu.pipeline = render_pipeline(&gpu.device, &shader, &layout, false, "fs_test_normals", 1);
+        gpu.pipeline = render_pipeline(
+            &gpu.device,
+            &shader,
+            &layout,
+            false,
+            "fs_test_normals",
+            1,
+            false,
+        );
         gpu.flat_pipeline = render_pipeline(
             &gpu.device,
             &shader,
@@ -1141,6 +2202,7 @@ mod tests {
             true,
             "fs_test_normals",
             1,
+            false,
         );
     }
     // Only the reference side expands triangles and uploads CPU geometry. The
@@ -1197,6 +2259,7 @@ mod tests {
             });
             pass.set_pipeline(&gpu.pipeline);
             pass.set_bind_group(0, &gpu.camera_bind, &[]);
+            pass.set_bind_group(2, &gpu.local_lighting.bind, &[]);
             for (mesh, (buffer, count)) in gpu.deformer.meshes.iter().zip(&buffers) {
                 pass.set_bind_group(1, &gpu.materials[mesh.material], &[]);
                 pass.set_vertex_buffer(0, buffer.slice(..));

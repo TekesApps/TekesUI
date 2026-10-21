@@ -8,15 +8,16 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-gltf = "1.4.1"
+gltf = { version = "1.4.1", features = ["extras"] }
 glam = "0.30"
 bytemuck.workspace = true
 wgpu.workspace = true
 tekes-ui-scene.workspace = true
 tekes-ui-render.workspace = true
 
-[dev-dependencies]
 serde_json.workspace = true
+
+[dev-dependencies]
 png.workspace = true
 tekes-ui-tokens.workspace = true
 

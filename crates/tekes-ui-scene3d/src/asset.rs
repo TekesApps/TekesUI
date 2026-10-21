@@ -45,7 +45,13 @@ pub(crate) struct Mesh {
 pub(crate) struct Material {
     pub color: [f32; 4],
     pub image: Option<usize>,
+    pub emissive: [f32; 3],
+    pub emissive_image: Option<usize>,
+    pub interior: [f32; 4],
+    pub dimming: [f32; 4],
+    pub interior_activation: [f32; 4],
     pub cutoff: f32,
+    pub blend: bool,
 }
 #[derive(Debug)]
 pub(crate) struct Image {
@@ -173,15 +179,56 @@ impl Asset3D {
             .materials()
             .map(|m| {
                 let pbr = m.pbr_metallic_roughness();
-                if m.alpha_mode() == gltf::material::AlphaMode::Blend {
-                    return Err(err(
-                        "alpha BLEND materials are not yet supported; use OPAQUE or MASK",
-                    ));
-                }
                 if pbr.base_color_texture().is_some_and(|t| t.tex_coord() != 0) {
                     return Err(err("only TEXCOORD_0 base color textures are supported"));
                 }
+                if m.emissive_texture().is_some_and(|t| t.tex_coord() != 0) {
+                    return Err(err("only TEXCOORD_0 emissive textures are supported"));
+                }
+                let interior = if let Some(raw) = m.extras() {
+                    let extras: serde_json::Value = serde_json::from_str(raw.get())
+                        .map_err(|e| err(format!("invalid material extras: {e}")))?;
+                    if let Some(value) = extras.get("tekes_interior") {
+                        let params: [f32; 4] = serde_json::from_value(value.clone())
+                            .map_err(|e| err(format!("invalid tekes_interior: {e}")))?;
+                        if params.iter().any(|v| !v.is_finite())
+                            || params[0] <= 0.
+                            || params[1] <= 0.
+                            || !(0.0..=1.0).contains(&params[3])
+                        {
+                            return Err(err(
+                                "interior requires finite parameters, positive UV grid and occupancy in 0..1",
+                            ));
+                        }
+                        params
+                    } else {
+                        [0.; 4]
+                    }
+                } else {
+                    [0.; 4]
+                };
+                let dimming=if let Some(raw)=m.extras() {
+                    let extras:serde_json::Value=serde_json::from_str(raw.get()).map_err(|e|err(e.to_string()))?;
+                    if let Some(value)=extras.get("tekes_dimming") {
+                        let p:[f32;4]=serde_json::from_value(value.clone()).map_err(|e|err(e.to_string()))?;
+                        if p.iter().any(|v|!v.is_finite()) || !(1.0..=4.0).contains(&p[0]) || p[0].fract()!=0. || p[1]<0. || p[2]<=p[1] || !(0.0..=1.0).contains(&p[3]) {return Err(err("invalid material dimming curve"));}
+                        p
+                    } else {[0.;4]}
+                } else {[0.;4]};
                 Ok(Material {
+                    interior_activation: if let Some(raw)=m.extras() {
+                        let extras:serde_json::Value=serde_json::from_str(raw.get()).map_err(|e|err(e.to_string()))?;
+                        if let Some(value)=extras.get("tekes_interior_activation") {
+                            let p:[f32;4]=serde_json::from_value(value.clone()).map_err(|e|err(e.to_string()))?;
+                            if p.iter().any(|v|!v.is_finite()) || !(1.0..=4.0).contains(&p[0]) || p[0].fract()!=0. || p[1]<0. || p[2]<=p[1] || p[3]!=0. {return Err(err("invalid interior activation curve"));}
+                            p
+                        } else {[0.;4]}
+                    } else {[0.;4]},
+                    dimming,
+                    interior,
+                    emissive: m.emissive_factor(),
+                    emissive_image: m.emissive_texture().map(|t| t.texture().source().index()),
+                    blend: m.alpha_mode() == gltf::material::AlphaMode::Blend,
                     color: pbr.base_color_factor(),
                     image: pbr
                         .base_color_texture()
@@ -197,7 +244,13 @@ impl Asset3D {
         materials.push(Material {
             color: [1.; 4],
             image: None,
+            emissive: [0.; 3],
+            emissive_image: None,
+            interior: [0.; 4],
+            dimming: [0.; 4],
+            interior_activation: [0.; 4],
             cutoff: -1.,
+            blend: false,
         });
         let mut meshes = Vec::new();
         for node in d.nodes() {
@@ -334,7 +387,7 @@ impl Asset3D {
         let mut asset = Self {
             node_names: d
                 .nodes()
-                .map(|n| n.name().unwrap_or_default().to_owned())
+                .map(|n| n.name().unwrap_or("").to_owned())
                 .collect(),
             id: NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             nodes,
@@ -607,7 +660,13 @@ pub(crate) mod tests {
         asset.materials = vec![Material {
             color: [1.; 4],
             image: None,
+            emissive: [0.; 3],
+            emissive_image: None,
+            interior: [0.; 4],
+            dimming: [0.; 4],
+            interior_activation: [0.; 4],
             cutoff: 0.,
+            blend: false,
         }];
         let mut mesh = Mesh {
             node: 0,
