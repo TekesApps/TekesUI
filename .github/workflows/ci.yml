@@ -15,6 +15,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+      - name: Fetch pinned dependencies for offline consumers
+        run: |
+          cargo fetch --locked
+          cargo fetch --locked --manifest-path examples/composition-consumer/Cargo.toml
+          cargo fetch --locked --manifest-path examples/brand-consumer/Cargo.toml
       - name: Design package, brand generation and Rust boundaries
         run: |
           python3 -m pip install -r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt
