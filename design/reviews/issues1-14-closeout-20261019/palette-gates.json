@@ -1,0 +1,48 @@
+[
+  {
+    "name": "palette-api-green",
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "tekes-ui-controls",
+      "command_palette_",
+      "--offline",
+      "-j",
+      "2",
+      "--message-format=json"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "palette-gallery",
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "tekes-ui-gallery",
+      "command_palette",
+      "--offline",
+      "-j",
+      "2",
+      "--message-format=json"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "palette-consumer",
+    "command": [
+      "cargo",
+      "test",
+      "--manifest-path",
+      "examples/composition-consumer/Cargo.toml",
+      "--all-targets",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--message-format=json"
+    ],
+    "exit_code": 0
+  }
+]

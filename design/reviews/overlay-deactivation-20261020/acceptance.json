@@ -1,0 +1,77 @@
+{
+  "scope": "batch6 bounded overlay deactivation and retained dismissal; not complete Issues3/4/5/9/14",
+  "root_cause": "pending presence outlived explicit window deactivation; generic blur/cancel also serve normal menu/modal operations, so cannot universally mean lost window",
+  "shared_fix": {
+    "control_motion.rs": "existing OverlayPresence.settle(open) reuses ProgressTransition.snap",
+    "composite.rs": "Menu owned/bound Window(false) clears; ordinary deactivate retains exit; Dialog settles logical state and inactive render",
+    "feedback_view.rs": "Popover Window(false) clears transient paint",
+    "layout_view.rs": "FilteredMenu ordinary dismiss reuses deactivate_with_model, drops hit layout, retains exit",
+    "native.rs": "existing context projects preference OR inactive Window; system preference unchanged"
+  },
+  "applicable_components": [
+    "MenuView owned/bound",
+    "FilteredMenuView for ComboBox/CommandPalette",
+    "PopoverView",
+    "DialogView",
+    "Rich Dialog Content through host motion context"
+  ],
+  "exceptions": [
+    "inactive modal stays logically open with passive paint",
+    "transient Menu/Popover close",
+    "generic Cancel remains gesture cancellation and show_dialog still has normal entrance",
+    "motion host does not prove full AX/IME/invoker focus chain"
+  ],
+  "public_api": {
+    "controls_tests": 355,
+    "new_regressions": 5
+  },
+  "real_consumer": {
+    "tests": 150,
+    "new_Rich_Dialog_motion_context_regression": true,
+    "CoreText": true,
+    "strict_clippy": true
+  },
+  "GPU": {
+    "cases": 144,
+    "frames": 576,
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "exact_dependency_identity": "gpu-layer-verification.json"
+  },
+  "native": {
+    "component_command_checkpoints": 17,
+    "real_pending_transition_interruptions": 3,
+    "method": "CUA-owned test menu drives actual AppKit miniaturize/activate; no manual activity flag",
+    "display": "U2790B",
+    "scale": 2,
+    "VoiceOver": false,
+    "physical_keyboard": false,
+    "screenshots": [
+      "native/menu.png",
+      "native/popover.png",
+      "native/dialog.png"
+    ]
+  },
+  "Gold7": "bounded continuity/interruption/no replay and semantic input isolation; no whole-page maturity promotion",
+  "tokens": {
+    "actual_probes": 9,
+    "bounded_cases": 4416,
+    "complete": false,
+    "new_tokens": false
+  },
+  "remaining": [
+    "batch6 content-slot and native invoker focus checks",
+    "deferred VoiceOver",
+    "same final combined candidate/page acceptance",
+    "Window Toolbar remains architecture planning",
+    "Issue25 independent dependency reviewed, not auto-added to implementation scope"
+  ],
+  "concurrent_WIP": "3D changes recorded separately and untouched; excluded from this acceptance",
+  "performance": "not measured",
+  "git": "no commit/push/Issue close",
+  "cleanup": "cleanup.json"
+}

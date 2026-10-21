@@ -1,0 +1,32 @@
+{
+  "status": "public component consumer and real GPU stages passed; active-window native and final Gold7 pending",
+  "consumer_identity": "4b38cfedcc8b7a0e4b72c68f24cc1626d7a1de613b8e1edf4145f73efcfc9b74",
+  "components": [
+    "existing TextField",
+    "existing TextArea",
+    "existing SearchField single-line alias"
+  ],
+  "shared_implementation": "all three reuse existing TextFieldContent/TextSurface; TextArea sets existing multiline and Fixed viewport",
+  "new_production_component_or_abstraction": false,
+  "tests": 3,
+  "coverage": {
+    "layout_theme_width_field_checks": 24,
+    "editable_readonly_pointer_scenarios": 6,
+    "availability_readonly_error_configurations": 12
+  },
+  "strict_clippy": "passed",
+  "root_package_dependency_versions": "exact current root lock subset",
+  "protected_source_inputs": 138,
+  "source_changes": [],
+  "initial_attempt": "fixture crate import typo; corrected before accepted run; first failed log preserved",
+  "cleanup": "cache host package/test outputs cleaned; copied app retained for pending native check; source/evidence/shared dependency cache retained",
+  "native": "standalone native host built and strictClippy passed; launched on external U2790B@2x; current activity false, pointer/key acceptance not claimed; pending user title activation",
+  "GPU_Gold7": "actualGPU208 frames/96 equality checks passed; two narrow-profile images visually inspected; full Gold7 depends remaining native evidence",
+  "remaining": [
+    "external display active-window pointer/focus/drag/cancel evidence",
+    "scoped Gold7 final assessment",
+    "close app and clean copied runtime after native review"
+  ],
+  "performance": "not measured",
+  "git_issue_writes": false
+}

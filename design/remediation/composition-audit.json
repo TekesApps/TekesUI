@@ -1,0 +1,3200 @@
+{
+  "format": "tekesui-composition-audit/1",
+  "head": "b8999fe006adfcd70587f07af50ef9e240422788",
+  "source": "HEAD plus ALL current WIP; evidence hashes identify audited bytes",
+  "audited_at": "2026-10-21",
+  "issue14_updated_at": "2026-10-17T08:15:16Z",
+  "status_values": [
+    "已实现",
+    "部分实现",
+    "缺失",
+    "未验证",
+    "不适用"
+  ],
+  "profiles": {
+    "owned-content": {
+      "measure_layout": "Component.measure required; optional arrange; existing measured layout primitives",
+      "paint_clip_theme": "Content traversal propagates ancestor clip and Palette; child foreground inheritance is explicit",
+      "events_focus": "ContentHost routes child first, consumption/capture/cancel, modal scope and focus; IME owns composing interval",
+      "state_lifecycle": "owned object + ComponentId; reorder moves objects; insert/remove Mounted/Unmounted; explicit retained returned subtree; no automatic reconstruction/virtualization",
+      "invalidation": "event response, focus/mutation dirty; render acknowledges; animation uses existing host clock/frame request",
+      "semantics": "actual mounted active tree and parts, role/name/value/state/frame/action; ContentRole and macOS bridge already exist; independent native example and Gallery both export semantics; full family Inspector/VoiceOver acceptance remains separate Declarative required metadata is distinct from disabled/read-only/invalid and native experience acceptance.",
+      "limits": "Any + Box<dyn Component> requires owned static objects; optional methods default; no claim of borrowed/static DSL/full-library conversion; input/focus/AX-action boundaries reconcile active ancestor paths before dispatch."
+    },
+    "view-hosted": {
+      "measure_layout": "view render takes host frame, text/data and explicit clip; some views measure fixed text internally; host composes child positions",
+      "paint_clip_theme": "production View uses Scene/Palette and own clip, but no shared owned child traversal",
+      "events_focus": "view owns local arming/navigation; host forwards events and composes global focus/routing",
+      "state_lifecycle": "model/view instance owns local state; item indices often identity; host must preserve/rebuild objects and cancel when detached",
+      "invalidation": "host follows component return values/animation API; no ContentHost automatic traversal",
+      "semantics": "no automatic Component semantics/AX projection; semantic model values alone do not prove system accessibility",
+      "limits": "a consumer can create a newtype Component using existing public view; this does not make built-in adapter support complete"
+    }
+  },
+  "components": [
+    {
+      "id": "tui.stack",
+      "title": "Stack",
+      "kind": "slots",
+      "legacy_content": "count→Rect/StackView placement; no legacy owned children",
+      "protocol": {
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::StackContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [
+        "children*"
+      ],
+      "content_capacity": "已实现",
+      "heterogeneous_consumer_content": "已实现",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects",
+      "limits": "Intrinsic measured children; one optional flexible child; no implicit viewport or virtualization",
+      "native_acceptance": "未验证",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "additive experimental adapter; legacy entry remains",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::Stack",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 20,
+          "anchor": "pub struct Stack {"
+        },
+        {
+          "api": "tekes_ui_controls::layout_view::StackView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 206,
+          "anchor": "pub struct StackView {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::StackContent",
+          "path": "crates/tekes-ui-controls/src/composition.rs",
+          "line": 1860,
+          "anchor": "pub struct StackContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.grid",
+      "title": "Grid",
+      "kind": "slots",
+      "legacy_content": "count/columns/row_height→Rect; legacy fixed cell sizing",
+      "protocol": {
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::GridContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [
+        "cells*"
+      ],
+      "content_capacity": "已实现",
+      "heterogeneous_consumer_content": "已实现",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects",
+      "limits": "Shared measured row maxima; no per-cell span/alignment API or virtualization",
+      "native_acceptance": "未验证",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "additive experimental adapter; legacy entry remains",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::Grid",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 61,
+          "anchor": "pub struct Grid {"
+        },
+        {
+          "api": "tekes_ui_controls::layout_view::GridView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 249,
+          "anchor": "pub struct GridView {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::GridContent",
+          "path": "crates/tekes-ui-controls/src/composition.rs",
+          "line": 1955,
+          "anchor": "pub struct GridContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.separator",
+      "title": "Separator",
+      "kind": "leaf",
+      "legacy_content": "axis and frame; no child content",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Decorative leaf; arbitrary children not applicable; no built-in Component adapter",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::Separator",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 103,
+          "anchor": "pub struct Separator {"
+        },
+        {
+          "api": "tekes_ui_controls::layout_view::SeparatorView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 301,
+          "anchor": "pub struct SeparatorView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.split-view",
+      "title": "SplitView",
+      "kind": "slots",
+      "legacy_content": "leading/divider/trailing geometry; caller paints panes",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "部分实现",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Two pane geometry and existing drag/cancel state; no owned Content panes or recursive event/focus wiring",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::SplitView",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 113,
+          "anchor": "pub struct SplitView {"
+        },
+        {
+          "api": "tekes_ui_controls::layout_view::SplitViewView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 359,
+          "anchor": "pub struct SplitViewView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.scroll-area",
+      "title": "ScrollArea",
+      "kind": "slots",
+      "legacy_content": "ScrollArea viewport/content size and scrolling only",
+      "protocol": {
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::ScrollContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [
+        "children*"
+      ],
+      "content_capacity": "已实现",
+      "heterogeneous_consumer_content": "已实现",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects",
+      "limits": "Opt-in structured reading uses stable declared Content item keys, shared document/revision attachments and per-document intent; deterministic removal/clipping fallback. Item-local point is not a word/UTF-16 anchor in arbitrary custom content. Virtualized reconstruction/edit-retention policy is not supplied. API/real consumer/GPU verified separately; final native physical momentum/IME and matched ClientKit visual acceptance remain unverified.",
+      "native_acceptance": "未验证",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "additive experimental adapter; legacy entry remains",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::ScrollArea",
+          "path": "crates/tekes-ui-controls/src/scroll_view.rs",
+          "line": 32,
+          "anchor": "pub struct ScrollView {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::ScrollContent",
+          "path": "crates/tekes-ui-controls/src/composition.rs",
+          "line": 2012,
+          "anchor": "pub struct ScrollContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.disclosure",
+      "title": "Disclosure",
+      "kind": "slots",
+      "legacy_content": "label string, optional icon and layout_body geometry",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "部分实现",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Open state/reveal clip exists; body painting/state routing remain host-owned, no Content body slot Caller-owned public Component wrapper now demonstrates retained loading/error/empty bodies and independent header focus; no built-in adapter/default Gallery migration is implied.",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::Disclosure",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 508,
+          "anchor": "pub struct Disclosure {"
+        },
+        {
+          "api": "tekes_ui_controls::layout_view::DisclosureView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 723,
+          "anchor": "pub struct DisclosureView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.surface",
+      "title": "Surface / Panel",
+      "kind": "slots",
+      "legacy_content": "background and content Rect",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "部分实现",
+      "heterogeneous_consumer_content": "部分实现",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "SurfaceView remains reusable plate/content geometry without a built-in Content owner. The independent plain_text Card implements existing Component and owns heterogeneous readonly body/Button/footnote children; no library edits or copied editor routing. A shared built-in Surface adapter remains absent.",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::feedback_view::SurfaceView",
+          "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+          "line": 176,
+          "anchor": "pub struct SurfaceView {"
+        }
+      ],
+      "consumer_evidence": {
+        "path": "examples/composition-consumer/src/plain_text.rs",
+        "private_sample": "Card implements Component using the public SurfaceView; not a new public adapter",
+        "receipt": "design/reviews/issue23-delivery-20261020/native/acceptance.json",
+        "receipt_scope": "source122 scoped plain consumer, not whole current-WIP Surface acceptance"
+      }
+    },
+    {
+      "id": "tui.toolbar",
+      "title": "Toolbar",
+      "kind": "slots",
+      "legacy_content": "labels slice, equal-width production Button actions",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Content ToolbarView is not Window UI; no Window registration/group/placement/overflow/custom Content contract",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::Toolbar",
+          "path": "crates/tekes-ui-controls/src/widgets.rs",
+          "line": 2654,
+          "anchor": "pub struct Toolbar;"
+        },
+        {
+          "api": "tekes_ui_controls::feedback_view::ToolbarView",
+          "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+          "line": 231,
+          "anchor": "pub struct ToolbarView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.text",
+      "title": "Text",
+      "kind": "leaf",
+      "legacy_content": "TextSurface text/selection/scroll; TextContent string+TextRole",
+      "protocol": {
+        "status": "部分实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::TextContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects",
+      "limits": "TextContent remains static string/TextRole. Existing TextFieldContent::read_only_content supplies selectable unadorned multiline TextSurface content using the same controlled values, selection and native services; ordinary Field remains default. This is an additive mode, not a replacement TextContent editor or rich-document protocol.",
+      "native_acceptance": "未验证",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "additive experimental adapter; legacy entry remains",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::TextSurface",
+          "path": "crates/tekes-ui-controls/src/text_surface.rs",
+          "line": 92,
+          "anchor": "pub struct TextSurface {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::TextContent",
+          "path": "crates/tekes-ui-controls/src/composition.rs",
+          "line": 2347,
+          "anchor": "pub struct TextContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.icon",
+      "title": "Icon",
+      "kind": "leaf",
+      "legacy_content": "canonical icon name, host IconRenderer and tint",
+      "protocol": {
+        "status": "部分实现",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Independent consumer wraps actual IconView as a leaf Component; wrapper is consumer-owned, not a built-in IconContent",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::layout_view::IconView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 117,
+          "anchor": "pub struct IconView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.button",
+      "title": "Button",
+      "kind": "leaf-and-slots",
+      "legacy_content": "label string; render_content_frame reuses original Button painter",
+      "protocol": {
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::ButtonContent",
+          "tekes_ui_controls::composition::CompoundButton"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [
+        "content1"
+      ],
+      "content_capacity": "已实现",
+      "heterogeneous_consumer_content": "已实现",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects",
+      "limits": "Arbitrary decorative Content tree, one action/name/focus; nested independent interaction rejected; fixed child replacement requires explicit subtree rebuild",
+      "native_acceptance": "未验证",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "additive experimental adapter; legacy entry remains",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::Button",
+          "path": "crates/tekes-ui-controls/src/widgets.rs",
+          "line": 339,
+          "anchor": "pub struct Button {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::ButtonContent",
+          "path": "crates/tekes-ui-controls/src/composition.rs",
+          "line": 2212,
+          "anchor": "pub struct ButtonContent {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::CompoundButton",
+          "path": "crates/tekes-ui-controls/src/composition.rs",
+          "line": 2404,
+          "anchor": "pub struct CompoundButton {"
+        }
+      ]
+    },
+    {
+      "id": "tui.icon-button",
+      "title": "IconButton",
+      "kind": "leaf",
+      "legacy_content": "canonical icon renderer + IconButton model",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Special icon-only convenience may retain restrictions; no direct Component adapter; CompoundButton+consumer Icon is a separate supported route",
+      "native_acceptance": "未验证",
+      "accessibility": "Default Gallery publishes actual retained name/state/bounds and routes AX actions to original control; bounded Dark/U2790B evidence in selection-accessibility-20261019; VoiceOver and full matrix pending.",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::IconButton",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 530,
+          "anchor": "pub struct IconButton {"
+        },
+        {
+          "api": "tekes_ui_controls::layout_view::IconButtonView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 944,
+          "anchor": "pub struct IconButtonView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.link",
+      "title": "Link",
+      "kind": "leaf",
+      "legacy_content": "text label and Link model",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Link semantics/presentation still use action runtime; no Content Link role/adapter or URL host callback in composition",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::Link",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 559,
+          "anchor": "pub struct Link {"
+        },
+        {
+          "api": "tekes_ui_controls::layout_view::LinkView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 1117,
+          "anchor": "pub struct LinkView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.text-field",
+      "title": "TextField",
+      "kind": "leaf",
+      "legacy_content": "TextSurface + TextInput/selection/IME state",
+      "protocol": {
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::TextFieldContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects",
+      "limits": "Shared editor and default FieldView retained; additive read_only_content removes form chrome and delegates document scrolling to its parent. Generic arbitrary label/accessory Content slots remain absent; no dedicated new TextField state machine.",
+      "native_acceptance": "未验证",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance. Existing Field.required is now expressible in shared ContentSemantics/AccessibilityNode and projected by TextFieldContent/Gallery metadata. Bare TextSurface/View hosts still publish their own form metadata. Native-object getter checks are separate from active-window/VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "additive experimental adapter; legacy entry remains",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::TextSurface",
+          "path": "crates/tekes-ui-controls/src/text_surface.rs",
+          "line": 92,
+          "anchor": "pub struct TextSurface {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::TextFieldContent",
+          "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
+          "line": 178,
+          "anchor": "pub struct TextFieldContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.text-area",
+      "title": "TextArea",
+      "kind": "leaf",
+      "legacy_content": "multiline TextSurface",
+      "protocol": {
+        "status": "部分实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::TextFieldContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects",
+      "limits": "Same public TextFieldContent supports multiline and additive unadorned readonly content. Reading/plain/Field minimal consumers exist; whole TextArea-specific variant migration, physical IME and all-family native acceptance are not inferred.",
+      "native_acceptance": "未验证",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance. Existing Field.required is now expressible in shared ContentSemantics/AccessibilityNode and projected by TextFieldContent/Gallery metadata. Bare TextSurface/View hosts still publish their own form metadata. Native-object getter checks are separate from active-window/VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "additive experimental adapter; legacy entry remains",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::TextSurface",
+          "path": "crates/tekes-ui-controls/src/text_surface.rs",
+          "line": 92,
+          "anchor": "pub struct TextSurface {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::TextFieldContent",
+          "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
+          "line": 178,
+          "anchor": "pub struct TextFieldContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.search-field",
+      "title": "SearchField",
+      "kind": "leaf",
+      "legacy_content": "TextSurface shared input model",
+      "protocol": {
+        "status": "部分实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::TextFieldContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects",
+      "limits": "Can host same text state, but search accessory/clear/search semantics are not a dedicated composition contract; do not infer SearchField-specific migration",
+      "native_acceptance": "未验证",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance. Existing Field.required is now expressible in shared ContentSemantics/AccessibilityNode and projected by TextFieldContent/Gallery metadata. Bare TextSurface/View hosts still publish their own form metadata. Native-object getter checks are separate from active-window/VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "additive experimental adapter; legacy entry remains",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::TextSurface",
+          "path": "crates/tekes-ui-controls/src/text_surface.rs",
+          "line": 92,
+          "anchor": "pub struct TextSurface {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::TextFieldContent",
+          "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
+          "line": 178,
+          "anchor": "pub struct TextFieldContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.combo-box",
+      "title": "ComboBox",
+      "kind": "leaf-and-slots",
+      "legacy_content": "items/query strings + filtered MenuView",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Fixed selection/filter semantics; no Content label/editor/item slot; not an arbitrary form container MenuView now exposes natural-size measurement shared with production row layout; placement follows measured anchor and available side. Filtered empty queries keep caller state and delegate feedback without an empty option surface. No portal/new window or new content adapter implied.; caller TextSurface retains input pointer/skin/draft; eight exact states probed; loading/error composition not promoted; public key convenience reports each valid Enter confirmation, including same value; cancellation/key-up/empty do not activate; independent consumer reuses original TextFieldContent, ComboBox and ComboBoxView with existing caller Status/Feedback; host gives composing editor control keys and captured drag its release before overlays; live async and full native accessibility remain open Current bounded choice refresh: original source-position keys survive filtering; normal dismissal retains exit paint, stale/data/window cancellation clears. Failure feedback is outside options. Source positions are not persistent business IDs across arbitrary dataset replacement. See design/reviews/filtered-choice-exit-20261020/acceptance.json; VoiceOver remains separate.",
+      "native_acceptance": "未验证",
+      "accessibility": "Default Gallery source-index Menu/MenuItem projection reuses actual TextDemo and FilteredMenuView snapshot guard; native U2790B bounded evidence in filtered-menu-accessibility-20261019; complete VoiceOver/physical IME unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::ComboBox",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1246,
+          "anchor": "pub struct ComboBox {"
+        },
+        {
+          "api": "tekes_ui_controls::layout_view::ComboBoxView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 2437,
+          "anchor": "pub struct ComboBoxView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.slider",
+      "title": "Slider",
+      "kind": "leaf",
+      "legacy_content": "finite range/value model and SliderView",
+      "protocol": {
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::SliderContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "owned-content",
+      "state_identity": "ContentHost stable ComponentId retains original Slider model and SliderView; reorder/remove/reinsert preserve values and lifecycle",
+      "limits": "Range is data, not child UI. Public SliderContent and default Gallery share mounted/visible/active semantic updates in SliderView; valid edits cancel prior drag. Bounded Light external2x native role, SetValue, pointer/key and inactive rejection evidence is separate; full VoiceOver and full native matrix remain unverified.",
+      "native_acceptance": "未验证",
+      "accessibility": "ContentRole::Slider, finite value_range, snapped value and SetValue/Increment/Decrement reuse SliderView availability guards and original model; real Gallery exports the same finite role/value. Bounded native receipt: design/reviews/slider-semantics-20261019/native-result.json. Source audit does not promote native acceptance.",
+      "requires_internal_source_edit": "no: public SliderContent or existing Component newtype; no private Gallery dependency",
+      "compatibility": "Slider/SliderView and existing semantic/native snapshot struct literals unchanged; default trait method/host getter additive; new ContentRole is non_exhaustive; exhaustive experimental platform Role/Action and composition Action matches need new variants; known native consumer updated",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::SliderView",
+          "path": "crates/tekes-ui-controls/src/selection.rs",
+          "line": 34,
+          "anchor": "pub struct SliderView {"
+        },
+        {
+          "api": "tekes_ui_controls::extended::Slider",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 584,
+          "anchor": "pub struct Slider {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::SliderContent",
+          "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
+          "line": 911,
+          "anchor": "pub struct SliderContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.checkbox",
+      "title": "Checkbox",
+      "kind": "leaf",
+      "legacy_content": "checkbox model and text label",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract; any observed unavailable key boundary cancels existing Button capture/Space arm before filtering unsupported keys",
+      "limits": "No Checkbox Content role/adapter; do not reuse Switch role to claim semantic completion",
+      "native_acceptance": "未验证",
+      "accessibility": "Default Gallery publishes actual retained name/state/bounds and routes AX actions to original control; bounded Dark/U2790B evidence in selection-accessibility-20261019; VoiceOver and full matrix pending.",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::Checkbox",
+          "path": "crates/tekes-ui-controls/src/widgets.rs",
+          "line": 872,
+          "anchor": "pub struct Checkbox {"
+        }
+      ]
+    },
+    {
+      "id": "tui.radio-group",
+      "title": "RadioGroup",
+      "kind": "slots",
+      "legacy_content": "labels slice; indexed selection/roving buttons",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Semantic item collection has fixed string presentation; no arbitrary label Content or radio/group AX composition",
+      "native_acceptance": "未验证",
+      "accessibility": "Default Gallery publishes actual retained name/state/bounds and routes AX actions to original control; bounded Dark/U2790B evidence in selection-accessibility-20261019; VoiceOver and full matrix pending.",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::RadioGroupView",
+          "path": "crates/tekes-ui-controls/src/selection.rs",
+          "line": 288,
+          "anchor": "pub struct RadioGroupView {"
+        },
+        {
+          "api": "tekes_ui_controls::extended::RadioGroup",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 666,
+          "anchor": "pub struct RadioGroup {"
+        }
+      ]
+    },
+    {
+      "id": "tui.switch",
+      "title": "Switch",
+      "kind": "leaf",
+      "legacy_content": "Switch model plus optional label string",
+      "protocol": {
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::SwitchContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects; any observed disabled key boundary cancels old pointer/Space arms while parent-owned keys remain ignored",
+      "limits": "Real SwitchView behavior and checked value, no general child content; label/accessory freedom not required to preserve toggle semantics",
+      "native_acceptance": "未验证",
+      "accessibility": "Default Gallery publishes actual retained name/state/bounds and routes AX actions to original control; bounded Dark/U2790B evidence in selection-accessibility-20261019; VoiceOver and full matrix pending.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "additive experimental adapter; legacy entry remains",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::SwitchView",
+          "path": "crates/tekes-ui-controls/src/selection.rs",
+          "line": 638,
+          "anchor": "pub struct SwitchView {"
+        },
+        {
+          "api": "tekes_ui_controls::extended::Switch",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 783,
+          "anchor": "pub struct Switch {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::SwitchContent",
+          "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
+          "line": 52,
+          "anchor": "pub struct SwitchContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.segmented-control",
+      "title": "SegmentedControl",
+      "kind": "slots",
+      "legacy_content": "labels slice and selected index",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Own selection model but action-button presentation; no Content segments/selection-group role or panels",
+      "native_acceptance": "未验证",
+      "accessibility": "Default Gallery publishes actual retained name/state/bounds and routes AX actions to original control; bounded Dark/U2790B evidence in selection-accessibility-20261019; VoiceOver and full matrix pending. Current public View focused() supports independent native part-focus projection; final new-version external followup pending, no new VoiceOver acceptance.",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "Existing API retained; additive focused() accessor exposes actual roving item; keyboard-from-focus and focus paint ordering repaired without a new container/slot protocol. Future slot adapter remains separate.",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::SegmentedControl",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 808,
+          "anchor": "pub struct SegmentedControl {"
+        },
+        {
+          "api": "tekes_ui_controls::layout_view::SegmentedControlView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 1292,
+          "anchor": "pub struct SegmentedControlView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.field",
+      "title": "Field",
+      "kind": "slots",
+      "legacy_content": "Field label/help/error strings and input Rect",
+      "protocol": {
+        "status": "部分实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::TextFieldContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [],
+      "content_capacity": "部分实现",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects",
+      "limits": "Input adapter reuses FieldView for real text editor; generic Field child/accessory Content slot is absent",
+      "native_acceptance": "未验证",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance. Existing Field.required is now expressible in shared ContentSemantics/AccessibilityNode and projected by TextFieldContent/Gallery metadata. Bare TextSurface/View hosts still publish their own form metadata. Native-object getter checks are separate from active-window/VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "additive experimental adapter; legacy entry remains",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::Field",
+          "path": "crates/tekes-ui-controls/src/widgets.rs",
+          "line": 1302,
+          "anchor": "pub struct Field {"
+        },
+        {
+          "api": "tekes_ui_controls::feedback_view::FieldView",
+          "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+          "line": 345,
+          "anchor": "pub struct FieldView {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::TextFieldContent",
+          "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
+          "line": 178,
+          "anchor": "pub struct TextFieldContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.select",
+      "title": "Select",
+      "kind": "slots",
+      "legacy_content": "labels slice, selection model and MenuView",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Fixed menu-choice templates; no arbitrary Content item/label adapter; preserve choice semantics MenuView now exposes natural-size measurement shared with production row layout; placement follows measured anchor and available side. Filtered empty queries keep caller state and delegate feedback without an empty option surface. No portal/new window or new content adapter implied.; open-trigger dismissal consumes the click; new click may reopen; selected value and candidate focus stay distinct; empty feedback/loading/error not promoted; keyboard activation/dismissal restores owned trigger focus-visible; pointer open does not promote keyboard modality; empty choice set cancels popup and capture; latest count guards before another frame; additive set_error projects existing shared validation boundary without clearing value or blocking repair; async content status not promoted; additive trigger/options paint entry points share original implementation; combined render preserved; caller ContentHost/Stack retains cached choice/focus/candidate during background refresh and paints menu after shared feedback; not a built-in async Select protocol or complete native acceptance Current bounded choice refresh: original source-position keys survive filtering; normal dismissal retains exit paint, stale/data/window cancellation clears. Failure feedback is outside options. Source positions are not persistent business IDs across arbitrary dataset replacement. See design/reviews/filtered-choice-exit-20261020/acceptance.json; VoiceOver remains separate.",
+      "native_acceptance": "未验证",
+      "accessibility": "Default Gallery actual Menu/Select tree and original MenuRuntime semantic focus/activation; external model API symmetric; MenuButton->Menu->MenuItem when invoker visible; source audit never promotes native/full VoiceOver maturity.",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::Select",
+          "path": "crates/tekes-ui-controls/src/widgets.rs",
+          "line": 1237,
+          "anchor": "pub struct Select {"
+        },
+        {
+          "api": "tekes_ui_controls::layout_view::SelectView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 2082,
+          "anchor": "pub struct SelectView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.number-field",
+      "title": "NumberField",
+      "kind": "leaf",
+      "legacy_content": "numeric value/step model, rendered field + increment/decrement",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Legacy noneditable bounded stepper now synchronizes current model availability to child Buttons and cancels stale arms; independent caller-owned Stepper example delegates NumberFieldView. No built-in numeric Component adapter or editable numeric/IME contract; leaf content slots are not required.",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::NumberField",
+          "path": "crates/tekes-ui-controls/src/widgets.rs",
+          "line": 1258,
+          "anchor": "pub struct NumberField {"
+        },
+        {
+          "api": "tekes_ui_controls::feedback_view::NumberFieldView",
+          "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+          "line": 552,
+          "anchor": "pub struct NumberFieldView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.tabs",
+      "title": "Tabs",
+      "kind": "slots",
+      "legacy_content": "labels slice + selected/roving Tabs model",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "No owned label/panel Content or stable label↔panel semantic relation in composition Caller-owned public Component wrapper now demonstrates retained loading/error/empty bodies and independent header focus; no built-in adapter/default Gallery migration is implied.",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::Tabs",
+          "path": "crates/tekes-ui-controls/src/widgets.rs",
+          "line": 1137,
+          "anchor": "pub struct Tabs {"
+        },
+        {
+          "api": "tekes_ui_controls::TabsView",
+          "path": "crates/tekes-ui-controls/src/composite.rs",
+          "line": 91,
+          "anchor": "pub struct TabsView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.breadcrumb",
+      "title": "Breadcrumb",
+      "kind": "slots",
+      "legacy_content": "hierarchical labels/current location",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Fixed navigation hierarchy; no arbitrary label Content; does not become a free-form box",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::Breadcrumb",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 873,
+          "anchor": "pub struct Breadcrumb {"
+        },
+        {
+          "api": "tekes_ui_controls::layout_view::BreadcrumbView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 1586,
+          "anchor": "pub struct BreadcrumbView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.command-palette",
+      "title": "CommandPalette",
+      "kind": "slots",
+      "legacy_content": "query/items strings + trigger and filtered menu",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Caller still owns query editor wiring; no unified input/item Content subtree or semantic command palette adapter MenuView now exposes natural-size measurement shared with production row layout; placement follows measured anchor and available side. Filtered empty queries keep caller state and delegate feedback without an empty option surface. No portal/new window or new content adapter implied.; trigger pointer move reuses Button; blur_trigger transfers focus without dismissing query; whole blur/window lifecycle stays distinct; public key convenience reports each valid Enter confirmation, including same value; cancellation/key-up/empty do not activate; independent caller mounts original CommandPaletteView trigger/results and TextFieldContent with existing Status/Feedback; preserves retained query/IME/selection/candidate through status updates and restores trigger focus on execute/dismiss; initial empty data supported; native live async/AX/full motion not accepted; open_from captures the original invoker and requests query focus, take_restore_focus is one-shot after close; blur/deactivation discards handoff. Gallery and independent caller share this contract; host validates mounted/enabled caller. No owned child slots or native acceptance promotion. Current bounded choice refresh: original source-position keys survive filtering; normal dismissal retains exit paint, stale/data/window cancellation clears. Failure feedback is outside options. Source positions are not persistent business IDs across arbitrary dataset replacement. See design/reviews/filtered-choice-exit-20261020/acceptance.json; VoiceOver remains separate.",
+      "native_acceptance": "未验证",
+      "accessibility": "Default Gallery source-index Menu/MenuItem projection reuses actual TextDemo and FilteredMenuView snapshot guard; native U2790B bounded evidence in filtered-menu-accessibility-20261019; complete VoiceOver/physical IME unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::CommandPalette",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1312,
+          "anchor": "pub struct CommandPalette {"
+        },
+        {
+          "api": "tekes_ui_controls::layout_view::CommandPaletteView",
+          "path": "crates/tekes-ui-controls/src/layout_view.rs",
+          "line": 2545,
+          "anchor": "pub struct CommandPaletteView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.list",
+      "title": "List",
+      "kind": "slots",
+      "legacy_content": "List/ListView labels, count and index selection",
+      "protocol": {
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::ListContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [
+        "rows*"
+      ],
+      "content_capacity": "已实现",
+      "heterogeneous_consumer_content": "已实现",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects",
+      "limits": "General heterogeneous content organization is separate from legacy selectable List; no ListBox selection/virtualization guarantee Legacy collection View pointers now recheck current source availability; owned Escape clears capture before unavailable-focus validation. Ordinary offscreen mounted keyboard targets remain eligible; source-position IDs are not cross-document business identities.",
+      "native_acceptance": "未验证",
+      "accessibility": "Default Gallery actual ListView row projection and original activation; List/ListItem stable IDs, selected/focused, actual clipped bounds; bounded native evidence in list-accessibility-20261019; full notification/VoiceOver remains pending.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "additive experimental adapter; legacy entry remains",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::collections_view::ListView",
+          "path": "crates/tekes-ui-controls/src/collections_view.rs",
+          "line": 230,
+          "anchor": "pub struct ListView {"
+        },
+        {
+          "api": "tekes_ui_controls::extended::List",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 883,
+          "anchor": "pub struct List {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::ListContent",
+          "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
+          "line": 14,
+          "anchor": "pub struct ListContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.tree",
+      "title": "Tree",
+      "kind": "slots",
+      "legacy_content": "TreeNode label/parent indices/expanded/disabled",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "No arbitrary node Content; indices are not stable external child keys across reconstruction; tree semantics adapter absent Legacy collection View pointers now recheck current source availability; owned Escape clears capture before unavailable-focus validation. Ordinary offscreen mounted keyboard targets remain eligible; source-position IDs are not cross-document business identities.",
+      "native_acceptance": "未验证",
+      "accessibility": "Default Gallery actual Tree/Table role hierarchy, source-stable row IDs and explicit disclosure/sort; native U2790B bounded evidence in tree-table-accessibility-20261019; complete VoiceOver/physical IME unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::collections_view::TreeView",
+          "path": "crates/tekes-ui-controls/src/collections_view.rs",
+          "line": 527,
+          "anchor": "pub struct TreeView {"
+        },
+        {
+          "api": "tekes_ui_controls::extended::Tree",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 924,
+          "anchor": "pub struct Tree {"
+        }
+      ]
+    },
+    {
+      "id": "tui.data-table",
+      "title": "DataTable",
+      "kind": "slots",
+      "legacy_content": "headers strings, rows Vec<Vec<String>>, row_order indices",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "No Content header/cell/accessory slots, stable cell identity or composed cell focus/AX Legacy collection View pointers now recheck current source availability; owned Escape clears capture before unavailable-focus validation. Ordinary offscreen mounted keyboard targets remain eligible; source-position IDs are not cross-document business identities.",
+      "native_acceptance": "未验证",
+      "accessibility": "Default Gallery actual Tree/Table role hierarchy, source-stable row IDs and explicit disclosure/sort; native U2790B bounded evidence in tree-table-accessibility-20261019; complete VoiceOver/physical IME unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::collections_view::DataTableView",
+          "path": "crates/tekes-ui-controls/src/collections_view.rs",
+          "line": 981,
+          "anchor": "pub struct DataTableView {"
+        },
+        {
+          "api": "tekes_ui_controls::extended::DataTable",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1068,
+          "anchor": "pub struct DataTable {"
+        }
+      ]
+    },
+    {
+      "id": "tui.chart",
+      "title": "Chart",
+      "kind": "leaf",
+      "legacy_content": "BarChart/ChartDatum data and ChartView",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "ChartDatum is data, not a UI child; general composition adapter/range AX absent",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::BarChart",
+          "path": "crates/tekes-ui-controls/src/chart.rs",
+          "line": 33,
+          "anchor": "pub struct BarChart {"
+        },
+        {
+          "api": "tekes_ui_controls::collections_view::ChartView",
+          "path": "crates/tekes-ui-controls/src/collections_view.rs",
+          "line": 1474,
+          "anchor": "pub struct ChartView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.menu",
+      "title": "Menu",
+      "kind": "leaf-and-slots",
+      "legacy_content": "item strings and production MenuView",
+      "protocol": {
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::MenuContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [
+        "trigger"
+      ],
+      "content_capacity": "部分实现",
+      "heterogeneous_consumer_content": "部分实现",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects",
+      "limits": "Original MenuContent supports controlled nested MenuEntry item/submenu/separator declarations, checked distinct from active, per-item disabled and a named decorative trigger Content slot. Shared CompoundButton slot geometry and original Button/MenuRuntime/ScrollArea/OverlayPresence are reused; no consumer menu engine. Owned selection records capture stable full value paths and mount/model identity at delivery. Fixed row templates intentionally exclude arbitrary interactive Content; narrow panels may overlap within the real clip and Left returns to parent. Precise scroll capture and host-clocked original rebound are preserved across the composed panels. No portal/new native window or full family native/VoiceOver maturity is implied.",
+      "native_acceptance": "未验证",
+      "accessibility": "Original runtime publishes live MenuButton/Menu/MenuItem parts, checks separate from focus, expanded state and disabled rejection. Additive public part-parent query projects the hierarchy in actual public native consumer and Gallery; wrapper forwarding is tested. Speech and final external native acceptance remain separately required.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "Original public MenuContent struct fields/literals, Menu/MenuView and Copy ContentAction/old drain remain supported. Optional adapter declaration uses already-private MenuView storage. Rich and legacy drains share one once-only queue; no independent popup engine.",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::Menu",
+          "path": "crates/tekes-ui-controls/src/widgets.rs",
+          "line": 1167,
+          "anchor": "pub struct Menu {"
+        },
+        {
+          "api": "tekes_ui_controls::MenuView",
+          "path": "crates/tekes-ui-controls/src/composite.rs",
+          "line": 446,
+          "anchor": "pub struct MenuView {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::MenuContent",
+          "path": "crates/tekes-ui-controls/src/composition/menu.rs",
+          "line": 121,
+          "anchor": "pub struct MenuContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.tooltip",
+      "title": "Tooltip",
+      "kind": "leaf",
+      "legacy_content": "Tooltip text, anchor and requested size",
+      "protocol": {
+        "status": "部分实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::Content::with_help",
+          "tekes_ui_controls::composition::Content::set_help",
+          "tekes_ui_controls::composition::ContentHost::help_tooltip"
+        ],
+        "representation": "original-owner help attachment"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "help declaration stays on original Content mount/revision; original TooltipView owned by ContentHost, no separate tooltip action/AX identity",
+      "limits": "Original Tooltip is available as a dynamic explanatory help attachment. No arbitrary interactive content subtree or standalone TooltipContent adapter; original View API remains.",
+      "native_acceptance": "未验证",
+      "accessibility": "help augments original semantic owner description through existing native accessibilityHelp mapper; full native/hearing acceptance not inferred",
+      "requires_internal_source_edit": "no for original-owner help via public declaration; arbitrary standalone interactive Content subtree still not provided",
+      "compatibility": "additive private metadata and public methods; default undeclared behavior unchanged; legacy Tooltip/TooltipView retained; optional JSON dwell binding and existing clock/font capabilities documented",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::Tooltip",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1118,
+          "anchor": "pub struct Tooltip {"
+        },
+        {
+          "api": "tekes_ui_controls::feedback_view::TooltipView",
+          "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+          "line": 806,
+          "anchor": "pub struct TooltipView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.popover",
+      "title": "Popover",
+      "kind": "slots",
+      "legacy_content": "text plus render_with_content/render_with_text_content callbacks",
+      "protocol": {
+        "status": "部分实现",
+        "public_adapters": [],
+        "representation": "existing view-hosted primitive plus consumer-owned Component wrapper"
+      },
+      "slots": [
+        "one content callback; real minimum consumer owns one Content subtree"
+      ],
+      "content_capacity": "部分实现",
+      "heterogeneous_consumer_content": "已实现",
+      "runtime_profile": "view-hosted",
+      "state_identity": "Consumer Card owns existing Popover/PopoverView and one retained Content tree; ContentHost owns measure/input/focus/semantics/mount; capture/restore uses current mount identity. Replacement/remount cannot inherit stale focus; outside new focus is preserved.",
+      "limits": "Bounded public consumer verified with Caption/TextField/Switch. Optional paints_children and public subtree paint reuse host tree; layout-only PopoverView.arrange shares production geometry. No builtin PopoverContent adapter, broad migration, virtualization or window registration claimed.",
+      "native_acceptance": "未验证",
+      "accessibility": "Same host exports mounted body/control semantics, text queries and view-owned Dismiss geometry. Tool-native key/AX/minimize/restore evidence is separate; VoiceOver hearing remains deferred. Matrix native maturity stays unverified.",
+      "requires_internal_source_edit": "No further library edits for the proven consumer-defined wrapper using public APIs; future builtin adapter migration remains separately selected.",
+      "compatibility": "Additive default-false Component capability and public existing paint/focus operations; legacy PopoverView render/measure preserved. Gesture Cancel retains normal exit; explicit platform deactivation closes/clears. No new tokens or parallel host/state machine.",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::Popover",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1123,
+          "anchor": "pub struct Popover {"
+        },
+        {
+          "api": "tekes_ui_controls::feedback_view::PopoverView",
+          "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+          "line": 992,
+          "anchor": "pub struct PopoverView {"
+        },
+        {
+          "path": "examples/composition-consumer/src/popover_content.rs",
+          "line": 250,
+          "anchor": "pub struct Scenario {",
+          "api": "tekes_ui_composition_consumer::popover_content::Scenario"
+        }
+      ]
+    },
+    {
+      "id": "tui.dialog",
+      "title": "Dialog",
+      "kind": "slots",
+      "legacy_content": "title string + fixed action model/painter",
+      "protocol": {
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::DialogContent"
+        ],
+        "representation": "owned-content"
+      },
+      "slots": [
+        "header1",
+        "body1",
+        "footer1"
+      ],
+      "content_capacity": "已实现",
+      "heterogeneous_consumer_content": "已实现",
+      "runtime_profile": "owned-content",
+      "state_identity": "Content stable key + retained owned production objects",
+      "limits": "Three fixed Content slots, dynamic body subtree; modal scope and exit paint separate; nested modal rejected, no arbitrary slot reorder",
+      "native_acceptance": "未验证",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
+      "compatibility": "additive experimental adapter; legacy entry remains",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::Dialog",
+          "path": "crates/tekes-ui-controls/src/widgets.rs",
+          "line": 1211,
+          "anchor": "pub struct Dialog {"
+        },
+        {
+          "api": "tekes_ui_controls::DialogView",
+          "path": "crates/tekes-ui-controls/src/composite.rs",
+          "line": 1637,
+          "anchor": "pub struct DialogView {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::DialogContent",
+          "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
+          "line": 757,
+          "anchor": "pub struct DialogContent {"
+        }
+      ]
+    },
+    {
+      "id": "tui.toast",
+      "title": "Toast",
+      "kind": "slots",
+      "legacy_content": "message/tone/dismissible model",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Text/dismiss action are fixed; no arbitrary Content or live-region semantics adapter Shared notice marker positioning follows actual shaped first-line metrics through the existing text renderer; this does not add generic content slots.",
+      "native_acceptance": "未验证",
+      "accessibility": "Gallery adapter exports actual visible body/group and component-owned action from the real view geometry; no built-in Content semantics adapter; system/native acceptance of this delta remains unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::Toast",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1145,
+          "anchor": "pub struct Toast {"
+        },
+        {
+          "api": "tekes_ui_controls::feedback_view::ToastView",
+          "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+          "line": 1455,
+          "anchor": "pub struct ToastView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.banner",
+      "title": "Banner",
+      "kind": "slots",
+      "legacy_content": "message/tone/dismissible model",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Fixed notification text/dismiss presentation; no Content or announcement semantics Shared notice marker positioning follows actual shaped first-line metrics through the existing text renderer; this does not add generic content slots.",
+      "native_acceptance": "未验证",
+      "accessibility": "Gallery adapter exports actual visible body/group and component-owned action from the real view geometry; no built-in Content semantics adapter; system/native acceptance of this delta remains unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::Banner",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1191,
+          "anchor": "pub struct Banner {"
+        },
+        {
+          "api": "tekes_ui_controls::feedback_view::BannerView",
+          "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+          "line": 1724,
+          "anchor": "pub struct BannerView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.status-badge",
+      "title": "StatusBadge",
+      "kind": "leaf",
+      "legacy_content": "closed Info/Running/Succeeded/Failed enum",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Leaf status glyph; consumer Badge(String) fixture is custom content, not production StatusBadgeView migration",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::StatusBadge",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1207,
+          "anchor": "pub enum StatusBadge {"
+        },
+        {
+          "api": "tekes_ui_controls::feedback_view::StatusBadgeView",
+          "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+          "line": 1961,
+          "anchor": "pub struct StatusBadgeView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.progress",
+      "title": "Progress",
+      "kind": "leaf",
+      "legacy_content": "value/indeterminate model",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Range/animation data, no UI children; Component progress/range semantics absent",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::Progress",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1214,
+          "anchor": "pub struct Progress {"
+        },
+        {
+          "api": "tekes_ui_controls::feedback_view::ProgressView",
+          "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+          "line": 2000,
+          "anchor": "pub struct ProgressView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.empty-state",
+      "title": "EmptyState",
+      "kind": "slots",
+      "legacy_content": "title/detail/action strings",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "缺失",
+      "heterogeneous_consumer_content": "缺失",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Fixed title/detail/action layout; shared natural measure/render geometry now available; no arbitrary Content slots",
+      "native_acceptance": "未验证",
+      "accessibility": "Gallery adapter exports actual visible body/group and component-owned action from the real view geometry; no built-in Content semantics adapter; system/native acceptance of this delta remains unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "Additive EmptyStateView::measure; existing render and intentionally constrained clipping retained; future slot adapter remains separate",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::extended::EmptyState",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1239,
+          "anchor": "pub struct EmptyState {"
+        },
+        {
+          "api": "tekes_ui_controls::feedback_view::EmptyStateView",
+          "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+          "line": 2030,
+          "anchor": "pub struct EmptyStateView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.skeleton",
+      "title": "Skeleton",
+      "kind": "leaf",
+      "legacy_content": "frame plus placeholder paint",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Decorative leaf, children not applicable; no built-in Component adapter",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::feedback_view::SkeletonView",
+          "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+          "line": 2250,
+          "anchor": "pub struct SkeletonView {"
+        }
+      ]
+    },
+    {
+      "id": "tui.markdown",
+      "title": "Markdown",
+      "kind": "leaf",
+      "legacy_content": "MarkdownBlock enum document data",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Document blocks are not arbitrary UI children; no Component document-text/selection adapter; do not promote document AST into Component",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::collections_view::MarkdownView",
+          "path": "crates/tekes-ui-controls/src/collections_view.rs",
+          "line": 1718,
+          "anchor": "pub struct MarkdownView {"
+        },
+        {
+          "api": "tekes_ui_controls::extended::Markdown",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1338,
+          "anchor": "pub struct Markdown {"
+        }
+      ]
+    },
+    {
+      "id": "tui.code-block",
+      "title": "CodeBlock",
+      "kind": "leaf",
+      "legacy_content": "code/language strings",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Code is document data; no generic child slots or composed document-text semantics",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::collections_view::CodeBlockView",
+          "path": "crates/tekes-ui-controls/src/collections_view.rs",
+          "line": 1828,
+          "anchor": "pub struct CodeBlockView {"
+        },
+        {
+          "api": "tekes_ui_controls::extended::CodeBlock",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1403,
+          "anchor": "pub struct CodeBlock {"
+        }
+      ]
+    },
+    {
+      "id": "tui.diff-view",
+      "title": "DiffView",
+      "kind": "leaf",
+      "legacy_content": "DiffLine/DiffKind data and selection/scroll runtime",
+      "protocol": {
+        "status": "缺失",
+        "public_adapters": [],
+        "representation": "view-hosted"
+      },
+      "slots": [],
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "view-hosted",
+      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
+      "limits": "Lines remain data; no arbitrary Content cells or document accessibility adapter",
+      "native_acceptance": "未验证",
+      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
+      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
+      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "evidence": [
+        {
+          "api": "tekes_ui_controls::collections_view::DiffViewRuntime",
+          "path": "crates/tekes-ui-controls/src/collections_view.rs",
+          "line": 1934,
+          "anchor": "pub struct DiffViewRuntime {"
+        },
+        {
+          "api": "tekes_ui_controls::extended::DiffView",
+          "path": "crates/tekes-ui-controls/src/extended.rs",
+          "line": 1424,
+          "anchor": "pub struct DiffView {"
+        }
+      ]
+    }
+  ],
+  "not_implemented_candidates": [
+    "names",
+    "note"
+  ],
+  "source_sha256": {
+    "DESIGN.md": "4dae89654f600a0f4e46a5b66808267d2e861afdae748660322031dc43fd7700",
+    "crates/tekes-ui-controls/src/chart.rs": "f30cda0a769e0007ca6c7336d72584ed3da8c31870d845a8208b912ca489e120",
+    "crates/tekes-ui-controls/src/collections_view.rs": "6e41766fab863f68d0bfb7a9d32b541f85fdc3bb249e5c70af99dbc1abbf6cc7",
+    "crates/tekes-ui-controls/src/composite.rs": "466f71e95125ad3dd2cbe9de9dde783a180ed37ffc2ab8aae05738255c203fef",
+    "crates/tekes-ui-controls/src/composition.rs": "9369b60f0d26faef84b7169703451e0de35946a599a099a97a9942d7fb913119",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "2bc27d38499f22101e0ac35b6da9ce86383c12d6efe38bc64230ca66a8d12b59",
+    "crates/tekes-ui-controls/src/extended.rs": "b86575722cb7590dfdf03b96f218f4bbc97c0f845c872f44f7ca9cd94d299df8",
+    "crates/tekes-ui-controls/src/feedback_view.rs": "c1e4e22ebb46f8553ce47eb03e0a9f5ad0de73c7615a2c192d754b68c71b1f40",
+    "crates/tekes-ui-controls/src/layout_view.rs": "c6fecfce79f62c29ebbba3ebfb1c60ac99709d7f32b7f85d4234a35579edce51",
+    "crates/tekes-ui-controls/src/lib.rs": "68370760bdbeb230259ed4b0bbf94dae54447719b4645a94242f8c8e22f86376",
+    "crates/tekes-ui-controls/src/scroll_view.rs": "ed31b11d668ef1c40ceed5e4312ab1df55171444f0ef9f93d0b2515263fedcb1",
+    "crates/tekes-ui-controls/src/selection.rs": "0c089ab889da7bb1117039ffb22daca572a9e3526c9a04967b1266473d7a6dd8",
+    "crates/tekes-ui-controls/src/text_surface.rs": "590a1f196998d53d66384e9339ae30f29a908a8097ebabf9c2c0db1cac1c32b8",
+    "crates/tekes-ui-controls/src/widgets.rs": "654e44574e5b6cb547710fd5c568a87928f953c6f9024f3327642677fb9e6425",
+    "crates/tekes-ui-controls/tests/composition.rs": "d7f454c61b0e1d174c2d88826d5b3b69d03f45fdaac7f62b7035317b9b7fdc88",
+    "crates/tekes-ui-gallery/src/gallery/composition_acceptance.rs": "5e8cc675092692b1d520c715e9c425e74b3a8a0ba1ffe394325fa80b3688554c",
+    "crates/tekes-ui-gallery/src/host.rs": "c65ec262e5d9aea60d6d3de585aa14c2c8b54cf468babb5976dcd09c53d42402",
+    "crates/tekes-ui-platform-macos/src/accessibility.rs": "7289ad33538964abaa6add86428f4967dc728b1fde29f480e7fccc03002a809d",
+    "crates/tekes-ui-platform-macos/src/shared.rs": "730fe792594ca00d0aafd06cb081791f5c9e113d6a294e55435000a3d2dac36a",
+    "design/gallery/catalog.json": "4a9dde47550b1a7aa355c877649db73a8e9ec918e82bb823db19f8882a85433f",
+    "design/gallery/public-api-surface.json": "c2c7dcbcca53601c279606c415137ca4ab81fa49ba84b6e5d5c6ca38f669b9d1",
+    "docs/charter.md": "acb4b7252226a228ab0b3469856cea2901c4e3b1456791167bf0b327a3cfd956",
+    "docs/roadmap.md": "49266958b74711b3c72e547994cd138f15c45c8a3a94931b46dd96f845e7de78",
+    "examples/composition-consumer/examples/native.rs": "1498585eadb961cb4376ad0b36b816f65df34f626f96a7d1036d76581b120375",
+    "examples/composition-consumer/src/lib.rs": "c3ab5d6f1f9df54b5e17114eb6b3f2afd66fa6c7dfb09086ee4654028cb63ae0",
+    "examples/composition-consumer/src/scenarios.rs": "a039e25e108bcc4860cc3b1c6f15632b107e374231d07f303420563e2d2bb7bf",
+    "examples/composition-consumer/tests/scenarios.rs": "23cc79989007b39fe67062a0d2737f613dc57b12d8a35c3c45a4fd45efc32ba0",
+    "examples/composition-consumer/src/content_status.rs": "0dc6a0f79cd802d0879c212e5828959f26bfcc7803222d1842ed9ec1fc3fe496",
+    "examples/composition-consumer/Cargo.toml": "4d9bfd4db368de443abf24c53f0414ea58503a5dd128939ca64abb6add163eda",
+    "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs": "8649461e8898d7c873b63faf971c81f3cf78ec87f292da918332ab23a788cbdc",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "b94d493fb3ce011e68a4ca42eea31d30f9d30ded9fc063ed701286129c610550",
+    "crates/tekes-ui-gallery/Cargo.toml": "1e9d34258361fef3658daa88234c499709c001ab14a0ab53da62aea4bef24c9d",
+    "crates/tekes-ui-controls/tests/choice_contract.rs": "4ee09801a24dd52ffc229e45c7ed7adbb2e5ad25b61fea71fb233ec63787a564",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "48e85473fb5c2e2667dc16fab46925c8c3de6a9e26d62bbed14b655dfc615c89",
+    "crates/tekes-ui-controls/tests/popup_placement.rs": "ebdf7d43ac05605fd22b5a110c6e0fe6793198baf00b12ae421ea4a843ab98c0",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs": "cbf1da10d2ba5f18eddec88f616d5f87e030404e5dc86f2838b2a5faf457da08",
+    "crates/tekes-ui-controls/tests/choice_trigger_states.rs": "39ee0437dae7b2af56247c91cc3de2db4f091ea0c9e82c1234b2efdafac88aa0",
+    "crates/tekes-ui-controls/tests/choice_selection_states.rs": "f3677639bcb21f1312db3a08d35a804884ba06fe04510ff128a1953fcd100649",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs": "24db27129bfe007d35e2ad882c4a6e1cffb23318cd0cf09bb724f3d27ec81049",
+    "crates/tekes-ui-controls/tests/command_result_states.rs": "edb45a43138cd0ea757ea6905455d318ab15deabf15433e8a78311f61638087d",
+    "examples/composition-consumer/src/choice_status.rs": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
+    "examples/composition-consumer/tests/choice_status.rs": "974f88e3442795daf781013922292b67a029c20265a01be4109487296c65cf1c",
+    "examples/composition-consumer/src/combo_status.rs": "1e36d6989f56ed61eb67f2ab1b56c751164f2e1726c486eb65dd5430f9f40166",
+    "examples/composition-consumer/tests/combo_status.rs": "03192f0431b6f1a2187ae17b892e202aa6221f89b088fbc5131668af87dc32f5",
+    "examples/composition-consumer/src/command_status.rs": "f3d568c1ec48e6091de6a3f8447f605887848bf422cc12b7697bcca35f0c73d3",
+    "examples/composition-consumer/tests/command_status.rs": "819f5d01200bfc6e0abfb3ff2e4aa57c1def1f6aa1689a8ccba718e06622e838",
+    "crates/tekes-ui-controls/tests/selection_availability.rs": "c8e9b61598c97ae64c5d58a8545f7067148235f6bf4291f53ecea031219942da",
+    "examples/composition-consumer/tests/slider_states.rs": "9ba39cb152181ee5ab65b94d83e5573417fc706582a67eb6dc7712db5a1fc184",
+    "examples/composition-consumer/src/slider_content.rs": "5f50ce30c305092e1f4c12e215ed26a70f08baecce5bd7b4ccc3a7569f64108e",
+    "examples/composition-consumer/tests/slider_content.rs": "a8d5dca54eb17a24422b52912334368799c5baea71c864b7314542d82b6c10cd",
+    "crates/tekes-ui-platform-macos/src/lib.rs": "2003ad6eca3825bae0a7fa359c2e5d8498b7841617d996108996bbe0a7acb3a0",
+    "crates/tekes-ui-controls/src/composition/pointer.rs": "bab363a222d7c6195349569a4a317ca4586070463964a3503212c3c7aa3927d6",
+    "crates/tekes-ui-controls/tests/pointer_contract.rs": "fb35a5294c9d927797e0412dc696a8764ca67f1a104de84a39e52ba01810f200",
+    "examples/composition-consumer/tests/pointer_metadata.rs": "e804ffc666ec3128808a60b09e2b2007a1d3a4988193056fe2eda823a0e92679",
+    "examples/composition-consumer/tests/native_pointer_translation.rs": "9b7ec44a2a1ba65fc538c87f0f43f3e94e662bd4f7e77735d2d16f0a435cf44e",
+    "crates/tekes-ui-controls/src/text_input.rs": "fd25003400dbf9ed92c94e354d8fed4aa12e737e14eb2ade26c34e1002801b4a",
+    "crates/tekes-ui-text/src/coretext/shaper.rs": "8f8031bfdc952a951f0a500e3ea90d86145cb30e4916415bd1dafd979f3cf158",
+    "crates/tekes-ui-platform-macos/src/text_key.rs": "9546715dcec3acd93f938866702f0f3c7653a5e2c776db88ccbd2907fb6e4773",
+    "crates/tekes-ui-platform-macos/src/event.rs": "f6ca08eafed88b257b9e987c8c0f6cf575e513ee5d22df46028f3948ba5d2557",
+    "crates/tekes-ui-platform-macos/src/view.rs": "0bc864ceb663f4a8bdc9da280dd0f9bc0e27b759b753c7ad9a7ef84636fe609a",
+    "crates/tekes-ui-controls/src/composition/key.rs": "9c78585d2d39165f07c74c416165b130ba95d324e7c651b0b0f1c8057844524e",
+    "crates/tekes-ui-gallery/src/reading_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
+    "examples/composition-consumer/examples/support/native_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
+    "examples/composition-consumer/tests/editor_keys.rs": "76ed45394def28514e4abf9ee36e0484a91f74f9b23a17838751d1c30436fa7c",
+    "examples/composition-consumer/tests/native_key_translation.rs": "cc4e92492d471617de46b72b65eaf3cbdc76591d1e9ef4af83e7fbf1dd11c12f",
+    "crates/tekes-ui-controls/tests/component_registry_api.rs": "10a5caa01fbf3efc01c327963a0a3414bb9081aa3965c73a52619afef11d6feb",
+    "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
+    "examples/composition-consumer/src/controlled_editor.rs": "fbdd6c0b97197805a3e8aa3a8406bd977d29681c4a8410bb1f30296b9fa8d703",
+    "crates/tekes-ui-gallery/src/controlled_acceptance.rs": "ce1776aecc775f77ff5ed53bbf51f55fcfc93a7857a4d2395470fccf051fc15c",
+    "examples/composition-consumer/src/text_viewport.rs": "c4652a815029503dc12928831675d5e36bfa52d03d40f046bd00ec1292771464",
+    "crates/tekes-ui-gallery/src/viewport_acceptance.rs": "4087d2370154069e4b5dd4864425ef620327a6782a848643922f5be303abffad",
+    "crates/tekes-ui-controls/src/composition/actions.rs": "f1a015320d9df08628d952a56adbc9f0d2626fc0bd90d4f0d3a40d28ac686d0a",
+    "examples/composition-consumer/src/content_actions.rs": "525638d5c956db238c6cd420992ef4b91897f7a2233257713e569b3bc78de7c8",
+    "crates/tekes-ui-gallery/src/actions_acceptance.rs": "4810643e1d332a36f6e8da9e20e6ddd5f9d9c971805ecf1f1e8cee430e9fa23d",
+    "examples/composition-consumer/tests/editor_navigation.rs": "8eee3669a7f3c87bdc73b641f2ca0db75eb5491f765456429605e1db4b8b089e",
+    "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "acaa5060c9ae658bea79b8baf89fa210cf3da6aa2fa8a2c3adb43aefc0853b8f",
+    "crates/tekes-ui-gallery/src/gallery/accessibility.rs": "f754d094afa3d8d341d650f7ee0d30568dc6fe79ed7f47b5d6357c221fa181c5",
+    "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "6f0440bb5923b131e569703c3cb4d81ce629ee321add387e4fc64440bf415086",
+    "examples/composition-consumer/tests/dialog_accessibility.rs": "154568d070669e1f388af1b84a4c48d50918f1dd902cc5db860071b76dffc7d2",
+    "crates/tekes-ui-platform-macos/src/app.rs": "9862d63d1db6fdfd70895fab619a1246055deb3cefceca51584343e474bd461d",
+    "examples/composition-consumer/src/plain_text.rs": "1106c39eb92fdfca1f23ce7016d11f39d304002623bd101f590f29fcb28c3eb0",
+    "crates/tekes-ui-controls/src/control_motion.rs": "cd67d5e00d63126a5c14b1c096be060cdf8615e23555a37788ec122a84a6fac8",
+    "examples/composition-consumer/src/popover_content.rs": "1afc27732bfd028462d9f52856694ba9b037a3b0f3dd193caf94eb2837845b5b",
+    "crates/tekes-ui-controls/tests/owned_paint_contract.rs": "ab6aaf920244b5ae8e9f1f916192cd47409a698966384bcf5ac379ca6d4cea86",
+    "crates/tekes-ui-controls/tests/popover_layout_contract.rs": "e817e03ce0a6acf08ba5d2324513a81992d5103dcb5fa23b16c3c7db1f88e1e4",
+    "crates/tekes-ui-controls/src/reading.rs": "2bcd3f8445f10e523ff907bb8e4f9267b338acaa3bfc306ebabf23ee4b4a969d",
+    "crates/tekes-ui-controls/src/composition/content_reading.rs": "043eb142fc958925024b1cca1d4c473f4be2c73c792df0de9f803ebee2c46b7e",
+    "crates/tekes-ui-controls/tests/content_reading.rs": "5f4e3f2c86848d17ce9847c741ddd9934117f6ca86e8d44bf0127b57e372e825",
+    "examples/composition-consumer/src/scroll_updates.rs": "f821440d09464717bb7a9bbbe4bc31704e07fa32a514a5ec56e469d0a9a3a5fb",
+    "examples/composition-consumer/src/reading_prepend.rs": "1e067a377607f4f43d3649f189223247b40c034a456cf7ff1335286caa27cc76",
+    "examples/composition-consumer/src/reading_stream.rs": "32da134c8c3845017cae7f9f568e84e516e9f3a02c41bbc8e666294a839c81a0",
+    "crates/tekes-ui-controls/tests/collection_live_input.rs": "57f318912758da06f666641f865c63e95afeba24e7390105cc5e3c6b11325937",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "ac15f209e5270c4af9a7c05033a83b72729fad6e744e45ceea37225285ad6c66",
+    "examples/composition-consumer/src/controlled_reading.rs": "a354d0641d8338a69c837ae3002c0ef4faf985e72d2dba67b58ff0f9e8e414aa",
+    "examples/composition-consumer/tests/controlled_reading.rs": "b6328a88559f196d90e34d2e63181efcea29a154f339c0919b2e6d6da4474620",
+    "crates/tekes-ui-controls/tests/external_preflight.rs": "e7a3b993e8cef971b50fbb4cff7bc4fd39e1854e5c1f86209c651d9d44f26736",
+    "crates/tekes-ui-controls/tests/collection_focus_availability.rs": "04d448f87094b3bad192bd4e4ee615e1103271a80d8857e495174150d89ca1b9",
+    "crates/tekes-ui-controls/tests/collection_focus_ink.rs": "03908326be448ef5c6fcb82892c1adfe28b44d8b22c69b72148ecb719486da91",
+    "crates/tekes-ui-controls/tests/collection_navigation_live.rs": "dd358b0475fe719e1e5cecd95b936c1df66930298fb33872f9ddd4562db83e43",
+    "crates/tekes-ui-controls/tests/separator_scale.rs": "79d099023ea7236019163032d157ade0e6ea8adafe96708b7f8c0740eb972fd1",
+    "crates/tekes-ui-controls/tests/grid_layout_availability.rs": "46f08b8dc435514a420304723eb3aada2cf7afd240069911a199d5dacb03688a",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "8d6aa4fe4af62651de4de8a4c427676d79e92ca84b20c15b2e071260b8b8d1cb",
+    "crates/tekes-ui-gallery/src/gallery/quality_effects.rs": "55917f6bf01eb115ef50dacd27f2778e798329903aa0899608c1b5e1e042ea4b",
+    "crates/tekes-ui-controls/tests/layout_surface_tokens.rs": "7e914d2b70394ab377c81f542a3a54b1e86343db092d5c5db1efe7387db5f269",
+    "examples/composition-consumer/tests/surface_host_scale.rs": "152941bff9d9baa1e402f3d1c52d051a4aacc0e5702de774780aa951178419c7",
+    "examples/composition-consumer/src/feedback_status.rs": "46d31930e7eeba24a09d10b380cef9eb2776486af6d1804da0ea80ad443a1305",
+    "crates/tekes-ui-text/src/label.rs": "d3a061771bdbd77958eb7987c0262edde9fd5cfe4a6e2e5621f91ecfa7f4380b",
+    "crates/tekes-ui-text/src/coretext/label.rs": "c33c967133e09f87663d62f219a3ce1442394d82ac239c095267b84dd6164f76",
+    "crates/tekes-ui-text/src/lib.rs": "f7d8f15dcbc8e2ecfe9d28df36b17a5fbccf3cbc54202f28d8c8956063a9d766",
+    "crates/tekes-ui-text/src/coretext/mod.rs": "e54e0afb6df97d2f85264bf818918f0bb320e90ce882c718c92a2d2e107ad2ea",
+    "crates/tekes-ui-controls/src/composition/label.rs": "ba9f1e5d886366635f94c30845e7001d5eaa830134ca4d31be5758d8c6827044",
+    "crates/tekes-ui-gallery/src/gallery/text.rs": "994e4291404ca1162a6fe84d74ef20d56e3c11f1445e97e78e73379f19b7bac1",
+    "examples/composition-consumer/src/label_content.rs": "e37f1e6eeb422bd4ab454dce259e1970484e213283fac7466684312361bea187",
+    "examples/composition-consumer/tests/label_content.rs": "95e3351c21f041ca0884d2e40f657c747b53a48d1fa848af7ce48df0508628d5",
+    "examples/composition-consumer/src/layout_activation.rs": "339b963c56189addd3f47f1280b0f5247464aca034cdff4b5d16526fa6f80f7d",
+    "examples/composition-consumer/tests/layout_text_services.rs": "c44adec0e0bbd221867b89417c6ae167c0bd88d80a4fef8011f8f62a21729e65",
+    "crates/tekes-ui-controls/src/scroll_view/reveal.rs": "e1783d26d68f45d1e04addd2b4ca38d067a546017adc5de82f87de68e79ef868",
+    "examples/composition-consumer/tests/scroll_reveal.rs": "3fb0700db0e5d3f969b11062aa6b2b686cf442e7ff3410ec03f0706422901a2c",
+    "crates/tekes-ui-controls/src/composition/content_reveal.rs": "be8033d7ef4db46dc4de526214dfc261d70a8c1ce4e685e814d8198a75941450",
+    "examples/composition-consumer/src/item_navigation.rs": "fd44c9df9c66efaa388c355a2e4e723b045eb64892269cd2d30217065f2bbace",
+    "examples/composition-consumer/tests/item_navigation.rs": "1be1c1f6a9c05d82071c6c1d50239bfa0f4edd1e462877db669d03ca5dabaa0d",
+    "examples/composition-consumer/src/compact_actions.rs": "86f7f5a2d014620a684d5cad4ca554dc8c137bc86bb7e19d761977f5eadadf3a",
+    "examples/composition-consumer/tests/compact_actions.rs": "d90805a9de722e5ab9e461d77c25b4da6e2ed411023afc581f85ec76caeb3b24",
+    "examples/composition-consumer/src/padding_focus.rs": "e06563f79e77e7f2185adec99cac20858e73dad4df8fbb842824f4a1e3cf3c6f",
+    "examples/composition-consumer/tests/padding_focus.rs": "b70b02cde561212191cf1e9bb8e4d0c621df7107d3598d2e457934d31b6fb3a5",
+    "examples/composition-consumer/src/forwarded_actions.rs": "5fc60b4b1f5c00f7fd898486158e8b41d7f2adcd736395e4d74d540b21ceddb6",
+    "examples/composition-consumer/tests/forwarded_actions.rs": "185296fa531c1b3aecbca30f9f22d179c19b97c4bebd23511e2146c471bdff56",
+    "crates/tekes-ui-controls/src/composition/help.rs": "4e0b40a69520a135f5bb00d5584dfa1023bf1c9dd11faec9389535f51bf8fcbf",
+    "crates/tekes-ui-design-export/src/effects.rs": "187193a7959c24212f72a0931b953498ae6195283dd7b9940ef02168ea8039d3",
+    "examples/composition-consumer/src/help_list.rs": "4bb73c344a6a69a4526a631bbcdb2ade30a551dc03cc8372001028bc8c63ec04",
+    "examples/composition-consumer/tests/content_help.rs": "5aaaf963c5a181b736828b75b601554b7f21a11acdd22d94a5189d6c44d8b793",
+    "examples/composition-consumer/tests/menu_action_records.rs": "71367b915d842162639cab18018eb006e55e0dfe09b96e026edbdcdbada02034",
+    "docs/design/menu-action-records-20261021.md": "27b925716d27757e750c7be222ebfe0844bbd618a0e5b5373d35c5820164fa88",
+    "crates/tekes-ui-controls/src/composition/menu.rs": "dd821b02aced9a741e14bedea84d540cf9ed8ab435453eeb4ab7257fe20a654b",
+    "examples/composition-consumer/src/declared_menu.rs": "469c7e569d02693052d6f087daa308506a1f5de111b487df6ad68ee65cff3cba",
+    "examples/composition-consumer/tests/menu_declarations.rs": "72fad9945e39321ab705221691e5a7b3b9f7d76e7a5d18df7ffa1452045464db",
+    "examples/composition-consumer/tests/menu_item_states.rs": "2295971f31871f116d4f54d8c4bf1411b85a620e5d57df2b9344441bbb3b527a",
+    "examples/composition-consumer/tests/menu_content_tokens.rs": "01075564073562c962f4fcc8e296d7ff63b6b2c7f09d4240cbfe3c8e1209c451",
+    "scripts/audit-menu-content-tokens.py": "c6c66ffd9939c61b2069cdafc9f798ea72b7aa58f1c7d8c0b3f55dc67765f867",
+    "docs/design/menu-declarations-20261021.md": "af9ef303182284599150e0cd54027a9eccba2d463c36fea07228a1ebafb9f9ef"
+  },
+  "remaining": [
+    "minimal three scenarios: public/GPU and scoped native evidence exist; full physical IME/candidate/VoiceOver/current combined acceptance still unverified",
+    "Gallery host/default-page/workbench semantic export exists; per-family coverage, inspector and native/VoiceOver acceptance still require #5 verification; no blanket migration",
+    "Tabs/Tree/DataTable/Disclosure/Popover composition adapters await minimum-protocol acceptance and bounded family selection",
+    "window toolbar: currently missing Window registration, stable items/groups/placement/overflow/commands/multi-window lifecycle; do not equate ToolbarView with Window UI",
+    "role/value-range/document/selection-group semantics needed for future family adapters; no fake Button semantics",
+    "virtualization/reconstruction/edit-retention policy absent; owned detach/reattach is the current explicit boundary",
+    "performance excluded by user; not an acceptance blocker for this authorized run"
+  ],
+  "dimension_policy": "kind describes semantic content responsibility, including fixed template/geometry entry points; only nonempty slots and public_adapters assert actual shared Content ownership. Leaves do not require children; menu items may constrain interaction. Missing direct adapter does not mean consumers cannot wrap an existing public view.",
+  "shared_evidence": [
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 222,
+      "anchor": "pub trait Component: Debug + Any {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 1114,
+      "anchor": "pub fn render("
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 1308,
+      "anchor": "pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 1582,
+      "anchor": "pub fn focused_text(&self) -> Option<&crate::TextSurface> {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 1733,
+      "anchor": "pub fn insert(&mut self, parent: ComponentId, child: Content) -> Result<(), CompositionError> {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 1759,
+      "anchor": "pub fn remove(&mut self, id: ComponentId) -> Result<Content, CompositionError> {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 1804,
+      "anchor": "pub fn reorder("
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 1844,
+      "anchor": "pub fn semantics(&self) -> Vec<SemanticNode> {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 1661,
+      "anchor": "pub fn show_dialog(&mut self, id: ComponentId) -> Result<(), CompositionError> {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 1701,
+      "anchor": "pub fn close_dialog(&mut self) -> bool {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 686,
+      "anchor": "fn lifecycle(&mut self, event: Lifecycle) {"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/shared.rs",
+      "line": 406,
+      "anchor": "pub fn set_accessibility_nodes(&self, nodes: Vec<crate::accessibility::AccessibilityNode>) {"
+    },
+    {
+      "path": "examples/composition-consumer/examples/native.rs",
+      "line": 521,
+      "anchor": "w.set_accessibility_nodes(nodes);"
+    },
+    {
+      "path": "examples/composition-consumer/src/content_status.rs",
+      "line": 427,
+      "anchor": "pub struct Scenario {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/widgets.rs",
+      "line": 121,
+      "anchor": "impl<T: ButtonTextRenderer + ?Sized> ButtonTextRenderer for &mut T {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composite.rs",
+      "line": 590,
+      "anchor": "pub fn measure("
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/layout_view.rs",
+      "line": 2672,
+      "anchor": "pub fn blur_trigger(&mut self) {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/layout_view.rs",
+      "line": 2800,
+      "anchor": "pub fn pointer_move(&mut self, p: Point, model: &mut CommandPalette) {"
+    },
+    {
+      "path": "crates/tekes-ui-gallery/src/gallery/mod.rs",
+      "line": 1323,
+      "anchor": "pub fn handle_input(&mut self, event: &Event) -> Change {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/layout_view.rs",
+      "line": 2149,
+      "anchor": "pub fn render_trigger("
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/layout_view.rs",
+      "line": 2206,
+      "anchor": "pub fn render_options("
+    },
+    {
+      "path": "examples/composition-consumer/src/choice_status.rs",
+      "line": 74,
+      "anchor": "impl Component for Choice {"
+    },
+    {
+      "path": "examples/composition-consumer/src/combo_status.rs",
+      "line": 64,
+      "anchor": "impl Component for Query {"
+    },
+    {
+      "path": "examples/composition-consumer/src/command_status.rs",
+      "line": 85,
+      "anchor": "impl Component for Commands {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/selection_availability.rs",
+      "line": 26,
+      "anchor": "fn slider_observed_disabled_events_release_old_drag_without_waiting_for_paint() {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
+      "line": 925,
+      "anchor": "impl Component for SliderContent {"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/accessibility.rs",
+      "line": 15,
+      "anchor": "pub struct AccessibilityRange {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/text_input/external.rs",
+      "line": 117,
+      "anchor": "pub fn apply_external_value("
+    },
+    {
+      "path": "examples/composition-consumer/src/controlled_editor.rs",
+      "line": 20,
+      "anchor": "pub struct ControlledEditorFixture {"
+    },
+    {
+      "path": "crates/tekes-ui-gallery/src/controlled_acceptance.rs",
+      "line": 12,
+      "anchor": "pub(crate) fn try_run() -> bool {"
+    },
+    {
+      "path": "examples/composition-consumer/src/text_viewport.rs",
+      "line": 13,
+      "anchor": "pub struct ViewportFixture {"
+    },
+    {
+      "path": "crates/tekes-ui-gallery/src/viewport_acceptance.rs",
+      "line": 12,
+      "anchor": "pub(crate) fn try_run() -> bool {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/actions.rs",
+      "line": 21,
+      "anchor": "pub struct ContentAction {"
+    },
+    {
+      "path": "examples/composition-consumer/src/content_actions.rs",
+      "line": 11,
+      "anchor": "pub struct ActionFixture {"
+    },
+    {
+      "path": "crates/tekes-ui-gallery/src/actions_acceptance.rs",
+      "line": 12,
+      "anchor": "pub(crate) fn try_run() -> bool {"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/accessibility.rs",
+      "line": 123,
+      "anchor": "pub struct AccessibilityTextLayout {"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/shared.rs",
+      "line": 425,
+      "anchor": "pub fn set_accessibility_text_layouts("
+    },
+    {
+      "path": "crates/tekes-ui-gallery/src/host.rs",
+      "line": 103,
+      "anchor": "fn sync_accessibility(&self, window: &Window) {"
+    },
+    {
+      "path": "crates/tekes-ui-gallery/src/gallery/accessibility.rs",
+      "line": 41,
+      "anchor": "pub fn accessibility_nodes(&self) -> Vec<N> {"
+    },
+    {
+      "path": "examples/composition-consumer/src/plain_text.rs",
+      "line": 28,
+      "anchor": "impl Component for Card {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
+      "line": 454,
+      "anchor": "s.required = self.field.required;"
+    },
+    {
+      "path": "crates/tekes-ui-platform-macos/src/accessibility.rs",
+      "line": 811,
+      "anchor": "fn accessibilityRequired(&self) -> bool {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/control_motion.rs",
+      "line": 179,
+      "anchor": "pub(super) fn settle(&mut self, open: bool) {",
+      "purpose": "existing private presence interruption; no new public protocol"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 286,
+      "anchor": "fn paints_children(&self) -> bool {",
+      "purpose": "Optional child paint ownership; default preserves automatic traversal"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 1053,
+      "anchor": "pub fn capture_focus(&self) -> Option<(ComponentId, u64)> {",
+      "purpose": "Existing mount identity reused for temporary presentation focus intent"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 1066,
+      "anchor": "pub fn restore_focus(&mut self, captured: Option<(ComponentId, u64)>) -> bool {",
+      "purpose": "Same mount/current eligibility validation; Dialog shares this implementation"
+    },
+    {
+      "path": "examples/composition-consumer/src/popover_content.rs",
+      "line": 59,
+      "anchor": "impl Component for Card {",
+      "purpose": "Real consumer-owned overlay with same Content tree, not another host"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/owned_paint_contract.rs",
+      "line": 217,
+      "anchor": "fn retained_owned_overlay_still_requires_the_real_text_backend() {",
+      "purpose": "Red/green retained text service boundary"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/popover_layout_contract.rs",
+      "line": 27,
+      "anchor": "fn public_popover_arrange_matches_render_without_drawing_or_reviving_closed_focus() {",
+      "purpose": "Single production geometry in layout/render and no closed dismiss focus"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/content_reading.rs",
+      "line": 20,
+      "anchor": "pub struct ContentReadingResult {",
+      "purpose": "Structured item-local reading result, bounded clamp/fallback and user-priority reporting"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/content_reading.rs",
+      "line": 404,
+      "anchor": "fn document_switch_and_explicit_latest_reject_the_old_momentum_tail() {",
+      "purpose": "Document/explicit-follow scope fences; no stale native momentum mutation"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/collection_live_input.rs",
+      "line": 114,
+      "anchor": "fn externally_collapsed_tree_rejects_hidden_down_and_old_captured_release() {",
+      "purpose": "Live-model pointer eligibility before repaint; hidden captures cannot disclose"
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/collection_live_input.rs",
+      "line": 186,
+      "anchor": "fn escape_still_cancels_capture_when_source_disappeared_before_the_key() {",
+      "purpose": "Escape cancels ownership before current-source availability checks"
+    },
+    {
+      "path": "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs",
+      "line": 1108,
+      "anchor": "pub(super) fn key(",
+      "purpose": "Actual Gallery transfer: cancel before hidden-focus filtering; exact production function separately compiled"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 445,
+      "anchor": "pub fn with_label_layout(",
+      "purpose": "Explicit readonly Content label opt-in on original components"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/text_surface.rs",
+      "line": 45,
+      "anchor": "fn shape_label(",
+      "purpose": "Optional label shaping on the existing host font service"
+    },
+    {
+      "path": "examples/composition-consumer/tests/label_content.rs",
+      "line": 245,
+      "anchor": "fn intrinsic_stack_round_trip_does_not_elide_a_fully_fitting_source() {",
+      "purpose": "Actual intrinsic Stack f64/f32 feedback regression; complete source fits without ellipsis"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition.rs",
+      "line": 1079,
+      "anchor": "fn check_text_services(",
+      "purpose": "Single existing text-capability traversal and cancellation reused at all render layout boundaries"
+    },
+    {
+      "path": "examples/composition-consumer/tests/layout_text_services.rs",
+      "line": 76,
+      "anchor": "fn layout_arrange_activation_requires_the_same_service_as_always_active_fields() {",
+      "purpose": "Real retained field activated in application arrange rejects absent backend before paint"
+    },
+    {
+      "path": "examples/composition-consumer/tests/layout_text_services.rs",
+      "line": 119,
+      "anchor": "fn a_valid_backend_can_recover_after_failure_without_replacing_or_focusing_editor() {",
+      "purpose": "Original editor baseline/value/reading attachment retained across failed layout and valid retry"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/scroll_view/reveal.rs",
+      "line": 111,
+      "anchor": "pub fn reveal_with(",
+      "note": "Explicit viewport-only nearest/centered/comfort margin shared navigation prerequisite for Issue28; stable item API not implemented by this method"
+    },
+    {
+      "path": "examples/composition-consumer/tests/scroll_reveal.rs",
+      "line": 118,
+      "anchor": "fn public_navigation_fences_old_momentum_until_fresh_user_input_then_user_input_wins() {",
+      "note": "Independent public primitive competition regression; no stable Content item/native acceptance"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/content_reveal.rs",
+      "line": 312,
+      "anchor": "pub fn reveal_scroll_reading_item(",
+      "note": "Original owner/version/declared mount-safe item command with same-tree clipping preflight, no editor clone or focus jump"
+    },
+    {
+      "path": "examples/composition-consumer/src/item_navigation.rs",
+      "line": 234,
+      "anchor": "pub fn navigate(",
+      "note": "Actual independent mixed Text/Panel/Button nested ScrollContent consumer passes IDs/options/current backend, no offset compensation"
+    },
+    {
+      "path": "examples/composition-consumer/tests/item_navigation.rs",
+      "line": 283,
+      "anchor": "fn intrinsic_clipping_rejects_and_restores_library_scroll_metadata_without_touching_editor() {",
+      "note": "Real layout clipping rejection and scroll metadata restoration with original composer baseline unchanged"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/help.rs",
+      "line": 14,
+      "anchor": "pub fn with_help(mut self, text: impl Into<String>) -> Self {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/help.rs",
+      "line": 20,
+      "anchor": "pub fn set_help(&mut self, text: Option<String>) {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/help.rs",
+      "line": 177,
+      "anchor": "pub fn help_tooltip(&self) -> Option<(ComponentId, &str, OverlayLayout)> {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/actions.rs",
+      "line": 161,
+      "anchor": "pub fn drain_action_records(&mut self) -> Vec<ContentActionRecord> {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/menu.rs",
+      "line": 294,
+      "anchor": "pub fn set_values(&mut self, values: Vec<String>) -> Result<(), MenuValuesError> {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/menu.rs",
+      "line": 381,
+      "anchor": "pub fn model_revision(&self) -> Option<u64> {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/menu.rs",
+      "line": 8,
+      "anchor": "pub enum MenuEntry {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/menu.rs",
+      "line": 74,
+      "anchor": "pub enum MenuEntriesError {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/menu.rs",
+      "line": 220,
+      "anchor": "pub fn set_entries(&mut self, entries: Vec<MenuEntry>) -> Result<(), MenuEntriesError> {"
+    }
+  ],
+  "review_updates": [
+    {
+      "date": "2026-10-18",
+      "scope": "IconButton/Link current model availability; SegmentedControl cancel/roving focus on disabled interval; Link nonexistent inset token replaced with canonical space-regular without geometry change",
+      "composition_impact": "no new slots/types or migration; built-in adapter statuses unchanged",
+      "evidence": "design/reviews/action-family-20261018/receipt.json"
+    },
+    {
+      "batch": "segment-availability-20261018",
+      "conclusion": "additive SegmentedControlView overall disabled gate preserves model selection/per-item choices; no content-slot/type/migration change; existing cancel/blur reused"
+    },
+    {
+      "batch": "icon-defaults-20261018",
+      "conclusion": "existing IconButtonView additive natural-size API and own semantic geometry using existing Button paint/motion; explicit frames preserved, no content-slot/type/adapter expansion"
+    },
+    {
+      "batch": "navigation-family-20261018",
+      "conclusion": "Disclosure fresh availability and row radius; Breadcrumb group availability and checked public index boundaries; existing icon/default and Tree action slots use canonical24pt tokens. No new content adapter or migration; content status requirements remain unverified."
+    },
+    {
+      "batch": "content-status-20261018",
+      "conclusion": "Reviewed active-ancestor reconciliation for focus, capture and nested modal; reference renderer forwarding retains existing services. Tabs/Disclosure caller-owned public wrappers exercise real Views and retained TextFieldContent; built-in adapter and native AX statuses unchanged.",
+      "changed_sources": [
+        "crates/tekes-ui-controls/src/composition.rs",
+        "crates/tekes-ui-controls/src/widgets.rs",
+        "crates/tekes-ui-controls/tests/composition.rs",
+        "crates/tekes-ui-gallery/src/gallery/composition_acceptance.rs",
+        "examples/composition-consumer/src/lib.rs",
+        "examples/composition-consumer/tests/scenarios.rs"
+      ],
+      "gallery_host_fix": "Story tabs are host-owned before adapter activation; host header pointer-up precedes body adapters after modal/popup guards. All extended renderers pointer regression and existing modal exclusion test pass."
+    },
+    {
+      "batch": "choice-contract-20261018",
+      "conclusion": "Reviewed existing shared FilteredMenuView snapshot binding and current model eligibility at release/hover; changed presented options revoke old capture. ComboBox/CommandPalette reuse this check; CommandPalette disabled open/trigger guard preserves query. Select existing setter sufficient. No new component/content adapter, state profile, token or broad migration.",
+      "changed_sources": [
+        "crates/tekes-ui-controls/src/extended.rs",
+        "crates/tekes-ui-controls/src/layout_view.rs",
+        "examples/composition-consumer/tests/scenarios.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench.rs"
+      ],
+      "native_followup": "Gallery Escape falsely logged candidate0; both shared ExtendedStory key branches now log only Enter confirmations. Public host cancellation regression and native before/after are separate evidence."
+    },
+    {
+      "batch": "popup-geometry-20261018",
+      "conclusion": "Reviewed measured popup rows/natural-size public API, reuse of existing overlay placement, available-side scroll clamping with tiny-viewport fallback; empty filtered candidates no phantom surface. Measured Gallery state/Playground integration; no new component/profile/token or broad migration.",
+      "changed_sources": [
+        "crates/tekes-ui-controls/src/composite.rs",
+        "crates/tekes-ui-controls/src/feedback_view.rs",
+        "crates/tekes-ui-controls/src/layout_view.rs",
+        "examples/composition-consumer/tests/scenarios.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+        "crates/tekes-ui-controls/tests/choice_contract.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs"
+      ]
+    },
+    {
+      "batch": "choice-hover-20261018",
+      "conclusion": "Reviewed trigger event forwarding and narrow focus-transfer API; real Gallery cold keyboard focus and outside-release arm cleanup; five trigger action states with original View specimens, no new state layer/token/adapter",
+      "new_evidence": "design/reviews/choice-hover-20261018/receipt.json"
+    },
+    {
+      "batch": "choice-selection-20261018",
+      "conclusion": "Reviewed shared Select close-click cancellation and removal of Gallery trigger-blur workaround; measured Select/ComboBox fixtures reuse TextSurface;15 exact choice states. Native discovered omitted hardware76: Gallery boundary reuses existing independent consumer36/76 Enter equivalence, preserving platform raw events",
+      "new_evidence": "design/reviews/choice-selection-20261018/receipt.json"
+    },
+    {
+      "batch": "choice-focus-20261018",
+      "conclusion": "SelectView restores owned trigger keyboard modality after keyboard close; generic Menu caller retains trigger ownership and Gallery synchronizes its existing Button state; no runtime protocol or token added",
+      "new_evidence": "design/reviews/choice-focus-20261018/receipt.json"
+    },
+    {
+      "batch": "command-results-20261018",
+      "conclusion": "ComboBoxView/CommandPaletteView key convenience wrongly inferred activation from value change; reused existing key_event confirmation result. CommandPalette exact selected/open/empty public proof and measured selected fixture; no new runtime state or token",
+      "new_evidence": "design/reviews/command-results-20261018/receipt.json"
+    },
+    {
+      "batch": "select-availability-20261018",
+      "conclusion": "Select empty set previously opened a menu; reuse existing cancellation and disabled trigger presentation, with current-count guards. Existing private Button error boundary exposed through additive SelectView.set_error; native review caught caller feedback painting above popup, fixed caller base-content order with red/green regression; no new token/state/protocol",
+      "new_evidence": "design/reviews/select-availability-20261018/receipt.json"
+    },
+    {
+      "batch": "select-async-20261018",
+      "conclusion": "Independent caller refresh required base/overlay paint phases; Select render convenience now delegates additive trigger/options methods using same owned model/menu. Existing app Status/Feedback reused with measured Banner; no async library layer. Stable consumer maintains cached choice, focus and candidate through Loading/Error/Ready and keeps failure separate from validation. Late empty options defended at overlay boundary.",
+      "new_evidence": "design/reviews/select-async-20261018/receipt.json"
+    },
+    {
+      "batch": "combo-async-20261018",
+      "conclusion": "Independent retained query consumer reuses TextFieldContent/ComboBoxView/Status/Feedback. Shared ContentHost fixes composing-editor keyboard ownership and captured pointer release before overlays. Status-only updates retain draft, IME, selection, cached value, focus and candidate; data replacement reconciles unique domain labels and cancels stale options. No new library layer/token.",
+      "new_evidence": "design/reviews/combo-async-20261018/receipt.json"
+    },
+    {
+      "batch": "command-async-20261018",
+      "conclusion": "No missing shared primitive found: independent caller reuses original CommandPaletteView trigger/results and TextFieldContent plus existing host IME/capture arbitration and Status/Feedback. Status-only refresh retains query, IME, selection and candidate. Execute/dismiss restore original trigger focus; response replacement cancels stale menu captures; cached and initial-empty sources verified. No new library layer/token.",
+      "new_evidence": "design/reviews/command-async-20261018/receipt.json"
+    },
+    {
+      "batch": "range-availability-20261018",
+      "conclusion": "Observed model unavailability must cancel old interaction ownership before paint. Existing SliderView blur, SwitchView cancel and RadioGroupView cancel reused at model-aware event entry points; no new shared layer/state. Slider independent workspace probes six states using actual events, geometry and token reads. Unified Component range semantics adapter remains missing.",
+      "new_evidence": "design/reviews/range-availability-20261018/receipt.json"
+    },
+    {
+      "batch": "slider-composition-20261018",
+      "conclusion": "Existing Slider model/View now participates in original Component protocol through SliderContent. Range metadata uses a default optional trait method; relative actions resolve against current model. Existing snapshot struct literals remain intact. Native range descriptor/numeric value/bounds/actions and existing value-change notification path compile; actual native AX not inferred. Independent caller, real Gallery review specimen and actual token probes verify public integration.",
+      "new_evidence": "design/reviews/slider-composition-20261018/receipt.json"
+    },
+    {
+      "batch": "pointer-metadata-20261018",
+      "scope": "#19 shared pointer metadata; all current component dimensions unchanged",
+      "review": "Reviewed Component routing/default compatibility, primary capture/secondary release, overlay default and TextField forwarding. Existing button/switch/menu/slider adapters retain primary legacy behavior; context consumers opt in to pointer_event. New four public data types are composition support, no new component. Native final experience is not promoted.",
+      "evidence": [
+        "crates/tekes-ui-controls/tests/pointer_contract.rs",
+        "examples/composition-consumer/tests/pointer_metadata.rs",
+        "examples/composition-consumer/tests/native_pointer_translation.rs"
+      ],
+      "selection_fix": "Native emoji25% hit reproduced previous-word selection; same shaped selection rectangles now resolve visual grapheme, same Unicode word boundaries drive movement/selection. Triple selects logical paragraph. CR/CRLF/Unicode hard breaks share CoreText trailing line handling. No component dimensions/native statuses promoted."
+    },
+    {
+      "batch": "controlled-editor-20261018",
+      "scope": "#18 shared controlled value and existing real consumer; all 45 component dimensions/native statuses unchanged",
+      "review": "Reviewed TextInput baseline and mutator epochs, atomic external value checks, UTF-16 grapheme selection/history mapping, TextSurface invalidation/reveal and original ContentHost key binding ownership. Added five support types, no new component or framework. Existing adapters keep ownership and defaults; original public methods remain. Authority versions are caller-owned, no generic queue or Session model. AgentKit canonical publication revision and original prepare/clear boundary integrated separately.",
+      "rebound_sources": [
+        "crates/tekes-ui-controls/src/lib.rs",
+        "crates/tekes-ui-controls/src/text_surface.rs",
+        "design/gallery/public-api-surface.json",
+        "examples/composition-consumer/src/lib.rs",
+        "crates/tekes-ui-controls/src/text_input.rs",
+        "crates/tekes-ui-controls/src/composition/key.rs"
+      ],
+      "evidence": [
+        "examples/composition-consumer/tests/controlled_text.rs",
+        "examples/composition-consumer/tests/controlled_fixture.rs",
+        "docs/design/controlled-editor-20261018.md"
+      ],
+      "generated_bindings_review": "Regenerated binding test only adds five reviewed support type references; component identities and dimensions remain unchanged.",
+      "gallery_adapter_review": "Both opt-in audit hosts import the same crate-level existing reading_key/reading_pointer modules; removed duplicate compilation rather than suppressing Clippy. No data translation behavior changes."
+    },
+    {
+      "batch": "text-viewport-20261018",
+      "scope": "#20 original Field/TextSurface/Stack; all45 component dimensions and native acceptance statuses unchanged",
+      "review": "Reviewed Form compatibility; opt-in Fixed/Fill/Grow resolve actual Field label/help/error independently of viewport; FieldPresentation optional exactslot reuses original geometry; measurement never mutates surface, arrange is authoritative for paint/hit/caret/semantics. Multiline wrap and original ScrollArea axes remain explicit; wrap/backing width changes reuse reading reflow anchors. No new component, token or layout framework. AgentKit delegates existing public adapter instead of custom transcript arrange.",
+      "rebound_sources": [
+        "crates/tekes-ui-controls/src/composition.rs",
+        "crates/tekes-ui-controls/src/composition/adapters.rs",
+        "crates/tekes-ui-controls/src/feedback_view.rs",
+        "crates/tekes-ui-controls/src/text_surface.rs",
+        "design/gallery/public-api-surface.json",
+        "examples/composition-consumer/src/lib.rs"
+      ],
+      "evidence": [
+        "examples/composition-consumer/tests/text_viewport.rs",
+        "docs/design/text-viewport-20261018.md"
+      ],
+      "generated_review": "Generated public binding adds one reviewed TextViewport support type; registered original adapter line numbers updated after insertion;45 component identities unchanged."
+    },
+    {
+      "batch": "content-actions-20261018",
+      "scope": "#21 existing Component/Host action outlet;45 component dimensions/native acceptance fields remain unchanged",
+      "review": "Reviewed input-derived target/source collection at every original delivery path including capture,overlay,Tab,fallback and semantic action. Response remains Copy; default kind declarations reuse actual activation, custom multi-kind declarations preserve order. Explicit opt-in avoids unconsumed legacy queues. Value-owned drain has private mounted-instance fencing against same-ID replacement/remount; first valid action survives hiding/focus without replay. No new framework/widget/token/business scope. AgentKit immediately freezes owned intents, with sync compatibility before selection swap and existing IME isolation at AX entry.",
+      "rebound_sources": [
+        "crates/tekes-ui-controls/src/composition.rs",
+        "design/gallery/public-api-surface.json",
+        "examples/composition-consumer/src/lib.rs"
+      ],
+      "evidence": [
+        "examples/composition-consumer/tests/content_actions.rs",
+        "docs/design/content-actions-20261018.md"
+      ],
+      "generated_review": "Regenerated binding adds3 reviewed composition data types; original45 component identities/dimensions unchanged; actual registered source line changes reviewed."
+    },
+    {
+      "batch": "editor-navigation-20261018",
+      "scope": "Existing TextSurface paragraph navigation shared by stock Field, Gallery and AgentText; callback-only Combo normalization; original mount fence covers late native key; explicit producer action kinds, no AX-role inference. No new public type/token/component.",
+      "evidence": "examples/composition-consumer/tests/editor_navigation.rs",
+      "native": "bounded U2790B Light Gallery native keys and Metal, not physical IME or VoiceOver"
+    },
+    {
+      "batch": "gallery-accessibility-20261018",
+      "scope": "default Gallery real Button/text family/Dialog AX host integration, direct original DialogView action API, TextArea native text protocol and closed target invalidation; no new component/token; partial5 coverage remains explicit"
+    },
+    {
+      "batch": "selection-accessibility-20261019",
+      "issue": 5,
+      "scope": "Default Gallery IconButton, Checkbox, RadioGroup, Switch, SegmentedControl; original state/actions; native roles and mixed value; no maturity promotion",
+      "remaining": "full selection/collection/menu families, Inspector, VoiceOver, full notification matrix"
+    },
+    {
+      "batch": "list-accessibility-20261019",
+      "issue": 5,
+      "root_cause": "List/Tree logical model membership was insufficient for activation; require current layout membership. Default Gallery omitted retained ListView semantics. Collection activation success must use consumed, not selection change.",
+      "scope": "public List/Tree layout guards; default Gallery List; shared collection activation consumption verified on List/Tree/DataTable; no native Tree/Table promotion",
+      "remaining": "other producer families, Inspector, full notifications/VoiceOver"
+    },
+    {
+      "batch": "icon-wip-reconciliation-20261019",
+      "issue": [
+        5,
+        6,
+        8
+      ],
+      "scope": "source binding reconciliation only after concurrent icon library/catalog WIP; no icon implementation/ownership or component scope expansion",
+      "remaining": "current fullWIP verification and actual List native recheck;other producer/VO scope unchanged"
+    },
+    {
+      "batch": "menu-accessibility-20261019",
+      "issue": [
+        5,
+        14
+      ],
+      "scope": "MenuView own/external semantic methods share mounted/count/disabled/window/open guards; SelectView forwards actual owned menu; default Menu/Select producers use actual labels, native Menu root and original restore/dismiss",
+      "remaining": "FilteredMenu original-index adaptation and other producers; generic composition parts hierarchy and Inspector/fullnotifications/VO remain"
+    },
+    {
+      "batch": "filtered-menu-accessibility-20261019",
+      "issue": [
+        5,
+        14,
+        17,
+        21
+      ],
+      "scope": "FilteredMenuView source-index semantic contract; actual ComboBox/CommandPalette TextDemo and original confirmation; snapshot invalidation",
+      "remaining": "complete VoiceOver/physical IME, generic semantic hierarchy and other producers remain"
+    },
+    {
+      "batch": "tree-table-accessibility-20261019",
+      "issue": [
+        5,
+        14,
+        17,
+        21
+      ],
+      "scope": "Tree explicit disclosure; Table mounted key guards; actual tree/table/cells; stable rendered cell stride; native selector ABI/role permissions; initial/application/window Focus and common new/reset story state inheritance; immediate host AX publication",
+      "remaining": "manual minimized restore/cross-application active transition; full VoiceOver/physicalIME; other producers and generic nested semantic protocol"
+    },
+    {
+      "batch": "slider-semantics-20261019",
+      "issue": [
+        5,
+        12,
+        14
+      ],
+      "scope": "Shared SliderView semantic availability and capture cancellation; public SliderContent and actual Gallery range producer; existing native host inactive focus/action guard and external placement",
+      "remaining": "full VoiceOver/native Increment-Decrement, restored native scope, full theme/brand/scale/window and physical IME matrices; other producers unchanged"
+    },
+    {
+      "batch": "gallery-lifecycle-gates-20261019",
+      "issue": [
+        8,
+        13,
+        14
+      ],
+      "scope": "Reviewed TextSurface diff: effective ancestor-clipped viewport and composing caret reveal; no public fields, stable-key/state ownership, adapters or text API anchors changed. Four TextSurface bindings at line70 checked against live source; 7 actual token probes rerun, 17 producer references rebound, no native maturity promotion.",
+      "evidence": "design/reviews/gallery-lifecycle-gates-20261019/token-rebinding.json",
+      "remaining": "Native Gallery/window/overlay lifecycle and full component/theme/Gold7 remain separate."
+    },
+    {
+      "batch": "gallery-lifecycle-gates-20261019",
+      "issue": [
+        3,
+        4,
+        5
+      ],
+      "root_cause": "Cold Gallery native startup delivers Focus(false) before first lazy controls mount; local button checks alone allowed inactive AX Press to open Dialog. Post-paint Focus(false) test had missed this order.",
+      "scope": "One Gallery AX entry guard reuses existing Workbench authoritative window_active via private getter; all existing Gallery producers covered, no new state/token/public layer, no change to frozen037 or platform.",
+      "evidence": "design/reviews/gallery-lifecycle-gates-20261019/inactive-ax-red.log",
+      "native_acceptance": "not promoted by source review; corrected native retest required"
+    },
+    {
+      "batch": "gallery-transient-lifecycle-20261019",
+      "root_cause": "Gallery transient host deactivation closed models but did not clear retained presentation when no inactive frame was painted",
+      "scope": "Reuse existing MenuView.clear_presentation and ExtendedStory.clear_overlay_presentation in private host deactivation; Select already clears; persistent Dialog intentionally retained. Public188 unchanged.",
+      "source_review": [
+        {
+          "path": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+          "before": "ce08dd72a595a8af894f5ab873eeb45591934a6791f0dccc99e8c70a00532218",
+          "after": "abd05ee88c4d8396244a6dd41a65f69512217bc961eceff3493ccf7b3668dc20"
+        },
+        {
+          "path": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+          "before": "63c598800fb8b6bf6e965003b0b5080c9fd5b79856fd090351d92d7aca63f073",
+          "after": "8a1072440103f66182ce1cafd5bebdb9f3cb786a0c9a254fb03c1448cee43055"
+        }
+      ],
+      "anchors": [],
+      "acceptance": "new real consumer red/green regression plus existing interaction/AX gates; native scoped verification pending; no native maturity promotion"
+    },
+    {
+      "date": "2026-10-19",
+      "scope": "Issue4 shared CommandPalette caller focus handoff; Gallery test-only font-profile dev dependency",
+      "sources_reviewed": [
+        "crates/tekes-ui-controls/src/layout_view.rs",
+        "examples/composition-consumer/examples/native.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+        "crates/tekes-ui-gallery/Cargo.toml",
+        "examples/composition-consumer/src/command_status.rs",
+        "examples/composition-consumer/tests/command_status.rs"
+      ],
+      "evidence": "design/reviews/issues1-14-closeout-20261019/palette-gates.json",
+      "native_boundary": "pending final current native round; prior receipts remain historical"
+    },
+    {
+      "date": "2026-10-20",
+      "scope": "review current11 changed inputs and correct stale consumer/AX conclusions; no native maturity promotion",
+      "evidence": "design/reviews/composition-audit-current-20261020/source-review.json",
+      "remaining": "shared built-in Surface/NumberField adapters and Window Toolbar remain separate gaps; foreign Motion/Scene3D examples not accepted"
+    },
+    {
+      "date": "2026-10-19T21:15:06.535767+00:00",
+      "scope": "reviewed required metadata propagation and snapshot-literal compatibility across9 changed inputs",
+      "changed_sources": [
+        "crates/tekes-ui-controls/src/composition.rs",
+        "crates/tekes-ui-controls/src/composition/adapters.rs",
+        "crates/tekes-ui-platform-macos/src/accessibility.rs",
+        "examples/composition-consumer/examples/native.rs",
+        "examples/composition-consumer/tests/scenarios.rs",
+        "crates/tekes-ui-platform-macos/src/view.rs",
+        "crates/tekes-ui-gallery/src/actions_acceptance.rs",
+        "crates/tekes-ui-gallery/src/gallery/accessibility.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs"
+      ],
+      "native_acceptance": "unchanged; source audit cannot promote experience"
+    },
+    {
+      "date": "2026-10-19T21:33:08.415918+00:00",
+      "scope": "reviewed6 rustfmt-only Gallery changes; whitespace/optional punctuation/expression closure block/module declaration order; no content/interaction/semantic conclusion changed",
+      "source_changes": [
+        "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+        "crates/tekes-ui-gallery/src/gallery/mod.rs"
+      ],
+      "native_acceptance": "unchanged"
+    },
+    {
+      "evidence": "design/reviews/selection-key-availability-20261020/acceptance.json",
+      "scope": "reviewed shared event availability ordering only in Checkbox/Switch; no new composition protocol/slots, roles, visual rules or native maturity",
+      "reviewed_inputs": [
+        "crates/tekes-ui-controls/src/selection.rs",
+        "crates/tekes-ui-controls/src/widgets.rs",
+        "examples/composition-consumer/tests/scenarios.rs",
+        "crates/tekes-ui-controls/tests/selection_availability.rs"
+      ],
+      "API_cases": 60,
+      "consumer_cases": 24,
+      "native_acceptance": "pending; not promoted"
+    },
+    {
+      "evidence": "design/reviews/button-content-alignment-20261020/acceptance.json",
+      "scope": "ordinary ButtonContent paint now uses existing DS ButtonTextAlign default; public slots/content capacity/roles/lifecycle/action contracts unchanged; TextContent and CompoundButton explicit subtree layout unaffected",
+      "reviewed_inputs": [
+        "crates/tekes-ui-controls/src/composition.rs",
+        "examples/composition-consumer/tests/scenarios.rs"
+      ],
+      "native_acceptance": "bounded ordinary ButtonContent alignment/input isolation accepted on external U2790B@2; no whole-component/VO maturity promotion"
+    },
+    {
+      "evidence": "design/reviews/link-model-availability-20261020/acceptance.json",
+      "scope": "direct public Link.key now calls existing Button synchronization before Enter filtering; internal helper visibility crate-only; no composition API/slot/ownership changes; public LinkView behavior already synchronized",
+      "reviewed_inputs": [
+        "crates/tekes-ui-controls/src/extended.rs",
+        "crates/tekes-ui-controls/src/widgets.rs",
+        "examples/composition-consumer/tests/scenarios.rs"
+      ],
+      "native_acceptance": "two repeated scoped direct-Link physical temporal chains accepted; Link role remains missing, no AX/VO or component maturity promotion"
+    },
+    {
+      "batch": "link-role-20261020",
+      "conclusion": "ContentRole::Link reuses Button single-action/decorative-child ownership rules. Native bridge adds AXLink with existing Press/Focus fencing. Gallery retained Link and public consumer mappings migrated; no new registered component, built-in content adapter, token or native/experience maturity promotion.",
+      "evidence": "design/reviews/link-role-20261020/acceptance.json"
+    },
+    {
+      "batch": "radio-disabled-focus-20261020",
+      "conclusion": "RadioGroupView rejects disabled-scope late focus using existing blur/cancel. No new protocol, token, public type or content slot. Public and actual consumer plus bounded GPU/native evidence separate from source maturity.",
+      "evidence": "design/reviews/radio-disabled-focus-20261020/acceptance.json"
+    },
+    {
+      "batch": "slider-native-actions-20261020",
+      "conclusion": "Shared independent native host fences inactive interaction callbacks using existing Window.is_active plus tree Cancel/focus clear. All mounted scenarios reuse one handler. No component/content/AX protocol or token change. Actual AX selectors and minimized isolation verified separately; true reactivation subsequently passed on the same final source and signed native host.",
+      "evidence": "design/reviews/slider-native-actions-20261020/acceptance.json"
+    },
+    {
+      "batch": "overlay-deactivation-20261020",
+      "conclusion": "Existing OverlayPresence settles open modal paint; explicit Menu/Popover window deactivation clears transient paint. Ordinary Menu deactivate and FilteredMenu dismiss retain exit while dropping semantic hit layout. Native consumer projects effective motion from current window activity without changing the preference; generic Cancel remains gesture cancellation. No new public protocol/token/type/maturity promotion. Final API/GPU/native evidence bound separately.",
+      "evidence": "design/reviews/overlay-deactivation-20261020/acceptance.json"
+    },
+    {
+      "batch": "dialog-caller-identity-20261020",
+      "conclusion": "Restore invoker by existing Content mount identity and eligibility at capture; reorder preserves identity, replacement/remount/disabled does not. Independent native consumer reads DialogContent.is_open rather than inferring open state from restored focus. No new protocol/token or maturity promotion.",
+      "evidence": "design/reviews/dialog-caller-identity-20261020/acceptance.json"
+    },
+    {
+      "batch": "menu-trigger-contract-20261020",
+      "conclusion": "MenuContent derives disabled/loading semantics and action eligibility from existing ButtonContent; rejects stale row input before repaint and dismisses through existing MenuView. Unmount clears presentation and hit layout while preserving selected model state. Standalone MenuView explicit availability and semantic menu item restrictions stay unchanged. Actual wrapper token lookups now observed; no full state/native maturity promotion.",
+      "evidence": "design/reviews/menu-trigger-contract-20261020/acceptance.json"
+    },
+    {
+      "batch": "popover-owned-content-20261020",
+      "conclusion": "Minimum consumer-owned Popover composition proven via public shared tree paint/layout/focus/lifecycle rather than new adapter hierarchy. Native caught consumer clip and Cancel-policy defects, both repaired and red/green verified. Native/GPU/token evidence is bounded and separate, not whole component/page maturity.",
+      "evidence": "design/reviews/popover-owned-content-20261020/acceptance.json"
+    },
+    {
+      "batch": "filtered-choice-exit-20261020",
+      "conclusion": "Select/ComboBox/CommandPalette real consumer original-index actions, retained exit presentation and readable background failure. Reuses MenuRuntime/OverlayPresence without new protocol. Source positions are not persistent keys across replacement; no global native promotion.",
+      "evidence": "design/reviews/filtered-choice-exit-20261020/acceptance.json"
+    },
+    {
+      "batch": "scroll-layout-input-20261020",
+      "conclusion": "Existing ScrollArea geometry path retains valid native input and return state through document/viewport changes. No new scrolling layer/token.374controls/159consumer; bounded GPU/native input evidence is separate from ClientKit visual acceptance and missing structured #22 anchor API.",
+      "evidence": "design/reviews/scroll-layout-input-20261020/acceptance.json"
+    },
+    {
+      "batch": "content-reading-anchor-20261020",
+      "conclusion": "Opt-in structured Content document attachment/version, item-local anchor/fallback, per-document intent, input priority and explicit latest. Existing shared version/ScrollArea/Content used. Auxiliary latest actions preserve active editor via Content instance option; ordinary keyboard/AXFocus retained. No native, ClientKit visual, portable public delivery or Issue closure promotion.",
+      "evidence": "design/reviews/content-reading-anchor-20261020/progress.json"
+    },
+    {
+      "batch": "collection-live-input-20261020",
+      "conclusion": "Shared existing collection capture lifecycle plus live-model eligibility; no new abstraction/token, Gallery cancel guard migrated. Protocol/content-slot statuses not promoted.",
+      "evidence": "design/reviews/collection-live-input-20261020/progress.json"
+    }
+  ],
+  "text_key_review_20261018": {
+    "changed_sources_reviewed": [
+      "crates/tekes-ui-platform-macos/src/shared.rs",
+      "examples/composition-consumer/examples/native.rs",
+      "crates/tekes-ui-platform-macos/src/lib.rs"
+    ],
+    "scope": "opt-in platform Started/Finished provenance surrounds existing once-only callback delivery; consumer observes reports; existing Component contracts and ownership unchanged",
+    "remaining": "composition edit acknowledgement, policies, physical IME and VoiceOver pending; #17 remains partial",
+    "historical_checkpoint": true,
+    "current_status_reference": "design/remediation/ledger.json: original_issue_criteria; formal431 final consumer acceptance and individual issue15-21 closures supersede delivery/physical-input blockers at this older checkpoint. Broader Gallery family coverage remains separate."
+  },
+  "editor_key_review_20261018": {
+    "scope": "native provenance now integrated with existing Component/ContentHost; six reviewed public support types, no new component identity; Tab offers editor first before the existing traversal fallback",
+    "shared_fixes": [
+      "focus epoch fences A-B-A native callback ownership",
+      "actual editor command acknowledgement prevents boundary no-op from falling through",
+      "existing TextSurface.minimum_outer_height and FieldPresentation unify multiline slot measure/paint",
+      "existing TextSurface.reveal defers only stale-paragraph requests and lets later wheel/direct offset changes win"
+    ],
+    "status": "#17 public minimal contract implemented; physical IME and full experience remain pending; #18 controlled transactions/#20 full viewport and #21 typed actions remain separate",
+    "native_scope": "bounded Light Gallery real events and GPU before/after; AgentKit bridge/wrapper tests, not its native UI",
+    "reviewed_changed_inputs": [
+      "crates/tekes-ui-controls/src/composition.rs",
+      "crates/tekes-ui-controls/src/composition/adapters.rs",
+      "crates/tekes-ui-controls/src/text_surface.rs",
+      "design/gallery/public-api-surface.json",
+      "examples/composition-consumer/examples/native.rs",
+      "examples/composition-consumer/src/choice_status.rs",
+      "crates/tekes-ui-controls/src/composition/pointer.rs",
+      "crates/tekes-ui-controls/tests/pointer_contract.rs"
+    ],
+    "historical_checkpoint": true,
+    "current_status_reference": "design/remediation/ledger.json: original_issue_criteria; formal431 final consumer acceptance and individual issue15-21 closures supersede delivery/physical-input blockers at this older checkpoint. Broader Gallery family coverage remains separate."
+  },
+  "text_accessibility_followup": {
+    "issue": 20,
+    "review": "design/reviews/text-ax-lines-20261019",
+    "scope": "Shaped line queries in independent composition host and explicit AgentKit consumer candidate. Legacy Gallery text publishers not yet migrated; native VoiceOver line navigation awaiting human retest. Source audit does not certify experience.",
+    "historical_checkpoint": true,
+    "current_status_reference": "design/remediation/ledger.json: original_issue_criteria; formal431 final consumer acceptance and individual issue15-21 closures supersede delivery/physical-input blockers at this older checkpoint. Broader Gallery family coverage remains separate."
+  },
+  "text_navigation_followup": {
+    "issue": 20,
+    "review": "design/reviews/text-ax-navigation-20261019",
+    "status": "shared queries and final actual AppKit protocol/window checks passed; VoiceOver-only entry/line navigation not accepted; user deferred active-window retest",
+    "limits": "No promotion of source-only native_acceptance; no change to AgentKit business state or Tab policy.",
+    "historical_checkpoint": true,
+    "current_status_reference": "design/remediation/ledger.json: original_issue_criteria; formal431 final consumer acceptance and individual issue15-21 closures supersede delivery/physical-input blockers at this older checkpoint. Broader Gallery family coverage remains separate."
+  },
+  "agentkit_final_acceptance_20261019": {
+    "issues": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21
+    ],
+    "status": "已实现待验收",
+    "public_snapshot": "03721866a362b1d31261ebbbc86140eb07e9e23320871c325234a5212591213d",
+    "review": "design/reviews/agentkit-final-acceptance-20261019",
+    "report": "docs/design/agentkit-final-acceptance-20261019.md",
+    "functional": "public/real consumer/offscreen/native/physical IME separately recorded; current VO human three steps passed; real two-page anchors0pt",
+    "remaining": "AgentKit consumer session receive/promote; authorized public immutable pin",
+    "supersedes_current_remaining_notes": [
+      "text_key_review_20261018",
+      "editor_key_review_20261018",
+      "text_accessibility_followup",
+      "text_navigation_followup"
+    ],
+    "scope": "Only #15–#21 AgentKit minimal consumer; no extension of other component/native acceptance dimensions. Historical entries retain original scope.",
+    "historical_checkpoint": true,
+    "current_status_reference": "design/remediation/ledger.json: original_issue_criteria; formal431 final consumer acceptance and individual issue15-21 closures supersede delivery/physical-input blockers at this older checkpoint. Broader Gallery family coverage remains separate."
+  },
+  "empty_state_measure_followup": {
+    "evidence": "design/reviews/empty-state-measure-20261019/",
+    "conclusion": "Additive natural measurement and matching public/Gallery consumer sizing; no change to owned-content or arbitrary-slot audit status; native acceptance remains separate"
+  },
+  "compatibility_updates_20261020": {
+    "scope": "ContentSemantics.required and AccessibilityNode.required fields",
+    "source_compatibility": "direct struct literals require migration; ContentSemantics::new defaults false; legacy View and adapter entry signatures unchanged",
+    "migration": "current native/Gallery publishers migrated; no frozen source or public pin changed",
+    "evidence": "design/reviews/field-required-primary-20261020/application.json",
+    "native_boundary": "actual native-object getter checks36, no active-window/VoiceOver maturity promotion"
+  },
+  "prior_audit_heads": [
+    "80d6b05649234f953ea452d42e1cbed369fdddbb"
+  ],
+  "current_review_scope": "Current source/line verification of existing45row reviewed matrix, #22 structured-reading followup and explicit public-enum compatibility delta; not a new whole-library native or visual audit.",
+  "structured_reading_compatibility_20261020": {
+    "scope": "Public CompositionError adds ReadingTransactionInProgress; Content gains a private per-instance activation-focus option and ScrollContent gains opt-in reading state.",
+    "source_compatibility": "Downstream exhaustive CompositionError matches require an added arm; this is a potential source-breaking enum extension, even though existing entry signatures remain. No new required field on public ButtonContent.",
+    "migration": "Handle ReadingTransactionInProgress; keep request-time ReadingDocumentVersion; use preserving_focus for auxiliary latest actions, retain Tab/explicit AXFocus; ordinary ScrollContent stays opt-out.",
+    "evidence": "design/reviews/content-reading-anchor-20261020/progress.json",
+    "frozen_boundary": "Accepted AgentKit inputs not overwritten; local new exportbd3 has independent sender replay but no public pin or receiver conclusion."
+  },
+  "issue14_scope_current": "Audit/planning only per latest original body2026-10-17T08:15:16Z. Window Toolbar registration/group/placement/overflow/window-lifecycle remains planned and missing, not authorized as an implementation expansion in this audit.",
+  "collection_input_compatibility_20261020": {
+    "source": "No new public type/field/signature/token.",
+    "behavior": "Held row Escape returns Handled and cancels capture; unowned Escape returns Ignored to parent, rather than swallowing it. Does not undo selection or immediate header sorting.",
+    "scope": "Legacy ListView/TreeView/DataTableView and actual Gallery Tree forwarding. Owned Content composition uses its existing independent core cancellation and is not claimed fixed by this change.",
+    "native": "Public/GPU/extracted adapter tested; new held-pointer physical/native verification not performed."
+  },
+  "tooltip_lifecycle_20261020": {
+    "root_cause": "Inactive late hover/focus could reopen after activation; stale anchor survived deactivation; controlled-only Escape latch had no leave owner.",
+    "shared_source": "crates/tekes-ui-controls/src/feedback_view.rs",
+    "compatibility": "Existing TooltipView API retained; inactive inputs ignored and geometry cleared. Controlled visible request resumes after activation; hover/focus requires fresh input. Controlled false-to-true cycle rearms.",
+    "proof": [
+      "crates/tekes-ui-controls/tests/tooltip_lifecycle.rs",
+      "examples/composition-consumer/tests/tooltip_tokens.rs",
+      "design/reviews/tooltip-lifecycle-20261020/gpu-result.json"
+    ],
+    "limits": "No new Content adapter, Gallery native or ClientKit visual acceptance claimed."
+  },
+  "controlled_preflight_20261020": {
+    "issue": 26,
+    "scope": "Additive read-only TextInput/TextSurface::check_external_value, same private preparation as apply; no callback rollback or native/visual promotion.",
+    "proof": [
+      "crates/tekes-ui-controls/tests/external_preflight.rs",
+      "examples/composition-consumer/src/controlled_reading.rs",
+      "examples/composition-consumer/tests/controlled_reading.rs",
+      "design/reviews/controlled-preflight-20261020/gpu-result.json"
+    ],
+    "compatibility": "Existing result/conflict variants, precedence, acknowledgement semantics, selection and undo policies retained. Predictions are same-turn only; apply always revalidates original instance/baseline/publication."
+  },
+  "collection_focus_availability_20261020": {
+    "root_cause": "Public focus setters recorded requests delivered during group-disabled/window-inactive intervals, reviving focus after availability restored. Chart also mutated controlled focus while inactive.",
+    "shared_source": "crates/tekes-ui-controls/src/collections_view.rs",
+    "applicable": [
+      "ListView::focus",
+      "TreeView::focus",
+      "DataTableView::focus_row",
+      "DataTableView::focus_header",
+      "ChartView::focus(inactive only)"
+    ],
+    "reuse": "Existing disabled/window_active and blur/cancel behavior; same signatures/models and exact Gallery focus_changed forwarding; no queue/new state/token/protocol",
+    "compatibility": "Calls delivered while unavailable are ignored. A caller deliberately restoring focus must reissue after availability is restored; no cross-async request lease is inferred. Model/per-item membership checks remain distinct.",
+    "proof": [
+      "crates/tekes-ui-controls/tests/collection_focus_availability.rs",
+      "design/reviews/collection-focus-availability-20261020/gpu-result.json",
+      "design/reviews/collection-focus-availability-20261020/token-probes/collection-focus.json"
+    ],
+    "limits": "Exact adapter in minimal fixture, not whole Gallery native/global FocusManager or built-in owned adapters; native/Gold7 experience remains separate"
+  },
+  "collection_focus_ink_20261021": {
+    "root_cause": "Collection own-frame clip trimmed fitting row/header canonical focus; subsequent sibling chrome could occlude it.",
+    "shared_fix": [
+      "collections_view.rs: container-owned final focus pass using existing ContainerLayout clipping and paint::focus_ring",
+      "widgets.rs: existing ButtonSize::radius made crate-visible to reuse exact Body token without duplicating style"
+    ],
+    "applicable": [
+      "ListView rows",
+      "TreeView rows",
+      "DataTableView rows/headers"
+    ],
+    "exceptions": [
+      "Actual ancestor clips always enforced",
+      "Overflow-cropped/wholly hidden rows retain viewport clipping/no phantom ink",
+      "Chart already has internal margins;48before/afterGPUcases identical",
+      "Host retains existing ControlFrame.focus_bounds and Viewport.reveal_focus reserve/reveal contract"
+    ],
+    "compatibility": "No public signatures/models/tokens, layout or hit targets changed; focus owner remains existing CollectionInteraction. Existing row spacing/label alignment retained.",
+    "proof": [
+      "crates/tekes-ui-controls/tests/collection_focus_ink.rs",
+      "design/reviews/collection-focus-ink-20261021/gpu-result.json"
+    ],
+    "limits": "Scope is canonical focus ink/availability, not full native/AX/whole component or matched ClientKit visual acceptance",
+    "token_evidence_correction": "Fresh collection504probe labels header sorting as rest/sort; selected proofs come from actual selected rows. Prior mislabeled header-sort cases retained historically, not bound as current evidence."
+  },
+  "collection_navigation_live_20261021": {
+    "root_cause": "DataTable keyboard candidates trusted mounted geometry without intersecting current source membership; column growth could focus an unmounted header.",
+    "shared_fix": "DataTableView::key filters mounted rows/headers by live model bounds; reuses existing row_key_target for header navigation.",
+    "compatibility": "No public API, model, token, layout or pointer target changes; no new abstraction.",
+    "scope": "412controls/168consumer/192CoreText-GPU384frames/exactGalleryfocus and current Gallery regression; final native and matched ClientKit/whole Gold7 unverified.",
+    "receipt": "design/reviews/collection-navigation-live-20261021/progress.json"
+  },
+  "separator_scale_20261021": {
+    "root_cause": "Separator lacked backing-scale adaptation despite existing JSON and decorative_border policy",
+    "fix": "add compatible separator_at_scale/SeparatorView.render_at_scale host inputs, delegate existing helper; current standalone Gallery draw/variants migrated",
+    "exceptions": "legacy1x entry retained; SplitView interactive divider deliberately not migrated automatically",
+    "evidence": "design/reviews/separator-scale-20261021/progress.json",
+    "native": "unverified",
+    "protocol_and_maturity": "unchanged"
+  },
+  "grid_layout_availability_20261021": {
+    "root_cause": "GridView published natural positive child hit/paint rectangles despite zero parent area",
+    "fix": "reuse existing has_area at GridView availability gate; do not change pure Grid measurement or positive natural overflow",
+    "evidence": "design/reviews/grid-layout-availability-20261021/progress.json",
+    "native": "separate",
+    "protocol_and_maturity": "unchanged"
+  },
+  "panel_scale_adaptation_20261021": {
+    "root_cause": "Existing shared scale-aware Surface APIs were not used by several Gallery and private example callers",
+    "fix": "Forward existing renderer backing_scale; no token, API or protocol added",
+    "scope": [
+      "Stack/Grid/Disclosure/SplitView panel previews",
+      "EmptyState matrix/variants",
+      "compound and heterogeneous List private Badge examples",
+      "test-only Disclosure surface fixture"
+    ],
+    "exceptions": "Interactive divider and necessary control borders untouched; legacy Canvas no-border usage remains valid",
+    "evidence": "design/reviews/panel-scale-adaptation-20261021/progress.json",
+    "native": "separate",
+    "maturity_and_protocol": "unchanged"
+  },
+  "feedback_outcome_consumer_20261021": {
+    "scope": "Caller-owned independent outcome fixture reuses existing StatusBadge Info/labels, Progress, Skeleton; no shared protocol implementation or status promotion.",
+    "new_file": "examples/composition-consumer/src/feedback_status.rs",
+    "source_review": [
+      {
+        "path": "examples/composition-consumer/src/lib.rs",
+        "old": "5dabf97fa6275198124f0ead94869b156d182f0bd990be785253af46baad26aa",
+        "new": "e2a249c478db30022b993f4fa1b98cb972ff15695823d649f6677dd10e151c9d",
+        "review": "Append-only public module export and two external outcome fixture conformance tests; existing Component/Content contracts unchanged."
+      },
+      {
+        "path": "examples/composition-consumer/tests/scenarios.rs",
+        "old": "3bc3aa396bad1d3bbdcc513884cbb50513f0e14005054c1f45c4287347c4bf1b",
+        "new": "23cc79989007b39fe67062a0d2737f613dc57b12d8a35c3c45a4fd45efc32ba0",
+        "review": "Append-only public module export and two external outcome fixture conformance tests; existing Component/Content contracts unchanged."
+      }
+    ],
+    "evidence": "design/reviews/feedback-outcome-consumer-20261021/checks.json",
+    "remaining": "native/AX and matched ClientKit experience; no control protocol completeness inferred"
+  },
+  "tooltip_reentry_20261021": {
+    "root_cause": "Joint Escape latch ignored new independent source entry while another old source persisted",
+    "shared_fix": "Reuse hovered/focused/controlled_visible/dismissed_until_leave: new independent input/caller entry clears suppression, duplicate notifications and owner exits do not",
+    "applies_to": "all TooltipView consumers, real Gallery FeedbackViews wrapper tested",
+    "no_new_protocol": true,
+    "source": "design/source/interaction-contracts.json tooltip",
+    "evidence": "design/reviews/tooltip-reentry-20261021/checks.json",
+    "remaining": "same-source native and full experience verification"
+  },
+  "label_layout_core_20261021": {
+    "status": "core text foundation implemented and scoped verified; no control/Content protocol promotion",
+    "new_API": "tekes_ui_text::{LabelOptions,LabelOverflow,LabelLayout}; CoreTextShaper::shape_label",
+    "compatibility": "Existing ShapeOptions/Shaper::shape/Paragraph fields and UI Content public struct literals unchanged; only sibling reuse visibility changes in existing shaper",
+    "owned_prior_source_change": [
+      "crates/tekes-ui-text/src/coretext/shaper.rs"
+    ],
+    "remaining": "shared opt-in control/Content input, renderer service bridge, exact consumer/UI/native and public delivery",
+    "evidence": "design/reviews/label-layout-core-20261021/checks.json"
+  },
+  "label_content_integration_20261021": {
+    "owner": "Root",
+    "scope": "explicit TextContent/ButtonContent and CompoundButton decorative slot; same original models/state",
+    "evidence": "design/reviews/label-content-integration-20261021",
+    "compatibility": "existing struct literals/default behavior preserved; public CompositionError adds MissingLabelServices and UnsupportedLabelLayout, exhaustive consumers must handle these opt-in capability diagnostics",
+    "status": "root scoped API/real integration/GPU/native verified;26active external checkpoints/104API frame matches; no whole-component or native maturity promotion; standalone delivery/receiver and matched-page visuals pending",
+    "native_acceptance": "未验证",
+    "native_evidence": "design/reviews/label-content-integration-20261021/native-acceptance.json"
+  },
+  "layout_text_preflight_20261021": {
+    "owner": "Root",
+    "issue": 27,
+    "root_cause": "render validated only entry activation snapshot,not layout-activated required text subtrees",
+    "shared_fix": "reuse the same needs_text/optional host/cancellation after measure and arrange; no new public protocol/error",
+    "applicable": "all requires_text_services components; original editable and reading-backed readonly TextFieldContent demonstrated",
+    "exceptions": "entry-active preflight remains conservative; no rollback of application callbacks; caller publishes native input/AX only after successful render",
+    "evidence": "design/reviews/layout-text-preflight-20261021",
+    "native": "design/reviews/layout-text-preflight-20261021/native-acceptance.json",
+    "native_scope": "14 active U2790B@2 checkpoints,3 native Tab entries; editable field only; no VO hearing",
+    "host_correction": "Rejected frame fences fresh input but lets TextKey Finished drain the original acknowledgement chain; attempt1 failure retained",
+    "remaining": [
+      "new immutable independent consumer candidate/receipt",
+      "public exact pin/CI under separate authorization",
+      "matched ClientKit product-page review separate"
+    ]
+  },
+  "stable_item_reveal_20261021": {
+    "status": "partial: viewport prerequisite implemented and verified; original Issue28 not completed",
+    "root_cause": "existing immediate reveal lacks explicit placement/comfort-zone/motion/input competition; composition stable item entry still absent",
+    "shared_fix": "original ScrollArea/axis/clamp/cancel/wheel + ProgressTransition, existing JSON geometry duration and standard reveal easing",
+    "owner": "root",
+    "API": "examples/composition-consumer/tests/scroll_reveal.rs",
+    "evidence": "design/reviews/stable-item-reveal-20261021/progress.json",
+    "remaining": [
+      "version/mount-safe stable item ContentHost command",
+      "nested ancestor mapping and clipped-target proof",
+      "real mixed consumer with unchanged composer selection/preedit/focus",
+      "GPU/native/Gold7 on final source and independent immutable consumer acceptance"
+    ],
+    "public_type_classification": "Four reviewed component-support types on existing tui.scroll-area route, not four new components or native maturity promotion"
+  },
+  "content_item_reveal_20261021": {
+    "status": "implemented;scoped API/actualCoreText/GPU/producer43ea externalnative22checkpoints passed,independent actualconsumer/productpage/public delivery remain",
+    "owner": "root",
+    "shared_fix": "reuse ReadingDocumentVersion and original mount IDs, ContentHost layout preflight, original ScrollContent ancestor path, shared ScrollArea reveal and ProgressTransition; snapshot only library scroll/reading metadata,never editors",
+    "root_cause": "legacy immediate rectangle/focus paths cannot express stable versioned focus-preserving item navigation",
+    "remount_fix": "clear old per-version item mount baseline and explicit navigation intent when original reading owner unmounts; regression red/green retained",
+    "evidence": "design/reviews/content-item-reveal-20261021/progress.json",
+    "remaining": [
+      "new immutable isolated candidate and independent actual AgentKit integration",
+      "matched ClientKit product-page experience",
+      "physical IME on final consumer if required; current preedit proof is public/GPU",
+      "public exact source/CI under separate authorization"
+    ],
+    "native": "design/reviews/content-item-reveal-20261021/native-acceptance.json",
+    "Gold7": "design/reviews/content-item-reveal-20261021/gold7-scope.json"
+  },
+  "content_item_geometry_20261021": {
+    "owner": "root",
+    "root_cause": "Scroll extents can remain unchanged while target document geometry moves; old animation must not continue to stale endpoint.",
+    "shared_fix": "ContentHost validates original scroll ancestor path and per-ancestor target document rect, projecting inner scrolls to planned endpoints so normal animation is not mistaken for reflow.",
+    "applies_to": "all original declared reading items, nested scroll paths",
+    "exception": "ordinary animation offset changes remain valid; layout changes interrupt rather than silently retarget.",
+    "public_API_tests": 17,
+    "controls": 426,
+    "consumer": 209,
+    "GPU_cases": 48,
+    "GPU_frames": 240,
+    "evidence": "design/reviews/content-item-geometry-20261021/progress.json",
+    "native": "pending exact-source focused round; historical43ea retained separately",
+    "remaining": [
+      "new immutable consumer candidate replay and AgentKit integration",
+      "matched product-page experience",
+      "public source/CI separately authorized"
+    ]
+  },
+  "compact_actions_20261021": {
+    "owner": "root",
+    "root_cause": "Existing compound content/action contract forced token minimum geometry and release timing; caller-arranged10pt rows could not keep hit/AX/chrome identical.",
+    "shared_fix": "Explicit ButtonFramePolicy::Exact reuses original ButtonLayout/paint; ButtonContent pointer activation phase reuses original Button arm with committed state and original cancellation/motion. Original normal paint traversal draws the exact focused branch last so adjacent chrome cannot cover its outsetting focus ring. No parallel input state machine.",
+    "applicable": "all opt-in original CompoundButton decorative actions and Button layout; not limited to Agent rail",
+    "exceptions": "ordinary buttons remain Minimum/default Release; press commits cannot be undone by later cancellation; keyboard/AX retain original timing; small exact targets require explicit caller arrangement.",
+    "evidence": "design/reviews/compact-action-20261021/progress.json",
+    "native": "pending exact-source small host",
+    "remaining": [
+      "native/scoped Gold7",
+      "isolated consumer integration",
+      "matched ClientKit product-page experience",
+      "public source/CI under separately scoped authorization"
+    ]
+  },
+  "item_start_alignment_20261021": {
+    "issues": [
+      28,
+      32
+    ],
+    "owner": "root shared implementation;AgentKit final integration",
+    "root_causes": [
+      "missing selected-axis Start even for already-visible/tall item",
+      "current nested clip can differ from reachable endpoint clip",
+      "host frame/clip changes did not stop old plan before tick",
+      "reading anchor f32 round trip moved unchanged fractional user offsets by one ULP"
+    ],
+    "shared_fix": "Reuse existing Axis,ScrollArea target/clamp/motion,ScrollGeometry actual visible rect and SAME-tree scroll/reading metadata preflight; refine only Start up to ancestor_count+2 and require usable final clips; original frame/clip change interrupts navigation only; reuse existing0.001 anchor clamp tolerance with f64 displacement.",
+    "applies_to": "original declared mixed reading items and nested original ScrollContent;viewport primitive supports selected existing Axis",
+    "exceptions": "unselected axis retains document offset; original invalid margins reject; boundary clamp is explicit; permanently unusable/oscillating clip rejects; default Nearest/Centered unchanged;business owns semantic latest/follow deduplication",
+    "evidence": "design/reviews/item-start-alignment-20261021/progress.json",
+    "remaining": [
+      "AgentKit exact588277 actual RunView/rail native and matched ClientKit/Gold7 page",
+      "public source/CI under separately scoped authorization"
+    ],
+    "status": "producer layered acceptance and sender exact archive replay passed;receiver actual page/native pending",
+    "native_evidence": "design/reviews/item-start-alignment-20261021/native-acceptance.json",
+    "delivery_candidate": "design/reviews/item-start-portable-candidate-20261021/portable-acceptance.json"
+  },
+  "padding_focus_20261021": {
+    "issue": 30,
+    "owner": "root sole SDK implementation; Rust AgentKit original Composer receiver",
+    "root_cause": "Passive composition decoration lacked an atomic mount-bound focus destination; container visibility alone also overestimated visibility of the original text slot.",
+    "shared_fix": "ContentHost::set_padding_focus binds existing descendant mount; original active subtree, editable availability, semantic-frame clip and real interactive hit shielding are validated before the original atomic focus method. Repeated focus does not repeat set_focus/reveal. No editor/capture/IME clone.",
+    "applies_to": "passive input surfaces around original editable TextSurface descendants and real sibling actions; original TextField/TextArea/SearchField adapters",
+    "exceptions": "read-only stays directly selectable; secondary pointers/outside clip/active capture/default unregistered components keep original routing. Replacement/remount requires explicit rebind. Disabled real-control bounds shield parent decoration.",
+    "evidence": "design/reviews/padding-focus-routing-20261021/progress.json",
+    "remaining": [
+      "Actual AgentKit Composer receiver acceptance for exact5677b80f",
+      "Matching public immutable pin/CI under scoped authorization"
+    ],
+    "status": "producer API/GPU/external native/scoped Gold7 and independent archive replay passed; exact receiver/public pin pending",
+    "candidate": "5677b80f5462570525ea3d00f6256298baac7e018513844de5403364e9c097f0"
+  },
+  "forwarded_focus_decoration_20261021": {
+    "issue": 33,
+    "owner": "root sole SDK implementation; Rust AgentKit actual rail wrapper receiver",
+    "root_cause": "Ordinary sibling traversal used concrete downcasts, missing legitimate wrappers delegating one retained Exact CompoundButton; the next original row occluded the lower ring.",
+    "shared_fix": "Default-false Component::focus_decoration_above_siblings; existing predicate owned by original ButtonContent; CompoundButton and wrapper forward to the same retained action; original active ordinary traversal asks trait.",
+    "applies_to": "Direct and legitimate forwarded original compact actions; no business/domain types in SDK",
+    "exceptions": "Minimum default, inactive/disabled/loading/non-keyboard focus unchanged; layout/hit/AX/overlay order unchanged; components owning child paint retain own order",
+    "evidence": "design/reviews/forwarded-focus-decoration-20261021/progress.json",
+    "remaining": [
+      "Actual AgentKit TurnRailAction forwarding and matched final consumer experience on95b140c2",
+      "Matching public immutable pin/CI under explicit scope"
+    ],
+    "status": "producer public API/actual wrapper/GPU/scoped external native/independent archive passed; actual receiver/public pin pending",
+    "candidate": "95b140c278a2257c11fb956eaf860313c38bc4829bae70e022cc3d8f33bb38ac"
+  },
+  "padding_focus_intent_20261021": {
+    "issue": 34,
+    "root_cause": "Host IME barrier could not query original registered padding ownership without copying private generic hit rules. An open unconsumed overlay also allowed padding fallthrough.",
+    "shared_fix": "Read-only ContentHost::padding_focus_target on original classifier, reused by actual dispatch; original pointer-phase/primary, capture, overlay/modal, active subtree/mount and semantic text visibility rules.",
+    "applies_to": "registered passive input surfaces with original editable TextSurface descendants and original sibling actions",
+    "exceptions": "not a general hit-test or reservation; None never grants forwarding permission; stale ownership can conservatively reject until normal reconciliation; direct read-only text and original control contracts retained",
+    "owner": "root SDK; Rust AgentKit actual Composer receiver",
+    "evidence": "design/reviews/padding-focus-intent-20261021/progress.json",
+    "remaining": [
+      "same final immutable increment independent consumer/Composer physical IME acceptance",
+      "bounded original-component native/GPU evidence does not establish whole page or VoiceOver acceptance"
+    ]
+  },
+  "current_scope_reconciliation_20261021": {
+    "owner": "root sole shared implementation owner",
+    "method": "historical receipts unchanged; current effective status supplements older intermediate descriptions",
+    "receipt_sha256": {
+      "design/reviews/label-content-integration-20261021/native-acceptance.json": "172388497861f2517a7bb9acb169b38950604d9ab875f69b4c0f21e359307a33",
+      "design/reviews/label-portable-candidate-20261021-attempt2/portable-acceptance.json": "063b4c92dc2f473d78a0d097c597ad963e12e5c648f306093a0601ccd9bdb682",
+      "design/reviews/layout-text-preflight-20261021/native-acceptance.json": "1ea502f123fc64748d6220cc9dcb530450b26915004d9831c6da53e71e139a4e",
+      "design/reviews/layout-text-portable-candidate-20261021/portable-acceptance.json": "5664893a4ca5d02806e68a7cc7e2d25eaad028f58192d12e7882cc4814a0f7b1",
+      "design/reviews/content-item-portable-candidate-20261021-attempt2/portable-acceptance.json": "608c2d9c40f1bbf530b68d8e16579e1b937ecbf8473c427107f3fd43fdba19c2",
+      "design/reviews/compact-action-20261021/native-acceptance.json": "2cb6c8837f52c9040c6fa76083fd4c7ad16727ae42b4780365f27b70f7c21605",
+      "design/reviews/compact-action-portable-candidate-20261021/portable-acceptance.json": "7235723e56891c50014a71ba151b86ef7b4c82aea896f6ecb30c581e96dce243",
+      "design/reviews/item-start-alignment-20261021/native-acceptance.json": "b6a755d63bec1b88c4c3a6ea38b539a9b6f7fe1874db2a922950647c1358dd9d",
+      "design/reviews/item-start-portable-candidate-20261021/portable-acceptance.json": "9d73849fdb915b50f509993f2263bb24fcb6d75bd40d3ba1a35710b057ce677a",
+      "design/reviews/padding-focus-routing-20261021/native-acceptance.json": "de1baa1374c9c6584291a4d10540af27d390589ef9199ebb1c8f889578a707c3",
+      "design/reviews/padding-focus-portable-candidate-20261021/portable-acceptance.json": "cae168341b9470af309c60ed0d4a0e3987bc3c41f9c75a79fad2bc4ab1acb802",
+      "design/reviews/forwarded-focus-decoration-20261021/native-acceptance.json": "921f1d1ba206c65b52da36338bfe1f5259a3d28661bb4e7d7035bf1ea213de6d",
+      "design/reviews/forwarded-focus-portable-candidate-20261021/portable-acceptance.json": "f8c7a31267369883ca8d5c5e5621bf69eedba165e15f344eae5593649cb23aff",
+      "design/reviews/tooltip-system-reactivation-20261021/acceptance.json": "d373d7f15072adc277b77610a222914cdefa6d08962e6bba00709195ffd5b401",
+      "design/reviews/padding-focus-intent-20261021/progress.json": "b205f7ccfef81efecea30ff63b7b2a89aa769ef347c73689ea15f9a83f1c55a0",
+      "design/reviews/padding-intent-portable-candidate-20261021/portable-acceptance.json": "307ff4f2f27fc3cb1aef4f51baf3aee3626603eb9ac25973c484e755b4a99173"
+    },
+    "corrections": {
+      "label_layout_core_20261021": {
+        "effective_status": "core foundation and explicit renderer/control/Content integration now implemented with bounded API/GPU/native and exact isolated packet receipts; whole-component experience/receiver delivery still separate",
+        "superseded_remaining": [
+          "shared opt-in control/Content input",
+          "renderer service bridge",
+          "scoped API/consumer/GPU/native producer verification"
+        ],
+        "latest": "label_content_integration_20261021"
+      },
+      "layout_text_preflight_20261021": {
+        "effective_status": "producer14native checkpoints and exact292f5fe6 independent archive replay complete; actual receiver/final delivery remain",
+        "superseded_remaining": [
+          "new immutable independent consumer candidate/receipt"
+        ],
+        "latest_receipt": "design/reviews/layout-text-portable-candidate-20261021/portable-acceptance.json"
+      },
+      "stable_item_reveal_20261021": {
+        "effective_status": "historical viewport prerequisite remains a partial-scope receipt; full stable item command, nested geometry and real mixed-consumer preservation subsequently implemented",
+        "superseded_by": [
+          "content_item_reveal_20261021",
+          "content_item_geometry_20261021",
+          "item_start_alignment_20261021"
+        ],
+        "remaining": "final actual receiver and matched page/physical acceptance; old prerequisite is not an unresolved implementation task"
+      },
+      "content_item_reveal_20261021": {
+        "effective_status": "public command and producer native accepted in recorded scope; immutable packets10b5f235 and5882774a independently replayed by sender",
+        "superseded_remaining": [
+          "new immutable isolated candidate"
+        ],
+        "latest_receipt": "design/reviews/item-start-portable-candidate-20261021/portable-acceptance.json"
+      },
+      "content_item_geometry_20261021": {
+        "effective_status": "geometry repair included in10b5f235 and final5882774a; final sender scope has17active native checks plus independent archive replay",
+        "superseded_remaining": [
+          "producer focused native round",
+          "new immutable consumer candidate replay"
+        ],
+        "latest_native": "design/reviews/item-start-alignment-20261021/native-acceptance.json",
+        "latest_receipt": "design/reviews/item-start-portable-candidate-20261021/portable-acceptance.json"
+      },
+      "compact_actions_20261021": {
+        "effective_status": "producer7native checkpoints and sender exactc7797b1e replay passed; legitimate wrapper focus-paint gap subsequently fixed by#33 and inherited bya30b18db",
+        "superseded_remaining": [
+          "producer native/scoped Gold7",
+          "sender isolated archive build"
+        ],
+        "latest_native": "design/reviews/compact-action-20261021/native-acceptance.json",
+        "latest_receipt": "design/reviews/compact-action-portable-candidate-20261021/portable-acceptance.json",
+        "wrapper_followup": "forwarded_focus_decoration_20261021"
+      },
+      "tooltip_reentry_20261021": {
+        "effective_status": "producer mixed-owner repair has separate final-WIP system-reactivation supplement16 checkpoints; applicable hearing and combined page experience remain",
+        "superseded_remaining": [
+          "recorded final source system reactivation"
+        ],
+        "latest_receipt": "design/reviews/tooltip-system-reactivation-20261021/acceptance.json"
+      },
+      "padding_focus_intent_20261021": {
+        "effective_status": "query and real-overlay fallback shared fix completed; producer21API/24GPU/10native and exacta30b18db sender replay passed; actual Composer/physical IME receiver pending",
+        "latest_receipt": "design/reviews/padding-intent-portable-candidate-20261021/portable-acceptance.json"
+      }
+    },
+    "native_policy": "all45 component native_acceptance remain unverified; scoped native receipts never relabelled as same combined candidate/whole page/VoiceOver/ClientKit acceptance",
+    "delivery_policy": "private sender clean-extract is not receiver signoff or public pin/remoteCI; no closure inferred",
+    "toolbar": "latest#14 remains architecture audit/planning; no implicit new Toolbar implementation scope"
+  },
+  "content_help_20261021": {
+    "issue": 35,
+    "owner": "root sole SDK; Rust AgentKit actual Sidebar snippet receiver",
+    "root_cause": "No original-owner dynamic help declaration or common delayed route. Assuming editing services implied readonly label service also produced blank help; nominal line boxes cropped large fallback-font text.",
+    "shared_fix": "Original Content metadata, ContentHost route/clock scheduling, original TooltipView paint/placement and original readonly LabelRenderer capability/fallback; existing description/native accessibilityHelp. No Agent types/new editor/action/semantic node.",
+    "applies_to": "original Content owners in scrollable List and other eligible composition trees, not only Sidebar rows",
+    "exceptions": "disabled control explanation stays readable while original activation rejected; no clock or no legible fit remains semantic-only; no interactive tooltip subtree; remount explicitly rebinds",
+    "evidence": "design/reviews/content-help-20261021/progress.json",
+    "remaining": [
+      "final source GPU/native/independent immutable input and actual Sidebar receiver",
+      "applicable physical hover/hearing/matched Gold7 page review; no broad maturity promotion"
+    ]
+  },
+  "menu_selection_event_20261021": {
+    "issue": 36,
+    "status": "部分完成",
+    "root_cause": "shared Menu/action contract loses event-time value when polling mutable selected; trigger opening falsely reported as command activation",
+    "shared_fix": "owned optional payload in existing action queue, MenuContent value/model snapshot, original MenuRuntime model replacement/held-input cancellation",
+    "applies_to": "all original flat MenuContent consumers; generic ContentHost queue; not AgentKit-specific",
+    "exceptions": "legacy positional menus retain revision/index mapping; other producers have no payload; action-delegating wrappers forward payload hook; P2 nested/checked/disabled original templates pending",
+    "evidence": "design/reviews/menu-selection-event-20261021/progress.json",
+    "remaining": [
+      "P2 original submenu/separator/checked/disabled and compact/compound trigger",
+      "fixed final candidate and layered GPU/native/AX/consumer experience; no whole-library promotion"
+    ],
+    "compatibility": "External original MenuContent struct literal compile/selection regression added; initial private fields on public adapter rejected before handoff and moved into existing private MenuView storage."
+  },
+  "menu_declarations_20261021": {
+    "scope": "Original Menu composition, no second engine; declaration/compact trigger/parent hierarchy, captured selection and existing scroll capture/clock bridge.",
+    "public_api": "design/reviews/menu-declarations-20261021/scroll-bridge-matrix.log",
+    "status": "implemented under final validation; native, Gold7/ClientKit and isolated receiver pending",
+    "unrelated_platform_review": "Compared app.rs/shared.rs against exact previous frozen336 source hashes. Changes are opt-in unified_titlebar AppKit chrome and synchronous native begin_titlebar_drag. Existing AX anchors/ownership unchanged; no acceptance promotion; excluded from intended Menu delivery unless required and separately reviewed.",
+    "baseline": "Prior full CI 7e predates35/36. Current exact WIP gates are separate; historical frozen inputs/receipts remain unchanged."
+  }
+}

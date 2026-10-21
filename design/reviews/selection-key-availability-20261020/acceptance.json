@@ -1,0 +1,107 @@
+{
+  "status": "scoped shared key-availability repair API/real consumer/GPU/native acceptance passed; round cleaned",
+  "head": "b3013c720d98f89159bc20f7bc64e9ba1f71b314",
+  "root_cause": "Checkbox and Switch filtered unrelated keys before observing current unavailability, preserving an older pointer/Space activation across disabled or loading state",
+  "shared_fix": {
+    "Checkbox": "widgets.rs: always synchronize existing Button.key first; activate Checkbox only for Space",
+    "SwitchView": "selection.rs: reuse cancel before key filtering; preserve unrelated-key Ignored result"
+  },
+  "applicable": "all direct public Checkbox and SwitchView consumers, including actual Gallery and SwitchContent users; no built-in Checkbox Content adapter added",
+  "exceptions": [
+    "unavailable flag changes with no event/render observation cannot be detected; pointer_move APIs without a model argument do not observe model flags",
+    "Checkbox retains Space-only activation; Enter/Tab/Escape/arrows remain nonactivating",
+    "Switch supports disabled, not loading; do not invent a loading contract",
+    "Button/IconButton/Link/Slider already synchronize before filtering; RadioGroup cancels unavailable captures, SegmentedControl cancels unavailable focused items; their behavior not changed"
+  ],
+  "API": {
+    "tests": 12,
+    "new_regression_combinations": 60,
+    "red": "both new tests failed before repair; logs retained",
+    "controls_total": 341
+  },
+  "consumer": {
+    "tests": 33,
+    "new_real_view_cases": 24,
+    "backend": "actual CoreText measurement and production views; text draw is a no-op in this existing fixture; no GPU claim"
+  },
+  "strict_clippy": "controls and actual composition consumer all-targets passed",
+  "gates": {
+    "runtime_probes": [
+      {
+        "path": "design/reviews/selection-key-availability-20261020/token-probes/action.json",
+        "cases": 576,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/selection-key-availability-20261020/token-probes/combo-async.json",
+        "cases": 264,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/selection-key-availability-20261020/token-probes/command-async.json",
+        "cases": 168,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/selection-key-availability-20261020/token-probes/content-status.json",
+        "cases": 408,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/selection-key-availability-20261020/token-probes/field.json",
+        "cases": 48,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/selection-key-availability-20261020/token-probes/input.json",
+        "cases": 612,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/selection-key-availability-20261020/token-probes/number.json",
+        "cases": 60,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/selection-key-availability-20261020/token-probes/selection.json",
+        "cases": 2016,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/selection-key-availability-20261020/token-probes/slider-composition.json",
+        "cases": 264,
+        "complete": false
+      }
+    ],
+    "total_cases": 4416,
+    "governance_tests": 42,
+    "composition_tests": 8,
+    "matrix_components": 45,
+    "format": "passed"
+  },
+  "source_hashes": {
+    "crates/tekes-ui-controls/src/widgets.rs": "040f8130c4c035b084bf7533cddfa34b25bc1941801ef10b74ffab78bffbad43",
+    "crates/tekes-ui-controls/src/selection.rs": "cb6f02b42cd93cd7ce79a086606fcbb5d8b3c6fee22a6ac211919a99479ddb08",
+    "crates/tekes-ui-controls/tests/action_contract.rs": "f4d6b41fecbfb435cccfca7114d9db0bdb70cad9a825ad7f7cc8c0e7f15fdf00",
+    "crates/tekes-ui-controls/tests/selection_availability.rs": "2e546e09c0e9533a72073a86a658a2bf86acc2fd4c3ae2a4d0d08df549740e25",
+    "examples/composition-consumer/tests/scenarios.rs": "b6b078c607931adc1dbe7a92665f0de3614e77695f9158a4932659716f2c2358"
+  },
+  "source_protection": {
+    "unchanged": 557,
+    "unexpected": []
+  },
+  "native": "six actual active-window keyboard/pointer chains plus user physical-input confirmation passed; design/reviews/selection-key-gpu-20261020/native/acceptance.json",
+  "Gold7": "scoped repair accepted, no wider component-family maturity promotion",
+  "initial_consumer_attempts": "fixture used frame method instead of public field, then used outer Switch label slot instead of actual hit geometry; both corrected and failed logs retained; no runtime defect inferred from these fixture errors",
+  "cleanup": "cleanup.json",
+  "frozen_boundary": "AgentKit formal431/public61dd/local532 preserved; no new consumer pin or public delivery",
+  "publication": "no commit/push/tag/merge/Issue write",
+  "performance": "not measured",
+  "GPU_followup": {
+    "evidence": "design/reviews/selection-key-gpu-20261020/acceptance.json",
+    "frames": 1440,
+    "cases": 288,
+    "native": "scoped six-chain acceptance passed and cleaned; no VoiceOver or whole-family acceptance",
+    "native_evidence": "design/reviews/selection-key-gpu-20261020/native/acceptance.json"
+  }
+}

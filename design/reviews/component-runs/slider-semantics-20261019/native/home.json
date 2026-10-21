@@ -1,0 +1,86 @@
+{
+  "mode": "slider",
+  "nodes": [
+    {
+      "component": 8500,
+      "enabled": true,
+      "focused": false,
+      "frame": {
+        "height": 624.0,
+        "width": 704.0,
+        "x": 8.0,
+        "y": 8.0
+      },
+      "label": "",
+      "part": null,
+      "role": "Group",
+      "value": null
+    },
+    {
+      "component": 8504,
+      "enabled": true,
+      "focused": false,
+      "frame": {
+        "height": 16.0,
+        "width": 44.96044921875,
+        "x": 8.0,
+        "y": 8.0
+      },
+      "label": "Volume",
+      "part": null,
+      "role": "StaticText",
+      "value": null
+    },
+    {
+      "component": 8501,
+      "enabled": true,
+      "focused": true,
+      "frame": {
+        "height": 32.0,
+        "width": 704.0,
+        "x": 8.0,
+        "y": 32.0
+      },
+      "label": "Volume",
+      "part": null,
+      "role": "Slider(AccessibilityRange { minimum: 0.0, maximum: 100.0 })",
+      "value": "0"
+    },
+    {
+      "component": 8502,
+      "enabled": true,
+      "focused": false,
+      "frame": {
+        "height": 32.0,
+        "width": 704.0,
+        "x": 8.0,
+        "y": 92.0
+      },
+      "label": "Draft",
+      "part": null,
+      "role": "TextField",
+      "value": "Keep this draft"
+    },
+    {
+      "component": 8503,
+      "enabled": true,
+      "focused": false,
+      "frame": {
+        "height": 24.0,
+        "width": 78.49462890625,
+        "x": 8.0,
+        "y": 136.0
+      },
+      "label": "Continue",
+      "part": null,
+      "role": "Button",
+      "value": null
+    }
+  ],
+  "screen": {
+    "builtin": false,
+    "name": "U2790B",
+    "scale": 2.0
+  },
+  "window_active": true
+}

@@ -1,0 +1,44 @@
+{
+  "scope": "RadioGroup disabled-scope late focus and fresh-focus restoration only",
+  "root_cause": "RadioGroupView.focus accepted enabled item while whole group disabled; stale focus survived restore",
+  "shared_fix": "crates/tekes-ui-controls/src/selection.rs: existing disabled guard + blur/cancel",
+  "applicability": [
+    "all RadioGroupView consumers",
+    "Gallery state fixtures",
+    "independent public API host"
+  ],
+  "exceptions": [
+    "RadioGroup uses Space down selection; no Button release semantics introduced",
+    "inactive focus preparation is separate; no new policy imposed",
+    "Slider stores disabled on model; focus signature differs; audit separately"
+  ],
+  "public_api": {
+    "controls_tests": 350,
+    "new_regression_tests": 2,
+    "late_focus_matrix_cases": 30,
+    "red_then_green": true
+  },
+  "real_consumer": {
+    "cases": 720,
+    "native_pointer_bridge_regression": true,
+    "strict_clippy": true
+  },
+  "real_gpu": {
+    "cases": 48,
+    "frames": 144,
+    "reference": "fresh-focus reconstruction of prior bad state, not pre-fix binary",
+    "visual_review": "Light neutral @2 aligned labels/indicators, selection and focused item distinct; no visual design change"
+  },
+  "native": {
+    "checkpoints": 15,
+    "display": "U2790B",
+    "scale": 2,
+    "result": "native/result.json",
+    "VoiceOver": false,
+    "physical_keyboard": false
+  },
+  "Gold7": "bounded existing keyboard navigation, selection, disabled isolation and focus-visible experience checked; no complete component maturity claim",
+  "performance": "not measured",
+  "runtime": "closed and unused-checked cleaned",
+  "git": "no commit/push/issue close"
+}

@@ -388,26 +388,31 @@ pub fn button_variant_with_interaction(
         color(theme, pressed),
         progress(pressed_progress),
     );
-    let border = if primary {
-        fill
+    let role = if state.error && !state.disabled {
+        "error"
+    } else if state.selected && !state.disabled && !primary {
+        "selected"
     } else {
-        color(
-            theme,
-            if state.error {
-                "status-failed"
-            } else {
-                "border"
-            },
-        )
+        match variant {
+            ButtonVariant::Primary if primary => "action-primary",
+            ButtonVariant::Panel => "action-panel",
+            _ => "action-quiet",
+        }
     };
-    scene.push_quad(
-        Quad::new(rect, fill)
-            .with_corner_radius(radius)
-            .with_border(
-                proposal::metric("stroke", "stroke-rule").expect("control stroke"),
-                border,
-            ),
-    );
+    let boundary = proposal::control_boundary(role, theme.theme).expect("JSON control emphasis");
+    let quad = Quad::new(rect, fill).with_corner_radius(radius);
+    let quad = match boundary {
+        "none" => quad,
+        "fill" => quad.with_border(
+            proposal::metric("stroke", "stroke-rule").expect("control stroke"),
+            fill,
+        ),
+        color_role => quad.with_border(
+            proposal::metric("stroke", "stroke-rule").expect("control stroke"),
+            color(theme, color_role),
+        ),
+    };
+    scene.push_quad(quad);
     if state.focused && state.focus_visible && !state.disabled {
         focus_ring(scene, rect, theme, radius);
     }
@@ -428,7 +433,7 @@ mod boundary_tests {
     use super::*;
     use tekes_ui_tokens::{Contrast, Theme};
     #[test]
-    fn decorative_frames_follow_scale_and_contrast_without_weakening_controls() {
+    fn decorative_frames_and_optional_actions_have_distinct_boundary_roles() {
         for theme in Theme::ALL {
             for scale in [1., 2.] {
                 let (width, ink) = decorative_border(theme, scale);
@@ -451,11 +456,7 @@ mod boundary_tests {
                 let tekes_ui_scene::Primitive::Quad(q) = &scene.primitives()[0] else {
                     panic!("control quad")
                 };
-                assert_eq!(
-                    q.border_width,
-                    proposal::metric("stroke", "stroke-rule").unwrap()
-                );
-                assert_eq!(q.border_color, color(theme, "border"));
+                assert_eq!(q.border_width, 0.);
             }
         }
     }
@@ -632,6 +633,62 @@ mod focus_tests {
                     assert_eq!(ring.border_width * scale, 2. * scale);
                     assert_eq!(frame.min_x() - (ring.rect.min_x() + ring.border_width), 2.);
                     assert_eq!(ring.border_color, color(palette, "border-focused"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn action_emphasis_preserves_primary_error_selection_and_independent_focus_in_all_themes() {
+        for theme in Theme::ALL {
+            for variant in [
+                ButtonVariant::Quiet,
+                ButtonVariant::Panel,
+                ButtonVariant::Primary,
+            ] {
+                for (selected, error, focused) in [
+                    (false, false, false),
+                    (false, false, true),
+                    (true, false, false),
+                    (false, true, true),
+                ] {
+                    let mut scene = Scene::new();
+                    button_variant(
+                        &mut scene,
+                        Rect::new(10., 10., 100., 32.),
+                        theme,
+                        ControlState {
+                            selected,
+                            error,
+                            focused,
+                            focus_visible: focused,
+                            ..Default::default()
+                        },
+                        variant,
+                    );
+                    let tekes_ui_scene::Primitive::Quad(q) = &scene.primitives()[0] else {
+                        panic!("action")
+                    };
+                    if error {
+                        assert_eq!(q.border_color, color(theme, "status-failed"));
+                        assert_eq!(
+                            q.border_width,
+                            proposal::metric("stroke", "stroke-rule").unwrap()
+                        );
+                    } else if variant == ButtonVariant::Primary {
+                        assert_eq!(q.border_color, q.fill);
+                    } else if selected {
+                        assert_eq!(q.border_color, color(theme, "border"));
+                    } else {
+                        assert_eq!(q.border_width, 0.);
+                    }
+                    assert_eq!(scene.primitives().len(), if focused { 2 } else { 1 });
+                    if focused {
+                        let tekes_ui_scene::Primitive::Quad(ring) = &scene.primitives()[1] else {
+                            panic!("focus")
+                        };
+                        assert_eq!(ring.border_color, color(theme, "border-focused"));
+                    }
                 }
             }
         }

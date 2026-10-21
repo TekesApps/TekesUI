@@ -1,0 +1,8 @@
+{
+  "head": "b3013c720d98f89159bc20f7bc64e9ba1f71b314",
+  "subject": "feat(scene3d): add GPU animated glTF viewer and adaptive Gallery preview",
+  "owned_required_files_in_external_commit": [],
+  "protected_source_hashes": "unchanged despite external HEAD movement",
+  "git_ref_or_index_writes_by_this_turn": false,
+  "action": "preserved current HEAD; no reset/rebase/commit/push"
+}

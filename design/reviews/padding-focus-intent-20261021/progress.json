@@ -1,0 +1,90 @@
+{
+  "issue": 34,
+  "status": "已实现待验收",
+  "owner": "root shared SDK; Rust AgentKit actual Composer barrier",
+  "root_cause": "Existing mount-bound padding classification was private; host IME policy could not query original route. An open unconsumed overlay leaked down into padding fallback.",
+  "shared_fix": "ContentHost::padding_focus_target(&ContentEvent)->Option<ComponentId>, original Content::padding_focus_at reused by query and dispatch; no new state/token/editor/capture abstraction",
+  "applies_to": "registered passive input decorations around original editable TextSurface descendants, real sibling controls, and current modal subtree",
+  "exceptions": [
+    "None does not authorize forwarding and is not a general hit result",
+    "pending stale ownership conservatively returns None until normal reconciliation",
+    "query is not a mount reservation; real dispatch rechecks changes",
+    "read-only/direct-control/default styles and semantic nodes remain original"
+  ],
+  "red_evidence": [
+    "before-api.log missing API",
+    "overlay-before-route-fix.log reproduces actual focus leak with old fallback"
+  ],
+  "API": {
+    "targeted_tests": 21,
+    "root_controls": 426,
+    "root_consumer": 253,
+    "strict_clippy": "controls/consumer/host passed"
+  },
+  "GPU": {
+    "cases": 24,
+    "functional_frames": 120,
+    "themes": 4,
+    "type_scales": [
+      1,
+      1.5,
+      2
+    ],
+    "backing_scales": [
+      1,
+      2
+    ],
+    "original_preedit_and_pixels_preserved": true,
+    "receipt": "gpu/result.json"
+  },
+  "tokens": {
+    "actual_probes": 17,
+    "bounded_cases": 6432,
+    "complete": false,
+    "receipt": "token-checks.json",
+    "token_sets_api_values_unchanged": true
+  },
+  "gates": "gates.json",
+  "native": {
+    "identity": "53c4be13e1ff838162be7d116edcf1f8a798796175fbfe615f861015e23305a7",
+    "active_checkpoints": 10,
+    "screen": "U2790B@2",
+    "receipt": "native/checkpoints.json",
+    "accepted": [
+      "query returns original editor before focus",
+      "same-owner padding keeps selection/baseline",
+      "actual Send reports no padding and emits one Pointer action",
+      "read-only/disabled reject padding",
+      "availability recovery",
+      "same-ID new mount rejects old registration",
+      "explicit rebind restores query/dispatch"
+    ],
+    "boundary": "Root final WIP identity differs from isolated five-path package; not relabelled as candidate or Composer native acceptance; no physical IME/hearing claim"
+  },
+  "Gold7": "bounded original-component focus/selection/route experience and original GPU rendering; whole matched ClientKit/page remains unverified",
+  "portable": {
+    "identity": "a30b18db1a1df1f5a780c245080b22221a63cb20556f7274b76786d4d896584e",
+    "archive_sha256": "54b217691907389a0f9bc51bc8cafae4d54151dd2c491f32df7af5eaf25ded9e",
+    "base": "95b140c278a2257c11fb956eaf860313c38bc4829bae70e022cc3d8f33bb38ac",
+    "files": 497,
+    "delta_paths": 5,
+    "exact_replay": "50text/388controls/250consumer, strict3Clippy, native builds,24GPU/120functional frames",
+    "receipt": "design/reviews/padding-intent-portable-candidate-20261021/portable-acceptance.json"
+  },
+  "remaining": [
+    "AgentKit independent exact input and real Composer barrier integration",
+    "physical IME transfer preserving marked text in actual Composer",
+    "final matched ClientKit/Gold7 page experience where required",
+    "public pin/CI only under explicit scoped authorization"
+  ],
+  "cleanup": "cleanup.json",
+  "Git": "no commit/push/tag/close",
+  "performance": "not measured",
+  "handoff": {
+    "thread": "01a14920-0d6e-7652-9a60-c74ef1a1f70f",
+    "guide": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/padding-intent-portable-candidate-20261021/HANDOFF.md",
+    "sent": true,
+    "receiver_acceptance": "pending; no freeze/close inferred"
+  },
+  "final_provenance_refresh": "final-capability-refresh.json"
+}

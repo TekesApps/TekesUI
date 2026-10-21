@@ -18,12 +18,26 @@
 //!
 //! 截图写到 `TEKES_SELFTEST_OUT` 指定的目录。
 
+#[cfg(all(target_os = "macos", feature = "composition-review"))]
+mod actions_acceptance;
+#[cfg(all(target_os = "macos", feature = "composition-review"))]
+mod controlled_acceptance;
 #[cfg(target_os = "macos")]
 mod gallery;
 #[cfg(target_os = "macos")]
 mod host;
 #[cfg(target_os = "macos")]
 mod perf;
+#[cfg(all(target_os = "macos", feature = "composition-review"))]
+mod reading_acceptance;
+#[cfg(all(target_os = "macos", feature = "composition-review"))]
+mod reading_key;
+#[cfg(all(target_os = "macos", feature = "composition-review"))]
+mod reading_pointer;
+#[cfg(all(target_os = "macos", feature = "composition-review"))]
+mod viewport_acceptance;
+#[cfg(all(target_os = "macos", feature = "composition-review"))]
+mod wake_acceptance;
 
 #[cfg(not(target_os = "macos"))]
 fn main() {
@@ -33,6 +47,23 @@ fn main() {
 #[cfg(target_os = "macos")]
 fn main() {
     use tekes_ui_platform_macos::{App, AppConfig, Size, WindowConfig, WindowPlacement, selftest};
+
+    #[cfg(feature = "composition-review")]
+    if actions_acceptance::try_run() {
+        return;
+    }
+    #[cfg(feature = "composition-review")]
+    if viewport_acceptance::try_run() {
+        return;
+    }
+    #[cfg(feature = "composition-review")]
+    if controlled_acceptance::try_run() {
+        return;
+    }
+    #[cfg(feature = "composition-review")]
+    if reading_acceptance::try_run() {
+        return;
+    }
 
     let mut args = std::env::args().skip(1);
     if let Some(arg) = args.next() {
@@ -75,6 +106,7 @@ fn main() {
     let menu_bar = gallery_state.menu_bar();
     let window_config = WindowConfig {
         title: gallery_state.title(),
+        unified_titlebar: false,
         // 固定的内容区尺寸，Gallery 的每个页面都按它排版，保证可复现。
         size: Size {
             width: gallery::CONTENT_WIDTH as f64,

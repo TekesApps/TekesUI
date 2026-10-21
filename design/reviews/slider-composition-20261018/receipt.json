@@ -1,0 +1,141 @@
+{
+  "format": "tekesui-slider-composition-review/1",
+  "date": "2026-10-18T04:03:48.109466+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues_open": 21,
+  "new_issues_read": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21
+  ],
+  "existing_14_issue_updates_unchanged": true,
+  "root_fixes": [
+    "SliderContent reuses original Slider/SliderView",
+    "optional Component range metadata and relative actions",
+    "validated native numeric range descriptor and bridge; existing snapshot notification path",
+    "existing spacing inset fixes public fixture narrow width"
+  ],
+  "scope_exceptions": [
+    "new experimental enum variants require external exhaustive match migration",
+    "native numeric AX actual operation is NOT accepted; bridge compiled and platform snapshots tested",
+    "no other family migration; no new component/token/framework"
+  ],
+  "validation": {
+    "shared_packages": 350,
+    "independent_consumer_total": 47,
+    "new_public_consumer_tests": 4,
+    "platform_tests": 26,
+    "strict_clippy": "root workspace all-targets composition-review and consumer all-targets pass",
+    "authoritative_logs": [
+      "logs/shared-final.log",
+      "logs/consumer-full.log",
+      "logs/platform-full.log",
+      "logs/root-clippy-current.log",
+      "logs/consumer-clippy-final.log",
+      "logs/gallery-range-final.log",
+      "logs/default-build-current.log",
+      "logs/review-build-current.log",
+      "logs/native-consumer-build.log"
+    ],
+    "capability_tests": 38,
+    "composition_audit_tests": 6,
+    "diagnostic_logs": "earlier compile/test errors corrected; authoritative logs above are final green; not intentional red regressions"
+  },
+  "tokens": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "query-async-token-observations.json": 264,
+    "slider-composition-token-observations.json": 264,
+    "command-async-token-observations.json": 168,
+    "action-token-observations.json": 576
+  },
+  "token_total": 4500,
+  "gpu": {
+    "pages": 144,
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "historical_references": 144,
+    "different": 144,
+    "native_visual": [
+      "Gallery fill",
+      "Gallery 420pt/150% text"
+    ],
+    "not_accepted": [
+      "live AX numeric role/value/bounds/actions",
+      "VoiceOver",
+      "physical IME"
+    ]
+  },
+  "native_independent_consumer": "compiled; not executed; user desktop authorization Gallery only",
+  "public_states": 131,
+  "fixture_gaps": 125,
+  "required": 269,
+  "remaining": "native AX shared projection/actual operation; new P0 issues assessed before next implementation",
+  "source_sha256": {
+    "crates/tekes-ui-controls/src/composition.rs": "4ebd7fd964d72dac4af1d42c89eda08bc965e13ad070fd8758f48722ce05207a",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "1ab8f733539cd2296ddd2b554c2ed645c72129e42568c3c2d4f8086c989ab5e2",
+    "crates/tekes-ui-controls/tests/component_registry_api.rs": "6d85763a9df6f239c2289a912d7a238560aaf287434be5bf86bee8ed8cf6f330",
+    "crates/tekes-ui-platform-macos/src/accessibility.rs": "84716ab56e2b3af57a522b902d12cc705d038647ccf875c8f8b8d8c63e7abea1",
+    "design/gallery/capabilities.json": "61ba2346cec944908cd7d0c679d1f5d1235a6ffc53232d9d6931f92577b4ee6e",
+    "design/gallery/component-coverage.json": "28186f64091d165d9684e5a845de69dadc1d369aeb744a259ae1aca8d7464e9f",
+    "design/gallery/public-api-surface.json": "5cd7ab6b77ae52af895a13458b95c232ae8645acbcb612b0aa18f6ca2663073a",
+    "design/remediation/composition-audit.json": "3784935949cf324ff029b1a75de610daba64eb133e7ae5d948ac19c58f84ebed",
+    "design/remediation/ledger.json": "65f969f1e93bd11b4e6e2f4a730342193ec82e1b6fd689aacf10ac5a0f3c971f",
+    "docs/design/composition-audit-20261018.md": "47ffcdfd2ddc223af35e43520221646e032eca4a43d078e2a122ee6e4fdcf512",
+    "docs/design/issue-remediation-current-20261017.md": "e9a4179abb248b5bbbc26af5ff778e059ace29fa92b4ce84a0bae960529c455e",
+    "examples/composition-consumer/examples/native.rs": "a57c551ba2ea1bb20adaa8e0f6d921219efb2a1b321595a97a485a0e3d289409",
+    "examples/composition-consumer/src/lib.rs": "9ecc5b01fe9340d228709b87cc2c19b865b20f28e39fcd37b9c0e2005eb65083",
+    "crates/tekes-ui-controls/src/extended.rs": "b6349672e80369c38761c93774e904386d44760e31854e466c2cd03f822b4478",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "7cc048427a94ec1d2a66f95ff279720a4f4566e698e50d30c68bd7f8909101c0",
+    "crates/tekes-ui-platform-macos/src/lib.rs": "54bdab3e26a28b4f056991f5533ec973b483c398ce89f54584c51ca7ab15efc9",
+    "crates/tekes-ui-platform-macos/src/view.rs": "67a06512f2790006e54432c20ee05560e19f7321fe2429516be78718adf41a36",
+    "examples/composition-consumer/src/slider_content.rs": "5f50ce30c305092e1f4c12e215ed26a70f08baecce5bd7b4ccc3a7569f64108e",
+    "examples/composition-consumer/tests/slider_content.rs": "a8d5dca54eb17a24422b52912334368799c5baea71c864b7314542d82b6c10cd",
+    "scripts/audit-slider-composition-tokens.py": "53a1e24ff93254dde1d9cdc7b3f82ad11d879d06265c29dbaf92cb62c5c18dba",
+    "docs/design/slider-composition-20261018.md": "f4d6266f7863219ca0730f9c9aef35f519357755ba60b7868edcd6eeef51ce2c"
+  },
+  "wip_protection": {
+    "baseline_files": 21396,
+    "changed_owned_existing": [
+      "crates/tekes-ui-controls/src/composition.rs",
+      "crates/tekes-ui-controls/src/composition/adapters.rs",
+      "crates/tekes-ui-controls/tests/component_registry_api.rs",
+      "crates/tekes-ui-platform-macos/src/accessibility.rs",
+      "design/gallery/capabilities.json",
+      "design/gallery/component-coverage.json",
+      "design/gallery/public-api-surface.json",
+      "design/remediation/composition-audit.json",
+      "design/remediation/ledger.json",
+      "docs/design/composition-audit-20261018.md",
+      "docs/design/issue-remediation-current-20261017.md",
+      "examples/composition-consumer/examples/native.rs",
+      "examples/composition-consumer/src/lib.rs",
+      "crates/tekes-ui-controls/src/extended.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+      "crates/tekes-ui-platform-macos/src/lib.rs",
+      "crates/tekes-ui-platform-macos/src/view.rs"
+    ],
+    "protected_unchanged": 21379,
+    "new_owned": [
+      "examples/composition-consumer/src/slider_content.rs",
+      "examples/composition-consumer/tests/slider_content.rs",
+      "scripts/audit-slider-composition-tokens.py",
+      "docs/design/slider-composition-20261018.md"
+    ],
+    "unexpected_baseline_changes": [],
+    "historical_frozen_files_protected": 20747,
+    "no_commit_push_tag_close_publish_performance": true
+  },
+  "goal_status": "active"
+}

@@ -1,0 +1,32 @@
+{
+  "identity": "5677b80f5462570525ea3d00f6256298baac7e018513844de5403364e9c097f0",
+  "archive": "padding-focus-5677b80f5462.tar.gz",
+  "archive_sha256": "e365b9a6d54e77c6315273d7638caa802bf3e21f440de4d30641235edf9ba990",
+  "base_identity": "5882774a0e73dfcb423efb4260c150e03f50f5cc9a87bd2331c1e171963faacd",
+  "files": 493,
+  "delta_paths": 7,
+  "root_native_identity": "d5dab70775631b1688640ce2ed9a4955941706213b12b06d97ef6756f812f12f",
+  "status": "sender exact archive clean-extract passed; receiver/public pin/isolated native pending",
+  "all_source_and_locks_unchanged": true,
+  "local_dependencies_inside_extract": true,
+  "checks": "portable-checks.json",
+  "native_boundary": "native example builds on isolated source; rootd5dab707 padding focus actual native receipt remains a different identity, never relabelled as isolated native acceptance",
+  "cleanup": [
+    "     Removed 32 files, 85.6MiB total\n",
+    "     Removed 508 files, 98.9MiB total\n",
+    "     Removed 851 files, 210.7MiB total\n"
+  ],
+  "root_cache_lane_restored": true,
+  "test_counts": {
+    "text": 50,
+    "controls": 388,
+    "consumer": 237,
+    "targeted_padding_API": 13
+  },
+  "GPU": {
+    "cases": 24,
+    "frames": 120
+  },
+  "receiver": "pending; independent Composer not yet accepted",
+  "public_pin": "pending separate authorization"
+}

@@ -337,6 +337,7 @@ fn catalog_slug(catalog: PresetCatalog) -> &'static str {
         PresetCatalog::DesignSystem => "design-system",
         PresetCatalog::Recipes => "recipes",
         PresetCatalog::Symbols => "symbols",
+        PresetCatalog::TickingNumber => "ticking-number",
     }
 }
 
@@ -397,6 +398,60 @@ mod tests {
             file_name(Page::StaticText, Theme::DARK, 2),
             "static-text-dark@2x.png"
         );
+    }
+
+    #[test]
+    fn ticking_number_gpu_frames_keep_fixed_width_and_finish() {
+        let mut renderer = Renderer::new_headless().expect("headless Metal renderer");
+        let mut gallery = Gallery::with_static_text(StaticText::new(None));
+        assert!(gallery.open_route("foundation-motion/playground"));
+        gallery.motion.select_catalog(PresetCatalog::TickingNumber);
+        gallery.set_view_size(1000.0, FRAME_H);
+        gallery.prepare(&mut renderer, 1.0);
+        gallery.build_scene(&mut Scene::new());
+        gallery.motion.ticking.set_target(546).unwrap();
+        let mut widths = Vec::new();
+        let mut images = Vec::new();
+        for (index, delta) in [0.0, 0.9, 1.0].into_iter().enumerate() {
+            gallery.animate(delta);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            widths.push(
+                gallery
+                    .motion
+                    .ticking
+                    .measure(
+                        &mut gallery.text,
+                        tekes_ui_tokens::proposal::TextRole::UiHeading,
+                    )
+                    .width,
+            );
+            let background = Gallery::background(gallery.theme.system);
+            let rgba = renderer
+                .render_to_rgba8(
+                    &scene,
+                    gallery.atlas_mut(),
+                    (1000, FRAME_H as u32),
+                    1.0,
+                    background,
+                )
+                .unwrap();
+            if let Ok(dir) = std::env::var("TEKESUI_TICKING_SNAPSHOT_OUT") {
+                fs::create_dir_all(&dir).unwrap();
+                fs::write(
+                    Path::new(&dir).join(format!("ticking-{index}.png")),
+                    encode_png(&rgba, 1000, FRAME_H as u32).unwrap(),
+                )
+                .unwrap();
+            }
+            images.push(rgba);
+        }
+        assert_eq!(widths[0], widths[1]);
+        assert_eq!(widths[1], widths[2]);
+        assert_ne!(images[0], images[1]);
+        assert_ne!(images[1], images[2]);
+        assert_eq!(gallery.motion.ticking.value(), 546);
+        assert!(!gallery.motion.ticking.needs_animation());
     }
 
     /// Set TEKESUI_MOTION_SNAPSHOT_OUT to export the real, full Gallery Motion

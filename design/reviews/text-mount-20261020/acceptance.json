@@ -1,0 +1,39 @@
+{
+  "status": "scoped real-consumer lifecycle acceptance passed",
+  "root_cause": "validation gap: existing generic Editor/button lifecycle coverage did not prove real TextFieldContent preedit/undo and pointer capture preservation",
+  "shared_implementation": "existing Content lifecycle Cancel/set_focus, TextFieldContent blur/unmark and existing retained Content remove/insert/reorder; no runtime fix or new abstraction needed",
+  "applicable_components": [
+    "TextField",
+    "TextArea",
+    "SearchField current single-line alias",
+    "other existing TextFieldContent consumers with the same owned-content lifecycle"
+  ],
+  "tests": 3,
+  "cases": {
+    "reorder_live_preedit_four_themes": 12,
+    "unmount_preedit_visible_draft_reinsert_undo": 3,
+    "capture_unmount_editable_readonly": 6
+  },
+  "public_boundaries": [
+    "stable original owned Component object; no host snapshot reconstruction",
+    "blur/unmount finalizes visible preedit with existing undo transaction; explicit cancel policy remains distinct",
+    "removed target rejects AX SetValue and unfocused late commit",
+    "reinsert alone never steals focus",
+    "capture canceled; text/selection/readonly retained"
+  ],
+  "strict_clippy": "passed; original first lint failure retained; single-range clause construction made unambiguous",
+  "CI": "new integration target auto-discovered by existing independent consumer command",
+  "source_test_sha256": "0726e9c867dc5325605dceccb2a333c8c2900b858ff43cbcf36dc3d3e3ad46b3",
+  "protected_runtime_source_and_lock_inputs": 219,
+  "runtime_source_changes": [],
+  "cleanup": {
+    "removed_test_executables": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/deps/text_mount-a4a21a341627f638"
+    ],
+    "libraries_dependencies_source_evidence": "retained"
+  },
+  "native_Gold7": "no new native/GPU/physicalIME/VoiceOver claim; input-family native activation remains pending",
+  "performance": "not measured",
+  "publication": "no commit/push/tag/merge/Issue writes",
+  "original_issue_completion": "not implied; scoped evidence for #3/#5/#14 and current text-family batch"
+}

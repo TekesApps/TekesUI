@@ -1,0 +1,36 @@
+{
+  "scope": "Three real processes with existing independent consumer file adapter, public DraftJournal and actual RichDialog TextFieldContent/CoreText; no Gallery or network",
+  "binary_sha256": "c97bc0544b86d741af9e7560100df6ce9984e9ce1ba750bd7c72673f10eb48ea",
+  "phases": [
+    {
+      "editor": "Newer editor draft retained 中文😀",
+      "mode": "prepare",
+      "pending_snapshot": "Frozen first request 中文😀",
+      "pid": 90710,
+      "save_failure_retained_editor_and_file": true,
+      "version": 2
+    },
+    {
+      "ack": 1,
+      "editor": "Newer editor draft retained 中文😀",
+      "late_and_duplicate_ack_preserved_newer_editor": true,
+      "mode": "retry-ack",
+      "pending": 0,
+      "pid": 90713,
+      "same_snapshot_key_request": true,
+      "version": 2
+    },
+    {
+      "ack": 1,
+      "editor": "Newer editor draft retained 中文😀",
+      "mode": "verify",
+      "pid": 90714,
+      "reconstructed_from_caller_file": true,
+      "version": 2
+    }
+  ],
+  "cleanup": "     Removed 8 files, 5.9MiB total\n",
+  "runtime_persistence": "caller-data/draft.json and per-phase snapshots retained as evidence",
+  "native": "not a native window replay; separate process/storage+public editor evidence only",
+  "performance": "not measured"
+}

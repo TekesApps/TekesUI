@@ -1,0 +1,2 @@
+There has been no change in the accessibility tree for Window: "TekesUI Composition Consumer · slider".
+The focused UI element is 4 text field (settable) Description: Draft, Value: Keep this draft

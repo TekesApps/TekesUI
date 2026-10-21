@@ -1,0 +1,39 @@
+{
+  "status": "producer API/real consumer/GPU/scoped native and gates passed; isolated delivery and actual AgentKit page pending",
+  "root_cause": "Existing compound content/action contract forced token minimum geometry and release timing; caller-arranged10pt rows could not keep hit/AX/chrome identical.",
+  "shared_fix": "Explicit ButtonFramePolicy::Exact reuses original ButtonLayout/paint; ButtonContent pointer activation phase reuses original Button arm with committed state and original cancellation/motion. Original normal paint traversal draws the exact focused branch last so adjacent chrome cannot cover its outsetting focus ring. No parallel input state machine.",
+  "tests": {
+    "compact-api-final": 7,
+    "controls-final": 426,
+    "full-consumer": 216
+  },
+  "GPU_cases": 24,
+  "GPU_frames": 192,
+  "actual_token_probes": 17,
+  "bounded_cases": 6432,
+  "complete": false,
+  "tokens_sets_api_values_unchanged": true,
+  "ClientKit_reference": {
+    "path": "/Users/frankqin/dev/TekesClientKit/Sources/TranscriptRendering/TranscriptIndicatorRailView.swift",
+    "sha256": "0a710cf6be24f8caa08e2e030db20caf3fb0001048ebbd8b9fb8c15dc53df487",
+    "read_only": true
+  },
+  "remaining": [
+    "isolated candidate/AgentKit actual integration",
+    "matched ClientKit product-page experience",
+    "public source/CI under separate authorization"
+  ],
+  "performance": "not measured",
+  "Git": "no commit/push/tag/closure",
+  "native": "native-acceptance.json",
+  "native_identity": "0649408d14d6d17958630e165931bb3d4dcece3230ef30d86126e0f33b1632e8",
+  "gates": "closing-checks.json",
+  "cleanup": "native-cleanup.json",
+  "exact_compact_token_probe": {
+    "receipt": "compact-token-observation.json",
+    "cases": 288,
+    "unique_token_reads": 9,
+    "complete": false,
+    "other_buttons_removed_before_capture": true
+  }
+}

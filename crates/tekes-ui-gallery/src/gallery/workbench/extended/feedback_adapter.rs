@@ -3,7 +3,7 @@
 //! The story keeps its deterministic fixture models; these runtimes own their
 //! component geometry, clipping, transient pointer state and presentation.
 use tekes_ui_controls::{
-    ButtonTextRenderer, ControlKey,
+    Button, ButtonTextRenderer, ControlKey,
     extended::{Banner, EmptyState, Popover, Progress, StatusBadge, Toast, Tooltip},
     feedback_view::{
         BannerView, EmptyStateView, OverlayEvent, OverlayLayout, ProgressView, StatusBadgeView,
@@ -16,6 +16,8 @@ use tekes_ui_tokens::{ColorRole, Palette, proposal};
 use super::super::{Entry, PageCtx, StoryState, action, line, quiet_action};
 use super::collections_adapter::InputResult;
 use super::{ExtendedStory, controls};
+
+const POPOVER_CONTENT: &str = "Popover content";
 
 #[derive(Debug, Default)]
 pub(super) struct FeedbackViews {
@@ -36,6 +38,744 @@ pub(super) fn supports(renderer: &str) -> bool {
     )
 }
 
+/// Feedback controls with an actual transient or focus state supplied by the
+/// production view. This is a visual comparison only; Playground owns native
+/// pointer and keyboard verification.
+pub(super) fn supports_states(renderer: &str) -> bool {
+    matches!(
+        renderer,
+        "tooltip" | "popover" | "toast" | "banner" | "empty-state"
+    )
+}
+
+/// Contractual values/modes presented as variants, rather than invented
+/// hover/pressed states for controls that do not define them.
+pub(super) fn supports_variants(renderer: &str) -> bool {
+    matches!(
+        renderer,
+        "toast" | "banner" | "status-badge" | "progress" | "empty-state"
+    )
+}
+
+pub(super) fn matrix(
+    entry: &Entry,
+    state: &mut StoryState,
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    viewport: Rect,
+) {
+    if !supports_states(entry.renderer())
+        || viewport.size.width <= 0.0
+        || viewport.size.height <= 0.0
+    {
+        return;
+    }
+    let gutter = -controls::ControlFrame::new(Rect::new(0., 0., 1., 1.), None)
+        .focus_bounds(ctx.text.backing_scale())
+        .min_x();
+    let bounds = viewport.inset(gutter);
+    scene.push_clip(viewport);
+    let width = bounds.size.width.max(0.0);
+    let mut y = bounds.min_y();
+    let palette = Palette {
+        theme: ctx.theme,
+        brand: state.brand,
+    };
+    let description = "Production-view state specimens. Use Playground for real pointer, keyboard, and focus behavior.";
+    matrix_caption(ctx, scene, bounds.min_x(), &mut y, width, description);
+    y += 12.0;
+    match entry.renderer() {
+        "tooltip" => matrix_tooltip(ctx, scene, bounds, &mut y, palette),
+        "popover" => matrix_popover(ctx, scene, bounds, &mut y, palette),
+        "toast" => matrix_toast(ctx, scene, bounds, &mut y, palette),
+        "banner" => matrix_banner(ctx, scene, bounds, &mut y, palette),
+        "empty-state" => matrix_empty_state(ctx, scene, bounds, &mut y, palette),
+        _ => {}
+    }
+    state.document_bottom = state.document_bottom.max(y + gutter);
+    scene.pop_clip();
+}
+
+pub(super) fn variants(
+    entry: &Entry,
+    state: &mut StoryState,
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    viewport: Rect,
+) {
+    if !supports_variants(entry.renderer())
+        || viewport.size.width <= 0.0
+        || viewport.size.height <= 0.0
+    {
+        return;
+    }
+    let gutter = -controls::ControlFrame::new(Rect::new(0., 0., 1., 1.), None)
+        .focus_bounds(ctx.text.backing_scale())
+        .min_x();
+    let bounds = viewport.inset(gutter);
+    scene.push_clip(viewport);
+    let width = bounds.size.width.max(0.0);
+    let mut y = bounds.min_y();
+    let palette = Palette {
+        theme: ctx.theme,
+        brand: state.brand,
+    };
+    let description =
+        "Supported model values and modes, rendered by the production presentation views.";
+    matrix_caption(ctx, scene, bounds.min_x(), &mut y, width, description);
+    y += 12.0;
+    match entry.renderer() {
+        "toast" => matrix_toast_variants(ctx, scene, bounds, &mut y, palette),
+        "banner" => matrix_banner_variants(ctx, scene, bounds, &mut y, palette),
+        "status-badge" => matrix_status_badges(ctx, scene, bounds, &mut y, palette),
+        "progress" => matrix_progress_variants(ctx, scene, bounds, &mut y, palette),
+        "empty-state" => matrix_empty_variants(ctx, scene, bounds, &mut y, palette),
+        _ => {}
+    }
+    state.document_bottom = state.document_bottom.max(y + gutter);
+    scene.pop_clip();
+}
+
+fn matrix_caption(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    x: f32,
+    y: &mut f32,
+    w: f32,
+    text: &str,
+) {
+    let role = proposal::TextRole::UiCaption;
+    let size = ctx.text.measure(text, role, w.max(0.0));
+    ctx.text.proposal_wrapped_in(
+        scene,
+        ctx.theme,
+        Rect::new(x, *y, w.max(0.0), size.height),
+        text,
+        role,
+        ColorRole::SecondaryText.resolve(ctx.theme),
+    );
+    *y += size.height.max(18.0) + 8.0;
+}
+
+fn matrix_heading(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    y: f32,
+    title: &str,
+) -> f32 {
+    let role = proposal::TextRole::UiBody;
+    let size = ctx.text.measure(title, role, bounds.size.width.max(0.0));
+    ctx.text.proposal_wrapped_in(
+        scene,
+        ctx.theme,
+        Rect::new(
+            bounds.min_x(),
+            y,
+            bounds.size.width.max(0.0),
+            size.height.max(20.0),
+        ),
+        title,
+        role,
+        ColorRole::PrimaryText.resolve(ctx.theme),
+    );
+    size.height.max(20.0)
+}
+
+fn bounded_fixture_width(width: f32, maximum: f32) -> f32 {
+    // Preserve the previous min/max behavior for a malformed NaN viewport:
+    // f32::min(NaN, maximum) selects maximum, while clamp(NaN, ..) stays NaN.
+    if width.is_nan() {
+        maximum
+    } else {
+        width.clamp(0.0, maximum)
+    }
+}
+
+fn matrix_clip(ctx: &PageCtx<'_>, bounds: Rect) -> Rect {
+    let gutter = -controls::ControlFrame::new(Rect::new(0., 0., 1., 1.), None)
+        .focus_bounds(ctx.text.backing_scale())
+        .min_x();
+    Rect::new(
+        bounds.min_x() - gutter,
+        bounds.min_y() - gutter,
+        bounds.size.width + gutter * 2.0,
+        bounds.size.height + gutter * 2.0,
+    )
+}
+
+fn matrix_button(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    frame: Rect,
+    clip: Rect,
+    palette: Palette,
+    label: &str,
+    focused: bool,
+) {
+    let mut button = Button::default();
+    button.state.focused = focused;
+    button.state.focus_visible = focused;
+    button.render(
+        scene,
+        ctx.text,
+        label,
+        frame,
+        Some(clip),
+        palette,
+        tekes_ui_controls::paint::ButtonVariant::Quiet,
+        tekes_ui_controls::ButtonSize::Body,
+        proposal::TextRole::UiBody,
+        tekes_ui_controls::ButtonTextAlign::Center,
+    );
+}
+
+fn matrix_tooltip(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    y: &mut f32,
+    palette: Palette,
+) {
+    let clip = matrix_clip(ctx, bounds);
+    let width = bounded_fixture_width(bounds.size.width, 420.0);
+    for (title, interaction) in [
+        ("Rest · hidden", 0),
+        ("Hover · shown", 1),
+        ("Focus-visible · shown", 2),
+        ("Escape · dismissed until leave", 3),
+    ] {
+        *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
+        let button_size = Button::measure(
+            ctx.text,
+            "Hover or focus me",
+            width.min(190.0),
+            tekes_ui_controls::ButtonSize::Body,
+            proposal::TextRole::UiBody,
+        );
+        let anchor = Rect::new(
+            bounds.min_x(),
+            *y,
+            button_size.width.max(160.0).min(width),
+            button_size.height.max(36.0),
+        );
+        matrix_button(
+            ctx,
+            scene,
+            anchor,
+            clip,
+            palette,
+            "Hover or focus me",
+            interaction == 2,
+        );
+        let tip_text = "Tooltip content wraps naturally at the current preview width.";
+        let tip_width = width.min(240.0);
+        let tip_text_height = ctx
+            .text
+            .measure(
+                tip_text,
+                proposal::TextRole::UiBody,
+                (tip_width - 24.0).max(0.0),
+            )
+            .height;
+        let tip_size = Size::new(tip_width, tip_text_height + 16.0);
+        let model = Tooltip {
+            visible: false,
+            text: tip_text.into(),
+        };
+        let mut view = TooltipView::default();
+        if interaction == 1 || interaction == 3 {
+            let mut probe = Scene::new();
+            view.render(
+                &mut probe,
+                ctx.text,
+                &model,
+                anchor,
+                tip_size,
+                clip,
+                Some(clip),
+                palette,
+                proposal::TextRole::UiBody,
+            );
+            view.pointer_move(Point::new(anchor.min_x() + 8.0, anchor.min_y() + 8.0));
+        }
+        if interaction == 2 {
+            view.set_focus(true, true);
+        }
+        if interaction == 3 {
+            let _ = view.key(ControlKey::Escape);
+        }
+        view.render(
+            scene,
+            ctx.text,
+            &model,
+            anchor,
+            tip_size,
+            clip,
+            Some(clip),
+            palette,
+            proposal::TextRole::UiBody,
+        );
+        *y = (*y + button_size.height.max(36.0) + 54.0).max(view.layout().frame.max_y()) + 15.0;
+    }
+}
+
+fn matrix_popover(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    y: &mut f32,
+    palette: Palette,
+) {
+    let clip = matrix_clip(ctx, bounds);
+    let width = bounded_fixture_width(bounds.size.width, 420.0);
+    for (title, open, focused) in [
+        ("Closed", false, false),
+        ("Open", true, false),
+        ("Open · dismiss action focus-visible", true, true),
+    ] {
+        *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
+        let button_size = Button::measure(
+            ctx.text,
+            "More options",
+            180.0_f32.min(width),
+            tekes_ui_controls::ButtonSize::Body,
+            proposal::TextRole::UiBody,
+        );
+        let anchor = Rect::new(
+            bounds.min_x(),
+            *y,
+            button_size.width.max(140.0).min(width),
+            button_size.height.max(36.0),
+        );
+        matrix_button(ctx, scene, anchor, clip, palette, "More options", false);
+        let mut model = Popover::default();
+        if open {
+            model.show(20);
+        }
+        let mut view = tekes_ui_controls::feedback_view::PopoverView::default();
+        if open {
+            let size = tekes_ui_controls::feedback_view::PopoverView::measure(
+                ctx.text,
+                Size::new((width.min(232.0) - 28.0).max(0.0), 24.0),
+                proposal::TextRole::UiBody,
+            );
+            if focused {
+                let mut probe = Scene::new();
+                view.render_with_text_content(
+                    &mut probe,
+                    ctx.text,
+                    &model,
+                    anchor,
+                    size,
+                    clip,
+                    Some(clip),
+                    palette,
+                    proposal::TextRole::UiBody,
+                    "Gallery popover focus geometry",
+                    |scene, text, slot| {
+                        text.proposal_label_in(
+                            scene,
+                            ctx.theme,
+                            slot,
+                            "Popover content",
+                            proposal::TextRole::UiBody,
+                            ColorRole::PrimaryText.resolve(ctx.theme),
+                        );
+                    },
+                );
+                view.focus_dismiss(true, true);
+            }
+            view.render_with_text_content(
+                scene,
+                ctx.text,
+                &model,
+                anchor,
+                size,
+                clip,
+                Some(clip),
+                palette,
+                proposal::TextRole::UiBody,
+                "Gallery popover state",
+                |scene, text, slot| {
+                    text.proposal_label_in(
+                        scene,
+                        ctx.theme,
+                        slot,
+                        "Popover content",
+                        proposal::TextRole::UiBody,
+                        ColorRole::PrimaryText.resolve(ctx.theme),
+                    );
+                },
+            );
+            *y = view.layout().frame.max_y() + 15.0;
+        } else {
+            *y += anchor.size.height + 15.0;
+        }
+    }
+}
+
+fn matrix_toast(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    y: &mut f32,
+    palette: Palette,
+) {
+    let clip = matrix_clip(ctx, bounds);
+    let width = bounded_fixture_width(bounds.size.width, 500.0);
+    for (title, visible, focused) in [
+        ("Visible · default", true, false),
+        ("Visible · dismiss action focus-visible", true, true),
+        ("Dismissed", false, false),
+    ] {
+        *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
+        let message = if visible {
+            "Changes saved"
+        } else {
+            "Toast dismissed."
+        };
+        let mut model = Toast::new(message, controls::NoticeTone::Success, 5000);
+        model.visible = visible;
+        let size = ToastView::measure(ctx.text, message, width, proposal::TextRole::UiBody);
+        let frame = Rect::new(bounds.min_x(), *y, width, size.height);
+        let mut view = ToastView::default();
+        if visible && focused {
+            let mut probe = Scene::new();
+            view.render(
+                &mut probe,
+                ctx.text,
+                &model,
+                frame,
+                Some(clip),
+                palette,
+                proposal::TextRole::UiBody,
+            );
+            view.focus_dismiss(true, true);
+        }
+        view.render(
+            scene,
+            ctx.text,
+            &model,
+            frame,
+            Some(clip),
+            palette,
+            proposal::TextRole::UiBody,
+        );
+        *y += size.height + 14.0;
+    }
+}
+
+fn matrix_banner(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    y: &mut f32,
+    palette: Palette,
+) {
+    let clip = matrix_clip(ctx, bounds);
+    let width = bounded_fixture_width(bounds.size.width, 600.0);
+    for (title, visible, dismissible, focused) in [
+        ("Visible · dismissible", true, true, false),
+        ("Dismiss action focus-visible", true, true, true),
+        ("Visible · persistent", true, false, false),
+        ("Dismissed", false, true, false),
+    ] {
+        *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
+        let model = Banner {
+            message: "Your changes are saved. You can continue working.".into(),
+            tone: controls::NoticeTone::Info,
+            dismissible,
+            visible,
+        };
+        let size = BannerView::measure(
+            ctx.text,
+            &model.message,
+            width,
+            dismissible,
+            proposal::TextRole::UiBody,
+        );
+        let frame = Rect::new(bounds.min_x(), *y, width, size.height);
+        let mut view = BannerView::default();
+        if focused {
+            let mut probe = Scene::new();
+            view.render(
+                &mut probe,
+                ctx.text,
+                &model,
+                frame,
+                Some(clip),
+                palette,
+                proposal::TextRole::UiBody,
+            );
+            view.focus_dismiss(true, true);
+        }
+        view.render(
+            scene,
+            ctx.text,
+            &model,
+            frame,
+            Some(clip),
+            palette,
+            proposal::TextRole::UiBody,
+        );
+        *y += size.height.max(30.0) + 14.0;
+    }
+}
+
+fn matrix_empty_state(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    y: &mut f32,
+    palette: Palette,
+) {
+    let clip = matrix_clip(ctx, bounds);
+    let width = bounded_fixture_width(bounds.size.width, 520.0);
+    for (title, action, disabled, focused) in [
+        ("Action enabled", Some("Create document"), false, false),
+        ("Action focus-visible", Some("Create document"), false, true),
+        ("Action disabled", Some("Create document"), true, false),
+        ("No action", None, false, false),
+    ] {
+        *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
+        let model = EmptyState {
+            title: "No documents yet".into(),
+            detail: "Create a document to begin your workspace.".into(),
+            action: action.map(str::to_owned),
+        };
+        let height = empty_state_matrix_height(ctx, &model, width);
+        let frame = Rect::new(bounds.min_x(), *y, width, height);
+        let mut surface = SurfaceView::default();
+        let mut probe = Scene::new();
+        let panel = surface.render_at_scale(
+            &mut probe,
+            frame,
+            Some(clip),
+            palette,
+            true,
+            ctx.text.backing_scale(),
+        );
+        let mut view = EmptyStateView::default();
+        view.set_disabled(disabled);
+        if focused {
+            view.render(
+                &mut probe,
+                ctx.text,
+                &model,
+                panel.content,
+                Some(clip),
+                palette,
+                proposal::TextRole::UiBody,
+            );
+            view.focus_action(true, true);
+        }
+        let panel = surface.render_at_scale(
+            scene,
+            frame,
+            Some(clip),
+            palette,
+            true,
+            ctx.text.backing_scale(),
+        );
+        view.render(
+            scene,
+            ctx.text,
+            &model,
+            panel.content,
+            Some(clip),
+            palette,
+            proposal::TextRole::UiBody,
+        );
+        *y += height + 14.0;
+    }
+}
+
+fn matrix_toast_variants(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    y: &mut f32,
+    palette: Palette,
+) {
+    let clip = matrix_clip(ctx, bounds);
+    let width = bounded_fixture_width(bounds.size.width, 520.0);
+    for (label, tone) in [
+        ("Info", controls::NoticeTone::Info),
+        ("Success", controls::NoticeTone::Success),
+        ("Warning", controls::NoticeTone::Warning),
+        ("Error", controls::NoticeTone::Error),
+    ] {
+        *y += matrix_heading(ctx, scene, bounds, *y, label) + 6.0;
+        let model = Toast::new("Changes saved", tone, 5000);
+        let size = ToastView::measure(ctx.text, &model.message, width, proposal::TextRole::UiBody);
+        let frame = Rect::new(bounds.min_x(), *y, width, size.height);
+        ToastView::default().render(
+            scene,
+            ctx.text,
+            &model,
+            frame,
+            Some(clip),
+            palette,
+            proposal::TextRole::UiBody,
+        );
+        *y += size.height + 12.0;
+    }
+}
+
+fn matrix_banner_variants(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    y: &mut f32,
+    palette: Palette,
+) {
+    let clip = matrix_clip(ctx, bounds);
+    let width = bounded_fixture_width(bounds.size.width, 600.0);
+    for (label, tone) in [
+        ("Info", controls::NoticeTone::Info),
+        ("Success", controls::NoticeTone::Success),
+        ("Warning", controls::NoticeTone::Warning),
+        ("Error", controls::NoticeTone::Error),
+    ] {
+        *y += matrix_heading(ctx, scene, bounds, *y, label) + 6.0;
+        let model = Banner {
+            message: "Your changes are saved. You can continue working.".into(),
+            tone,
+            dismissible: true,
+            visible: true,
+        };
+        let size = BannerView::measure(
+            ctx.text,
+            &model.message,
+            width,
+            model.dismissible,
+            proposal::TextRole::UiBody,
+        );
+        let frame = Rect::new(bounds.min_x(), *y, width, size.height);
+        BannerView::default().render(
+            scene,
+            ctx.text,
+            &model,
+            frame,
+            Some(clip),
+            palette,
+            proposal::TextRole::UiBody,
+        );
+        *y += size.height + 12.0;
+    }
+}
+
+fn matrix_status_badges(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    y: &mut f32,
+    palette: Palette,
+) {
+    let clip = matrix_clip(ctx, bounds);
+    let labels = ["Info", "Running", "Succeeded", "Failed"];
+    let statuses = [
+        StatusBadge::Info,
+        StatusBadge::Running,
+        StatusBadge::Succeeded,
+        StatusBadge::Failed,
+    ];
+    let (columns, cell_width, cell_height, _) = status_badge_grid(ctx, bounds.size.width);
+    let gap = 12.0;
+    *y += matrix_heading(ctx, scene, bounds, *y, "Status variants") + 6.0;
+    for (i, (label, status)) in labels.into_iter().zip(statuses).enumerate() {
+        let frame = Rect::new(
+            bounds.min_x() + (i % columns) as f32 * (cell_width + gap),
+            *y + (i / columns) as f32 * (cell_height + 8.0),
+            cell_width,
+            cell_height,
+        );
+        StatusBadgeView::default().render(scene, status, frame, Some(clip), palette);
+        draw_status_badge_label(ctx.text, scene, ctx.theme, frame, label, palette);
+    }
+    *y += labels.len().div_ceil(columns) as f32 * (cell_height + 8.0);
+}
+
+fn matrix_progress_variants(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    y: &mut f32,
+    palette: Palette,
+) {
+    let clip = matrix_clip(ctx, bounds);
+    for (label, mut model) in [
+        ("0% · determinate", Progress::new(0.0)),
+        ("45% · determinate", Progress::new(0.45)),
+        ("100% · determinate", Progress::new(1.0)),
+        ("Indeterminate", Progress::new(0.45)),
+    ] {
+        *y += matrix_heading(ctx, scene, bounds, *y, label) + 6.0;
+        if label == "Indeterminate" {
+            model.indeterminate = true;
+        }
+        let frame = Rect::new(bounds.min_x(), *y, bounds.size.width.min(500.0), 12.0);
+        ProgressView::default().render(scene, model, frame, Some(clip), palette);
+        *y += frame.size.height + 18.0;
+    }
+}
+
+fn matrix_empty_variants(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    y: &mut f32,
+    palette: Palette,
+) {
+    let clip = matrix_clip(ctx, bounds);
+    for (title, action) in [
+        ("With primary action", Some("Create document")),
+        ("Without action", None),
+    ] {
+        *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
+        let model = EmptyState {
+            title: "No documents yet".into(),
+            detail: "Create a document to begin your workspace.".into(),
+            action: action.map(str::to_owned),
+        };
+        let width = bounded_fixture_width(bounds.size.width, 520.0);
+        let height = empty_state_matrix_height(ctx, &model, width);
+        let frame = Rect::new(bounds.min_x(), *y, width, height);
+        let mut surface = SurfaceView::default();
+        let panel = surface.render_at_scale(
+            scene,
+            frame,
+            Some(clip),
+            palette,
+            true,
+            ctx.text.backing_scale(),
+        );
+        EmptyStateView::default().render(
+            scene,
+            ctx.text,
+            &model,
+            panel.content,
+            Some(clip),
+            palette,
+            proposal::TextRole::UiBody,
+        );
+        *y += height + 14.0;
+    }
+}
+
+fn empty_state_matrix_height(ctx: &mut PageCtx<'_>, model: &EmptyState, width: f32) -> f32 {
+    let inset = proposal::metric("spacing", "space-loose").unwrap_or(16.0);
+    EmptyStateView::measure(
+        ctx.text,
+        model,
+        (width - 2.0 * inset).max(0.0),
+        proposal::TextRole::UiBody,
+    )
+    .height
+        + 2.0 * inset
+}
+
 fn draw_status_badge_label(
     text: &mut super::super::super::text::TextEngine,
     scene: &mut Scene,
@@ -52,6 +792,25 @@ fn draw_status_badge_label(
         proposal::TextRole::UiCaption,
         StatusBadgeView::label_color(palette),
     );
+}
+
+fn status_badge_grid(ctx: &mut PageCtx<'_>, width: f32) -> (usize, f32, f32, usize) {
+    let labels = ["Info", "Running", "Succeeded", "Failed"];
+    let columns = if width >= 452.0 {
+        4
+    } else if width >= 220.0 {
+        2
+    } else {
+        1
+    };
+    let gap = 12.0;
+    let cell_width = ((width - gap * (columns - 1) as f32) / columns as f32).max(0.0);
+    let cell_height = labels
+        .iter()
+        .map(|label| measured_caption_size(ctx, label, (cell_width - 10.0).max(0.0)).height + 10.0)
+        .fold(28.0_f32, f32::max);
+    let rows = labels.len().div_ceil(columns);
+    (columns, cell_width, cell_height, rows)
 }
 
 /// Draws one feedback story from the existing fixtures. Layout and inner
@@ -79,6 +838,7 @@ pub(super) fn build(
     let x = body.min_x();
     let y = body.min_y();
     let width = body.size.width.max(0.0);
+    let natural_bottom;
     let focus_visible = state.focus.is_some_and(|id| {
         state
             .buttons
@@ -87,7 +847,9 @@ pub(super) fn build(
     });
     match renderer {
         "tooltip" => {
-            let anchor = Rect::new(x, y + 16.0, 164.0, 36.0);
+            let anchor_size =
+                measured_action_size(ctx, "Hover or focus me", width, 164.0, 36.0, state.density);
+            let anchor = Rect::new(x, y + 16.0, anchor_size.width, anchor_size.height);
             action(
                 state,
                 ctx,
@@ -99,26 +861,38 @@ pub(super) fn build(
             );
             ext.feedback_views
                 .tooltip_set_focus(state.focus == Some(20), focus_visible);
+            let tooltip_width = width.min(276.0);
+            let tooltip_text =
+                measured_body_size(ctx, &ext.tooltip.text, (tooltip_width - 24.0).max(0.0));
+            let tooltip_size = Size::new(tooltip_width, 48.0_f32.max(tooltip_text.height + 16.0));
             ext.feedback_views.render_tooltip(
                 scene,
                 ctx.text,
                 &ext.tooltip,
                 anchor,
-                Size::new(276.0, 48.0),
+                tooltip_size,
                 body,
                 Some(clip),
                 palette,
                 proposal::TextRole::UiBody,
             );
-            line(
+            let note = "Tooltip appears on hover or focus-visible. Escape dismisses it.";
+            let tooltip_layout = ext.feedback_views.tooltip.layout();
+            let note_y = anchor.max_y().max(tooltip_layout.frame.max_y()) + 12.0;
+            let note_size = measured_caption_size(ctx, note, width);
+            draw_measured_caption(
                 ctx,
                 scene,
-                Rect::new(x, y + 122.0, width, 24.0),
-                "Tooltip appears on hover or focus-visible. Escape dismisses it.",
+                Rect::new(x, note_y, width, note_size.height),
+                note,
+                24.0,
             );
+            natural_bottom = note_y + note_size.height;
         }
         "popover" => {
-            let anchor = Rect::new(x, y + 10.0, 150.0, 36.0);
+            let anchor_size =
+                measured_action_size(ctx, "More options", width, 150.0, 36.0, state.density);
+            let anchor = Rect::new(x, y + 10.0, anchor_size.width, anchor_size.height);
             action(
                 state,
                 ctx,
@@ -130,41 +904,59 @@ pub(super) fn build(
             );
             ext.feedback_views
                 .popover_focus_dismiss(state.focus == Some(21), focus_visible);
-            if ext.popover.open {
-                let layout = ext.feedback_views.render_popover_with_content(
+            let popover_width = width.min(232.0);
+            let content_text = POPOVER_CONTENT;
+            let content_size =
+                measured_body_size(ctx, content_text, (popover_width - 28.0).max(0.0));
+            let popover_size = tekes_ui_controls::feedback_view::PopoverView::measure(
+                ctx.text,
+                Size::new((popover_width - 28.0).max(0.0), content_size.height),
+                proposal::TextRole::UiBody,
+            );
+            if ext.popover.open || ext.feedback_views.popover.is_presented() {
+                let theme = ctx.theme;
+                ext.feedback_views.render_popover_with_content(
                     scene,
                     ctx.text,
                     &ext.popover,
                     anchor,
-                    Size::new(width.min(232.0), 32.0),
+                    popover_size,
                     body,
                     Some(clip),
                     palette,
                     proposal::TextRole::UiBody,
-                    |_, _| {},
+                    |scene, text, bounds| {
+                        text.proposal_label_in(
+                            scene,
+                            theme,
+                            bounds,
+                            content_text,
+                            proposal::TextRole::UiBody,
+                            ColorRole::PrimaryText.resolve(theme),
+                        );
+                    },
                 );
-                if let Some(visible) = layout.visible {
-                    scene.push_clip(visible);
-                    ctx.text.proposal_label_in(
-                        scene,
-                        ctx.theme,
-                        layout.content,
-                        "Popover content",
-                        proposal::TextRole::UiBody,
-                        ColorRole::PrimaryText.resolve(ctx.theme),
-                    );
-                    scene.pop_clip();
-                }
                 if let Some(hit) = ext.feedback_views.popover_focus_target() {
                     state.hits.push((21, hit));
+                    state.button_labels.insert(21, "Dismiss".to_owned());
                 }
             }
-            line(
+            let note = "Escape or outside click dismisses and restores the invoker focus.";
+            let overlay_bottom = if ext.popover.open || ext.feedback_views.popover.is_presented() {
+                ext.feedback_views.popover.layout().frame.max_y()
+            } else {
+                anchor.max_y()
+            };
+            let note_y = anchor.max_y().max(overlay_bottom) + 12.0;
+            let note_size = measured_caption_size(ctx, note, width);
+            draw_measured_caption(
                 ctx,
                 scene,
-                Rect::new(x, y + 170.0, width, 24.0),
-                "Escape or outside click dismisses and restores the invoker focus.",
+                Rect::new(x, note_y, width, note_size.height),
+                note,
+                24.0,
             );
+            natural_bottom = note_y + note_size.height;
         }
         "toast" => {
             if ext.toast.visible {
@@ -187,6 +979,7 @@ pub(super) fn build(
                 );
                 if let Some(hit) = ext.feedback_views.toast_focus_target() {
                     state.hits.push((20, hit));
+                    state.button_labels.insert(20, "Dismiss".to_owned());
                 }
                 let timer = format!("{} ms remaining", ext.toast.remaining_ms());
                 let toast_bottom = frame.max_y();
@@ -217,33 +1010,53 @@ pub(super) fn build(
                     "Time advances only when the fixture timer control is activated.",
                     24.0,
                 );
+                natural_bottom = note_frame.max_y();
             } else {
+                let dismissed_note = "Toast dismissed.";
+                let dismissed_size = measured_caption_size(ctx, dismissed_note, width);
                 line(
                     ctx,
                     scene,
-                    Rect::new(x, y + 20.0, width, 28.0),
-                    "Toast dismissed.",
+                    Rect::new(x, y + 20.0, width, dismissed_size.height.max(28.0)),
+                    dismissed_note,
                 );
+                let show_label = "Show again";
+                let show_size =
+                    measured_action_size(ctx, show_label, width, 112.0, 34.0, state.density);
+                let show_y = y + 20.0 + dismissed_size.height.max(28.0) + 8.0;
                 quiet_action(
                     state,
                     ctx,
                     scene,
                     21,
-                    Rect::new(x, y + 54.0, 112.0, 34.0),
-                    "Show again",
+                    Rect::new(x, show_y, show_size.width, show_size.height),
+                    show_label,
                     (false, false),
                 );
-                line(
+                let note = "Time advances only when the fixture timer control is activated.";
+                let note_size = measured_caption_size(ctx, note, width);
+                let note_y = show_y + show_size.height + 8.0;
+                draw_measured_caption(
                     ctx,
                     scene,
-                    Rect::new(x, y + 126.0, width, 24.0),
-                    "Time advances only when the fixture timer control is activated.",
+                    Rect::new(x, note_y, width, note_size.height),
+                    note,
+                    24.0,
                 );
+                natural_bottom = note_y + note_size.height;
             }
         }
         "banner" => {
             if ext.banner.visible {
-                let frame = Rect::new(x, y + 12.0, width.min(640.0), 74.0);
+                let banner_width = width.min(640.0);
+                let banner_size = BannerView::measure(
+                    ctx.text,
+                    &ext.banner.message,
+                    banner_width,
+                    ext.banner.dismissible,
+                    proposal::TextRole::UiBody,
+                );
+                let frame = Rect::new(x, y + 12.0, banner_width, banner_size.height);
                 ext.feedback_views.render_banner(
                     scene,
                     ctx.text,
@@ -255,17 +1068,25 @@ pub(super) fn build(
                 );
                 if let Some(hit) = ext.feedback_views.banner_focus_target() {
                     state.hits.push((20, hit));
+                    state.button_labels.insert(20, "Dismiss".to_owned());
                 }
+                natural_bottom = frame.max_y();
             } else {
+                let note = "Banner dismissed. Reset restores the initial fixture.";
+                let note_size = measured_caption_size(ctx, note, width);
                 line(
                     ctx,
                     scene,
-                    Rect::new(x, y + 20.0, width, 28.0),
-                    "Banner dismissed. Reset restores the initial fixture.",
+                    Rect::new(x, y + 20.0, width, note_size.height.max(28.0)),
+                    note,
                 );
+                natural_bottom = y + 20.0 + note_size.height.max(28.0);
             }
         }
         "status-badge" => {
+            let labels = ["Info", "Running", "Succeeded", "Failed"];
+            let gap = 12.0;
+            let (columns, cell_width, cell_height, rows) = status_badge_grid(ctx, width);
             for (index, status) in [
                 StatusBadge::Info,
                 StatusBadge::Running,
@@ -275,18 +1096,19 @@ pub(super) fn build(
             .into_iter()
             .enumerate()
             {
-                let frame = Rect::new(x + index as f32 * 116.0, y + 20.0, 106.0, 28.0);
+                let column = index % columns;
+                let row = index / columns;
+                let frame = Rect::new(
+                    x + column as f32 * (cell_width + gap),
+                    y + 20.0 + row as f32 * (cell_height + 8.0),
+                    cell_width,
+                    cell_height,
+                );
                 ext.feedback_views
                     .render_status_badge(scene, status, frame, Some(clip), palette);
-                draw_status_badge_label(
-                    ctx.text,
-                    scene,
-                    ctx.theme,
-                    frame,
-                    ["Info", "Running", "Succeeded", "Failed"][index],
-                    palette,
-                );
+                draw_status_badge_label(ctx.text, scene, ctx.theme, frame, labels[index], palette);
             }
+            natural_bottom = y + 20.0 + rows as f32 * (cell_height + 8.0) - 8.0;
         }
         "progress" => {
             let frame = Rect::new(x, y + 26.0, width.min(500.0), 12.0);
@@ -322,22 +1144,13 @@ pub(super) fn build(
             } else {
                 wrapped_body(ctx, scene, percentage_frame, &percentage);
             }
+            natural_bottom = percentage_frame.max_y();
         }
         "empty-state" => {
-            let model = if ext.empty_state_created {
-                EmptyState {
-                    title: "Documents".into(),
-                    detail: "One fixture document was created.".into(),
-                    action: None,
-                }
-            } else {
-                EmptyState {
-                    title: "No documents yet".into(),
-                    detail: "Create a document to begin your workspace.".into(),
-                    action: Some("Create document".into()),
-                }
-            };
-            let frame = Rect::new(x, y + 12.0, width.min(520.0), 164.0);
+            let model = empty_state_model(ext);
+            let panel_width = width.min(520.0);
+            let natural_height = empty_state_matrix_height(ctx, &model, panel_width).max(164.0);
+            let frame = Rect::new(x, y + 12.0, panel_width, natural_height);
             let backing_scale = ctx.text.scale();
             let panel = ext.feedback_views.surface.render_at_scale(
                 scene,
@@ -361,10 +1174,15 @@ pub(super) fn build(
             );
             if let Some(hit) = ext.feedback_views.empty_state_focus_target() {
                 state.hits.push((20, hit));
+                state
+                    .button_labels
+                    .insert(20, model.action.clone().expect("visible action"));
             }
+            natural_bottom = frame.max_y();
         }
         _ => return false,
     }
+    state.document_bottom = state.document_bottom.max(natural_bottom);
     true
 }
 
@@ -517,6 +1335,50 @@ fn progress_fixture_layout(
     )
 }
 
+fn empty_state_model(ext: &ExtendedStory) -> EmptyState {
+    if ext.empty_state_created {
+        EmptyState {
+            title: "Documents".into(),
+            detail: "One fixture document was created.".into(),
+            action: None,
+        }
+    } else {
+        EmptyState {
+            title: "No documents yet".into(),
+            detail: "Create a document to begin your workspace.".into(),
+            action: Some("Create document".into()),
+        }
+    }
+}
+
+/// Live production surface, not a state-matrix specimen or retained exit paint.
+/// Body names share the same models/strings used by the painter.
+pub(super) fn semantic_surface(ext: &ExtendedStory, renderer: &str) -> Option<(Rect, String)> {
+    let (frame, label) = match renderer {
+        "popover" if ext.popover.open => (
+            ext.feedback_views.popover.layout().visible?,
+            POPOVER_CONTENT.to_owned(),
+        ),
+        "toast" if ext.toast.visible => (
+            ext.feedback_views.toast.layout().visible?,
+            ext.toast.message.clone(),
+        ),
+        "banner" if ext.banner.visible => (
+            ext.feedback_views.banner.layout().visible?,
+            ext.banner.message.clone(),
+        ),
+        "empty-state" => {
+            let model = empty_state_model(ext);
+            (
+                ext.feedback_views.empty_state.layout().visible?,
+                format!("{}. {}", model.title, model.detail),
+            )
+        }
+        _ => return None,
+    };
+    Some((frame, label))
+}
+
 fn component_id(renderer: &str, id: usize) -> bool {
     match renderer {
         "tooltip" | "popover" | "banner" | "empty-state" => (20..=21).contains(&id),
@@ -524,6 +1386,35 @@ fn component_id(renderer: &str, id: usize) -> bool {
         "progress" => id == 20,
         _ => false,
     }
+}
+
+/// Returns full, unclipped child-action frames from the last real Playground
+/// layout. State/variant specimens deliberately never participate in focus.
+pub(super) fn logical_focus_targets(ext: &ExtendedStory, renderer: &str) -> Vec<(usize, Rect)> {
+    let target = match renderer {
+        "popover" => ext
+            .feedback_views
+            .popover
+            .logical_focus_target()
+            .map(|frame| (21, frame)),
+        "toast" => ext
+            .feedback_views
+            .toast
+            .logical_focus_target()
+            .map(|frame| (20, frame)),
+        "banner" => ext
+            .feedback_views
+            .banner
+            .logical_focus_target()
+            .map(|frame| (20, frame)),
+        "empty-state" => ext
+            .feedback_views
+            .empty_state
+            .logical_focus_target()
+            .map(|frame| (20, frame)),
+        _ => None,
+    };
+    target.into_iter().collect()
 }
 
 pub(super) fn accepts_key(renderer: &str, focus: Option<usize>, key: ControlKey) -> bool {
@@ -798,7 +1689,10 @@ pub(super) fn focus_changed(
 pub(super) fn blur(ext: &mut ExtendedStory, renderer: &str) {
     match renderer {
         "tooltip" => ext.feedback_views.tooltip_blur(),
-        "popover" => ext.feedback_views.popover_cancel(),
+        "popover" => {
+            let _ = ext.feedback_views.popover_close(&mut ext.popover);
+            ext.feedback_views.popover.clear_presentation();
+        }
         "toast" => ext.feedback_views.toast_cancel(),
         "banner" => ext.feedback_views.banner_cancel(),
         "empty-state" => ext.feedback_views.empty_state_focus_action(false, false),
@@ -873,10 +1767,10 @@ impl FeedbackViews {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn render_popover_with_content(
+    pub fn render_popover_with_content<T: tekes_ui_controls::ButtonTextRenderer>(
         &mut self,
         scene: &mut Scene,
-        text: &mut impl tekes_ui_controls::ButtonTextRenderer,
+        text: &mut T,
         model: &Popover,
         anchor: Rect,
         content_size: Size,
@@ -884,10 +1778,10 @@ impl FeedbackViews {
         clip: Option<Rect>,
         palette: Palette,
         role: proposal::TextRole,
-        draw_content: impl FnOnce(&mut Scene, Rect),
+        draw_content: impl FnOnce(&mut Scene, &mut T, Rect),
     ) -> OverlayLayout {
         let size = tekes_ui_controls::feedback_view::PopoverView::measure(text, content_size, role);
-        self.popover.render_with_content(
+        self.popover.render_with_text_content(
             scene,
             text,
             model,
@@ -897,6 +1791,7 @@ impl FeedbackViews {
             clip,
             palette,
             role,
+            "Popover content",
             draw_content,
         )
     }
@@ -911,10 +1806,6 @@ impl FeedbackViews {
 
     pub fn popover_set_window_active(&mut self, active: bool, model: &mut Popover) -> OverlayEvent {
         self.popover.set_window_active(active, model)
-    }
-
-    pub fn popover_cancel(&mut self) {
-        self.popover.cancel();
     }
 
     pub fn popover_pointer_down(&mut self, model: &mut Popover, point: Point) -> bool {
@@ -1127,6 +2018,290 @@ mod layout_tests {
         }
     }
 
+    #[test]
+    fn empty_state_playground_keeps_the_full_measured_action_visible() {
+        let entry = crate::gallery::workbench::entries()
+            .iter()
+            .find(|entry| entry.renderer() == "empty-state")
+            .unwrap();
+        let output = std::env::var_os("TEKESUI_EMPTY_STATE_OUT").map(std::path::PathBuf::from);
+        if let Some(p) = &output {
+            std::fs::create_dir_all(p).unwrap();
+        }
+        let mut renderer = tekes_ui_render::Renderer::new_headless().expect("real GPU required");
+        let mut records = Vec::new();
+        for (theme_index, theme) in tekes_ui_tokens::Theme::ALL.into_iter().enumerate() {
+            for width in [220., 420., 640.] {
+                for type_scale in [1., 1.5] {
+                    let mut ext = ExtendedStory::default();
+                    let mut state = StoryState::for_entry(entry);
+                    let mut text = TextEngine::new();
+                    text.set_scale(2.);
+                    text.set_type_scale(type_scale);
+                    text.begin_frame();
+                    let mut static_text = StaticText::new(None);
+                    let mut ctx = context(&mut text, &mut static_text);
+                    ctx.theme = theme;
+                    let mut scene = Scene::new();
+                    let body = Rect::new(24., 20., width, 1200.);
+                    assert!(build(
+                        &mut ext,
+                        entry,
+                        &mut state,
+                        &mut ctx,
+                        &mut scene,
+                        body,
+                        body,
+                        Palette::from(theme)
+                    ));
+                    let view = &ext.feedback_views.empty_state;
+                    let full = view.logical_focus_target().unwrap();
+                    let visible = view.focus_target().unwrap();
+                    assert_eq!(
+                        visible, full,
+                        "width={width} type_scale={type_scale}: natural host must not clip its action"
+                    );
+                    assert!(view.layout().frame.max_y() >= full.max_y());
+                    let action_ink: Vec<_> = ink_bounds(&scene, full, 2.)
+                        .into_iter()
+                        .filter(|r| r.center().y >= full.min_y())
+                        .collect();
+                    assert!(!action_ink.is_empty());
+                    assert!(action_ink.iter().all(|r| r.max_y() <= full.max_y() + 0.5));
+                    let size = (
+                        ((width + 48.) * 2.).ceil() as u32,
+                        ((state.document_bottom + 24.) * 2.).ceil() as u32,
+                    );
+                    let rgba = renderer
+                        .render_to_rgba8(
+                            &scene,
+                            text.atlas_mut(),
+                            size,
+                            2.,
+                            crate::gallery::Gallery::background(theme),
+                        )
+                        .unwrap();
+                    let name =
+                        format!("empty-theme-{theme_index}-width-{width}-text-{type_scale}.png");
+                    if let Some(p) = &output {
+                        let mut encoder = png::Encoder::new(
+                            std::fs::File::create(p.join(&name)).unwrap(),
+                            size.0,
+                            size.1,
+                        );
+                        encoder.set_color(png::ColorType::Rgba);
+                        encoder.set_depth(png::BitDepth::Eight);
+                        encoder
+                            .write_header()
+                            .unwrap()
+                            .write_image_data(&rgba)
+                            .unwrap();
+                    }
+                    records.push(serde_json::json!({"image":name,"width":width,"type_scale":type_scale,
+                        "action_y":full.min_y(),"action_height":full.size.height,"fully_visible":visible==full}));
+                }
+            }
+        }
+        if let Some(p) = output {
+            std::fs::write(p.join("gpu-receipt.json"), serde_json::to_vec_pretty(&serde_json::json!({
+                "scope":"real Gallery EmptyState playground integration, CoreText and GPU; not native acceptance",
+                "frames":records,"performance":"not measured"})).unwrap()).unwrap();
+        }
+    }
+
+    fn ink_bounds(scene: &Scene, slot: Rect, scale: f32) -> Vec<Rect> {
+        scene
+            .primitives()
+            .iter()
+            .filter_map(|primitive| match primitive {
+                tekes_ui_scene::Primitive::Glyphs(run) => Some(run),
+                _ => None,
+            })
+            .flat_map(|run| run.glyphs.iter())
+            .filter_map(|glyph| {
+                if glyph.glyph.width == 0 || glyph.glyph.height == 0 {
+                    return None;
+                }
+                let rect = Rect::new(
+                    glyph.origin.x + glyph.glyph.left as f32 / scale,
+                    glyph.origin.y + glyph.glyph.top as f32 / scale,
+                    glyph.glyph.width as f32 / scale,
+                    glyph.glyph.height as f32 / scale,
+                );
+                (rect.center().x >= slot.min_x() && rect.center().x <= slot.max_x()).then_some(rect)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn number_field_real_glyph_ink_centers_in_value_slot_at_large_and_narrow_sizes() {
+        use tekes_ui_controls::{NumberField, feedback_view::NumberFieldView};
+
+        let mut renderer = tekes_ui_render::Renderer::new_headless()
+            .expect("headless GPU is required for real NumberField glyph geometry");
+        for width in [198.0, 144.0] {
+            let mut text = TextEngine::new();
+            text.set_scale(2.0);
+            text.set_type_scale(1.5);
+            text.begin_frame();
+            let mut scene = Scene::new();
+            let mut view = NumberFieldView::default();
+            let model = NumberField::new(8.0, 0.0, 32.0, 1.0).unwrap();
+            let frame = Rect::new(16.0, 16.0, width, 40.0);
+            let layout = view.render(
+                &mut scene,
+                &mut text,
+                &model,
+                frame,
+                None,
+                tekes_ui_tokens::Palette::from(tekes_ui_tokens::Theme::LIGHT),
+                tekes_ui_tokens::proposal::TextRole::UiBody,
+            );
+
+            let number = ink_bounds(&scene, layout.value, text.scale());
+            let minus = ink_bounds(&scene, layout.decrement.frame, text.scale());
+            let plus = ink_bounds(&scene, layout.increment.frame, text.scale());
+            assert_eq!(number.len(), 1, "actual CoreText ink for the value 8");
+            assert_eq!(minus.len(), 1, "actual CoreText ink for the minus action");
+            assert_eq!(plus.len(), 1, "actual CoreText ink for the plus action");
+
+            let number_ink = number[0];
+            let stepper_axis_midpoint =
+                (layout.decrement.frame.center().x + layout.increment.frame.center().x) * 0.5;
+            assert!(
+                (number_ink.center().x - layout.value.center().x).abs() <= 2.0,
+                "type scale 150%, width={width}: value ink {:?} must center in slot {:?}",
+                number_ink,
+                layout.value
+            );
+            assert!(
+                (layout.value.center().x - stepper_axis_midpoint).abs() <= 1.0,
+                "width={width}: value slot must stay centered between stepper axes"
+            );
+            assert!(
+                (number_ink.center().y - layout.value.center().y).abs() <= 4.0,
+                "type scale 150%, width={width}: value ink {:?} must center on stepper row {:?}",
+                number_ink,
+                frame
+            );
+            assert!(
+                text.measure("8", tekes_ui_tokens::proposal::TextRole::UiHeading, 80.0)
+                    .height
+                    > 0.0,
+                "the measured 150% display value must be nonempty"
+            );
+            let backing_scale = text.scale();
+            let image_width = (frame.max_x() + 16.0).mul_add(backing_scale, 0.0).round() as u32;
+            let image_height = (frame.max_y() + 16.0).mul_add(backing_scale, 0.0).round() as u32;
+            let pixels = renderer
+                .render_to_rgba8(
+                    &scene,
+                    text.atlas_mut(),
+                    (image_width, image_height),
+                    backing_scale,
+                    crate::gallery::Gallery::background(tekes_ui_tokens::Theme::LIGHT),
+                )
+                .expect("render actual NumberField CoreText glyphs through Metal");
+            if let Some(output) = std::env::var_os("TEKESUI_GOLD7_PAGE_OUT") {
+                let output = std::path::PathBuf::from(output);
+                std::fs::create_dir_all(&output).unwrap();
+                let file = std::fs::File::create(
+                    output.join(format!("number-field-{width}-pt-scale2-type150.png")),
+                )
+                .unwrap();
+                let mut encoder = png::Encoder::new(file, image_width, image_height);
+                encoder.set_color(png::ColorType::Rgba);
+                encoder.set_depth(png::BitDepth::Eight);
+                encoder
+                    .write_header()
+                    .unwrap()
+                    .write_image_data(&pixels)
+                    .unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn production_notices_align_first_line_with_real_shaping_and_gpu() {
+        use tekes_ui_controls::{
+            extended::{Banner, NoticeTone, Toast},
+            feedback_view::{BannerView, ToastView},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme, proposal};
+        let output = std::env::var_os("TEKESUI_NOTICE_ALIGNMENT_OUT").map(std::path::PathBuf::from);
+        if let Some(p) = &output {
+            std::fs::create_dir_all(p).unwrap();
+        }
+        let mut renderer = tekes_ui_render::Renderer::new_headless().expect("real GPU required");
+        let mut records = Vec::new();
+        for (theme_index, theme) in Theme::ALL.into_iter().enumerate() {
+            for width in [220., 640.] {
+                for scale in [1., 2.] {
+                    for type_scale in [1., 1.5] {
+                        for (message_index, message) in ["Changes saved", "文档已保存。Your workspace has unsaved changes that wrap across several lines."].into_iter().enumerate() {
+                            let palette = Palette::from(theme);
+                            let role = proposal::TextRole::UiBody;
+                            let mut text = TextEngine::new(); text.set_scale(scale); text.set_type_scale(type_scale); text.begin_frame();
+                            let mut scene = Scene::new();
+                            let toast_size = ToastView::measure(&mut text, message, width, role);
+                            let toast_frame = Rect::new(16., 16., toast_size.width, toast_size.height);
+                            let banner_size = BannerView::measure(&mut text, message, width, true, role);
+                            let banner_frame = Rect::new(16., toast_frame.max_y() + 24., banner_size.width, banner_size.height);
+                            let mut toast_view = ToastView::default();
+                            let toast_layout = toast_view.render(&mut scene, &mut text,
+                                &Toast::new(message, NoticeTone::Success, 5000), toast_frame, None, palette, role);
+                            let mut banner_view = BannerView::default();
+                            banner_view.render(&mut scene, &mut text,
+                                &Banner { message: message.into(), tone: NoticeTone::Info, dismissible: true, visible: true },
+                                banner_frame, None, palette, role);
+                            // Inspect actual rasterized glyph ink, not only an enum or layout slot.
+                            for (kind, action) in [("toast", toast_view.focus_target().unwrap()), ("banner", banner_view.focus_target().unwrap())] {
+                                let glyphs: Vec<_> = ink_bounds(&scene, action, scale).into_iter()
+                                    .filter(|r| r.center().y >= action.min_y() && r.center().y <= action.max_y()).collect();
+                                assert!(!glyphs.is_empty(), "real Dismiss glyph ink");
+                                let left = glyphs.iter().map(|r| r.min_x()).fold(f32::INFINITY, f32::min);
+                                let right = glyphs.iter().map(|r| r.max_x()).fold(f32::NEG_INFINITY, f32::max);
+                                assert!(((left + right) / 2. - action.center().x).abs() <= 2.5,
+                                    "{kind} action text not centered: ink={left}..{right}, action={action:?}, width={width}, text={type_scale}");
+                            }
+                            let banner_message_width = if width < 280. { width - 46. } else { width - 220. };
+                            let toast_line = text.first_line_height(message, role, toast_layout.content.size.width);
+                            let banner_line = text.first_line_height(message, role, banner_message_width);
+                            let marker = |diameter| scene.primitives().iter().find_map(|p| match p {
+                                Primitive::Quad(q) if q.rect.size == Size::new(diameter, diameter) => Some(q.rect), _ => None
+                            }).unwrap();
+                            let toast_marker = marker(10.); let banner_marker = marker(12.);
+                            assert!((toast_marker.center().y - toast_layout.content.min_y() - toast_line / 2.).abs() < 0.01);
+                            assert!((banner_marker.center().y - banner_frame.min_y() - 6. - banner_line / 2.).abs() < 0.01);
+                            assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Glyphs(run) if !run.glyphs.is_empty())));
+                            let image_width = ((width + 32.) * scale).ceil() as u32;
+                            let image_height = ((banner_frame.max_y() + 16.) * scale).ceil() as u32;
+                            let rgba = renderer.render_to_rgba8(&scene, text.atlas_mut(), (image_width, image_height), scale,
+                                crate::gallery::Gallery::background(theme)).expect("actual notice GPU rendering");
+                            let name = format!("notices-theme-{theme_index}-{width}-scale-{scale}-text-{type_scale}-message-{message_index}.png");
+                            if let Some(p) = &output {
+                                let f = std::fs::File::create(p.join(&name)).unwrap();
+                                let mut encoder = png::Encoder::new(f, image_width, image_height);
+                                encoder.set_color(png::ColorType::Rgba); encoder.set_depth(png::BitDepth::Eight);
+                                encoder.write_header().unwrap().write_image_data(&rgba).unwrap();
+                            }
+                            records.push(serde_json::json!({"image":name,"theme":theme_index,"width":width,"backing_scale":scale,
+                                "type_scale":type_scale,"message":message,"toast_first_line_height":toast_line,"banner_first_line_height":banner_line,
+                                "toast_marker_center_y":toast_marker.center().y,"banner_marker_center_y":banner_marker.center().y}));
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!(records.len(), 64);
+        if let Some(p) = output {
+            std::fs::write(p.join("gpu-receipt.json"), serde_json::to_vec_pretty(&serde_json::json!({
+                "scope":"Production ToastView/BannerView with real Gallery CoreText adapter and GPU; not native or VoiceOver acceptance",
+                "frames":records,"performance":"not measured"})).unwrap()).unwrap();
+        }
+    }
+
     fn luminance(color: tekes_ui_tokens::Rgba) -> f32 {
         let linear = |channel: f32| {
             if channel <= 0.04045 {
@@ -1268,6 +2443,94 @@ mod layout_tests {
     }
 
     #[test]
+    fn narrow_large_text_feedback_stories_report_their_measured_document_bottom() {
+        let renderers = [
+            "tooltip",
+            "popover",
+            "banner",
+            "status-badge",
+            "progress",
+            "empty-state",
+        ];
+        for renderer in renderers {
+            let entry = crate::gallery::workbench::entries()
+                .iter()
+                .find(|entry| entry.renderer() == renderer)
+                .expect("registered feedback story");
+            let mut ext = ExtendedStory::default();
+            ext.tooltip.visible = renderer == "tooltip";
+            if renderer == "popover" {
+                ext.popover.show(20);
+            }
+            let mut state = crate::gallery::workbench::StoryState::for_entry(entry);
+            let mut text = TextEngine::new();
+            text.set_type_scale(1.5);
+            let mut static_text = StaticText::new(None);
+            let mut ctx = context(&mut text, &mut static_text);
+            let mut scene = Scene::new();
+            let body = Rect::new(24.0, 100.0, 220.0, 32.0);
+            let clip = Rect::new(0.0, 0.0, 720.0, 640.0);
+            let palette = Palette::from(ctx.theme);
+            assert!(build(
+                &mut ext, entry, &mut state, &mut ctx, &mut scene, body, clip, palette,
+            ));
+            assert!(
+                state.document_bottom > body.max_y(),
+                "{renderer} must report its actual content below the first clipped viewport: {} <= {}",
+                state.document_bottom,
+                body.max_y()
+            );
+            assert!(
+                scene.primitives().iter().any(|primitive| matches!(
+                    primitive,
+                    tekes_ui_scene::Primitive::Glyphs(run) if !run.glyphs.is_empty()
+                )),
+                "{renderer} should draw actual shaped text"
+            );
+            if renderer == "tooltip" {
+                let anchor = state.buttons[&20].layout().unwrap().frame;
+                let measured = ctx.text.measure_button(
+                    "Hover or focus me",
+                    anchor.size.width,
+                    tekes_ui_controls::ButtonSize::Body,
+                    proposal::TextRole::UiBody,
+                );
+                assert!(anchor.size.height >= measured.height);
+            }
+            if renderer == "popover" {
+                let layout = ext.feedback_views.popover.layout();
+                assert!(layout.requested_size.height > body.size.height);
+                assert!(layout.frame.size.height <= body.size.height);
+                assert!(layout.frame.max_y() <= body.max_y());
+            }
+        }
+    }
+
+    #[test]
+    fn status_badge_grid_reports_the_actual_wrapped_row_count() {
+        let mut text = TextEngine::new();
+        text.set_type_scale(1.5);
+        let mut static_text = StaticText::new(None);
+        let mut ctx = context(&mut text, &mut static_text);
+        for (width, expected_columns, expected_rows) in
+            [(500.0, 4, 1), (300.0, 2, 2), (180.0, 1, 4)]
+        {
+            let (columns, _, _, rows) = status_badge_grid(&mut ctx, width);
+            assert_eq!(columns, expected_columns);
+            assert_eq!(rows, expected_rows);
+        }
+    }
+
+    #[test]
+    fn bounded_fixture_width_keeps_previous_non_finite_viewport_semantics() {
+        assert_eq!(bounded_fixture_width(260.0, 420.0), 260.0);
+        assert_eq!(bounded_fixture_width(-4.0, 420.0), 0.0);
+        assert_eq!(bounded_fixture_width(f32::INFINITY, 420.0), 420.0);
+        assert_eq!(bounded_fixture_width(f32::NEG_INFINITY, 420.0), 0.0);
+        assert_eq!(bounded_fixture_width(f32::NAN, 420.0), 420.0);
+    }
+
+    #[test]
     fn default_size_fixture_rows_keep_their_existing_positions() {
         let mut text = TextEngine::new();
         let mut static_text = StaticText::new(None);
@@ -1294,5 +2557,279 @@ mod layout_tests {
         assert_eq!(percentage.min_x(), 172.0);
         assert_eq!(percentage.min_y(), 54.0);
         assert_eq!(percentage.size.height, 34.0);
+    }
+
+    #[test]
+    fn feedback_state_and_variant_specs_use_real_views_without_registering_focus_or_hits() {
+        let mut renderer = tekes_ui_render::Renderer::new_headless()
+            .expect("headless GPU is required for feedback visual fixtures");
+        let cases = [
+            ("tooltip", true, false),
+            ("popover", true, false),
+            ("toast", true, true),
+            ("banner", true, true),
+            ("status-badge", false, true),
+            ("progress", false, true),
+            ("empty-state", true, true),
+        ];
+        for (renderer_name, has_states, has_variants) in cases {
+            assert_eq!(
+                supports_states(renderer_name),
+                has_states,
+                "{renderer_name} states"
+            );
+            assert_eq!(
+                supports_variants(renderer_name),
+                has_variants,
+                "{renderer_name} variants"
+            );
+            let entry = crate::gallery::workbench::entries()
+                .iter()
+                .find(|entry| entry.renderer() == renderer_name)
+                .expect("registered feedback story");
+            if has_states {
+                let mut state = StoryState::default();
+                state.hits.push((777, Rect::new(1., 2., 3., 4.)));
+                let mut text = TextEngine::new();
+                text.set_scale(1.0);
+                text.set_type_scale(1.5);
+                text.begin_frame();
+                assert_eq!(text.backing_scale(), 1.0);
+                let mut static_text = StaticText::new(None);
+                let mut ctx = context(&mut text, &mut static_text);
+                let viewport = Rect::new(0.0, 0.0, 360.0, 200.0);
+                let mut scene = Scene::new();
+                matrix(entry, &mut state, &mut ctx, &mut scene, viewport);
+                assert!(
+                    state.document_bottom > viewport.max_y(),
+                    "{renderer_name} states scroll"
+                );
+                assert_eq!(state.hits, vec![(777, Rect::new(1., 2., 3., 4.))]);
+                assert!(
+                    state.buttons.is_empty(),
+                    "visual specimens are not tab stops"
+                );
+                assert!(!scene.is_empty());
+                let full_viewport = Rect::new(0.0, 0.0, 360.0, 5_000.0);
+                let mut full_scene = Scene::new();
+                matrix(entry, &mut state, &mut ctx, &mut full_scene, full_viewport);
+                let image_height = state.document_bottom.ceil().max(1.0) as u32;
+                let rgba = renderer
+                    .render_to_rgba8(
+                        &full_scene,
+                        ctx.text.atlas_mut(),
+                        (360, image_height),
+                        1.0,
+                        crate::gallery::Gallery::background(ctx.theme),
+                    )
+                    .expect(
+                        "GPU render full feedback state specimens at scale 1 and text scale 1.5",
+                    );
+                save_feedback_image(&rgba, 360, image_height, renderer_name, "states");
+            }
+            if has_variants {
+                let mut state = StoryState::default();
+                state.hits.push((777, Rect::new(1., 2., 3., 4.)));
+                let mut text = TextEngine::new();
+                text.set_scale(1.0);
+                text.set_type_scale(1.5);
+                text.begin_frame();
+                let mut static_text = StaticText::new(None);
+                let mut ctx = context(&mut text, &mut static_text);
+                let viewport = Rect::new(0.0, 0.0, 360.0, 200.0);
+                let mut scene = Scene::new();
+                variants(entry, &mut state, &mut ctx, &mut scene, viewport);
+                assert!(
+                    state.document_bottom.is_finite() && state.document_bottom > viewport.min_y(),
+                    "{renderer_name} variants report their actual document bottom"
+                );
+                assert_eq!(state.hits, vec![(777, Rect::new(1., 2., 3., 4.))]);
+                assert!(
+                    state.buttons.is_empty(),
+                    "visual specimens are not tab stops"
+                );
+                assert!(!scene.is_empty());
+                let full_viewport = Rect::new(0.0, 0.0, 360.0, 5_000.0);
+                let mut full_scene = Scene::new();
+                variants(entry, &mut state, &mut ctx, &mut full_scene, full_viewport);
+                let image_height = state.document_bottom.ceil().max(1.0) as u32;
+                let rgba = renderer
+                    .render_to_rgba8(
+                        &full_scene,
+                        ctx.text.atlas_mut(),
+                        (360, image_height),
+                        1.0,
+                        crate::gallery::Gallery::background(ctx.theme),
+                    )
+                    .expect(
+                        "GPU render full feedback variant specimens at scale 1 and text scale 1.5",
+                    );
+                save_feedback_image(&rgba, 360, image_height, renderer_name, "variants");
+            }
+        }
+    }
+
+    fn save_feedback_image(rgba: &[u8], width: u32, height: u32, renderer: &str, story: &str) {
+        let Some(output) = std::env::var_os("TEKESUI_GOLD7_PAGE_OUT") else {
+            return;
+        };
+        let output = std::path::PathBuf::from(output);
+        std::fs::create_dir_all(&output).unwrap();
+        let file = std::fs::File::create(
+            output.join(format!("feedback-{renderer}-{story}-360pt-text150.png")),
+        )
+        .unwrap();
+        let mut encoder = png::Encoder::new(file, width, height);
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        encoder
+            .write_header()
+            .unwrap()
+            .write_image_data(rgba)
+            .unwrap();
+    }
+    #[test]
+    fn empty_state_panel_callers_forward_host_backing_scale() {
+        let mut gpu = std::env::var_os("TEKESUI_PANEL_SCALE_OUT")
+            .map(|_| tekes_ui_render::Renderer::new_headless().unwrap());
+        let mut wrong = 0;
+        for (ti, theme) in tekes_ui_tokens::Theme::ALL.into_iter().enumerate() {
+            for brand in 0..3 {
+                for scale in [1., 2.] {
+                    for variants in [false, true] {
+                        let mut text = TextEngine::new();
+                        text.set_scale(scale);
+                        text.begin_frame();
+                        let mut static_text = StaticText::new(None);
+                        let mut ctx = PageCtx {
+                            theme,
+                            text: &mut text,
+                            static_text: &mut static_text,
+                        };
+                        let mut scene = Scene::new();
+                        let mut y = 8.;
+                        let bounds = Rect::new(8., 8., 700., 2000.);
+                        let palette = Palette { theme, brand };
+                        if variants {
+                            matrix_empty_variants(&mut ctx, &mut scene, bounds, &mut y, palette);
+                        } else {
+                            matrix_empty_state(&mut ctx, &mut scene, bounds, &mut y, palette);
+                        }
+                        let name = format!("empty-v{variants}-t{ti}-b{brand}-s{scale}");
+                        wrong += crate::gallery::quality_effects::record_panel_host_scale(
+                            &scene,
+                            &mut text,
+                            palette,
+                            &name,
+                            gpu.as_mut(),
+                        );
+                    }
+                }
+            }
+        }
+        assert_eq!(
+            wrong, 0,
+            "all EmptyState panel callers must forward existing backing scale"
+        );
+    }
+    #[test]
+    fn actual_tooltip_forwarder_recovers_each_new_owner_without_reviving_old_requests() {
+        use tekes_ui_tokens::{Palette, Theme};
+        fn paint(v: &mut FeedbackViews, text: &mut TextEngine, palette: Palette) -> bool {
+            let mut scene = Scene::new();
+            let layout = v.render_tooltip(
+                &mut scene,
+                text,
+                &Tooltip {
+                    visible: false,
+                    text: "Help · 操作说明".into(),
+                },
+                Rect::new(20., 20., 160., 40.),
+                Size::new(240., 64.),
+                Rect::new(0., 0., 400., 240.),
+                None,
+                palette,
+                proposal::TextRole::UiBody,
+            );
+            assert_eq!(scene.is_empty(), layout.visible.is_none());
+            layout.visible.is_some()
+        }
+        for theme in Theme::ALL {
+            for brand in 0..3 {
+                for focus in [false, true] {
+                    let palette = Palette { theme, brand };
+                    let mut views = FeedbackViews::default();
+                    let mut text = TextEngine::new();
+                    paint(&mut views, &mut text, palette);
+                    views.tooltip_pointer_move(Point::new(50., 40.));
+                    views.tooltip_set_focus(true, true);
+                    assert!(paint(&mut views, &mut text, palette));
+                    assert_eq!(
+                        views.tooltip_key(ControlKey::Escape),
+                        TooltipEvent::Dismissed
+                    );
+                    views.tooltip_set_focus(true, true);
+                    views.tooltip_pointer_move(Point::new(50., 40.));
+                    assert!(!paint(&mut views, &mut text, palette));
+                    if focus {
+                        views.tooltip_set_focus(false, false);
+                    } else {
+                        views.tooltip_pointer_move(Point::new(-10., -10.));
+                    }
+                    assert!(!paint(&mut views, &mut text, palette));
+                    if focus {
+                        views.tooltip_set_focus(true, true);
+                    } else {
+                        views.tooltip_pointer_move(Point::new(50., 40.));
+                    }
+                    assert!(paint(&mut views, &mut text, palette));
+                    views.tooltip_set_window_active(false);
+                    views.tooltip_set_focus(true, true);
+                    views.tooltip_pointer_move(Point::new(50., 40.));
+                    views.tooltip_set_window_active(true);
+                    assert!(!paint(&mut views, &mut text, palette));
+                }
+            }
+        }
+    }
+    #[test]
+    fn actual_tooltip_forwarder_observes_new_controlled_request_with_retained_owners() {
+        for theme in tekes_ui_tokens::Theme::ALL {
+            for brand in 0..3 {
+                let mut views = FeedbackViews::default();
+                let mut text = TextEngine::new();
+                let mut model = Tooltip {
+                    visible: true,
+                    text: "Controlled help · 说明".into(),
+                };
+                let mut paint = |v: &mut FeedbackViews, m: &Tooltip| {
+                    v.render_tooltip(
+                        &mut Scene::new(),
+                        &mut text,
+                        m,
+                        Rect::new(20., 20., 160., 40.),
+                        Size::new(240., 64.),
+                        Rect::new(0., 0., 400., 240.),
+                        None,
+                        tekes_ui_tokens::Palette { theme, brand },
+                        proposal::TextRole::UiBody,
+                    )
+                    .visible
+                    .is_some()
+                };
+                assert!(paint(&mut views, &model));
+                views.tooltip_set_focus(true, true);
+                views.tooltip_pointer_move(Point::new(50., 40.));
+                assert_eq!(
+                    views.tooltip_key(ControlKey::Escape),
+                    TooltipEvent::Dismissed
+                );
+                assert!(!paint(&mut views, &model));
+                model.visible = false;
+                assert!(!paint(&mut views, &model));
+                model.visible = true;
+                assert!(paint(&mut views, &model));
+            }
+        }
     }
 }

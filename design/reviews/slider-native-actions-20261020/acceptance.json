@@ -1,0 +1,49 @@
+{
+  "scope": "Slider real native selectors and native consumer common inactive-input fence; no full family maturity claim",
+  "root_cause": "Focus(false) cleared ownership but common native example still dispatched later inactive Key/TextKey/Mouse/Scroll/text callbacks; Tab rearmed focus and Right mutated value",
+  "shared_fix": "examples/composition-consumer/examples/native.rs common WindowHandler: existing Window.is_active + Cancel + focus clear + publish and early return",
+  "applicable_scenarios": [
+    "List",
+    "Rich Dialog",
+    "Slider",
+    "Command",
+    "Reading",
+    "Plain text",
+    "NumberField",
+    "Field"
+  ],
+  "native_scenarios_exercised": [
+    "Slider",
+    "real adjacent TextField"
+  ],
+  "exceptions": [
+    "Created/Focus/Redraw/resize/system-appearance/system-motion/close remain delivered",
+    "no claim of every scene native acceptance",
+    "read-only and disabled semantics remain owned by original components"
+  ],
+  "public_and_real_consumer": {
+    "root_consumer_tests": 149,
+    "root_native_example_strict_clippy": true,
+    "host_strict_clippy": true
+  },
+  "native": {
+    "real_AX_selector_calls": 10,
+    "true_reactivation_checkpoints": 8,
+    "disabled_and_old_objects_reject": true,
+    "inactive_Tab_Right_AX_regression": "red old host mutates 5 to10; green remains60 with no focus",
+    "display": "U2790B",
+    "scale": 2,
+    "VoiceOver": false,
+    "physical_keyboard": false,
+    "evidence": "native/verified-result.json"
+  },
+  "GPU": "production painters/layout/tokens unchanged from slider-current-20261020 432cases/864frames; no new GPU-run claim",
+  "Gold7": "bounded disabled/old-object isolation, stale-focus cancellation and genuine restoration to fresh keyboard/AX navigation verified; full-page and VoiceOver remain separate",
+  "remaining": [
+    "deferred VoiceOver hearing",
+    "other component families and final combined candidate"
+  ],
+  "performance": "not measured",
+  "cleanup": "cleanup.json",
+  "git": "no commit/push/issue-close"
+}

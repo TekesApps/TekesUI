@@ -8,9 +8,13 @@ repository.workspace = true
 rust-version.workspace = true
 publish = false
 
+[features]
+composition-review = ["dep:tekes-ui-composition-consumer"]
+
 [target.'cfg(target_os = "macos")'.dependencies]
 tekes-ui-controls.workspace = true
 tekes-ui-scene3d = { path = "../tekes-ui-scene3d" }
+tekes-ui-composition-consumer = { path = "../../examples/composition-consumer", optional = true }
 tekes-ui-icons = { path = "../tekes-ui-icons" }
 tekes-ui-motion = {path="../tekes-ui-motion"}
 tekes-ui-tokens.workspace = true
@@ -28,6 +32,9 @@ workspace = true
 
 [build-dependencies]
 serde_json.workspace = true
+
+[dev-dependencies]
+tekes-ui-composition-consumer = { path = "../../examples/composition-consumer" }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 objc2-foundation = { workspace = true, features = ["NSUserDefaults", "NSString", "NSArray"] }

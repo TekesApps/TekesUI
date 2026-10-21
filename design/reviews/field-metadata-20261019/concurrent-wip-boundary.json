@@ -1,0 +1,14 @@
+{
+  "root_capability_generation": "failed",
+  "reason": "concurrent new TickingNumber and TickingNumberError lack public API classification",
+  "root_log": "capabilities-root.log",
+  "action": "preserve all foreign WIP; do not implement or classify new components in this remediation; isolated source generation separately passed",
+  "root_full_gate_pass_claim": false,
+  "isolated_audit_review_changes": [
+    "crates/tekes-ui-controls/src/feedback_view.rs",
+    "crates/tekes-ui-gallery/src/gallery/composition_acceptance.rs",
+    "examples/composition-consumer/examples/native.rs",
+    "examples/composition-consumer/src/lib.rs",
+    "examples/composition-consumer/tests/scenarios.rs"
+  ]
+}

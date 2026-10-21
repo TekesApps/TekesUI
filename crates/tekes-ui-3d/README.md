@@ -57,6 +57,20 @@ cargo run -p tekes-ui-3d --release --locked -- --demo manhattan --auto-rotate
 
 GPU 回归覆盖城市导入、缩放、视角、旋转、复位、120 次旋转不产生 pose 上传 / 变形计算、MSAA 目标 resize，以及两个 Demo 来回切换时 ImageId 和注册图像数量保持稳定。离屏图像与原生窗口检查分别进行，不以它们代表大规模城市 / 持续帧率性能验收。
 
+## AI 健康小屋（带窗版）
+
+```sh
+cargo run -p tekes-ui-3d --release --locked -- --demo health-cabin
+TEKESUI3D_DEMO=health-cabin crates/tekes-ui-3d/scripts/build-app.sh
+open "target/TekesUI Health Cabin.app"
+```
+
+根据用户提供的《AI健康小屋（带窗版）》PDF，第 6 页平面图及第 12–14 页立面，建立独立的 `assets/health-cabin.glb`。单位为米，舱体宽 3.905、深 2.635、高 2.886，离地 0.185；含白色圆角外壳、960 mm 中央内开玻璃门、两侧 1273 mm 上翻窗 / 固定玻璃、招牌、活动踏步、脚轮、支架和后置空调。桌椅、AED、储物柜和检测设备依平面位置示意，未标注细节和圆角半径为建模近似，不作为施工放样模型。未嵌入原 PDF、联系方式、周边建筑或渲染照片。
+
+`Space` 播放 / 暂停内开门和上翻窗动画，`R` 复位，`A` 自动旋转；也可从 Demo 菜单切换。采用真实 glTF alpha BLEND 玻璃及 GPU 4× MSAA，室内物体可透过玻璃看见。动画只更新活动节点的紧凑 pose，节点顶点变换仍由 GPU 执行；静止时停止动画调度，旋转时不上传 / 重算模型顶点。
+
+生成器 `assets/generate_health_cabin.py` 需要 Pillow，以及 macOS STHeiti 字体生成中文招牌；模型和招牌图像均嵌在 GLB 中，应用运行不需要 Python、字体文件或原 PDF。它是尺寸参考的交互展示模型，当前不是 PDF 渲染图的 PBR / 光追级复现。
+
 ## Living City Block
 
 ```sh

@@ -2,15 +2,25 @@
 use serde_json::Value;
 use std::fmt::Write;
 
-const ROLES: [&str; 4] = [
+const ROLES: [&str; 5] = [
     "button_hover",
     "button_press",
     "switch_thumb",
     "disclosure_reveal",
+    "overlay_presence",
 ];
 
 pub(crate) fn validate(p: &Value) -> Vec<String> {
     let mut errors = Vec::new();
+    let help_delay = &p["interaction"]["tooltip"]["content_help"]["hover_delay_seconds"];
+    if !help_delay.is_null()
+        && !help_delay
+            .as_f64()
+            .is_some_and(|v| v.is_finite() && v >= 0.)
+    {
+        errors.push("tooltip help: finite nonnegative hover delay required".into());
+    }
+
     for role in ROLES {
         let binding = &p["motion"]["control_transitions"][role];
         let duration = binding["duration"]
@@ -41,6 +51,23 @@ pub(crate) fn validate(p: &Value) -> Vec<String> {
         .is_some_and(|v| v.is_finite() && (0.0..=4.0).contains(&v))
     {
         errors.push("focus: finite physical-pixel antialias guard required".into());
+    }
+    for role in [
+        "action-primary",
+        "action-quiet",
+        "action-panel",
+        "required-input",
+        "selected",
+        "error",
+    ] {
+        for contrast in ["normal", "increased"] {
+            let value = p["layout"]["control_emphasis"]["boundary_roles"][role][contrast].as_str();
+            if !matches!(value, Some("none" | "fill" | "border" | "status-failed")) {
+                errors.push(format!(
+                    "control emphasis {role}/{contrast}: supported boundary required"
+                ));
+            }
+        }
     }
     let elevation = &p["layout"]["elevation"];
     for (key, expected) in [
@@ -106,12 +133,41 @@ pub(crate) fn validate(p: &Value) -> Vec<String> {
 }
 
 pub(crate) fn generate(p: &Value, out: &mut String) {
+    let delay = &p["interaction"]["tooltip"]["content_help"]["hover_delay_seconds"];
+    if delay.is_number() {
+        writeln!(
+            out,
+            "pub fn tooltip_hover_delay()->Option<f32>{{Some({})}}",
+            crate::bits(delay)
+        )
+        .unwrap();
+    } else {
+        out.push_str("pub fn tooltip_hover_delay()->Option<f32>{None}\n");
+    }
+
     writeln!(
         out,
         "pub const FOCUS_ANTIALIAS_GUARD_PHYSICAL_PIXELS:f32={};",
         crate::bits(&p["layout"]["boundary_styles"]["focus"]["antialias_guard_physical_pixels"])
     )
     .unwrap();
+    out.push_str("pub fn control_boundary(role:&str,theme:crate::Theme)->Option<&'static str>{let increased=matches!(theme.contrast,crate::Contrast::Increased);match(role,increased){\n");
+    for role in [
+        "action-primary",
+        "action-quiet",
+        "action-panel",
+        "required-input",
+        "selected",
+        "error",
+    ] {
+        for (contrast, increased) in [("normal", false), ("increased", true)] {
+            let value = p["layout"]["control_emphasis"]["boundary_roles"][role][contrast]
+                .as_str()
+                .unwrap();
+            writeln!(out, "({role:?},{increased})=>Some({value:?}),").unwrap();
+        }
+    }
+    out.push_str("_=>None,}}\n");
     out.push_str("pub fn control_duration(role:&str)->Option<f32>{match role{\n");
     for role in ROLES {
         let binding = &p["motion"]["control_transitions"][role];
@@ -176,4 +232,67 @@ pub(crate) fn generate(p: &Value, out: &mut String) {
         }
     }
     out.push_str("_=>&[],}}\n");
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn invalid_or_missing_shared_emphasis_cannot_silently_fall_back() {
+        let document: serde_json::Value =
+            serde_json::from_str(include_str!("../../../design/tokens.json")).unwrap();
+        let mut proposal = document["proposal"].clone();
+        assert!(super::validate(&proposal).is_empty());
+        proposal["layout"]["control_emphasis"]["boundary_roles"]["action-quiet"]["normal"] =
+            serde_json::json!("separator-typo");
+        assert!(
+            super::validate(&proposal)
+                .iter()
+                .any(|e| e.contains("action-quiet/normal"))
+        );
+        proposal["layout"]["control_emphasis"]["boundary_roles"]
+            .as_object_mut()
+            .unwrap()
+            .remove("required-input");
+        assert!(
+            super::validate(&proposal)
+                .iter()
+                .any(|e| e.contains("required-input"))
+        );
+    }
+}
+
+#[cfg(test)]
+mod content_help_tests {
+    #[test]
+    fn help_dwell_is_bound_to_json_and_rejects_invalid_values() {
+        let mut document: serde_json::Value =
+            serde_json::from_str(include_str!("../../../design/tokens.json")).unwrap();
+        let path =
+            &document["proposal"]["interaction"]["tooltip"]["content_help"]["hover_delay_seconds"];
+        assert_eq!(path.as_f64(), Some(0.5));
+        let mut out = String::new();
+        super::generate(&document["proposal"], &mut out);
+        assert!(out.contains("pub fn tooltip_hover_delay()"));
+        for value in [serde_json::json!(-1.), serde_json::json!("500ms")] {
+            document["proposal"]["interaction"]["tooltip"]["content_help"]["hover_delay_seconds"] =
+                value;
+            assert!(
+                super::validate(&document["proposal"])
+                    .iter()
+                    .any(|s| s.contains("hover delay"))
+            );
+        }
+        document["proposal"]["interaction"]["tooltip"]
+            .as_object_mut()
+            .unwrap()
+            .remove("content_help");
+        assert!(
+            !super::validate(&document["proposal"])
+                .iter()
+                .any(|s| s.contains("hover delay"))
+        );
+        let mut out = String::new();
+        super::generate(&document["proposal"], &mut out);
+        assert!(out.contains("pub fn tooltip_hover_delay()->Option<f32>{None}"));
+    }
 }

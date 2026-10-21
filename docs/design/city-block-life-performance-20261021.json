@@ -1,0 +1,1000 @@
+{
+  "conditions": {
+    "local_date": "2026-10-21",
+    "build": "release, current worktree with unrelated WIP preserved",
+    "hardware": "Apple M4",
+    "logical_cores": 10,
+    "unified_memory_gib": 32,
+    "system": "macOS-26.6.2-arm64-arm-64bit",
+    "native_pid": 47005,
+    "window_content_points": [
+      1512,
+      833
+    ],
+    "backing_scale": 2,
+    "render_target_pixels": [
+      2960,
+      1362
+    ],
+    "msaa_samples": 4,
+    "mode": "Night, all new lighting/interior/curtain/dust-screen effects",
+    "cpu_percent_unit": "100% = one logical core",
+    "gpu_scope": "Metal Performance Overview target PID native-layer GPU Active Time and GPU Usage ratio; not whole-device utilization",
+    "measurement_seconds_per_case": 60,
+    "cpu_and_gpu_recordings_are_separate": true,
+    "menu_tracking": "Animation menu open, keeping rendering active on the common run loop",
+    "sha256": {
+      "target/TekesUI City Block.app/Contents/MacOS/tekes-ui-city-block": "05eaad0067cf9c1cc0b1614f28713d05eec2878c95fd6084b52076a8e6d7a6e5",
+      "target/TekesUI City Block.app/Contents/Resources/city-block.glb": "6bd751296513a1285ced47b848789f94bb0d9925f7e3cdba71f1637e5fdaf44b",
+      "target/TekesUI City Block.app/Contents/Resources/city-block.json": "c3101bb0910da15e09528dcc6e73ecc98900397324a7cdba6b00ebd44fbee0ab"
+    }
+  },
+  "cases": {
+    "animation": {
+      "cpu": {
+        "label": "night-animation",
+        "timebase_numer": 125,
+        "timebase_denom": 3,
+        "pid": 47005,
+        "utc": "2026-10-21T00:10:57.001855+00:00",
+        "seconds": 60.00084225,
+        "cpu_average": 7.273668798652016,
+        "cpu_median": 7.165712118487281,
+        "cpu_p95": 8.567834312707827,
+        "cpu_max": 9.514388825848213,
+        "footprint_start_mib": 492.8448028564453,
+        "footprint_end_mib": 493.1260528564453,
+        "footprint_min_mib": 492.2198028564453,
+        "footprint_max_mib": 493.1260528564453,
+        "samples": [
+          {
+            "elapsed": 1.003283916,
+            "cpu_percent": 8.242557134744299,
+            "footprint_mib": 492.2198028564453,
+            "resident_mib": 180.03125
+          },
+          {
+            "elapsed": 2.0030228749999996,
+            "cpu_percent": 7.898924443135562,
+            "footprint_mib": 492.8448028564453,
+            "resident_mib": 180.03125
+          },
+          {
+            "elapsed": 3.003584166,
+            "cpu_percent": 9.514388825848213,
+            "footprint_mib": 492.2198028564453,
+            "resident_mib": 180.03125
+          },
+          {
+            "elapsed": 4.0004539580000005,
+            "cpu_percent": 8.254780847714429,
+            "footprint_mib": 492.5166778564453,
+            "resident_mib": 180.03125
+          },
+          {
+            "elapsed": 5.00117075,
+            "cpu_percent": 8.282721344935057,
+            "footprint_mib": 492.5323028564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 6.00504775,
+            "cpu_percent": 8.004308960825544,
+            "footprint_mib": 492.2354278564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 7.004796458,
+            "cpu_percent": 8.096313705530354,
+            "footprint_mib": 492.8604278564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 8.004049833,
+            "cpu_percent": 8.002195472528006,
+            "footprint_mib": 492.8604278564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 9.004177833,
+            "cpu_percent": 7.474193303257183,
+            "footprint_mib": 492.8604278564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 10.002523166,
+            "cpu_percent": 7.072995118280048,
+            "footprint_mib": 492.8604278564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 11.001169625,
+            "cpu_percent": 6.7866276454365,
+            "footprint_mib": 492.8604278564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 12.004572833,
+            "cpu_percent": 7.607854721283026,
+            "footprint_mib": 492.8604278564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 13.0050925,
+            "cpu_percent": 6.923910205688468,
+            "footprint_mib": 492.9854278564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 14.000759875,
+            "cpu_percent": 7.914737422558746,
+            "footprint_mib": 493.1104278564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 15.010613,
+            "cpu_percent": 7.851026190896164,
+            "footprint_mib": 493.1104278564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 16.00063675,
+            "cpu_percent": 8.300427977948335,
+            "footprint_mib": 492.7823028564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 17.005044125,
+            "cpu_percent": 6.982434127719678,
+            "footprint_mib": 492.8135528564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 18.005034125,
+            "cpu_percent": 6.681516815168149,
+            "footprint_mib": 492.4854278564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 19.005061416,
+            "cpu_percent": 7.129888751539426,
+            "footprint_mib": 492.4854278564453,
+            "resident_mib": 180.046875
+          },
+          {
+            "elapsed": 20.005051166,
+            "cpu_percent": 8.49618708591762,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 21.005042791,
+            "cpu_percent": 8.213439620890158,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 22.005077500000002,
+            "cpu_percent": 7.472769794299866,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 23.00378825,
+            "cpu_percent": 7.135269980155268,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 24.003650083,
+            "cpu_percent": 6.8270849445121895,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 25.002902166000002,
+            "cpu_percent": 8.82413722223883,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 26.005067583000002,
+            "cpu_percent": 8.539599871930784,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 27.000076916,
+            "cpu_percent": 6.463934343819877,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 28.00509675,
+            "cpu_percent": 8.25903269354451,
+            "footprint_mib": 492.8291778564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 29.005062791,
+            "cpu_percent": 7.9700248207395505,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 30.005169666,
+            "cpu_percent": 8.567834312707827,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 31.004563958000002,
+            "cpu_percent": 7.9553894763822806,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 32.002535666,
+            "cpu_percent": 8.822799380066849,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 33.003590083,
+            "cpu_percent": 7.4611619906240065,
+            "footprint_mib": 492.5948028564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 34.004718583,
+            "cpu_percent": 7.05570846632908,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 35.001531332999996,
+            "cpu_percent": 7.130154752401281,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 36.002216540999996,
+            "cpu_percent": 6.380981866843649,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 37.004465165999996,
+            "cpu_percent": 6.054801688220491,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 38.004174332999995,
+            "cpu_percent": 6.574720479014413,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 39.001454040999995,
+            "cpu_percent": 6.3870621741358,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 40.004080165999994,
+            "cpu_percent": 6.511412716280464,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 41.004653833,
+            "cpu_percent": 6.329160835957355,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 42.004620415999995,
+            "cpu_percent": 7.006504969709937,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 43.001698125,
+            "cpu_percent": 7.1961542568192955,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 44.002152124999995,
+            "cpu_percent": 7.914698393595991,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 45.004427416,
+            "cpu_percent": 7.235433117480002,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 46.004780583,
+            "cpu_percent": 6.043165753280411,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 47.00254675,
+            "cpu_percent": 6.4149925219903645,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 48.004048374999996,
+            "cpu_percent": 5.739726915903263,
+            "footprint_mib": 492.5010528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 49.004657916,
+            "cpu_percent": 5.5965012030601695,
+            "footprint_mib": 492.5010528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 50.003846958,
+            "cpu_percent": 6.532430860399037,
+            "footprint_mib": 492.5010528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 51.002578582999995,
+            "cpu_percent": 6.442362998835328,
+            "footprint_mib": 492.7979278564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 52.007201333,
+            "cpu_percent": 7.223565595476822,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 53.003720832999996,
+            "cpu_percent": 7.369520449256987,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 54.004275207999996,
+            "cpu_percent": 6.25398294820309,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 55.001294582999996,
+            "cpu_percent": 6.8702526467953495,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 56.00222625,
+            "cpu_percent": 8.149827907616102,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 57.004441416,
+            "cpu_percent": 6.378844799880034,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 58.002256625,
+            "cpu_percent": 5.85598577167674,
+            "footprint_mib": 492.7979278564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 59.0043235,
+            "cpu_percent": 5.854857075615188,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          },
+          {
+            "elapsed": 60.00084225,
+            "cpu_percent": 5.880822613724027,
+            "footprint_mib": 493.1260528564453,
+            "resident_mib": 180.0625
+          }
+        ]
+      },
+      "gpu": {
+        "pid": 47005,
+        "layer": "18156888260004879040",
+        "recorded_counter_coverage_seconds": 60.079045083,
+        "analysis_seconds": 60.079045083,
+        "gpu_metrics": {
+          "CPU Begin to Display": {
+            "frame_weighted_mean_ms": 49.483971120026034,
+            "counter_windows": 60,
+            "weighted_frames": 3493.0,
+            "minimum_window_mean_ms": 41.650897924,
+            "maximum_window_mean_ms": 56.748466048
+          },
+          "CPU Begin to Present": {
+            "frame_weighted_mean_ms": 0.5657503803704551,
+            "counter_windows": 60,
+            "weighted_frames": 3493.0,
+            "minimum_window_mean_ms": 0.464550839,
+            "maximum_window_mean_ms": 0.960049989
+          },
+          "GPU Begin to End": {
+            "frame_weighted_mean_ms": 17.119200028689097,
+            "counter_windows": 60,
+            "weighted_frames": 3493.0,
+            "minimum_window_mean_ms": 15.981616667,
+            "maximum_window_mean_ms": 19.116124996
+          },
+          "GPU Active Time": {
+            "frame_weighted_mean_ms": 16.746660150923272,
+            "counter_windows": 60,
+            "weighted_frames": 3493.0,
+            "minimum_window_mean_ms": 15.498679156,
+            "maximum_window_mean_ms": 18.705226069
+          },
+          "GPU End to Display": {
+            "frame_weighted_mean_ms": 24.987386817328364,
+            "counter_windows": 60,
+            "weighted_frames": 3493.0,
+            "minimum_window_mean_ms": 22.453670481,
+            "maximum_window_mean_ms": 28.066709241
+          },
+          "Frame Interval": {
+            "frame_weighted_mean_ms": 17.20448464737647,
+            "counter_windows": 60,
+            "weighted_frames": 3493.0,
+            "minimum_window_mean_ms": 16.388735417,
+            "maximum_window_mean_ms": 18.749824074
+          },
+          "On Display Lateness": {
+            "frame_weighted_mean_ms": 25.499572822976805,
+            "counter_windows": 60,
+            "weighted_frames": 3493.0,
+            "minimum_window_mean_ms": 17.360970139,
+            "maximum_window_mean_ms": 33.564492286
+          }
+        },
+        "layer_counters": {
+          "FPS": {
+            "time_weighted_mean": 58.12092062323849,
+            "minimum_window_value": 53.986729546,
+            "maximum_window_value": 61.200634963,
+            "counter_windows": 60
+          },
+          "Skipped Frames": {
+            "time_weighted_mean": 0.0,
+            "minimum_window_value": 0.0,
+            "maximum_window_value": 0.0,
+            "counter_windows": 60
+          },
+          "Command Buffers": {
+            "time_weighted_mean": 11.0,
+            "minimum_window_value": 11.0,
+            "maximum_window_value": 11.0,
+            "counter_windows": 60
+          },
+          "GPU Usage %": {
+            "time_weighted_mean": 0.9706889808552525,
+            "minimum_window_value": 0.917556583,
+            "maximum_window_value": 1.0,
+            "counter_windows": 60
+          }
+        },
+        "scope": "GPU times are frame-weighted averages of Metal per-window frame counters; FPS is the native layer presentation counter. Window means are not individual-frame percentiles; GPU time is not whole-device utilization. Memory is actual MTLDevice allocation in the provided sample, overlapping process unified memory; a short memory sample cannot establish a 60s peak."
+      },
+      "metal_memory": {
+        "samples": 11137,
+        "coverage_seconds": 60.04575225,
+        "time_weighted_mean_mib": 261.66032323943836,
+        "minimum_mib": 258.671875,
+        "maximum_mib": 1746.625,
+        "stable_median_mib": 258.671875,
+        "over_400mib_seconds": 0.121870043,
+        "last_mib": 258.671875,
+        "mode": "Night"
+      }
+    },
+    "rotation": {
+      "cpu": {
+        "label": "night-rotation",
+        "timebase_numer": 125,
+        "timebase_denom": 3,
+        "pid": 47005,
+        "utc": "2026-10-21T00:14:59.836656+00:00",
+        "seconds": 60.005065833,
+        "cpu_average": 8.363545111286303,
+        "cpu_median": 8.471541217895496,
+        "cpu_p95": 9.148035177483454,
+        "cpu_max": 9.550461077277888,
+        "footprint_start_mib": 499.0323486328125,
+        "footprint_end_mib": 499.3917236328125,
+        "footprint_min_mib": 498.7042236328125,
+        "footprint_max_mib": 499.4229736328125,
+        "samples": [
+          {
+            "elapsed": 1.0059491249999999,
+            "cpu_percent": 7.958429309235694,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 113.859375
+          },
+          {
+            "elapsed": 2.005085917,
+            "cpu_percent": 7.130033868942606,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 113.859375
+          },
+          {
+            "elapsed": 3.00515075,
+            "cpu_percent": 6.701515520644252,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 113.859375
+          },
+          {
+            "elapsed": 4.010147667,
+            "cpu_percent": 7.498086849023304,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 113.859375
+          },
+          {
+            "elapsed": 5.005101417,
+            "cpu_percent": 7.863954312784224,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 113.859375
+          },
+          {
+            "elapsed": 6.004442292,
+            "cpu_percent": 7.37219252973449,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 113.859375
+          },
+          {
+            "elapsed": 7.00382275,
+            "cpu_percent": 8.775916215350556,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 113.859375
+          },
+          {
+            "elapsed": 8.005079083,
+            "cpu_percent": 7.772655789367518,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 113.859375
+          },
+          {
+            "elapsed": 9.000411875000001,
+            "cpu_percent": 7.656090902040054,
+            "footprint_mib": 498.7042236328125,
+            "resident_mib": 105.3125
+          },
+          {
+            "elapsed": 10.000139167,
+            "cpu_percent": 7.69835356927184,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 76.71875
+          },
+          {
+            "elapsed": 11.001090000000001,
+            "cpu_percent": 7.924415204517834,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 76.578125
+          },
+          {
+            "elapsed": 12.000182292000002,
+            "cpu_percent": 9.01942033332525,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 64.5
+          },
+          {
+            "elapsed": 13.005104167,
+            "cpu_percent": 7.20568452149577,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 64.65625
+          },
+          {
+            "elapsed": 14.004137917000001,
+            "cpu_percent": 8.20562868872047,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 64.75
+          },
+          {
+            "elapsed": 15.004460083000001,
+            "cpu_percent": 7.261997931174505,
+            "footprint_mib": 499.0323486328125,
+            "resident_mib": 64.78125
+          },
+          {
+            "elapsed": 16.004636458,
+            "cpu_percent": 8.233418664116446,
+            "footprint_mib": 499.4073486328125,
+            "resident_mib": 64.796875
+          },
+          {
+            "elapsed": 17.000717291999997,
+            "cpu_percent": 8.482950256893199,
+            "footprint_mib": 499.4073486328125,
+            "resident_mib": 64.53125
+          },
+          {
+            "elapsed": 18.003982667,
+            "cpu_percent": 8.546558946745922,
+            "footprint_mib": 499.4073486328125,
+            "resident_mib": 64.546875
+          },
+          {
+            "elapsed": 19.003883416999997,
+            "cpu_percent": 8.819096128624112,
+            "footprint_mib": 499.4073486328125,
+            "resident_mib": 64.5625
+          },
+          {
+            "elapsed": 20.000375625,
+            "cpu_percent": 8.967564684994812,
+            "footprint_mib": 499.4073486328125,
+            "resident_mib": 64.5625
+          },
+          {
+            "elapsed": 21.000825292,
+            "cpu_percent": 8.650276922593731,
+            "footprint_mib": 499.4229736328125,
+            "resident_mib": 63.828125
+          },
+          {
+            "elapsed": 22.005117332999998,
+            "cpu_percent": 8.319231019376371,
+            "footprint_mib": 499.4229736328125,
+            "resident_mib": 63.828125
+          },
+          {
+            "elapsed": 23.001833208,
+            "cpu_percent": 8.266953876566518,
+            "footprint_mib": 499.4229736328125,
+            "resident_mib": 63.828125
+          },
+          {
+            "elapsed": 24.0028735,
+            "cpu_percent": 7.720976263494237,
+            "footprint_mib": 499.4229736328125,
+            "resident_mib": 63.828125
+          },
+          {
+            "elapsed": 25.001763417,
+            "cpu_percent": 7.556876259869187,
+            "footprint_mib": 499.4229736328125,
+            "resident_mib": 63.828125
+          },
+          {
+            "elapsed": 26.00505475,
+            "cpu_percent": 8.785467434445914,
+            "footprint_mib": 499.4229736328125,
+            "resident_mib": 63.90625
+          },
+          {
+            "elapsed": 27.006431042,
+            "cpu_percent": 8.281735247366267,
+            "footprint_mib": 499.4229736328125,
+            "resident_mib": 63.90625
+          },
+          {
+            "elapsed": 28.002140167,
+            "cpu_percent": 8.61699109834577,
+            "footprint_mib": 499.4229736328125,
+            "resident_mib": 63.9375
+          },
+          {
+            "elapsed": 29.005670416999997,
+            "cpu_percent": 8.486494718686048,
+            "footprint_mib": 499.4229736328125,
+            "resident_mib": 63.9375
+          },
+          {
+            "elapsed": 30.005050083,
+            "cpu_percent": 8.271410203643908,
+            "footprint_mib": 499.4229736328125,
+            "resident_mib": 63.9375
+          },
+          {
+            "elapsed": 31.001461332999998,
+            "cpu_percent": 8.225326975516738,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 63.9375
+          },
+          {
+            "elapsed": 32.001544375,
+            "cpu_percent": 9.550461077277888,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.046875
+          },
+          {
+            "elapsed": 33.005659333000004,
+            "cpu_percent": 9.005019722054552,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.046875
+          },
+          {
+            "elapsed": 34.003891375,
+            "cpu_percent": 8.894921681279142,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 35.005052625000005,
+            "cpu_percent": 9.148035177483454,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 36.002951375,
+            "cpu_percent": 8.955421746611757,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 37.002631875000006,
+            "cpu_percent": 8.460132178897792,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 38.001693208000006,
+            "cpu_percent": 8.93914504713062,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 39.001211667,
+            "cpu_percent": 8.671930056538077,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 40.000137667000004,
+            "cpu_percent": 8.697687149331674,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 41.001566000000004,
+            "cpu_percent": 9.24171641813001,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 42.004363167,
+            "cpu_percent": 8.544561933330655,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 43.00404025,
+            "cpu_percent": 9.47369254971039,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 44.002540375,
+            "cpu_percent": 8.58643274247629,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 45.005065833,
+            "cpu_percent": 8.944353078629408,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 46.000109667000004,
+            "cpu_percent": 9.101960828792992,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 47.004221292000004,
+            "cpu_percent": 9.10963625848537,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 48.004663750000006,
+            "cpu_percent": 8.978298313418156,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 49.004173583000004,
+            "cpu_percent": 8.86217311147422,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 50.00161275,
+            "cpu_percent": 8.15423998016449,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 51.00504275,
+            "cpu_percent": 8.252589451514623,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 52.005086083,
+            "cpu_percent": 7.83763953823255,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 53.006640125000004,
+            "cpu_percent": 8.035179659997468,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 54.001897875000004,
+            "cpu_percent": 7.9634689271866135,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 55.006054125000006,
+            "cpu_percent": 7.932683949003611,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 56.004504458,
+            "cpu_percent": 8.414573119615941,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 57.003661833,
+            "cpu_percent": 8.568878684735035,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.0625
+          },
+          {
+            "elapsed": 58.002486708,
+            "cpu_percent": 8.528288471656948,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.078125
+          },
+          {
+            "elapsed": 59.005043667,
+            "cpu_percent": 7.6208596077714805,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.078125
+          },
+          {
+            "elapsed": 60.005065833,
+            "cpu_percent": 9.070694772313,
+            "footprint_mib": 499.3917236328125,
+            "resident_mib": 64.078125
+          }
+        ]
+      },
+      "gpu": {
+        "pid": 47005,
+        "layer": "18156888260004879040",
+        "recorded_counter_coverage_seconds": 60.000159958,
+        "analysis_seconds": 60.000159958,
+        "gpu_metrics": {
+          "CPU Begin to Display": {
+            "frame_weighted_mean_ms": 50.73364444445945,
+            "counter_windows": 60,
+            "weighted_frames": 3587.0,
+            "minimum_window_mean_ms": 46.631151742,
+            "maximum_window_mean_ms": 56.165729168
+          },
+          "CPU Begin to Present": {
+            "frame_weighted_mean_ms": 0.5179998713180932,
+            "counter_windows": 60,
+            "weighted_frames": 3587.0,
+            "minimum_window_mean_ms": 0.445342358,
+            "maximum_window_mean_ms": 0.634779236
+          },
+          "GPU Begin to End": {
+            "frame_weighted_mean_ms": 16.707270594758295,
+            "counter_windows": 60,
+            "weighted_frames": 3587.0,
+            "minimum_window_mean_ms": 15.004537933,
+            "maximum_window_mean_ms": 19.095726767
+          },
+          "GPU Active Time": {
+            "frame_weighted_mean_ms": 16.35110648170282,
+            "counter_windows": 60,
+            "weighted_frames": 3587.0,
+            "minimum_window_mean_ms": 14.630835209,
+            "maximum_window_mean_ms": 18.677108979
+          },
+          "GPU End to Display": {
+            "frame_weighted_mean_ms": 25.578661009908277,
+            "counter_windows": 60,
+            "weighted_frames": 3587.0,
+            "minimum_window_mean_ms": 23.981553113,
+            "maximum_window_mean_ms": 27.667042549
+          },
+          "Frame Interval": {
+            "frame_weighted_mean_ms": 16.72691160150767,
+            "counter_windows": 60,
+            "weighted_frames": 3587.0,
+            "minimum_window_mean_ms": 14.925231964,
+            "maximum_window_mean_ms": 19.230586539
+          },
+          "On Display Lateness": {
+            "frame_weighted_mean_ms": 26.844372711546693,
+            "counter_windows": 60,
+            "weighted_frames": 3587.0,
+            "minimum_window_mean_ms": 22.636597645,
+            "maximum_window_mean_ms": 32.852261224
+          }
+        },
+        "layer_counters": {
+          "FPS": {
+            "time_weighted_mean": 59.783176376897494,
+            "minimum_window_value": 52.00091745,
+            "maximum_window_value": 67.001940902,
+            "counter_windows": 60
+          },
+          "Skipped Frames": {
+            "time_weighted_mean": 0.0,
+            "minimum_window_value": 0.0,
+            "maximum_window_value": 0.0,
+            "counter_windows": 60
+          },
+          "Command Buffers": {
+            "time_weighted_mean": 11.0,
+            "minimum_window_value": 11.0,
+            "maximum_window_value": 11.0,
+            "counter_windows": 60
+          },
+          "GPU Usage %": {
+            "time_weighted_mean": 0.9761371288159912,
+            "minimum_window_value": 0.910451665,
+            "maximum_window_value": 1.0,
+            "counter_windows": 60
+          }
+        },
+        "scope": "GPU times are frame-weighted averages of Metal per-window frame counters; FPS is the native layer presentation counter. Window means are not individual-frame percentiles; GPU time is not whole-device utilization. Memory is actual MTLDevice allocation in the provided sample, overlapping process unified memory; a short memory sample cannot establish a 60s peak."
+      },
+      "metal_memory": {
+        "samples": 41514,
+        "coverage_seconds": 60.054167246000446,
+        "time_weighted_mean_mib": 258.67187499999676,
+        "minimum_mib": 258.671875,
+        "maximum_mib": 258.671875,
+        "stable_median_mib": 258.671875,
+        "over_400mib_seconds": 0,
+        "last_mib": 258.671875,
+        "mode": "Day; do not present as confirmed Night peak"
+      }
+    }
+  },
+  "allocation_event_crosscheck": {
+    "allocation_bytes": 720109568,
+    "deallocation_bytes": 718798848,
+    "largest_allocation_bytes": 131072,
+    "net_change_bytes": 1310720,
+    "peak_net_growth_bytes": 1572864,
+    "minimum_net_growth_bytes": 0,
+    "event_count": 10978
+  },
+  "notes": [
+    "Each CPU, GPU Overview, and resource-events recording is separate to avoid applying resource tracing overhead to performance results.",
+    "60-second recordings; GPU counter coverage differs at rolling-window boundaries.",
+    "Memory allocation overlaps process unified footprint on Apple unified memory; do not sum them.",
+    "Animation resource counter briefly spikes without matching allocation event growth; stable allocation and trace maximum must be distinguished.",
+    "Final GPU figures use confirmed Night start/end screenshots. Earlier daytime GPU recordings are excluded. Resource trace indexing was active in the background during the Night animation Overview run."
+  ]
+}

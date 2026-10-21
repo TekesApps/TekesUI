@@ -1,0 +1,55 @@
+{
+  "scope": "Current feedback corrections only; not whole library/whole page maturity or all associated Issues complete",
+  "root_cause": "Missing EmptyState public natural measurement; duplicated host size math mismatched actual Surface padding",
+  "shared_fix": "EmptyStateView::measure shares title/detail/Button geometry with render; Gallery uses existing Surface space-loose composition",
+  "applicable": "EmptyState Gallery Playground/matrix/variants; independent existing content-status consumer",
+  "exceptions": "Explicitly constrained hosts retain intentional clipping; no arbitrary Content slots or unrelated migration",
+  "public_api": {
+    "status": "passed",
+    "tests": 321
+  },
+  "consumer": {
+    "status": "passed",
+    "tests": 134,
+    "empty_state_coretext_conditions": 64
+  },
+  "gallery": {
+    "passed": 417,
+    "ignored": 1
+  },
+  "gpu": {
+    "status": "passed",
+    "empty_state_frames": 24,
+    "notice_frames": 64,
+    "native_acceptance_separate": true
+  },
+  "native": {
+    "status": "passed",
+    "receipt": "native-receipt.json",
+    "display": "external U2790B @2x",
+    "observed_directory": "observed/",
+    "automated_readback_assertions": "passed"
+  },
+  "gold7": {
+    "status": "scoped-pass",
+    "reviewed": [
+      "observed/empty-dark-420-text150.png",
+      "observed/empty-light-420-text150.png",
+      "observed/empty-variants.png",
+      "observed/banner-light.png",
+      "observed/toast-dark-ic.png"
+    ],
+    "before": "../feedback-button-centering-20261019/observed/empty-state-before.png",
+    "boundary": "notice marker first-line alignment, owned Button default centering, EmptyState natural sizing only"
+  },
+  "voiceover": "off, not started or claimed this round",
+  "performance": "not measured",
+  "cleanup": {
+    "status": "cleaned",
+    "runtime_bytes_removed": 32260598,
+    "gallery_package_cleanup": "     Removed 70 files, 135.9MiB total\n",
+    "retained": "current public/shared library cache, all source and raw evidence"
+  },
+  "negative_exploration": "popover-tab/shift-tab/enter-closed initial AX invocation had no keyboard focus; excluded from pass. Correct actual-focus scenarios use popover-keyboard-*; raw attempts preserved",
+  "delivery": "WIP only; no commit/push/Issue closure"
+}

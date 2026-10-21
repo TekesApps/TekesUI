@@ -1,0 +1,24 @@
+   Compiling tekes-ui-composition-consumer v0.0.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/examples/composition-consumer)
+    Finished `test` profile [unoptimized] target(s) in 0.74s
+     Running tests/plain_text.rs (target/review-cache/debug/deps/plain_text-aed00080b41252fb)
+
+running 1 test
+test focusing_and_navigating_document_reveals_caret_through_parent_not_entire_block ... FAILED
+
+failures:
+
+---- focusing_and_navigating_document_reveals_caret_through_parent_not_entire_block stdout ----
+
+thread 'focusing_and_navigating_document_reveals_caret_through_parent_not_entire_block' (43959396) panicked at tests/plain_text.rs:237:5:
+assertion `left == right` failed: selecting first-line text must not jump to the end of a long block
+  left: 74.0
+ right: 0.0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    focusing_and_navigating_document_reveals_caret_through_parent_not_entire_block
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.05s
+
+error: test failed, to rerun pass `--test plain_text`

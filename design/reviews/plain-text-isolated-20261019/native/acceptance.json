@@ -1,0 +1,49 @@
+{
+  "result": "passed",
+  "round": "plain-text-active-final-20261019",
+  "source_identity": "2f0902d9f90fb069696c52edc38d9b7e7f8f0d0c4a3f0141e21fe1ac3f3183d0",
+  "display": {
+    "builtin": false,
+    "name": "U2790B",
+    "scale": 2.0
+  },
+  "checks": [
+    "active pointer selection 中文😀 maps to UTF16 [8,12]",
+    "Command+C reads back 中文😀 on existing private test pasteboard",
+    "real Append action advances controlled version2; Shift+Tab restores body with selection unchanged",
+    "narrow resize reflows width303; parent scroll635, nested scroll0, wrap/height preserved during scroll",
+    "Command+Down caret1790 at document end; Command+Up caret0 and complete first line visible",
+    "focused readonly native x retry preserves document/selection and marked=None"
+  ],
+  "exceptions": [
+    "document-start parent offset16 reveals first text line, not decorative padding; initial zero-offset verifier assumption corrected",
+    "first x probe had no focused text owner and is inconclusive; focused immediate retry separately passed"
+  ],
+  "excluded": [
+    "physical keyboard/IME",
+    "VoiceOver",
+    "performance",
+    "all-component/page acceptance"
+  ],
+  "attachments_sha256": {
+    "activation-trace.jsonl": "6ec3542f1e4d2d069d54e261b0f9a2ef952917aea951d0a0ff3a81ca9c56e5b2",
+    "narrow.json": "bcc515c1af758f8aa86cfc6b7f06101a4d04ff928297ea25c9a7167fe84c0800",
+    "document-end.json": "76ddc57e37857f47db5befe4f5e5cc170020300c342336c8acad01e4b02a7241",
+    "final-ax.txt": "7a05631425c66ece0e9cd000dcd5f1cc445a4c54a661c90c26afc5c1b9c51b9d",
+    "accepted-ax.txt": "22d80297d147f4ed4669dd73fd9a0381d522dfc778b50fc74e5ea69c79da3b65",
+    "scrolled.json": "b3a9ef76af981ddb8ed73b086f6ef36bddee8c5aed6832235331f6fa8af76ec7",
+    "narrow.png": "95c3f1ff16fb44eb6463f8f5b2e921faa3a12124f7a62ae1b9a4e813378f1453",
+    "document-end.png": "35b88cde2da30ca31815b9e18c05a542286e705a03d6c3e4389d9b65de7143b0",
+    "active-initial.json": "6ec3542f1e4d2d069d54e261b0f9a2ef952917aea951d0a0ff3a81ca9c56e5b2",
+    "selected.png": "8bd94dd99259e95cfaac62500f6d405d729bc5222f26790936b09e76eb68957f",
+    "readonly-before-retry.json": "51ff024c2db16b3c40be5f2f1803783bcf312a5ce687530c4b740dd97de30868",
+    "copied.json": "a65b7ab17e4f5077f8d8adc440b4f838cf20710cdef65f779df64bbb6545398f",
+    "document-start.json": "342f2eb225c085cb63d0b289413bcdbe04d2c9e5aba67efb58a2bb055ed57c00",
+    "document-start.png": "bc94dcfb6506b03c1ab2648052df8a918bfa7136f1b5da1e7ec837a6c5e66107",
+    "readonly-after-retry.json": "51ff024c2db16b3c40be5f2f1803783bcf312a5ce687530c4b740dd97de30868",
+    "scrolled.png": "046ac3cc766f8d76866efc7dc1b89e1899b4d224a2831b8d2477aa397b8f9aa4",
+    "navigation-checker-correction.json": "ec2853280f7be195236042a2335f0a51ec69077e738d2d6f96df4623e96ff85f",
+    "appended-selection.json": "b788b66baff65782a96388b3246efb145afdcd41d6755f15caf8c478404dcbd0",
+    "readonly-input.json": "ecd65946ef612030a8f1556b3f708b8741749accf6397f1458170510524e4396"
+  }
+}

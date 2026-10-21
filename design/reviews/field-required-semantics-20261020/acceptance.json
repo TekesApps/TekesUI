@@ -1,0 +1,50 @@
+{
+  "status": "independent current-WIP implementation verified; not applied to primary",
+  "source_identity": "7b744e2c5cc9f7590df933b90e5486ed3d0c0aba6373eab784a736f7ec163c1c",
+  "baseline": "all current selected production/build/design sources;947 initial files plus exact omitted compile/test fixtures",
+  "changed_files": [
+    "crates/tekes-ui-controls/src/composition.rs",
+    "crates/tekes-ui-controls/src/composition/adapters.rs",
+    "crates/tekes-ui-gallery/src/actions_acceptance.rs",
+    "crates/tekes-ui-gallery/src/gallery/accessibility.rs",
+    "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs",
+    "crates/tekes-ui-platform-macos/Cargo.toml",
+    "crates/tekes-ui-platform-macos/src/accessibility.rs",
+    "crates/tekes-ui-platform-macos/src/selftest.rs",
+    "crates/tekes-ui-platform-macos/src/view.rs",
+    "examples/composition-consumer/examples/native.rs",
+    "examples/composition-consumer/tests/scenarios.rs"
+  ],
+  "added_files": [
+    "crates/tekes-ui-controls/tests/field_required.rs",
+    "crates/tekes-ui-platform-macos/tests/required_native.rs"
+  ],
+  "root_cause": "existing Field.required model metadata was lost in ContentSemantics and AccessibilityNode; no AppKit isAccessibilityRequired getter",
+  "shared_fix": [
+    "existing Field.required -> ContentSemantics.required",
+    "existing host projections -> AccessibilityNode.required",
+    "actual cached native AX element -> isAccessibilityRequired; setter denied",
+    "existing layout-change notification classification includes required; stale proxy and closed owner fences reused"
+  ],
+  "applicable": "all Field/TextFieldContent consumers, single/multiline/read-only/content presentation and Gallery Field metadata producer",
+  "reasonable_exceptions": "default false for controls without declarative required metadata; availability, read-only and invalid remain independent; no automatic validation or label text injection",
+  "new_abstraction_or_token": false,
+  "public_API": "3 tests including32 orthogonal form-state combinations passed",
+  "real_consumer": "existing normal/error/disabled Field metadata scenario passed in candidate; native projection typecheck passed",
+  "native_object": "36 actual Objective-C getter/lifetime checks passed on main thread, no App/window/desktop action; not VoiceOver or active-window acceptance",
+  "gallery": "cargo check passed; first fixture-omission failure retained as setup failure, no product failure claim",
+  "strict_clippy": "controls/platform all-targets passed after exact3 compile-time legacy test fixtures copied",
+  "compatibility": "source-breaking for direct ContentSemantics/AccessibilityNode struct literals; new constructor defaultfalse preserves constructor users; all current in-snapshot publishers migrated. Future consumer version migration still required, no frozen pin upgraded.",
+  "primary_WIP_protected_files": 964,
+  "primary_source_changes": [],
+  "cleanup": "candidate workspace/consumer local package outputs cleaned on shared-cache return; source/patch/evidence retained",
+  "GPU_Gold7": "not rerun for this semantic-only candidate; no visual/maturity promotion",
+  "remaining": [
+    "finish pending current input-family native round before changing active shared implementation",
+    "reconcile/apply reviewed patch to current root and regenerate actual source-bound gates",
+    "new-version active-window/AXRequired/VoiceOver and final consumer acceptance as applicable"
+  ],
+  "performance": "not measured",
+  "publication": "no commit/push/tag/merge/Issue write; #23 public61dd and local53220-file followup untouched",
+  "official_API": "https://developer.apple.com/documentation/appkit/nsaccessibilityprotocol/isaccessibilityrequired()"
+}

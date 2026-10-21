@@ -139,3 +139,6 @@ pub use error::RenderError;
 pub use renderer::Renderer;
 pub use stats::{DROP_THRESHOLD, Distribution, DropReport, FrameSample, FrameStats};
 pub use timing::FrameTiming;
+
+#[cfg(all(target_os = "macos", feature = "macos-shared-surface"))]
+pub mod shared_surface_macos;

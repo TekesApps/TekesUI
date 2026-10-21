@@ -1,0 +1,78 @@
+{
+  "status": "scoped ButtonContent default-alignment repair API/consumer/GPU/external native accepted; runtime cleaned",
+  "head": "b3013c720d98f89159bc20f7bc64e9ba1f71b314",
+  "baseline": "all current WIP; old frozen AgentKit inputs not edited",
+  "root_cause": "ordinary public ButtonContent hardcoded Leading instead of the existing DS-owned ButtonTextAlign default",
+  "shared_fix": "crates/tekes-ui-controls/src/composition.rs: ButtonContent.paint now passes ButtonTextAlign::default(); one production line; no new layer/token/API",
+  "applicable": "all ordinary ButtonContent callers, including existing List/Dialog/other composed content, without caller-specific patches",
+  "exceptions": [
+    "CompoundButton decorative subtree retains caller/container layout; no automatic centering of arbitrary compound children",
+    "TextContent and links retain their own leading content semantics",
+    "direct Button.render explicit alignment overrides remain valid",
+    "no separate registered Toggle component exists; do not add one to scope"
+  ],
+  "API": {
+    "tests": 2,
+    "button_state_theme_brand_width_cases": 144,
+    "body_leading_exception": 1,
+    "red": "red.log genuine Leading != Center failure before production repair; first fixture compile-error separately retained",
+    "controls_total": 343
+  },
+  "consumer": {
+    "scenarios_total": 34,
+    "new_real_coretext_cases": 72,
+    "scope": "actual public ContentHost/ButtonContent, normal/disabled/loading activation and accessible name, four themes/three brands/two widths; text draw records alignment, not GPU pixels"
+  },
+  "GPU": {
+    "evidence": "design/reviews/button-content-native-20261020/images/cases.json",
+    "frames": 864,
+    "default_pixel_equalities": 288,
+    "legacy_pixel_differences": 288,
+    "png_files": 576,
+    "reference_boundary": "legacy-leading is a reproduction through the unchanged public Button primitive, not a separately compiled old-source snapshot",
+    "profile": "four themes/three existing brands, paired280/1.5 and640/1.0,@1x/@2x,six states; real CoreText and GPU, ReducedMotion true"
+  },
+  "native": {
+    "evidence": "design/reviews/button-content-native-20261020/native/result.json",
+    "activation_events": [
+      29,
+      60,
+      63,
+      65,
+      100
+    ],
+    "screen": "U2790B@2x external",
+    "profile": "Light/default brand/640pt/normal text, system ReducedMotion false; scoped mouse/key/AX state isolation; no full motion acceptance",
+    "VoiceOver": "not enabled, keep off per user"
+  },
+  "Gold7": "bounded G1/G2 common DS alignment and neutral presentation; G3 focus/disabled distinctions; G5/G7 actual common input route and accessible action. Three GPU images and active final screenshot inspected. Not whole family/page or complete native brand/motion/assistive matrix acceptance.",
+  "gates": {
+    "probes": 9,
+    "bounded_cases": 4416,
+    "complete": false,
+    "governance_tests": 42,
+    "composition_tests": 8,
+    "components": 45,
+    "strict_clippy": "controls and independent composition-consumer and new review host passed",
+    "fmt": "root/consumer/host passed"
+  },
+  "source_protection": {
+    "protected": 562,
+    "unchanged": 560,
+    "intentional_changed": [
+      "crates/tekes-ui-controls/src/composition.rs",
+      "examples/composition-consumer/tests/scenarios.rs"
+    ],
+    "new_test": "crates/tekes-ui-controls/tests/composition_button_alignment.rs",
+    "unexpected": []
+  },
+  "cleanup": {
+    "root_tests": "test-cleanup.json,28 exact unused executables removed; latest dependencies retained",
+    "small_host": "Removed 52 files, 60.1MiB total",
+    "runtime": "closed and removed; source and576 GPU images plus native logs retained"
+  },
+  "fixture_corrections": "initial public exception used Theme instead of ContentTheme/Palette (compile-only, excluded from red). Review host strictClippy caught unused test import and unused copied text-key translator; corrected with import removal and transparent native TextKey forwarding. No library changes from fixture corrections. GPU source after execution differs only by removed unused import; executed copy preserved.",
+  "remaining": "broader batch5 and all8batch acceptance remain incomplete; input required/optional VoiceOver separately deferred; public delivery permission remains separate",
+  "performance": "not measured",
+  "publication": "no commit/push/tag/merge/Issue writes"
+}

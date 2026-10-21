@@ -1061,6 +1061,12 @@
       "sourceSha256": "a7772a191ab8ab7d91414c72f69cd76c0a832717fadc0b015cfde94f82718413"
     },
     {
+      "name": "tekes-swap-horizontal",
+      "file": "assets/tekes-swap-horizontal.svg",
+      "sha256": "aee62a8f67824367e006909c8d0fba13eca503c73849faaf631a15b0de0adecc",
+      "origin": "native-apphost-toolbar"
+    },
+    {
       "name": "tekes-tab-diffs",
       "file": "assets/tekes-tab-diffs.svg",
       "sha256": "f4fe30e73458fcfc39a62aa42dd2fe971f3b0546a2e207e3b763858972e5cce4",

@@ -1,0 +1,52 @@
+{
+  "identity": "0e8578af063e45a9d475b8bac7dc59048bb6cb15206875a69053079f570cf34a",
+  "binary_sha256": "6209b04f3821d391e941e1e2a7b4fd5ec5f771171280e8c9da124d9b7f5b74bf",
+  "accepted_active_checkpoints": 10,
+  "external_display": "U2790B@2",
+  "original_pointer_phase_transitions": [
+    {
+      "frame_index": 15,
+      "action": {
+        "source": "Keyboard",
+        "target": 15002
+      },
+      "pressed": false
+    },
+    {
+      "frame_index": 18,
+      "action": {
+        "source": "Accessibility",
+        "target": 15003
+      },
+      "pressed": false
+    },
+    {
+      "frame_index": 27,
+      "action": {
+        "source": "Pointer",
+        "target": 15002
+      },
+      "pressed": false
+    },
+    {
+      "frame_index": 31,
+      "action": {
+        "source": "Pointer",
+        "target": 15003
+      },
+      "pressed": true
+    }
+  ],
+  "no_extra_AX_owner": true,
+  "ordinary_Minimum_frame_height": 36,
+  "keyboard_ring_visual": "both edges intact for actual forwarding wrappers, normal/large type+ReducedMotion",
+  "diagnostics": [
+    "native/inactive-diagnostic.json last additional keyboard sequence excluded then Window-menu reactivation and exact native recovery passed",
+    "Ctrl6 toggles ReducedMotion and Ctrl5 restores original wrapper state; preliminary normal-row screenshots labelled by actual content, not counted as wrapper acceptance"
+  ],
+  "cancel_unmount_scope": "public API/real-component tests only; no physical held-pointer Escape claim",
+  "VoiceOver": "off; no hearing claim",
+  "physical_IME": "not repeated for this generic action seam",
+  "Gold7": "scoped original control focus ring and input/AX ownership; actual AgentKit product-page comparison remains receiver scope",
+  "performance": "not measured"
+}

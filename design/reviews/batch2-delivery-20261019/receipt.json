@@ -1,0 +1,34 @@
+{
+  "candidate_id": "audit-213cfe8c81b687850aff683a96b5549277fa22cb1c3face7f4cca633dcb529c1",
+  "baseline_head": "80d6b05649234f953ea452d42e1cbed369fdddbb",
+  "source_identity": "304 exact current-WIP audit input files, not a newly committed Git revision",
+  "files": 304,
+  "manifest": "audit-source-manifest.json",
+  "snapshot": "audit-source/",
+  "checks": [
+    {
+      "name": "capability-check",
+      "exit_code": 0
+    },
+    {
+      "name": "composition-check",
+      "exit_code": 0
+    },
+    {
+      "name": "capability-tests",
+      "exit_code": 0
+    },
+    {
+      "name": "composition-tests",
+      "exit_code": 0
+    }
+  ],
+  "bounded_build_negative_evidence": "../brand-build-path-20261019-attempt3/receipt.json",
+  "public_main": "dbe5f72170c26bc1d4c227f8274bb922e3dbf1ca",
+  "remote_ci_gap": "Current main CI lacks #6 brand freshness, reference and Gold7 checks; existing green main is #2 acceptance only",
+  "status": "local-review-ready; not published or independently accepted by another person/session",
+  "native": "No new native evidence this turn; feedback native remains separately source-bound",
+  "performance": "not measured",
+  "changes": "no runtime implementation changed; added direct build-path and independent audit reproduction evidence",
+  "publication": "no commit/push/tag/comment/Issue close"
+}

@@ -11,7 +11,8 @@
       "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/SPEC.md"
     },
     "components": {
-      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json"
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json",
+      "role": "Immutable proposal contract; current implementation/state/maturity is supplement.current_capability_inventory, not historical planned/code_symbol fields."
     },
     "component_contracts": {
       "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json"
@@ -73,7 +74,7 @@
       "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py"
     },
     "context": {
-      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/context.py"
+      "$ref": "../scripts/component-context.py"
     },
     "generate": {
       "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/generate.py"
@@ -86,6 +87,9 @@
     },
     "validate": {
       "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py"
+    },
+    "historical_context": {
+      "$ref": "./imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/context.py"
     }
   },
   "supplement": {
@@ -113,6 +117,9 @@
     },
     "reference_alignment_20261016": {
       "$ref": "./behavior/reference-alignment.json"
+    },
+    "current_capability_inventory": {
+      "$ref": "./gallery/capabilities.json"
     }
   },
   "acceptance": {

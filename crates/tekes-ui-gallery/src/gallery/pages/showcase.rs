@@ -436,11 +436,6 @@ impl Icon {
         (Self::Spinner, "spinner"),
     ];
 }
-pub(crate) fn draw_icon(ctx: &mut PageCtx<'_>, scene: &mut Scene, rect: Rect, icon: Icon) {
-    let tint = color(ctx.theme, "primary-text");
-    draw_icon_tinted(ctx, scene, rect, icon, tint);
-}
-
 pub(crate) fn draw_icon_tinted(
     ctx: &mut PageCtx<'_>,
     scene: &mut Scene,

@@ -1,0 +1,118 @@
+{
+  "batch": "tree-table-accessibility-20261019",
+  "sealed_at": "2026-10-19T00:46:13.645709+00:00",
+  "head": "80d6b05649234f953ea452d42e1cbed369fdddbb",
+  "baseline": "HEAD plus ALL WIP",
+  "root_cause": [
+    "Tree explicit disclosure API missing",
+    "DataTable keyboard header/row did not consistently guard current mount",
+    "default actual Tree/Table producers not exported",
+    "native selector policy Objective-C method name was incorrect; new disclosure attributes exposed fake Expand on unrelated roles",
+    "model column shrink before repaint could reinterpret rendered cell text identity",
+    "new/reset stories did not inherit current host active state",
+    "missing initial/application-level focus and deferred host AX publication"
+  ],
+  "shared_fix": "TreeView set_expanded reuses model toggle and runtime guards; Table key validates current mount; native typed role metadata and correct isAccessibilitySelectorAllowed: with role-specific gates; global host focus rejects inactive windows",
+  "applicable": [
+    "TreeView consumers",
+    "DataTableView consumers",
+    "all native AccessibilityNode consumers for selector policy",
+    "default Gallery current Tree/Table"
+  ],
+  "exceptions": [
+    "clipped mounted targets remain valid keyboard reveal owners; native publishes only visible slots",
+    "Tree Enter activation and explicit disclosure remain distinct",
+    "native composition example mounts no Tree and rejects SetExpanded instead of mapping to Press",
+    "indices identify current source list; table accessibility row indices follow actual display positions",
+    "header decorative sort glyph omitted from title; sort metadata separate"
+  ],
+  "checks": {
+    "workspace": {
+      "passed": 1035,
+      "ignored_existing": 1
+    },
+    "independent_consumer": 127,
+    "new_public_api_tests": 2,
+    "new_gallery_tests": 5,
+    "actual_gallery_ax_total": 25,
+    "isolated_shared": 354,
+    "isolated_consumer": 127,
+    "byte_exact_replay_files": 539,
+    "owned_patch_paths": 25,
+    "final_bounded_token_cases": 4500,
+    "token_complete": false,
+    "initial_token_artifacts": "historical pre-fixture update; final current-tokens-final is authoritative",
+    "strict_clippy": "workspace/all-targets and independent consumer passed",
+    "fmt": "passed",
+    "python_design_gates": "all passed"
+  },
+  "native": {
+    "canonical_current_scopes": [
+      "tree-active-scope",
+      "table-active-scope"
+    ],
+    "display": "U2790B",
+    "builtin": false,
+    "backing_scale": 2,
+    "mode": "Light",
+    "actual_compiler_inputs_each": 425,
+    "observed": [
+      "native Tree outline/rows,Expand/Collapse setter and restored ancestor focus/selection",
+      "Tree original keyboard activation after expansion",
+      "Table3columns/5rows/15cells; ascending sort,original source3 confirmation,keyboard visual source2; descending covered in actual Gallery and historical source-bound native capture",
+      "initial scope inactive then explicit keyboard entry active; native minimize clears focus and retains source2 selection",
+      "both Window public close-readback accepted_nodes_after_close=0"
+    ],
+    "selector_regression": "tree-selector-red has fake Expand on ordinary nodes; tree-active-scope fixes it; ComboBox text+confirmation and Select cancel regressed in selector-fix build, shared platform selector source unchanged in final",
+    "intermediate_identity_policy": "all stages before active-scope are historical diagnostic builds; only active-scope matches all current425 inputs; filenames containing inactive/restored without matching false/true flags do not prove transition",
+    "not_proven": [
+      "complete VoiceOver grid traversal/sort announcements/notifications",
+      "physical IME",
+      "full native theme/brand/motion matrix",
+      "native minimized restore and genuine cross-application deactivation; API/Gallery restore is separate"
+    ]
+  },
+  "gold7": "gold7-review.json; bounded contract/integration/experience recorded separately",
+  "wip": {
+    "baseline_files": 24231,
+    "unchanged": 24215,
+    "changed_existing": [
+      "crates/tekes-ui-controls/src/collections_view.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs",
+      "crates/tekes-ui-gallery/src/host.rs",
+      "crates/tekes-ui-platform-macos/src/accessibility.rs",
+      "crates/tekes-ui-platform-macos/src/app.rs",
+      "crates/tekes-ui-platform-macos/src/event.rs",
+      "crates/tekes-ui-platform-macos/src/lib.rs",
+      "crates/tekes-ui-platform-macos/src/shared.rs",
+      "design/gallery/capabilities.json",
+      "design/gallery/component-coverage.json",
+      "design/remediation/composition-audit.json",
+      "design/remediation/ledger.json",
+      "examples/composition-consumer/examples/native.rs"
+    ],
+    "missing": [],
+    "all_changes_owned_or_ledger": true,
+    "head_unchanged": true,
+    "previous_seals_verified": [
+      "filtered-menu-accessibility-20261019",
+      "menu-accessibility-20261019",
+      "icon-wip-reconciliation-20261019",
+      "list-accessibility-20261019",
+      "selection-accessibility-20261019"
+    ]
+  },
+  "remaining": [
+    "other current semantic producers",
+    "generic nested semantic-part protocol/Inspector",
+    "full VoiceOver/physical IME"
+  ],
+  "performance": "not measured",
+  "git_writes_by_this_session": false,
+  "issue_mutations": false,
+  "agentkit_frozen_candidate": "unchanged",
+  "issue_state": "21open/0openPR; no issue completion claim"
+}

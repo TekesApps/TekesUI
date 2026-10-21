@@ -1,0 +1,100 @@
+{
+  "format": "tekesui-content-status-review/1",
+  "date": "2026-10-18T00:12:28.101071+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues_open": 14,
+  "prs_all_states": 0,
+  "github_changed_since_ledger": false,
+  "issues": [
+    8,
+    12,
+    14
+  ],
+  "root_fixes": [
+    "active ancestor input/modal reconciliation",
+    "borrowed dynamic renderer forwarding through all existing services",
+    "host story header activation/release before body adapters after modal/popup guards"
+  ],
+  "public_api": {
+    "shared_tests": 319,
+    "component_registry_tests": 3,
+    "consumer_tests": 28,
+    "body_cases": 120,
+    "body_required_states": 6,
+    "body_focus_combinations": 4,
+    "header_and_body_token_cases": 408,
+    "clippy": "root Gallery+controls all-targets review feature and consumer all-targets token-audit strict pass"
+  },
+  "governance": {
+    "capability_tests": 36,
+    "composition_tests": 6,
+    "composition_components": 45,
+    "public_states": 95,
+    "fixture_unverified": 161,
+    "required_states": 269,
+    "reference_alignment": "15 mappings;13 profiles x4themes;12688 declared checks",
+    "gold7": "mechanical pass; experience separately scoped"
+  },
+  "gpu": {
+    "final_body_pngs": 480,
+    "full_page_pngs": 288,
+    "before_allocation_pngs": 480,
+    "before_final_identical": 480,
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "type_and_width": [
+      "360 type150 body/720x512 type150 page",
+      "800 type100 body/1440x960 type100 page"
+    ]
+  },
+  "native": {
+    "app": "Gallery only, explicit composition-review feature",
+    "bundle_id": "com.tekesui.gallery.audit.contentstatus20261018",
+    "observed": "Tabs and Disclosure body/focus matrices; search/tab/scroll; Disclosure route before/after",
+    "not_tested": [
+      "native content-input transitions",
+      "physical content IME",
+      "VoiceOver",
+      "full component AX"
+    ],
+    "exit_inventory": []
+  },
+  "limits": [
+    "no builtin Tabs/Disclosure Content adapter",
+    "default Gallery body scenes not migrated",
+    "complete token dependencies unverified",
+    "full experience unverified",
+    "no performance tested"
+  ],
+  "source_sha256": {
+    "docs/design/issue-remediation-current-20261017.md": "53dbae1a19469c5d9164e21dca9a95f7e1c8bce5eb92f79402ace32a7d3803f2",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "3adc6a4e34d38f9a8a067f4a38c9d7c97891a86cae093865cf7f15626b543991",
+    "crates/tekes-ui-controls/src/widgets.rs": "8c22a4bc965f66a1c5a1d2d7bb30d29698cbab6b16c92abbb4db0aa2cd7b5605",
+    "crates/tekes-ui-gallery/Cargo.toml": "f4caf88eb1e0bc5ff245ee871f5543c4f66b97a70afd6c71bf54a31ae4ba5b79",
+    "crates/tekes-ui-controls/tests/composition.rs": "4a3a4995e115d96663c185e99d36fca9bfcb8081cf6628c267970f111f746d40",
+    "examples/composition-consumer/tests/scenarios.rs": "913a1c01f14a2ce80c5b271dd062001183bfa6460a8984155c9cf0c5e77b25fb",
+    "design/gallery/capabilities.json": "f6f9a1b9e5e8d8fc1e9eca473db47838cebc593237ef4e8321247156053ef020",
+    "design/remediation/composition-audit.json": "c9ab02e9ebf2acc5c23b630453682d32fe19df859c946dd35a3b1598403e1b2a",
+    "scripts/test-component-capabilities.py": "c48d30ad85f3c549c578bf1994ed0485cd1f6e6c804cb525bdea3ebeb6955753",
+    "examples/composition-consumer/Cargo.toml": "4d9bfd4db368de443abf24c53f0414ea58503a5dd128939ca64abb6add163eda",
+    "crates/tekes-ui-gallery/src/gallery/composition_acceptance.rs": "fc9cbff83f60c9825016cc61929f1017c1fa067dad8d10ce85781fcd119fe759",
+    "scripts/generate-component-capabilities.py": "a8440e764b5bfab4c73a411270c6481a2d8ab005626d8fcf59f97c9b83b23319",
+    "design/remediation/ledger.json": "7a9af35ffe1b0c46dfdb2777f9f01d02a9662a5ce67c6579fd2f88ab65276c96",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "150858e9f4c87fa609d1e29b9f353e3661b37f94d85a6d2e3bca423e501fcb42",
+    "crates/tekes-ui-controls/src/composition.rs": "974e4c51e7b00c6b8ad49f872af533bbc12caaf9704c205f8c0cb770c3f9669a",
+    "examples/composition-consumer/src/lib.rs": "26ab2d37d1808320eb797db2be5e69b51acb65530e17483ba3327bf4a19577d8",
+    "design/gallery/component-coverage.json": "f7b8c1e7388571a1933800bf2dab837c41eebf2e5c8541cb4018b46a6a5c4cc8",
+    "docs/design/composition-audit-20261018.md": "11fa5dfa234df9a59765e7deb72dc349dee6cdbfb7dc5e905912948d076a00a8",
+    "examples/composition-consumer/src/content_status.rs": "b3bf4ab1b5b98633f330c86446e8cf73e7400b031bd98758582a5f75ce9d04bd",
+    "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs": "8649461e8898d7c873b63faf971c81f3cf78ec87f292da918332ab23a788cbdc",
+    "scripts/audit-content-status-tokens.py": "ad97c0b5f142c174206efbede6676db6a5a1debdac25487a58c2b408193d2229",
+    "docs/design/content-status-20261018.md": "e9c1dcb06d8603fce4d7cc519fbd402b92bc1e51b8c932eee53f56845e6594a6"
+  },
+  "wip_protection": "wip-protection.json",
+  "goal_status": "active"
+}

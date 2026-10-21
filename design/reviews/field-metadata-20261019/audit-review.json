@@ -1,0 +1,10 @@
+{
+  "reviewed_changed_sources": [
+    "crates/tekes-ui-controls/src/feedback_view.rs",
+    "crates/tekes-ui-gallery/src/gallery/composition_acceptance.rs",
+    "examples/composition-consumer/examples/native.rs",
+    "examples/composition-consumer/src/lib.rs",
+    "examples/composition-consumer/tests/scenarios.rs"
+  ],
+  "limits": "Isolated Field source only; foreign TickingNumber/Scene3D WIP not classified or accepted. Root full audit not refreshed."
+}

@@ -1,0 +1,73 @@
+{
+  "format": "tekesui-tooltip-lifecycle/1",
+  "owner": "root: sole shared implementation owner",
+  "status": "shared fix and bounded API/consumer/GPU/token governance passed; native/whole experience incomplete",
+  "source_identity": "0a193337cab24fe38bcd2e0c8c2851f38b4b7678590cd3d955900442b9c97ea0",
+  "root_causes": [
+    "Inactive pointer/focus events were recorded and reopened Tooltip after reactivation.",
+    "Deactivation retained obsolete anchor/overlay hit geometry until redraw.",
+    "Controlled-only Escape suppression incorrectly waited for a hover/focus owner to leave.",
+    "A valid closed render has zero dynamic token reads; evidence validator previously required nonempty reads."
+  ],
+  "shared_fix": "crates/tekes-ui-controls/src/feedback_view.rs; reuse existing inactive, hover/focus and controlled suppression flags; no new abstraction or tokens",
+  "applicable": "Every public TooltipView consumer, including Gallery FeedbackViews forwarding adapter and independent composition consumer",
+  "exceptions": [
+    "Controlled visible request survives window activation unless explicitly dismissed; hover/focus needs fresh active input.",
+    "No builtin owned Content/AX adapter added.",
+    "Closed render performs no paint/lookups; explicit state assertion and reason required, never attribute caller background."
+  ],
+  "verification": {
+    "api": {
+      "new_red_green": 3,
+      "controls": 390,
+      "strict_clippy": true
+    },
+    "real_consumer": {
+      "normal_tests": 164,
+      "public_render_probe_cases": 144,
+      "strict_clippy": true,
+      "Gallery": "Existing production forwarding source reviewed at feedback_adapter.rs; no full Gallery build/native claim"
+    },
+    "GPU": {
+      "cases": 144,
+      "frames": 816,
+      "result": "gpu-result.json",
+      "source": "Independent public TooltipView + actual CoreText/GPU; no-op text sink only in separate token probe"
+    },
+    "token_observations": {
+      "files": 12,
+      "cases": 5184,
+      "complete": false,
+      "closed_zero_read": "12scenarios including asserted zero-lookup states;2new validator tests including9negative forms"
+    },
+    "governance_tests": 44,
+    "composition_rows": 45,
+    "composition_tests": 8,
+    "compile_bindings": 3,
+    "native": "not run for this Tooltip WIP; native bd3 Content results independent",
+    "Gold7": "functional scoped evidence only; matched ClientKit visuals and whole experience unverified"
+  },
+  "checks": [
+    "checks.json",
+    "followup-checks.json",
+    "gates.json"
+  ],
+  "wip_boundary": {
+    "preexisting_controls_consumer_changed": [
+      "crates/tekes-ui-controls/src/feedback_view.rs"
+    ],
+    "new_sources": [
+      "crates/tekes-ui-controls/tests/tooltip_lifecycle.rs",
+      "examples/composition-consumer/tests/tooltip_tokens.rs",
+      "scripts/audit-tooltip-tokens.py"
+    ],
+    "frozen_bd3": "not edited; native runtime cleanup only"
+  },
+  "remaining": [
+    "Tooltip active native late-input and controlled lifecycle on final combined candidate",
+    "Applicable AX/hearing and matched ClientKit visual/Gold7 checks",
+    "AgentKit external-value read-only preflight shared contract finding"
+  ],
+  "constraints": "No Git writes, remote Issue changes, performance, VoiceOver or private ClientKit edits",
+  "cleanup": "cleanup.json"
+}

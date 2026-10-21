@@ -24,6 +24,9 @@ impl Default for AppConfig {
 #[derive(Clone, Debug, PartialEq)]
 pub struct WindowConfig {
     pub title: String,
+    /// Extend the TekesUI view into a transparent, unified native titlebar.
+    /// Hosts must reserve space for the native window buttons. Default false.
+    pub unified_titlebar: bool,
     /// 内容区（视图）的初始尺寸，单位 pt。
     pub size: Size,
     pub min_size: Option<Size>,
@@ -40,6 +43,7 @@ impl Default for WindowConfig {
     fn default() -> Self {
         WindowConfig {
             title: String::from("TekesUI"),
+            unified_titlebar: false,
             size: Size {
                 width: 960.0,
                 height: 640.0,

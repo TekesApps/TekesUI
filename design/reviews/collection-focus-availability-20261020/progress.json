@@ -1,0 +1,68 @@
+{
+  "format": "tekesui-collection-focus-availability/1",
+  "status": "availability repair scoped API/actual adapter/CoreText-GPU/token-governance passed; native/full experience pending; separate focus-ink failure confirmed",
+  "owner": "root: sole shared implementation owner",
+  "source_identity": "e6e1068c04d05e975c231af08f37cd34e4a67cc2a61df55b0549df0c36dc3bb9",
+  "root_cause": "Public focus methods recorded requests delivered during group-disabled or window-inactive periods, reviving keyboard ownership on restore; Chart also mutated controlled focus while inactive.",
+  "shared_fix": "Existing ListView/TreeView/DataTableView row+header and ChartView focus methods in collections_view.rs; existing disabled/window_active/blur reused; signatures/models unchanged",
+  "applicable": [
+    "ListView::focus",
+    "TreeView::focus",
+    "DataTableView::focus_row",
+    "DataTableView::focus_header",
+    "ChartView::focus (inactive only)"
+  ],
+  "exceptions": [
+    "Chart has no group-disabled contract; none added.",
+    "Requests delivered after restoration are current requests; asynchronous intent/version fencing remains host responsibility.",
+    "Existing node/source membership and clipping contracts remain separate.",
+    "Host forwards availability; no implicit OS observer or focus queue."
+  ],
+  "verification": {
+    "api": {
+      "tests": 5,
+      "before": "red.log: all5genuine failures",
+      "after": "green.log",
+      "controls": 400,
+      "strict_clippy": true
+    },
+    "real_consumer": {
+      "ordinary_consumer_tests": 168,
+      "actual_production_function": "byte-identical Gallery focus_changed extracted at build; minimal fixture holds original models/Views only",
+      "boundary": "No whole Gallery/global FocusManager or native AX proof"
+    },
+    "GPU": {
+      "cases": 432,
+      "frames": 1296,
+      "restored_pixels_identical": true,
+      "fresh_focus_changes_pixels": true,
+      "full_focus_outline": "FAILED: focus-ink-defect.json; difference alone is not full visual acceptance"
+    },
+    "tokens": {
+      "files": 13,
+      "bounded_cases": 5688,
+      "collection_cases": 504,
+      "complete": false,
+      "states": "rest/focus/selected and applicable disabled; other states remain unverified"
+    },
+    "gates": {
+      "registry_components": 45,
+      "governance": 44,
+      "composition": 8,
+      "public_bindings": 3
+    },
+    "native": "not run on this exact repair; no VoiceOver enabled",
+    "Gold7": {
+      "G5": "contract/integration/GPU scoped passed; native experience pending",
+      "G3": "focus clipping defect confirmed in actual pixels; shared followup next",
+      "G7": "code/tests/probes/evidence retained; public delivery/independent final review remain"
+    }
+  },
+  "owned_existing_source_changes": [
+    "crates/tekes-ui-controls/src/collections_view.rs"
+  ],
+  "cleanup": "cleanup.json",
+  "next": "shared focus-ink clipping/painter-order fix, then final native/family experience; frozen AgentKit2b16 and bd3 untouched",
+  "constraints": "No performance, Git writes, Issue closure, new framework or unrelated WIP edits",
+  "focus_ink_followup": "design/reviews/collection-focus-ink-20261021/progress.json: shared ink defect repaired and scoped verified; original failed images/source remain historical"
+}

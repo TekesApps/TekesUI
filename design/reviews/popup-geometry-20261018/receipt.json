@@ -1,0 +1,123 @@
+{
+  "format": "tekesui-popup-geometry-review/1",
+  "date": "2026-10-18T00:54:19.124807+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues_open": 14,
+  "prs_all_states": 0,
+  "github_changed_since_ledger": false,
+  "issues": [
+    8,
+    12,
+    14
+  ],
+  "root_fixes": [
+    "shared actual-anchor and available-side placement reuses place_overlay",
+    "public MenuView::measure shares production row measurement",
+    "empty FilteredMenuView cancels paint/input without closing query",
+    "existing Gallery consumers reserve real measured trigger/query/popup space"
+  ],
+  "public_api": {
+    "new_geometry_tests": 6,
+    "new_empty_contract_test": 1,
+    "compiled_geometry_red_tests": 3,
+    "compiled_empty_red_tests": 1,
+    "shared_tests": 332,
+    "consumer_tests": 30,
+    "gallery_command_tests": 5,
+    "gallery_combo_tests": 5,
+    "gallery_states_tests": 2,
+    "strict_clippy": "root controls/Gallery review features and independent consumer pass"
+  },
+  "governance": {
+    "components": 45,
+    "capability_tests": 36,
+    "composition_tests": 6,
+    "public_states": 95,
+    "fixture_unverified": 161,
+    "required_states": 269,
+    "reference_alignment": "pass",
+    "gold7_mechanical": "pass; experience remains scoped",
+    "pure_rust": "pass",
+    "fmt": "pass"
+  },
+  "gpu": {
+    "final_pngs": 576,
+    "comparable_previous_pngs": 432,
+    "changed": 393,
+    "identical": 39,
+    "additional_menu_pngs_without_previous_counterpart": 144,
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "widths_and_type": [
+      "720x512 type150",
+      "1440x960 type100"
+    ],
+    "reduced_motion": true,
+    "visual_review": "representative frames only; not full state experience acceptance"
+  },
+  "token_observations": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "action-token-observations.json": 576
+  },
+  "token_limits": {
+    "complete": false,
+    "geometry_state_asserted": false,
+    "choice_required_states": "not promoted"
+  },
+  "native": {
+    "bundle_id": "com.tekesui.gallery.audit.popupgeometry20261018",
+    "signed_binary_sha256": "81a6b9ed1f81d4f214e544f3c41edd0e84d526a14831b62a7fa5b9a8e8a15a38",
+    "hash_stage": "after codesign",
+    "observed": [
+      "CommandPalette type150 full trigger, query and popup separation",
+      "CommandPalette no-match feedback, Enter no activation, Escape close and reopen",
+      "420pt narrow type150 CommandPalette geometry",
+      "420pt narrow type150 ComboBox empty/filter/Down Enter Comfortable selection and retained input focus"
+    ],
+    "not_tested": [
+      "Menu and Select new geometry in native window",
+      "physical IME",
+      "full AX controls",
+      "VoiceOver",
+      "all themes and all states in native window"
+    ],
+    "exit_inventory": [],
+    "previous_identity_limit": "prior receipt used pre-sign hash; no current equality claim for signed old binary"
+  },
+  "limits": [
+    "tiny viewport existing bounded overlay fallback may cover anchor",
+    "caller placement viewport and ancestor clip are distinct",
+    "30 choice required states not yet fully verified",
+    "no new token/state layer/adapter/broad migration",
+    "no performance"
+  ],
+  "source_sha256": {
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "a96a79323eb03714a1c5c171aa6c3c99e76aa811ab93b48b6f6d46d0ef7c72e4",
+    "crates/tekes-ui-controls/tests/choice_contract.rs": "9a40648050caffa9f1da0d57ce4c9f86abcb17bc0343c8c5fa8273608b4aaf8b",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs": "f704570affa2132b7384f6f24d2bd3ee8e6b154458ea58f22f3293a1936b2191",
+    "docs/design/composition-audit-20261018.md": "4b89550a8f218ec82b3d8dc973b85e2df2993031c567bb8935604c9b05680c92",
+    "docs/design/issue-remediation-current-20261017.md": "8e52f507980daa4c8f22f57723a3b287d4d632da93329c71fc3ca82782706310",
+    "crates/tekes-ui-controls/src/feedback_view.rs": "c50f313b65cf5a1e02324907b367d4bd64d1de3ab7a224b7c4e329572229f2b8",
+    "crates/tekes-ui-controls/src/composite.rs": "ab1695c26f20c7ee00b34fb25375c0389c0c3c5509ba93842112dad4a915fe37",
+    "examples/composition-consumer/tests/scenarios.rs": "ca2178b941b4daad5dc7f3292c1dce4c638463691848b5b08e5dc4b1086e46d2",
+    "crates/tekes-ui-controls/src/layout_view.rs": "aadb82919b7349371e6704924d94e41e0a5063dc9d739cfa483830360cd6c6ca",
+    "design/remediation/composition-audit.json": "25f3cb802140f78c8f57efb993cdfa34572055196f35ec16158d2e6e52f24d5c",
+    "design/remediation/ledger.json": "7af46d1f269bf5bd4265a1faba8bc690511c14d95ff854f3445e66fb4cf9b852",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "ac178371c3d0bc7a2e3759385da9a6323408d4fcd17cec5aa9e7231386d09779",
+    "design/gallery/component-coverage.json": "cc3a44f37950fcb451b65d91baca1824448c9c4f685972495eacc1e561d7bff7",
+    "design/gallery/capabilities.json": "0148adf369ff3052176214dac9104ea03702ee12975f082e930fe7e0a1b3efbf",
+    "crates/tekes-ui-controls/tests/popup_placement.rs": "eeabac28363e3fbf3c6b46e6515c26961f30aa9cb70a18c315f32c913f88a849",
+    "scripts/audit-popup-tokens.py": "ae61097b2ac1f834f772e5e9133b8741f99950e0cfefcc991e612e72be0a0559",
+    "docs/design/popup-geometry-20261018.md": "2d086fb63b89b670b2f47cb4ded5ae1ea710e39dc30dedddba941f21cb762bb8"
+  },
+  "wip_protection": "wip-protection.json",
+  "goal_status": "active"
+}

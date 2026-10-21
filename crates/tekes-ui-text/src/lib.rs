@@ -30,6 +30,7 @@
 pub mod compare;
 pub mod export;
 mod geometry;
+pub mod label;
 pub mod model;
 pub mod push;
 pub mod style;
@@ -43,3 +44,5 @@ pub use model::{FontInfo, FontRun, Line, Paragraph, ShapeOptions, ShapedGlyph, S
 pub use push::{push_paragraph, push_paragraph_visible};
 pub use style::{FontFamily, TextStyle};
 pub use traits::{FontFallback, Rasterizer, Shaper};
+
+pub use label::{LabelLayout, LabelOptions, LabelOverflow};

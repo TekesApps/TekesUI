@@ -1,0 +1,29 @@
+{
+  "user_observation": "现在我看到的界面和client kit差别很大，你确定吗",
+  "window": "TekesUI Scroll Update Review · mixed",
+  "actual_view_checked": "CUA screenshot of the running final candidate, U2790B@2, narrow window and expanded header",
+  "confirmed_fixture_facts": [
+    "toggle_top repeats a heading eight times to change document height; this is synthetic input-stress content.",
+    "Mixed List and sibling editor use production components, but this composition is not a matched ClientKit/Gallery visual specimen.",
+    "Existing GPU before/after demonstrates input-frame continuity, not ClientKit visual parity."
+  ],
+  "visual_acceptance": "not accepted; ClientKit comparison not performed",
+  "Gold7": {
+    "G1": "unverified visual quality; user raised visible difference",
+    "G2": "unverified matching hierarchy",
+    "G3": "unverified matching component geometry/rendering",
+    "G4": "bounded API/GPU input continuity evidence only; no complete native momentum claim",
+    "G5": "bounded independent focus/preedit isolation evidence only; structured item anchor is still missing",
+    "G6": "unverified complete experience",
+    "G7": "functional public consumer exists; matched visual preview still needed"
+  },
+  "next": "Identify exact ClientKit comparison scene; use same content/width/backing scale/theme/type scale, compare shared semantics/tokens/production rendering and host layout; no per-page styling patches or copying private Swift implementation.",
+  "desktop": "Final window kept available for user observation; automatic desktop actions stopped while answering feedback.",
+  "reference_sources_read": [
+    "docs/design/gold7.md",
+    "docs/comparison-method.md",
+    "/Users/frankqin/dev/TekesClientKit/Sources/Composer/TekesButtonMetrics.swift",
+    "/Users/frankqin/dev/TekesMetalTextKit/Sources/TekesMetalTextKit/Design/TextRole.swift"
+  ],
+  "private_assets": "No private reference assets or code copied into public repo."
+}

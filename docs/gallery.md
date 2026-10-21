@@ -4,6 +4,10 @@ Gallery 是纯 Rust 原生工作台，使用现有 wgpu / CoreText / AppKit Rust
 
 ## 注册和信息架构
 
+日常整改优先使用当前组件已有的独立小宿主，完整 Gallery 留给共享契约或组件族的集成检查点。
+构建、共享缓存、分层验收与验收后清理统一通过 [组件验收流程](component-review.md) 执行；
+没有独立场景的组件随实际整改接入，不提前扩范围，也不把运行时页面过滤称为小构建。
+
 [design/gallery/workbench.json](../design/gallery/workbench.json) 集中维护名称、规范入口、分类、渲染器、文档、关键词和成熟度。`build.rs` 从同一注册表生成页面枚举列表；侧栏、菜单、搜索、路由和快照遍历共同使用它。新增已有渲染器的 Story 只加一条注册记录，不再重复登记名称、分组和路由。新增真实组件仍须实现生产控件和对应渲染适配器。
 
 新导航完全替换旧目录：
@@ -209,7 +213,7 @@ Button 共享布局与文本适配的最终检查为 Gallery **207 项通过**�
 ```sh
 python3 scripts/package-gallery.py
 # 或只打包已验证的二进制：
-python3 scripts/package-gallery.py --binary target/gallery-integration/release/tekes-ui-gallery
+python3 scripts/package-gallery.py --binary target/review-cache/debug/tekes-ui-gallery
 ```
 
 脚本需要 Xcode 的 `actool`，但不编译 Swift 或 Xcode App 项目。脚本在临时 bundle 中装入 Rust 二进制、Info.plist、编译后的图标目录和旧版 ICNS，完成本地 ad-hoc 签名及验证后替换 `target/TekesUI Gallery.app`。它不启动、提交或发布。`cargo run` 直接启动可执行文件，不等于运行带图标的 `.app`；检查 Dock/Finder 图标请使用打包产物。Python 仅用于离线打包，不进入 App 运行时。

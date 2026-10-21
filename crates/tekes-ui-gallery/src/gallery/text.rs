@@ -30,6 +30,7 @@ use tekes_ui_tokens::{ColorRole, Rgba, TextRole, Theme, proposal};
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum LabelRole {
     Legacy(TextRole),
+    TickingPreview(u32),
     Proposal(proposal::TextRole),
 }
 
@@ -202,6 +203,15 @@ impl TextEngine {
         });
     }
 
+    /// Static comparison fixtures borrow the host clock and snap their local
+    /// states. The caller restores this exact optional context afterwards.
+    pub(super) fn replace_fixture_motion_context(
+        &mut self,
+        context: Option<ControlMotionContext>,
+    ) -> Option<ControlMotionContext> {
+        std::mem::replace(&mut self.motion_context, context)
+    }
+
     pub fn motion_frame_requested(&self) -> bool {
         self.motion_frame_requested
     }
@@ -252,6 +262,24 @@ impl TextEngine {
         let p = Rc::new(self.shape(&localized, &style, &options));
         self.cache_label(key, p.clone());
         p
+    }
+
+    /// Large counter glyphs are shaped at their final size and cached per digit.
+    fn ticking_preview_digit(&mut self, digit: &str, size: f32) -> Rc<Paragraph> {
+        let key = LabelKey {
+            text: digit.to_owned(),
+            role: LabelRole::TickingPreview(size.to_bits()),
+            width_64: None,
+            locale: self.locale,
+            type_scale_bits: self.type_scale.to_bits(),
+        };
+        if let Some(paragraph) = self.labels.get(&key) {
+            return paragraph.clone();
+        }
+        let style = TextStyle::system(size);
+        let paragraph = Rc::new(self.shape(digit, &style, &ShapeOptions::default()));
+        self.cache_label(key, paragraph.clone());
+        paragraph
     }
 
     /// 把段落编进 scene，原点 `origin`（调用方保证是整数 pt）。
@@ -566,7 +594,72 @@ impl TextEngine {
     }
 }
 
+impl tekes_ui_controls::TextSurfaceHost for TextEngine {
+    fn shape_label(
+        &mut self,
+        text: &str,
+        role: proposal::TextRole,
+        width: f32,
+        options: tekes_ui_text::LabelOptions,
+    ) -> Option<Rc<tekes_ui_text::LabelLayout>> {
+        let metrics = role.style();
+        let style = if proposal::text_family(role.id()) == Some("mono") {
+            TextStyle::named("Menlo", metrics.size * self.type_scale)
+        } else {
+            TextStyle::system(metrics.size * self.type_scale)
+        }
+        .with_weight(metrics.weight);
+        Some(Rc::new(
+            self.shaper
+                .shape_label(
+                    text,
+                    &style,
+                    &ShapeOptions::with_width(f64::from(width)),
+                    options,
+                )
+                .with_min_line_height(f64::from(metrics.line_height * self.type_scale)),
+        ))
+    }
+
+    fn shape_surface(
+        &mut self,
+        text: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> Rc<Paragraph> {
+        Rc::new(self.shape_proposal(text, role, width))
+    }
+    fn type_scale(&self) -> f32 {
+        self.type_scale
+    }
+}
+/// Gallery-only large typography adapter; fixed slots remain owned by TickingNumber.
+pub(super) struct TickingPreviewText<'a>(pub &'a mut TextEngine, pub f32);
+impl ButtonTextRenderer for TickingPreviewText<'_> {
+    fn measure(&mut self, text: &str, _: proposal::TextRole, _: f32) -> Size {
+        let paragraph = self.0.ticking_preview_digit(text, self.1);
+        Size::new(paragraph.width as f32, paragraph.height as f32)
+    }
+    fn draw(
+        &mut self,
+        scene: &mut Scene,
+        text: &str,
+        _: proposal::TextRole,
+        rect: Rect,
+        _: ButtonTextAlign,
+        ink: Rgba,
+    ) {
+        let paragraph = self.0.ticking_preview_digit(text, self.1);
+        let origin = label_origin(rect, &paragraph, HAlign::Center);
+        self.0.push(scene, &paragraph, origin, ink);
+    }
+}
+
 impl ButtonTextRenderer for TextEngine {
+    fn text_surface_host(&mut self) -> Option<&mut dyn tekes_ui_controls::TextSurfaceHost> {
+        Some(self)
+    }
+
     fn motion_context(&self) -> Option<ControlMotionContext> {
         self.motion_context
     }
@@ -1165,6 +1258,160 @@ mod gold7_focus_raster {
                         .unwrap();
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod label_content_tests {
+    use super::*;
+    use tekes_ui_controls::composition::*;
+    use tekes_ui_text::{LabelOptions, LabelOverflow};
+
+    fn node(kind: usize, original: bool, state: tekes_ui_controls::ControlState) -> Content {
+        let source = if original { "A\nB" } else { "A…" };
+        let label = |id| {
+            let node = Content::new(ComponentId(id), TextContent::new(source));
+            if original {
+                node.with_label_layout(LabelOptions::single_line(LabelOverflow::TailEllipsis))
+                    .unwrap()
+            } else {
+                node
+            }
+        };
+        let mut node = match kind {
+            0 => label(1),
+            1 => {
+                let node = Content::new(ComponentId(1), ButtonContent::new(source));
+                if original {
+                    node.with_label_layout(LabelOptions::single_line(LabelOverflow::TailEllipsis))
+                        .unwrap()
+                } else {
+                    node
+                }
+            }
+            _ => Content::new(
+                ComponentId(1),
+                CompoundButton::new(source, label(2)).unwrap(),
+            ),
+        };
+        if let Some(button) = node.component_mut::<ButtonContent>() {
+            button.button.state = state;
+        }
+        if let Some(button) = node.component_mut::<CompoundButton>() {
+            button.action.button.state = state;
+        }
+        node
+    }
+
+    #[test]
+    fn production_gallery_label_slots_match_explicit_native_reference_pixels() {
+        let mut renderer = Renderer::new_headless().unwrap();
+        let mut cases = 0;
+        use tekes_ui_controls::ControlState;
+        let states = [
+            ControlState::default(),
+            ControlState {
+                hovered: true,
+                ..Default::default()
+            },
+            ControlState {
+                pressed: true,
+                focused: true,
+                ..Default::default()
+            },
+            ControlState {
+                focused: true,
+                focus_visible: true,
+                ..Default::default()
+            },
+            ControlState {
+                disabled: true,
+                ..Default::default()
+            },
+            ControlState {
+                loading: true,
+                ..Default::default()
+            },
+        ];
+        for theme in Theme::ALL {
+            for scale in [1u32, 2] {
+                for type_scale in [1., 1.5, 2.] {
+                    for kind in 0..3 {
+                        for (state_index, state) in states.into_iter().enumerate() {
+                            let mut text = TextEngine::new();
+                            text.set_scale(scale as f32);
+                            text.set_type_scale(type_scale);
+                            let palette = tekes_ui_tokens::Palette::from(theme);
+                            let mut render = |original: bool| {
+                                text.begin_frame();
+                                let mut host =
+                                    ContentHost::new(node(kind, original, state)).unwrap();
+                                let mut scene = Scene::new();
+                                let frame = Rect::new(20., 20., 200., 60.);
+                                host.render(
+                                    &mut scene,
+                                    &mut text,
+                                    frame,
+                                    Rect::new(0., 0., 240., 100.),
+                                    palette,
+                                )
+                                .unwrap();
+                                assert_eq!(
+                                    host.semantics()[0].semantics.name,
+                                    if original { "A\nB" } else { "A…" }
+                                );
+                                renderer
+                                    .render_to_rgba8(
+                                        &scene,
+                                        text.atlas_mut(),
+                                        (240 * scale, 100 * scale),
+                                        scale as f32,
+                                        palette.color("surface-1").unwrap(),
+                                    )
+                                    .unwrap()
+                            };
+                            let actual = render(true);
+                            let reference = render(false);
+                            assert!(
+                                actual == reference,
+                                "pixels differ: kind={kind},theme={theme:?},scale={scale},type={type_scale}; changed channels={}",
+                                actual
+                                    .iter()
+                                    .zip(&reference)
+                                    .filter(|(a, b)| a != b)
+                                    .count()
+                            );
+                            if let Some(dir) = std::env::var_os("TEKESUI_LABEL_CONTENT_GPU_OUT") {
+                                let dir = std::path::PathBuf::from(dir);
+                                std::fs::create_dir_all(&dir).unwrap();
+                                if scale == 2 && type_scale == 1.5 {
+                                    let name = format!("kind-{kind}-state-{state_index}-{theme:?}")
+                                        .replace([' ', ':', '{', '}', ','], "_");
+                                    let mut encoder = png::Encoder::new(
+                                        std::fs::File::create(dir.join(format!("{name}.png")))
+                                            .unwrap(),
+                                        240 * scale,
+                                        100 * scale,
+                                    );
+                                    encoder.set_color(png::ColorType::Rgba);
+                                    encoder.set_depth(png::BitDepth::Eight);
+                                    encoder
+                                        .write_header()
+                                        .unwrap()
+                                        .write_image_data(&actual)
+                                        .unwrap();
+                                }
+                            }
+                            cases += 1;
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!(cases, 432);
+        if let Some(dir) = std::env::var_os("TEKESUI_LABEL_CONTENT_GPU_OUT") {
+            std::fs::write(std::path::PathBuf::from(dir).join("result.json"),"{\"cases\":432,\"GPU_frames\":864,\"comparison\":\"production Gallery Content opt-in versus independent original shaper literal A…\"}\n").unwrap();
         }
     }
 }

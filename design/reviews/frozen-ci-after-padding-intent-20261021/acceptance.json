@@ -1,0 +1,84 @@
+{
+  "format": "tekesui-frozen-current-ci/1",
+  "status": "complete local CI recipe passed on exact isolated source; public remoteCI/independent reviewer/native experience separate",
+  "identity": "7e5092c9509c5e0fbdc7e1b2c97800c0c62e168ab7929f02a7e92c4cc9790c35",
+  "files": 1250,
+  "all_snapshot_bytes_unchanged": true,
+  "workspace": {
+    "summaries": 89,
+    "totals": {
+      "passed": 1218,
+      "failed": 0,
+      "ignored": 18,
+      "measured": 0,
+      "filtered_out": 3
+    },
+    "ignored": [
+      "test gallery::pages::icons::catalogue_review::local_full_catalogue_pixels_and_scroll_culling ... ignored, requires explicit TEKESUI_ICON_DIR and TEKESUI_ICONS_REVIEW_OUT",
+      "test gallery::scene3d_preview::tests::scene3d_adapts_resolution_while_paused_without_geometry_reuploads ... ignored, requires a real wgpu GPU adapter",
+      "test gallery::scene3d_preview::tests::scene3d_gallery_composes_gpu_image_and_stops_off_page ... ignored, requires a real wgpu GPU adapter",
+      "test gallery::scene3d_preview::tests::scene3d_gallery_routes_clipped_input_and_reuses_gpu_geometry ... ignored, requires a real wgpu GPU adapter",
+      "test component_and_ui_passes_share_one_encoder_in_order ... ignored, requires a real wgpu GPU adapter",
+      "test foreign_context_and_wrong_image_kind_are_rejected_before_gpu_binding ... ignored, requires real wgpu GPU adapters",
+      "test gpu_storage_color_order_clipping_replacement_and_lifetime ... ignored, requires a real wgpu GPU adapter",
+      "test deform::tests::gpu_morph_and_skin_match_cpu_geometry_including_normals ... ignored, requires a real wgpu GPU adapter",
+      "test deform::tests::shared_indices_preserve_geometry_and_frame_uploads ... ignored, requires a real wgpu GPU adapter",
+      "test deform::tests::vertex_count_does_not_change_frame_uploads ... ignored, requires a real wgpu GPU adapter",
+      "test gpu::tests::camera_motion_reuses_deformation_and_seek_invalidates_it ... ignored, requires a real wgpu GPU adapter",
+      "test gpu::tests::culled_local_shadows_match_full_scan_with_motion_and_fades ... ignored, requires a real wgpu GPU adapter",
+      "test gpu::tests::distant_close_surfaces_do_not_z_fight ... ignored, requires a real wgpu GPU adapter",
+      "test gpu::tests::environment_normals_match_numerical_reference_and_reuse_buffers ... ignored, requires a real wgpu GPU adapter",
+      "test gpu::tests::glass_alpha_is_premultiplied_in_ui_space_and_skipped_meshes_are_safe ... ignored, requires a real wgpu GPU adapter",
+      "test gpu::tests::indexed_smooth_and_flat_normal_images_match_expanded_cpu_reference ... ignored, requires a real wgpu GPU adapter",
+      "test gpu::tests::shared_window_bank_updates_once_and_reuses_states_across_camera_frames ... ignored, requires a real wgpu GPU adapter",
+      "test gpu_animation_changes_pixels_and_resizes ... ignored, requires a real wgpu GPU adapter: cargo test -p tekes-ui-scene3d -- --ignored"
+    ]
+  },
+  "consumer": {
+    "summaries": 44,
+    "totals": {
+      "passed": 253,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered_out": 0
+    },
+    "ignored": []
+  },
+  "checks": "checks.json",
+  "source_stability": "input-stability.json",
+  "live_delta_boundary": {
+    "paths": [
+      "design/remediation/composition-audit.json",
+      "design/remediation/issue-component-batches-20261019.json",
+      "docs/design/city-block-night-gpu-optimization-20261021.json",
+      "docs/design/city-block-night-gpu-optimization-20261021.md",
+      "docs/design/composition-audit-current-20261020.md"
+    ],
+    "runtime_source_delta": [],
+    "meaning": "Root audit/ledger/doc reconciliation and unrelated CityBlock performance documents changed after capture; no runtime or DS code drift. Do not claim those later document bytes were verified by frozen CI."
+  },
+  "source_projection": "45 components/5patterns/2examples; protocols10implemented/6partial/29missing; all45native_acceptance unverified",
+  "build_cache": "single existing target/review-cache; no new target",
+  "python_brand_adapter": "existing prepare_cache(workspace_root=SOURCE) bound by brand-cache-runner.py; tests/compiler sources unchanged",
+  "snapshot_Git": "empty local metadata only for nonvacuous isolated source inventory; no index/commit/remote/public pin",
+  "performance": "not measured; existing3timing tests explicitly skipped, parser fixtures are not app measurements",
+  "explicit_skips": [
+    "timing_is_off_by_default_and_costs_nothing_to_drain",
+    "cpu_segments_are_consistent_and_frames_are_numbered",
+    "gpu_time_agrees_with_wall_clock_on_a_heavy_frame"
+  ],
+  "cleanup": "cleanup.json",
+  "unrelated_3D": "normal workspace compile/tests only; no new component/3D experience acceptance or production edits",
+  "boundaries": [
+    "sender local full CI recipe is not remoteCI or independent signoff",
+    "ignored tests remain ignored; no GPU/native/VoiceOver/Gold7 approval inferred from unit tests",
+    "current GPU/native scoped receipts and AgentKit a30b18db packet retain their own identities",
+    "no commit/push/tag/close/release"
+  ],
+  "next": [
+    "same scoped public delivery/remoteCI under explicit authorization",
+    "independent final audit and original Issue evidence backfill",
+    "combined family/page/physical/VoiceOver acceptance remains in batches4-8"
+  ]
+}

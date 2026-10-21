@@ -1,0 +1,33 @@
+{
+  "format": "tekesui-segment-availability-review/1",
+  "basis": "HEAD plus all WIP",
+  "goal_status": "active",
+  "shared_controls_tests": 268,
+  "shared_tokens_design_tests": 42,
+  "consumer_tests": 24,
+  "gallery_regression": "failed before selected2 instead0; passed after",
+  "gpu_pairs": 144,
+  "gpu_identical": 144,
+  "token_cases": {
+    "action": 576,
+    "input": 612,
+    "selection": 2016
+  },
+  "native_this_batch": "not verified",
+  "performance": "not run",
+  "owned_sources": {
+    "design/gallery/component-coverage.json": "22edb132442410434aaa8f8cd22f18ebfee9373307ca7a41fb40c428212a1ad3",
+    "docs/design/composition-audit-20261018.md": "d3900b370303a3c3ee353b5c1c1f92a725e50ced80a5cfba6cf04603555c6cd7",
+    "design/gallery/capabilities.json": "12aae842c615e1111905ea6746cc479c966c20ce699801f182ea0071792826a0",
+    "design/remediation/ledger.json": "f567672b06235b46e739bbed45c58cb810494bfdb638613a1477038b6b6087b4",
+    "crates/tekes-ui-controls/tests/action_contract.rs": "c057fec50847fbd9c85f840304dd4e25c448a6f28f3009ef39f710abe9be7368",
+    "design/remediation/composition-audit.json": "b039279eb3c379cbc2313b518c67e47f72890bc6fb972b45382e61597f9b6de2",
+    "examples/composition-consumer/tests/scenarios.rs": "53d9da3a79916b7de88a3c0be20e98f032a4ee12a5e5a0616fe7aa8e9b9aae15",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "2a5f23c98c000d2174ccc3a112f0ad606e864560d23ea856a69c43b6688bef1a",
+    "crates/tekes-ui-controls/src/layout_view.rs": "69b8ee9387da072918599c6d8487d236109f349813ac23a8162cfae43a1d2e44",
+    "docs/design/segment-availability-20261018.md": "cc2758626dca0f2ef0d881247a01f1323082e6decd88a3788e53ee9335a03dfe"
+  },
+  "protected_baseline_files": 13150,
+  "changed_baseline_files": 9,
+  "contract": "overall availability lives in existing View; per-item availability and controlled selection untouched"
+}

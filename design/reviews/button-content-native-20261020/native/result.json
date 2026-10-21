@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "activation_events": [
+    29,
+    60,
+    63,
+    65,
+    100
+  ],
+  "isolated_states": [
+    {
+      "state": "disabled",
+      "snapshots": 11,
+      "unchanged_count": 4,
+      "tab_space_enter_mouse_rejected": true
+    },
+    {
+      "state": "loading",
+      "snapshots": 11,
+      "unchanged_count": 4,
+      "tab_space_enter_mouse_rejected": true
+    }
+  ],
+  "scope": "one actual ButtonContent; active external native mouse, Space, Enter and AX Press; disabled/loading reject input; fresh Space after restore",
+  "input_provenance": "initial native mouse chain observed after user activation; subsequent keys/AX and disabled/loading mouse fallback driven by CUA; no claim of physical keyboard",
+  "not_proved": [
+    "held cancellation timing",
+    "VoiceOver",
+    "all-brand native matrix",
+    "all motion/reduced-motion transitions"
+  ],
+  "performance": "not measured"
+}

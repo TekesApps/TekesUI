@@ -24,7 +24,8 @@ SOURCE_FILES = ['design/source/base.tokens.json','design/source/legacy.tokens.js
                 'design/source/rust-mapping.json','design/source/motion.json','design/source/token-metadata.json',
                 'design/source/layout.json','design/source/interaction-contracts.json',
                 'design/brand/config.json','design/brand/policy.json','design/brand/gallery.json',
-                'scripts/merge-design-system.py']
+                'scripts/merge-design-system.py','scripts/generate-gallery-brands.py',
+                'design/gallery/brands.json']
 UPSTREAM_INPUTS = ['tools/brand.py','tools/brand_color.py','tools/validate.py',
                    'design/tokens/token-metadata.json','design/tokens/tokens.schema.json',
                    'design/brand/brand.schema.json','design/brand/policy.schema.json',

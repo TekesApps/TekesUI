@@ -1,0 +1,52 @@
+{
+  "format": "tekesui-draft-evidence/1",
+  "date": "2026-10-17T22:00:30.207141+00:00",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "source": "HEAD plus all WIP",
+  "issue": 11,
+  "status": "已实现待验收",
+  "public_api_tests": 3,
+  "shared_tests": 301,
+  "independent_consumer_tests": 21,
+  "governance_tests": 32,
+  "gpu_frames": 256,
+  "native": "isolated app: edit, pending edit, failure/retry old revision, late ack preserves newer, recover and cold restart",
+  "accessibility": "actual system tree lacks form controls; VoiceOver unverified",
+  "physical_keyboard_and_system_ime": "unverified",
+  "wip_protection": {
+    "baseline": 11313,
+    "changed_existing": [
+      "crates/tekes-ui-controls/tests/component_registry_api.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/durable_draft.rs",
+      "design/gallery/capabilities.json",
+      "design/gallery/component-coverage.json",
+      "design/gallery/public-api-surface.json",
+      "design/remediation/ledger.json",
+      "docs/design/issue-remediation-current-20261017.md",
+      "examples/composition-consumer/tests/scenarios.rs",
+      "crates/tekes-ui-controls/src/lib.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench.rs"
+    ],
+    "protected_unchanged": 11303
+  },
+  "source_manifest": "source-manifest.json",
+  "source_overlay": [
+    "crates/tekes-ui-controls/tests/component_registry_api.rs",
+    "crates/tekes-ui-gallery/src/gallery/workbench/durable_draft.rs",
+    "design/gallery/capabilities.json",
+    "design/gallery/component-coverage.json",
+    "design/gallery/public-api-surface.json",
+    "design/remediation/ledger.json",
+    "docs/design/issue-remediation-current-20261017.md",
+    "examples/composition-consumer/tests/scenarios.rs",
+    "crates/tekes-ui-controls/src/lib.rs",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+    "crates/tekes-ui-controls/src/draft.rs",
+    "crates/tekes-ui-controls/tests/draft_contract.rs",
+    "crates/tekes-ui-gallery/src/gallery/workbench/draft_capture.rs",
+    "examples/composition-consumer/tests/draft_persistence.rs",
+    "docs/design/draft-protocol-20261018.md"
+  ],
+  "checks": "strict workspace and token-audit clippy, fmt, DS, Gold7 mechanical, reference, pure Rust, generated capabilities pass",
+  "goal_status": "active"
+}

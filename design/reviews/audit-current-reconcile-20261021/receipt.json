@@ -1,0 +1,30 @@
+{
+  "matrix_before_sha256": "3dacfe09be2dfab0844ff1634d87444ef42fec1cf6a7cba6acacb24050aaea93",
+  "matrix_after_sha256": "c0bb5c795dda8d4be670fc7ef47d861cbb0b93531c116e89dc923581646b4c1e",
+  "all45component_dimensions_and_native_status_unchanged": true,
+  "protocol_counts": {
+    "\u5df2\u5b9e\u73b0": 10,
+    "\u7f3a\u5931": 29,
+    "\u90e8\u5206\u5b9e\u73b0": 6
+  },
+  "historical_receipts_unchanged": {
+    "design/reviews/label-content-integration-20261021/native-acceptance.json": "172388497861f2517a7bb9acb169b38950604d9ab875f69b4c0f21e359307a33",
+    "design/reviews/label-portable-candidate-20261021-attempt2/portable-acceptance.json": "063b4c92dc2f473d78a0d097c597ad963e12e5c648f306093a0601ccd9bdb682",
+    "design/reviews/layout-text-preflight-20261021/native-acceptance.json": "1ea502f123fc64748d6220cc9dcb530450b26915004d9831c6da53e71e139a4e",
+    "design/reviews/layout-text-portable-candidate-20261021/portable-acceptance.json": "5664893a4ca5d02806e68a7cc7e2d25eaad028f58192d12e7882cc4814a0f7b1",
+    "design/reviews/content-item-portable-candidate-20261021-attempt2/portable-acceptance.json": "608c2d9c40f1bbf530b68d8e16579e1b937ecbf8473c427107f3fd43fdba19c2",
+    "design/reviews/compact-action-20261021/native-acceptance.json": "2cb6c8837f52c9040c6fa76083fd4c7ad16727ae42b4780365f27b70f7c21605",
+    "design/reviews/compact-action-portable-candidate-20261021/portable-acceptance.json": "7235723e56891c50014a71ba151b86ef7b4c82aea896f6ecb30c581e96dce243",
+    "design/reviews/item-start-alignment-20261021/native-acceptance.json": "b6a755d63bec1b88c4c3a6ea38b539a9b6f7fe1874db2a922950647c1358dd9d",
+    "design/reviews/item-start-portable-candidate-20261021/portable-acceptance.json": "9d73849fdb915b50f509993f2263bb24fcb6d75bd40d3ba1a35710b057ce677a",
+    "design/reviews/padding-focus-routing-20261021/native-acceptance.json": "de1baa1374c9c6584291a4d10540af27d390589ef9199ebb1c8f889578a707c3",
+    "design/reviews/padding-focus-portable-candidate-20261021/portable-acceptance.json": "cae168341b9470af309c60ed0d4a0e3987bc3c41f9c75a79fad2bc4ab1acb802",
+    "design/reviews/forwarded-focus-decoration-20261021/native-acceptance.json": "921f1d1ba206c65b52da36338bfe1f5259a3d28661bb4e7d7035bf1ea213de6d",
+    "design/reviews/forwarded-focus-portable-candidate-20261021/portable-acceptance.json": "f8c7a31267369883ca8d5c5e5621bf69eedba165e15f344eae5593649cb23aff",
+    "design/reviews/tooltip-system-reactivation-20261021/acceptance.json": "d373d7f15072adc277b77610a222914cdefa6d08962e6bba00709195ffd5b401",
+    "design/reviews/padding-focus-intent-20261021/progress.json": "b205f7ccfef81efecea30ff63b7b2a89aa769ef347c73689ea15f9a83f1c55a0",
+    "design/reviews/padding-intent-portable-candidate-20261021/portable-acceptance.json": "307ff4f2f27fc3cb1aef4f51baf3aee3626603eb9ac25973c484e755b4a99173"
+  },
+  "scope": "current effective audit overlay, exact line projection and previous entry historical boundary; no production/DS/native/maturity change",
+  "source_snapshot_CI_is_prior_to_document_reconciliation": true
+}

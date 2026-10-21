@@ -12,7 +12,7 @@ use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2::{AllocAnyThread, DefinedClass, MainThreadOnly, Message, define_class, msg_send, sel};
 use objc2_app_kit::{
-    NSEvent, NSTextInputClient, NSTrackingArea, NSTrackingAreaOptions, NSView,
+    NSEvent, NSEventType, NSTextInputClient, NSTrackingArea, NSTrackingAreaOptions, NSView,
     NSViewLayerContentsPlacement, NSViewLayerContentsRedrawPolicy,
 };
 use objc2_core_graphics::{CGColorSpace, kCGColorSpaceSRGB};
@@ -33,9 +33,11 @@ use crate::shared::{GeometryState, Shared};
 
 #[derive(Debug)]
 pub(crate) struct ViewIvars {
-    shared: Rc<Shared>,
+    pub(crate) shared: Rc<Shared>,
+    text_keys: RefCell<crate::text_key::TextKeyTracker>,
     layer: RefCell<Option<Retained<CAMetalLayer>>>,
     tracking_area: RefCell<Option<Retained<NSTrackingArea>>>,
+    cursor_regions: RefCell<Vec<crate::CursorRegion>>,
     /// 按需创建的显示链接。创建后一直存在，不跑的时候是暂停状态（`isPaused`），
     /// 窗口关闭或应用结束时 invalidate（它强引用 target，也就是这个视图）。
     link: RefCell<Option<Retained<CADisplayLink>>>,
@@ -61,18 +63,21 @@ define_class!(
     unsafe impl NSTextInputClient for TekesView {
         #[unsafe(method(insertText:replacementRange:))]
         unsafe fn insertText_replacementRange(&self,string:&objc2::runtime::AnyObject,replacement:objc2_foundation::NSRange) {
+            self.note_text_callback(false);
             self.ivars().shared.dispatch(Event::TextCommit{text:input_string(string),replacement:input_range(replacement)});
         }
         #[unsafe(method(doCommandBySelector:))]
         unsafe fn doCommandBySelector(&self,selector:objc2::runtime::Sel) {
+            self.note_text_callback(true);
             self.ivars().shared.dispatch(Event::TextCommand(selector.name().to_string_lossy().into_owned()));
         }
         #[unsafe(method(setMarkedText:selectedRange:replacementRange:))]
         unsafe fn setMarkedText_selectedRange_replacementRange(&self,string:&objc2::runtime::AnyObject,selection:objc2_foundation::NSRange,replacement:objc2_foundation::NSRange) {
+            self.note_text_callback(false);
             self.ivars().shared.dispatch(Event::TextPreedit{text:input_string(string),clauses:input_clauses(string),selection:selection.location..selection.location.saturating_add(selection.length),replacement:input_range(replacement)});
         }
         #[unsafe(method(unmarkText))]
-        fn unmarkText(&self) {self.ivars().shared.dispatch(Event::TextUnmark);}
+        fn unmarkText(&self) {self.note_text_callback(false);self.ivars().shared.dispatch(Event::TextUnmark);}
         #[unsafe(method(selectedRange))]
         fn selectedRange(&self)->objc2_foundation::NSRange {self.ivars().shared.text_input.borrow().as_ref().map(|s|native_range(s.selection.clone())).unwrap_or(not_found())}
         #[unsafe(method(markedRange))]
@@ -97,9 +102,12 @@ define_class!(
         fn validAttributesForMarkedText(&self)->Retained<NSArray<objc2_foundation::NSAttributedStringKey>> {unsafe {NSArray::from_slice(&[objc2_app_kit::NSMarkedClauseSegmentAttributeName,objc2_app_kit::NSUnderlineStyleAttributeName])}}
         #[unsafe(method(firstRectForCharacterRange:actualRange:))]
         unsafe fn firstRectForCharacterRange_actualRange(&self,_range:objc2_foundation::NSRange,actual:*mut objc2_foundation::NSRange)->NSRect {
-            let state=self.ivars().shared.text_input.borrow();let Some(s)=state.as_ref() else {return NSRect::ZERO;};
-            let (index,origin,size)=s.carets.iter().find(|v|v.0==_range.location).copied().unwrap_or((s.caret_index,s.caret_origin,s.caret_size));
-            if !actual.is_null(){unsafe {*actual=objc2_foundation::NSRange::new(index,0);}}
+            if !actual.is_null(){unsafe {*actual=not_found();}}
+            let geometry = _range.location.checked_add(_range.length).and_then(|end| {
+                self.ivars().shared.text_input.borrow().as_ref().and_then(|s| s.first_rect_for_range(_range.location..end))
+            });
+            let Some((covered, origin, size)) = geometry else {return NSRect::ZERO;};
+            if !actual.is_null(){unsafe {*actual=native_range(covered);}}
             let rect=NSRect::new(objc2_foundation::NSPoint::new(origin.x,origin.y),NSSize::new(size.width,size.height));
             let rect=self.convertRect_toView(rect,None);self.window().map_or(rect,|w|w.convertRectToScreen(rect))
         }
@@ -139,6 +147,26 @@ define_class!(
     }
 
     impl TekesView {
+        #[unsafe(method_id(accessibilityChildren))]
+        fn accessibility_children(&self) -> Retained<objc2_foundation::NSArray> {
+            self.accessibility_children_snapshot()
+        }
+
+        #[unsafe(method_id(accessibilityFocusedUIElement))]
+        fn accessibility_focused_ui_element(&self) -> Retained<objc2::runtime::AnyObject> {
+            let shared = &self.ivars().shared;
+            let focused_key = shared
+                .accessibility_nodes
+                .borrow()
+                .iter()
+                .find(|node| node.focused)
+                .map(|node| node.key);
+            focused_key
+                .and_then(|key| shared.accessibility_elements.borrow().get(&key).cloned())
+                .map(Into::into)
+                .unwrap_or_else(|| self.retain().into())
+        }
+
         #[unsafe(method(tekesStartMetalLink))]
         fn start_metal_link_deferred(&self) {
             self.ivars().metal_start_pending.set(false);
@@ -354,6 +382,21 @@ define_class!(
             *ivars.tracking_area.borrow_mut() = Some(area);
         }
 
+        #[unsafe(method(resetCursorRects))]
+        fn reset_cursor_rects(&self) {
+            let regions = self.ivars().cursor_regions.borrow().clone();
+            for region in regions {
+                let cursor = match region.icon {
+                    crate::CursorIcon::ResizeHorizontal => resize_cursor(true),
+                    crate::CursorIcon::ResizeVertical => resize_cursor(false),
+                };
+                self.addCursorRect_cursor(NSRect::new(
+                    objc2_foundation::NSPoint::new(region.origin.x, region.origin.y),
+                    NSSize::new(region.size.width, region.size.height),
+                ), &cursor);
+            }
+        }
+
         // ---- 鼠标 ----
 
         #[unsafe(method(mouseDown:))]
@@ -425,15 +468,35 @@ define_class!(
 
         // ---- 键盘 ----
         //
-        // 暂不实现 NSTextInputClient（F5）。这里也不调用 interpretKeyEvents:，
-        // 所以输入法和死键不会工作；也不调用 super，避免未处理的按键触发系统提示音。
+        // An active Rust text owner supplies NSTextInputClient state. AppKit
+        // interprets editing keys/IME; non-editing and command keys stay on the
+        // host's ordinary key route.
 
         #[unsafe(method(keyDown:))]
         fn key_down(&self, e: &NSEvent) {
-            let editing=self.ivars().shared.text_input.borrow().is_some();
-            if editing && !modifiers_of(e).command {
+            let editing = self.ivars().shared.text_input.borrow().is_some();
+            let key = self.key_data(e, KeyEventKind::Down);
+            if editing {
+                let composing = self.ivars().shared.text_input.borrow().as_ref().is_some_and(|s|s.marked.is_some());
+                let started = self.ivars().text_keys.borrow_mut().begin(key.clone(),composing);
+                if let Some(crate::TextKeyEvent::Started(context)) = started {
+                    self.ivars().shared.dispatch(Event::TextKey(crate::TextKeyEvent::Started(context.clone())));
+                    let handled = if key.modifiers.command {None}
+                        else {self.inputContext().map(|input|input.handleEvent(e))};
+                    // Never offer the same physical key to the input system twice.
+                    // Only a definite unhandled key (or deliberate Command route)
+                    // uses the existing raw-key fallback.
+                    let fallback = handled != Some(true)
+                        && self.ivars().text_keys.borrow().can_fallback(context.id);
+                    if fallback {self.ivars().shared.dispatch(Event::Key(key));}
+                    let finished = self.ivars().text_keys.borrow_mut().finish(context.id,handled);
+                    if let Some(finished) = finished {self.ivars().shared.dispatch(Event::TextKey(finished));}
+                    return;
+                }
+            }
+            if editing && !key.modifiers.command {
                 self.interpretKeyEvents(&NSArray::from_slice(&[e]));
-            } else {self.key_event(e, KeyEventKind::Down);}
+            } else {self.ivars().shared.dispatch(Event::Key(key));}
         }
         #[unsafe(method(keyUp:))]
         fn key_up(&self, e: &NSEvent) {
@@ -500,6 +563,97 @@ fn modifiers_of(e: &NSEvent) -> Modifiers {
 }
 
 impl TekesView {
+    pub(crate) fn set_cursor_regions(&self, regions: Vec<crate::CursorRegion>) {
+        if *self.ivars().cursor_regions.borrow() == regions {
+            return;
+        }
+        *self.ivars().cursor_regions.borrow_mut() = regions;
+        if let Some(window) = self.window() {
+            window.invalidateCursorRectsForView(self);
+        }
+    }
+
+    pub(crate) fn accessibility_children_snapshot(&self) -> Retained<objc2_foundation::NSArray> {
+        crate::accessibility::native::elements_for_parent(&self.ivars().shared, None)
+    }
+
+    pub(crate) fn accessibility_nodes_changed(
+        &self,
+        previous: &[crate::accessibility::AccessibilityNode],
+    ) {
+        let shared = &self.ivars().shared;
+        let nodes = shared.accessibility_nodes.borrow().clone();
+        let mut elements = shared.accessibility_elements.borrow_mut();
+        elements.retain(|key, _| nodes.iter().any(|node| node.key == *key));
+        for node in nodes.iter() {
+            elements.entry(node.key).or_insert_with(|| {
+                crate::accessibility::NativeAccessibilityElement::new(shared.mtm, shared, node.key)
+            });
+        }
+        drop(elements);
+        let structural = nodes.len() != previous.len()
+            || nodes.iter().zip(previous).any(|(a, b)| {
+                a.key != b.key
+                    || a.parent != b.parent
+                    || a.role != b.role
+                    || a.frame != b.frame
+                    || a.label != b.label
+                    || a.description != b.description
+                    || a.enabled != b.enabled
+                    || a.expanded != b.expanded
+                    || a.invalid != b.invalid
+                    || a.required != b.required
+                    || a.read_only != b.read_only
+            });
+        let focus_changed = nodes.iter().find(|n| n.focused).map(|n| n.key)
+            != previous.iter().find(|n| n.focused).map(|n| n.key);
+        // Editing changes are not structural layout changes. Announce the real
+        // owner so assistive clients can query its updated value and selection.
+        unsafe {
+            if structural {
+                objc2_app_kit::NSAccessibilityPostNotification(
+                    self,
+                    objc2_app_kit::NSAccessibilityLayoutChangedNotification,
+                );
+            }
+            if focus_changed {
+                objc2_app_kit::NSAccessibilityPostNotification(
+                    self,
+                    objc2_app_kit::NSAccessibilityFocusedUIElementChangedNotification,
+                );
+            }
+            for node in nodes.iter() {
+                let element = shared
+                    .accessibility_elements
+                    .borrow()
+                    .get(&node.key)
+                    .cloned();
+                if let Some(old) = previous.iter().find(|n| n.key == node.key)
+                    && let Some(element) = element
+                {
+                    if old.value != node.value
+                        || old.selected != node.selected
+                        || (matches!(
+                            node.role,
+                            crate::accessibility::AccessibilityRole::Slider(_)
+                        ) && old.role != node.role)
+                    {
+                        objc2_app_kit::NSAccessibilityPostNotification(
+                            &element,
+                            objc2_app_kit::NSAccessibilityValueChangedNotification,
+                        );
+                    }
+                    if old.text_selection != node.text_selection {
+                        objc2_app_kit::NSAccessibilityPostNotification(
+                            &element,
+                            objc2_app_kit::NSAccessibilitySelectedTextChangedNotification,
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     pub(crate) fn schedule_caret_blink(&self) {
         // SAFETY: main thread, selector has no arguments, common runloop modes.
         unsafe {
@@ -518,8 +672,10 @@ impl TekesView {
     ) -> Retained<TekesView> {
         let this = Self::alloc(mtm).set_ivars(ViewIvars {
             shared,
+            text_keys: RefCell::new(Default::default()),
             layer: RefCell::new(None),
             tracking_area: RefCell::new(None),
+            cursor_regions: RefCell::new(Vec::new()),
             link: RefCell::new(None),
             metal_link: RefCell::new(None),
             metal_start_pending: Cell::new(false),
@@ -745,6 +901,17 @@ impl TekesView {
     }
 
     fn mouse(&self, e: &NSEvent, kind: MouseEventKind) {
+        // Track the original native type, independently of a synthesized
+        // object's buttonNumber (AppKit's object factory may leave it at zero).
+        match e.r#type() {
+            NSEventType::LeftMouseDown => {
+                *self.ivars().shared.titlebar_drag_origin.borrow_mut() = Some(e.retain());
+            }
+            NSEventType::LeftMouseUp => {
+                self.ivars().shared.titlebar_drag_origin.borrow_mut().take();
+            }
+            _ => {}
+        }
         let ev = MouseEvent {
             kind,
             position: self.view_point(e),
@@ -775,8 +942,8 @@ impl TekesView {
         self.mouse(e, MouseEventKind::Dragged { button });
     }
 
-    fn key_event(&self, e: &NSEvent, kind: KeyEventKind) {
-        let ev = KeyEvent {
+    fn key_data(&self, e: &NSEvent, kind: KeyEventKind) -> KeyEvent {
+        KeyEvent {
             kind,
             key_code: e.keyCode(),
             characters: e.characters().map(|s| s.to_string()).unwrap_or_default(),
@@ -786,8 +953,18 @@ impl TekesView {
                 .unwrap_or_default(),
             modifiers: modifiers_of(e),
             is_repeat: kind == KeyEventKind::Down && e.isARepeat(),
-        };
-        self.ivars().shared.dispatch(Event::Key(ev));
+        }
+    }
+    fn key_event(&self, e: &NSEvent, kind: KeyEventKind) {
+        self.ivars()
+            .shared
+            .dispatch(Event::Key(self.key_data(e, kind)));
+    }
+    fn note_text_callback(&self, command: bool) {
+        self.ivars().text_keys.borrow_mut().note_callback(command);
+    }
+    pub(crate) fn set_text_key_events(&self, enabled: bool) -> bool {
+        self.ivars().text_keys.borrow_mut().set_enabled(enabled)
     }
 
     /// 把层的 contentsScale 对齐到窗口缩放因子，算出新的 drawable 像素尺寸。
@@ -832,5 +1009,26 @@ impl TekesView {
         if metal && shared.animating.get() && !self.ivars().live_resizing.get() {
             self.schedule_metal_start();
         }
+    }
+}
+
+/// Prefer current divider cursors while retaining compatibility with older macOS.
+#[allow(deprecated)]
+fn resize_cursor(horizontal: bool) -> Retained<objc2_app_kit::NSCursor> {
+    use objc2::ClassType;
+    use objc2_app_kit::NSCursor;
+    let selector = if horizontal {
+        sel!(columnResizeCursor)
+    } else {
+        sel!(rowResizeCursor)
+    };
+    // SAFETY: query the class before calling selectors introduced by newer AppKit.
+    let supported: objc2::runtime::Bool =
+        unsafe { msg_send![NSCursor::class(), respondsToSelector: selector] };
+    match (horizontal, supported.as_bool()) {
+        (true, true) => NSCursor::columnResizeCursor(),
+        (false, true) => NSCursor::rowResizeCursor(),
+        (true, false) => NSCursor::resizeLeftRightCursor(),
+        (false, false) => NSCursor::resizeUpDownCursor(),
     }
 }

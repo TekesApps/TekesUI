@@ -1,0 +1,12 @@
+{
+  "source": "design/reviews/draft-process-replay-20261019/consumer-source",
+  "change": "Cargo path dependencies changed from machine absolute paths to repository-relative paths; Rust function bodies and lockfile unchanged",
+  "files": {
+    "consumer-source/Cargo.toml": "defabd9a647d1f9c4dd275bc31ec0fca4f1f7feab9a138c3c1bbfad88a265945",
+    "consumer-source/Cargo.lock": "a764dad24ee445d02a601170c867bf1697b7a8371e2b532a7cc16a2edf5b7882",
+    "consumer-source/src/store.rs": "96ea42ccb35412773898f78976988a0d254b565d00fd126221e930302af2ef14",
+    "consumer-source/src/main.rs": "83c85172d2a1c13ebbd00c6365e41eec599c5e6be894f6f1ca694b35eb8d6e90"
+  },
+  "scope": "caller-owned file adapter plus existing public DraftJournal and real CoreText editor; no GPU/native claim",
+  "verification": "passed: 3 real independent process executions using relative dependency paths; harness executable cleaned"
+}

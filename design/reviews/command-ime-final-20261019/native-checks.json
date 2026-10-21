@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "display": "U2790B external @2x",
+  "physical_IME": "real user Pinyin n,i; marked [0,2] observed; Escape clears marked range and keeps TextField published while window active",
+  "normal_close": "active snapshot publishes no TextInputState and focused Find a command button",
+  "late_physical_input": "user confirms x does not reopen; no hidden query published",
+  "physical_evidence": [
+    "human-first-escape.json",
+    "human-close-late-input.json"
+  ],
+  "trace": "physical-session-trace-final.jsonl",
+  "boundaries": [
+    "not VoiceOver",
+    "not performance",
+    "not all themes/pages",
+    "native Enter and outside-close remain historical receipts plus current API/consumer regression coverage"
+  ],
+  "attachments_sha256": {
+    "human-first-escape.json": "e241a46067ff5ed22aa3423a55fb6acc37279d77508249f1ad817f98caa07a9d",
+    "human-close-late-input.json": "b8f558cbb37a4a7f8b98d5d5bd804c73f84ee0d125296142db466d6a06d7b9ae",
+    "physical-session-trace-final.jsonl": "38c6f0723bd96a2191b8bf3fc0c949cbf6a0bc8b38811166720a972b9dc4b483",
+    "closed-ax.txt": "3809d69da9e41557a95c5a2a800f028df38ed3f05a3052ca6063e8bc3accd023",
+    "closed-native.png": "bb25f06acddb519e0a5011aae23dbdfd1ca541084aa6335a198be95195be4267"
+  }
+}

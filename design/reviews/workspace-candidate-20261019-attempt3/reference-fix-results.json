@@ -1,0 +1,26 @@
+[
+  {
+    "name": "reference-export",
+    "exit_code": 0
+  },
+  {
+    "name": "reference-selftest",
+    "exit_code": 0
+  },
+  {
+    "name": "reference-unborn",
+    "exit_code": 0
+  },
+  {
+    "name": "pure-rust",
+    "exit_code": 0
+  },
+  {
+    "name": "capabilities",
+    "exit_code": 0
+  },
+  {
+    "name": "composition",
+    "exit_code": 0
+  }
+]

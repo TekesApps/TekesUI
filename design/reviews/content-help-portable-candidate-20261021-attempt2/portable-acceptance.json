@@ -1,0 +1,20 @@
+{
+  "identity": "3366559a1a524909f562fa2fdd1c8646d762b5ba0eb1294b5480c39d9e9c37ef",
+  "archive": "content-help-3366559a1a52.tar.gz",
+  "archive_sha256": "de2ee991aaa61912b8b6b03d183b244f6a7fd8884f8ed3b9448ce04e389c8ce2",
+  "base_identity": "a30b18db1a1df1f5a780c245080b22221a63cb20556f7274b76786d4d896584e",
+  "files": 503,
+  "delta_paths": 13,
+  "status": "sender exact archive clean-extract passed; receiver/public pin/isolated native pending",
+  "all_source_and_locks_unchanged": true,
+  "local_dependencies_inside_extract": true,
+  "checks": "portable-checks.json",
+  "native_boundary": "native example builds on isolated source; root WIP GPU/native receipts remain separate identities; receiver real Composer/physical IME acceptance is separate",
+  "cleanup": [
+    "     Removed 44 files, 109.3MiB total\n",
+    "     Removed 539 files, 109.7MiB total\n",
+    "     Removed 976 files, 250.5MiB total\n"
+  ],
+  "root_cache_lane_restored": true,
+  "cleanup_disk_bytes_released": 523800576
+}

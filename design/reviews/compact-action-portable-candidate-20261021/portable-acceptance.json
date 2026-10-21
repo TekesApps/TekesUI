@@ -1,0 +1,36 @@
+{
+  "identity": "c7797b1e1b5a26b079ad7d1b2f8b45b89d054b730cb915ec554077132e8db0b3",
+  "base_identity": "10b5f2354f76a1c250143ef15ea7f7337f7be632e0b979ff00feb569338b5481",
+  "archive": "compact-action-c7797b1e1b5a.tar.gz",
+  "archive_sha256": "e926b626ac58f92ffbd8c56f176a70d5de96560af4479db4a2bc7fe0592a165f",
+  "files": 489,
+  "delta_paths": 11,
+  "root_native_identity": "0649408d14d6d17958630e165931bb3d4dcece3230ef30d86126e0f33b1632e8",
+  "status": "sender exact archive clean-extract passed; receiver/public pin/isolated native pending",
+  "all_source_and_locks_unchanged": true,
+  "local_dependencies_inside_extract": true,
+  "checks": "portable-checks.json",
+  "native_boundary": "native example builds on isolated source; root064940 compact action actual native receipt remains a different identity, never relabelled as isolated native acceptance",
+  "cleanup": [
+    "     Removed 12 files, 64.9MiB total\n",
+    "     Removed 496 files, 95.6MiB total\n",
+    "     Removed 851 files, 210.5MiB total\n"
+  ],
+  "root_cache_lane_restored": true,
+  "test_counts": {
+    "text": 50,
+    "controls": 388,
+    "consumer": 213,
+    "compact_actions": 7
+  },
+  "GPU": {
+    "cases": 24,
+    "frames": 192,
+    "result": "portable-evidence/gpu/result.json",
+    "result_sha256": "9d0df97dd6d5813495d24e69bd95dce755d48b731dc4ddc5c829fce87393b050",
+    "harness_manifest": "review-harness-manifest.json",
+    "harness_unchanged": true
+  },
+  "owned_output_cleanup_MiB": 371.0,
+  "known_base_gap": "Inherited10b5 #28 has no top alignment; do not promote final turn-jump experience as complete."
+}

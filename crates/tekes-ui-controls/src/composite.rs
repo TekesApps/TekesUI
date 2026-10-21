@@ -4,6 +4,7 @@
 //! centralizing their layout, clipping, paint, pointer capture, keyboard focus,
 //! and activation behavior. A runtime is bound either to its owned model or to
 //! one external model for its lifetime; do not alternate between them.
+use crate::control_motion::OverlayPresence;
 use crate::{
     Button, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout,
     ControlKey, Dialog, Insets, Menu, ScrollArea, ScrollPolicy, Tabs, paint,
@@ -174,6 +175,19 @@ impl TabsView {
         compact: bool,
     ) -> TabsLayout {
         self.compact = compact;
+        if safe_rect(frame) != frame
+            || frame.size.width <= 0.0
+            || frame.size.height <= 0.0
+            || clip.is_some_and(|clip| safe_rect(clip) != clip)
+        {
+            self.clear_focus();
+            self.cancel_arms();
+            for button in &mut self.buttons {
+                button.clear_layout();
+            }
+            self.placement = TabsLayout::default();
+            return self.placement.clone();
+        }
         let frame = safe_rect(frame);
         self.buttons.resize_with(self.model.count, Button::default);
         let lane = if self.model.count == 0 {
@@ -233,6 +247,17 @@ impl TabsView {
             visible,
             items,
         };
+        if !visible.is_some_and(|rect| rect.size.width > 0.0 && rect.size.height > 0.0)
+            || self.focused.is_some_and(|index| {
+                self.placement
+                    .items
+                    .get(index)
+                    .is_none_or(|item| item.visible.is_none())
+            })
+        {
+            self.clear_focus();
+            self.cancel_arms();
+        }
         self.placement.clone()
     }
 
@@ -422,10 +447,14 @@ pub struct MenuView {
     model: Menu,
     bound_external: bool,
     runtime: MenuRuntime,
+    // Optional adapter-owned declaration, within the already private original
+    // runtime storage. MenuContent's legacy public struct shape stays intact.
+    pub(crate) content_state: Option<crate::composition::MenuContentState>,
 }
 
 #[derive(Debug)]
 struct MenuRuntime {
+    presence: OverlayPresence,
     buttons: Vec<Button>,
     scroll: ScrollArea,
     placement: MenuLayout,
@@ -442,9 +471,160 @@ struct MenuRuntime {
     role: proposal::TextRole,
     scroll_gesture_captured: bool,
     focus_outset: f32,
+    row_styles: Vec<MenuRowStyle>,
+    submenu_request: Option<usize>,
+    beside_anchor: bool,
+    open_generation: u64,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct MenuRowStyle {
+    pub disabled: bool,
+    pub checked: Option<bool>,
+    pub separator: bool,
+    pub submenu: bool,
+}
+
+// Original Button still owns chrome, ink, motion, hit layout and clipping.
+// This label adapter reserves shared icon columns without another painter.
+struct MenuRowText<'a, T> {
+    text: &'a mut T,
+    leading: f32,
+    trailing: f32,
+    gap: f32,
+    style: MenuRowStyle,
+}
+impl<T: ButtonTextRenderer> ButtonTextRenderer for MenuRowText<'_, T> {
+    fn measure(&mut self, label: &str, role: proposal::TextRole, width: f32) -> Size {
+        if self.leading == 0.0 && self.trailing == 0.0 {
+            return self.text.measure(label, role, width);
+        }
+        let gutters = self.leading + self.trailing;
+        let measured = self.text.measure(label, role, (width - gutters).max(0.0));
+        Size::new(
+            (measured.width + gutters).min(width.max(0.0)),
+            measured.height,
+        )
+    }
+    fn draw(
+        &mut self,
+        scene: &mut Scene,
+        label: &str,
+        role: proposal::TextRole,
+        frame: Rect,
+        align: ButtonTextAlign,
+        ink: tekes_ui_tokens::Rgba,
+    ) {
+        let leading = self.leading.min(frame.size.width);
+        let trailing = self.trailing.min((frame.size.width - leading).max(0.0));
+        self.text.draw(
+            scene,
+            label,
+            role,
+            Rect::new(
+                frame.min_x() + leading,
+                frame.min_y(),
+                (frame.size.width - leading - trailing).max(0.0),
+                frame.size.height,
+            ),
+            align,
+            ink,
+        );
+        let mark = (leading - self.gap).max(0.0);
+        if self.style.checked == Some(true) && mark > 0.0 {
+            self.text.draw(
+                scene,
+                "✓",
+                role,
+                Rect::new(frame.min_x(), frame.min_y(), mark, frame.size.height),
+                ButtonTextAlign::Center,
+                ink,
+            );
+        }
+        let arrow = (trailing - self.gap).max(0.0);
+        if self.style.submenu && arrow > 0.0 {
+            self.text.draw(
+                scene,
+                "›",
+                role,
+                Rect::new(
+                    frame.max_x() - arrow,
+                    frame.min_y(),
+                    arrow,
+                    frame.size.height,
+                ),
+                ButtonTextAlign::Center,
+                ink,
+            );
+        }
+    }
+    fn motion_context(&self) -> Option<crate::ControlMotionContext> {
+        self.text.motion_context()
+    }
+    fn request_animation_frame(&mut self) {
+        self.text.request_animation_frame();
+    }
+    fn backing_scale(&self) -> f32 {
+        self.text.backing_scale()
+    }
+    fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
+        self.text.text_surface_host()
+    }
+    fn first_line_height(&mut self, label: &str, role: proposal::TextRole, width: f32) -> f32 {
+        self.text
+            .first_line_height(label, role, (width - self.leading - self.trailing).max(0.0))
+    }
+}
+
+// Retain the existing legacy surface minimum in one production rule. Item
+// metadata changes row content; it must not silently change this minimum.
+fn menu_surface_height(content: f32, inset: f32) -> f32 {
+    (content + inset * 2.0).max(132.0)
 }
 
 impl MenuView {
+    /// Legacy flat-label popup size before viewport placement/scroll clamping.
+    /// Controlled declaration metadata is measured by this same runtime.
+    /// Shares production row measurement, focus gutter and minimum surface
+    /// height, so callers can reserve space without painting a probe.
+    pub fn measure(
+        text: &mut impl ButtonTextRenderer,
+        labels: &[&str],
+        max_width: f32,
+        role: proposal::TextRole,
+        compact: bool,
+    ) -> Size {
+        Self::measured_rows(text, labels, max_width, role, compact).0
+    }
+    fn measured_rows(
+        text: &mut impl ButtonTextRenderer,
+        labels: &[&str],
+        max_width: f32,
+        role: proposal::TextRole,
+        compact: bool,
+    ) -> (Size, Vec<f32>) {
+        let width = if max_width.is_nan() {
+            0.0
+        } else {
+            max_width.clamp(0.0, 280.0)
+        };
+        let inset = focus_reveal_outset(text.backing_scale());
+        let inner_width = (width - inset * 2.0).max(0.0);
+        let heights: Vec<f32> = labels
+            .iter()
+            .map(|label| {
+                Button::measure(text, label, inner_width, size_role(compact), role)
+                    .height
+                    .max(36.0)
+            })
+            .collect();
+        let content =
+            heights.iter().sum::<f32>() + labels.len().saturating_sub(1) as f32 * inset.max(4.0);
+        (
+            Size::new(width, menu_surface_height(content, inset)),
+            heights,
+        )
+    }
     pub fn new(count: usize) -> Self {
         let mut scroll = ScrollArea::default();
         scroll.set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Auto);
@@ -452,7 +632,9 @@ impl MenuView {
         Self {
             model: Menu::new(count),
             bound_external: false,
+            content_state: None,
             runtime: MenuRuntime {
+                presence: OverlayPresence::default(),
                 buttons: vec![Button::default(); count],
                 scroll,
                 placement: MenuLayout::default(),
@@ -469,6 +651,10 @@ impl MenuView {
                 role: proposal::TextRole::UiBody,
                 scroll_gesture_captured: false,
                 focus_outset: focus_reveal_outset(1.0),
+                row_styles: Vec::new(),
+                submenu_request: None,
+                beside_anchor: false,
+                open_generation: 0,
             },
         }
     }
@@ -486,8 +672,89 @@ impl MenuView {
         Self::new_external()
     }
 
+    /// Paint can outlive semantic open during dismissal.
+    pub fn is_presented(&self) -> bool {
+        self.runtime.presence.is_presented()
+    }
+
+    /// Call on unmount or text/image resource replacement.
+    pub fn clear_presentation(&mut self) {
+        self.runtime.presence.clear();
+    }
+
+    /// Move semantic focus, revealing a mounted logical item before redraw.
+    pub fn focus_item(&mut self, index: usize) -> bool {
+        !self.bound_external && self.runtime.focus_item_model(&mut self.model, index)
+    }
+    /// The same semantic focus contract for a caller-owned menu model.
+    pub fn focus_item_with_model(&mut self, model: &mut Menu, index: usize) -> bool {
+        self.bound_external = true;
+        self.runtime.focus_item_model(model, index)
+    }
+    /// Semantic activation shares the production state and dismissal path.
+    pub fn activate_item(&mut self, index: usize) -> MenuEvent {
+        if self.bound_external {
+            return MenuEvent::None;
+        }
+        self.runtime.activate_item_model(&mut self.model, index)
+    }
+    /// The same semantic activation contract for a caller-owned menu model.
+    pub fn activate_item_with_model(&mut self, model: &mut Menu, index: usize) -> MenuEvent {
+        self.bound_external = true;
+        self.runtime.activate_item_model(model, index)
+    }
     pub fn menu(&self) -> &Menu {
         &self.model
+    }
+
+    /// Replace the owned flat model, retaining runtime window/motion settings.
+    /// Old popup geometry and held input are revoked.
+    pub(crate) fn replace_items(&mut self, count: usize) {
+        assert!(
+            !self.bound_external,
+            "MenuView is bound to an external Menu model"
+        );
+        self.runtime.deactivate_model(&mut self.model);
+        self.runtime.presence.clear();
+        self.runtime.clear_layout();
+        self.model = Menu::new(count);
+        self.runtime.row_styles.clear();
+    }
+
+    pub(crate) fn set_row_styles(&mut self, styles: Vec<MenuRowStyle>) {
+        if self.runtime.row_styles != styles {
+            self.runtime.cancel_buttons();
+            self.runtime.row_styles = styles;
+            if !self.runtime.item_enabled(self.model.items.selected) {
+                self.model.items.selected = self
+                    .runtime
+                    .first_enabled(self.model.items.count)
+                    .unwrap_or(0);
+            }
+        }
+    }
+    pub(crate) fn take_submenu_request(&mut self) -> Option<usize> {
+        self.runtime.submenu_request.take()
+    }
+    pub(crate) fn scroll_gesture_captured(&self) -> bool {
+        self.runtime.scroll_gesture_captured
+    }
+    pub(crate) fn cancel_scroll_gesture(&mut self) {
+        self.runtime.scroll_gesture_captured = false;
+        self.runtime.scroll.cancel();
+    }
+    pub(crate) fn set_submenu_placement(&mut self) {
+        self.runtime.beside_anchor = true;
+    }
+    pub(crate) fn open_generation(&self) -> u64 {
+        self.runtime.open_generation
+    }
+    pub(crate) fn set_keyboard_focus(&mut self, visible: bool) {
+        self.runtime.focus_visible = visible;
+        self.runtime.sync_focus(self.model.items.selected);
+    }
+    pub(crate) fn item_style(&self, index: usize) -> Option<MenuRowStyle> {
+        self.runtime.row_styles.get(index).copied()
     }
 
     pub fn is_open(&self) -> bool {
@@ -503,31 +770,46 @@ impl MenuView {
             !self.bound_external,
             "MenuView is bound to an external Menu model"
         );
+        self.runtime.open_generation = self
+            .runtime
+            .open_generation
+            .checked_add(1)
+            .expect("menu popup generation exhausted");
         self.model.show();
+        self.model.items.selected = self
+            .runtime
+            .first_enabled(self.model.items.count)
+            .unwrap_or(0);
         self.runtime.return_focus = Some(invoker);
         self.runtime.focus_visible = false;
         self.runtime
             .scroll
             .scroll_by(0.0, -self.runtime.scroll.offset.y);
-        self.runtime.cancel_buttons();
+        self.runtime.clear_layout();
         self.runtime.sync_focus(self.model.items.selected);
     }
 
     pub fn show_with_model(&mut self, model: &mut Menu, invoker: usize) {
         self.bound_external = true;
+        self.runtime.open_generation = self
+            .runtime
+            .open_generation
+            .checked_add(1)
+            .expect("menu popup generation exhausted");
         model.show();
         self.runtime.return_focus = Some(invoker);
         self.runtime.focus_visible = false;
         self.runtime
             .scroll
             .scroll_by(0.0, -self.runtime.scroll.offset.y);
-        self.runtime.cancel_buttons();
+        self.runtime.clear_layout();
         self.runtime.sync_focus(model.items.selected);
     }
 
     pub fn set_window_active(&mut self, active: bool) -> MenuEvent {
         self.runtime.window_active = active;
         if !active {
+            self.runtime.presence.clear();
             self.runtime.deactivate_model(&mut self.model)
         } else {
             MenuEvent::None
@@ -538,6 +820,7 @@ impl MenuView {
         self.bound_external = true;
         self.runtime.window_active = active;
         if !active {
+            self.runtime.presence.clear();
             self.runtime.deactivate_model(model)
         } else {
             MenuEvent::None
@@ -705,7 +988,7 @@ impl MenuView {
     /// Whether the host should keep scheduling frames for this menu's scroll
     /// gesture timeout or elastic rebound.
     pub fn needs_animation(&self) -> bool {
-        self.runtime.scroll.needs_animation()
+        self.runtime.scroll.needs_animation() || self.runtime.presence.needs_animation()
     }
 
     /// Advances the owned scroll clock by elapsed seconds and returns whether
@@ -729,6 +1012,60 @@ impl MenuView {
 }
 
 impl MenuRuntime {
+    fn row_style(&self, index: usize) -> MenuRowStyle {
+        self.row_styles.get(index).copied().unwrap_or_default()
+    }
+    fn item_enabled(&self, index: usize) -> bool {
+        let row = self.row_style(index);
+        !row.disabled && !row.separator
+    }
+    fn first_enabled(&self, count: usize) -> Option<usize> {
+        (0..count).find(|&index| self.item_enabled(index))
+    }
+    fn move_enabled(&self, count: usize, before: usize, key: ControlKey) -> Option<usize> {
+        match key {
+            ControlKey::Home => self.first_enabled(count),
+            ControlKey::End => (0..count).rev().find(|&index| self.item_enabled(index)),
+            ControlKey::Up | ControlKey::Down if count > 0 => (1..=count)
+                .map(|n| {
+                    if key == ControlKey::Up {
+                        (before % count + count - n) % count
+                    } else {
+                        (before % count + n) % count
+                    }
+                })
+                .find(|&index| self.item_enabled(index)),
+            _ => None,
+        }
+    }
+    fn semantic_item_mounted(&self, model: &Menu, index: usize) -> bool {
+        !self.disabled
+            && self.window_active
+            && model.open
+            && index < model.items.count
+            && self.item_enabled(index)
+            && self
+                .placement
+                .items
+                .get(index)
+                .is_some_and(|item| !item.frame.is_empty())
+    }
+    fn focus_item_model(&mut self, model: &mut Menu, index: usize) -> bool {
+        if !self.semantic_item_mounted(model, index) {
+            return false;
+        }
+        model.items.selected = index;
+        self.focus_visible = true;
+        self.reveal_active(model);
+        self.sync_focus(index);
+        true
+    }
+    fn activate_item_model(&mut self, model: &mut Menu, index: usize) -> MenuEvent {
+        if !self.semantic_item_mounted(model, index) {
+            return MenuEvent::None;
+        }
+        self.activate_model(model, index)
+    }
     #[allow(clippy::too_many_arguments)]
     fn render_model(
         &mut self,
@@ -743,10 +1080,29 @@ impl MenuRuntime {
         role: proposal::TextRole,
         compact: bool,
     ) -> Option<MenuLayout> {
-        if !model.open {
+        if safe_rect(anchor) != anchor
+            || safe_rect(visible_bounds) != visible_bounds
+            || visible_bounds.size.width <= 0.0
+            || visible_bounds.size.height <= 0.0
+            || ancestor_clip.is_some_and(|clip| safe_rect(clip) != clip)
+        {
+            self.presence.clear();
             self.clear_layout();
             return None;
         }
+        let paint_context = format!(
+            "{anchor:?}{visible_bounds:?}{ancestor_clip:?}{palette:?}{role:?}{compact:?}{}{labels:?}{:?}",
+            text.backing_scale(),
+            self.row_styles
+        );
+        if !model.open && !self.presence.is_presented() {
+            self.clear_layout();
+            self.presence.paint(scene, text, false, paint_context, None);
+            return None;
+        }
+        let destination = scene;
+        let mut overlay_scene = Scene::new();
+        let scene = &mut overlay_scene;
         self.compact = compact;
         self.palette = palette;
         self.role = role;
@@ -759,34 +1115,95 @@ impl MenuRuntime {
         self.ancestor_clip = ancestor_clip;
         let count = model.items.count.min(labels.len());
         self.buttons.resize_with(model.items.count, Button::default);
-        self.row_heights.resize(model.items.count, 36.0);
-        let width = visible_bounds.size.width.clamp(0.0, 280.0);
+        let has_check = self.row_styles.iter().any(|style| style.checked.is_some());
+        let has_submenu = self.row_styles.iter().any(|style| style.submenu);
+        let indicator_gap = if has_check || has_submenu {
+            proposal::metric("spacing", "space-tight")
+                .expect("canonical menu indicator-caption spacing")
+        } else {
+            0.0
+        };
+        let icon = if has_check || has_submenu {
+            proposal::metric("size", "size-icon-standard").expect("canonical menu indicator size")
+        } else {
+            0.0
+        };
+        let leading = if has_check {
+            icon.max(text.measure("✓", role, f32::MAX).width) + indicator_gap
+        } else {
+            0.0
+        };
+        let trailing = if has_submenu {
+            icon.max(text.measure("›", role, f32::MAX).width) + indicator_gap
+        } else {
+            0.0
+        };
+        let (mut natural_size, mut heights) = MenuView::measured_rows(
+            &mut MenuRowText {
+                text,
+                leading,
+                trailing,
+                gap: indicator_gap,
+                style: MenuRowStyle::default(),
+            },
+            &labels[..count],
+            visible_bounds.size.width,
+            role,
+            compact,
+        );
+        for (index, height) in heights.iter_mut().enumerate() {
+            if self.row_style(index).separator {
+                *height = proposal::metric("spacing", "space-regular")
+                    .expect("canonical separator row spacing");
+            }
+        }
+        if !self.row_styles.is_empty() {
+            natural_size.height = menu_surface_height(
+                heights.iter().sum::<f32>()
+                    + count.saturating_sub(1) as f32 * self.focus_outset.max(4.0),
+                self.focus_outset,
+            );
+        }
+        heights.resize(model.items.count, 36.0);
+        self.row_heights = heights;
+        let width = natural_size.width;
         let popup_inset = self.focus_outset;
         let row_gap = popup_inset.max(4.0);
-        let inner_width = (width - popup_inset * 2.0).max(0.0);
         let role_size = size_role(compact);
-        for (index, label) in labels.iter().copied().enumerate().take(count) {
-            self.row_heights[index] = Button::measure(text, label, inner_width, role_size, role)
-                .height
-                .max(36.0);
-        }
-        for height in self.row_heights.iter_mut().skip(count) {
-            *height = 36.0;
-        }
         let natural_content = self.row_heights.iter().take(count).sum::<f32>()
             + count.saturating_sub(1) as f32 * row_gap;
-        let natural_height = natural_content + popup_inset * 2.0;
-        let popup_height = natural_height
-            .max(132.0)
-            .min(visible_bounds.size.height.max(0.0));
-        let max_y = (visible_bounds.max_y() - popup_height).max(visible_bounds.min_y());
-        let popup_x = anchor.min_x().clamp(
-            visible_bounds.min_x(),
-            (visible_bounds.max_x() - width).max(visible_bounds.min_x()),
-        );
-        let preferred_y = (anchor.min_y() + 42.0).min(visible_bounds.max_y() - 160.0);
-        let popup_y = preferred_y.clamp(visible_bounds.min_y(), max_y);
-        let popup = Rect::new(popup_x, popup_y, width, popup_height);
+        let gap =
+            proposal::metric("spacing", "space-micro").expect("canonical popup-to-anchor spacing");
+        let below =
+            (visible_bounds.max_y() - anchor.max_y() - gap).clamp(0.0, visible_bounds.size.height);
+        let above =
+            (anchor.min_y() - gap - visible_bounds.min_y()).clamp(0.0, visible_bounds.size.height);
+        let available = below.max(above);
+        let minimum_row = self.row_heights.first().copied().unwrap_or(0.0) + popup_inset * 2.0;
+        // Scroll inside an available side rather than covering a measured
+        // anchor. If neither side can show one full row, retain the existing
+        // viewport-bounded overlay fallback instead of an unusable thin strip.
+        let height_limit = if self.beside_anchor {
+            visible_bounds.size.height
+        } else if available >= minimum_row {
+            available
+        } else {
+            visible_bounds.size.height
+        };
+        let size = Size::new(width, natural_size.height.min(height_limit));
+        let popup = if self.beside_anchor {
+            // The same original placement rule, with axes transposed: right,
+            // then left, clamped to the real viewport. No host screen math.
+            let transpose = |r: Rect| Rect::new(r.min_y(), r.min_x(), r.size.height, r.size.width);
+            transpose(crate::feedback_view::place_overlay(
+                transpose(anchor),
+                Size::new(size.height, size.width),
+                transpose(visible_bounds),
+                gap,
+            ))
+        } else {
+            crate::feedback_view::place_overlay(anchor, size, visible_bounds, gap)
+        };
         let popup_container =
             ContainerLayout::new(popup, Insets::ZERO, Insets::ZERO, ancestor_clip);
         let visible = popup_container.visible_clip();
@@ -802,7 +1219,11 @@ impl MenuRuntime {
             Size::new(inner_viewport.size.width, document_height),
         );
         self.scroll_viewport = inner_viewport;
-        if old_scroll_viewport != inner_viewport || old_row_heights != self.row_heights {
+        if old_scroll_viewport != inner_viewport
+            || old_row_heights != self.row_heights
+            || self.placement.items.is_empty()
+            || self.placement.active_item != model.items.selected
+        {
             self.reveal_active(model);
         }
         let scroll_geometry = self.scroll.geometry(inner_viewport, visible);
@@ -833,18 +1254,51 @@ impl MenuRuntime {
             let height = self.row_heights[index];
             let item = Rect::new(inner_viewport.min_x(), y, inner_viewport.size.width, height);
             let row_clip = explicit_visible_clip(visible);
+            let style = self.row_style(index);
+            if style.separator {
+                if let Some(clip) = visible {
+                    scene.push_clip(clip);
+                }
+                crate::extended::separator_at_scale(
+                    scene,
+                    item,
+                    palette,
+                    crate::extended::Axis::Horizontal,
+                    text.backing_scale(),
+                );
+                if visible.is_some() {
+                    scene.pop_clip();
+                }
+                items.push(ButtonLayout {
+                    frame: item,
+                    content: item,
+                    visible: clip_rect(item, visible),
+                    label_size: Size::default(),
+                });
+                y += height + row_gap;
+                continue;
+            }
             let button = &mut self.buttons[index];
             set_button_state(
                 button,
-                self.window_active && model.items.selected == index,
-                self.window_active && self.focus_visible && model.items.selected == index,
-                self.disabled,
-                model.items.selected == index,
+                self.window_active && model.open && model.items.selected == index,
+                self.window_active
+                    && model.open
+                    && self.focus_visible
+                    && model.items.selected == index,
+                self.disabled || style.disabled,
+                model.items.selected == index && !style.disabled,
             );
             let label = labels.get(index).copied().unwrap_or("");
             let layout = button.render(
                 scene,
-                text,
+                &mut MenuRowText {
+                    text,
+                    leading,
+                    trailing,
+                    gap: indicator_gap,
+                    style,
+                },
                 label,
                 item,
                 row_clip,
@@ -868,6 +1322,17 @@ impl MenuRuntime {
             active_item: model.items.selected,
             scroll_offset: offset,
         };
+        self.presence.paint(
+            destination,
+            text,
+            model.open,
+            paint_context,
+            Some(overlay_scene),
+        );
+        if !model.open {
+            self.clear_layout();
+            return None;
+        }
         Some(self.placement.clone())
     }
 
@@ -879,11 +1344,17 @@ impl MenuRuntime {
             .placement
             .items
             .iter()
-            .position(|item| item.hit_test(point));
+            .enumerate()
+            .find_map(|(index, item)| {
+                (self.item_enabled(index) && item.hit_test(point)).then_some(index)
+            });
         if let Some(index) = hovered {
             model.items.selected = index;
             self.focus_visible = false;
             self.sync_focus(index);
+            if self.row_style(index).submenu {
+                self.submenu_request = Some(index);
+            }
         }
         for button in &mut self.buttons {
             button.pointer_move_at(point);
@@ -910,7 +1381,10 @@ impl MenuRuntime {
             .placement
             .items
             .iter()
-            .position(|item| item.hit_test(point))
+            .enumerate()
+            .find_map(|(index, item)| {
+                (self.item_enabled(index) && item.hit_test(point)).then_some(index)
+            })
         {
             model.items.selected = index;
             self.focus_visible = false;
@@ -925,15 +1399,8 @@ impl MenuRuntime {
             return MenuEvent::None;
         }
         for index in 0..self.buttons.len() {
-            if self.buttons[index].pointer_up_at(point) {
-                model.items.selected = index;
-                model.last_action = Some(index);
-                model.open = false;
-                self.clear_layout();
-                return MenuEvent::Activated {
-                    index,
-                    restore_focus: self.return_focus.take(),
-                };
+            if self.buttons[index].pointer_up_at(point) && self.item_enabled(index) {
+                return self.activate_model(model, index);
             }
         }
         MenuEvent::None
@@ -964,19 +1431,8 @@ impl MenuRuntime {
             ControlKey::Up | ControlKey::Down | ControlKey::Home | ControlKey::End => {
                 self.focus_visible = true;
                 let before = model.items.selected;
-                match key {
-                    ControlKey::Up if model.items.count > 0 => {
-                        model.items.selected =
-                            before.checked_sub(1).unwrap_or(model.items.count - 1);
-                    }
-                    ControlKey::Down if model.items.count > 0 => {
-                        model.items.selected = (before + 1) % model.items.count;
-                    }
-                    ControlKey::Home if model.items.count > 0 => model.items.selected = 0,
-                    ControlKey::End if model.items.count > 0 => {
-                        model.items.selected = model.items.count - 1
-                    }
-                    _ => {}
+                if let Some(index) = self.move_enabled(model.items.count, before, key) {
+                    model.items.selected = index;
                 }
                 self.reveal_active(model);
                 self.sync_focus(model.items.selected);
@@ -994,15 +1450,14 @@ impl MenuRuntime {
                     return MenuEvent::None;
                 }
                 self.sync_focus(index);
-                if let Some(activated) = model.key(key) {
-                    self.clear_layout();
-                    MenuEvent::Activated {
-                        index: activated,
-                        restore_focus: self.return_focus.take(),
-                    }
-                } else {
-                    MenuEvent::None
+                self.activate_model(model, index)
+            }
+            ControlKey::Right if self.row_style(model.items.selected).submenu => {
+                let index = model.items.selected;
+                if self.semantic_item_mounted(model, index) {
+                    self.submenu_request = Some(index);
                 }
+                MenuEvent::None
             }
             _ => MenuEvent::None,
         }
@@ -1053,7 +1508,14 @@ impl MenuRuntime {
     }
 
     fn activate_model(&mut self, model: &mut Menu, index: usize) -> MenuEvent {
-        if index >= model.items.count {
+        if index >= model.items.count || !self.item_enabled(index) {
+            return MenuEvent::None;
+        }
+        if self.row_style(index).submenu {
+            model.items.selected = index;
+            self.reveal_active(model);
+            self.sync_focus(index);
+            self.submenu_request = Some(index);
             return MenuEvent::None;
         }
         model.items.selected = index;
@@ -1127,6 +1589,7 @@ impl MenuRuntime {
     }
 
     fn clear_layout(&mut self) {
+        self.submenu_request = None;
         self.cancel_buttons();
         self.placement = MenuLayout::default();
         self.focus_visible = false;
@@ -1172,6 +1635,7 @@ pub enum DialogEvent {
 /// Modal presentation for the existing `Dialog` model.
 #[derive(Clone, Debug)]
 pub struct DialogView {
+    presence: OverlayPresence,
     model: Dialog,
     buttons: [Button; 2],
     placement: DialogLayout,
@@ -1185,6 +1649,7 @@ pub struct DialogView {
 impl Default for DialogView {
     fn default() -> Self {
         Self {
+            presence: OverlayPresence::default(),
             model: Dialog::default(),
             buttons: [Button::default(), Button::default()],
             placement: DialogLayout::default(),
@@ -1198,6 +1663,83 @@ impl Default for DialogView {
 }
 
 impl DialogView {
+    /// Shared modal surface for default actions and public composed content.
+    pub fn paint_content_frame(
+        scene: &mut Scene,
+        viewport: Rect,
+        modal: Rect,
+        clip: Rect,
+        palette: Palette,
+        scale: f32,
+    ) {
+        scene.push_clip(clip);
+        scene.push_quad(Quad::new(
+            viewport,
+            palette.color("scrim").expect("scrim token"),
+        ));
+        paint::surface_kind_at_scale(scene, modal, palette, paint::SurfaceKind::Dialog, scale);
+        scene.pop_clip();
+    }
+
+    /// Paint can outlive semantic open during dismissal.
+    pub fn is_presented(&self) -> bool {
+        self.presence.is_presented()
+    }
+
+    pub fn needs_animation(&self) -> bool {
+        self.presence.needs_animation()
+    }
+
+    /// Call on unmount or text/image resource replacement.
+    pub fn clear_presentation(&mut self) {
+        self.presence.clear();
+    }
+
+    /// Labels are shared with measurement and painting, including native AX adapters.
+    pub fn button_label(index: usize) -> Option<&'static str> {
+        ["Cancel", "Confirm"].get(index).copied()
+    }
+
+    /// Direct semantic focus of an existing visible action; no synthetic key.
+    pub fn focus_button(&mut self, index: usize) -> bool {
+        if index >= 2
+            || !self.model.open
+            || !self.window_active
+            || self.disabled
+            || self.buttons[index]
+                .layout()
+                .is_none_or(|l| l.visible.is_none())
+        {
+            return false;
+        }
+        let changed = self.model.focus != index || !self.focus_visible;
+        self.model.focus = index;
+        self.focus_visible = true;
+        self.cancel_button_arms_except(index);
+        self.sync_focus_buttons();
+        changed
+    }
+
+    /// Activate the same retained Button and finish path used by pointer/keyboard.
+    /// Closing/hidden/disabled actions cannot produce a second dismissal.
+    pub fn activate_button(&mut self, index: usize) -> DialogEvent {
+        if index >= 2
+            || !self.model.open
+            || !self.window_active
+            || self.disabled
+            || self.buttons[index]
+                .layout()
+                .is_none_or(|l| l.visible.is_none())
+        {
+            return DialogEvent::Blocked;
+        }
+        self.buttons[index].pointer_down();
+        if !self.buttons[index].pointer_up(true) {
+            return DialogEvent::Blocked;
+        }
+        self.finish(index == 1)
+    }
+
     pub fn dialog(&self) -> &Dialog {
         &self.model
     }
@@ -1224,6 +1766,7 @@ impl DialogView {
         if !active {
             self.focus_visible = false;
             self.cancel_buttons();
+            self.presence.settle(self.model.open);
             for button in &mut self.buttons {
                 button.blur();
             }
@@ -1249,12 +1792,42 @@ impl DialogView {
         role: proposal::TextRole,
         compact: bool,
     ) -> Option<DialogLayout> {
-        if !self.model.open {
+        if safe_rect(preview) != preview
+            || preview.size.width <= 0.0
+            || preview.size.height <= 0.0
+            || ancestor_clip.is_some_and(|clip| safe_rect(clip) != clip)
+        {
+            self.presence.clear();
             self.placement = DialogLayout::default();
+            self.cancel_buttons();
+            for button in &mut self.buttons {
+                button.clear_layout();
+            }
             return None;
         }
+        let paint_context = format!(
+            "{title}{preview:?}{ancestor_clip:?}{palette:?}{role:?}{compact:?}{}",
+            text.backing_scale()
+        );
+        if !self.model.open && !self.presence.is_presented() {
+            self.placement = DialogLayout::default();
+            self.presence.paint(scene, text, false, paint_context, None);
+            return None;
+        }
+        let destination = scene;
+        let mut overlay_scene = Scene::new();
+        let scene = &mut overlay_scene;
         let preview = safe_rect(preview);
         let visible = clip_rect(preview, ancestor_clip);
+        if visible.is_none() {
+            self.presence.clear();
+            self.placement = DialogLayout::default();
+            self.cancel_buttons();
+            for button in &mut self.buttons {
+                button.clear_layout();
+            }
+            return None;
+        }
         let modal_width = (preview.size.width - 16.0).clamp(0.0, 460.0);
         let modal_height = preview.size.height.clamp(0.0, 200.0);
         let modal = Rect::new(
@@ -1267,15 +1840,41 @@ impl DialogView {
         let margin = 20.0_f32.min((modal.size.width * 0.5).max(0.0));
         let action_width = (modal.size.width - margin * 2.0).max(0.0);
         let focus_gap = focus_reveal_outset(text.backing_scale()) * 2.0;
-        let cancel_natural = Button::measure(text, "Cancel", f32::MAX, ButtonSize::Body, role);
-        let confirm_natural = Button::measure(text, "Confirm", f32::MAX, ButtonSize::Body, role);
+        let cancel_natural = Button::measure(
+            text,
+            Self::button_label(0).unwrap(),
+            f32::MAX,
+            ButtonSize::Body,
+            role,
+        );
+        let confirm_natural = Button::measure(
+            text,
+            Self::button_label(1).unwrap(),
+            f32::MAX,
+            ButtonSize::Body,
+            role,
+        );
         let inline_width = ((action_width - focus_gap).max(0.0)) * 0.5;
         let mut stacked = inline_width < cancel_natural.width.max(confirm_natural.width);
         let vertical_margin = 20.0_f32.min((modal.size.height * 0.5).max(0.0));
-        let stacked_natural_height =
-            Button::measure(text, "Cancel", action_width, ButtonSize::Body, role)
-                .height
-                .max(Button::measure(text, "Confirm", action_width, ButtonSize::Body, role).height);
+        let stacked_natural_height = Button::measure(
+            text,
+            Self::button_label(0).unwrap(),
+            action_width,
+            ButtonSize::Body,
+            role,
+        )
+        .height
+        .max(
+            Button::measure(
+                text,
+                Self::button_label(1).unwrap(),
+                action_width,
+                ButtonSize::Body,
+                role,
+            )
+            .height,
+        );
         if stacked
             && (modal.size.height - vertical_margin * 2.0).max(0.0)
                 < stacked_natural_height * 2.0 + focus_gap
@@ -1288,10 +1887,24 @@ impl DialogView {
             0.0
         };
         let button_width = if stacked { action_width } else { inline_width };
-        let measured_button_height =
-            Button::measure(text, "Cancel", button_width, ButtonSize::Body, role)
-                .height
-                .max(Button::measure(text, "Confirm", button_width, ButtonSize::Body, role).height);
+        let measured_button_height = Button::measure(
+            text,
+            Self::button_label(0).unwrap(),
+            button_width,
+            ButtonSize::Body,
+            role,
+        )
+        .height
+        .max(
+            Button::measure(
+                text,
+                Self::button_label(1).unwrap(),
+                button_width,
+                ButtonSize::Body,
+                role,
+            )
+            .height,
+        );
         let available_action_height = (modal.size.height - vertical_margin * 2.0).max(0.0);
         let maximum_button_height = if stacked {
             (available_action_height - stack_gap).max(0.0) * 0.5
@@ -1327,19 +1940,14 @@ impl DialogView {
         };
         let visible_modal = visible.and_then(|clip| modal.intersection(&clip));
         if let Some(visible) = visible {
-            scene.push_clip(visible);
-            scene.push_quad(Quad::new(
-                preview,
-                palette.color("scrim").expect("scrim token"),
-            ));
-            paint::surface_kind_at_scale(
+            Self::paint_content_frame(
                 scene,
+                preview,
                 modal,
+                visible,
                 palette,
-                paint::SurfaceKind::Dialog,
                 text.backing_scale(),
             );
-            scene.pop_clip();
         }
         let title_clip = Rect::new(
             modal.min_x() + margin,
@@ -1368,14 +1976,20 @@ impl DialogView {
             );
             scene.pop_clip();
         }
-        let labels = ["Cancel", "Confirm"];
+        let labels = [
+            Self::button_label(0).unwrap(),
+            Self::button_label(1).unwrap(),
+        ];
         let mut button_layouts = [empty_button_layout(); 2];
         for index in 0..2 {
             let frame = button_frame(index);
             set_button_state(
                 &mut self.buttons[index],
-                self.window_active && self.model.focus == index,
-                self.window_active && self.focus_visible && self.model.focus == index,
+                self.window_active && self.model.open && self.model.focus == index,
+                self.window_active
+                    && self.model.open
+                    && self.focus_visible
+                    && self.model.focus == index,
                 self.disabled,
                 false,
             );
@@ -1402,6 +2016,23 @@ impl DialogView {
             buttons: button_layouts,
             focus: self.model.focus,
         };
+        if !self.window_active {
+            self.presence.settle(self.model.open);
+        }
+        self.presence.paint(
+            destination,
+            text,
+            self.model.open,
+            paint_context,
+            Some(overlay_scene),
+        );
+        if !self.model.open {
+            self.placement = DialogLayout::default();
+            for button in &mut self.buttons {
+                button.clear_layout();
+            }
+            return None;
+        }
         Some(self.placement.clone())
     }
 
@@ -2598,5 +3229,485 @@ mod tests {
         );
         assert!(!cancel.hit_test(confirm_visible.center()));
         assert!(!confirm.hit_test(cancel_visible.center()));
+    }
+}
+
+#[cfg(test)]
+mod overlay_presence_tests {
+    use super::*;
+    use crate::{
+        ControlMotionContext,
+        extended::Popover,
+        feedback_view::{OverlayEvent, PopoverView},
+    };
+    use std::time::Duration;
+    use tekes_ui_tokens::{Rgba, Theme};
+
+    struct ClockText {
+        millis: u64,
+        reduced: bool,
+        requested: bool,
+    }
+    impl ClockText {
+        fn new() -> Self {
+            Self {
+                millis: 0,
+                reduced: false,
+                requested: false,
+            }
+        }
+    }
+    impl ButtonTextRenderer for ClockText {
+        fn motion_context(&self) -> Option<ControlMotionContext> {
+            Some(ControlMotionContext {
+                now: Duration::from_millis(self.millis),
+                reduced_motion: self.reduced,
+            })
+        }
+        fn request_animation_frame(&mut self) {
+            self.requested = true;
+        }
+        fn measure(&mut self, label: &str, _: proposal::TextRole, max: f32) -> Size {
+            Size::new((label.len() as f32 * 7.0).min(max), 18.0)
+        }
+        fn draw(
+            &mut self,
+            scene: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            frame: Rect,
+            _: ButtonTextAlign,
+            color: Rgba,
+        ) {
+            scene.push_quad(Quad::new(frame, color));
+        }
+    }
+    fn viewport() -> Rect {
+        Rect::new(0.0, 0.0, 600.0, 400.0)
+    }
+    fn menu(view: &mut MenuView, text: &mut ClockText, scene: &mut Scene) -> Option<MenuLayout> {
+        view.render(
+            scene,
+            text,
+            &["Open", "Copy"],
+            Rect::new(20.0, 20.0, 120.0, 36.0),
+            viewport(),
+            Some(viewport()),
+            Palette::from(Theme::default()),
+            proposal::TextRole::UiBody,
+            false,
+        )
+    }
+    fn dialog(
+        view: &mut DialogView,
+        text: &mut ClockText,
+        scene: &mut Scene,
+        clip: Option<Rect>,
+    ) -> Option<DialogLayout> {
+        view.render(
+            scene,
+            text,
+            "Confirm changes?",
+            viewport(),
+            clip,
+            Palette::from(Theme::default()),
+            proposal::TextRole::UiBody,
+            false,
+        )
+    }
+    fn popover(
+        view: &mut PopoverView,
+        model: &Popover,
+        text: &mut ClockText,
+        scene: &mut Scene,
+        palette: Palette,
+    ) {
+        view.render_with_text_content(
+            scene,
+            text,
+            model,
+            Rect::new(20.0, 20.0, 120.0, 36.0),
+            Size::new(220.0, 120.0),
+            viewport(),
+            Some(viewport()),
+            palette,
+            proposal::TextRole::UiBody,
+            "content-v1",
+            |scene, _, bounds| scene.push_quad(Quad::new(bounds, Rgba::new(1.0, 0.0, 0.0, 1.0))),
+        );
+    }
+    #[test]
+    fn window_deactivation_clears_popover_presence_without_replaying_exit() {
+        for closing in [false, true] {
+            let mut view = PopoverView::default();
+            let mut model = Popover::default();
+            let mut text = ClockText::new();
+            let mut scene = Scene::new();
+            view.show(&mut model, 7);
+            popover(
+                &mut view,
+                &model,
+                &mut text,
+                &mut scene,
+                Theme::LIGHT.into(),
+            );
+            text.millis = 40;
+            popover(
+                &mut view,
+                &model,
+                &mut text,
+                &mut scene,
+                Theme::LIGHT.into(),
+            );
+            if closing {
+                view.close(&mut model);
+            }
+            assert!(view.needs_animation());
+            view.set_window_active(false, &mut model);
+            assert!(!view.needs_animation());
+            assert!(!view.is_presented());
+            assert!(!model.open);
+            text.requested = false;
+            scene.clear();
+            popover(
+                &mut view,
+                &model,
+                &mut text,
+                &mut scene,
+                Theme::LIGHT.into(),
+            );
+            assert!(scene.is_empty());
+            assert!(!text.requested);
+            view.set_window_active(true, &mut model);
+            text.millis = 60;
+            popover(
+                &mut view,
+                &model,
+                &mut text,
+                &mut scene,
+                Theme::LIGHT.into(),
+            );
+            assert!(scene.is_empty());
+            assert!(!text.requested);
+        }
+    }
+    #[test]
+    fn filtered_menu_dismissal_keeps_exit_but_cancel_discards_presentation() {
+        let mut view = crate::layout_view::FilteredMenuView::new();
+        let mut text = ClockText::new();
+        let mut scene = Scene::new();
+        let items = vec!["Open".to_owned(), "Copy".to_owned()];
+        let paint = |view: &mut crate::layout_view::FilteredMenuView,
+                     text: &mut ClockText,
+                     scene: &mut Scene,
+                     open| {
+            view.render(
+                scene,
+                text,
+                &items,
+                &[7, 8],
+                Some(0),
+                open,
+                Rect::new(20., 20., 120., 36.),
+                viewport(),
+                Some(viewport()),
+                Theme::LIGHT.into(),
+                proposal::TextRole::UiBody,
+                false,
+            );
+        };
+        paint(&mut view, &mut text, &mut scene, true);
+        text.millis = 40;
+        paint(&mut view, &mut text, &mut scene, true);
+        view.dismiss();
+        assert!(!view.is_visible());
+        assert!(view.layout().is_none());
+        assert!(
+            view.is_presented(),
+            "ordinary filtered dismissal must not mean window deactivation"
+        );
+        scene.clear();
+        paint(&mut view, &mut text, &mut scene, false);
+        assert!(!scene.is_empty());
+        assert_eq!(view.key(ControlKey::Enter, true), MenuEvent::None);
+        view.cancel();
+        assert!(!view.is_presented());
+        assert!(!view.needs_animation());
+    }
+    #[test]
+    fn ordinary_menu_deactivation_keeps_exit_until_window_is_inactive() {
+        let mut view = MenuView::new(2);
+        let mut text = ClockText::new();
+        let mut scene = Scene::new();
+        view.show(7);
+        menu(&mut view, &mut text, &mut scene);
+        text.millis = 40;
+        menu(&mut view, &mut text, &mut scene);
+        view.deactivate();
+        assert!(!view.is_open());
+        assert!(
+            view.is_presented(),
+            "ordinary focus return retains exit paint"
+        );
+        assert!(view.needs_animation());
+        scene.clear();
+        menu(&mut view, &mut text, &mut scene);
+        assert!(!scene.is_empty());
+        view.set_window_active(false);
+        assert!(!view.is_presented());
+        assert!(!view.needs_animation());
+    }
+    #[test]
+    fn window_deactivation_stops_menu_presence_without_render_or_replay() {
+        for closing in [false, true] {
+            let mut view = MenuView::new(2);
+            let mut text = ClockText::new();
+            let mut scene = Scene::new();
+            view.show(7);
+            menu(&mut view, &mut text, &mut scene);
+            text.millis = 40;
+            menu(&mut view, &mut text, &mut scene);
+            if closing {
+                view.key(ControlKey::Escape, true);
+            }
+            assert!(view.needs_animation());
+            view.set_window_active(false);
+            assert!(
+                !view.needs_animation(),
+                "inactive menu stops pending presence, closing={closing}"
+            );
+            assert!(!view.is_presented());
+            text.requested = false;
+            scene.clear();
+            menu(&mut view, &mut text, &mut scene);
+            assert!(scene.is_empty());
+            assert!(!text.requested);
+            view.set_window_active(true);
+            text.millis = 60;
+            menu(&mut view, &mut text, &mut scene);
+            assert!(!view.needs_animation());
+            assert!(scene.is_empty());
+        }
+    }
+    #[test]
+    fn window_deactivation_settles_dialog_presence_to_its_logical_state() {
+        for closing in [false, true] {
+            let mut view = DialogView::default();
+            let mut text = ClockText::new();
+            let mut scene = Scene::new();
+            view.show(7);
+            dialog(&mut view, &mut text, &mut scene, Some(viewport()));
+            text.millis = 40;
+            dialog(&mut view, &mut text, &mut scene, Some(viewport()));
+            if closing {
+                view.close();
+            }
+            assert!(view.needs_animation());
+            view.set_window_active(false);
+            assert!(
+                !view.needs_animation(),
+                "inactive dialog stops pending presence, closing={closing}"
+            );
+            assert_eq!(view.dialog().open, !closing);
+            text.requested = false;
+            scene.clear();
+            dialog(&mut view, &mut text, &mut scene, Some(viewport()));
+            assert_eq!(scene.is_empty(), closing);
+            assert!(!text.requested);
+            view.set_window_active(true);
+            text.millis = 60;
+            text.requested = false;
+            dialog(&mut view, &mut text, &mut scene, Some(viewport()));
+            assert!(!view.needs_animation());
+            assert!(!text.requested);
+        }
+    }
+    #[test]
+    fn menu_exit_keeps_only_paint_and_reopen_continues_current_progress() {
+        let mut text = ClockText::new();
+        let mut view = MenuView::new(2);
+        let mut scene = Scene::new();
+        view.show(8);
+        assert!(menu(&mut view, &mut text, &mut scene).is_some());
+        assert!(text.requested && view.needs_animation());
+        text.millis = 200;
+        scene.clear();
+        menu(&mut view, &mut text, &mut scene);
+        let resting = scene.clone();
+        assert!(!resting.is_empty());
+        assert!(matches!(
+            view.key(ControlKey::Escape, true),
+            MenuEvent::Dismissed {
+                restore_focus: Some(8)
+            }
+        ));
+        assert!(!view.is_open());
+        scene.clear();
+        assert!(menu(&mut view, &mut text, &mut scene).is_none());
+        assert_eq!(scene, resting);
+        assert!(view.is_presented());
+        assert_eq!(
+            view.pointer_down_at(Point::new(30.0, 80.0)),
+            MenuEvent::None
+        );
+        text.millis = 240;
+        scene.clear();
+        menu(&mut view, &mut text, &mut scene);
+        let exiting = scene.clone();
+        assert!(!exiting.is_empty());
+        assert_ne!(exiting, resting);
+        view.show(9);
+        scene.clear();
+        menu(&mut view, &mut text, &mut scene);
+        assert_eq!(scene, exiting);
+        text.millis = 500;
+        scene.clear();
+        menu(&mut view, &mut text, &mut scene);
+        assert_eq!(scene, resting);
+        view.clear_presentation();
+        assert!(!view.is_presented());
+    }
+    #[test]
+    fn dialog_dismissal_restores_focus_once_and_reduced_motion_finishes_exit() {
+        let mut text = ClockText::new();
+        let mut view = DialogView::default();
+        let mut scene = Scene::new();
+        view.show(3);
+        dialog(&mut view, &mut text, &mut scene, Some(viewport()));
+        text.millis = 200;
+        scene.clear();
+        dialog(&mut view, &mut text, &mut scene, Some(viewport()));
+        assert!(matches!(
+            view.close(),
+            DialogEvent::Cancelled {
+                restore_focus: Some(3)
+            }
+        ));
+        assert_eq!(view.close(), DialogEvent::None);
+        assert!(!view.blocks_background());
+        assert_eq!(view.key(ControlKey::Enter, true), DialogEvent::None);
+        scene.clear();
+        assert!(dialog(&mut view, &mut text, &mut scene, Some(viewport())).is_none());
+        assert!(!scene.is_empty());
+        assert!(view.needs_animation());
+        text.reduced = true;
+        scene.clear();
+        dialog(&mut view, &mut text, &mut scene, Some(viewport()));
+        assert!(scene.is_empty());
+        assert!(!view.is_presented());
+        assert!(!view.needs_animation());
+    }
+    #[test]
+    fn dialog_exit_is_cancelled_when_current_ancestor_clip_changes() {
+        let mut text = ClockText::new();
+        let mut view = DialogView::default();
+        let mut scene = Scene::new();
+        view.show(3);
+        dialog(&mut view, &mut text, &mut scene, Some(viewport()));
+        text.millis = 200;
+        dialog(&mut view, &mut text, &mut scene, Some(viewport()));
+        view.close();
+        scene.clear();
+        dialog(&mut view, &mut text, &mut scene, Some(Rect::default()));
+        assert!(scene.is_empty());
+        assert!(!view.is_presented());
+    }
+    #[test]
+    fn popover_retains_content_but_no_focus_or_hits_and_cancels_stale_brand() {
+        let mut text = ClockText::new();
+        let mut view = PopoverView::default();
+        let mut model = Popover::default();
+        let mut scene = Scene::new();
+        let palette = Palette::from(Theme::default());
+        view.show(&mut model, 4);
+        popover(&mut view, &model, &mut text, &mut scene, palette);
+        text.millis = 200;
+        scene.clear();
+        popover(&mut view, &model, &mut text, &mut scene, palette);
+        let resting = scene.clone();
+        assert!(matches!(
+            view.close(&mut model),
+            OverlayEvent::Dismissed {
+                restore_focus: Some(4)
+            }
+        ));
+        assert!(view.focus_target().is_none());
+        assert!(!view.pointer_down(&mut model, Point::new(30.0, 80.0)));
+        scene.clear();
+        popover(&mut view, &model, &mut text, &mut scene, palette);
+        assert_eq!(scene, resting);
+        assert!(view.is_presented());
+        scene.clear();
+        popover(
+            &mut view,
+            &model,
+            &mut text,
+            &mut scene,
+            Palette {
+                brand: 1,
+                ..palette
+            },
+        );
+        assert!(scene.is_empty());
+        assert!(!view.is_presented());
+    }
+
+    #[test]
+    fn tabs_invalid_and_hidden_layout_cancel_focus_and_capture() {
+        let mut view = TabsView::new(2);
+        let mut scene = Scene::new();
+        let mut text = ClockText::new();
+        let palette = Palette::from(Theme::LIGHT);
+        let frame = Rect::new(20., 20., 240., 40.);
+        view.render(
+            &mut scene,
+            &mut text,
+            &["One", "Two"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        let point = view.placement.items[0].frame.center();
+        assert_eq!(view.pointer_down_at(point), Some(0));
+        view.render(
+            &mut scene,
+            &mut text,
+            &["One", "Two"],
+            Rect::new(f32::NAN, 0., 240., 40.),
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        assert_eq!(view.pointer_up_at(point), None);
+        assert_eq!(view.pointer_down_at(point), None);
+        assert_eq!(view.key(ControlKey::Enter, true), None);
+        view.render(
+            &mut scene,
+            &mut text,
+            &["One", "Two"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        view.focus(0, true);
+        view.key(ControlKey::Space, true);
+        view.render(
+            &mut scene,
+            &mut text,
+            &["One", "Two"],
+            frame,
+            Some(Rect::new(500., 500., 20., 20.)),
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        assert_eq!(view.key(ControlKey::Space, false), None);
+        assert_eq!(view.key(ControlKey::Right, true), None);
+        assert_eq!(view.selected(), 0);
     }
 }

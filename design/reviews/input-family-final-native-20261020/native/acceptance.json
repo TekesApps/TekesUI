@@ -1,0 +1,19 @@
+{
+  "status": "scoped revised-host shortcut and readonly native acceptance passed; VoiceOver pending",
+  "pid": 33109,
+  "screen": {
+    "builtin": false,
+    "name": "U2790B",
+    "scale": 2.0
+  },
+  "source": "../shortcut-adapter/source-manifest.json; only GPU test target changed afterward, no native compile source drift",
+  "signed_binary_sha256": "e71b9c516a7eebf25e04881e48b8ec8fed48ae4421c429988e313acec1e2edba",
+  "checks": "shortcut-result.json",
+  "scope": "three real existing input aliases on active external-screen AppKit window; independent consumer ContentHost/TextSurface commands",
+  "historical_state_checks": "../native-attempt1/acceptance.json retains original rest/error/readonly/disabled and Tab/ShiftTab evidence; not relabeled as revised source",
+  "Gold7": "bounded G5/G7 keyboard edit/selection and readonly isolation; final required/optional assistive announcement remains unverified",
+  "VoiceOver": "deferred by user; not enabled",
+  "cleanup": "window closed, PID absent, copied runtime removed after identity/unused checks; source/images/logs retained",
+  "performance": "not measured",
+  "publication": "none"
+}

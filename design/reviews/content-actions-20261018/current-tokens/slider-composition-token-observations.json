@@ -1,0 +1,9587 @@
+{
+  "cases": [
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 0.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 0.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 50.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 50.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "rest",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-hover"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "hover",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "pressed",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ]
+      ],
+      "range_state": "disabled",
+      "rendered_value": 100.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "initial": 100.0,
+      "lookups": [
+        [
+          "color",
+          "accent-pressed"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-3"
+        ]
+      ],
+      "range_state": "dragging",
+      "rendered_value": 75.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "rest",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "rest",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "rest",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "rest",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "rest",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "rest",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "rest",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "rest",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "rest",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "rest",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "rest",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "rest",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "accent"
+        ],
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "border-focused"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-0"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "surface-3"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "c-focus-offset"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ],
+        [
+          "stroke",
+          "c-focus-width"
+        ]
+      ],
+      "range_state": "focus",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.slider",
+      "context": "public SliderContent with TextFieldContent sibling",
+      "lookups": [
+        [
+          "color",
+          "border"
+        ],
+        [
+          "color",
+          "button-hover"
+        ],
+        [
+          "color",
+          "button-pressed"
+        ],
+        [
+          "color",
+          "disabled-text"
+        ],
+        [
+          "color",
+          "primary-text"
+        ],
+        [
+          "color",
+          "surface-2"
+        ],
+        [
+          "color",
+          "transcript-input"
+        ],
+        [
+          "radius",
+          "c-button-md-radius"
+        ],
+        [
+          "radius",
+          "radius-input"
+        ],
+        [
+          "size",
+          "size-action-button"
+        ],
+        [
+          "size",
+          "size-button-md"
+        ],
+        [
+          "size",
+          "size-row-height"
+        ],
+        [
+          "spacing",
+          "space-relaxed"
+        ],
+        [
+          "spacing",
+          "space-tight"
+        ]
+      ],
+      "range_state": "disabled",
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    }
+  ],
+  "complete": false,
+  "format": "tekesui-runtime-token-observation/1",
+  "inputs_sha256": {
+    "crates/tekes-ui-controls/Cargo.toml": "2440aadfcbdb1e1fec9c86444ac3e07ec2ad2ea04022999ba2b464752e13e0bd",
+    "crates/tekes-ui-controls/src/chart.rs": "f30cda0a769e0007ca6c7336d72584ed3da8c31870d845a8208b912ca489e120",
+    "crates/tekes-ui-controls/src/collections_view.rs": "29cf93ad8d9a6bfdbbb9f224dbff95ca6d429f5a3e2d83b43800cd38baf62c15",
+    "crates/tekes-ui-controls/src/composite.rs": "ab1695c26f20c7ee00b34fb25375c0389c0c3c5509ba93842112dad4a915fe37",
+    "crates/tekes-ui-controls/src/composition.rs": "38e2a120afad715e5c02690f1a3f0089651226c5cf8635d3d68ddbe97f5f3ba5",
+    "crates/tekes-ui-controls/src/composition/actions.rs": "a89bb560148cfe341adfbf53a4af1c7c1bf10b8786fa1dba924d0b1c741624f4",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "75424b9474dd80acea62ebc75dd688258e9b6414249ee70acb10c1ba3bb5a118",
+    "crates/tekes-ui-controls/src/composition/key.rs": "48aff7e32eea7ef41e526dd3da0ccfa94ff8165af2ae4568943cfb59ef02cfd4",
+    "crates/tekes-ui-controls/src/composition/pointer.rs": "bab363a222d7c6195349569a4a317ca4586070463964a3503212c3c7aa3927d6",
+    "crates/tekes-ui-controls/src/control_motion.rs": "9749a3ab805ec8e58b78e117e6c3db3f92e9c780da0826f286390c634e1f5053",
+    "crates/tekes-ui-controls/src/draft.rs": "e1632400d3010211fd9718b92b02149c2ba115d587309367d424738117152994",
+    "crates/tekes-ui-controls/src/extended.rs": "b6349672e80369c38761c93774e904386d44760e31854e466c2cd03f822b4478",
+    "crates/tekes-ui-controls/src/feedback_view.rs": "2b47f88e4b0320a7daf5be02f3d7157256cdfce8c814e424b25d7d21e69965e5",
+    "crates/tekes-ui-controls/src/layout.rs": "1fb04f0f3061b0439dded808949aa7dd89d03e6fef6084c53bfb9707062d6e35",
+    "crates/tekes-ui-controls/src/layout_view.rs": "9e50a3f9595f5cb43a099028681cd964b7ef447e1b10ca3c88c5bf64f72d1d01",
+    "crates/tekes-ui-controls/src/lib.rs": "00008c078fcaa579f6afeb63542a448ed267c946fcb553cdcafc88f107979b05",
+    "crates/tekes-ui-controls/src/paint.rs": "f586b50e5d9e1e65226b7b13d9e34d1cbf985557acec13fa256dc5c8ba10ad55",
+    "crates/tekes-ui-controls/src/reading.rs": "b791308f9bbbceba29294575c70401170aa2f3d7f51696039b290c1c262c30f8",
+    "crates/tekes-ui-controls/src/scroll_view.rs": "f055963827da73cb56d75f669697fba7cf6b259a90aebe86a6607953c79cbf30",
+    "crates/tekes-ui-controls/src/selection.rs": "87bccbc8d0cf86d1bca243707e785f5c0a02a8fc7e6570005c623eb843b5cd4f",
+    "crates/tekes-ui-controls/src/text_input.rs": "1cbba31ebf68dd783edc049e92a86b955b8942c71ab36c48a3055fadd8c31d4d",
+    "crates/tekes-ui-controls/src/text_input/external.rs": "dc0ca1d0052a27a07da47fdcf65c6ae3aeab097a1eebe15d0d78730614763f45",
+    "crates/tekes-ui-controls/src/text_surface.rs": "4b98634ee054ff24088ee515624869dce84b4d9830de29a204b9b995186e87a4",
+    "crates/tekes-ui-controls/src/widgets.rs": "8c22a4bc965f66a1c5a1d2d7bb30d29698cbab6b16c92abbb4db0aa2cd7b5605",
+    "crates/tekes-ui-controls/tests/selection_contract.rs": "0d71ee2c2042dc0ca86091851b3cc23d49f56a621890a3c3582914de54036f28",
+    "crates/tekes-ui-design-export/src/effects.rs": "a0bd22ee1869cae0f6546db84cd818e501cc8eb2da0d83401060bf77cba333da",
+    "crates/tekes-ui-design-export/src/freshness.rs": "c4b3e0448d5f68531e54bc6563db9e26b41da11265b7392a9e759b44184c2b74",
+    "crates/tekes-ui-design-export/src/gallery_brands.rs": "289dfb15d825e9f2c325488f08506ffcdf7aa14145f5a10de07ced96d4486c93",
+    "crates/tekes-ui-design-export/src/lib.rs": "39cfc4bb5636f2202468821a119bdf6c6f60e8291ba4e77ad0a701fea54fd0a7",
+    "crates/tekes-ui-design-export/src/main.rs": "fe8846f83e206ba0c834fd1ac0948d548e8c658dba7a322264dabc4c70c7ae96",
+    "crates/tekes-ui-design-export/src/proposal.rs": "ca9f87cd401f281b89fe01a6c8bfe7ce63ee2ce9c80caee63cd5ddb06a519267",
+    "crates/tekes-ui-design-export/src/validator.rs": "bb11f08be7b145c90dbacb1cbd20c8afc7102ef690925af81dafe6b1b6eebc7a",
+    "crates/tekes-ui-tokens/Cargo.toml": "4c647031d8e4054f8645bbc21b9fd6b2bc98043075d6f7dd8d58c2e6cbedf6f2",
+    "crates/tekes-ui-tokens/src/alpha.rs": "aa3017df323ade39c0f6041ad2ff0a5d0d936186cc66f69c9bb6ebb67e1d780b",
+    "crates/tekes-ui-tokens/src/audit.rs": "f0af9c25388a6d3d170a918958b15238daf6efc537dfa8c663a08c6fb14070d7",
+    "crates/tekes-ui-tokens/src/color.rs": "680b9dfed0189d878ab4a8f5a5a8d4daf86ec31735e881519ebe317b6aabad86",
+    "crates/tekes-ui-tokens/src/lib.rs": "21f4239091bbb47834f9b4315dd4f753fc0a249e4ed5104f67b8fb874386cd6e",
+    "crates/tekes-ui-tokens/src/metrics.rs": "91a1038e07cb013b6e31878dc0e571b813f26bf97c674fcead9458c57438fb49",
+    "crates/tekes-ui-tokens/src/palette.rs": "8bd75a15da0d00de2fe34bd5e7f50a0a8541239d82fe9eea599ca20fff3005ed",
+    "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
+    "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
+    "design/brand/apricot.json": "07442028268d7673e89fd1287b9b235e9765418610d73205650f627a049d12ce",
+    "design/brand/config.json": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
+    "design/brand/gallery.json": "ba7cc2b8678d71fa397f99faa51f03733d5ae68ff384f5ce822bd07cd52d5e14",
+    "design/brand/heather.json": "5aa3f8498da5dcb13810816ae24129ea14046f2ce55c57033c42bb8758d1e11c",
+    "design/brand/mist-blue.json": "b3485d1104e10cb10faf9b49790fb1974f46d1272d070d83ed60946b1590dbf8",
+    "design/brand/policy.json": "8ab0d7c6c9605a72ace5af335cf90ffa8abe3243534ac9c4ca68f3fc39bf488c",
+    "design/brand/rose.json": "b5ed8911d1caf79c76a0d16127212e63139f3494f32f5e86a843ba7321f4b09c",
+    "design/brand/sage.json": "6e7fafedf0766dfa98f35631778846c16cc44ef4671df0dbb62da4e174c00fc9",
+    "design/brand/sea-glass.json": "4f9c77586a09c8ce2b8284d7581cfdfdc0cdeb96f8a757a88dbff5c9bf9b556b",
+    "design/brand/warm-sand.json": "08d379e0e4fdc4ccb8d9239f42ce112ca535e719787e4feea56280b0f5c08bd9",
+    "design/brand/warm-stone.json": "39dd02e76b0617babeef0f89081ea94536f1d3b13466370978b5201f8c18df5c",
+    "design/brand/warm-taupe.json": "e4ee17d8634f49c2e8f78c33df87d6048a604023e32d1e8eb98dabafb440cd10",
+    "design/brand/wheat.json": "a998867d0ea6926465d7f82a3e0e03239ac358b93a76e5edadc51a8ad672b11a",
+    "design/source/base.tokens.json": "f7d3a739b023fb72a7e137290d72abb58545d443751bbac969148e53a9a6c95a",
+    "design/source/interaction-contracts.json": "43e3f957838db569c0544d4878c6b3c18decd6aa83113aa0823967caede748c4",
+    "design/source/layout.json": "d556ee23cea3b35122f54f2f843436d3f0b0eb47f49ce7df91a4ca6eb2ebc2b9",
+    "design/source/legacy.tokens.json": "e2532db5200b6310cf934ecd12bad820f60ef0dd3195a1d563f5ef7512149eda",
+    "design/source/motion.json": "73b22d880193b33b0d35ce20e26e4196cf2dab2a116af573823d4d82ace3c53c",
+    "design/source/rust-mapping.json": "cd34ddf901603272874201fd835cea8841f2fdc5875bcf640d647c70b39f3e76",
+    "design/source/token-metadata.json": "0e9108b59a26b560087fe31c0bfc80dcfdceea67a65dd7fd4c541a4e0f46c9e5",
+    "design/tokens.json": "6cdfd88064cb2f0f4bac398876fcf4a037903bd17cf0748d76ca1f1b1d409c20",
+    "scripts/audit-selection-tokens.py": "aee4a4fc24787f0e125102dd72538021b407b3f1be3877c1e096aa4c48c76c92",
+    "examples/composition-consumer/tests/slider_states.rs": "9ba39cb152181ee5ab65b94d83e5573417fc706582a67eb6dc7712db5a1fc184",
+    "examples/composition-consumer/Cargo.toml": "4d9bfd4db368de443abf24c53f0414ea58503a5dd128939ca64abb6add163eda",
+    "crates/tekes-ui-controls/tests/selection_availability.rs": "6b7bd61cd844364ffbe5fd29d9b5b6cb32dc9ff07044194d54b484f59f392d78",
+    "scripts/audit-slider-tokens.py": "8e7fbc985db4ebd304b5e547e8e93632da4ada06fa105138cf563a495caf1418",
+    "examples/composition-consumer/src/controlled_editor.rs": "fbdd6c0b97197805a3e8aa3a8406bd977d29681c4a8410bb1f30296b9fa8d703",
+    "examples/composition-consumer/src/reading_prepend.rs": "35bdf6df644a3cbc680d2e5b2010c9d51b24d16779505e37d51dd57ee3fee4df",
+    "examples/composition-consumer/src/combo_status.rs": "ec75b4527d80f350e07c4a595f16f7343ebc29f8a23799fa7bc773c6c4f23d44",
+    "examples/composition-consumer/src/lib.rs": "b873c6602c737c1de9c04a6f12f182594a45223865d2b27cf903b32bc4b236fa",
+    "examples/composition-consumer/src/scenarios.rs": "8bf3a88681d5df55b426aa717939973de1f629e2f470c416e0ee4883b42d68a0",
+    "examples/composition-consumer/src/choice_status.rs": "a0a064fdee0e9cd5c78bb111c241037d0aa58e066c699708a965cc6df6a16997",
+    "examples/composition-consumer/src/content_status.rs": "b20c338dadb5a9ea3db09ec941270be1c76b538e551bd67aa1afba3e7819654d",
+    "examples/composition-consumer/src/slider_content.rs": "5f50ce30c305092e1f4c12e215ed26a70f08baecce5bd7b4ccc3a7569f64108e",
+    "examples/composition-consumer/src/content_actions.rs": "525638d5c956db238c6cd420992ef4b91897f7a2233257713e569b3bc78de7c8",
+    "examples/composition-consumer/src/command_status.rs": "ce58233447b8bc72d134931ca02b036fe42cd34ecffd28d1c2930e3661f8c237",
+    "examples/composition-consumer/src/text_viewport.rs": "c4652a815029503dc12928831675d5e36bfa52d03d40f046bd00ec1292771464",
+    "examples/composition-consumer/tests/slider_content.rs": "a8d5dca54eb17a24422b52912334368799c5baea71c864b7314542d82b6c10cd",
+    "scripts/audit-slider-composition-tokens.py": "53a1e24ff93254dde1d9cdc7b3f82ad11d879d06265c29dbaf92cb62c5c18dba"
+  },
+  "probe_command": [
+    "cargo",
+    "test",
+    "--manifest-path",
+    "examples/composition-consumer/Cargo.toml",
+    "--features",
+    "token-audit",
+    "--test",
+    "slider_content",
+    "--locked"
+  ],
+  "public_api_test": "examples/composition-consumer/tests/slider_content.rs",
+  "scope": "Original SliderView six states plus public SliderContent in independent ContentHost/Stack with TextFieldContent sibling; real ownership/range/actions; four themes/three brands; CoreText/no-op glyph painter; native AX separate",
+  "excluded": [
+    "native AX role/actions/VoiceOver operation",
+    "complete state combinations/dependency extraction",
+    "physicalIME/live async/full motion",
+    "performance"
+  ]
+}

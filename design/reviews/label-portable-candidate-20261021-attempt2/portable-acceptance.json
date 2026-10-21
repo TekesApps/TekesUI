@@ -1,0 +1,20 @@
+{
+  "identity": "545ef8d70d89404f11d916f05e417404277507b07dea808aac051339544431a1",
+  "archive": "label-layout-545ef8d70d89.tar.gz",
+  "archive_sha256": "6d00adbd7a975823ad772a2fef22d925e4756f4c28c3dc036115abb5d3313630",
+  "base_identity": "2b16eaa6200fecdde9a0c615166064effb9446249cde05087d5d7c288d81d4ec",
+  "files": 476,
+  "delta_paths": 21,
+  "root_native_identity": "22caa4f3b5a3a52ac7d9c5e18db575abf70950ca05c28ea52f914293dc39ebf0",
+  "frozen_base_unchanged": true,
+  "status": "sender exact archive clean-extract passed; receiver/public pin/isolated native pending",
+  "all_source_and_locks_unchanged": true,
+  "local_dependencies_inside_extract": true,
+  "checks": "portable-checks.json",
+  "native_boundary": "native example builds on isolated source; root22caa actual native receipt remains a different identity, never relabelled as isolated native acceptance",
+  "cleanup": [
+    "     Removed 447 files, 125.9MiB total\n",
+    "     Removed 759 files, 178.6MiB total\n"
+  ],
+  "root_cache_lane_restored": true
+}

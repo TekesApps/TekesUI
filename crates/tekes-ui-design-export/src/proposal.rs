@@ -394,6 +394,17 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
         p["brand"]["config"]["brand_id"].as_str().unwrap()
     )
     .unwrap();
+    for (name, key) in [
+        ("BRAND_VERSION", "version"),
+        ("BRAND_SEED_SRGB", "seed_srgb"),
+    ] {
+        writeln!(
+            out,
+            "pub const {name}: &str = {:?};",
+            p["brand"]["config"][key].as_str().unwrap()
+        )
+        .unwrap();
+    }
     for (name, path) in [
         ("CAPTURE_WIDTH", "/layout/gallery/capture_size/0"),
         ("CAPTURE_HEIGHT", "/layout/gallery/capture_size/1"),
@@ -417,7 +428,7 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
         )
         .unwrap();
     }
-    out.push_str("/// Raw opaque sRGB token payload; use render_color to apply final-alpha contracts.\npub fn color(id:&str,theme:crate::Theme)->Option<crate::Rgba>{\nmatch(id,theme.appearance,theme.contrast){\n");
+    out.push_str("/// Raw opaque sRGB token payload; use render_color to apply final-alpha contracts.\npub fn color(id:&str,theme:crate::Theme)->Option<crate::Rgba>{\n#[cfg(feature=\"token-audit\")] crate::audit::record(\"color\",id);\nmatch(id,theme.appearance,theme.contrast){\n");
     for v in t["color"]["tokens"].as_array().unwrap() {
         let id = v["name"].as_str().unwrap();
         for (theme, _) in THEMES {
@@ -486,7 +497,7 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
         }
     }
     out.push_str("_=>raw.a,};Some(crate::Rgba::new(raw.r,raw.g,raw.b,alpha))}\n");
-    out.push_str("pub fn metric(group:&str,id:&str)->Option<f32>{match(group,id){\n");
+    out.push_str("pub fn metric(group:&str,id:&str)->Option<f32>{#[cfg(feature=\"token-audit\")] crate::audit::record(group,id);match(group,id){\n");
     for group in GROUPS.iter().filter(|g| **g != "color") {
         for v in t[group]["tokens"].as_array().unwrap() {
             let id = v["name"].as_str().unwrap();
@@ -579,7 +590,7 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
         writeln!(out, "Self::{variant}=>{id:?},").unwrap();
     }
     out.push_str("}}}\n");
-    out.push_str("pub fn text_family(id:&str)->Option<&'static str>{match id{\n");
+    out.push_str("pub fn text_family(id:&str)->Option<&'static str>{#[cfg(feature=\"token-audit\")] crate::audit::record(\"type\",id);match id{\n");
     for style in &styles {
         writeln!(
             out,
@@ -590,7 +601,7 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
         .unwrap();
     }
     out.push_str("_=>None,}}\n");
-    out.push_str("pub fn text_color(id:&str,theme:crate::Theme)->Option<crate::Rgba>{match id{\n");
+    out.push_str("pub fn text_color(id:&str,theme:crate::Theme)->Option<crate::Rgba>{#[cfg(feature=\"token-audit\")] crate::audit::record(\"type\",id);match id{\n");
     for style in &styles {
         let name = style["color"]
             .as_str()
@@ -605,7 +616,7 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
         .unwrap();
     }
     out.push_str("_=>None,}}\n");
-    out.push_str("pub fn text(id:&str)->Option<crate::TextStyle>{match id{\n");
+    out.push_str("pub fn text(id:&str)->Option<crate::TextStyle>{#[cfg(feature=\"token-audit\")] crate::audit::record(\"type\",id);match id{\n");
     for s in styles {
         writeln!(
             out,

@@ -14,6 +14,34 @@ pub struct GpuContext {
     pub(crate) queue: wgpu::Queue,
 }
 impl GpuContext {
+    /// Adopt an externally imported, single-sample 2D texture on this context's
+    /// device. Platform import and cross-process synchronization belong to the
+    /// caller. No pixels are copied or read back. wgpu validates device identity.
+    pub fn import_image(&self, texture: wgpu::Texture) -> Result<GpuImage, RenderError> {
+        if texture.dimension() != wgpu::TextureDimension::D2
+            || texture.sample_count() != 1
+            || texture.depth_or_array_layers() != 1
+            || !texture
+                .usage()
+                .contains(wgpu::TextureUsages::TEXTURE_BINDING)
+            || !matches!(
+                texture.format(),
+                wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Rgba8Unorm
+            )
+        {
+            return Err(RenderError::InvalidArgument(
+                "unsupported imported GPU image",
+            ));
+        }
+        let render_view = texture.create_view(&Default::default());
+        let sample_view = texture.create_view(&Default::default());
+        Ok(GpuImage {
+            owner: self.owner,
+            texture,
+            render_view,
+            sample_view,
+        })
+    }
     pub fn device(&self) -> &wgpu::Device {
         &self.device
     }
@@ -79,9 +107,32 @@ impl GpuImage {
         (self.texture.width(), self.texture.height())
     }
     pub fn render_format(&self) -> wgpu::TextureFormat {
-        wgpu::TextureFormat::Rgba8UnormSrgb
+        self.texture.format()
     }
     pub fn render_view(&self) -> &wgpu::TextureView {
         &self.render_view
+    }
+}
+
+/// Own a Renderer registration without borrowing the Renderer across component
+/// callbacks. Drop queues unregistration on that Renderer; its next render or
+/// explicit collection releases storage. Submitted GPU work retains its normal
+/// wgpu resource lifetime. This handle is not cloneable and cannot be rebound.
+#[derive(Debug)]
+pub struct GpuImageRegistration {
+    pub(crate) id: tekes_ui_scene::ImageId,
+    pub(crate) owner: u64,
+    pub(crate) retired: std::sync::Weak<std::sync::Mutex<Vec<tekes_ui_scene::ImageId>>>,
+}
+impl GpuImageRegistration {
+    pub fn id(&self) -> tekes_ui_scene::ImageId {
+        self.id
+    }
+}
+impl Drop for GpuImageRegistration {
+    fn drop(&mut self) {
+        if let Some(retired) = self.retired.upgrade() {
+            retired.lock().unwrap().push(self.id);
+        }
     }
 }

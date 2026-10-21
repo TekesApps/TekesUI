@@ -1,0 +1,38 @@
+{
+  "scope": "Current all-WIP real RichDialog editor/CoreText + caller-owned file adapter,3 separate processes; no pixel/native-window/hearing or production durability claim",
+  "source_identity": "8aa4c4e5668bdc0be56f2a29672b39beee2e247ccf2f4e5b23e05ce810d24853",
+  "files": 190,
+  "unchanged": true,
+  "host_bodies": "verbatim reuse of existing accepted consumer-source/src bodies; libc pin aligned with current root; no shared implementation change",
+  "binary_sha256": "a3e181ea49aae4b275ee14104bf8cb7d6b9d10a411aecba12ef4f3cff5236b9d",
+  "phases": [
+    {
+      "editor": "Newer editor draft retained 中文😀",
+      "mode": "prepare",
+      "pending_snapshot": "Frozen first request 中文😀",
+      "pid": 6197,
+      "save_failure_retained_editor_and_file": true,
+      "version": 2
+    },
+    {
+      "ack": 1,
+      "editor": "Newer editor draft retained 中文😀",
+      "late_and_duplicate_ack_preserved_newer_editor": true,
+      "mode": "retry-ack",
+      "pending": 0,
+      "pid": 6205,
+      "same_snapshot_key_request": true,
+      "version": 2
+    },
+    {
+      "ack": 1,
+      "editor": "Newer editor draft retained 中文😀",
+      "mode": "verify",
+      "pid": 6212,
+      "reconstructed_from_caller_file": true,
+      "version": 2
+    }
+  ],
+  "cleanup": "cleanup.log; executable/package removed after fresh complete unused check, source/file/evidence/shared cache retained",
+  "performance": "not measured"
+}

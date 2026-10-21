@@ -1,0 +1,74 @@
+{
+  "source": "physical human input; full native log retained",
+  "candidate": "4a02d30bd65c1117f433a874a7c421492bf76ad101e92f7260ecd470323554a1",
+  "Enter": {
+    "active": true,
+    "event": "TextKey(Finished { context: TextKeyContext { id: 5, key: KeyEvent { kind: Down, key_code: 36, characters: \"\\r\", characters_ignoring_modifiers: \"\\r\", modifiers: Modifiers { shift: false, control: false, alt: false, command: false, caps_lock: false, function: false }, is_repeat: false }, composing_at_start: true }, input_context_handled: Some(true), disposition: TextDispatched, text_callbacks: 1, command_callbacks: 0 })",
+    "focused": 4,
+    "items": 20,
+    "marked": null,
+    "ms": 120446,
+    "native": "app_active=true key=true first_responder=true context=true current=true matches=true client=true source=Some(\"com.apple.inputmethod.SCIM.ITABC\")",
+    "selection": {
+      "end": 2,
+      "start": 2
+    },
+    "stage": "after",
+    "text": "ni"
+  },
+  "Space": {
+    "active": true,
+    "event": "TextCommit { text: \"你\", replacement: None }",
+    "focused": 4,
+    "items": 20,
+    "marked": null,
+    "ms": 131355,
+    "native": "app_active=true key=true first_responder=true context=true current=true matches=true client=true source=Some(\"com.apple.inputmethod.SCIM.ITABC\")",
+    "selection": {
+      "end": 1,
+      "start": 1
+    },
+    "stage": "after",
+    "text": "你"
+  },
+  "Tab": {
+    "active": true,
+    "event": "TextKey(Finished { context: TextKeyContext { id: 40, key: KeyEvent { kind: Down, key_code: 48, characters: \"\\t\", characters_ignoring_modifiers: \"\\t\", modifiers: Modifiers { shift: false, control: false, alt: false, command: false, caps_lock: false, function: false }, is_repeat: false }, composing_at_start: true }, input_context_handled: Some(true), disposition: TextDispatched, text_callbacks: 1, command_callbacks: 0 })",
+    "focused": 4,
+    "items": 20,
+    "marked": {
+      "end": 2,
+      "start": 0
+    },
+    "ms": 256018,
+    "native": "app_active=true key=true first_responder=true context=true current=true matches=true client=true source=Some(\"com.apple.inputmethod.SCIM.ITABC\")",
+    "selection": {
+      "end": 2,
+      "start": 2
+    },
+    "stage": "after",
+    "text": "nī"
+  },
+  "Escape": {
+    "active": true,
+    "event": "TextKey(Finished { context: TextKeyContext { id: 41, key: KeyEvent { kind: Down, key_code: 53, characters: \"\\u{1b}\", characters_ignoring_modifiers: \"\\u{1b}\", modifiers: Modifiers { shift: false, control: false, alt: false, command: false, caps_lock: false, function: false }, is_repeat: false }, composing_at_start: true }, input_context_handled: Some(true), disposition: TextDispatched, text_callbacks: 1, command_callbacks: 0 })",
+    "focused": 4,
+    "items": 20,
+    "marked": null,
+    "ms": 262874,
+    "native": "app_active=true key=true first_responder=true context=true current=true matches=true client=true source=Some(\"com.apple.inputmethod.SCIM.ITABC\")",
+    "selection": {
+      "end": 0,
+      "start": 0
+    },
+    "stage": "after",
+    "text": ""
+  },
+  "result": "four physical Pinyin paths passed; no newline/send or focus escape",
+  "not_covered": [
+    "controlled external sync during physical composition",
+    "candidate popup geometry under resize",
+    "VoiceOver pending"
+  ],
+  "performance": "not run"
+}

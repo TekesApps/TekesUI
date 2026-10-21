@@ -1,0 +1,21 @@
+{
+  "status": "scoped native acceptance passed; window and copied runtime cleaned",
+  "implementation": "two existing retained production controls plus thin WindowHandler; no new runtime library or UI framework",
+  "source_manifest": "native-source-manifest.json",
+  "build_checks": "native-checks-retry.json",
+  "runtime": "native-runtime.json",
+  "process_confirmed_live": [
+    8226
+  ],
+  "case_count": 6,
+  "acceptance": "native/acceptance.json",
+  "first_attempt": "native-attempt1 retained; own help-token name caused startup failure; correction is native-host-only and does not affect prior GPU images",
+  "protection": {
+    "root_inputs_unchanged": 562,
+    "prior_text_app": "retained, not replaced"
+  },
+  "cleanup": "cache package and copied runtime cleaned; exact manifests and events retained",
+  "publication": "none",
+  "VoiceOver": "not enabled",
+  "performance": "not measured"
+}

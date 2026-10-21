@@ -38,6 +38,9 @@
     },
     "evidence": {
       "$ref": "#/evidence"
+    },
+    "current_component_capabilities": {
+      "$ref": "./gallery/capabilities.json"
     }
   },
   "specs": {
@@ -103,18 +106,27 @@
       "$ref": "../crates/tekes-ui-gallery/src/gallery/mod.rs"
     },
     "navigation": {
-      "pages": [
-        "primitives",
-        "tokens",
-        "static-text"
-      ],
-      "selection": [
-        "mouse click",
-        "Up/Down without wrapping",
-        "Pages menu shortcuts Command+1/2/3"
-      ],
-      "selection_changes_update": "Scene, title and menu check state only when actual state changes.",
-      "search": "Not part of the approved three-page baseline; future additions must preserve existing appearance."
+      "historical_baseline": {
+        "pages": [
+          "primitives",
+          "tokens",
+          "static-text"
+        ],
+        "selection": [
+          "mouse click",
+          "Up/Down without wrapping",
+          "Pages menu shortcuts Command+1/2/3"
+        ],
+        "selection_changes_update": "Scene, title and menu check state only when actual state changes.",
+        "search": "Not part of the approved three-page baseline; future additions must preserve existing appearance.",
+        "policy": "Historical three-page snapshot only; current Gallery routes are driven by the workbench registry."
+      },
+      "current_registry": {
+        "$ref": "./gallery/workbench.json"
+      },
+      "current_capabilities": {
+        "$ref": "./gallery/capabilities.json"
+      }
     },
     "redraw_policy": [
       "Hover entering or leaving a row can redraw.",

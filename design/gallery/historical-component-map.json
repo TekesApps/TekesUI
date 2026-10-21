@@ -1,0 +1,353 @@
+{
+  "format": "tekesui-historical-component-map/1",
+  "historical_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json",
+  "scope": "Explicit identity and partial-overlap audit; never an implementation or experience pass.",
+  "entries": [
+    {
+      "historical": "tui.text",
+      "current": [
+        "tui.text"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.icon",
+      "current": [
+        "tui.icon"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.separator",
+      "current": [
+        "tui.separator"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.stack",
+      "current": [
+        "tui.stack"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.grid",
+      "current": [
+        "tui.grid"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.split-view",
+      "current": [
+        "tui.split-view"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.scroll-area",
+      "current": [
+        "tui.scroll-area"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.button",
+      "current": [
+        "tui.button"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.icon-button",
+      "current": [
+        "tui.icon-button"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.link",
+      "current": [
+        "tui.link"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.checkbox",
+      "current": [
+        "tui.checkbox"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.radio-group",
+      "current": [
+        "tui.radio-group"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.switch",
+      "current": [
+        "tui.switch"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.text-field",
+      "current": [
+        "tui.text-field"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.text-area",
+      "current": [
+        "tui.text-area"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.search-field",
+      "current": [
+        "tui.search-field"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.combo-box",
+      "current": [
+        "tui.combo-box"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.slider",
+      "current": [
+        "tui.slider"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.tabs",
+      "current": [
+        "tui.tabs"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.list",
+      "current": [
+        "tui.list"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.tree",
+      "current": [
+        "tui.tree"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.breadcrumb",
+      "current": [
+        "tui.breadcrumb"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.menu",
+      "current": [
+        "tui.menu"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.tooltip",
+      "current": [
+        "tui.tooltip"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.popover",
+      "current": [
+        "tui.popover"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.dialog",
+      "current": [
+        "tui.dialog"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.toast",
+      "current": [
+        "tui.toast"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.banner",
+      "current": [
+        "tui.banner"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.status-badge",
+      "current": [
+        "tui.status-badge"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.progress",
+      "current": [
+        "tui.progress"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.empty-state",
+      "current": [
+        "tui.empty-state"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.selection-surface",
+      "current": [
+        "tui.text"
+      ],
+      "relationship": "partial-overlap",
+      "note": "Current TextSurface provides selection in one plain-text surface. Cross-node rich-document selection from SelectionSurface remains unimplemented; it was not silently merged or accepted."
+    },
+    {
+      "historical": "tui.markdown",
+      "current": [
+        "tui.markdown"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.code-block",
+      "current": [
+        "tui.code-block"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.diff-view",
+      "current": [
+        "tui.diff-view"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.data-table",
+      "current": [
+        "tui.data-table"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.chart",
+      "current": [
+        "tui.chart"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.command-palette",
+      "current": [
+        "tui.command-palette"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.segmented-control",
+      "current": [
+        "tui.segmented-control"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    },
+    {
+      "historical": "tui.disclosure",
+      "current": [
+        "tui.disclosure"
+      ],
+      "relationship": "same-id",
+      "note": "Stable identity only; the historical planned API and required states are not asserted implemented by this mapping."
+    }
+  ],
+  "current_additions": [
+    {
+      "current": "tui.field",
+      "note": "Shared Field metadata and FieldView; editor state remains in TextSurface/TextInput."
+    },
+    {
+      "current": "tui.number-field",
+      "note": "Existing bounded numeric model and view; editable numeric-text gaps remain documented."
+    },
+    {
+      "current": "tui.select",
+      "note": "Fixed-option model/view, distinct from editable ComboBox."
+    },
+    {
+      "current": "tui.skeleton",
+      "note": "Static loading placeholder through existing SkeletonView."
+    },
+    {
+      "current": "tui.surface",
+      "note": "Semantic surface and bordered Panel variant, using the existing public SurfaceView."
+    },
+    {
+      "current": "tui.toolbar",
+      "note": "Existing action-group Toolbar/ToolbarView; not window-level Toolbar architecture."
+    }
+  ]
+}

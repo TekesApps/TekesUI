@@ -1,0 +1,38 @@
+{
+  "status": "implemented; native/delivery pending",
+  "public_tests": {
+    "item-api-final": 16,
+    "controls-final": 426,
+    "full-consumer": 208
+  },
+  "strict_Clippy": [
+    "controls all targets",
+    "Gallery all targets",
+    "independent consumer all targets/token audit",
+    "owned GPU host all targets"
+  ],
+  "GPU_cases": 48,
+  "GPU_frames": 240,
+  "GPU": "gpu-root-gutter/result.json:48cases240frames,whole rootfocusring retained",
+  "fixtures": "old no-root-gutter GPU images retained, final uses same original root inset as native host",
+  "actual_token_probes": 17,
+  "bounded_cases": 6432,
+  "token_complete": false,
+  "tokens_sets_api_values_unchanged": true,
+  "native": {
+    "identity": "43ea9e62734840927f121eb76d91bf8895bfa9169b3bc6705d6df6b236dac079",
+    "receipt": "native-acceptance.json",
+    "active_checkpoints": 22,
+    "animation_phase_frames": 7,
+    "scope": "tool native original editor/focus/directed selection/undo,real actions/pointer/wheel,clipping,narrow+large type andReducedMotion; no physicalIME/hearing claim"
+  },
+  "remaining": [
+    "new immutable isolated candidate and independent actual AgentKit integration",
+    "matched ClientKit product-page experience",
+    "physical IME on final consumer if required; current preedit proof is public/GPU",
+    "public exact source/CI under separate authorization"
+  ],
+  "cleanup": "native-cleanup.json: own app,exact test outputs,consumer andGPU packages cleaned; all source/evidence/frozen candidates and latest common framework cache kept",
+  "performance": "not measured",
+  "Git": "no commit/push/tag/Issue closure"
+}

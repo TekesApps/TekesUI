@@ -1531,7 +1531,24 @@ mod tests {
             perf.resize(width, height);
             perf.gallery.build_scene(&mut Scene::new());
             let regular = tekes_ui_tokens::Spacing::Regular.value();
+            let mut text = crate::gallery::text::TextEngine::new();
+            let footer = ["Append paragraph", "Return to latest"]
+                .into_iter()
+                .map(|label| {
+                    tekes_ui_controls::Button::measure(
+                        &mut text,
+                        label,
+                        (width - crate::gallery::layout::PAGE_CONTENT.min_x()) * 0.5
+                            - regular * 0.5,
+                        tekes_ui_controls::ButtonSize::Sm,
+                        tekes_ui_tokens::proposal::TextRole::UiBody,
+                    )
+                    .height
+                })
+                .fold(0.0_f32, f32::max);
             let expected = height
+                - footer
+                - regular
                 - crate::gallery::layout::PAGE_CONTENT.min_y()
                 - tekes_ui_tokens::Spacing::Section.value()
                 - tekes_ui_tokens::proposal::TextRole::UiHeading

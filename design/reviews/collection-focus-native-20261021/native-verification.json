@@ -1,0 +1,61 @@
+{
+  "format": "collection-native-review/1",
+  "source_unchanged": true,
+  "binary_sha256": "11f0371eb96b9c4db0b651470721345ce7dd9374d8a5a4d2824c9e70a92255c6",
+  "display": "U2790B @2",
+  "disabled_restore_fresh_focus": [
+    {
+      "family": "List",
+      "pass": true,
+      "sequences": [
+        19,
+        24,
+        29
+      ]
+    },
+    {
+      "family": "Tree",
+      "pass": true,
+      "sequences": [
+        37,
+        42,
+        47
+      ]
+    },
+    {
+      "family": "TableRow",
+      "pass": true,
+      "sequences": [
+        55,
+        60,
+        65
+      ]
+    },
+    {
+      "family": "TableHeader",
+      "pass": true,
+      "sequences": [
+        73,
+        78,
+        83
+      ]
+    }
+  ],
+  "chart_fresh_focus": {
+    "pass": true,
+    "sequences": [
+      88,
+      93
+    ]
+  },
+  "actual_minimize_inactive_late_focus": {
+    "pass": true,
+    "sequence": 102,
+    "selection_preserved": 1
+  },
+  "reactivation": "pending actual system activation; visible restoration is not acceptance",
+  "pointer_and_ancestor_clip": "pending",
+  "VoiceOver": "off; not run",
+  "ClientKit_whole_visual": "not accepted",
+  "performance": "not measured"
+}

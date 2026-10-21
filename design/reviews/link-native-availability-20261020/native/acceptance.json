@@ -1,0 +1,37 @@
+{
+  "status": "scoped direct Link availability native acceptance passed and cleaned",
+  "result": "result.json",
+  "operator": "operator-receipt.json",
+  "source": "../source-manifest.json",
+  "signed_identity": "../runtime.json",
+  "physical_chains": [
+    {
+      "down": 68,
+      "native_escape": 69,
+      "old_release": 71,
+      "fresh_down": 73,
+      "fresh_release": 74,
+      "old_value": 0,
+      "fresh_value": 1,
+      "active_through_chain": true,
+      "parent_key_continued": true
+    },
+    {
+      "down": 75,
+      "native_escape": 76,
+      "old_release": 78,
+      "fresh_down": 80,
+      "fresh_release": 81,
+      "old_value": 1,
+      "fresh_value": 2,
+      "active_through_chain": true,
+      "parent_key_continued": true
+    }
+  ],
+  "scope": "direct public Link; native pointer owner cancellation across observed disable without intervening paint; parent key free, stale release ignored, fresh click callback delivered",
+  "AX": "Link semantic role remains missing; this harness exports no surrogate interactive role and does not accept AX/VoiceOver",
+  "Gold7": "G5/G7 bounded temporal behavior; visual Link semantics unchanged and native text/frame inspected; whole-component assistive/motion/page acceptance remains",
+  "cleanup": "closed/runtime removed; code/288GPUframes/logs retained",
+  "performance": "not measured",
+  "publication": "none"
+}

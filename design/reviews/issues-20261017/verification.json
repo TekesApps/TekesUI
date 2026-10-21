@@ -1,0 +1,113 @@
+{
+  "format": "tekesui-remediation-verification/1",
+  "date": "2026-10-17",
+  "source_manifest": {
+    "path": "source-manifest.json",
+    "sha256": "66f562fae7e4ae4d75a27b1a74d06da9baaf27d57027ad0e5941ca91bd7d0aa9",
+    "frozen_inputs_unchanged_after_checks": true
+  },
+  "automated": {
+    "workspace": {
+      "command": "cargo test --workspace --release --locked -- --skip gpu_time_agrees_with_wall_clock_on_a_heavy_frame --skip cpu_segments_are_consistent_and_frames_are_numbered",
+      "exit": 0,
+      "passed": 867,
+      "failed": 0,
+      "ignored": 1,
+      "filtered": 2,
+      "log": "workspace-tests-final.log"
+    },
+    "fmt": {
+      "command": "cargo fmt --all -- --check",
+      "exit": 0
+    },
+    "clippy": {
+      "command": "cargo clippy --workspace --all-targets --release --locked -- -D warnings",
+      "exit": 0,
+      "log": "clippy-final.log"
+    },
+    "static_checks": "static-checks.json (19 checks, all exit 0); latest capabilities --check revalidated after final test addition",
+    "projection_cli_generate_and_check": {
+      "exit": 0,
+      "output": "/tmp/tekesui-handoff-20261017/tokens.rs"
+    }
+  },
+  "gpu": {
+    "method": "real headless GPU rendering, not native input acceptance",
+    "before_pngs": 520,
+    "final_pngs": 1646,
+    "state_variant_frames": 1104,
+    "state_variant_components": 38,
+    "state_variant_routes": 46,
+    "state_variant_manifest": "visual-after-final/state-pages/manifest.json",
+    "themes": [
+      "dark-increased",
+      "dark-standard",
+      "light-increased",
+      "light-standard"
+    ],
+    "backing_scale": 1.0,
+    "positions": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "visual_review_samples": [
+      "Light Settings before/after",
+      "Dark narrow Settings",
+      "Light increased contrast Button state matrix"
+    ],
+    "result": "automated raster/geometry checks passed; human visual review is sampled only"
+  },
+  "native": {
+    "method": "AppKit selftest actions + real window captures; not physical keyboard/real IME/VoiceOver",
+    "command": "TEKES_SELFTEST=workbench-extended TEKES_SELFTEST_OUT=.../native-clean-check cargo run -p tekes-ui-gallery --locked",
+    "exit": 0,
+    "pngs": 34,
+    "text_assertions_passed": 4,
+    "text_assertions_failed": 0,
+    "log": "native-clean-check.log",
+    "source_identity": "gpu-native-source-manifest.json; final change only adds the ComboBox regression test, production code unchanged",
+    "prior_failure": "native-failure.log retains earlier text=None after ComboBox submit; clean local build then complete script passed. Do not infer physical/native matrix acceptance from this rerun."
+  },
+  "unverified": [
+    "Full 45-component and all page human visual acceptance",
+    "Physical @1x/@2x display/brand/size matrix",
+    "Physical keyboard and actual Chinese/Japanese IME candidate windows",
+    "macOS control semantic tree and VoiceOver (dependency #5)",
+    "Independent consumer/public composition A-F (dependency #14)"
+  ],
+  "performance": {
+    "status": "not measured by explicit user scope",
+    "excluded_tests": [
+      "gpu_time_agrees_with_wall_clock_on_a_heavy_frame",
+      "cpu_segments_are_consistent_and_frames_are_numbered"
+    ]
+  },
+  "wip_protection": {
+    "main": {
+      "original_wip_file_count": 21,
+      "missing": [],
+      "changed": [],
+      "recovery_archive": "/tmp/tekesui-handoff-20261017/main-wip.tar.gz"
+    },
+    "gallery": {
+      "original_wip_file_count": 1203,
+      "missing": [],
+      "changed": [
+        "crates/tekes-ui-design-export/src/effects.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+        "design/tokens.json"
+      ],
+      "recovery_archive": "/tmp/tekesui-handoff-20261017/gallery-wip.tar.gz"
+    }
+  },
+  "git_and_github": {
+    "committed": false,
+    "pushed": false,
+    "tag_created": false,
+    "issues_closed": false,
+    "issues_created": false,
+    "published": false,
+    "remote_ci": "Only existing failure run 39001117835 on bc3de79; no new remote run or remote recovery claimed"
+  }
+}

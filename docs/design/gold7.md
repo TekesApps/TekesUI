@@ -105,3 +105,69 @@ Button、Switch、Disclosure 的实际接线、时长、失活、Reduced Motion 
 本批的 [源码与验证收据](../../design/reviews/gold7-20261017/alignment-pass2/receipt.json) 保留 743 项 Rust 测试通过、1 项既有可选本地图标测试忽略，以及严格 Clippy、Gallery 构建、纯 Rust、格式、DS、Gold7 23 项检查器回归和静态颜色检查日志。GPU 留下三种生产浮层 × 四主题 × 1×/2× 的 24 张图、真实控件起始/中间/结束帧 4 张及焦点图 8 张。首次整合时发现的 header prepass 与新焦点 gutter 不一致失败也保留，修正测量后重新运行完整检查。
 
 最终 app 与本轮 Cargo 二进制核对一致；原生窗口观察了 Button 激活与左侧 Tab 环、Menu 方向键与投影、Dialog 居中动作与 Escape 焦点恢复、Switch 指针/Space，以及 Disclosure 点击展开/Space 收起。当前 Gallery 停留在 Disclosure。未把这些有限样本扩大为全部组件、所有屏幕、VoiceOver、真实 IME 或完整 Gold7 通过；性能保持暂停。
+
+### 继续整改：浮层生命周期、Split 原生事件与阅读/草稿保护
+
+本批仍为纯 Rust，不新增公开组件或导航入口。浮层停稳后的颜色、字体、尺寸和 JSON elevation 保持原值；`overlay_presence` 使用 JSON 的 150ms 标量透明度过渡，不增加位移或缩放。Menu/Dialog/Popover 关闭时立即结束命中、键盘占用并恢复既有焦点，绘制生命周期单独结束；重开承接当前进度，Reduced Motion 直接到终点。每个退场帧重新生成文字，不能跨帧复用旧 atlas glyph；页面卸载、上下文变化与无效布局清理旧呈现。Select、ComboBox、CommandPalette 继续复用真实 MenuView。
+
+当前透明度逐图元应用，不是独立离屏层合成；背景、文字和阴影叠加的中间帧不等价于整体图层淡出。这是本批明确的渲染边界，静止端点不变；四主题真实 GPU 中间帧单独检查，不据此宣称已实现通用合成层。
+
+Split 的 Gallery 适配必须接收真实 `Left Dragged`，不能用 `Moved` 模拟原生拖动通过测试。捕获中的拖动与释放跨入侧栏仍交给原组件；无按键移动揭示丢失释放时回滚，失活与无效布局取消。分隔条双击、获得焦点后的 Enter/Space 使用同一个均分复位入口。受限窗口与媒体平移的缺口分别保留。
+
+既有 Text/ScrollArea 预览增加真实 Button 操作：`Append paragraph` 只追加确定性段落，`Return to latest` 显式开启跟随。初始仍显示文首；向上滚动、正文交互退出跟随，手动到达底部不会自动开启。追加与容器重排保留 UTF-16 位置及行内偏移；当前夹具是 append-only，不承诺任意替换或前插都能保持身份。阅读策略由应用适配层持有，生产 TextSurface/ScrollArea 不承担业务跟随策略。
+
+既有 Forms & validation 可显式开启持久草稿夹具：启动时设置 `TEKESUI_GALLERY_DRAFT_FIXTURE` 为已有目录下的绝对 JSON 文件路径。默认不持久化，不扫描用户目录。真实输入与勾选写入同一原子快照，包含草稿、不可变 outbox 修订和按修订确认；`Resolve` 控制失败/成功，`Interrupt & recover` 重新打开存储。提交前先保存，旧修订确认不能清掉新输入，marked preedit 不作为已提交草稿保存。此为单写入者、本地模拟 transport，不声称真实网络服务或断电验收；单元测试显式使用临时目录，不受运行环境路径影响。
+
+半径审计确认共享 Canvas/Panel/Floating/Dialog/Code 按角色映射；Row/Column 是独立 token，Column 使用较少本身不构成误用。历史 Showcase 明确是 Quality lab 的固定渲染夹具，应保留，不能误当成规范组件页的重复实现并删除。后续继续逐页原生排版、适用状态、物理 IME 与 VoiceOver 核验；媒体缩放/平移因“不加新组件”保留缺口。CPU、掉帧及 120Hz/8.33ms 本批不测。
+
+本批最终验证见 [第三批收据](../../design/reviews/gold7-20261017/alignment-pass3/receipt.json)：全工作区 release 测试 **791 通过、0 失败、1 既有可选测试忽略**，严格 Clippy、release Gallery 构建、格式、纯 Rust、DS 和 Gold7 机械检查及检查器回归通过。新增浮层生命周期真实 GPU 图片为 **3 种浮层 × 4 主题 × 6 时刻 = 72 张**，包含退场前清空 atlas 后重建字形、祖先裁切及完全退出后无残留。保留首次整合时三项阅读几何失败日志；短窗口根据实测行高让出冗余标题，修复后重跑全套。
+
+最终打包可执行字节与 Cargo 构建核对一致。原生窗口完成 ScrollArea 向上阅读后追加不抢位置及显式返回最新；Dialog 点击打开、Tab 焦点和 Escape 关闭恢复；表单真实输入、持久排队、中断恢复、同修订重试确认，并退出整个进程后重新启动，恢复 `Gold7 Studio` 与已确认修订。原生截图单独保留；Split 本批的完整链路由实际 Gallery 事件回归覆盖，尚未扩大为物理手势全面验收。最终 Gallery 停留 Forms & validation。未提交、推送或新增标签；0.1.0 保持原提交。
+
+### 已有组件状态与页面逐项检查（第四批）
+
+本批沿用现有 JSON 外观、组件和注册入口。45 个现有组件在 `gold7-alignment.json#/component_reviews` 分别登记实际提供的 Story、自动几何检查范围与未验收项；未实现的 planned 组件不冒充本批完成。几何扫描覆盖所有已实现规范入口及其已公布 Story：四主题、常规宽度/字号与窄容器/150% 字号。检查只证明场景存在及独立动作命中框不重叠，不能代替全部文字可读性、操作或读屏验收。
+
+状态整改包括：失活 Button/Checkbox 拒绝新输入，Slider/Radio 无效布局结束旧状态，Switch 指针与空格独占激活，Radio 从真实焦点导航并使用禁用文字语义；Slider 步长舍入不会超出范围，极端有限范围仍生成有限几何。IconButton/Disclosure/Select 清理失效命中，Breadcrumb 内容缩短清理越界按压，Tabs 隐藏后取消捕获，Select 重开显露原选中项，Link 失活清理旧 hover。默认尺寸、字号、颜色与视觉 token 不作重调。
+
+List/Tree/Table/Chart 的逻辑键盘目标与指针裁剪分开：有效屏外内容保留逻辑几何与键盘焦点，Home/End 等输入可由宿主显露；不输出屏外绘制或指针命中。Tree 的“可见”层级指已展开节点，不等于恰在 viewport 内。无效/零尺寸或卸载仍取消旧状态。集合页面的 Story tabs、Reset 等普通按钮继续使用通用焦点显露路径。
+
+页面层使用共享测量行换行属性和边界动作，Settings 的连续控件跟随真实高度，Master-detail 的行高/滚动步长来自内容，Separator 在窄容器重新排布。文档自然底部由实际渲染反馈提供；固定 preview/编辑器 viewport 独立裁切，禁止用会改变活组件状态的试绘去测量。检查连续构建的 extent 稳定性及容器变宽后的回缩，防止日志留白反复把文档撑长。
+
+Tabs/Menu/Dialog/Select 状态页直接构造生产视图；状态矩阵明确是视觉比较。矩阵局部借用静态呈现上下文，完整恢复宿主原有时钟和 Reduced Motion，不让每帧新实例反复从透明入场，也不改变真实 Playground 的动效。输入矩阵不再列出未接入的 hover/pressed；IconButton/Link/Disclosure 不再列不成立的 selected+hover。Radio 矩阵是一选项的实际组视图状态样本，三项互斥与键盘导航另由真实 Playground/事件测试核验。
+
+只有 Button、Checkbox、TextField、TextArea、SearchField、Form、Settings、Async 保留当前有实际内容的 Edge cases；其余入口尚未提供专用边界 Story 时不展示同名 Playground。未给每个组件补齐所有专用状态页，不把“不提供”误报成全部状态已验收。历史渲染校准夹具仍保留。
+
+另确认一个长期代码缺口：当前 macOS `TekesView` 只实现文本输入服务，没有把各个 Rust 控件映射成 role/name/value/children/focus 的 Accessibility 节点。系统 Reduced Motion/增强对比度偏好不等于 AX 桥接；该项应记录为实现缺失，后续接线后再作 VoiceOver 实验。物理 IME、物理显示器/倍率与全部原生组合体验继续分别留待核验。本批不运行 CPU/掉帧/120Hz 性能测量。
+
+本批最终证据见 [第四批收据](../../design/reviews/gold7-20261017/alignment-pass4/receipt.json)：全工作区 release 测试 **819 通过、0 失败、1 既有可选测试忽略**，按本轮约束显式过滤两项 GPU/CPU 计时测试。严格 Clippy、Gallery 构建、格式、纯 Rust、DS、Gold7 机械检查及检查器回归均通过。68 个已实现规范入口共 **1704 组几何检查**，另有 **144 张重点页面真实 GPU 图片**；45 个组件分别登记范围。几何检查与实际事件回归分别留证，不互相替代。
+
+最终打包可执行字节与 Cargo 构建核对一致，已启动最新 Gallery。原生窗口仅补充抽查 Tabs 与 Menu 状态矩阵的文字、状态及真实浮层显示，不能扩大为全部组件原生验收；当前 AX 树只有窗口及菜单，也没有因此宣称读屏通过。未提交、推送或新增标签；性能继续暂停。
+
+### 适用状态、窄窗与大字号（第五批）
+
+继续使用现有 JSON token，不新增公开组件，不改常规配色、边界和字体。基础状态矩阵按真实控件测量高度与 Caption 换行；Checkbox 使用完整标签行，补全 checked、mixed、pressed、focus-visible 与适用 disabled 组合。Field 样本是生产 FieldView 包裹真实输入；TextArea 使用连续的三行文本。扩展矩阵用生产 Slider、Switch、Link、Disclosure、IconButton 及 SegmentedControl，后者获得独立 states Story。生产 SegmentedControl 会保持选中项可用，所以 disabled 样本明确是禁用同组其他项，不伪造 selected+disabled。矩阵是视觉夹具，真实交互仍在 Playground。
+
+真实 GPU 抽查发现并修正 Caption 测量角色与绘制不一致的截字、矩阵左侧焦点环裁切、分段控件误用单按钮 220pt 宽度上限。反馈组件中，窄 Banner/Toast 将关闭动作移到正文后；Tooltip/Popover 锚点按钮、说明、StatusBadge 网格及 EmptyState 按实际文案度量。受限浮层仍必须 clamp 到真实 viewport，不承诺 32pt 视口能完整显示其内容。
+
+页面文档 bounds 与实际 preview viewport 分离：反馈内容不再被永久压在短 viewport 中，测量后的正文底部决定事件日志位置。Banner/Toast 回归通过真实滚动找到关闭按钮并发送指针按下/释放，检查模型关闭和事件。不能要求 Toast 关闭按钮恰在整个文档最底部仍可见，因为后面还有计时器、说明和日志；保留该首次失败并修正为可达性操作验收。CodeBlock/DiffView 的文字宽度扣除双侧内边距，测量和绘制一致，窄 CodeBlock 另保留真实 GPU 图。
+
+新确认的待办：通用 Tab 顺序当前来自可见命中项，尚未有独立于指针裁剪的全页逻辑焦点注册；普通屏外动作仍需先滚动，再参与 Tab/点击。不能用测试直接设置焦点冒充已解决。集合方向键屏外显露与此分开；macOS 控件 AX 桥接、物理 IME、VoiceOver 和完整原生组合验收仍未完成。性能继续暂停。
+
+第五批最终验证见 [收据](../../design/reviews/gold7-20261017/alignment-pass5/receipt.json)：全工作区 **827 通过、0 失败、1 既有可选测试忽略**；两项 GPU/CPU 计时测试按本轮约束过滤。严格 Clippy、Gallery 构建、格式、纯 Rust、DS、Gold7 机械检查和检查器回归通过。68 个已实现规范入口共 **1712 组几何检查**，**520 张完整页面 GPU 图及 1 张窄 CodeBlock 图**。其中只对重点图进行人工放大复核，不能把图片数量解释为每图均人工验收；页面 top/end 之外另捕获 Banner 所在中段。
+
+最终打包与 Cargo 二进制核对一致。原生窗口缩至 720pt 宽（系统最小外窗高 512pt）、150% 字号，复查 Checkbox 状态页完整焦点环与文字；实际指针勾选、Space 再切换后标签仍在。Banner 通过实际页面滚动完整显示，指针关闭后事件日志出现 `banner: dismissed`。保留原生抽查前发现的焦点环裁切、截图夹具倍率误用和首次测试/Clippy 失败记录；修复后重跑。Gallery 保持运行，未提交、推送或新增标签；不宣称全套 Gold7 已完成。
+
+### 第六批：完整逻辑焦点与剩余适用状态
+
+本批把指针命中与键盘顺序分开。每次真实布局登记完整 frame、挂载状态、可用性及漫游分组；指针仍只使用裁剪后的命中区。屏外但有效的控件可参与 Tab，无效尺寸、卸载和禁用控件不参与。Tab 以注册的阅读顺序前进，选中项为空的漫游组回退到第一个可用项；DataTable 的表头与数据行是两个独立组。显露使用最后一次布局的文档原点，避免连续按键尚未重绘时重复计算滚动差值。
+
+Gallery 的作用域顺序为搜索框、过滤结果中的侧栏当前项、页面，再回搜索框；Shift+Tab 对称反向。侧栏内用方向键漫游。Story 顶部操作与 Motion、Text、ScrollArea、Icon 搜索、品牌预览中的真实控件交接，局部末尾不再自行循环。可选择的只读正文允许键盘进入，静态文字不会冒充输入框。AppKit 编辑状态的 `insertTab:` / `insertBacktab:` 与普通按键走同一调度入口，组合输入保持原输入服务所有权。Dialog 保留模态焦点约束；非模态菜单的 Tab 关闭与继续移动另按组件契约处理。
+
+适用状态补到 Toolbar、NumberField、ComboBox、Breadcrumb、CommandPalette、List、Tree、DataTable、Chart、Tooltip、Popover、Toast、Banner 和 EmptyState；反馈变体覆盖已有模型正式支持的种类。矩阵使用生产 view 与隔离 fixture，不改 Playground 模型、不登记交互命中，不将模拟 focus-visible 当作真实焦点测试。被动的 StatusBadge、Progress 不增加虚假的 hover/pressed。NumberField 数值使用完整槽位居中，保留原字号、尺寸与语义颜色。
+
+本批保留首次全量失败与后续回归日志。修复固定高度推算造成的 TextArea 越界、Tab 退出未清理 Switch 按压、原生搜索与页面双焦点、ComboBox 指针输入漏同步逻辑 owner；恢复内部文本预览原有路由映射，原三条文本回归的路由与尺寸断言保留。原生放大复查还修复侧栏与文本预览的焦点环裁切，真实 ancestor viewport 与逻辑内容布局分开。性能验收仍暂停，不能据本批更新声称 AX、物理 IME、VoiceOver 或全部原生组合已通过。
+
+第六批最终证据见 [收据](../../design/reviews/gold7-20261017/alignment-pass6/receipt.json)：全工作区 release 测试 **857 通过、0 失败、1 既有可选测试忽略**，按本轮约束过滤两项 GPU/CPU 计时测试。严格 Clippy、构建、格式、纯 Rust、DS、Gold7 机械检查及检查器回归通过。68 个已实现入口共 **1864 组几何检查**；38 个组件的 46 条状态/变体路由在四主题、两种窗口/字号与上中下滚动位置生成 **1104 帧真实 GPU 输出**，另保留既有页面与独立矩阵捕获。完整生成图留在 target，仓库存完整清单、哈希、检查日志与人工复核样张；仅重点样张经过人工检查，不能把数量当作每图人工验收。
+
+原生窗口抽查 720pt 宽、150% 字号：Settings 正反 Tab、真实输入后的屏外动作显露；侧栏末项完整焦点环；Search 点击的单一焦点；ComboBox 指针输入、方向键提交及 Tab 关闭与后继；Dialog Tab 约束与 Escape 恢复；Motion 屏外按钮显露及 Space 激活；恢复后的单/多行文本预览与文末内部滚动。最终修复文本焦点环后再次打包，核对 Cargo 与 app 除签名元数据外的可执行内容一致，并原生复查四边环与底部布局。Gallery 保持运行，未提交、推送或新增标签；其余 AX、物理 IME、VoiceOver 及完整原生组合验收仍明确未测。

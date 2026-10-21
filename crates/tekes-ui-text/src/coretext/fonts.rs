@@ -122,6 +122,18 @@ impl CoreTextFonts {
 
     /// 登记一个字体并返回它的 `FontKey`；已登记的身份返回原来的键。
     pub fn key_for(&self, font: &CTFont) -> FontKey {
+        // Registered fonts are retained by this registry: pointer identity is
+        // safe for the common repeated CTRun font, without rebuilding variation
+        // dictionaries and PostScript strings for every wrapped line.
+        if let Some(key) = self
+            .inner
+            .borrow()
+            .entries
+            .iter()
+            .find_map(|entry| ptr::eq(entry.font.as_ref(), font).then_some(entry.info.key))
+        {
+            return key;
+        }
         let identity = identity_of(font);
         let mut inner = self.inner.borrow_mut();
         if let Some(key) = inner.by_identity.get(&identity) {

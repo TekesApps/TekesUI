@@ -1,0 +1,30 @@
+{
+  "status": "bounded final required-profile real GPU acceptance passed; native shortcut and VoiceOver separate",
+  "root_cause": "preceding input GPU fixture kept all required flags false; it could not prove the final native required/optional configuration",
+  "shared_fix": "no library/token changes needed; reuse existing Field.required, TextFieldContent, TextSurface and original real CoreText/GPU backend",
+  "applicable": "existing TextField/TextArea/SearchField aliases; first two required, optional SearchField unchanged",
+  "exceptions": [
+    "SearchField remains existing single-line alias, no new search behaviors",
+    "required is metadata; does not invent validation errors or editable-state policy",
+    "paired 280pt/1.5 and640pt/1.0 profiles; no full independent width/size Cartesian product or brand matrix claimed"
+  ],
+  "API": "prior public required32-case and actual publisher96-case receipts retained; no fresh API coverage inflation",
+  "real_consumer": "same existing three-alias ContentHost fixture; four states and four themes,@1x/@2x;128 real GPU frames",
+  "assertions": {
+    "required_label_visibly_changed": 64,
+    "optional_search_surface_pixel_equal": 64,
+    "document_selection_marked_unchanged": 192
+  },
+  "visual_review": [
+    "Light640@1x/rest before-after: first2 marker visible, optional SearchField retains baseline label",
+    "DarkIC280@2x/error before-after: narrow large text error/copy contained, first2required, thirdoptional"
+  ],
+  "Gold7": "bounded G1/G2/G3 metadata clarity and sibling visual isolation; no claim of all components/pages or native assistive acceptance",
+  "protected_runtime_inputs": 562,
+  "runtime_source_drift": [],
+  "native_compile_sources": "unchanged; only gpu.rs test target changed relative to current signed native app source manifest",
+  "cleanup": "Removed 56 files, 62.0MiB total",
+  "performance": "not measured",
+  "publication": "no commit/push/tag/merge/Issue writes",
+  "remaining": "current native undo/redo after host-only shortcut fix; required/optional VoiceOver announcement; broader batch4 and final8batch scope unchanged"
+}

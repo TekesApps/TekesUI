@@ -1,0 +1,102 @@
+{
+  "status": "scoped shared repairs API/real consumer/GPU/active external native passed; runtime cleaned",
+  "root_causes": [
+    {
+      "class": "single component own paint sequencing",
+      "cause": "contiguous SegmentControl child Button chrome painted after earlier focused cell covers its outboard focus ring",
+      "shared_fix": "SegmentedControlView paints keyboard-focused enabled cell last with existing Button painter; retains original indexed layout slots; no duplicate ring or new layer"
+    },
+    {
+      "class": "public component focus contract",
+      "cause": "no existing public getter for actual Segmented roving focus; native adapter could not publish focused child independently of controlled selection",
+      "shared_fix": "add focused() query matching existing RadioGroupView; native consumer projects actual focus without owning duplicate state"
+    },
+    {
+      "class": "component navigation primitive",
+      "cause": "arrow key used controlled selected index after external focus-only change; focus was not advanced when target was already selected",
+      "shared_fix": "reuse RadioGroup key_from pattern in Segmented model/View, cancel old press when focus changes; public direct key() retains selection-based entry"
+    }
+  ],
+  "applicable": [
+    "all existing SegmentedControlView consumers, including default Gallery and external public-API callers"
+  ],
+  "exceptions": [
+    "last focused segment was not occluded; no general renderer change required",
+    "Tabs already has focus-reveal lane gaps; RadioGroup has spaced rows/inset indicator and same focused/key_from contract; no duplicate fix",
+    "ancestor viewport clipping remains authoritative",
+    "pointer focus does not automatically show keyboard ring; disabled/inactive focus clears via existing View methods",
+    "no Content segment slot, generic selection protocol or new token introduced"
+  ],
+  "API": {
+    "root_tests": 348,
+    "new_roving_focus_matrix": 54,
+    "paint_order_cases": 72,
+    "old_occluded": 48,
+    "new_occluded": 0,
+    "strict_Clippy": "passed"
+  },
+  "real_consumer": {
+    "existing_consumer_scenarios": 36,
+    "new_external_tests": 3,
+    "checks": "real CoreText geometry and view/query; actual focus-only change then navigation; unchanged selected value still moves focus and cancels old Space owner; pointer hit slots retained"
+  },
+  "GPU": {
+    "frames": 192,
+    "before_after_cases": 96,
+    "profile": "4themes/3brands/compact+standard/paired280pt1x+640pt2x/first+middle focused; full and true ancestor crop",
+    "checks": "old occluded right midpoint differs and full ring restored; outside real ancestor clip stays background; layout and selection retained",
+    "before": "../segmented-boundary-navigation-20261020/images/",
+    "after": "images/",
+    "inspection": [
+      "theme0-brand0-compactfalse-width640-focus1-full.png",
+      "theme3-brand2-compacttrue-width280-focus1-full.png"
+    ]
+  },
+  "gates": {
+    "fresh_probes": 9,
+    "bounded_cases": 4416,
+    "complete_dependencies": false,
+    "governance": "passed",
+    "composition_tests": "passed",
+    "source_composition_matrix": "45 components passed; source/impl anchors reviewed and rebound; no maturity promotion",
+    "evidence": "gates.json / composition-review.json"
+  },
+  "native": {
+    "status": "passed",
+    "pid": 82441,
+    "evidence": "native/result.json",
+    "checkpoints": 16,
+    "actual_native_interval": [
+      17,
+      60
+    ],
+    "inputs": 102,
+    "display": "actual active U2790B@2",
+    "AX": "actual RadioButton name/selected/enabled/focused observed; focused General while selected Advanced, then Right moved focus to Advanced with unchanged selected value",
+    "pointer": "real primary click at native(320,56) selected original index1; disabled index2 click at(520,56) retained index1; no layout index swap",
+    "recording": "record-native-batch.py validates actual native input and post-event states, exact signed source identity, unique process and no Focus(false) during chain. Evidence read later; no requirement to keep foreground solely while reading logs.",
+    "interrupted_attempt": "attempt1-pointer-route-missing/native/interrupted-focus-chain-attempt1.json retained and rejected; no false pass",
+    "harness_fix": "pointer-adapter-fix.json; old incomplete host archived, final full16 rerun",
+    "VoiceOver": "off; not tested",
+    "physical_input": "tool-driven native keyboard/pointer/AX; user activated window only; not claimed physical keyboard/VoiceOver hearing"
+  },
+  "Gold7": {
+    "G1_G2": "existing surfaces and semantic inks preserved; no visual direction change",
+    "G3": "bounded before/after GPU and actual U2790B screenshot inspected: complete focus ring and real ancestor crop; no full-page visual promotion",
+    "G4": "Reduced Motion deterministic GPU checked; normal-motion timeline not inferred",
+    "G5": "cancelled Space ownership and selected-vs-focus identity tested; IME not applicable to segments",
+    "G6": "final source passed16 active external native actions/AX focus/selection and hit-index checks; no VoiceOver hearing",
+    "G7": "public shared implementation and independent minimal host ready; code/evidence kept"
+  },
+  "cleanup": {
+    "navigation_predecessor": "accepted/closed/cleaned20,968,376 bytes; source/evidence retained",
+    "own_package": "cleaned after signed final copy",
+    "runtime": "closed/process absent/source and signed identity plus fresh unused check passed; removed; cleanup.json"
+  },
+  "remaining": [
+    "deferred VoiceOver and normal-motion/wider family matrix; no whole-component or eight-batch completion"
+  ],
+  "publication": "no commit/push/tag/merge/Issue writes",
+  "performance": "not measured",
+  "reproducibility": "reviewed-input-snapshot.json keeps bounded exact source bytes; independent portable package not claimed for this new WIP repair"
+}

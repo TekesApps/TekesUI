@@ -1,0 +1,14 @@
+{
+  "scope": "current inventory counts and route completeness gate only",
+  "change": "derive independent expectations from current registry kinds; compare array lengths and route sets, then validate generated payload",
+  "old_failure": "fixed examples1 conflicts with currently registered examples2",
+  "current_counts": {
+    "components": 45,
+    "examples": 2,
+    "patterns": 5
+  },
+  "tests_passed": 38,
+  "example_experience_acceptance": false,
+  "production_or_frozen_source_modified": false,
+  "test_source_sha256": "58e2d389a0936cc4a71505fbd17af08c7620579fc991e2151ff9d5e485a3ecf3"
+}

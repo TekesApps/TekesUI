@@ -1,0 +1,486 @@
+{
+  "cases": [
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 0,
+      "type_scale": 1.0,
+      "width": 360.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 0,
+      "type_scale": 1.5,
+      "width": 360.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 0,
+      "type_scale": 1.0,
+      "width": 720.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 0,
+      "type_scale": 1.5,
+      "width": 720.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 0,
+      "type_scale": 1.0,
+      "width": 360.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 0,
+      "type_scale": 1.5,
+      "width": 360.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 0,
+      "type_scale": 1.0,
+      "width": 720.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 0,
+      "type_scale": 1.5,
+      "width": 720.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 0,
+      "type_scale": 1.0,
+      "width": 360.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 0,
+      "type_scale": 1.5,
+      "width": 360.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 0,
+      "type_scale": 1.0,
+      "width": 720.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 0,
+      "type_scale": 1.5,
+      "width": 720.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 1,
+      "type_scale": 1.0,
+      "width": 360.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 1,
+      "type_scale": 1.5,
+      "width": 360.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 1,
+      "type_scale": 1.0,
+      "width": 720.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 1,
+      "type_scale": 1.5,
+      "width": 720.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 1,
+      "type_scale": 1.0,
+      "width": 360.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 1,
+      "type_scale": 1.5,
+      "width": 360.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 1,
+      "type_scale": 1.0,
+      "width": 720.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 1,
+      "type_scale": 1.5,
+      "width": 720.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 1,
+      "type_scale": 1.0,
+      "width": 360.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 1,
+      "type_scale": 1.5,
+      "width": 360.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 1,
+      "type_scale": 1.0,
+      "width": 720.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 1,
+      "type_scale": 1.5,
+      "width": 720.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 2,
+      "type_scale": 1.0,
+      "width": 360.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 2,
+      "type_scale": 1.5,
+      "width": 360.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 2,
+      "type_scale": 1.0,
+      "width": 720.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 2,
+      "type_scale": 1.5,
+      "width": 720.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 2,
+      "type_scale": 1.0,
+      "width": 360.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 2,
+      "type_scale": 1.5,
+      "width": 360.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 2,
+      "type_scale": 1.0,
+      "width": 720.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 2,
+      "type_scale": 1.5,
+      "width": 720.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 2,
+      "type_scale": 1.0,
+      "width": 360.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 2,
+      "type_scale": 1.5,
+      "width": 360.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 2,
+      "type_scale": 1.0,
+      "width": 720.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 2,
+      "type_scale": 1.5,
+      "width": 720.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 3,
+      "type_scale": 1.0,
+      "width": 360.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 3,
+      "type_scale": 1.5,
+      "width": 360.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 3,
+      "type_scale": 1.0,
+      "width": 720.0
+    },
+    {
+      "brand": 0,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 3,
+      "type_scale": 1.5,
+      "width": 720.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 3,
+      "type_scale": 1.0,
+      "width": 360.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 3,
+      "type_scale": 1.5,
+      "width": 360.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 3,
+      "type_scale": 1.0,
+      "width": 720.0
+    },
+    {
+      "brand": 1,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 3,
+      "type_scale": 1.5,
+      "width": 720.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 3,
+      "type_scale": 1.0,
+      "width": 360.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 1.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 3,
+      "type_scale": 1.5,
+      "width": 360.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 3,
+      "type_scale": 1.0,
+      "width": 720.0
+    },
+    {
+      "brand": 2,
+      "fresh_synchronous_publication_passed": true,
+      "rejected_pixels_identical": true,
+      "scale": 2.0,
+      "surface_and_reading_unchanged": true,
+      "theme": 3,
+      "type_scale": 1.5,
+      "width": 720.0
+    }
+  ],
+  "frames": 192,
+  "scope": "Real public mixed Content consumer + CoreText/GPU; synthetic preedit, not physical IME/native/VoiceOver or matched ClientKit/Gold7 visual acceptance"
+}

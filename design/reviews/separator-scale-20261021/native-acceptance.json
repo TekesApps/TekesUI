@@ -1,0 +1,125 @@
+{
+  "scope": "bounded static native Separator rendering only; not whole-page/subjective physical clarity, keyboard controls or VoiceOver acceptance",
+  "screen": "U2790B @2",
+  "themes": [
+    {
+      "active": true,
+      "ink_widths": [
+        1.0,
+        0.5,
+        1.0,
+        0.5,
+        1.0,
+        0.5,
+        1.0,
+        0.5
+      ],
+      "logical_phase_offsets": [
+        0.0,
+        0.25,
+        0.5
+      ],
+      "scale": 2.0,
+      "scope": "actual native standalone separator rendering; static noninteractive; no VoiceOver/performance/full Gold7 or ClientKit parity",
+      "screen": {
+        "builtin": false,
+        "name": "U2790B",
+        "scale": 2.0
+      },
+      "sequence": 13,
+      "theme": 0
+    },
+    {
+      "active": true,
+      "ink_widths": [
+        1.0,
+        0.5,
+        1.0,
+        0.5,
+        1.0,
+        0.5,
+        1.0,
+        0.5
+      ],
+      "logical_phase_offsets": [
+        0.0,
+        0.25,
+        0.5
+      ],
+      "scale": 2.0,
+      "scope": "actual native standalone separator rendering; static noninteractive; no VoiceOver/performance/full Gold7 or ClientKit parity",
+      "screen": {
+        "builtin": false,
+        "name": "U2790B",
+        "scale": 2.0
+      },
+      "sequence": 16,
+      "theme": 1
+    },
+    {
+      "active": true,
+      "ink_widths": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "logical_phase_offsets": [
+        0.0,
+        0.25,
+        0.5
+      ],
+      "scale": 2.0,
+      "scope": "actual native standalone separator rendering; static noninteractive; no VoiceOver/performance/full Gold7 or ClientKit parity",
+      "screen": {
+        "builtin": false,
+        "name": "U2790B",
+        "scale": 2.0
+      },
+      "sequence": 19,
+      "theme": 2
+    },
+    {
+      "active": true,
+      "ink_widths": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "logical_phase_offsets": [
+        0.0,
+        0.25,
+        0.5
+      ],
+      "scale": 2.0,
+      "scope": "actual native standalone separator rendering; static noninteractive; no VoiceOver/performance/full Gold7 or ClientKit parity",
+      "screen": {
+        "builtin": false,
+        "name": "U2790B",
+        "scale": 2.0
+      },
+      "sequence": 21,
+      "theme": 3
+    }
+  ],
+  "binary_sha256": "d0c31cb46137bc8bd6c5eab8553174d1e4a5b09b40ed8662ea689f7dea0baa35",
+  "observed_source_identity": "f07266652b0a55118d6e3377fb80de5037b7df0a59e67f0cc9bcd5fb47b3692f",
+  "current_source_unchanged": true,
+  "normal": "scale-aware0.5pt vs legacy1pt confirmed in actual scene and native PNG",
+  "increased_contrast": "existing1pt rule retained in both paths",
+  "logical_phase_offsets": [
+    0,
+    0.25,
+    0.5
+  ],
+  "performance": "not measured"
+}

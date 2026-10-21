@@ -47,7 +47,13 @@ impl From<Theme> for Palette {
     }
 }
 impl Palette {
+    /// Select a registered Gallery preview. Zero is the consumer's compiled
+    /// BrandConfig, including an explicitly selected offline artifact.
+    pub fn new(theme: Theme, brand: usize) -> Option<Self> {
+        gallery_brand_preset(brand).map(|_| Self { theme, brand })
+    }
     pub fn color(self, role: &str) -> Option<Rgba> {
+        gallery_brand_preset(self.brand)?;
         let base = proposal::render_color(role, self.theme)?;
         if self.brand == 0 {
             return Some(base);
@@ -61,6 +67,26 @@ impl Palette {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn unknown_brand_and_role_fail_without_default_fallback() {
+        for theme in Theme::ALL {
+            assert!(Palette::new(theme, usize::MAX).is_none());
+            assert!(
+                Palette {
+                    theme,
+                    brand: usize::MAX
+                }
+                .color("primary-text")
+                .is_none()
+            );
+            assert!(
+                Palette::new(theme, 0)
+                    .unwrap()
+                    .color("unknown-role")
+                    .is_none()
+            );
+        }
+    }
     #[test]
     fn every_registered_preset_compiles_four_themes_and_preserves_independent_roles() {
         assert_eq!(gallery_brand_presets().len(), 13);

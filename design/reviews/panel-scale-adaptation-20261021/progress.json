@@ -1,0 +1,70 @@
+{
+  "owner": "root: sole shared implementation owner",
+  "source_identity": "f3997961265f2ff25b87e731ce6b314b5cecbe9f13b1b0eff0e5775e6d0c9a22",
+  "status": "implemented at existing consumers; real Gallery/independent consumer/GPU/current token governance/four-theme external native paint verified; whole experience incomplete",
+  "root_cause_category": "host-to-component scale contract adaptation; existing design and shared implementation sufficient",
+  "root_cause": "Legacy default1x Surface entry points were used despite actual renderer scale being available",
+  "shared_fix": "Reuse existing paint::surface_at_scale and SurfaceView::render_at_scale; forward current text/renderer backing_scale. No token, public API, protocol or state layer added.",
+  "applicable": [
+    "Stack/Grid preview cells and variants",
+    "Disclosure expanded body surface",
+    "SplitView preview panes and variants",
+    "EmptyState matrix/variants including measurement probe",
+    "independent compound-button and heterogeneous-List private Badge painters",
+    "test-only Disclosure surface fixture"
+  ],
+  "exceptions": [
+    "Necessary control borders, focus ink and interactive SplitView divider unchanged",
+    "Legacy Canvas caller has no decorative boundary, so scale does not affect its stroke",
+    "Existing default1x API compatibility retained; scale-aware callers explicitly forward host context",
+    "No migration of AgentKit frozen package or product-owned Agent UI"
+  ],
+  "verification": {
+    "gallery_tests": 2,
+    "actual_gallery_cases": 216,
+    "current_gpu_frames": 432,
+    "before_gpu_cases": 216,
+    "before_wrong_border_quads": 324,
+    "changed_cases": 54,
+    "unchanged_cases": 162,
+    "all_current_actual_equals_prior_rule_reference": true,
+    "matrix": "4themes/3brands/@1,@2; bounded actual Gallery scenes at normal type scale, not all pages",
+    "consumer_tests": 169,
+    "new_consumer_test_cases": 16,
+    "new_public_api_probe_cases": 192,
+    "controls_library_sources_unchanged": 25,
+    "prior_controls_result": "419 from grid-layout round; unchanged library sources revalidated, not reported as a new full-suite run",
+    "strict_clippy": [
+      "Gallery",
+      "consumer",
+      "actual API probe with token feature",
+      "native host"
+    ],
+    "current_token_artifacts": 16,
+    "current_bounded_token_cases": 6120,
+    "reused_exact_source_receipts": 7,
+    "replayed_affected_receipts": 8,
+    "new_receipts": 1,
+    "token_complete": false,
+    "governance_tests": 44,
+    "composition_tests": 8,
+    "generated_bindings": 3
+  },
+  "native": {
+    "receipt": "native-acceptance.json",
+    "screen": "U2790B @2",
+    "themes": 4,
+    "actual_active": true,
+    "scenario": "original public heterogeneous List factory and its private Badge, real CoreText/Metal; default brand; paint only",
+    "input_AX_VoiceOver": "not claimed",
+    "cleanup": "closed; cleanup.json"
+  },
+  "Gold7": {
+    "G3": "existing decorative vs required boundary rule, actual caller forwarding and scoped before-after/native paint evidence passed; phase clarity/cross-display/full-page unverified",
+    "G7": "unchanged public API and corrected independent examples; docs/replay/source retained",
+    "whole_ClientKit_and_Gold7": "unverified; no registry maturity promotion"
+  },
+  "consumer_handoff": "AgentKit session informed existing frozen2b16 already exposes surface_at_scale; it can verify its own callers without replacing freeze",
+  "constraints": "All WIP protected; no performance, commit/push/tag/merge/Issue closure or frozen consumer changes",
+  "cleanup": "cleanup.json"
+}

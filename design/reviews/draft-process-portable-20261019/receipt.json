@@ -1,0 +1,44 @@
+{
+  "scope": "portable caller-owned file adapter + existing DraftJournal/real RichDialog editor/CoreText; three actual process executions",
+  "binary_sha256": "c97bc0544b86d741af9e7560100df6ce9984e9ce1ba750bd7c72673f10eb48ea",
+  "phases": [
+    {
+      "editor": "Newer editor draft retained 中文😀",
+      "mode": "prepare",
+      "pending_snapshot": "Frozen first request 中文😀",
+      "pid": 20923,
+      "save_failure_retained_editor_and_file": true,
+      "version": 2
+    },
+    {
+      "ack": 1,
+      "editor": "Newer editor draft retained 中文😀",
+      "late_and_duplicate_ack_preserved_newer_editor": true,
+      "mode": "retry-ack",
+      "pending": 0,
+      "pid": 20924,
+      "same_snapshot_key_request": true,
+      "version": 2
+    },
+    {
+      "ack": 1,
+      "editor": "Newer editor draft retained 中文😀",
+      "mode": "verify",
+      "pid": 20955,
+      "reconstructed_from_caller_file": true,
+      "version": 2
+    }
+  ],
+  "source_inputs": {
+    "consumer-source/Cargo.toml": "defabd9a647d1f9c4dd275bc31ec0fca4f1f7feab9a138c3c1bbfad88a265945",
+    "consumer-source/Cargo.lock": "a764dad24ee445d02a601170c867bf1697b7a8371e2b532a7cc16a2edf5b7882",
+    "consumer-source/src/store.rs": "96ea42ccb35412773898f78976988a0d254b565d00fd126221e930302af2ef14",
+    "consumer-source/src/main.rs": "83c85172d2a1c13ebbd00c6365e41eec599c5e6be894f6f1ca694b35eb8d6e90"
+  },
+  "cleanup": "     Removed 8 files, 5.9MiB total\n",
+  "native": "not a native window replay",
+  "GPU": "no-op draw, not GPU evidence",
+  "performance": "not measured",
+  "shared_source_identity": "e4cb91a3c6b8d0fa9f16729a7b80aa630dfc39277b81d507438d78caab59dbfb",
+  "shared_source_inputs": "shared-source-inputs.json"
+}

@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-21",
+  "asset_bytes": 12079668,
+  "asset_sha256": "20e9a9bbc1d3e7ea11d503f1addefe5bdf11e0c988b9aa9bdabace78c431a4af",
+  "window_patterns": [
+    {
+      "occupied": 7,
+      "lit": 13
+    },
+    {
+      "occupied": 7,
+      "lit": 13
+    },
+    {
+      "occupied": 4,
+      "lit": 14
+    },
+    {
+      "occupied": 3,
+      "lit": 9
+    }
+  ],
+  "runtime": "wgpu; generic Lighting3D plus core glTF emissiveFactor/emissiveTexture; per-asset image cache",
+  "switch_uniform_bytes": 48,
+  "switch_geometry_material_instance_reuploads": false,
+  "validation": {
+    "viewer": 11,
+    "scene3d_cpu": 9,
+    "scene3d_gpu": 8,
+    "clippy": "all-targets, warnings denied, passed",
+    "native_ui": "Lighting menu selects night; N toggles both ways while paused; Space resumes animation; night HUD readable",
+    "deterministic_asset_regeneration": true
+  },
+  "scope": [
+    "Seeded original room atlases contain standing, seated and reading silhouettes, furniture and blinds. They are texture details, not animated indoor NPCs or accessible interior rooms.",
+    "Four building atlases have independent patterns, repeated within each atlas UV grid. Night lighting masks are baked; no random per-frame CPU calculations.",
+    "Night uses ambient/directional light and emissive windows/lamps/signs. No local light projection, shadows, bloom or indirect illumination.",
+    "Day/night is independent of system UI theme. Imported glTF emissive materials remain supported at default Lighting3D emission strength.",
+    "Previous CPU/GPU timing report predates these textures and shader changes. This feature turn validates GPU resource reuse, not a new CPU/GPU performance measurement.",
+    "Current worktree and unrelated WIP preserved; not committed."
+  ]
+}

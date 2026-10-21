@@ -1,0 +1,12 @@
+{
+  "identity": "bd3ed1b0af81b044306af90d3594bb31110147b7194bda6053b1d2e185871c9a",
+  "archive": "content-reading-bd3ed1b0af81.tar.gz",
+  "archive_sha256": "f3ed66b85e31375582074eec2c8903904aa14649dae1cdef8f6bef2057dada61",
+  "files": 449,
+  "all_exported_bytes_unchanged": true,
+  "all_local_dependencies_inside_extract": true,
+  "exact_registry_locks_unchanged": true,
+  "checks": "portable-checks.json",
+  "cleanup": "Own host and isolated local-package lane cleaned; registry cache retained; export/archive/evidence retained.",
+  "scope": "Independent clean-extract local replay, not external AgentKit acceptance, public Git pin, native input or ClientKit visual proof."
+}

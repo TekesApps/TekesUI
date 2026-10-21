@@ -1,0 +1,54 @@
+   Compiling tekes-ui-composition-consumer v0.0.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/examples/composition-consumer)
+    Finished `test` profile [unoptimized] target(s) in 0.82s
+     Running tests/menu_action_records.rs (target/review-cache/debug/deps/menu_action_records-0f55e7e1b04567b6)
+
+running 8 tests
+test legacy_public_menu_literal_still_compiles_and_selects_original_item ... ok
+test failed_value_binding_does_not_change_current_model_or_close_popup ... ok
+test pointer_and_keyboard_capture_values_at_original_delivery ... ok
+test rebinding_model_cancels_held_pointer_and_identical_binding_keeps_revision ... ok
+test delayed_records_keep_a_b_values_after_selection_and_model_change ... ok
+test opening_keyboard_pointer_ax_dismissal_focus_paint_never_select ... ok
+test label_mutation_invalidates_old_popup_before_another_paint ... ok
+test unmount_and_same_id_remount_discard_undrained_actions ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/menu_declarations.rs (target/review-cache/debug/deps/menu_declarations-bc6607d596475726)
+
+running 19 tests
+test interactive_trigger_body_uses_existing_action_owner_validation ... ok
+test invalid_declaration_rejects_atomically_and_equal_tree_is_noop ... ok
+test old_declared_token_cannot_alias_a_legacy_position_after_model_mode_switch ... ok
+test independent_wrapper_forwards_original_parts_and_owned_action_without_private_sdk_access ... ok
+test left_returns_to_parent_and_outside_dismissal_has_no_selection ... ok
+test ax_opening_second_submenu_updates_original_active_parent_before_left_return ... ok
+test reopening_original_view_without_a_paint_revokes_previous_semantic_generation ... ok
+test nested_levels_keep_full_value_path_and_cancel_revokes_all_panels ... ok
+test submenu_pointer_hover_and_click_use_original_layout_and_action_owner ... ok
+test semantic_menu_surfaces_stay_inside_real_host_clip_at_edges_and_narrow_width ... ok
+test closed_reopened_replaced_and_unmounted_popup_tokens_cannot_activate_new_model ... ok
+test semantic_hierarchy_checks_disabled_and_focus_are_distinct ... ok
+test precise_child_scroll_keeps_original_capture_across_parent_boundary ... ok
+test switching_hovered_parent_retires_old_child_and_scroll_revokes_new_child ... ok
+test two_level_keyboard_and_ax_selection_capture_stable_paths_once ... ok
+test original_compound_trigger_is_one_exact_action_with_passive_body_and_name ... ok
+test compact_body_instance_survives_item_model_replacement ... ok
+test semantic_submenu_selection_does_not_edit_or_unmark_focused_original_composer ... ok
+test content_adapter_advances_original_menu_rebound_from_host_clock ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/menu_item_states.rs (target/review-cache/debug/deps/menu_item_states-3346b2cc212a3e72)
+
+running 7 tests
+test disabled_and_separator_reject_ax_pointer_and_programmatic_item_activation ... ok
+test keyboard_skips_disabled_separator_and_keeps_checked_independent ... ok
+test an_all_unavailable_menu_has_no_selection_or_fake_focused_row ... ok
+test adding_short_item_state_does_not_change_original_popup_minimum_geometry ... ok
+test declaration_update_cancels_old_popup_and_held_input_without_rebinding_queued_value ... ok
+test checked_is_controlled_not_toggled_by_original_selection ... ok
+test check_marker_and_separator_reuse_original_palette_and_label_columns ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

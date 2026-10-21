@@ -1,0 +1,75 @@
+[
+  {
+    "name": "capabilities",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "scripts/generate-component-capabilities.py",
+      "--check"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "composition-audit",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "scripts/check-composition-audit.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "capability-negative",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "scripts/test-component-capabilities.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "composition-negative",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "scripts/test-composition-audit.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "fmt",
+    "command": [
+      "cargo",
+      "fmt",
+      "--check"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "clippy",
+    "command": [
+      "cargo",
+      "clippy",
+      "--workspace",
+      "--all-targets",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "workspace",
+    "command": [
+      "cargo",
+      "test",
+      "--workspace",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--message-format=json"
+    ],
+    "exit_code": 0
+  }
+]

@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import tomllib
+from tekesui_build import CACHE, assert_unused, build_lock, environment, prepare_cache
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'crates/tekes-ui-gallery/resources/macos'
@@ -17,19 +18,23 @@ APP = ROOT / 'target/TekesUI Gallery.app'
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary', type=Path, help='Package this existing Gallery binary without rebuilding')
+    parser.add_argument('--release', action='store_true', help='Explicit release integration build (default: compact dev build)')
     args = parser.parse_args()
     if sys.platform != 'darwin':
         parser.error('macOS packaging requires macOS and codesign')
     binary = args.binary
     if binary is None:
-        target = ROOT / 'target/gallery-integration'
-        env = dict(os.environ, CARGO_TARGET_DIR=str(target))
-        subprocess.run(['cargo', 'build', '--release', '--locked', '--offline', '-p', 'tekes-ui-gallery'], cwd=ROOT, env=env, check=True)
-        binary = target / 'release/tekes-ui-gallery'
+        prepare_cache()
+        command = ['cargo', 'build', '--locked', '--offline', '-j', '2', '-p', 'tekes-ui-gallery']
+        if args.release:
+            command.append('--release')
+        subprocess.run(command, cwd=ROOT, env=environment(), check=True)
+        binary = CACHE / ('release' if args.release else 'debug') / 'tekes-ui-gallery'
     binary = binary.resolve(strict=True)
     info = plistlib.loads((ASSETS / 'Info.plist').read_bytes())
     info['CFBundleShortVersionString'] = tomllib.loads((ROOT / 'Cargo.toml').read_text())['workspace']['package']['version']
     if APP.exists():
+        assert_unused([APP])
         existing = plistlib.loads((APP / 'Contents/Info.plist').read_bytes())
         if existing.get('CFBundleIdentifier') != info['CFBundleIdentifier']:
             raise SystemExit('Refusing to replace an unrelated app bundle')
@@ -69,4 +74,5 @@ def main():
     print(APP)
 
 if __name__ == '__main__':
-    main()
+    with build_lock():
+        main()

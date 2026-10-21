@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+"""Freeze bounded CommandPalette trigger observations using the existing action contract."""
+import argparse, hashlib, importlib.util, json, os, subprocess, tempfile
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+spec=importlib.util.spec_from_file_location('navigation',ROOT/'scripts/audit-navigation-tokens.py')
+nav=importlib.util.module_from_spec(spec);spec.loader.exec_module(nav)
+def inputs():
+    data=nav.inputs()
+    for relative in ['crates/tekes-ui-controls/tests/choice_trigger_states.rs','scripts/audit-choice-trigger-tokens.py']:
+        data[relative]=hashlib.sha256((ROOT/relative).read_bytes()).hexdigest()
+    return data
+def main():
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True);args=parser.parse_args()
+    if args.output.exists():parser.error('use a fresh evidence path')
+    before=inputs();command=['cargo','test','-p','tekes-ui-controls','--features','token-audit','--test','choice_trigger_states','--locked']
+    with tempfile.TemporaryDirectory(prefix='tekesui-choice-trigger-') as folder:
+        raw=Path(folder)/'reads.json';env=os.environ.copy();env['TEKESUI_CHOICE_TRIGGER_AUDIT_OUT']=str(raw);subprocess.run(command,cwd=ROOT,env=env,check=True);data=json.loads(raw.read_text())
+    if before!=inputs():raise RuntimeError('source changed during probe')
+    assert len(data['cases'])==84 and all(c['state_asserted'] is True and c['part']=='trigger' for c in data['cases'])
+    assert {c['action_state'] for c in data['cases']}=={'rest','hover','pressed','focus','disabled'}
+    data.update(inputs_sha256=before,probe_command=command,public_api_test='crates/tekes-ui-controls/tests/choice_trigger_states.rs',scope='CommandPalette trigger only; five exact action states and two pointer cancellation cases; four themes/three brands',excluded=['query surface and all candidate states','loading/error/selected/open/empty','native AX/VoiceOver','complete dependency extraction'])
+    args.output.parent.mkdir(parents=True,exist_ok=True)
+    with args.output.open('x') as f:json.dump(data,f,indent=2);f.write('\n')
+    print('Wrote84 trigger cases; complete=False; popup/query states excluded')
+if __name__=='__main__':main()

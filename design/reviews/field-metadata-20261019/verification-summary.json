@@ -1,0 +1,24 @@
+{
+  "source_identity": "203d38ff425a272bb917a54ec89563f0a9c0999b1f09bfea2ebb96359796305b",
+  "public_api": "3 tests including48 palette/role/message cases",
+  "shared_library_tests": 238,
+  "real_consumer_tests": 142,
+  "strict_clippy": [
+    "consumer all-targets",
+    "controls token-audit tests",
+    "Gallery bins"
+  ],
+  "gpu": "96 final real CoreText/Metal frames; source-bound; 96 pre-fix and96 initial corrected frames retained",
+  "source_gates": "isolated capability38 and composition8 plus fmt passed",
+  "token_probes": "9 actual probes passed; metadata48 cases/5 lookupIDs; complete=false",
+  "native": "12 active U2790B checkpoints passed; app closed; round accepted/cleaned",
+  "root_full_gates": "not green: foreign TickingNumber API classification missing; untouched and excluded",
+  "fixture_failures": "MissingTextServices corrected by reusing existing HostText; short-label geometry assertion corrected; two no-op Palette conversion lint failures corrected only in current source, previous frozen inputs untouched",
+  "performance": "not measured",
+  "git_write": "none",
+  "portable_replay": "new source archive verified and extracted;3 public tests and142 consumers passed; temporary extract/local outputs cleaned",
+  "portable_evidence": "portable-export.json",
+  "static_native_geometry": "external U2790B 360pt window observed; still inactive, not full native acceptance",
+  "public_registry_binding": "external Rust binding test passed",
+  "gold7": "scoped metadata/stock editor experience passed; no whole-library/pages claim"
+}

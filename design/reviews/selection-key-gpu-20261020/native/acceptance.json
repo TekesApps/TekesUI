@@ -1,0 +1,103 @@
+{
+  "status": "scoped Checkbox/Switch key-availability native acceptance passed and cleaned",
+  "cases": [
+    {
+      "case": 0,
+      "gesture": "space",
+      "down": 56,
+      "native_escape": 193,
+      "observed_unavailable": 194,
+      "cancelled": 195,
+      "release": 202,
+      "fresh_release": 206,
+      "active_through_chain": true,
+      "old_value_preserved": true,
+      "parent_key_continued": true
+    },
+    {
+      "case": 1,
+      "gesture": "space",
+      "down": 212,
+      "native_escape": 303,
+      "observed_unavailable": 304,
+      "cancelled": 305,
+      "release": 312,
+      "fresh_release": 316,
+      "active_through_chain": true,
+      "old_value_preserved": true,
+      "parent_key_continued": true
+    },
+    {
+      "case": 2,
+      "gesture": "space",
+      "down": 322,
+      "native_escape": 363,
+      "observed_unavailable": 364,
+      "cancelled": 365,
+      "release": 372,
+      "fresh_release": 376,
+      "active_through_chain": true,
+      "old_value_preserved": true,
+      "parent_key_continued": true
+    },
+    {
+      "case": 0,
+      "gesture": "pointer",
+      "down": 532,
+      "native_escape": 533,
+      "observed_unavailable": 534,
+      "cancelled": 535,
+      "release": 542,
+      "fresh_release": 546,
+      "active_through_chain": true,
+      "old_value_preserved": true,
+      "parent_key_continued": true
+    },
+    {
+      "case": 1,
+      "gesture": "pointer",
+      "down": 578,
+      "native_escape": 581,
+      "observed_unavailable": 582,
+      "cancelled": 583,
+      "release": 590,
+      "fresh_release": 594,
+      "active_through_chain": true,
+      "old_value_preserved": true,
+      "parent_key_continued": true
+    },
+    {
+      "case": 2,
+      "gesture": "pointer",
+      "down": 638,
+      "native_escape": 639,
+      "observed_unavailable": 640,
+      "cancelled": 641,
+      "release": 700,
+      "fresh_release": 704,
+      "active_through_chain": true,
+      "old_value_preserved": true,
+      "parent_key_continued": true
+    }
+  ],
+  "operator": "operator-receipt.json",
+  "screen": {
+    "name": "U2790B",
+    "builtin": false,
+    "scale": 2
+  },
+  "native_profile": "Light,640pt normal text; other themes/brands/paired narrow-large/@1x covered by separate GPU receipt",
+  "source": "native-source-manifest.json; signed binary hashes retained in native-runtime.json; original model/library inputs bound in protected-before.json",
+  "source_drift_since_build": [],
+  "gesture_guards": "actual native Down < Escape < Up; active through each chain; no blur/reset between; old value preserved; parent key continues; fresh Space changes value",
+  "excluded_attempts": [
+    "first process session66 records excluded on relaunch",
+    "CUA held-Space/Escape serialized with release first; invalid timing not accepted",
+    "two nonmodifier key chord rejected by CUA; not accepted"
+  ],
+  "window_close": "CloseRequested/closed sequence738 and exact PID absent",
+  "cleanup": "fresh lsof-unused check, final app file hashes, exact owned runtime removed; cache package already cleaned; source/GPU/native evidence retained",
+  "VoiceOver": "not enabled or tested in this round",
+  "performance": "not measured",
+  "publication": "no commit/push/tag/merge/Issue writes"
+}

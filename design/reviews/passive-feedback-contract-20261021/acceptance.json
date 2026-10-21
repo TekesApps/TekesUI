@@ -1,0 +1,38 @@
+{
+  "format": "tekesui-passive-feedback-verification/1",
+  "owner": "root: sole shared implementation owner",
+  "status": "scoped API/token/current consumer and Gallery checks passed; native/GPU/whole experience incomplete",
+  "root_cause": "missing source-bound public API and token evidence; no production defect established in covered paths",
+  "shared_fix": "reuse existing Progress, StatusBadge, Skeleton views and semantic palette; tests and actual observation binding only",
+  "production_code_changed": false,
+  "new_api_or_token": false,
+  "public_api_tests": 4,
+  "actual_token_cases": 216,
+  "existing_consumer_tests": 2,
+  "existing_gallery_tests": 2,
+  "current_unique_token_receipts": 17,
+  "current_bounded_token_cases": 6336,
+  "complete_token_dependencies": false,
+  "governance_tests": 44,
+  "composition_tests": 8,
+  "generated_bindings": "gates.json and bindings.log",
+  "native": "not rerun; collection app remains separate",
+  "Gold7": "unverified; matched ClientKit review and physical/native acceptance required",
+  "remaining": [
+    "StatusBadge unverified/cancelled actual consumer contract",
+    "Progress host-owned outcome composition",
+    "final real GPU/external native/AX and matched ClientKit experience",
+    "same final source delivery/CI/independent review"
+  ],
+  "evidence": [
+    "checks.json",
+    "integration-checks.json",
+    "canonical-observation.json",
+    "integration-inputs.json",
+    "gates.json",
+    "cleanup.json",
+    "integration-cleanup.json",
+    "gate-cleanup.json"
+  ],
+  "constraints": "no performance, publication, Issue closure or frozen input edits"
+}

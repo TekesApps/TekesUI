@@ -1,0 +1,61 @@
+{
+  "format": "tekesui-tooltip-reentry/1",
+  "owner": "root: sole shared implementation owner",
+  "source_identity": "a9d9355a11d0d1031cc381588379f65967e9783e9c146f96e2eca35061c8a3f6",
+  "status": "shared fix verified through API/Gallery/independent consumer/GPU/active native and actual inactive rejection; final reactivation/full experience incomplete",
+  "root_cause": "Joint Escape latch ignored fresh independent hover/focus/caller requests while an old owner persisted",
+  "shared_fix": "TooltipView existing hovered/focused/controlled_visible/dismissed_until_leave; JSON interaction contract; no added state/token/protocol",
+  "applicable": "all public TooltipView consumers; Gallery forwarder tests plus real native public ButtonContent anchor",
+  "exceptions": [
+    "Duplicate notifications, redraw and single owner exit do not reopen",
+    "Inactive input ignored; passive activation alone cannot rearm",
+    "Controlled true needs observed hide/show or an independent new input request"
+  ],
+  "public_api_tests": 4,
+  "genuine_regression_failures": 3,
+  "controls_tests": 426,
+  "full_consumer_tests": 171,
+  "gallery_forwarder_tests": 2,
+  "gallery_forwarder_cases": 36,
+  "strict_clippy": [
+    "controls",
+    "Gallery",
+    "consumer with token-audit",
+    "GPU host",
+    "native host"
+  ],
+  "gpu_cases": 480,
+  "gpu_frames": 960,
+  "native_active_checkpoints": 38,
+  "native_inactive_checkpoints": 1,
+  "native_receipt": "native-acceptance.json",
+  "token_artifacts": 17,
+  "bounded_token_cases": 6432,
+  "Tooltip_probe_cases": 240,
+  "complete_token_dependencies": false,
+  "governance_tests": 44,
+  "composition_tests": 8,
+  "design_merge_tests": 9,
+  "bindings": 3,
+  "known_scoped_failures_preserved": [
+    "api-before.log:2regressions",
+    "api-controlled-before.log:1additional regression",
+    "api-stale-projection.log:wrong Python environment, subsequently corrected",
+    "gpu-before-count-correction.log:harness count",
+    "refresh-script-drift/:source drift rejected, no stale receipt rebound"
+  ],
+  "workflow_improvement": "Content-status audit now names --test scenarios: same two relevant tests/120body+288header cases, avoids building unrelated zero-match targets",
+  "remaining": [
+    "actual native system reactivation on final source",
+    "applicable hearing deferred; matched ClientKit/whole Gold7 and final pages",
+    "same final combined/public source CI and independent acceptance"
+  ],
+  "queued_consumer_finding": "#31 read and acknowledged; not implemented or accepted by this repair",
+  "constraints": "WIP/frozen packages protected; no performance/commit/push/tag/merge/Issue closure",
+  "cleanup": [
+    "test-cleanup.json",
+    "refresh-cleanup.json",
+    "gpu-cleanup.json",
+    "native-cleanup.json"
+  ]
+}

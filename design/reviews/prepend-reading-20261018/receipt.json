@@ -1,0 +1,152 @@
+{
+  "format": "tekesui-prepend-reading-review/1",
+  "date": "2026-10-18T04:44:00.416862+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues_open": 21,
+  "prs_open": 0,
+  "github_unchanged_since_ledger": true,
+  "root_cause": "existing ReadingController only protects tail append; prepend fails prefix check and loses logical reading anchor",
+  "shared_fix": [
+    "existing ReadingController versioned read-only document update with opaque attachment/key/revision token",
+    "verified retained UTF16/grapheme intervals; pending logical anchor composes updates before original layout",
+    "selection continuity/directional affinity; explicit Invalidated or FallbackStart; errors mutate no document",
+    "existing capture/layout/caret/ScrollArea clamp reused; no second scrolling or editor state machine"
+  ],
+  "applicable": [
+    "opt-in readonly Text/TextSurface/ScrollArea history",
+    "readonly TextFieldContent.reading using original form slot; direct and composed consumers verified"
+  ],
+  "exceptions": [
+    "editable/preedit surfaces rejected by this readonly history API; #18 owns controlled editor synchronization",
+    "history changes clear this readonly surface dormant undo/redo; separate Composer untouched",
+    "old surface drag gesture canceled; established mapped selection preserved; no focus/blur",
+    "#20 configurable viewport and #21 typed action queue remain separate; fixture uses existing direct TextSurface and activation counters"
+  ],
+  "validation": {
+    "reading_contract_cases": 10,
+    "new_reading_cases": 7,
+    "shared_packages": 357,
+    "independent_consumer": 50,
+    "new_real_consumer_tests": 3,
+    "platform": 30,
+    "capability_tests": 38,
+    "composition_audit_tests": 6,
+    "legacy_baseline_reproduction_error_pt": 204,
+    "compiled_selection_identity_red_green": true,
+    "strict_clippy": "workspace all-targets composition-review and independent all-targets passed",
+    "authoritative_logs": [
+      "logs/reading-final.log",
+      "logs/shared-final.log",
+      "logs/consumer-final.log",
+      "logs/platform.log",
+      "logs/root-clippy-authoritative.log",
+      "logs/consumer-clippy-final.log",
+      "logs/review-build-final.log",
+      "logs/default-build.log",
+      "logs/gpu-authoritative.log",
+      "logs/capabilities-check.log",
+      "logs/composition-check.log",
+      "logs/reference.log",
+      "logs/gold7-final.log",
+      "logs/pure-rust-final.log",
+      "logs/fmt.log",
+      "logs/consumer-fmt.log"
+    ],
+    "diagnostics": "legacy-red and selection-map-red are deliberate compiled reproductions. Earlier Gallery adapter compile errors and registry mismatch were corrected; final logs above passed. Header-only288 navigation probe rejected by gate; original content-status408 combined probe rerun, no coverage weakened."
+  },
+  "tokens": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "query-async-token-observations.json": 264,
+    "slider-composition-token-observations.json": 264,
+    "command-async-token-observations.json": 168,
+    "action-token-observations.json": 576
+  },
+  "token_total": 4500,
+  "token_probe_execution": "all8 groups reexecuted after shared Rust changes; current hashes verified; complete=false",
+  "gpu": {
+    "pngs": 48,
+    "themes": 4,
+    "width_type_pairs": [
+      [
+        360,
+        1.5
+      ],
+      [
+        800,
+        1.0
+      ]
+    ],
+    "scales": [
+      1,
+      2
+    ],
+    "stages": [
+      "initial",
+      "first prepend",
+      "second prepend"
+    ],
+    "geometry_checks": 32,
+    "max_error_pt": 0.0,
+    "representatives_inspected": [
+      "Light narrow150% before/after",
+      "Dark IC800@2x"
+    ],
+    "limits": "representative original theme/brand only, not exhaustive all states/brands; no new styles/tokens"
+  },
+  "native": {
+    "identity": "native/build-identity.json",
+    "background_focus": 8604,
+    "draft_unchanged": true,
+    "pages": 2,
+    "max_reading_error_pt": 0.0,
+    "observed": [
+      "original reading content remains at same vertical point after one finite background WindowWake",
+      "draft focus8604 and original draft unchanged at background page1",
+      "real click loaded second page; point retained",
+      "tail append keeps history; explicit Return to latest shows final appended line"
+    ],
+    "AX": "window/menu only; full components/VoiceOver not accepted",
+    "physical_IME": "not tested; preedit rejection unit tests distinct",
+    "performance": "deferred; no benchmarks",
+    "scope": "Gallery only; no system settings; test app exited"
+  },
+  "governance": {
+    "public_states": 131,
+    "fixture_gaps": 125,
+    "required": 269,
+    "component_count": 45,
+    "new_public_data_types": 6,
+    "next": "#19/#17 shared pointer/key/text-service events, #18 controlled editor transactions, #20 viewport; #21 actions"
+  },
+  "remaining": [
+    "AgentKit UI workspace/demo/second consumer migration and default headless regression not run here",
+    "formal immutable pin blocked by no commit/push/tag instruction",
+    "physicalIME/VoiceOver/nativeAX and unified acceptance remain open",
+    "editable external value synchronization intentionally remains #18, no claim of generic editor transaction completion"
+  ],
+  "source_sha256": {
+    "crates/tekes-ui-controls/src/reading.rs": "b791308f9bbbceba29294575c70401170aa2f3d7f51696039b290c1c262c30f8",
+    "crates/tekes-ui-controls/tests/component_registry_api.rs": "f2884f8568b3ebf4344ed93e04ad38cb4df5a3678eafd4e471dad8d4157d0635",
+    "crates/tekes-ui-controls/tests/reading_contract.rs": "4cbafd6bac117f0a8e763ba6e40d504b132615d5d062e760418e222fe66c2524",
+    "design/gallery/capabilities.json": "9bd49aef78ff0365aa2af7349787b0aa6ae1e073a06081193a30803d3b9ccfd0",
+    "design/gallery/component-coverage.json": "0bb320d29ff4f3054b864e8fa637fdba81152d86cfd50172f98a34c40047d20f",
+    "design/gallery/public-api-surface.json": "79045210ffff3cd1aac51e32d16dfd86b1abcfec7df21dfa0529244cef3cd954",
+    "design/remediation/composition-audit.json": "67c5dddc10438e60259492e25b6a09d78df71eb1547503662d802d682548e2a5",
+    "design/remediation/ledger.json": "652380f98704efc0a9406722196cfb3abb4a5a91787239102b5089d55e92da04",
+    "docs/design/issue-remediation-current-20261017.md": "d8dd5db7f8a1b00cfb807b0ed0586a7d2f1a25b380c898c503f9df5b3d55727a",
+    "examples/composition-consumer/src/lib.rs": "4dbbb80fe52fad6da7510aa1f3db25bec452d305af944bd48b761955406291d0",
+    "crates/tekes-ui-controls/src/lib.rs": "074d0955252fed6a50b8c7c0c4a0f49ef1e67c41e1df7799d3147b43526101b9",
+    "crates/tekes-ui-controls/src/text_input.rs": "f8c0e6a4cad8ffe2db2a3ac51218c291279ed6afcd9b13b7a8281773c15afa24",
+    "crates/tekes-ui-gallery/src/main.rs": "3956c2130c5914230cc70d4ab087f0d878ab223b3b7e9a6a10dee5485047aec6",
+    "examples/composition-consumer/src/reading_prepend.rs": "35bdf6df644a3cbc680d2e5b2010c9d51b24d16779505e37d51dd57ee3fee4df",
+    "examples/composition-consumer/tests/reading_prepend.rs": "489f5922d77791e1e0f652da88baae199cd0b725c0ad24b10fc5ba44e7fe9071",
+    "crates/tekes-ui-gallery/src/reading_acceptance.rs": "5802b3ed5e19b4e338351f120454bbb0a0a3a705a6f40f894283c9130da5ae84",
+    "docs/design/prepend-reading-20261018.md": "47512ee566e0a5df17ea5dddda8d89b51c321748a84167c4b59f247ec8d2e171"
+  },
+  "goal_status": "active",
+  "wip_protection": "wip-protection.json"
+}

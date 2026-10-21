@@ -163,7 +163,7 @@ impl IconView {
         let natural = if requested_size.is_finite() && requested_size > 0. {
             requested_size
         } else {
-            proposal::metric("size", "size-icon-artboard").unwrap_or(24.)
+            proposal::metric("size", "size-icon-preview").expect("Icon natural artboard token")
         };
         let side = natural
             .min(frame.size.width.max(0.))
@@ -243,6 +243,8 @@ impl StackView {
     }
 }
 
+/// A mounted grid requires nonzero bounds; the model may still measure natural
+/// rows in zero-height constraints. Positive grids retain caller-clipped overflow.
 #[derive(Clone, Debug)]
 pub struct GridView {
     model: Grid,
@@ -268,7 +270,7 @@ impl GridView {
         row_height: f32,
         clip: Option<Rect>,
     ) -> &LayoutItems {
-        self.layout = if valid(bounds, clip) {
+        self.layout = if valid(bounds, clip) && has_area(bounds) {
             let frame = ControlFrame::new(bounds, clip).frame();
             LayoutItems {
                 frame,
@@ -308,11 +310,24 @@ impl SeparatorView {
         clip: Option<Rect>,
         palette: Palette,
     ) -> SeparatorLayout {
+        self.render_at_scale(scene, frame, axis, clip, palette, 1.0)
+    }
+    /// As `render`, with the host's backing scale for decorative ink only.
+    /// Logical layout and ancestor clipping retain the same contract.
+    pub fn render_at_scale(
+        &mut self,
+        scene: &mut Scene,
+        frame: Rect,
+        axis: Axis,
+        clip: Option<Rect>,
+        palette: Palette,
+        backing_scale: f32,
+    ) -> SeparatorLayout {
         self.layout = if valid(frame, clip) {
             let f = ControlFrame::new(frame, clip);
             if let Some(v) = f.visible_frame() {
                 let clipped = safe_clip(scene, clip);
-                super::extended::separator(scene, f.frame(), palette, axis);
+                super::extended::separator_at_scale(scene, f.frame(), palette, axis, backing_scale);
                 if clipped {
                     scene.pop_clip();
                 }
@@ -364,6 +379,20 @@ impl SplitViewView {
         clip: Option<Rect>,
         palette: Palette,
     ) -> SplitViewLayout {
+        self.render_at_scale(scene, model, bounds, clip, palette, 1.)
+    }
+    /// Preserve logical pane/divider/hit geometry; paint decorative ink at the
+    /// actual host scale through the existing shared separator policy.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_at_scale(
+        &mut self,
+        scene: &mut Scene,
+        model: &mut SplitView,
+        bounds: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        backing_scale: f32,
+    ) -> SplitViewLayout {
         if !valid(bounds, clip) {
             self.cancel(model);
             self.layout = SplitViewLayout::default();
@@ -385,7 +414,7 @@ impl SplitViewView {
             && self.layout.divider.visible_frame().is_some_and(has_area)
         {
             let clipped = safe_clip(scene, clip);
-            super::extended::separator(
+            super::extended::separator_at_scale(
                 scene,
                 divider,
                 palette,
@@ -393,6 +422,7 @@ impl SplitViewView {
                     Axis::Horizontal => Axis::Vertical,
                     Axis::Vertical => Axis::Horizontal,
                 },
+                backing_scale,
             );
             if clipped {
                 scene.pop_clip();
@@ -402,6 +432,21 @@ impl SplitViewView {
     }
     pub fn layout(&self) -> SplitViewLayout {
         self.layout
+    }
+    /// Clipped resize target and movement axis for a host's native hover cursor.
+    /// Constrained, hidden, and inactive splitters do not advertise resizing.
+    pub fn resize_target(&self, model: &SplitView) -> Option<(Rect, Axis)> {
+        if !self.window_active
+            || !self.layout.frame.visible_frame().is_some_and(has_area)
+            || !self.layout.divider.visible_frame().is_some_and(has_area)
+            || model.is_constrained(self.layout.frame.frame(), self.axis)
+        {
+            return None;
+        }
+        self.layout
+            .divider_hit
+            .filter(|r| has_area(*r))
+            .map(|r| (r, self.axis))
     }
     pub fn pointer_down(&mut self, p: Point, model: &mut SplitView) -> bool {
         if !self.window_active || !self.layout.divider_hit.is_some_and(|r| r.contains(p)) {
@@ -413,6 +458,18 @@ impl SplitViewView {
         };
         self.dragging = model.begin_drag(axis, self.layout.frame.frame(), self.axis);
         self.dragging
+    }
+    /// A double click resets without starting another captured gesture.
+    pub fn double_click(&mut self, p: Point, model: &mut SplitView) -> bool {
+        if !self.window_active
+            || !self.layout.divider_hit.is_some_and(|r| r.contains(p))
+            || model.is_constrained(self.layout.frame.frame(), self.axis)
+        {
+            return false;
+        }
+        self.dragging = false;
+        model.reset();
+        true
     }
     pub fn pointer_move(&mut self, p: Point, model: &mut SplitView) -> bool {
         if !self.window_active || !self.dragging {
@@ -433,11 +490,14 @@ impl SplitViewView {
         was
     }
     pub fn key(&mut self, key: ControlKey, model: &mut SplitView) -> bool {
-        if !self.window_active {
+        if !self.window_active || !self.layout.frame.visible_frame().is_some_and(has_area) {
             return false;
         }
         if key == ControlKey::Escape {
             return self.cancel(model);
+        }
+        if matches!(key, ControlKey::Enter | ControlKey::Space) {
+            self.dragging = false;
         }
         model.key_in(key, self.layout.frame.frame(), self.axis)
     }
@@ -490,14 +550,16 @@ impl ButtonRuntime {
         palette: Palette,
         role: proposal::TextRole,
         variant: ButtonVariant,
+        radius: Option<f32>,
     ) -> ButtonComponentLayout {
         if !valid(frame, clip) {
             self.blur();
+            self.button.clear_layout();
             self.layout = ButtonComponentLayout::default();
             return self.layout;
         }
         self.button.state.focused = self.focused && self.window_active;
-        let l = self.button.render(
+        let l = self.button.render_with_radius(
             scene,
             text,
             label,
@@ -508,6 +570,7 @@ impl ButtonRuntime {
             ButtonSize::Body,
             role,
             ButtonTextAlign::Leading,
+            radius,
         );
         self.layout = ButtonComponentLayout {
             frame: l.frame,
@@ -531,9 +594,11 @@ impl ButtonRuntime {
         role: proposal::TextRole,
         variant: ButtonVariant,
         icon_slot_width: f32,
+        radius: Option<f32>,
     ) -> (ButtonComponentLayout, Rect) {
         if !valid(frame, clip) {
             self.blur();
+            self.button.clear_layout();
             self.layout = ButtonComponentLayout::default();
             return (self.layout, Rect::default());
         }
@@ -560,7 +625,7 @@ impl ButtonRuntime {
                 .max(label_size.height + vertical_inset * 2.),
         );
         self.button.state.focused = self.focused && self.window_active;
-        let button_layout = self.button.render(
+        let button_layout = self.button.render_with_radius(
             scene,
             text,
             "",
@@ -571,9 +636,10 @@ impl ButtonRuntime {
             ButtonSize::Body,
             role,
             ButtonTextAlign::Leading,
+            radius,
         );
-        let icon_side = proposal::metric("size", "size-icon-artboard")
-            .unwrap_or(24.)
+        let icon_side = proposal::metric("size", "size-icon-preview")
+            .expect("Disclosure icon artboard token")
             .min(slot_width);
         let row_bounds = Rect::new(
             button_layout.content.min_x(),
@@ -694,6 +760,12 @@ pub struct DisclosureView {
     motion_now: Duration,
 }
 impl DisclosureView {
+    fn sync_model(&mut self, model: &Disclosure) {
+        self.runtime.button.state.disabled = model.disabled;
+        if model.disabled {
+            self.runtime.cancel();
+        }
+    }
     #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
@@ -706,7 +778,7 @@ impl DisclosureView {
         palette: Palette,
         role: proposal::TextRole,
     ) -> ButtonComponentLayout {
-        self.runtime.button.state.disabled = model.disabled;
+        self.sync_model(model);
         let (layout, icon_frame) = self.runtime.render_icon_label(
             scene,
             text,
@@ -715,8 +787,9 @@ impl DisclosureView {
             clip,
             palette,
             role,
-            ButtonVariant::Primary,
+            ButtonVariant::Quiet,
             24.,
+            Some(proposal::metric("radius", "radius-row").expect("Disclosure radius token")),
         );
         self.icon_frame = icon_frame;
         layout
@@ -744,7 +817,7 @@ impl DisclosureView {
             icon_size,
             clip,
             palette,
-            icon_foreground(palette, self.runtime.button.state, ButtonVariant::Primary),
+            icon_foreground(palette, self.runtime.button.state, ButtonVariant::Quiet),
         )
     }
     #[allow(clippy::too_many_arguments)]
@@ -846,6 +919,7 @@ impl DisclosureView {
         self.runtime.pointer_down(p)
     }
     pub fn pointer_up(&mut self, p: Point, model: &mut Disclosure) -> bool {
+        self.sync_model(model);
         if self.runtime.pointer_up(p) {
             model.toggle()
         } else {
@@ -858,6 +932,7 @@ impl DisclosureView {
         down: bool,
         model: &mut Disclosure,
     ) -> ComponentEvent {
+        self.sync_model(model);
         if !matches!(k, ControlKey::Enter | ControlKey::Space) {
             return ComponentEvent::default();
         }
@@ -884,6 +959,7 @@ impl DisclosureView {
         self.runtime.layout
     }
     pub fn activate(&mut self, model: &mut Disclosure) -> bool {
+        self.sync_model(model);
         model.toggle()
     }
     pub fn set_window_active(&mut self, active: bool) {
@@ -900,11 +976,30 @@ pub struct IconButtonView {
     icon: IconView,
 }
 impl IconButtonView {
+    fn sync_model(&mut self, model: &crate::extended::IconButton) {
+        self.runtime.button.state.disabled = model.button.state.disabled;
+        self.runtime.button.state.loading = model.button.state.loading;
+        self.runtime.button.state.selected = model.button.state.selected;
+        if model.button.state.disabled || model.button.state.loading {
+            self.runtime.cancel();
+        }
+    }
     pub fn new() -> Self {
         Self {
             runtime: ButtonRuntime::default(),
             icon: IconView::default(),
         }
+    }
+    /// Natural square hit size from the existing IconButton contract. Hosts
+    /// may use a larger explicit frame; render never silently resizes it.
+    pub fn measure(compact: bool) -> Size {
+        let token = if compact {
+            "size-icon-button-compact"
+        } else {
+            "size-icon-button"
+        };
+        let side = proposal::metric("size", token).expect("IconButton hit size token");
+        Size::new(side, side)
     }
     pub fn render(
         &mut self,
@@ -915,7 +1010,7 @@ impl IconButtonView {
         clip: Option<Rect>,
         palette: Palette,
     ) -> ButtonComponentLayout {
-        self.runtime.button.state.disabled = model.button.state.disabled;
+        self.sync_model(model);
         let l = self.runtime.render(
             scene,
             text,
@@ -925,6 +1020,7 @@ impl IconButtonView {
             palette,
             proposal::TextRole::UiBody,
             ButtonVariant::Quiet,
+            Some(proposal::metric("radius", "radius-control").expect("IconButton radius token")),
         );
         model.button.state = self.runtime.button.state;
         l
@@ -951,6 +1047,8 @@ impl IconButtonView {
     }
     /// Paint the icon after the host has released its text adapter borrow.
     /// Geometry still comes from the latest component-owned button layout.
+    /// A non-positive/non-finite icon_size uses size-icon-standard; a positive
+    /// explicit size remains supported and is fitted by the existing IconView.
     pub fn render_icon(
         &mut self,
         scene: &mut Scene,
@@ -960,6 +1058,11 @@ impl IconButtonView {
         palette: Palette,
         icon_size: f32,
     ) -> IconLayout {
+        let icon_size = if icon_size.is_finite() && icon_size > 0. {
+            icon_size
+        } else {
+            proposal::metric("size", "size-icon-standard").expect("IconButton icon size token")
+        };
         self.icon.render_tinted(
             scene,
             renderer,
@@ -981,6 +1084,7 @@ impl IconButtonView {
         self.runtime.pointer_down(p)
     }
     pub fn pointer_up(&mut self, p: Point, model: &mut crate::extended::IconButton) -> bool {
+        self.sync_model(model);
         let a = self.runtime.pointer_up(p);
         model.button.state = self.runtime.button.state;
         a
@@ -999,16 +1103,21 @@ impl IconButtonView {
         down: bool,
         model: &mut crate::extended::IconButton,
     ) -> ComponentEvent {
+        self.sync_model(model);
         let consumed = matches!(k, ControlKey::Enter | ControlKey::Space)
             && self.runtime.window_active
             && self.runtime.focused
-            && !model.button.state.disabled;
-        self.runtime.button.state.disabled = model.button.state.disabled;
+            && !model.button.state.disabled
+            && !model.button.state.loading;
         let changed = self.runtime.key(k, down);
         model.button.state = self.runtime.button.state;
         ComponentEvent { consumed, changed }
     }
     pub fn activate(&mut self, model: &mut crate::extended::IconButton) -> bool {
+        self.sync_model(model);
+        if model.button.state.disabled || model.button.state.loading {
+            return false;
+        }
         self.runtime.focus(false);
         self.key(ControlKey::Enter, true, model)
     }
@@ -1046,6 +1155,12 @@ pub struct LinkView {
     visible: Option<Rect>,
 }
 impl LinkView {
+    fn sync_model(&mut self, model: &Link) {
+        self.button.state.disabled = model.button.state.disabled;
+        if model.button.state.disabled {
+            self.cancel();
+        }
+    }
     #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
@@ -1058,13 +1173,13 @@ impl LinkView {
         palette: Palette,
         role: proposal::TextRole,
     ) -> ButtonComponentLayout {
-        self.button.state.disabled = model.button.state.disabled;
+        self.sync_model(model);
         let visible = ControlFrame::new(frame, clip).visible_frame();
         if !visible.is_some_and(has_area) || model.button.state.disabled {
             self.blur();
         }
-        let inset = proposal::metric("spacing", "space-button-body-inset")
-            .unwrap_or(8.)
+        let inset = proposal::metric("spacing", "space-regular")
+            .expect("Link content inset token")
             .max(0.);
         let content = Rect::new(
             frame.min_x() + inset,
@@ -1120,6 +1235,7 @@ impl LinkView {
         true
     }
     pub fn pointer_up(&mut self, p: Point, model: &mut Link) -> bool {
+        self.sync_model(model);
         let armed = std::mem::replace(&mut self.pressed, false);
         let inside = self.window_active && self.visible.is_some_and(|v| v.contains(p));
         let activated = self.button.pointer_up(inside) && armed && self.window_active;
@@ -1127,6 +1243,7 @@ impl LinkView {
         activated
     }
     pub fn key(&mut self, k: ControlKey, down: bool, model: &mut Link) -> ComponentEvent {
+        self.sync_model(model);
         if k != ControlKey::Enter
             || !self.focused
             || !self.window_active
@@ -1143,6 +1260,10 @@ impl LinkView {
         }
     }
     pub fn activate(&mut self, model: &mut Link) -> bool {
+        self.sync_model(model);
+        if model.button.state.disabled {
+            return false;
+        }
         if !self.focused {
             self.focus(false);
         }
@@ -1157,6 +1278,7 @@ impl LinkView {
     pub fn blur(&mut self) {
         self.focused = false;
         self.focus_visible = false;
+        self.hovered = false;
         self.button.blur();
         self.cancel();
     }
@@ -1206,6 +1328,7 @@ pub struct SegmentedControlView {
     pressed: Option<usize>,
     space_armed: Option<usize>,
     window_active: bool,
+    disabled: bool,
 }
 impl SegmentedControlView {
     pub fn new(count: usize) -> Self {
@@ -1218,6 +1341,7 @@ impl SegmentedControlView {
             pressed: None,
             space_armed: None,
             window_active: true,
+            disabled: false,
         }
     }
     #[allow(clippy::too_many_arguments)]
@@ -1241,12 +1365,39 @@ impl SegmentedControlView {
             return self.layout.clone();
         }
         let count = model.len().min(labels.len()).min(self.buttons.len());
+        if self
+            .space_armed
+            .is_some_and(|i| i >= count || !model.is_enabled(i))
+            || self
+                .pressed
+                .is_some_and(|i| i >= count || !model.is_enabled(i))
+        {
+            self.cancel();
+        }
+        if self
+            .focused
+            .is_some_and(|i| i >= count || !model.is_enabled(i))
+        {
+            self.focused = (0..count).find(|i| model.is_enabled(*i));
+        }
         let cells = Stack::new(Axis::Horizontal).layout(frame, count);
-        let mut items = Vec::with_capacity(count);
+        let mut items = vec![None; count];
         let clipped = safe_clip(scene, clip);
-        for i in 0..count {
+        let focus_last = self.focused.filter(|&index| {
+            index < count
+                && self.focus_visible
+                && self.window_active
+                && !self.disabled
+                && model.is_enabled(index)
+        });
+        // Keep hit/layout slots in model order, while keyboard focus paints
+        // above adjacent opaque segments using the existing Button painter.
+        for i in (0..count)
+            .filter(|i| Some(*i) != focus_last)
+            .chain(focus_last)
+        {
             let button = &mut self.buttons[i];
-            let disabled = !model.is_enabled(i);
+            let disabled = self.disabled || !model.is_enabled(i);
             button.state.disabled = disabled;
             button.state.selected = model.selected == i;
             button.state.focused = self.window_active && self.focused == Some(i);
@@ -1270,8 +1421,12 @@ impl SegmentedControlView {
                 role,
                 ButtonTextAlign::Leading,
             );
-            items.push(l);
+            items[i] = Some(l);
         }
+        let items = items
+            .into_iter()
+            .map(|item| item.expect("every segment retains its original layout slot"))
+            .collect();
         if clipped {
             scene.pop_clip();
         }
@@ -1289,6 +1444,10 @@ impl SegmentedControlView {
         self.layout.clone()
     }
     pub fn pointer_move(&mut self, p: Point) {
+        if self.disabled {
+            self.hovered = None;
+            return;
+        }
         self.hovered = self.layout.items.iter().position(|l| l.hit_test(p));
         for (i, b) in self.buttons.iter_mut().enumerate() {
             b.pointer_move_at(p);
@@ -1298,7 +1457,7 @@ impl SegmentedControlView {
         }
     }
     pub fn pointer_down(&mut self, p: Point) -> Option<usize> {
-        if !self.window_active {
+        if !self.window_active || self.disabled {
             return None;
         }
         let i = self.layout.items.iter().position(|l| l.hit_test(p))?;
@@ -1314,7 +1473,7 @@ impl SegmentedControlView {
     pub fn pointer_up(&mut self, p: Point, model: &mut SegmentedControl) -> Option<usize> {
         let i = self.pressed.take()?;
         let ok = self.buttons.get_mut(i).is_some_and(|b| b.pointer_up_at(p));
-        if ok && self.window_active && model.select(i) {
+        if ok && self.window_active && !self.disabled && model.select(i) {
             Some(i)
         } else {
             None
@@ -1326,10 +1485,14 @@ impl SegmentedControlView {
         down: bool,
         model: &mut SegmentedControl,
     ) -> ComponentEvent {
-        let Some(index) = self.focused.filter(|_| self.window_active) else {
+        let Some(index) = self
+            .focused
+            .filter(|_| self.window_active && !self.disabled)
+        else {
             return ComponentEvent::default();
         };
         if !model.is_enabled(index) {
+            self.cancel();
             return ComponentEvent::default();
         }
         if key == ControlKey::Space {
@@ -1365,10 +1528,11 @@ impl SegmentedControlView {
             return ComponentEvent::default();
         }
         self.focus_visible = true;
-        let changed = model.key(key);
-        if changed {
-            self.focused = Some(model.selected);
+        let changed = model.key_from(key, index);
+        if self.focused != Some(model.selected) {
+            self.cancel();
         }
+        self.focused = Some(model.selected);
         ComponentEvent {
             consumed: true,
             changed,
@@ -1378,7 +1542,7 @@ impl SegmentedControlView {
         self.key_event(key, down, model).changed
     }
     pub fn select(&mut self, index: usize, model: &mut SegmentedControl) -> bool {
-        let changed = model.select(index);
+        let changed = !self.disabled && model.select(index);
         if changed {
             self.focused = Some(index);
             self.focus_visible = false;
@@ -1390,7 +1554,10 @@ impl SegmentedControlView {
         self.focus_with_visibility(i, true)
     }
     pub fn focus_with_visibility(&mut self, i: usize, visible: bool) {
-        if i < self.buttons.len() && self.buttons.get(i).is_some_and(|b| !b.state.disabled) {
+        if !self.disabled
+            && i < self.buttons.len()
+            && self.buttons.get(i).is_some_and(|b| !b.state.disabled)
+        {
             self.focused = Some(i);
             self.focus_visible = visible;
         }
@@ -1408,11 +1575,27 @@ impl SegmentedControlView {
         }
         pointer || keyboard
     }
+    /// Temporarily disable the whole view without changing the controlled
+    /// selection or any per-item availability in the model. Disabling cancels
+    /// pending pointer/Space activation and clears focus; re-enabling does not
+    /// restore an old press or automatically move focus.
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+        if disabled {
+            self.blur();
+            self.hovered = None;
+        }
+    }
     pub fn set_window_active(&mut self, v: bool) {
         self.window_active = v;
         if !v {
             self.blur();
         }
+    }
+    /// The current roving-focus item, independent of controlled selection.
+    /// Hosts can project the actual focused part without mirroring its state.
+    pub fn focused(&self) -> Option<usize> {
+        self.focused
     }
     pub fn layout(&self) -> &SegmentedLayout {
         &self.layout
@@ -1438,6 +1621,7 @@ pub struct BreadcrumbView {
     hovered: Option<usize>,
     pressed: Option<usize>,
     window_active: bool,
+    disabled: bool,
 }
 impl BreadcrumbView {
     #[allow(clippy::too_many_arguments)]
@@ -1460,6 +1644,16 @@ impl BreadcrumbView {
             return self.layout.clone();
         }
         let n = model.items.len().min(labels.len());
+        if self.buttons.len() != n {
+            self.cancel();
+        }
+        if self.focused.is_some_and(|i| i + 1 >= n) {
+            self.focused = None;
+            self.focus_visible = false;
+        }
+        if self.hovered.is_some_and(|i| i + 1 >= n) {
+            self.hovered = None;
+        }
         self.buttons.resize_with(n, Button::default);
         let mut cells = Vec::new();
         let mut x = frame.min_x();
@@ -1486,7 +1680,7 @@ impl BreadcrumbView {
         let mut items = Vec::new();
         for i in 0..n {
             let b = &mut self.buttons[i];
-            b.state.disabled = i + 1 == n;
+            b.state.disabled = self.disabled || i + 1 == n;
             b.state.selected = i + 1 == n;
             b.state.focused = self.window_active && self.focused == Some(i);
             b.state.focus_visible = b.state.focused && self.focus_visible;
@@ -1532,6 +1726,12 @@ impl BreadcrumbView {
             .items
             .iter()
             .any(|item| item.visible_frame().is_some_and(has_area))
+            || self.focused.is_some_and(|index| {
+                self.layout
+                    .items
+                    .get(index)
+                    .is_none_or(|item| !item.visible_frame().is_some_and(has_area))
+            })
         {
             self.cancel();
             self.focused = None;
@@ -1549,7 +1749,7 @@ impl BreadcrumbView {
         }
     }
     pub fn pointer_down(&mut self, p: Point) -> Option<usize> {
-        if !self.window_active {
+        if !self.window_active || self.disabled {
             return None;
         }
         let i = self.layout.items.iter().position(|l| l.contains(p))?;
@@ -1564,7 +1764,13 @@ impl BreadcrumbView {
     }
     pub fn pointer_up(&mut self, p: Point, model: &Breadcrumb) -> Option<usize> {
         let i = self.pressed.take()?;
-        if self.window_active && self.buttons[i].pointer_up_at(p) {
+        if self.window_active
+            && !self.disabled
+            && self
+                .buttons
+                .get_mut(i)
+                .is_some_and(|button| button.pointer_up_at(p))
+        {
             model.activate(i)
         } else {
             None
@@ -1576,10 +1782,14 @@ impl BreadcrumbView {
         down: bool,
         model: &Breadcrumb,
     ) -> (bool, Option<usize>) {
-        let Some(i) = self.focused.filter(|_| self.window_active) else {
+        let Some(i) = self
+            .focused
+            .filter(|_| self.window_active && !self.disabled)
+        else {
             return (false, None);
         };
-        if k == ControlKey::Space || k == ControlKey::Enter {
+        // Breadcrumb ancestors are links; Space stays available for page scroll.
+        if k == ControlKey::Enter {
             if down && k == ControlKey::Enter {
                 return (true, model.activate(i));
             }
@@ -1591,15 +1801,22 @@ impl BreadcrumbView {
         self.key_event(k, down, model).1
     }
     pub fn activate(&mut self, index: usize, model: &Breadcrumb) -> Option<usize> {
+        if self.disabled || !self.window_active {
+            return None;
+        }
+        let index = model.activate(index)?;
         self.focused = Some(index);
         self.focus_visible = false;
-        model.activate(index)
+        Some(index)
     }
     pub fn focus(&mut self, i: usize) {
         self.focus_with_visibility(i, true)
     }
     pub fn focus_with_visibility(&mut self, i: usize, visible: bool) {
-        if i + 1 < self.buttons.len() && !self.buttons[i].state.disabled {
+        if !self.disabled
+            && i < self.buttons.len().saturating_sub(1)
+            && !self.buttons[i].state.disabled
+        {
             self.focused = Some(i);
             self.focus_visible = visible;
         }
@@ -1615,6 +1832,15 @@ impl BreadcrumbView {
             b.cancel();
         }
         had
+    }
+    /// Disable all navigable ancestors without changing the breadcrumb path.
+    /// The current page remains noninteractive regardless of this gate.
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+        if disabled {
+            self.blur();
+            self.hovered = None;
+        }
     }
     pub fn set_window_active(&mut self, v: bool) {
         self.window_active = v;
@@ -1636,6 +1862,7 @@ impl Default for BreadcrumbView {
             hovered: None,
             pressed: None,
             window_active: true,
+            disabled: false,
         }
     }
 }
@@ -1648,9 +1875,14 @@ pub struct FilteredMenuView {
     menu: crate::Menu,
     menu_view: MenuView,
     mapping: Vec<usize>,
+    labels: Vec<String>,
     layout: Option<MenuLayout>,
 }
 impl FilteredMenuView {
+    pub fn is_presented(&self) -> bool {
+        self.menu_view.is_presented()
+    }
+
     /// Forward the owned popup scroll lifecycle to the host's frame clock.
     pub fn set_reduced_motion(&mut self, reduced: bool) -> bool {
         self.menu_view.set_reduced_motion(reduced)
@@ -1670,9 +1902,13 @@ impl FilteredMenuView {
             menu: crate::Menu::new(0),
             menu_view: MenuView::new_external(),
             mapping: Vec::new(),
+            labels: Vec::new(),
             layout: None,
         }
     }
+    /// `items` and `mapping` are parallel rendered-candidate snapshots. Each
+    /// mapping entry is an index in the original source; `active` is a filtered
+    /// row position. Semantic focus/activation accept original indices instead.
     #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
@@ -1689,7 +1925,19 @@ impl FilteredMenuView {
         role: proposal::TextRole,
         compact: bool,
     ) -> Option<MenuLayout> {
+        // A press belongs to the options actually presented at pointer-down.
+        // Updating labels/mapping must not retarget its eventual release.
+        if self.mapping != mapping || self.labels != items {
+            self.cancel();
+        }
         self.mapping = mapping.to_vec();
+        self.labels = items.to_vec();
+        // An open query with no candidates belongs to the caller's empty
+        // feedback. No phantom option surface may paint or intercept input.
+        if items.is_empty() {
+            self.cancel();
+            return None;
+        }
         self.menu.items.count = items.len();
         self.menu.items.selected = active.unwrap_or(0).min(items.len().saturating_sub(1));
         self.menu.open = open;
@@ -1699,6 +1947,7 @@ impl FilteredMenuView {
                 .set_window_active_with_model(&mut self.menu, true);
         }
         let labels: Vec<&str> = items.iter().map(String::as_str).collect();
+        self.layout = None;
         let l = self.menu_view.render_with_model(
             &mut self.menu,
             scene,
@@ -1713,6 +1962,85 @@ impl FilteredMenuView {
         )?;
         self.layout = Some(l.clone());
         Some(l)
+    }
+    /// Whether this candidate snapshot still describes the live source model.
+    /// Hosts can use the same guard when publishing semantic nodes.
+    pub fn is_current(&self, model: &ComboBox) -> bool {
+        !model.disabled
+            && model.open
+            && self.menu.open
+            && self.layout.is_some()
+            && model.filtered() == self.mapping
+            && self.source_matches(model)
+    }
+    fn source_matches(&self, model: &ComboBox) -> bool {
+        self.mapping.len() == self.labels.len()
+            && self
+                .mapping
+                .iter()
+                .zip(&self.labels)
+                .all(|(index, label)| model.items.get(*index) == Some(label))
+    }
+    // Confirmation changes the query, not the outgoing rows. Rebuild those
+    // existing labels in the current atlas until exit finishes. Actual source
+    // replacement still invalidates the snapshot; no alternate model is added.
+    fn mapping_for_model(&mut self, model: &ComboBox) -> Vec<usize> {
+        if !model.open && self.is_presented() {
+            if self.source_matches(model) {
+                return self.mapping.clone();
+            }
+            self.cancel();
+        }
+        model.filtered()
+    }
+    fn accepts_model(&mut self, model: &ComboBox) -> bool {
+        let current = self.is_current(model);
+        if !current {
+            if !model.open && !model.disabled && self.source_matches(model) {
+                self.dismiss();
+            } else {
+                self.cancel();
+            }
+        }
+        current
+    }
+    /// Focus a currently rendered candidate by its original source index.
+    /// Rejects closed, disabled and stale query/item snapshots. Focus does not
+    /// commit a value; the editable surface keeps ownership of text/IME focus.
+    pub fn focus_item(&mut self, original: usize, model: &mut ComboBox) -> bool {
+        if !self.accepts_model(model) {
+            return false;
+        }
+        let Some(filtered) = self.mapping.iter().position(|i| *i == original) else {
+            return false;
+        };
+        if !self
+            .menu_view
+            .focus_item_with_model(&mut self.menu, filtered)
+        {
+            return false;
+        }
+        model.active = Some(original);
+        true
+    }
+    /// Confirm a currently rendered candidate and return its original index.
+    /// Shares MenuRuntime's mounted guard and the model's normal Enter path.
+    pub fn activate_item(&mut self, original: usize, model: &mut ComboBox) -> Option<usize> {
+        if !self.accepts_model(model) {
+            return None;
+        }
+        let filtered = self.mapping.iter().position(|i| *i == original)?;
+        if !matches!(
+            self.menu_view
+                .activate_item_with_model(&mut self.menu, filtered),
+            MenuEvent::Activated { .. }
+        ) {
+            return None;
+        }
+        model.active = Some(original);
+        let selected = model.key(ControlKey::Enter);
+        self.dismiss();
+        selected
     }
     pub fn pointer_move(&mut self, p: Point) -> bool {
         let before = self.menu.items.selected;
@@ -1740,12 +2068,13 @@ impl FilteredMenuView {
             .is_some_and(|layout| layout.visible.is_some_and(has_area))
     }
     pub fn dismiss(&mut self) {
-        let _ = self
-            .menu_view
-            .set_window_active_with_model(&mut self.menu, false);
+        let _ = self.menu_view.deactivate_with_model(&mut self.menu);
+        self.layout = None;
         self.menu.open = false;
     }
     pub fn cancel(&mut self) {
+        self.menu_view.clear_presentation();
+        self.layout = None;
         let _ = self
             .menu_view
             .set_window_active_with_model(&mut self.menu, false);
@@ -1788,6 +2117,10 @@ pub struct SelectView {
     disabled: bool,
 }
 impl SelectView {
+    /// Logical close may retain outgoing paint before the next frame starts exit.
+    pub fn is_presented(&self) -> bool {
+        self.menu.is_presented()
+    }
     /// Forward the owned popup scroll lifecycle to the host's frame clock.
     pub fn set_reduced_motion(&mut self, reduced: bool) -> bool {
         self.menu.set_reduced_motion(reduced)
@@ -1815,6 +2148,11 @@ impl SelectView {
             self.cancel(model);
         }
     }
+    /// Validation belongs to the caller; this projects it through the existing
+    /// shared error boundary without disabling selection or clearing its value.
+    pub fn set_error(&mut self, error: bool) {
+        self.trigger.state.error = error;
+    }
     #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
@@ -1829,14 +2167,39 @@ impl SelectView {
         role: proposal::TextRole,
         compact: bool,
     ) -> SelectLayout {
+        self.render_trigger(scene, text, model, labels, frame, clip, palette, role);
+        self.render_options(
+            scene, text, model, labels, viewport, clip, palette, role, compact,
+        );
+        self.layout.clone()
+    }
+    /// Paint and lay out only the trigger. Call render_options in the host's
+    /// overlay pass after base content; render remains the combined convenience.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_trigger(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &mut crate::Select,
+        labels: &[&str],
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+    ) -> ButtonLayout {
         if !valid(frame, clip) {
             self.cancel(model);
+            self.trigger.blur();
+            self.trigger.clear_layout();
             self.layout = SelectLayout::default();
-            return self.layout.clone();
+            return self.layout.trigger;
         }
-        self.trigger.state.disabled = self.disabled;
+        if labels.is_empty() {
+            self.cancel(model);
+        }
+        self.trigger.state.disabled = self.disabled || labels.is_empty();
         self.trigger.state.focused =
-            self.trigger.state.focused && self.window_active && !self.disabled;
+            self.trigger.state.focused && self.window_active && !self.trigger.state.disabled;
         let selected = model.selected.min(labels.len().saturating_sub(1));
         let title = labels.get(selected).copied().unwrap_or("");
         let trigger = self.trigger.render(
@@ -1857,12 +2220,44 @@ impl SelectView {
         } else if model.menu.items.selected >= labels.len() {
             model.menu.items.selected = labels.len().saturating_sub(1);
         }
+        self.layout = SelectLayout {
+            trigger,
+            popup: None,
+        };
+        if !trigger.visible.is_some_and(has_area) {
+            self.cancel(model);
+            self.trigger.blur();
+        }
+        trigger
+    }
+    /// Paint the owned menu above the host's base content, using the trigger
+    /// layout from this frame. The existing menu still owns its state/lifecycle.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_options(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &mut crate::Select,
+        labels: &[&str],
+        viewport: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+        compact: bool,
+    ) -> Option<MenuLayout> {
+        model.menu.items.count = labels.len();
+        if labels.is_empty() || self.disabled || !self.window_active {
+            self.cancel(model);
+            self.layout.popup = None;
+            return None;
+        }
+        let trigger = self.layout.trigger;
         if model.menu.open {
             let _ = self
                 .menu
                 .set_window_active_with_model(&mut model.menu, self.window_active);
         }
-        let popup = if model.menu.open {
+        let popup = if model.menu.open || self.menu.is_presented() {
             self.menu.render_with_model(
                 &mut model.menu,
                 scene,
@@ -1878,7 +2273,7 @@ impl SelectView {
         } else {
             None
         };
-        self.layout = SelectLayout { trigger, popup };
+        self.layout.popup = popup;
         if !self.layout.trigger.visible.is_some_and(has_area)
             || model.menu.open
                 && self
@@ -1888,10 +2283,15 @@ impl SelectView {
                     .is_none_or(|layout| !layout.visible.is_some_and(has_area))
         {
             self.cancel(model);
+            self.trigger.blur();
         }
-        self.layout.clone()
+        self.layout.popup.clone()
     }
     pub fn pointer_move(&mut self, p: Point, model: &mut crate::Select) {
+        if model.menu.items.count == 0 {
+            self.cancel(model);
+            return;
+        }
         if !self.window_active || self.disabled {
             return;
         }
@@ -1901,6 +2301,10 @@ impl SelectView {
         }
     }
     pub fn pointer_down(&mut self, p: Point, model: &mut crate::Select) -> bool {
+        if model.menu.items.count == 0 {
+            self.cancel(model);
+            return false;
+        }
         if !self.window_active || self.disabled {
             return false;
         }
@@ -1920,9 +2324,19 @@ impl SelectView {
                 MenuEvent::Dismissed { .. }
             );
         }
-        self.trigger.pointer_down_at(p) || dismissed
+        if dismissed {
+            // The outside press already dismissed this open selection menu.
+            // Do not arm its trigger again and reopen on the same release.
+            self.trigger.cancel();
+            return true;
+        }
+        self.trigger.pointer_down_at(p)
     }
     pub fn pointer_up(&mut self, p: Point, model: &mut crate::Select) -> MenuEvent {
+        if model.menu.items.count == 0 {
+            self.cancel(model);
+            return MenuEvent::None;
+        }
         if !self.window_active || self.disabled {
             return MenuEvent::None;
         }
@@ -1947,6 +2361,10 @@ impl SelectView {
         MenuEvent::None
     }
     pub fn key(&mut self, key: ControlKey, down: bool, model: &mut crate::Select) -> MenuEvent {
+        if model.menu.items.count == 0 {
+            self.cancel(model);
+            return MenuEvent::None;
+        }
         if !self.window_active || self.disabled {
             return MenuEvent::None;
         }
@@ -1954,6 +2372,16 @@ impl SelectView {
             let event = self.menu.key_with_model(&mut model.menu, key, down);
             if let MenuEvent::Activated { index, .. } = event {
                 let _ = model.choose(index);
+            }
+            // The owned trigger regains keyboard focus presentation when its
+            // menu closes by keyboard, even if a pointer originally opened it.
+            if down
+                && matches!(
+                    event,
+                    MenuEvent::Activated { .. } | MenuEvent::Dismissed { .. }
+                )
+            {
+                self.focus(true);
             }
             event
         } else if matches!(key, ControlKey::Enter | ControlKey::Space)
@@ -1967,12 +2395,31 @@ impl SelectView {
             MenuEvent::None
         }
     }
+    /// Focus a mounted popup option without committing the selected value.
+    pub fn focus_option(&mut self, index: usize, model: &mut crate::Select) -> bool {
+        if !self.window_active || self.disabled {
+            return false;
+        }
+        self.menu.focus_item_with_model(&mut model.menu, index)
+    }
+    /// Commit through the retained menu, then restore the original trigger focus.
+    pub fn activate_option(&mut self, index: usize, model: &mut crate::Select) -> MenuEvent {
+        if !self.window_active || self.disabled {
+            return MenuEvent::None;
+        }
+        let event = self.menu.activate_item_with_model(&mut model.menu, index);
+        if let MenuEvent::Activated { index, .. } = event {
+            let _ = model.choose(index);
+            self.focus(true);
+        }
+        event
+    }
     pub fn wheel_event(
         &mut self,
         input: crate::MenuWheelInput,
         model: &crate::Select,
     ) -> crate::MenuWheelEvent {
-        if !self.window_active || !model.menu.open {
+        if !self.window_active || !model.menu.open || model.menu.items.count == 0 {
             return crate::MenuWheelEvent::Ignored;
         }
         self.menu.wheel_event_with_model(&model.menu, input)
@@ -1982,6 +2429,7 @@ impl SelectView {
         self.trigger.state.focus_visible = visible;
     }
     pub fn blur(&mut self, model: &mut crate::Select) {
+        self.menu.clear_presentation();
         self.trigger.blur();
         model.menu.open = false;
         let _ = self
@@ -1989,6 +2437,7 @@ impl SelectView {
             .set_window_active_with_model(&mut model.menu, false);
     }
     pub fn cancel(&mut self, model: &mut crate::Select) {
+        self.menu.clear_presentation();
         self.trigger.cancel();
         model.menu.open = false;
         let _ = self
@@ -2036,7 +2485,7 @@ impl ComboBoxView {
             model.open = false;
             self.options.cancel();
         }
-        let map = model.filtered();
+        let map = self.options.mapping_for_model(model);
         let filtered: Vec<String> = map.iter().map(|i| model.items[*i].clone()).collect();
         let active = model.active.and_then(|i| map.iter().position(|x| *x == i));
         self.options.render(
@@ -2044,8 +2493,14 @@ impl ComboBoxView {
             compact,
         )
     }
+    pub fn focus_option(&mut self, original: usize, model: &mut ComboBox) -> bool {
+        self.options.focus_item(original, model)
+    }
+    pub fn activate_option(&mut self, original: usize, model: &mut ComboBox) -> Option<usize> {
+        self.options.activate_item(original, model)
+    }
     pub fn pointer_move(&mut self, p: Point, model: &mut ComboBox) {
-        if self.options.pointer_move(p) {
+        if self.options.accepts_model(model) && self.options.pointer_move(p) {
             model.active = self.options.active_index();
         }
     }
@@ -2053,19 +2508,22 @@ impl ComboBoxView {
         self.options.pointer_down(p)
     }
     pub fn pointer_up(&mut self, p: Point, model: &mut ComboBox) -> Option<usize> {
+        if !self.options.accepts_model(model) {
+            return None;
+        }
         if let MenuEvent::Activated { index, .. } = self.options.pointer_up(p) {
-            let original = *self.options.mapping.get(index)?;
-            model.selected = Some(original);
-            model.query = model.items[original].clone();
-            model.open = false;
-            self.options.cancel();
-            Some(original)
+            let original = self.options.original_index(index)?;
+            model.active = Some(original);
+            let selected = model.key(ControlKey::Enter);
+            self.options.dismiss();
+            selected
         } else {
             None
         }
     }
     pub fn key_event(&mut self, k: ControlKey, down: bool, model: &mut ComboBox) -> ComponentEvent {
         if model.disabled {
+            self.options.cancel();
             return ComponentEvent::default();
         }
         let supported = matches!(
@@ -2088,7 +2546,7 @@ impl ComboBoxView {
             // through the last rendered menu would use stale query results.
             let _ = model.key(k);
             if !model.open {
-                self.options.cancel();
+                self.options.dismiss();
             }
         }
         ComponentEvent {
@@ -2103,9 +2561,10 @@ impl ComboBoxView {
         }
     }
     pub fn key(&mut self, k: ControlKey, down: bool, model: &mut ComboBox) -> Option<usize> {
-        let before = model.selected;
         let event = self.key_event(k, down, model);
-        if event.changed && model.selected != before {
+        // Confirmation is an event, including confirmation of the same value.
+        // Query/candidate movement, cancellation and key-up are not selections.
+        if down && k == ControlKey::Enter && event.changed && !model.open {
             model.selected
         } else {
             None
@@ -2118,8 +2577,18 @@ pub struct CommandPaletteView {
     trigger: Button,
     trigger_layout: Option<ButtonLayout>,
     window_active: bool,
+    return_focus: Option<usize>,
 }
 impl CommandPaletteView {
+    fn sync_trigger_availability(&mut self, model: &mut CommandPalette) -> bool {
+        self.trigger.state.disabled = model.combo.disabled;
+        if model.combo.disabled || !self.window_active {
+            self.cancel(model);
+            false
+        } else {
+            true
+        }
+    }
     #[allow(clippy::too_many_arguments)]
     pub fn render_trigger(
         &mut self,
@@ -2132,10 +2601,7 @@ impl CommandPaletteView {
         palette: Palette,
         role: proposal::TextRole,
     ) -> ButtonLayout {
-        self.trigger.state.disabled = model.combo.disabled;
-        if model.combo.disabled {
-            self.cancel(model);
-        }
+        self.sync_trigger_availability(model);
         self.trigger_layout = Some(self.trigger.render(
             scene,
             text,
@@ -2162,9 +2628,12 @@ impl CommandPaletteView {
         self.trigger.pointer_down_at(p)
     }
     pub fn pointer_up_trigger(&mut self, p: Point, model: &mut CommandPalette) -> bool {
+        if !self.sync_trigger_availability(model) {
+            return false;
+        }
         let activated = self.trigger.pointer_up_at(p);
         if activated && self.window_active {
-            model.open();
+            self.open(model);
             true
         } else {
             false
@@ -2176,8 +2645,7 @@ impl CommandPaletteView {
         down: bool,
         model: &mut CommandPalette,
     ) -> ComponentEvent {
-        if !self.window_active
-            || self.trigger.state.disabled
+        if !self.sync_trigger_availability(model)
             || !self.trigger.state.focused
             || !matches!(k, ControlKey::Enter | ControlKey::Space)
         {
@@ -2185,7 +2653,7 @@ impl CommandPaletteView {
         }
         let changed = self.trigger.key(k, down);
         if changed {
-            model.open();
+            self.open(model);
         }
         ComponentEvent {
             consumed: true,
@@ -2193,15 +2661,51 @@ impl CommandPaletteView {
         }
     }
     pub fn open(&mut self, model: &mut CommandPalette) {
-        model.open();
+        if self.sync_trigger_availability(model) {
+            self.return_focus = None;
+            model.open();
+        }
+    }
+    /// Open from a caller and request transfer to the host-owned query input.
+    /// Returns false when unavailable or already opened from a caller; repeated
+    /// activation must not reset the live query or replace the original caller.
+    /// This also adopts a palette just opened by the trigger methods.
+    pub fn open_from(&mut self, model: &mut CommandPalette, invoker: usize) -> bool {
+        if !self.sync_trigger_availability(model)
+            || (model.combo.open && self.return_focus.is_some())
+        {
+            return false;
+        }
+        if !model.combo.open {
+            model.open();
+        }
+        self.return_focus = Some(invoker);
+        self.blur_trigger();
+        true
+    }
+    /// Take the caller once after any close path. The host must validate that
+    /// this ID is still mounted and enabled before restoring focus. Scope exit
+    /// (`blur` or window deactivation) discards the handoff instead.
+    pub fn take_restore_focus(&mut self, model: &CommandPalette) -> Option<usize> {
+        if model.combo.open {
+            None
+        } else {
+            self.return_focus.take()
+        }
     }
     pub fn focus_trigger(&mut self, visible: bool) {
         self.trigger.state.focused = true;
         self.trigger.state.focus_visible = visible;
     }
-    pub fn blur(&mut self, model: &mut CommandPalette) {
+    /// Transfer focus to the query or another host target without dismissing
+    /// the palette. `blur` continues to release the entire component.
+    pub fn blur_trigger(&mut self) {
         self.trigger.blur();
+    }
+    pub fn blur(&mut self, model: &mut CommandPalette) {
+        self.blur_trigger();
         self.cancel(model);
+        self.return_focus = None;
     }
     pub fn cancel(&mut self, model: &mut CommandPalette) {
         model.combo.open = false;
@@ -2230,17 +2734,14 @@ impl CommandPaletteView {
         role: proposal::TextRole,
         compact: bool,
     ) -> Option<MenuLayout> {
-        if model.combo.disabled {
-            model.combo.open = false;
-            self.options.cancel();
-        }
+        self.sync_trigger_availability(model);
         if model.combo.open {
             let _ = self
                 .options
                 .menu_view
                 .set_window_active_with_model(&mut self.options.menu, true);
         }
-        let map = model.combo.filtered();
+        let map = self.options.mapping_for_model(&model.combo);
         let items: Vec<String> = map.iter().map(|i| model.combo.items[*i].clone()).collect();
         let active = model
             .combo
@@ -2267,7 +2768,8 @@ impl CommandPaletteView {
         down: bool,
         model: &mut CommandPalette,
     ) -> ComponentEvent {
-        if model.combo.disabled {
+        if model.combo.disabled || !self.window_active {
+            self.options.cancel();
             return ComponentEvent::default();
         }
         if !model.combo.open
@@ -2289,7 +2791,7 @@ impl CommandPaletteView {
             // its live query rather than a menu mapping populated by render.
             let _ = model.combo.key(k);
             if !model.combo.open {
-                self.options.cancel();
+                self.options.dismiss();
             }
         }
         ComponentEvent {
@@ -2304,16 +2806,33 @@ impl CommandPaletteView {
         }
     }
     pub fn key(&mut self, k: ControlKey, down: bool, model: &mut CommandPalette) -> Option<usize> {
-        let before = model.combo.selected;
         let event = self.key_event(k, down, model);
-        if event.changed && model.combo.selected != before {
+        // Executing the same command again must still notify the consumer.
+        if down && k == ControlKey::Enter && event.changed && !model.combo.open {
             model.combo.selected
         } else {
             None
         }
     }
+    pub fn focus_option(&mut self, original: usize, model: &mut CommandPalette) -> bool {
+        self.sync_trigger_availability(model) && self.options.focus_item(original, &mut model.combo)
+    }
+    pub fn activate_option(
+        &mut self,
+        original: usize,
+        model: &mut CommandPalette,
+    ) -> Option<usize> {
+        if !self.sync_trigger_availability(model) {
+            return None;
+        }
+        self.options.activate_item(original, &mut model.combo)
+    }
     pub fn pointer_move(&mut self, p: Point, model: &mut CommandPalette) {
-        if self.options.pointer_move(p) {
+        if !self.sync_trigger_availability(model) {
+            return;
+        }
+        self.trigger.pointer_move_at(p);
+        if self.options.accepts_model(&model.combo) && self.options.pointer_move(p) {
             model.combo.active = self.options.active_index();
         }
     }
@@ -2321,13 +2840,19 @@ impl CommandPaletteView {
         self.options.pointer_down(p)
     }
     pub fn pointer_up(&mut self, p: Point, model: &mut CommandPalette) -> Option<usize> {
-        if let MenuEvent::Activated { index, .. } = self.options.pointer_up(p) {
-            let original = *self.options.mapping.get(index)?;
-            model.combo.selected = Some(original);
-            model.combo.query = model.combo.items[original].clone();
-            model.combo.open = false;
+        if !self.window_active {
             self.options.cancel();
-            Some(original)
+            return None;
+        }
+        if !self.options.accepts_model(&model.combo) {
+            return None;
+        }
+        if let MenuEvent::Activated { index, .. } = self.options.pointer_up(p) {
+            let original = self.options.original_index(index)?;
+            model.combo.active = Some(original);
+            let selected = model.combo.key(ControlKey::Enter);
+            self.options.dismiss();
+            selected
         } else {
             None
         }
@@ -2340,6 +2865,7 @@ impl Default for CommandPaletteView {
             trigger: Button::default(),
             trigger_layout: None,
             window_active: true,
+            return_focus: None,
         }
     }
 }
@@ -2420,6 +2946,7 @@ mod tests {
                     Palette::from(Theme::LIGHT),
                     proposal::TextRole::UiBody,
                     ButtonVariant::Quiet,
+                    None,
                 );
             };
         render(&mut runtime, &mut text, &mut scene);
@@ -2720,10 +3247,7 @@ mod tests {
             assert_eq!(icon.name, "chevron-right");
             assert_eq!(icon.frame.center(), closed_icon_frame.center());
             assert_eq!(icon.frame.center().y, closed.frame.center().y);
-            assert_eq!(
-                icon.tint,
-                Palette::from(Theme::LIGHT).color("action-primary-foreground")
-            );
+            assert_eq!(icon.tint, Palette::from(Theme::LIGHT).color("primary-text"));
 
             model.open = true;
             let opened = view.render(
@@ -2823,6 +3347,53 @@ mod tests {
         assert_eq!(model.selected, Some(2));
         assert_eq!(model.query, "Comfortable");
         assert!(!model.open);
+    }
+
+    #[test]
+    fn command_palette_returns_original_invoker_once_for_all_close_paths() {
+        let mut view = CommandPaletteView::default();
+        let mut model = CommandPalette {
+            combo: ComboBox {
+                items: vec!["One".into(), "Two".into()],
+                ..Default::default()
+            },
+        };
+        for key in [ControlKey::Escape, ControlKey::Enter] {
+            assert!(view.open_from(&mut model, 42));
+            model.combo.set_query("T");
+            assert!(!view.open_from(&mut model, 99));
+            assert_eq!(model.combo.query, "T");
+            assert_eq!(view.take_restore_focus(&model), None);
+            assert!(view.key_event(key, true, &mut model).consumed);
+            assert!(!model.combo.open);
+            assert_eq!(view.take_restore_focus(&model), Some(42));
+            assert_eq!(view.take_restore_focus(&model), None);
+        }
+        assert!(view.open_from(&mut model, 17));
+        view.cancel(&mut model);
+        assert_eq!(view.take_restore_focus(&model), Some(17));
+    }
+
+    #[test]
+    fn command_palette_does_not_replay_focus_after_scope_exit_or_legacy_reopen() {
+        let mut view = CommandPaletteView::default();
+        let mut model = CommandPalette::default();
+        assert!(view.open_from(&mut model, 42));
+        view.blur(&mut model);
+        assert_eq!(view.take_restore_focus(&model), None);
+        assert!(view.open_from(&mut model, 42));
+        view.set_window_active(false, &mut model);
+        assert_eq!(view.take_restore_focus(&model), None);
+        assert!(!view.open_from(&mut model, 99));
+        view.set_window_active(true, &mut model);
+        assert!(view.open_from(&mut model, 42));
+        view.cancel(&mut model);
+        view.open(&mut model);
+        view.cancel(&mut model);
+        assert_eq!(view.take_restore_focus(&model), None);
+        model.combo.disabled = true;
+        assert!(!view.open_from(&mut model, 99));
+        assert_eq!(view.take_restore_focus(&model), None);
     }
 
     #[test]
@@ -3210,6 +3781,46 @@ mod tests {
     }
 
     #[test]
+    fn split_resize_target_follows_axis_clip_constraints_and_activation() {
+        for axis in [Axis::Horizontal, Axis::Vertical] {
+            let mut view = SplitViewView::new(axis);
+            let mut model = SplitView::new(0.5);
+            let bounds = Rect::new(0., 0., 400., 400.);
+            let clip = Rect::new(40., 40., 300., 300.);
+            assert_eq!(view.resize_target(&model), None);
+            let layout = view.render(
+                &mut Scene::default(),
+                &mut model,
+                bounds,
+                Some(clip),
+                Theme::LIGHT.into(),
+            );
+            assert_eq!(
+                view.resize_target(&model),
+                layout.divider_hit.map(|r| (r, axis))
+            );
+            let (target, _) = view.resize_target(&model).unwrap();
+            assert!(target.min_x() >= clip.min_x() && target.max_x() <= clip.max_x());
+            assert!(target.min_y() >= clip.min_y() && target.max_y() <= clip.max_y());
+            view.set_window_active(false, &mut model);
+            assert_eq!(view.resize_target(&model), None);
+            view.set_window_active(true, &mut model);
+            assert!(view.resize_target(&model).is_some());
+            model.min_pane = 300.;
+            assert_eq!(view.resize_target(&model), None);
+            model.min_pane = 0.;
+            view.render(
+                &mut Scene::default(),
+                &mut model,
+                Rect::default(),
+                None,
+                Theme::LIGHT.into(),
+            );
+            assert_eq!(view.resize_target(&model), None);
+        }
+    }
+
+    #[test]
     fn split_view_runtime_cancel_restores_ratio_for_escape_and_invalid_layout() {
         let mut v = SplitViewView::new(Axis::Horizontal);
         let mut model = SplitView::new(0.5);
@@ -3270,6 +3881,32 @@ mod tests {
     }
 
     #[test]
+    fn split_double_click_reset_requires_live_divider_and_releases_drag() {
+        let mut view = SplitViewView::new(Axis::Horizontal);
+        let mut model = SplitView::new(0.7);
+        view.render(
+            &mut Scene::new(),
+            &mut model,
+            Rect::new(0., 0., 200., 100.),
+            None,
+            Palette::from(Theme::LIGHT),
+        );
+        let divider = view.layout().divider_hit.unwrap().center();
+        assert!(!view.double_click(Point::new(10., 10.), &mut model));
+        assert_eq!(model.ratio(), 0.7);
+        assert!(view.pointer_down(divider, &mut model));
+        assert!(view.pointer_move(Point::new(divider.x + 20., divider.y), &mut model));
+        assert!(view.double_click(divider, &mut model));
+        assert_eq!(model.ratio(), 0.5);
+        assert!(!view.pointer_move(divider, &mut model));
+        assert!(!view.pointer_up(&mut model));
+        model.set_ratio(0.7);
+        view.set_window_active(false, &mut model);
+        assert!(!view.double_click(divider, &mut model));
+        assert_eq!(model.ratio(), 0.7);
+    }
+
+    #[test]
     fn split_view_runtime_focus_loss_cancels_and_releases_drag() {
         let mut v = SplitViewView::new(Axis::Horizontal);
         let mut model = SplitView::new(0.5);
@@ -3288,5 +3925,200 @@ mod tests {
         assert_eq!(model.ratio(), 0.5);
         assert!(!v.pointer_move(Point::new(140., 50.), &mut model));
         assert!(!v.pointer_up(&mut model));
+    }
+
+    #[test]
+    fn navigation_invalid_layout_drops_old_button_hit_targets() {
+        let mut scene = Scene::new();
+        let mut text = FixedText;
+        let palette = Palette::from(Theme::LIGHT);
+        let frame = Rect::new(20., 20., 160., 40.);
+        let invalid = Rect::new(f32::NAN, 20., 160., 40.);
+        let mut icon = IconButtonView::new();
+        let mut icon_model = crate::extended::IconButton::new("Action").unwrap();
+        icon.render(&mut scene, &mut text, &mut icon_model, frame, None, palette);
+        assert!(icon.pointer_down(frame.center()));
+        icon.render(
+            &mut scene,
+            &mut text,
+            &mut icon_model,
+            invalid,
+            None,
+            palette,
+        );
+        assert!(!icon.pointer_up(frame.center(), &mut icon_model));
+        assert!(!icon.pointer_down(frame.center()));
+        icon.focus(true);
+        // A hidden invalidated button must not retain an old pointer placement.
+        assert!(icon.runtime.button.layout().is_none());
+
+        let mut select = SelectView::new(2);
+        let mut model = crate::Select::new(2);
+        for bounds in [frame, invalid] {
+            select.render(
+                &mut scene,
+                &mut text,
+                &mut model,
+                &["A", "B"],
+                bounds,
+                Rect::new(0., 0., 400., 300.),
+                None,
+                palette,
+                proposal::TextRole::UiBody,
+                false,
+            );
+            if bounds == frame {
+                select.focus(true);
+            }
+        }
+        assert!(!select.pointer_down(frame.center(), &mut model));
+        select.key(ControlKey::Enter, true, &mut model);
+        assert!(!model.menu.open);
+    }
+
+    #[test]
+    fn breadcrumb_shrink_releases_press_and_invalid_roving_focus() {
+        let mut view = BreadcrumbView::default();
+        let mut model = Breadcrumb {
+            items: vec!["A".into(), "B".into(), "C".into()],
+        };
+        let mut scene = Scene::new();
+        let mut text = FixedText;
+        let palette = Palette::from(Theme::LIGHT);
+        let frame = Rect::new(0., 0., 320., 40.);
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            &["A", "B", "C"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+        );
+        let point = view.layout.items[1].frame().center();
+        assert_eq!(view.pointer_down(point), Some(1));
+        model.items.truncate(1);
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            &["A"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+        );
+        assert_eq!(view.pointer_up(point, &model), None);
+        assert_eq!(
+            view.key_event(ControlKey::Enter, true, &model),
+            (false, None)
+        );
+        assert!(!view.buttons[0].state.focused);
+    }
+
+    #[test]
+    fn split_hidden_divider_does_not_accept_keyboard_reset() {
+        let mut view = SplitViewView::new(Axis::Horizontal);
+        let mut model = SplitView::new(0.7);
+        view.render(
+            &mut Scene::new(),
+            &mut model,
+            Rect::new(0., 0., 200., 100.),
+            Some(Rect::new(300., 300., 20., 20.)),
+            Palette::from(Theme::LIGHT),
+        );
+        assert!(!view.key(ControlKey::Enter, &mut model));
+        assert_eq!(model.ratio(), 0.7);
+    }
+
+    #[test]
+    fn icon_button_preserves_model_loading_and_selected_state() {
+        let mut view = IconButtonView::new();
+        let mut model = crate::extended::IconButton::new("Action").unwrap();
+        model.button.state.loading = true;
+        model.button.state.selected = true;
+        let frame = Rect::new(0., 0., 40., 40.);
+        view.render(
+            &mut Scene::new(),
+            &mut FixedText,
+            &mut model,
+            frame,
+            None,
+            Palette::from(Theme::LIGHT),
+        );
+        assert!(model.button.state.loading && model.button.state.selected);
+        assert!(!view.pointer_down(frame.center()));
+        view.focus(true);
+        assert_eq!(
+            view.key_event(ControlKey::Enter, true, &mut model),
+            ComponentEvent::default()
+        );
+    }
+
+    #[test]
+    fn link_deactivation_clears_separately_owned_hover() {
+        let mut view = LinkView::default();
+        let mut model = Link::default();
+        let frame = Rect::new(0., 0., 160., 40.);
+        let render = |view: &mut LinkView, model: &mut Link| {
+            view.render(
+                &mut Scene::new(),
+                &mut FixedText,
+                model,
+                "Link",
+                frame,
+                None,
+                Palette::from(Theme::LIGHT),
+                proposal::TextRole::UiBody,
+            );
+        };
+        render(&mut view, &mut model);
+        view.pointer_move(frame.center());
+        render(&mut view, &mut model);
+        assert!(model.button.state.hovered);
+        view.set_window_active(false);
+        view.set_window_active(true);
+        render(&mut view, &mut model);
+        assert!(!model.button.state.hovered);
+    }
+
+    #[test]
+    fn select_reopens_with_selected_item_revealed_in_unchanged_popup() {
+        let mut view = SelectView::new(10);
+        let mut model = crate::Select::new(10);
+        let labels = ["A"; 10];
+        let mut scene = Scene::new();
+        let mut text = FixedText;
+        let render = |view: &mut SelectView,
+                      model: &mut crate::Select,
+                      scene: &mut Scene,
+                      text: &mut FixedText| {
+            view.render(
+                scene,
+                text,
+                model,
+                &labels,
+                Rect::new(20., 20., 160., 40.),
+                Rect::new(0., 0., 300., 180.),
+                None,
+                Palette::from(Theme::LIGHT),
+                proposal::TextRole::UiBody,
+                false,
+            )
+        };
+        render(&mut view, &mut model, &mut scene, &mut text);
+        view.focus(true);
+        view.key(ControlKey::Enter, true, &mut model);
+        render(&mut view, &mut model, &mut scene, &mut text);
+        view.key(ControlKey::Escape, true, &mut model);
+        model.selected = 9;
+        render(&mut view, &mut model, &mut scene, &mut text);
+        view.key(ControlKey::Enter, true, &mut model);
+        let popup = render(&mut view, &mut model, &mut scene, &mut text)
+            .popup
+            .unwrap();
+        assert!(popup.scroll_offset > 0.);
+        assert!(popup.items[9].visible.is_some_and(has_area));
     }
 }

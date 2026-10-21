@@ -1,0 +1,85 @@
+{
+  "4": {
+    "status": "已实现待验收",
+    "owner": "root",
+    "implemented": "CommandPalette open_from/take_restore_focus plus actual Gallery and independent command consumer; Menu and Dialog reuse their existing role-specific contracts",
+    "remaining": [
+      "Final source-bound delivery and independent review; current physical Pinyin Escape and late physical input are now verified separately from prior Enter/outside native receipts"
+    ],
+    "evidence": [
+      "docs/design/command-palette-focus-20261019.md",
+      "design/reviews/component-runs/command-focus-cua-20261019/receipt.json",
+      "design/reviews/command-ime-final-20261019/native-checks.json",
+      "design/reviews/component-runs/command-ime-final-20261019/receipt.json"
+    ],
+    "current_physical_verification": "U2790B external @2x: marked [0,2] cleared by Escape while query remains open; normal Escape releases TextInputState/restores caller; physical x does not reopen. User observations and native trace agree."
+  },
+  "7": {
+    "status": "已实现待验收",
+    "owner": "root",
+    "implemented": "Explicit offline BrandConfig artifact and public compiler/Palette errors; two external independent workspaces on same WIP dependency",
+    "current_verification": {
+      "GPU": "16 real frames,2consumers/4themes/@1x/@2x",
+      "semantic_isolation": "101 brand-independent color roles,12 runtime roles/theme,rest/hover/pressed distinct",
+      "negative": "invalid config/schema/role/output collision; missing explicit artifact rejected by actual Cargo",
+      "cleanup": "37.7MiB consumer outputs removed;shared dependencies andsource/evidence retained"
+    },
+    "remaining": [
+      "Exact delivered source identity for external reproduction and its continuous checks; current WIP path tests are not a published pin"
+    ],
+    "not_required_by_original_issue": [
+      "runtime JSON loader",
+      "hot theme switching",
+      "crate publication",
+      "whole-library native or VoiceOver acceptance"
+    ],
+    "evidence": [
+      "design/reviews/mature-capabilities-20261019/brand-gpu/receipt.json",
+      "design/reviews/mature-capabilities-20261019/brand-source-inputs.json",
+      "examples/brand-consumer/README.md"
+    ]
+  },
+  "10": {
+    "status": "已实现待验收",
+    "owner": "root",
+    "implemented": "Optional public ReadingController already extracted and integrated with TextSurface/ScrollArea/TextFieldContent and real Gallery append fixture",
+    "remaining": [
+      "Exact delivered source identity and independent final review; current native scene receipt is source-bound WIP, not a published pin"
+    ],
+    "evidence": [
+      "crates/tekes-ui-controls/src/reading.rs",
+      "crates/tekes-ui-controls/tests/reading_contract.rs",
+      "crates/tekes-ui-gallery/src/gallery/text_demo.rs",
+      "docs/design/reading-controller-20261018.md",
+      "design/reviews/reading-stream-native-20261019/native-acceptance.json",
+      "design/reviews/component-runs/reading-stream-20261019/receipt.json"
+    ],
+    "not_required_by_original_issue": [
+      "universal mixed Content anchor transactions tracked separately in #22",
+      "whole-library VoiceOver"
+    ]
+  },
+  "11": {
+    "status": "已实现待验收",
+    "owner": "root",
+    "implemented": "Public DraftJournal/Revision/Submission with save/restore/immutable value-owned requests and acknowledgement; actual editor and consumer-owned file adapter already integrated",
+    "remaining": [
+      "Source-bound reproducible delivery and final independent review; three-process editor/storage replay is complete, distinct from native window acceptance"
+    ],
+    "evidence": [
+      "crates/tekes-ui-controls/src/draft.rs",
+      "examples/composition-consumer/tests/draft_persistence.rs",
+      "examples/composition-consumer/tests/scenarios.rs",
+      "docs/design/draft-protocol-20261018.md",
+      "design/reviews/draft-process-replay-20261019/receipt.json",
+      "design/reviews/draft-process-replay-20261019/source-inputs.json",
+      "design/reviews/draft-process-portable-20261019/receipt.json"
+    ],
+    "not_required_by_original_issue": [
+      "network backend guarantees",
+      "production multiwriter storage",
+      "whole-library VoiceOver"
+    ],
+    "current_portability": "Relative-path Cargo harness built successfully; prepare/retry-ack/verify run in three different processes and pass. Existing Rust editor/adapter bodies reused unchanged. Exact shared WIP inputs retained, harness executable removed."
+  }
+}

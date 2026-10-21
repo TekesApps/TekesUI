@@ -1,0 +1,9 @@
+# Issue31 shared readonly label layout core
+
+Root remains the sole implementation owner. The root cause is a missing shared label-layout capability: existing content can wrap naturally but cannot express a positive line limit and tail overflow. The additive CoreTextShaper::shape_label API reuses the existing font registry, typesetting, native CTLine truncation and glyph collection. LabelOptions defaults preserve existing shaping. The complete source and UTF16 identity remain available; synthetic ellipsis glyphs never replace business or accessibility text.
+
+Applicable future integrations are TextContent, ButtonContent and CompoundButton labels. Editable text is intentionally excluded: truncated readonly label geometry is not caret or selection geometry. No new design token, product view or editing state machine was introduced.
+
+Verification on source hashes in design/reviews/label-layout-core-20261021/verified-inputs.json: 2880 public layout combinations; 50 text tests; 426 controls compatibility tests; 173 independent-consumer tests. Two GPU tests compare 432 cases /864 frames against independent native CTLine positions and explicit multiline references. Strict text and scoped consumer Clippy and both format checks passed. Capability inventory and45row composition audit match current inputs. Cleanup removed209992032 bytes of unused test executables while retaining source, evidence and shared libraries.
+
+This is foundation evidence only. The opt-in Content/control contract, shared measure/paint integration, actual component consumer, native/AX compatibility, matched Gold7/ClientKit visual review and independently reproducible public candidate remain pending. Existing control compatibility does not establish those new-path acceptance conditions. No native app or VoiceOver was started for this core unit; no performance test, commit, push or Issue closure was performed.

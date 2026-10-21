@@ -1,0 +1,93 @@
+{
+  "status": "scoped direct Link disabled-observation repair API/consumer/GPU/physical native passed; runtime cleaned",
+  "root_cause": "direct public Link.key filtered non-Enter keys before observing current disabled state, preserving earlier pointer arm; earlier LinkView coverage did not exercise this model path",
+  "shared_fix": "reuse existing Button.synchronize_activation before Link key filtering; make existing helper crate-visible only, no external API addition or new layer",
+  "applicable": "all direct public extended::Link model consumers; existing LinkView synchronization retained and checked alongside model",
+  "exceptions": [
+    "Link still activates on Enter only; Space/navigation keys remain unclaimed and do not arm keyboard activation",
+    "unobserved temporary disabled flag with no event/paint/model API boundary cannot be detected",
+    "Link has no loading presentation contract; no loading state introduced",
+    "LinkView and IconButtonView already synchronize model before filters; Checkbox/Switch separate fixes retained"
+  ],
+  "API": {
+    "new_cases": 16,
+    "red": "red.log fails on retained pressed state before fix; no compile-error substitution",
+    "controls_tests": 344
+  },
+  "consumer": {
+    "tests": 35,
+    "new_compared_scenarios": 384,
+    "paths": "direct Link model plus real LinkView, actual CoreText measurement/shared Link painter; event-only drawing records not GPU pixels"
+  },
+  "GPU": {
+    "evidence": "design/reviews/link-native-availability-20261020/images/cases.json",
+    "cases": 48,
+    "frames": 288,
+    "explicit_cancel_equalities": 48,
+    "old_release_equalities": 48,
+    "fresh_activations": 48,
+    "profile": "four themes/three brands,paired280pt/1.5 and640pt/1.0,@1x/@2x; Escape-down representative; ReducedMotion true",
+    "visual_review": "Light held/restored and DarkIC/brand2/narrow-large restored inspected; pressed/foreground token values can match, do not infer every state has unique ink"
+  },
+  "native": {
+    "status": "passed within two repeated physical temporal chains",
+    "evidence": "design/reviews/link-native-availability-20261020/native/acceptance.json",
+    "chains": [
+      {
+        "down": 68,
+        "native_escape": 69,
+        "old_release": 71,
+        "fresh_down": 73,
+        "fresh_release": 74,
+        "old_value": 0,
+        "fresh_value": 1,
+        "active_through_chain": true,
+        "parent_key_continued": true
+      },
+      {
+        "down": 75,
+        "native_escape": 76,
+        "old_release": 78,
+        "fresh_down": 80,
+        "fresh_release": 81,
+        "old_value": 1,
+        "fresh_value": 2,
+        "active_through_chain": true,
+        "parent_key_continued": true
+      }
+    ],
+    "source_drift": [],
+    "hardware_provenance": "operator-receipt.json separate from event ordering"
+  },
+  "AX": {
+    "status": "unimplemented Link-specific role; not accepted",
+    "source": "crates/tekes-ui-platform-macos/src/accessibility.rs:44 AccessibilityRole has no Link/custom role; ContentRole likewise no Link",
+    "issue_scope": "original open#5/#12 follow-up, no new Issue or assertion about closed#21 action queue",
+    "host_boundary": "current consumer exports no fake Button role for Link; pointer/key validation will not prove AX semantics"
+  },
+  "gates": {
+    "probes": 9,
+    "bounded_cases": 4416,
+    "complete": false,
+    "governance": 42,
+    "composition_audit": 8,
+    "components": 45,
+    "clippy": "controls/consumer/review host all-targets passed",
+    "fmt": "passed"
+  },
+  "source_protection": {
+    "protected": 563,
+    "unchanged": 559,
+    "changed": [
+      "crates/tekes-ui-controls/src/extended.rs",
+      "crates/tekes-ui-controls/src/widgets.rs",
+      "crates/tekes-ui-controls/tests/action_contract.rs",
+      "examples/composition-consumer/tests/scenarios.rs"
+    ],
+    "unexpected": []
+  },
+  "cleanup": "own package products cleaned after signed copy; exact runtime closed/PID absent/signed identity and unused verified/removed; source,288GPUframes and native evidence retained",
+  "remaining": "Link semantic role/actual publishers/native assistive acceptance; broader batch5 and all8batch scope remain",
+  "performance": "not measured",
+  "publication": "no commit/push/tag/merge/Issue writes"
+}

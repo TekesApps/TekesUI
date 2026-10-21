@@ -1,0 +1,16 @@
+{
+  "status": "app launched on external U2790B; waiting user activation; native acceptance incomplete",
+  "app": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/component-review/input-family-native-20261020/TekesUI Component Review.app",
+  "binary": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/tekesui-input-family-review",
+  "binary_sha256": "719ad4c1520a37a16705bb730189bf252f18692952fdc6b2d0b3be4cb68443db",
+  "copied_app_binary_sha256": "a837317a998aecb8dc97a72d54c5b1065f03c4f294357bf5c737919b78994342",
+  "private_clipboard": true,
+  "performance": "not measured",
+  "VoiceOver": "not enabled",
+  "screen": {
+    "builtin": false,
+    "name": "U2790B",
+    "scale": 2.0
+  },
+  "cache_build_outputs": "cleaned; copied app retained intentionally until native verification"
+}

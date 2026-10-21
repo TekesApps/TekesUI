@@ -1,0 +1,14 @@
+Window: "TekesUI Composition Consumer · slider", App: TekesUI Component Review.
+0 standard window TekesUI Composition Consumer · slider, Secondary Actions: Raise
+	1 container (settable)
+		2 text (settable) Volume
+		3 slider (settable, float) Description: Volume, Value: 50
+		4 text field (settable) Description: Draft, Value: Keep this draft
+		5 button (settable) Continue
+	6 close button
+	7 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	8 minimize button
+	9 text TekesUI Composition Consumer · slider
+10 menu bar
+	11 TekesUI Component Review
+	12 Window

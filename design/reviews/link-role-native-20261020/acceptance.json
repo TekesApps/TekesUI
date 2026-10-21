@@ -1,0 +1,55 @@
+{
+  "status": "public API, independent consumer, real GPU and bounded external native passed",
+  "source": "source-manifest.json",
+  "runtime": "runtime.json",
+  "public_API": "existing shared Link role/control receipt ../link-role-20261020/acceptance.json remains source-matched; no shared library change this round",
+  "real_consumer": {
+    "implementation": "small external workspace, only public Component/ContentHost/LinkView/Link and existing native input conversion",
+    "combinations": 12,
+    "themes": 4,
+    "brands": 3,
+    "checks": "role/name, one Pointer/Keyboard/Accessibility action with target+source, Space does not activate, disabled/hidden rejection, fresh action after reveal",
+    "evidence": "gesture-consumer.log"
+  },
+  "GPU": {
+    "cases": 36,
+    "frames": 72,
+    "profile": "640x280pt@2x only",
+    "comparisons": "actual ContentHost LinkConsumer equals existing LinkView in rest/focus/disabled",
+    "images": "image-manifest.json",
+    "inspection": [
+      "theme0-brand0-focus-composed.png"
+    ],
+    "scope_exception": "stretched first host was visually rejected despite pixel parity; preserved separately; host now consumes existing Link measurement; no production visual patch"
+  },
+  "Gold7": "bounded natural-sized Link consumer rendering, focus, action and lifecycle verified; no whole-component/page or VoiceOver promotion",
+  "native": {
+    "status": "passed",
+    "evidence": "native/result.json",
+    "checkpoints": "native/checkpoints.json",
+    "pid": 36749,
+    "source_and_signed_identity": "checked at every checkpoint",
+    "scope": "Link role, Pointer/Enter/AX typed action, Space free, disabled/hidden isolation and fresh focus on restore",
+    "voiceover": "not tested; remains off"
+  },
+  "cleanup": {
+    "own_package": "cargo clean --package tekesui-link-role-review after signed copy and final GPU/tests; logs retained",
+    "runtime": "closed, signed identity and fresh unused checks passed; owned runtime removed; cleanup.json",
+    "source_images_logs": "retained"
+  },
+  "voiceover": "confirmed not running in current CUA inventory; remains off per user",
+  "performance": "not measured",
+  "publication": "no commit/push/tag/Issue writes",
+  "protection": "protection.json",
+  "remote_state": "current-remote-state.json;15 open Issues,0 open PRs; #2/#15-21 closed, #24 merged unchanged",
+  "remaining": [
+    "VoiceOver hearing remains deferred; whole-family audit remains separate"
+  ],
+  "packaging_followup": {
+    "evidence": "packaging-direct-mach-o.json",
+    "prepared": "direct Rust binary app entry and app-local evidence environment; no code/build change",
+    "status": "not launched while receiver native window is active",
+    "warning": "existing launch timeouts/stale AX tree are not accepted native proof"
+  },
+  "native_startup_history": "packaging-env-fix.json: fixed host env mismatch before successful launch"
+}

@@ -17,6 +17,8 @@
 //!   可能切开代理对和组合字符；这里前进一个**字素簇**（`CFStringGetRangeOfComposedCharacterSequence`），
 //!   不会把 emoji、组合字符序列切开。
 
+use std::cell::RefCell;
+use std::collections::{HashMap, VecDeque};
 use std::ffi::c_void;
 use std::ops::Range;
 use std::ptr::NonNull;
@@ -63,6 +65,76 @@ pub struct PreparedText {
     base: CFRetained<CTFont>,
     typeset: Typeset,
     map: Utf16Map,
+    grapheme_lengths: Vec<usize>,
+    carets: RefCell<CaretCache>,
+}
+
+/// Width-independent CTLine caret geometry, keyed by the exact typesetter
+/// range. Bounded by caret entries, not by width count. No font-registry keys,
+/// selection state or visible-only data are cached here.
+#[derive(Debug, Default)]
+struct CaretCache {
+    entries: HashMap<(usize, usize), Vec<(usize, f64)>>,
+    order: VecDeque<(usize, usize)>,
+    size: usize,
+}
+impl CaretCache {
+    fn insert(&mut self, key: (usize, usize), value: Vec<(usize, f64)>, budget: usize) {
+        if value.len() > budget {
+            return;
+        }
+        while self.size + value.len() > budget {
+            let Some(old) = self.order.pop_front() else {
+                break;
+            };
+            if let Some(removed) = self.entries.remove(&old) {
+                self.size -= removed.len();
+            }
+        }
+        self.size += value.len();
+        self.entries.insert(key, value);
+        self.order.push_back(key);
+    }
+}
+
+/// Read-only viewport layout. It retains full line geometry, but copies glyphs
+/// only for visible lines plus overscan and never builds editing/caret maps.
+/// Use `shape_prepared` for editing, selection, hit testing and accessibility.
+#[derive(Debug)]
+pub struct DisplayParagraph {
+    paragraph: Paragraph,
+    visible_y: Range<f32>,
+}
+impl DisplayParagraph {
+    pub fn line_count(&self) -> usize {
+        self.paragraph.lines.len()
+    }
+    pub fn height(&self) -> f64 {
+        self.paragraph.height
+    }
+    pub fn width(&self) -> f64 {
+        self.paragraph.width
+    }
+    pub fn push<R: crate::Rasterizer + ?Sized>(
+        &self,
+        scene: &mut tekes_ui_scene::Scene,
+        atlas: &mut tekes_ui_scene::GlyphAtlas,
+        raster: &mut R,
+        origin: tekes_ui_scene::Point,
+        scale: f32,
+        color: tekes_ui_tokens::Rgba,
+    ) {
+        crate::push_paragraph_visible(
+            scene,
+            atlas,
+            raster,
+            &self.paragraph,
+            origin,
+            scale,
+            color,
+            origin.y + self.visible_y.start..origin.y + self.visible_y.end,
+        );
+    }
 }
 
 /// 一个属性字符串和它的排版器。
@@ -152,7 +224,7 @@ fn base_line_height(base: &CTFont) -> f64 {
 }
 
 /// 取一行里的全部 CTRun。
-fn runs_of(line: &CTLine) -> Vec<CFRetained<CTRun>> {
+pub(super) fn runs_of(line: &CTLine) -> Vec<CFRetained<CTRun>> {
     // SAFETY: glyph_runs 返回元素为 CTRun 的数组。
     let array = unsafe { line.glyph_runs() };
     // SAFETY: 数组元素类型确实是 CTRun。
@@ -176,7 +248,7 @@ fn cf_range(r: &Range<usize>) -> CFRange {
 }
 
 impl CoreTextShaper {
-    fn collect_runs(
+    pub(super) fn collect_runs(
         &self,
         line: &CTLine,
         base_key: FontKey,
@@ -228,9 +300,8 @@ impl CoreTextShaper {
                 .map(|i| {
                     let start = indices[i] as usize;
                     let next = boundaries
-                        .iter()
+                        .get(boundaries.partition_point(|&b| b <= start))
                         .copied()
-                        .find(|&b| b > start)
                         .unwrap_or(start);
                     ShapedGlyph {
                         id: glyphs[i],
@@ -261,17 +332,50 @@ impl Shaper for CoreTextShaper {
 impl CoreTextShaper {
     pub fn prepare(&self, text: &str, style: &TextStyle) -> PreparedText {
         let base = self.fonts.create_font(style);
+        let typeset = typeset(text, &base);
+        let mut grapheme_lengths = vec![0; typeset.utf16_len];
+        let mut index = 0;
+        while index < typeset.utf16_len {
+            let length = grapheme_len_at(&typeset.cf_text, index);
+            grapheme_lengths[index] = length;
+            index += length;
+        }
         PreparedText {
             text: text.into(),
-            typeset: typeset(text, &base),
+            typeset,
             map: Utf16Map::new(text),
             base,
+            grapheme_lengths,
+            carets: RefCell::new(CaretCache::default()),
         }
     }
 
     /// Recompute line breaks and geometry without replacing the document's
     /// attributed string or typesetter. Font registration stays in this shaper.
     pub fn shape_prepared(&mut self, prepared: &PreparedText, options: &ShapeOptions) -> Paragraph {
+        self.layout_prepared(prepared, options, None)
+    }
+
+    /// Opt-in read-only layout; viewport coordinates are local paragraph points.
+    /// A changed viewport requires a new layout before drawing its new region.
+    pub fn shape_prepared_display(
+        &mut self,
+        prepared: &PreparedText,
+        options: &ShapeOptions,
+        visible_y: Range<f32>,
+    ) -> DisplayParagraph {
+        DisplayParagraph {
+            paragraph: self.layout_prepared(prepared, options, Some(&visible_y)),
+            visible_y,
+        }
+    }
+
+    fn layout_prepared(
+        &mut self,
+        prepared: &PreparedText,
+        options: &ShapeOptions,
+        display_viewport: Option<&Range<f32>>,
+    ) -> Paragraph {
         let text = prepared.text.as_str();
         let base = &prepared.base;
         let base_key = self.fonts.key_for(base);
@@ -286,6 +390,7 @@ impl CoreTextShaper {
         let mut lines: Vec<Line> = Vec::new();
         let mut cursor_y = 0.0_f64;
         let mut location = 0usize;
+        let mut native_lines = Vec::new();
         while location < n {
             // SAFETY: location < n，排版器有效。
             let suggested = unsafe { ts.typesetter.suggest_line_break(location as isize, width) };
@@ -301,20 +406,48 @@ impl CoreTextShaper {
             let line = unsafe { ts.typesetter.line(cf_range(&utf16)) };
             let m = line_metrics(&line, base);
             let height = line_height(&m);
-            let runs = self.collect_runs(&line, base_key, &mut fonts_used, n);
-            let mut carets = Vec::new();
-            let mut index = utf16.start;
-            while index < utf16.end {
-                // SAFETY: index is a composed-character boundary inside this CTLine.
-                let x =
-                    unsafe { line.offset_for_string_index(index as isize, std::ptr::null_mut()) };
-                carets.push((index, x));
-                index += grapheme_len_at(&ts.cf_text, index);
-            }
-            carets.push((utf16.end, unsafe {
-                line.offset_for_string_index(utf16.end as isize, std::ptr::null_mut())
-            }));
-            let has_newline = text[map.byte_range(utf16.clone())].ends_with('\n');
+            let runs = if display_viewport.is_none() {
+                self.collect_runs(&line, base_key, &mut fonts_used, n)
+            } else {
+                Vec::new()
+            };
+            let carets = if display_viewport.is_none() {
+                let key = (utf16.start, utf16.end);
+                let cached = prepared.carets.borrow().entries.get(&key).cloned();
+                if let Some(carets) = cached {
+                    carets
+                } else {
+                    let mut carets = Vec::new();
+                    let mut index = utf16.start;
+                    while index < utf16.end {
+                        // SAFETY: same composed-character boundaries and primary
+                        // CoreText offsets as the uncached editable path.
+                        let x = unsafe {
+                            line.offset_for_string_index(index as isize, std::ptr::null_mut())
+                        };
+                        carets.push((index, x));
+                        let length = prepared.grapheme_lengths[index];
+                        index += if length == 0 {
+                            grapheme_len_at(&ts.cf_text, index)
+                        } else {
+                            length
+                        };
+                    }
+                    carets.push((utf16.end, unsafe {
+                        line.offset_for_string_index(utf16.end as isize, std::ptr::null_mut())
+                    }));
+                    prepared.carets.borrow_mut().insert(
+                        key,
+                        carets.clone(),
+                        n.saturating_mul(4).max(64),
+                    );
+                    carets
+                }
+            } else {
+                Vec::new()
+            };
+            let has_newline =
+                text[map.byte_range(utf16.clone())].ends_with(['\n', '\r', '\u{2028}', '\u{2029}']);
             lines.push(Line {
                 has_newline,
                 carets,
@@ -333,8 +466,11 @@ impl CoreTextShaper {
             });
             cursor_y += height + line_spacing;
             location += length;
+            if display_viewport.is_some() {
+                native_lines.push(line);
+            }
         }
-        if n == 0 || text.ends_with('\n') {
+        if n == 0 || text.ends_with(['\n', '\r', '\u{2028}', '\u{2029}']) {
             // SAFETY: 只读查询。
             let (ascent, descent, leading) =
                 unsafe { (base.ascent(), base.descent(), base.leading()) };
@@ -355,6 +491,17 @@ impl CoreTextShaper {
                 has_newline: false,
             });
             cursor_y += default_line_height + line_spacing;
+        }
+        if let Some(visible) = display_viewport {
+            // Same interval and one-line overscan as push_paragraph_visible.
+            let start = lines
+                .partition_point(|line| ((line.top + line.height) as f32) < visible.start)
+                .saturating_sub(1);
+            let end = (lines.partition_point(|line| line.top as f32 <= visible.end) + 1)
+                .min(native_lines.len());
+            for i in start.min(end)..end {
+                lines[i].runs = self.collect_runs(&native_lines[i], base_key, &mut fonts_used, n);
+            }
         }
         let height = default_line_height.max(cursor_y - line_spacing);
         let width = lines.iter().map(|l| l.width).fold(0.0, f64::max);
@@ -427,6 +574,100 @@ mod tests {
 
     fn len_at(text: &str, utf16: usize) -> usize {
         grapheme_len_at(&CFString::from_str(text), utf16)
+    }
+
+    #[test]
+    fn display_viewport_preserves_full_geometry_and_visible_unicode_glyphs() {
+        let mut shaper = CoreTextShaper::new(CoreTextFonts::new());
+        for text in [
+            "中文和 English e\u{301} 👨‍👩‍👧‍👦\nالعربية אבג\n".repeat(30),
+            String::new(),
+        ] {
+            let prepared = shaper.prepare(&text, &TextStyle::system(15.));
+            for width in [41., 180., 400.] {
+                let options = ShapeOptions {
+                    width: Some(width),
+                    line_spacing: 5.,
+                };
+                let full = shaper.shape_prepared(&prepared, &options);
+                for viewport in [0.0..120.0, 57.0..210.0, 10000.0..10200.0] {
+                    let display =
+                        shaper.shape_prepared_display(&prepared, &options, viewport.clone());
+                    assert_eq!(display.line_count(), full.lines.len());
+                    assert_eq!(display.height(), full.height);
+                    assert_eq!(display.width(), full.width);
+                    let start = full
+                        .lines
+                        .partition_point(|line| ((line.top + line.height) as f32) < viewport.start)
+                        .saturating_sub(1);
+                    let end = (full
+                        .lines
+                        .partition_point(|line| line.top as f32 <= viewport.end)
+                        + 1)
+                    .min(full.lines.len());
+                    for (i, (a, b)) in full.lines.iter().zip(&display.paragraph.lines).enumerate() {
+                        assert_eq!(
+                            (a.top, a.height, a.width, a.baseline_y),
+                            (b.top, b.height, b.width, b.baseline_y)
+                        );
+                        assert_eq!((&a.utf16, &a.bytes), (&b.utf16, &b.bytes));
+                        if (start..end).contains(&i) {
+                            assert_eq!(a.runs, b.runs);
+                        } else {
+                            assert!(b.runs.is_empty());
+                        }
+                        if !b.utf16.is_empty() {
+                            assert!(b.carets.is_empty());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn cached_editable_carets_match_coretext_at_every_boundary_and_stay_bounded() {
+        let mut shaper = CoreTextShaper::new(CoreTextFonts::new());
+        let text = "office ffi 中文 e\u{301} 😀 👨‍👩‍👧‍👦 👍🏽 العربية עברית\r\n".repeat(12);
+        let prepared = shaper.prepare(&text, &TextStyle::system(15.));
+        for width in (20..420).step_by(13).chain((20..420).step_by(13).rev()) {
+            let options = ShapeOptions {
+                width: Some(width as f64),
+                line_spacing: 3.,
+            };
+            let paragraph = shaper.shape_prepared(&prepared, &options);
+            let again = shaper.shape_prepared(&prepared, &options);
+            assert_eq!(paragraph, again);
+            for shaped in &paragraph.lines {
+                if shaped.utf16.is_empty() {
+                    continue;
+                }
+                let native = unsafe { prepared.typeset.typesetter.line(cf_range(&shaped.utf16)) };
+                let mut reference = Vec::new();
+                let mut index = shaped.utf16.start;
+                while index < shaped.utf16.end {
+                    reference.push((index, unsafe {
+                        native.offset_for_string_index(index as isize, std::ptr::null_mut())
+                    }));
+                    index += grapheme_len_at(&prepared.typeset.cf_text, index);
+                }
+                reference.push((shaped.utf16.end, unsafe {
+                    native.offset_for_string_index(shaped.utf16.end as isize, std::ptr::null_mut())
+                }));
+                assert_eq!(shaped.carets, reference);
+                for &(index, _) in &reference {
+                    let caret = paragraph.caret_rect(index, 1.);
+                    assert!(caret.origin.x.is_finite() && caret.origin.y.is_finite());
+                }
+            }
+            let cache = prepared.carets.borrow();
+            assert!(cache.size <= prepared.typeset.utf16_len * 4);
+            assert_eq!(
+                cache.size,
+                cache.entries.values().map(Vec::len).sum::<usize>()
+            );
+            assert_eq!(cache.order.len(), cache.entries.len());
+        }
     }
 
     #[test]

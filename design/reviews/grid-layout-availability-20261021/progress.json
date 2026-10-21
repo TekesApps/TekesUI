@@ -1,0 +1,79 @@
+{
+  "owner": "root: sole shared implementation owner",
+  "source_identity": "86c537fa9f2ffcc7e6a4bb76bb2a5df6267009fb1db28fd342753b2e0245fd24",
+  "status": "implemented; bounded API/actual Gallery/real consumer GPU/token governance/external native pointer checks passed; full experience remains incomplete",
+  "root_cause_category": "public layout component availability contract",
+  "root_cause": "GridView delegated natural positive child geometry even for a zero-area mounted parent; caller received visible paint/hit rectangles although the parent visible frame was empty",
+  "shared_fix": "GridView::render reuses existing has_area before publishing child frames. Pure Grid::layout still accepts zero-height measurement and positive views retain natural overflow.",
+  "applicable": [
+    "all standalone GridView consumers",
+    "existing Gallery Grid playground, no host style patch required"
+  ],
+  "exceptions": [
+    "Stack already collapses its main/cross dimensions on zero area; verified, no new abstraction or migration",
+    "Positive natural Grid overflow remains caller-viewport-clipped rather than forcibly clipped to its nominal bounds",
+    "GridView owns geometry only; retained child state, capture cancellation and semantics remain with existing host/owned-content lifecycle, not a new automatic Grid unmount protocol"
+  ],
+  "compatibility": "No public signature, model, tokens, gap/row-size values, or positive layout geometry changed",
+  "verification": {
+    "controls": 419,
+    "consumer": 168,
+    "gallery-integration-final": 1,
+    "bindings": 3,
+    "new_api_tests": 3,
+    "old_public_api_failure": 1,
+    "before_gpu_cases": 96,
+    "before_zero_height_leaks": 48,
+    "current_gpu_cases": 96,
+    "current_gpu_frames": 144,
+    "zero_area_empty_reference_equal": 48,
+    "positive_before_after_pixel_equal": 48,
+    "themes": 4,
+    "brands": 3,
+    "widths": [
+      240,
+      480
+    ],
+    "scales": [
+      1,
+      2
+    ],
+    "token_files": 15,
+    "bounded_token_cases": 5928,
+    "grid_geometry_zero_lookup_cases": 96,
+    "child_dependencies": "actual Button/CoreText/theme painting outside GridView capture; not attributed to Grid",
+    "token_complete": false,
+    "governance": 44,
+    "composition_tests": 8,
+    "strict_clippy": [
+      "controls",
+      "consumer",
+      "host with real token feature",
+      "Gallery",
+      "native host"
+    ]
+  },
+  "native": {
+    "receipt": "native-acceptance.json",
+    "display": "U2790B @2",
+    "actual_active": true,
+    "path": "shown click1 -> zero area0publishedslots, clickstays1 -> restored4slots, click2",
+    "input_route": "Mouse uses actual published Grid slots and retained Button pointer methods; no separate hidden-state mouse gate",
+    "scope": "pointer and paint availability only; no child AX/VoiceOver or whole-page experience",
+    "cleanup": "closed; cleanup.json"
+  },
+  "Gold7": {
+    "G5_G6": "public geometry and actual native pointer isolation/restore passed within this scenario",
+    "G7": "public unchanged API, real Gallery wiring, standalone runnable host and source evidence retained",
+    "whole_Gold7_ClientKit": "unverified; registry remains experimental"
+  },
+  "checks": [
+    "final-checks.json",
+    "integration-checks.json",
+    "token-checks.json",
+    "gates.json",
+    "native-checks.json"
+  ],
+  "cleanup": "cleanup.json",
+  "constraints": "No performance or commit/push/tag/merge/Issue closure; no AgentKit frozen-input changes"
+}

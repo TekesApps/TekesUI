@@ -1,0 +1,62 @@
+{
+  "agentkit": {
+    "baseline": 112,
+    "changed_owned": [
+      "docs/tekesui-development-tasks.md",
+      "docs/tekesui-gaps.md",
+      "docs/tekesui-integration-contract.md",
+      "ui/README.md",
+      "ui/components/src/lib.rs",
+      "ui/demo/src/lib.rs",
+      "ui/demo/src/native.rs",
+      "ui/demo/tests/reading.rs",
+      "ui/tekesui-source.json"
+    ],
+    "protected_unchanged": 103,
+    "new": [
+      "docs/tekesui-p0-closeout-20261018.md",
+      "ui/components/src/transcript.rs",
+      "ui/demo/src/notifications.rs",
+      "ui/demo/tests/notifications.rs"
+    ]
+  },
+  "tekesui": {
+    "baseline": 21918,
+    "changed_owned": [
+      "design/remediation/ledger.json",
+      "docs/design/issue-remediation-current-20261017.md"
+    ],
+    "protected_unchanged": 21916,
+    "new": [
+      "docs/design/p0-consumer-closeout-20261018.md"
+    ]
+  },
+  "clientkit": {
+    "baseline": 852,
+    "changed_owned": [],
+    "protected_unchanged": 852,
+    "new": []
+  },
+  "tests": {
+    "ui": 11,
+    "headless": 76,
+    "native_agentkit": "not run; authorization covers Gallery only",
+    "multi_target_native": "pending",
+    "performance": "deferred",
+    "physical_ime": "not tested",
+    "voiceover": "not tested"
+  },
+  "dependency_snapshot": "83ea59f05b430210bc60fa098e150d133ce8e4f9dae35220337a9b7e802b7359",
+  "previous_evidence": {
+    "wake-contract-20261018": {
+      "manifest_sha256": "bd0469c2fc9929cf45b9df6608687b3b5a88d0724b24624feae324e8b91dad64",
+      "verified_artifacts": 70
+    },
+    "prepend-reading-20261018": {
+      "manifest_sha256": "eae1ffbae8d0dfd9efa04803478cb95c89102ebf9afdd340bba4135cb13bb415",
+      "verified_artifacts": 166
+    }
+  },
+  "binary_sha256": "cc7853e6f4f47fa9090b3cb1eb8d79dce01f6731139e5cb07aed2b033a9a12bb",
+  "native_scope": "No AgentKit app window launched; offscreen renderer only. Existing Gallery native evidence retained separately."
+}

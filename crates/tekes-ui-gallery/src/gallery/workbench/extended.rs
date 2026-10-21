@@ -4,14 +4,14 @@
 //! are delegated to `tekes_ui_controls::extended` models.
 mod collections_adapter;
 mod feedback_adapter;
+pub(super) mod navigation_states;
 use super::super::pages::icons::GalleryIconRenderer;
-use super::super::pages::showcase::{Icon, draw_icon};
 use super::{Entry, PageCtx, StoryState, event_log, label, quiet_action};
 use collections_adapter::CollectionsViews;
 use feedback_adapter::FeedbackViews;
 use tekes_ui_controls::{
-    BarChart, ChartDatum, ControlKey, ControlState, RadioGroupView, SelectionEvent, SliderView,
-    SwitchView, extended as controls,
+    BarChart, Button, ButtonSize, ButtonTextRenderer, ChartDatum, ControlKey, ControlState,
+    RadioGroupView, SelectionEvent, SliderView, SwitchView, extended as controls,
     layout_view::{
         BreadcrumbView, ComboBoxView, CommandPaletteView, DisclosureView, GridView, IconButtonView,
         LinkView, SegmentedControlView, SeparatorView, SplitViewView, StackView,
@@ -26,6 +26,68 @@ fn caption_size(ctx: &mut PageCtx<'_>, text: &str, width: f32) -> tekes_ui_scene
         ctx.text
             .proposal_label(text, proposal::TextRole::UiCaption, Some(width.max(0.)));
     tekes_ui_scene::Size::new(paragraph.width as f32, paragraph.height as f32)
+}
+
+fn matrix_control_height(renderer: &str, text: &mut impl ButtonTextRenderer, width: f32) -> f32 {
+    match renderer {
+        "switch" => {
+            let text_width = (width - 62.).max(0.);
+            let measured = text
+                .measure("Enabled", proposal::TextRole::UiBody, text_width)
+                .height;
+            let first_line =
+                text.first_line_height("Enabled", proposal::TextRole::UiBody, text_width);
+            32.0_f32.max(measured.max(first_line) + 8.0)
+        }
+        "radio-group" => {
+            let text_width = (width - 40.).max(0.);
+            let measured = text
+                .measure("Option", proposal::TextRole::UiBody, text_width)
+                .height;
+            let first_line =
+                text.first_line_height("Option", proposal::TextRole::UiBody, text_width);
+            let comfortable = proposal::metric("size", "size-comfortable-row").unwrap_or(40.);
+            comfortable.max(measured.max(first_line) + 8.0)
+        }
+        "link" => text
+            .measure(
+                "Open documentation",
+                proposal::TextRole::UiBody,
+                (width - 16.).max(0.),
+            )
+            .height
+            .max(36.),
+        "disclosure" => {
+            let inset = proposal::metric("spacing", "space-relaxed").unwrap_or(12.);
+            let icon_slot = 24.0_f32.min((width - inset * 2.).max(0.));
+            let text_width = (width - inset * 2. - icon_slot).max(0.);
+            let label_height = text
+                .measure("Details", proposal::TextRole::UiBody, text_width)
+                .height;
+            let vertical = ((proposal::metric("size", "size-action-button").unwrap_or(40.)
+                - proposal::TextRole::UiBody.style().line_height)
+                * 0.5)
+                .max(0.);
+            (label_height + 2. * vertical)
+                .max(proposal::metric("size", "size-action-button").unwrap_or(40.))
+        }
+        "icon-button" => IconButtonView::measure(false).height,
+        "slider" => 36.0_f32.max(proposal::metric("size", "size-action-button").unwrap_or(40.)),
+        "segmented-control" => ["General", "Advanced", "Security"]
+            .into_iter()
+            .map(|label| {
+                Button::measure(
+                    text,
+                    label,
+                    width / 3.0,
+                    ButtonSize::Md,
+                    proposal::TextRole::UiBody,
+                )
+                .height
+            })
+            .fold(0.0_f32, f32::max),
+        _ => 36.0,
+    }
 }
 
 /// Draw explanatory copy in a caption slot measured with the same shaping,
@@ -95,14 +157,31 @@ pub(super) fn supports_disabled(renderer: &str) -> bool {
             | "radio-group"
             | "switch"
             | "segmented-control"
+            | "breadcrumb"
     )
 }
 pub(super) fn supports_story(renderer: &str, story: &str) -> bool {
     match story {
-        "states" => matches!(
-            renderer,
-            "disclosure" | "icon-button" | "link" | "slider" | "radio-group" | "switch"
-        ),
+        "states" => {
+            matches!(
+                renderer,
+                "disclosure"
+                    | "icon-button"
+                    | "link"
+                    | "combo-box"
+                    | "slider"
+                    | "radio-group"
+                    | "switch"
+                    | "segmented-control"
+                    | "breadcrumb"
+                    | "command-palette"
+            ) || collections_adapter::supports_states(renderer)
+                || feedback_adapter::supports_states(renderer)
+        }
+        "variants" => {
+            feedback_adapter::supports_variants(renderer)
+                || matches!(renderer, "stack" | "grid" | "separator" | "split-view")
+        }
         "behaviors" => matches!(
             renderer,
             "disclosure"
@@ -126,7 +205,6 @@ pub(super) fn supports_story(renderer: &str, story: &str) -> bool {
                 | "banner"
                 | "progress"
         ),
-        "variants" => matches!(renderer, "stack" | "grid" | "separator" | "split-view"),
         _ => false,
     }
 }
@@ -333,7 +411,200 @@ impl Default for ExtendedStory {
 }
 
 impl ExtendedStory {
+    pub(super) fn collection_focus_frame(&self, renderer: &str, id: usize) -> Option<Rect> {
+        collections_adapter::focus_frame(self, renderer, id)
+    }
+
+    pub(super) fn tree_view(&self) -> &tekes_ui_controls::collections_view::TreeView {
+        &self.collections_views.tree
+    }
+    pub(super) fn table_view(&self) -> &tekes_ui_controls::collections_view::DataTableView {
+        &self.collections_views.table
+    }
+    pub(super) fn set_tree_expanded(
+        &mut self,
+        index: usize,
+        expanded: bool,
+    ) -> tekes_ui_controls::collections_view::CollectionEvent {
+        self.collections_views
+            .tree
+            .set_expanded(index, expanded, &mut self.tree)
+    }
+
+    /// Visible feedback body geometry and copy from the actual component layout.
+    pub(super) fn feedback_surface(&self, renderer: &str) -> Option<(Rect, String)> {
+        feedback_adapter::semantic_surface(self, renderer)
+    }
+
+    /// Full document-space component frames from the most recent production
+    /// layout. These must not be taken from clipped hit regions: the workbench
+    /// uses them to reveal keyboard focus targets that sit outside the viewport.
+    pub(super) fn logical_focus_targets(&self, renderer: &str) -> Vec<super::FocusTarget> {
+        let mut targets = Vec::new();
+        {
+            let mut add = |id, frame: Rect, eligible, roving_group, roving_selected| {
+                if frame.size.width > 0. && frame.size.height > 0. {
+                    targets.push(super::FocusTarget {
+                        id,
+                        frame,
+                        eligible,
+                        mounted: true,
+                        roving_group,
+                        roving_selected,
+                    });
+                }
+            };
+            match renderer {
+                "split-view" => add(
+                    90,
+                    self.split_view.layout().divider.frame(),
+                    !self.disabled,
+                    None,
+                    true,
+                ),
+                "disclosure" => add(
+                    20,
+                    self.disclosure_view.layout().frame,
+                    !self.disabled && !self.disclosure.disabled,
+                    None,
+                    true,
+                ),
+                "icon-button" => add(
+                    20,
+                    self.icon_button_view.layout().frame,
+                    !self.disabled
+                        && !self.icon_button.button.state.disabled
+                        && !self.icon_button.button.state.loading,
+                    None,
+                    true,
+                ),
+                "link" => add(
+                    20,
+                    self.link_view.layout().frame,
+                    !self.disabled && !self.link.button.state.disabled,
+                    None,
+                    true,
+                ),
+                "slider" => add(
+                    20,
+                    self.slider_view.layout().frame,
+                    !self.disabled && !self.slider.disabled,
+                    None,
+                    true,
+                ),
+                "radio-group" => {
+                    let roving = self
+                        .focused
+                        .filter(|id| (30..30 + self.radio.len()).contains(id))
+                        .map(|id| id - 30)
+                        .filter(|index| self.radio.is_enabled(*index))
+                        .or(self
+                            .radio
+                            .selected
+                            .filter(|index| self.radio.is_enabled(*index)))
+                        .or_else(|| {
+                            (0..self.radio.len()).find(|index| self.radio.is_enabled(*index))
+                        });
+                    for (index, row) in self.radio_view.layout().rows.iter().enumerate() {
+                        add(
+                            30 + index,
+                            row.frame(),
+                            !self.disabled && self.radio.is_enabled(index),
+                            Some(1),
+                            roving == Some(index),
+                        );
+                    }
+                }
+                "switch" => add(
+                    20,
+                    self.switch_view.layout().frame(),
+                    !self.disabled && !self.switch.disabled,
+                    None,
+                    true,
+                ),
+                "segmented-control" => {
+                    let roving = self
+                        .focused
+                        .filter(|id| (30..33).contains(id))
+                        .map(|id| id - 30)
+                        .filter(|index| self.segmented.is_enabled(*index))
+                        .or_else(|| {
+                            self.segmented
+                                .is_enabled(self.segmented.selected)
+                                .then_some(self.segmented.selected)
+                        })
+                        .or_else(|| {
+                            (0..self.segmented.len())
+                                .find(|index| self.segmented.is_enabled(*index))
+                        });
+                    for (index, item) in self.segmented_view.layout().items.iter().enumerate() {
+                        add(
+                            30 + index,
+                            item.frame,
+                            !self.disabled && self.segmented.is_enabled(index),
+                            Some(1),
+                            roving == Some(index),
+                        );
+                    }
+                }
+                "breadcrumb" => {
+                    for (index, item) in self
+                        .breadcrumb_view
+                        .layout()
+                        .items
+                        .iter()
+                        .take(self.breadcrumb.items.len().saturating_sub(1))
+                        .enumerate()
+                    {
+                        add(30 + index, item.frame(), !self.disabled, None, true);
+                    }
+                }
+                "command-palette" => {
+                    if let Some(trigger) = self.command_view.trigger_layout() {
+                        add(
+                            20,
+                            trigger.frame,
+                            !self.disabled
+                                && !self.command.combo.disabled
+                                && !self.command.combo.open,
+                            None,
+                            true,
+                        );
+                    }
+                }
+                _ => {}
+            }
+        }
+        for (id, frame) in feedback_adapter::logical_focus_targets(self, renderer) {
+            if !targets
+                .iter()
+                .any(|target: &super::FocusTarget| target.id == id)
+                && frame.size.width > 0.
+                && frame.size.height > 0.
+            {
+                targets.push(super::FocusTarget {
+                    id,
+                    frame,
+                    eligible: !self.disabled,
+                    mounted: true,
+                    roving_group: None,
+                    roving_selected: true,
+                });
+            }
+        }
+        targets
+    }
+
+    pub(super) fn overlay_needs_animation(&self) -> bool {
+        self.feedback_views.popover.needs_animation()
+    }
+    pub(super) fn clear_overlay_presentation(&mut self) {
+        let _ = self.feedback_views.popover_close(&mut self.popover);
+        self.feedback_views.popover.clear_presentation();
+    }
+
     pub(super) fn set_window_active(&mut self, active: bool) {
+        self.split_view.set_window_active(active, &mut self.split);
         self.slider_view.set_window_active(active);
         self.radio_view.set_window_active(active);
         self.switch_view.set_window_active(active);
@@ -362,6 +633,9 @@ impl ExtendedStory {
             let _ = feedback_adapter::window_active(self, renderer, active, &mut ignore);
         }
         if !active {
+            // Popover is a transient: window deactivation has already closed
+            // its model. Hidden windows may skip painting until reactivation.
+            self.clear_overlay_presentation();
             self.cancel_pointer();
             self.focused = None;
         }
@@ -481,18 +755,214 @@ impl ExtendedStory {
     pub(super) fn matrix(
         &mut self,
         e: &Entry,
-        s: &StoryState,
+        s: &mut StoryState,
         ctx: &mut PageCtx<'_>,
         scene: &mut Scene,
         c: Rect,
     ) {
+        if navigation_states::supports_states(e.renderer()) {
+            navigation_states::matrix(e, s, ctx, scene, c);
+            return;
+        }
+        if collections_adapter::supports_states(e.renderer()) {
+            collections_adapter::matrix(e, s, ctx, scene, c);
+            return;
+        }
+        if feedback_adapter::supports_states(e.renderer()) {
+            feedback_adapter::matrix(e, s, ctx, scene, c);
+            return;
+        }
         scene.push_clip(c);
-        let x = c.min_x();
-        let y = c.min_y();
-        let width = c.size.width.max(0.);
-        let columns = if width < 520. { 2 } else { 3 };
+        let focus_gutter = -controls::ControlFrame::new(Rect::new(0.0, 0.0, 1.0, 1.0), None)
+            .focus_bounds(ctx.text.backing_scale())
+            .min_x();
+        // Keep the true ancestor clip and reserve the focus ring inside it.
+        let content = c.inset(focus_gutter);
+        let x = content.min_x();
+        let y = content.min_y();
+        let width = content.size.width.max(0.);
+        let columns = ((width / 300.).floor() as usize).clamp(1, 3);
         let cell_w = (width / columns as f32).max(0.);
         let states: Vec<(&str, ControlState)> = match e.renderer() {
+            "disclosure" => vec![
+                ("Collapsed · default", ControlState::default()),
+                (
+                    "Collapsed · hover",
+                    ControlState {
+                        hovered: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Collapsed · pressed",
+                    ControlState {
+                        pressed: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Collapsed · focus-visible",
+                    ControlState {
+                        focused: true,
+                        focus_visible: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Expanded · default",
+                    ControlState {
+                        selected: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Expanded · hover",
+                    ControlState {
+                        selected: true,
+                        hovered: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Expanded · disabled",
+                    ControlState {
+                        selected: true,
+                        disabled: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Disabled",
+                    ControlState {
+                        disabled: true,
+                        ..Default::default()
+                    },
+                ),
+            ],
+            "icon-button" => vec![
+                ("Default", ControlState::default()),
+                (
+                    "Hover",
+                    ControlState {
+                        hovered: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Pressed",
+                    ControlState {
+                        pressed: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Focus-visible",
+                    ControlState {
+                        focused: true,
+                        focus_visible: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Selected",
+                    ControlState {
+                        selected: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Loading",
+                    ControlState {
+                        loading: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Disabled",
+                    ControlState {
+                        disabled: true,
+                        ..Default::default()
+                    },
+                ),
+            ],
+            "link" => vec![
+                ("Default", ControlState::default()),
+                (
+                    "Hover",
+                    ControlState {
+                        hovered: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Pressed",
+                    ControlState {
+                        pressed: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Focus-visible",
+                    ControlState {
+                        focused: true,
+                        focus_visible: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Disabled",
+                    ControlState {
+                        disabled: true,
+                        ..Default::default()
+                    },
+                ),
+            ],
+            "segmented-control" => vec![
+                ("Selected · default", ControlState::default()),
+                (
+                    "Selected · alternate",
+                    ControlState {
+                        selected: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Disabled · all segments",
+                    ControlState {
+                        disabled: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Selected · hover",
+                    ControlState {
+                        hovered: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Selected · pressed",
+                    ControlState {
+                        pressed: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Selected · focus-visible",
+                    ControlState {
+                        focused: true,
+                        focus_visible: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Selected · disabled peer",
+                    ControlState {
+                        disabled: true,
+                        ..Default::default()
+                    },
+                ),
+            ],
             "switch" | "radio-group" => vec![
                 (
                     "Checked · default",
@@ -534,6 +1004,32 @@ impl ExtendedStory {
                         ..Default::default()
                     },
                 ),
+                (
+                    "Unchecked · error + focus-visible",
+                    ControlState {
+                        error: true,
+                        focused: true,
+                        focus_visible: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Checked · error",
+                    ControlState {
+                        error: true,
+                        selected: true,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "Checked · error + disabled",
+                    ControlState {
+                        error: true,
+                        selected: true,
+                        disabled: true,
+                        ..Default::default()
+                    },
+                ),
                 ("Unchecked", ControlState::default()),
                 (
                     "Unchecked · disabled",
@@ -545,6 +1041,13 @@ impl ExtendedStory {
             ],
             "slider" => vec![
                 ("Default", ControlState::default()),
+                (
+                    "Dragging",
+                    ControlState {
+                        pressed: true,
+                        ..Default::default()
+                    },
+                ),
                 (
                     "Hover",
                     ControlState {
@@ -606,14 +1109,6 @@ impl ExtendedStory {
                         ..Default::default()
                     },
                 ),
-                (
-                    "Selected · hover",
-                    ControlState {
-                        selected: true,
-                        hovered: true,
-                        ..Default::default()
-                    },
-                ),
             ],
         };
         const STATE_HELP: &str =
@@ -621,74 +1116,351 @@ impl ExtendedStory {
         let help_height = caption_size(ctx, STATE_HELP, width).height;
         wrapped_caption(ctx, scene, x, y, width, STATE_HELP);
         let state_rows_y = y + 38.0_f32.max(help_height + 10.);
+        let title_height = states
+            .iter()
+            .map(|(title, _)| {
+                ctx.text
+                    .proposal_label(
+                        title,
+                        proposal::TextRole::UiBody,
+                        Some((cell_w - 12.).max(0.)),
+                    )
+                    .height as f32
+            })
+            .fold(20., f32::max);
+        // Size each specimen from the same label width and text shaping that
+        // its production view uses. In particular, long Link labels wrap at
+        // the component's 220pt preview width, while Radio/Switch rows follow
+        // their own comfortable-row and first-line metrics.
+        let specimen_width = match e.renderer() {
+            "icon-button" => IconButtonView::measure(false)
+                .width
+                .min((cell_w - 12.).max(0.)),
+            // A segmented control is one joined group. Keep its production
+            // segment widths useful instead of squeezing three labels into the
+            // generic 220pt single-control specimen cap.
+            "segmented-control" => (cell_w - 12.).max(0.),
+            _ => (cell_w - 12.).clamp(0., 220.),
+        };
+        let control_height = matrix_control_height(e.renderer(), ctx.text, specimen_width);
+        let row_stride = title_height + 8. + control_height + 20.;
+        s.document_bottom =
+            state_rows_y + states.len().div_ceil(columns) as f32 * row_stride + focus_gutter;
         for (n, (name, state)) in states.into_iter().enumerate() {
             let col = n % columns;
             let row = n / columns;
             let rect = Rect::new(
                 x + col as f32 * cell_w,
-                state_rows_y + row as f32 * 82.,
+                state_rows_y + row as f32 * row_stride,
                 (cell_w - 12.).max(0.),
-                62.,
+                row_stride - 20.,
             );
             label(
                 ctx,
                 scene,
-                Rect::new(rect.min_x(), rect.min_y(), rect.size.width, 20.),
+                Rect::new(rect.min_x(), rect.min_y(), rect.size.width, title_height),
                 name,
                 false,
             );
             let control = Rect::new(
                 rect.min_x(),
-                rect.min_y() + 24.,
-                rect.size.width.min(220.),
-                36.,
+                rect.min_y() + title_height + 8.,
+                specimen_width,
+                control_height,
             );
             let palette = Palette {
                 theme: ctx.theme,
                 brand: s.brand,
             };
             match e.renderer() {
-                "switch" => controls::switch_with_state(
-                    scene,
-                    Rect::new(control.min_x(), control.min_y() + 5., 48., 26.),
-                    palette,
-                    state,
-                ),
-                "radio-group" => controls::radio_with_state(
-                    scene,
-                    Rect::new(control.min_x(), control.min_y() + 9., 18., 18.),
-                    palette,
-                    state,
-                ),
+                "switch" => {
+                    let model = controls::Switch {
+                        checked: state.selected,
+                        disabled: state.disabled,
+                    };
+                    let mut view = SwitchView::new();
+                    view.set_error(state.error);
+                    if state.focused {
+                        view.focus(state.focus_visible);
+                    }
+                    let mut probe = Scene::new();
+                    let layout = view.render_labeled(
+                        &mut probe,
+                        ctx.text,
+                        model,
+                        control,
+                        Some(c),
+                        palette,
+                        "Enabled",
+                    );
+                    let point = layout.toggle.frame().center();
+                    if state.hovered {
+                        view.pointer_move(point);
+                    }
+                    if state.pressed {
+                        view.pointer_down(point, &model);
+                    }
+                    view.render_labeled(
+                        scene,
+                        ctx.text,
+                        model,
+                        control,
+                        Some(c),
+                        palette,
+                        "Enabled",
+                    );
+                }
+                "radio-group" => {
+                    let mut model = controls::RadioGroup::new(1);
+                    model.selected = state.selected.then_some(0);
+                    let mut view = RadioGroupView::new();
+                    view.set_error(state.error);
+                    view.set_disabled(state.disabled);
+                    if state.focused {
+                        view.focus(&model, Some(0), state.focus_visible);
+                    }
+                    let mut probe = Scene::new();
+                    let layout = view.render(
+                        &mut probe,
+                        ctx.text,
+                        &model,
+                        control,
+                        Some(c),
+                        palette,
+                        &["Option"],
+                    );
+                    let point = layout.rows[0].frame().center();
+                    if state.hovered {
+                        view.pointer_move(point);
+                    }
+                    if state.pressed {
+                        view.pointer_down(point, &model);
+                    }
+                    view.render(
+                        scene,
+                        ctx.text,
+                        &model,
+                        control,
+                        Some(c),
+                        palette,
+                        &["Option"],
+                    );
+                }
                 "slider" => {
                     let mut slider =
                         controls::Slider::new(50., 0., 100., 5.).expect("valid fixture");
                     slider.disabled = state.disabled;
-                    controls::slider(scene, control, palette, slider, state);
+                    let mut view = SliderView::new();
+                    if state.focused {
+                        view.focus(state.focus_visible);
+                    }
+                    let mut probe = Scene::new();
+                    let layout = view.render(&mut probe, slider, control, Some(c), palette);
+                    if state.hovered {
+                        view.pointer_move(layout.thumb.center(), &mut slider);
+                    }
+                    if state.pressed {
+                        view.pointer_down(layout.thumb.center(), &mut slider);
+                    }
+                    if name == "Dragging" {
+                        view.pointer_move(
+                            Point::new(
+                                layout.track.min_x() + layout.track.size.width * 0.75,
+                                layout.track.center().y,
+                            ),
+                            &mut slider,
+                        );
+                    }
+                    view.render(scene, slider, control, Some(c), palette);
                 }
                 "disclosure" => {
-                    paint::button(scene, control, palette, state);
-                    label(ctx, scene, control.inset(8.), "Details", false);
+                    let model = controls::Disclosure {
+                        open: state.selected,
+                        disabled: state.disabled,
+                    };
+                    let mut view = DisclosureView::default();
+                    if state.focused {
+                        view.focus(state.focus_visible);
+                    }
+                    let mut probe = Scene::new();
+                    let layout = view.render(
+                        &mut probe,
+                        ctx.text,
+                        &model,
+                        "Details",
+                        control,
+                        Some(c),
+                        palette,
+                        proposal::TextRole::UiBody,
+                    );
+                    if state.hovered {
+                        view.pointer_move(layout.frame.center());
+                    }
+                    if state.pressed {
+                        view.pointer_down(layout.frame.center());
+                    }
+                    view.render(
+                        scene,
+                        ctx.text,
+                        &model,
+                        "Details",
+                        control,
+                        Some(c),
+                        palette,
+                        proposal::TextRole::UiBody,
+                    );
+                    let mut icons = GalleryIconRenderer::native(ctx);
+                    view.render_icon(scene, &mut icons, &model, Some(c), palette, 16.);
                 }
                 "link" => {
-                    let ink = controls::link_underline(scene, control, palette, state);
-                    ctx.text.proposal_label_in(
-                        scene,
-                        ctx.theme,
-                        control.inset(8.),
+                    let mut model = controls::Link::default();
+                    model.button.state.disabled = state.disabled;
+                    let mut view = LinkView::default();
+                    if state.focused {
+                        view.focus(state.focus_visible);
+                    }
+                    let mut probe = Scene::new();
+                    let layout = view.render(
+                        &mut probe,
+                        ctx.text,
+                        &mut model,
                         "Open documentation",
+                        control,
+                        Some(c),
+                        palette,
                         proposal::TextRole::UiBody,
-                        ink,
+                    );
+                    if state.hovered {
+                        view.pointer_move(layout.frame.center());
+                    }
+                    if state.pressed {
+                        view.pointer_down(layout.frame.center());
+                    }
+                    view.render(
+                        scene,
+                        ctx.text,
+                        &mut model,
+                        "Open documentation",
+                        control,
+                        Some(c),
+                        palette,
+                        proposal::TextRole::UiBody,
+                    );
+                }
+                "segmented-control" => {
+                    let mut model = controls::SegmentedControl::new(3);
+                    if state.selected {
+                        model.select(1);
+                    }
+                    if state.disabled && name != "Disabled · all segments" {
+                        model.set_enabled(2, false);
+                    }
+                    let mut view = SegmentedControlView::new(3);
+                    view.set_disabled(state.disabled && name == "Disabled · all segments");
+                    if state.focused {
+                        view.focus_with_visibility(0, state.focus_visible);
+                    }
+                    let labels = ["General", "Advanced", "Security"];
+                    let mut probe = Scene::new();
+                    let layout = view.render(
+                        &mut probe,
+                        ctx.text,
+                        &mut model,
+                        &labels,
+                        control,
+                        Some(c),
+                        palette,
+                        proposal::TextRole::UiBody,
+                        false,
+                    );
+                    let point = layout.items[0].frame.center();
+                    if state.hovered {
+                        view.pointer_move(point);
+                    }
+                    if state.pressed {
+                        view.pointer_down(point);
+                    }
+                    view.render(
+                        scene,
+                        ctx.text,
+                        &mut model,
+                        &labels,
+                        control,
+                        Some(c),
+                        palette,
+                        proposal::TextRole::UiBody,
+                        false,
                     );
                 }
                 "icon-button" => {
-                    paint::button(scene, control, palette, state);
-                    draw_icon(ctx, scene, control.inset(10.), Icon::Plus);
+                    let mut model =
+                        controls::IconButton::new("Create item").expect("stable accessible name");
+                    model.button.state = state;
+                    let mut view = IconButtonView::new();
+                    if state.focused {
+                        view.focus(state.focus_visible);
+                    }
+                    let mut probe = Scene::new();
+                    let layout =
+                        view.render(&mut probe, ctx.text, &mut model, control, Some(c), palette);
+                    if state.hovered {
+                        view.pointer_move(layout.frame.center());
+                    }
+                    if state.pressed {
+                        view.pointer_down(layout.frame.center());
+                    }
+                    view.render(scene, ctx.text, &mut model, control, Some(c), palette);
+                    let mut icons = GalleryIconRenderer::native(ctx);
+                    view.render_icon(scene, &mut icons, "plus", Some(c), palette, 0.);
                 }
                 _ => {}
             }
         }
         scene.pop_clip();
+        #[cfg(any(test, feature = "composition-review"))]
+        if e.renderer() == "slider" {
+            use tekes_ui_composition_consumer::slider_content::{RANGE, ROOT, build};
+            use tekes_ui_controls::composition::{AccessibilityAction, ContentEvent};
+            let mut sample = build().expect("independent public range composition");
+            sample.focus(Some(RANGE), true);
+            sample.accessibility_action(RANGE, None, AccessibilityAction::Increment);
+            sample.event(&ContentEvent::Key {
+                key: ControlKey::Right,
+                down: true,
+            });
+            let available = c.inset(tekes_ui_tokens::Spacing::Regular.value());
+            let w = available.size.width.min(420.);
+            let size = sample
+                .get_mut(ROOT)
+                .unwrap()
+                .measure(ctx.text, tekes_ui_scene::Size::new(w, 4096.))
+                .size;
+            let frame = Rect::new(c.min_x() + 12., s.document_bottom + 24., w, size.height);
+            sample
+                .render(
+                    scene,
+                    ctx.text,
+                    frame,
+                    c,
+                    Palette {
+                        theme: ctx.theme,
+                        brand: s.brand,
+                    },
+                )
+                .unwrap();
+            s.document_bottom = frame.max_y() + 12.;
+        }
+        #[cfg(any(test, feature = "composition-review"))]
+        if e.renderer() == "disclosure" {
+            s.document_bottom = super::content_status::matrix(
+                tekes_ui_composition_consumer::content_status::Kind::Disclosure,
+                s,
+                ctx,
+                scene,
+                c,
+                s.document_bottom + 24.,
+            );
+        }
     }
 
     pub(super) fn behaviors(
@@ -756,11 +1528,15 @@ impl ExtendedStory {
     pub(super) fn variants(
         &mut self,
         e: &Entry,
-        s: &StoryState,
+        s: &mut StoryState,
         ctx: &mut PageCtx<'_>,
         scene: &mut Scene,
         c: Rect,
     ) {
+        if feedback_adapter::supports_variants(e.renderer()) {
+            feedback_adapter::variants(e, s, ctx, scene, c);
+            return;
+        }
         let palette = Palette {
             theme: ctx.theme,
             brand: s.brand,
@@ -784,7 +1560,13 @@ impl ExtendedStory {
                         Rect::new(row.min_x(), row.min_y() + 20., row.size.width, 36.),
                         3,
                     ) {
-                        paint::surface(scene, cell, palette, true);
+                        paint::surface_at_scale(
+                            scene,
+                            cell,
+                            palette,
+                            true,
+                            ctx.text.backing_scale(),
+                        );
                     }
                 }
             }
@@ -804,36 +1586,54 @@ impl ExtendedStory {
                         cols * 2,
                         26.,
                     ) {
-                        paint::surface(scene, cell, palette, true);
+                        paint::surface_at_scale(
+                            scene,
+                            cell,
+                            palette,
+                            true,
+                            ctx.text.backing_scale(),
+                        );
                     }
                 }
             }
             "separator" => {
+                let horizontal_h = ctx
+                    .text
+                    .proposal_label("Horizontal", proposal::TextRole::UiBody, Some(w))
+                    .height as f32;
                 label(
                     ctx,
                     scene,
-                    Rect::new(x, y, w.min(320.), 28.),
+                    Rect::new(x, y, w, horizontal_h),
                     "Horizontal",
                     false,
                 );
-                controls::separator(
+                let horizontal_y = y + horizontal_h + 8.;
+                controls::separator_at_scale(
                     scene,
-                    Rect::new(x, y + 36., w.min(620.), 12.),
+                    Rect::new(x, horizontal_y, w.min(620.), 12.),
                     palette,
                     controls::Axis::Horizontal,
+                    ctx.text.backing_scale(),
                 );
+                let vertical_y = horizontal_y + 28.;
+                let vertical_h = ctx
+                    .text
+                    .proposal_label("Vertical", proposal::TextRole::UiBody, Some(w))
+                    .height as f32;
                 label(
                     ctx,
                     scene,
-                    Rect::new(x, y + 60., w.min(320.), 28.),
+                    Rect::new(x, vertical_y, w, vertical_h),
                     "Vertical",
                     false,
                 );
-                controls::separator(
+                controls::separator_at_scale(
                     scene,
-                    Rect::new(x + 340., y + 48., 12., 160.),
+                    Rect::new(x, vertical_y + vertical_h + 8., 12_f32.min(w), 160.),
                     palette,
                     controls::Axis::Vertical,
+                    ctx.text.backing_scale(),
                 );
             }
             "split-view" => {
@@ -849,9 +1649,21 @@ impl ExtendedStory {
                     self.split.set_ratio(ratio);
                     let (leading, divider, trailing) =
                         self.split.layout(bounds, controls::Axis::Horizontal);
-                    paint::surface(scene, leading, palette, true);
+                    paint::surface_at_scale(
+                        scene,
+                        leading,
+                        palette,
+                        true,
+                        ctx.text.backing_scale(),
+                    );
                     controls::separator(scene, divider, palette, controls::Axis::Vertical);
-                    paint::surface(scene, trailing, palette, true);
+                    paint::surface_at_scale(
+                        scene,
+                        trailing,
+                        palette,
+                        true,
+                        ctx.text.backing_scale(),
+                    );
                 }
             }
             _ => {}
@@ -868,8 +1680,10 @@ impl ExtendedStory {
             return false;
         }
         if collections_adapter::is_collection(renderer) {
+            // Activation success is consumption, not a selection delta: Enter
+            // may activate the already selected row and emit a real action.
             return collections_adapter::activate(self, renderer, id, log)
-                .is_some_and(|result| result.changed);
+                .is_some_and(|result| result.consumed);
         }
         if feedback_adapter::supports(renderer) {
             return feedback_adapter::activate(self, renderer, id, log)
@@ -897,9 +1711,7 @@ impl ExtendedStory {
                 true
             }
             ("icon-button", 20) => {
-                self.icon_button.button.state.focused = true;
-                self.icon_button.pointer_down();
-                let changed = self.icon_button.pointer_up(true);
+                let changed = self.icon_button_view.activate(&mut self.icon_button);
                 if changed {
                     log(format!(
                         "icon-button: {}",
@@ -909,9 +1721,7 @@ impl ExtendedStory {
                 changed
             }
             ("link", 20) => {
-                self.link.button.state.focused = true;
-                self.link.pointer_down();
-                let changed = self.link.pointer_up(true);
+                let changed = self.link_view.activate(&mut self.link);
                 if changed {
                     log("link: activated".into());
                 }
@@ -961,16 +1771,19 @@ impl ExtendedStory {
                 true
             }
             ("command-palette", 40..=42) => {
-                self.command.combo.selected = Some(id - 40);
-                self.command.combo.open = false;
-                log(format!("command: {}", id - 40));
+                let Some(index) = self
+                    .command_view
+                    .activate_option(id - 40, &mut self.command)
+                else {
+                    return false;
+                };
+                log(format!("command: {index}"));
                 true
             }
             ("combo-box", 40..=42) => {
-                let i = id - 40;
-                self.combo.selected = Some(i);
-                self.combo.query = self.combo.items[i].clone();
-                self.combo.open = false;
+                let Some(i) = self.combo_view.activate_option(id - 40, &mut self.combo) else {
+                    return false;
+                };
                 log(format!("combo selection: {i}"));
                 true
             }
@@ -1078,6 +1891,9 @@ impl ExtendedStory {
                 _ => supports(renderer),
             };
         }
+        if renderer == "split-view" && matches!(key, ControlKey::Enter | ControlKey::Space) {
+            self.pointer_dragging = None;
+        }
         if renderer == "split-view" && key == ControlKey::Escape {
             let captured = self.pointer_dragging.take() == Some(90);
             return self.split_view.cancel(&mut self.split) || captured;
@@ -1095,7 +1911,7 @@ impl ExtendedStory {
             "split-view" => self.split_view.key(key, &mut self.split),
             "combo-box" => {
                 let event = self.combo_view.key_event(key, true, &mut self.combo);
-                if event.changed && !self.combo.open {
+                if key == ControlKey::Enter && event.changed && !self.combo.open {
                     log(format!(
                         "combo selection: {}",
                         self.combo.selected.unwrap_or_default()
@@ -1110,7 +1926,7 @@ impl ExtendedStory {
                         .consumed
                 } else {
                     let event = self.command_view.key_event(key, true, &mut self.command);
-                    if event.changed && !self.command.combo.open {
+                    if key == ControlKey::Enter && event.changed && !self.command.combo.open {
                         log(format!(
                             "command: {}",
                             self.command.combo.selected.unwrap_or_default()
@@ -1246,14 +2062,21 @@ impl ExtendedStory {
         }
         self.icon_button.button.state.disabled = self.disabled;
         self.link.button.state.disabled = self.disabled;
-        for n in 0..3 {
-            self.segmented.set_enabled(n, !self.disabled);
-        }
+        self.segmented_view.set_disabled(self.disabled);
+        self.breadcrumb_view.set_disabled(self.disabled);
         self.chart
             .set_focused(self.focused.is_some(), self.focused.is_some());
         let rendered_by_component_adapter =
-            collections_adapter::build(self, e, s, ctx, scene, body, control_clip, palette)
-                || feedback_adapter::build(self, e, s, ctx, scene, body, control_clip, palette);
+            collections_adapter::build(
+                self,
+                e,
+                s,
+                ctx,
+                scene,
+                body,
+                original_clip.unwrap_or(control_clip),
+                palette,
+            ) || feedback_adapter::build(self, e, s, ctx, scene, body, control_clip, palette);
         if !rendered_by_component_adapter {
             match e.renderer() {
                 "stack" => {
@@ -1272,7 +2095,13 @@ impl ExtendedStory {
                         let r = item.frame();
                         if let Some(visible) = item.visible_frame() {
                             scene.push_clip(visible);
-                            paint::surface(scene, r.inset(0.5), palette, true);
+                            paint::surface_at_scale(
+                                scene,
+                                r.inset(0.5),
+                                palette,
+                                true,
+                                ctx.text.backing_scale(),
+                            );
                             label(
                                 ctx,
                                 scene,
@@ -1309,7 +2138,13 @@ impl ExtendedStory {
                         let r = item.frame();
                         if let Some(visible) = item.visible_frame() {
                             scene.push_clip(visible);
-                            paint::surface(scene, r.inset(0.5), palette, true);
+                            paint::surface_at_scale(
+                                scene,
+                                r.inset(0.5),
+                                palette,
+                                true,
+                                ctx.text.backing_scale(),
+                            );
                             label(
                                 ctx,
                                 scene,
@@ -1329,12 +2164,13 @@ impl ExtendedStory {
                         "Account settings",
                         true,
                     );
-                    self.separator_view.render(
+                    self.separator_view.render_at_scale(
                         scene,
                         Rect::new(bx, by + 42., bw.min(600.), 12.),
                         controls::Axis::Horizontal,
                         Some(control_clip),
                         palette,
+                        ctx.text.backing_scale(),
                     );
                     label(
                         ctx,
@@ -1343,12 +2179,18 @@ impl ExtendedStory {
                         "Profile and preferences",
                         false,
                     );
-                    self.separator_view.render(
+                    self.separator_view.render_at_scale(
                         scene,
-                        Rect::new(bx + 300., by + 110., 12., 160.),
+                        Rect::new(
+                            bx + (bw - 12.).clamp(0., 300.),
+                            by + 110.,
+                            12_f32.min(bw),
+                            160.,
+                        ),
                         controls::Axis::Vertical,
                         Some(control_clip),
                         palette,
+                        ctx.text.backing_scale(),
                     );
                 }
                 "disclosure" => {
@@ -1392,7 +2234,13 @@ impl ExtendedStory {
                     );
                     if let Some(body_clip) = body_layout.visible_clip {
                         scene.push_clip(body_clip);
-                        paint::surface(scene, body_layout.body_rect, palette, true);
+                        paint::surface_at_scale(
+                            scene,
+                            body_layout.body_rect,
+                            palette,
+                            true,
+                            ctx.text.backing_scale(),
+                        );
                         label(
                             ctx,
                             scene,
@@ -1410,7 +2258,7 @@ impl ExtendedStory {
                 }
                 "split-view" => {
                     let split_help = format!(
-                        "Divider position: {:.0}% · drag, arrow keys, Home / End; Escape restores the drag start.",
+                        "Divider position: {:.0}% · drag, arrow keys, Home / End; double-click or Enter / Space resets; Escape restores the drag start.",
                         self.split.ratio() * 100.
                     );
                     let help_height = caption_size(ctx, &split_help, bw).height;
@@ -1421,12 +2269,13 @@ impl ExtendedStory {
                         (body.size.height - help_height - 16.).max(0.),
                     );
                     self.split_bounds = bounds;
-                    let split_layout = self.split_view.render(
+                    let split_layout = self.split_view.render_at_scale(
                         scene,
                         &mut self.split,
                         bounds,
                         Some(control_clip),
                         palette,
+                        ctx.text.backing_scale(),
                     );
                     let visible_frame = split_layout.frame.visible_frame();
                     if self.pointer_dragging == Some(90)
@@ -1440,8 +2289,20 @@ impl ExtendedStory {
                     }
                     let leading = split_layout.leading.frame();
                     let trailing = split_layout.trailing.frame();
-                    paint::surface(scene, leading, palette, true);
-                    paint::surface(scene, trailing, palette, true);
+                    paint::surface_at_scale(
+                        scene,
+                        leading,
+                        palette,
+                        true,
+                        ctx.text.backing_scale(),
+                    );
+                    paint::surface_at_scale(
+                        scene,
+                        trailing,
+                        palette,
+                        true,
+                        ctx.text.backing_scale(),
+                    );
                     if !self
                         .split
                         .is_constrained(bounds, controls::Axis::Horizontal)
@@ -1478,8 +2339,15 @@ impl ExtendedStory {
                     let is_link = e.renderer() == "link";
                     self.icon_button.button.state.disabled = self.disabled;
                     self.link.button.state.disabled = self.disabled;
-                    let r = Rect::new(bx, by + 18., if is_link { 260. } else { 44. }, 40.);
+                    let natural = IconButtonView::measure(false);
+                    let r = Rect::new(
+                        bx,
+                        by + 18.,
+                        if is_link { 260. } else { natural.width },
+                        if is_link { 40. } else { natural.height },
+                    );
                     let component = if is_link {
+                        s.button_labels.insert(20, "Open documentation ↗".into());
                         self.link_view.render(
                             scene,
                             ctx.text,
@@ -1512,7 +2380,7 @@ impl ExtendedStory {
                             "plus",
                             Some(control_clip),
                             palette,
-                            20.,
+                            0.,
                         );
                     }
                     let help = if is_link {
@@ -1558,6 +2426,9 @@ impl ExtendedStory {
                     s.input.set_disabled(self.disabled);
                     s.input
                         .build_search_clipped(ctx, input, s.button_clip, scene);
+                    if let Some(frame) = s.input.frame_at(0) {
+                        s.register_logical_focus(1000, frame, !self.disabled, true, None, true);
+                    }
                     self.combo.disabled = self.disabled;
                     if self.combo.query != s.input.query() {
                         self.combo.set_query(s.input.query());
@@ -1593,7 +2464,7 @@ impl ExtendedStory {
                             ctx,
                             scene,
                             bx,
-                            by + 60.,
+                            input.max_y() + 8.,
                             bw.min(440.),
                             "No matching options",
                         );
@@ -1615,6 +2486,7 @@ impl ExtendedStory {
                     );
                     for (n, row) in layout.rows.iter().enumerate() {
                         let id = 30 + n;
+                        s.button_labels.insert(id, labels[n].clone());
                         if let Some(hit) = row.visible_frame() {
                             s.hits.push((id, hit));
                         }
@@ -1626,6 +2498,7 @@ impl ExtendedStory {
                     } else {
                         "Notifications off"
                     };
+                    s.button_labels.insert(20, label_text.to_owned());
                     let component = self.switch_view.render_labeled(
                         scene,
                         ctx.text,
@@ -1661,6 +2534,7 @@ impl ExtendedStory {
                         s.density == 1,
                     );
                     for (n, item) in layout.items.iter().enumerate() {
+                        s.button_labels.insert(30 + n, opts[n].to_owned());
                         if let Some(visible) = item.visible {
                             s.hits.push((30 + n, visible));
                         }
@@ -1687,12 +2561,21 @@ impl ExtendedStory {
                 }
                 "command-palette" => {
                     self.command.combo.disabled = self.disabled;
+                    let trigger_width = bw.min(200.);
+                    let trigger_height = Button::measure(
+                        ctx.text,
+                        "Open command palette",
+                        trigger_width,
+                        ButtonSize::Body,
+                        proposal::TextRole::UiBody,
+                    )
+                    .height;
                     let trigger = self.command_view.render_trigger(
                         scene,
                         ctx.text,
                         &mut self.command,
                         "Open command palette",
-                        Rect::new(bx, by + 8., 200., 36.),
+                        Rect::new(bx, by + 8., trigger_width, trigger_height),
                         Some(control_clip),
                         palette,
                         proposal::TextRole::UiBody,
@@ -1700,18 +2583,31 @@ impl ExtendedStory {
                     if let Some(hit) = trigger.visible {
                         s.hits.push((20, hit));
                     }
-                    if self.command.combo.open {
+                    if self.command.combo.open || self.command_view.options.is_presented() {
                         let input_height = 38.0_f32.max(s.input.measure_search_height(ctx.text));
-                        let input = Rect::new(bx, by + 52., bw.min(420.), input_height);
-                        s.input.set_disabled(self.disabled);
-                        s.input
-                            .build_search_clipped(ctx, input, s.button_clip, scene);
-                        if self.command.combo.query != s.input.query() {
-                            self.command.combo.set_query(s.input.query());
-                        }
-                        if let Some(visible) = s.input.visible_frame() {
-                            self.hits.push((1000, visible));
-                            s.hits.push((1000, visible));
+                        let input =
+                            Rect::new(bx, trigger.frame.max_y() + 8., bw.min(420.), input_height);
+                        if self.command.combo.open {
+                            s.input.set_disabled(self.disabled);
+                            s.input
+                                .build_search_clipped(ctx, input, s.button_clip, scene);
+                            if let Some(frame) = s.input.frame_at(0) {
+                                s.register_logical_focus(
+                                    1000,
+                                    frame,
+                                    !self.disabled,
+                                    true,
+                                    None,
+                                    true,
+                                );
+                            }
+                            if self.command.combo.query != s.input.query() {
+                                self.command.combo.set_query(s.input.query());
+                            }
+                            if let Some(visible) = s.input.visible_frame() {
+                                self.hits.push((1000, visible));
+                                s.hits.push((1000, visible));
+                            }
                         }
                         let options = self.command_view.render(
                             scene,
@@ -1734,18 +2630,43 @@ impl ExtendedStory {
                                 }
                             }
                         }
+                        if self.command.combo.open && self.command.combo.filtered().is_empty() {
+                            wrapped_caption(
+                                ctx,
+                                scene,
+                                input.min_x(),
+                                input.max_y() + 8.,
+                                input.size.width,
+                                "No matching commands",
+                            );
+                        }
                     }
                 }
                 _ => {}
             }
         }
         scene.pop_clip();
-        let log_y = (c.max_y() - 112.).max(c.min_y());
-        event_log(ctx, scene, x, log_y, w, &s.log, true);
+        // The log follows intrinsic story content, not the current document
+        // height: feeding the previous extent back into this position prevents
+        // shrinking after reflow and can grow the document on each build.
+        let natural_bottom = if s.document_bottom != 0. {
+            s.document_bottom
+        } else {
+            body.min_y() + body.size.height.min(320.)
+        };
+        s.document_bottom = natural_bottom;
+        let log_y = natural_bottom + 24.;
+        s.event_log_frame = Some(event_log(ctx, scene, x, log_y, w, &s.log, true));
         scene.pop_clip();
         let mut story_hits = s.hits.split_off(story_hit_start);
         story_hits.retain_mut(|(id, r)| {
             let clip = if *id == 10 { c } else { body };
+            let clip = clip.intersection(&s.preview).unwrap_or(Rect::new(
+                s.preview.min_x(),
+                s.preview.min_y(),
+                0.,
+                0.,
+            ));
             if let Some(clipped) = r.intersection(&clip) {
                 *r = clipped;
                 true
@@ -1938,6 +2859,15 @@ impl ExtendedStory {
                 return true;
             }
             "command-palette" => {
+                // Release the trigger even when capture ends outside its hit.
+                // Candidate releases must not leave a prior trigger arm alive.
+                if self
+                    .command_view
+                    .pointer_up_trigger(point, &mut self.command)
+                {
+                    log("command palette: open".into());
+                    return true;
+                }
                 if let Some(index) = self.command_view.pointer_up(point, &mut self.command) {
                     log(format!("command: {index}"));
                 }
@@ -2080,6 +3010,247 @@ mod tests {
         workbench.build_clipped(index, &mut ctx, content, clip, &mut Scene::new());
     }
 
+    #[test]
+    fn navigation_link_space_never_falls_back_to_gallery_button_activation() {
+        for renderer in ["link", "breadcrumb"] {
+            let mut workbench = Workbench::default();
+            let mut text = TextEngine::new();
+            let index = index(renderer);
+            let content = Rect::new(312., 70., 1000., 820.);
+            build(&mut workbench, index, &mut text, content, content);
+            let id = if renderer == "link" { 20 } else { 31 };
+            let point = workbench
+                .state(index)
+                .hits
+                .iter()
+                .find(|(hit, _)| *hit == id)
+                .unwrap()
+                .1
+                .center();
+            click(&mut workbench, index, point, &mut text);
+            let count = workbench.state(index).log.len();
+            assert!(!workbench.handle(index, &key_down(49), &mut text));
+            let mut release = key_down(49);
+            if let Event::Key(key) = &mut release {
+                key.kind = KeyEventKind::Up;
+            }
+            assert!(!workbench.handle(index, &release, &mut text));
+            assert_eq!(
+                workbench.state(index).log.len(),
+                count,
+                "{renderer} must not activate through the generic button fallback"
+            );
+        }
+    }
+
+    #[test]
+    fn breadcrumb_overall_disable_reaches_the_real_view_and_preserves_path() {
+        let mut workbench = Workbench::default();
+        let mut text = TextEngine::new();
+        let index = index("breadcrumb");
+        let content = Rect::new(312., 70., 1000., 820.);
+        build(&mut workbench, index, &mut text, content, content);
+        let point = workbench
+            .state(index)
+            .hits
+            .iter()
+            .find(|(id, _)| *id == 10)
+            .expect("existing disabled toggle must be exposed for Breadcrumb")
+            .1
+            .center();
+        click(&mut workbench, index, point, &mut text);
+        assert!(workbench.state(index).extended.disabled);
+        build(&mut workbench, index, &mut text, content, content);
+        let story = &mut workbench.state(index).extended;
+        assert_eq!(story.breadcrumb_view.activate(0, &story.breadcrumb), None);
+        assert_eq!(story.breadcrumb.items.len(), 3);
+    }
+
+    #[test]
+    fn icon_playground_uses_shared_natural_geometry() {
+        let mut workbench = Workbench::default();
+        let mut text = TextEngine::new();
+        let index = index("icon-button");
+        let content = Rect::new(312., 70., 1000., 820.);
+        build(&mut workbench, index, &mut text, content, content);
+        let story = &workbench.state(index).extended;
+        assert_eq!(
+            story.icon_button_view.layout().frame.size,
+            IconButtonView::measure(false)
+        );
+        let side = proposal::metric("size", "size-icon-standard").unwrap();
+        assert_eq!(
+            story.icon_button_view.icon_layout().artboard.size,
+            tekes_ui_scene::Size::new(side, side)
+        );
+    }
+
+    #[test]
+    fn overall_segment_disable_preserves_selection_and_item_availability() {
+        let mut workbench = Workbench::default();
+        let mut text = TextEngine::new();
+        let index = index("segmented-control");
+        let content = Rect::new(312., 70., 1000., 820.);
+        workbench.state(index).extended.segmented.select(0);
+        workbench
+            .state(index)
+            .extended
+            .segmented
+            .set_enabled(1, false);
+        workbench.state(index).extended.disabled = true;
+        build(&mut workbench, index, &mut text, content, content);
+        let model = &workbench.state(index).extended.segmented;
+        assert_eq!(
+            model.selected, 0,
+            "overall disable must preserve controlled selection"
+        );
+        assert!(
+            !model.is_enabled(1),
+            "overall availability must preserve per-item choices"
+        );
+        workbench.state(index).extended.disabled = false;
+        build(&mut workbench, index, &mut text, content, content);
+        let model = &workbench.state(index).extended.segmented;
+        assert_eq!(model.selected, 0);
+        assert!(!model.is_enabled(1));
+    }
+
+    #[test]
+    fn state_matrix_reserves_wrapped_text_rows_and_focus_gutter_at_large_type() {
+        for renderer in [
+            "link",
+            "radio-group",
+            "switch",
+            "disclosure",
+            "segmented-control",
+        ] {
+            let index = entries()
+                .iter()
+                .position(|entry| entry.renderer() == renderer)
+                .unwrap();
+            for scale in [1.0, 1.5] {
+                let mut text = TextEngine::new();
+                text.set_type_scale(scale);
+                let mut static_text = StaticText::new(None);
+                let mut ctx = PageCtx {
+                    theme: tekes_ui_tokens::Theme::LIGHT,
+                    text: &mut text,
+                    static_text: &mut static_text,
+                };
+                let viewport = Rect::new(0., 0., 360., 12000.);
+                let gutter = -controls::ControlFrame::new(Rect::new(0., 0., 1., 1.), None)
+                    .focus_bounds(ctx.text.backing_scale())
+                    .min_x();
+                let content = viewport.inset(gutter);
+                let columns = ((content.size.width / 300.).floor() as usize).clamp(1, 3);
+                let cell_width = content.size.width / columns as f32;
+                let specimen_width = match renderer {
+                    "segmented-control" => (cell_width - 12.).max(0.),
+                    _ => (cell_width - 12.).clamp(0., 220.),
+                };
+                let control_height = matrix_control_height(renderer, ctx.text, specimen_width);
+
+                let (states, longest_label) = match renderer {
+                    "link" => (5usize, "Focus-visible"),
+                    "radio-group" | "switch" => (7usize, "Checked · focus-visible"),
+                    "disclosure" => (8usize, "Collapsed · focus-visible"),
+                    "segmented-control" => (5usize, "Selected · disabled peer"),
+                    _ => unreachable!(),
+                };
+                let title_height = ctx
+                    .text
+                    .proposal_label(
+                        longest_label,
+                        proposal::TextRole::UiBody,
+                        Some((cell_width - 12.).max(0.)),
+                    )
+                    .height as f32;
+                let help =
+                    "Visual comparison only. Use Playground for real focus and keyboard behavior.";
+                let state_rows_y = content.min_y()
+                    + 38.0_f32.max(caption_size(&mut ctx, help, content.size.width).height + 10.);
+                let expected_bottom = state_rows_y
+                    + states.div_ceil(columns) as f32 * (title_height + 8. + control_height + 20.)
+                    + gutter;
+
+                let entry = &entries()[index];
+                let mut state = super::super::StoryState::default();
+                let mut story = ExtendedStory::default();
+                let mut scene = Scene::new();
+                story.matrix(entry, &mut state, &mut ctx, &mut scene, viewport);
+                assert!(
+                    !scene.is_empty(),
+                    "{renderer} matrix should paint real specimens"
+                );
+                assert!(
+                    state.document_bottom + 0.01 >= expected_bottom,
+                    "{renderer} at {scale}x needs {expected_bottom}pt, got {}pt; control row {control_height}pt",
+                    state.document_bottom
+                );
+                assert!(
+                    control_height
+                        >= match renderer {
+                            "link" => ctx
+                                .text
+                                .measure(
+                                    "Open documentation",
+                                    proposal::TextRole::UiBody,
+                                    (specimen_width - 16.).max(0.),
+                                )
+                                .height
+                                .max(36.),
+                            "radio-group" => {
+                                ctx.text
+                                    .measure(
+                                        "Option",
+                                        proposal::TextRole::UiBody,
+                                        (specimen_width - 40.).max(0.),
+                                    )
+                                    .height
+                            }
+                            "switch" => {
+                                ctx.text
+                                    .measure(
+                                        "Enabled",
+                                        proposal::TextRole::UiBody,
+                                        (specimen_width - 62.).max(0.),
+                                    )
+                                    .height
+                            }
+                            "disclosure" => {
+                                ctx.text
+                                    .measure(
+                                        "Details",
+                                        proposal::TextRole::UiBody,
+                                        (specimen_width - 48.).max(0.),
+                                    )
+                                    .height
+                            }
+                            "segmented-control" => ["General", "Advanced", "Security"]
+                                .into_iter()
+                                .map(|label| {
+                                    Button::measure(
+                                        ctx.text,
+                                        label,
+                                        specimen_width / 3.,
+                                        ButtonSize::Md,
+                                        proposal::TextRole::UiBody,
+                                    )
+                                    .height
+                                })
+                                .fold(0.0_f32, f32::max),
+                            _ => unreachable!(),
+                        },
+                    "{renderer} text must fit its measured row at {scale}x"
+                );
+                eprintln!(
+                    "state-matrix-layout renderer={renderer} width=360 type_scale={scale} specimen_width={specimen_width:.1} row_height={control_height:.1} document_bottom={:.1}",
+                    state.document_bottom
+                );
+            }
+        }
+    }
+
     fn mouse(point: Point, kind: MouseEventKind) -> Event {
         Event::Mouse(MouseEvent {
             position: NativePoint {
@@ -2166,7 +3337,16 @@ mod tests {
             visual_track.min_x() + visual_track.size.width * 0.75,
             visual_track.center().y,
         );
-        workbench.handle(index, &mouse(drag_point, MouseEventKind::Moved), &mut text);
+        workbench.handle(
+            index,
+            &mouse(
+                drag_point,
+                MouseEventKind::Dragged {
+                    button: MouseButton::Left,
+                },
+            ),
+            &mut text,
+        );
         assert_eq!(workbench.state(index).extended.slider.value(), 75.);
         assert!(workbench.state(index).extended.slider_view.is_captured());
 
@@ -2206,7 +3386,16 @@ mod tests {
         );
         assert_eq!(workbench.state(story).extended.pointer_dragging, Some(90));
         let moved = Point::new(divider.x + 48., divider.y);
-        workbench.handle(story, &mouse(moved, MouseEventKind::Moved), text);
+        workbench.handle(
+            story,
+            &mouse(
+                moved,
+                MouseEventKind::Dragged {
+                    button: MouseButton::Left,
+                },
+            ),
+            text,
+        );
         assert_ne!(workbench.state(story).extended.split.ratio(), 0.5);
         moved
     }
@@ -2224,7 +3413,12 @@ mod tests {
         assert_eq!(state.extended.pointer_dragging, None);
         workbench.handle(
             story,
-            &mouse(Point::new(moved.x + 30., moved.y), MouseEventKind::Moved),
+            &mouse(
+                Point::new(moved.x + 30., moved.y),
+                MouseEventKind::Dragged {
+                    button: MouseButton::Left,
+                },
+            ),
             &mut text,
         );
         let state = workbench.state(story);
@@ -2254,7 +3448,16 @@ mod tests {
         let state = workbench.state(story);
         assert_eq!(state.extended.split.ratio(), 0.5);
         assert_eq!(state.extended.pointer_dragging, None);
-        workbench.handle(story, &mouse(moved, MouseEventKind::Moved), &mut text);
+        workbench.handle(
+            story,
+            &mouse(
+                moved,
+                MouseEventKind::Dragged {
+                    button: MouseButton::Left,
+                },
+            ),
+            &mut text,
+        );
         assert_eq!(workbench.state(story).extended.split.ratio(), 0.5);
 
         let moved = begin_split_drag(&mut workbench, story, &mut text);
@@ -2265,9 +3468,198 @@ mod tests {
         let state = workbench.state(story);
         assert_eq!(state.extended.split.ratio(), 0.5);
         assert_eq!(state.extended.pointer_dragging, None);
-        workbench.handle(story, &mouse(moved, MouseEventKind::Moved), &mut text);
+        workbench.handle(
+            story,
+            &mouse(
+                moved,
+                MouseEventKind::Dragged {
+                    button: MouseButton::Left,
+                },
+            ),
+            &mut text,
+        );
         assert_eq!(workbench.state(story).extended.split.ratio(), 0.5);
         assert_eq!(workbench.state(story).extended.pointer_dragging, None);
+    }
+
+    #[test]
+    fn split_native_drag_lost_release_and_double_click_reset() {
+        let mut workbench = Workbench::default();
+        let mut text = TextEngine::new();
+        let story = index("split-view");
+        let moved = begin_split_drag(&mut workbench, story, &mut text);
+        assert!(workbench.has_pointer_capture(story));
+        assert!(!workbench.handle(story, &mouse(moved, MouseEventKind::Exited), &mut text));
+        assert!(
+            workbench.has_pointer_capture(story),
+            "leaving does not lose AppKit tracking"
+        );
+        assert!(workbench.handle(story, &mouse(moved, MouseEventKind::Moved), &mut text));
+        assert_eq!(workbench.state(story).extended.split.ratio(), 0.5);
+        assert!(!workbench.has_pointer_capture(story));
+        workbench.handle(
+            story,
+            &mouse(
+                moved,
+                MouseEventKind::Up {
+                    button: MouseButton::Left,
+                    click_count: 1,
+                },
+            ),
+            &mut text,
+        );
+        assert_eq!(workbench.state(story).extended.split.ratio(), 0.5);
+
+        let moved = begin_split_drag(&mut workbench, story, &mut text);
+        workbench.handle(
+            story,
+            &mouse(
+                moved,
+                MouseEventKind::Up {
+                    button: MouseButton::Left,
+                    click_count: 1,
+                },
+            ),
+            &mut text,
+        );
+        let content = Rect::new(312., 70., 1000., 820.);
+        build(&mut workbench, story, &mut text, content, content);
+        let divider = workbench
+            .state(story)
+            .extended
+            .split_view
+            .layout()
+            .divider_hit
+            .unwrap()
+            .center();
+        assert!(workbench.handle(
+            story,
+            &mouse(
+                divider,
+                MouseEventKind::Down {
+                    button: MouseButton::Left,
+                    click_count: 2
+                }
+            ),
+            &mut text
+        ));
+        assert_eq!(workbench.state(story).extended.split.ratio(), 0.5);
+        assert!(!workbench.has_pointer_capture(story));
+        workbench.handle(
+            story,
+            &mouse(
+                moved,
+                MouseEventKind::Dragged {
+                    button: MouseButton::Left,
+                },
+            ),
+            &mut text,
+        );
+        assert_eq!(workbench.state(story).extended.split.ratio(), 0.5);
+    }
+
+    #[test]
+    fn gallery_split_cursor_regions_follow_page_and_window_lifecycle() {
+        let mut gallery = crate::gallery::Gallery::new();
+        let story = index("split-view");
+        gallery.apply(crate::gallery::Command::Page(
+            crate::gallery::Page::Workbench(story),
+        ));
+        gallery.set_view_size(1440., 1000.);
+        gallery.build_scene(&mut Scene::new());
+        let regions = gallery.cursor_regions();
+        assert_eq!(regions.len(), 1);
+        assert_eq!(
+            regions[0].icon,
+            tekes_ui_platform_macos::CursorIcon::ResizeHorizontal
+        );
+        assert!(regions[0].size.width > 0. && regions[0].size.height > 0.);
+        gallery.handle_input(&Event::Focus(false));
+        assert!(gallery.cursor_regions().is_empty());
+        gallery.handle_input(&Event::Focus(true));
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(gallery.cursor_regions().len(), 1);
+        gallery.apply(crate::gallery::Command::Page(
+            crate::gallery::Page::Workbench(index("button")),
+        ));
+        assert!(gallery.cursor_regions().is_empty());
+    }
+
+    #[test]
+    fn gallery_split_capture_routes_across_catalog_boundary() {
+        let mut gallery = crate::gallery::Gallery::new();
+        let story = index("split-view");
+        gallery.apply(crate::gallery::Command::Page(
+            crate::gallery::Page::Workbench(story),
+        ));
+        gallery.set_view_size(1440., 1000.);
+        gallery.build_scene(&mut Scene::new());
+        let divider = gallery
+            .workbench
+            .state(story)
+            .extended
+            .split_view
+            .layout()
+            .divider_hit
+            .unwrap()
+            .center();
+        gallery.handle_input(&mouse(
+            divider,
+            MouseEventKind::Down {
+                button: MouseButton::Left,
+                click_count: 1,
+            },
+        ));
+        assert!(gallery.workbench.has_pointer_capture(story));
+        let outside = Point::new(100., divider.y);
+        assert_eq!(
+            gallery.handle_input(&mouse(
+                outside,
+                MouseEventKind::Dragged {
+                    button: MouseButton::Left
+                }
+            )),
+            crate::gallery::Change::REDRAW
+        );
+        assert!(gallery.workbench.state(story).extended.split.ratio() < 0.5);
+        gallery.handle_input(&mouse(
+            outside,
+            MouseEventKind::Up {
+                button: MouseButton::Left,
+                click_count: 1,
+            },
+        ));
+        assert!(!gallery.workbench.has_pointer_capture(story));
+        let committed = gallery.workbench.state(story).extended.split.ratio();
+        gallery.handle_input(&mouse(divider, MouseEventKind::Moved));
+        assert_eq!(
+            gallery.workbench.state(story).extended.split.ratio(),
+            committed
+        );
+    }
+
+    #[test]
+    fn split_reset_has_keyboard_alternative_and_releases_capture() {
+        let mut workbench = Workbench::default();
+        let mut text = TextEngine::new();
+        let story = index("split-view");
+        for code in [36, 49] {
+            let moved = begin_split_drag(&mut workbench, story, &mut text);
+            assert!(workbench.handle(story, &key_down(code), &mut text));
+            assert_eq!(workbench.state(story).extended.split.ratio(), 0.5);
+            assert!(!workbench.has_pointer_capture(story));
+            workbench.handle(
+                story,
+                &mouse(
+                    moved,
+                    MouseEventKind::Dragged {
+                        button: MouseButton::Left,
+                    },
+                ),
+                &mut text,
+            );
+            assert_eq!(workbench.state(story).extended.split.ratio(), 0.5);
+        }
     }
 
     #[test]
@@ -2355,5 +3747,147 @@ mod tests {
                 _ => unreachable!(),
             }
         }
+    }
+    #[test]
+    fn separator_story_and_variants_forward_actual_renderer_backing_scale() {
+        let entry = &entries()[index("separator")];
+        for theme in tekes_ui_tokens::Theme::ALL {
+            for scale in [1., 2.] {
+                for variants in [false, true] {
+                    let mut story = ExtendedStory::default();
+                    let mut state = StoryState::default();
+                    let mut text = TextEngine::new();
+                    text.set_scale(scale);
+                    text.begin_frame();
+                    let mut static_text = StaticText::new(None);
+                    let mut ctx = PageCtx {
+                        theme,
+                        text: &mut text,
+                        static_text: &mut static_text,
+                    };
+                    let mut scene = Scene::new();
+                    let bounds = Rect::new(8., 8., 800., 800.);
+                    if variants {
+                        story.variants(entry, &mut state, &mut ctx, &mut scene, bounds);
+                    } else {
+                        story.draw(entry, &mut state, &mut ctx, &mut scene, bounds);
+                    }
+                    let color = Palette::from(theme).color("separator").unwrap();
+                    let widths = scene
+                        .primitives()
+                        .iter()
+                        .filter_map(|p| match p {
+                            tekes_ui_scene::Primitive::Quad(q)
+                                if q.fill == color && q.border_width == 0. =>
+                            {
+                                if q.rect.size.width > 100. && q.rect.size.height <= 1. {
+                                    Some(q.rect.size.height)
+                                } else if q.rect.size.height > 100. && q.rect.size.width <= 1. {
+                                    Some(q.rect.size.width)
+                                } else {
+                                    None
+                                }
+                            }
+                            _ => None,
+                        })
+                        .collect::<Vec<_>>();
+                    assert_eq!(
+                        widths.len(),
+                        2,
+                        "two real standalone separators: variants={variants}"
+                    );
+                    let expected = if theme.contrast == tekes_ui_tokens::Contrast::Increased {
+                        1.
+                    } else {
+                        1. / scale
+                    };
+                    assert!(
+                        widths.into_iter().all(|width| width == expected),
+                        "Gallery must forward scale {scale}, variants={variants}"
+                    );
+                }
+            }
+        }
+    }
+    #[test]
+    fn grid_playground_zero_area_drops_child_geometry_and_restores_it() {
+        let entry = &entries()[index("grid")];
+        let mut story = ExtendedStory::default();
+        let mut state = StoryState::default();
+        let mut text = TextEngine::new();
+        let mut static_text = StaticText::new(None);
+        for (height, count) in [(120., 0), (800., 9), (120., 0)] {
+            text.begin_frame();
+            let mut ctx = PageCtx {
+                theme: tekes_ui_tokens::Theme::LIGHT,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            story.draw(
+                entry,
+                &mut state,
+                &mut ctx,
+                &mut Scene::new(),
+                Rect::new(8., 8., 800., height),
+            );
+            assert_eq!(story.grid_view.layout().items.len(), count);
+        }
+    }
+    #[test]
+    fn layout_panel_callers_forward_host_backing_scale() {
+        let mut gpu = std::env::var_os("TEKESUI_PANEL_SCALE_OUT")
+            .map(|_| tekes_ui_render::Renderer::new_headless().unwrap());
+        let mut wrong = 0;
+        for (ti, theme) in tekes_ui_tokens::Theme::ALL.into_iter().enumerate() {
+            for brand in 0..3 {
+                for scale in [1., 2.] {
+                    for (renderer, variants) in [
+                        ("stack", false),
+                        ("grid", false),
+                        ("split-view", false),
+                        ("disclosure", false),
+                        ("stack", true),
+                        ("grid", true),
+                        ("split-view", true),
+                    ] {
+                        let entry = &entries()[index(renderer)];
+                        let mut story = ExtendedStory::default();
+                        story.disclosure.open = true;
+                        let mut state = StoryState {
+                            brand,
+                            ..Default::default()
+                        };
+                        let mut text = TextEngine::new();
+                        text.set_scale(scale);
+                        text.begin_frame();
+                        let mut static_text = StaticText::new(None);
+                        let mut scene = Scene::new();
+                        let mut ctx = PageCtx {
+                            theme,
+                            text: &mut text,
+                            static_text: &mut static_text,
+                        };
+                        let bounds = Rect::new(8., 8., 700., 520.);
+                        if variants {
+                            story.variants(entry, &mut state, &mut ctx, &mut scene, bounds);
+                        } else {
+                            story.draw(entry, &mut state, &mut ctx, &mut scene, bounds);
+                        }
+                        let name = format!("layout-{renderer}-v{variants}-t{ti}-b{brand}-s{scale}");
+                        wrong += crate::gallery::quality_effects::record_panel_host_scale(
+                            &scene,
+                            &mut text,
+                            Palette { theme, brand },
+                            &name,
+                            gpu.as_mut(),
+                        );
+                    }
+                }
+            }
+        }
+        assert_eq!(
+            wrong, 0,
+            "all layout panel callers must forward existing backing scale"
+        );
     }
 }

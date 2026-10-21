@@ -1,0 +1,46 @@
+{
+  "status": "scoped API and portable gate acceptance passed",
+  "reason": "independently verify each negative instead of conflating modified color and missing theme in one mutation",
+  "shared_implementation": "existing public validate_gallery_brands/verify_inputs; no production abstraction or runtime change required",
+  "permanent_regression": "crates/tekes-ui-design-export/tests/gallery_brand_projection.rs",
+  "permanent_tests": 4,
+  "independent_negative_cases": 29,
+  "strict_clippy": "passed for exact current-root target and standalone public consumer",
+  "current_dependency_identity": "host packages exact subset of current root lock; original first-pass newer libc corrected and retested",
+  "source_protection": {
+    "existing_inputs": 57,
+    "changed": []
+  },
+  "portable": {
+    "source_identity": "c1c263ef8f727a78fffe8135dae2aa994e5ac10ab5d9230e3cc0f3c1e3365350",
+    "files": 60,
+    "command": [
+      "cargo",
+      "test",
+      "--manifest-path",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/batch2-brand-public-api-20261020/portable-source-attempt2/design/reviews/batch2-brand-public-api-20261020/host/Cargo.toml",
+      "--locked",
+      "--offline",
+      "--all-targets"
+    ],
+    "exit_code": 0,
+    "snapshot_changes": [],
+    "root_source_changes": [],
+    "bounded_workspace_setup_delta": [
+      "Cargo.lock"
+    ],
+    "performance": "not measured"
+  },
+  "archive": {
+    "file": "design/reviews/batch2-brand-public-api-20261020/tekesui-brand-public-validation-c1c263ef8f72.tar.gz",
+    "sha256": "0176f7284ac510bb145aed1522837c4090b8364bc02b32ef727b9765ac75ccbc",
+    "source_identity": "c1c263ef8f727a78fffe8135dae2aa994e5ac10ab5d9230e3cc0f3c1e3365350",
+    "source_members": 60,
+    "all_source_members_verified": true,
+    "build_outputs_in_archive": false
+  },
+  "cleanup": "root and independent consumer test executables removed; relocated source package outputs cleaned on cache return; libraries/dependencies/source/evidence retained",
+  "acceptance_boundary": "build/API integrity only; no UI or new native/Gold7 experience claimed",
+  "remaining": "same delivered batch2 public version remoteCI and independent final audit; no Issue completion or public delivery claimed",
+  "publication": "no commit/push/merge/tag/Issue write"
+}

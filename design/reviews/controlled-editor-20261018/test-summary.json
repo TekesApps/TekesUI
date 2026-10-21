@@ -1,0 +1,70 @@
+{
+  "batch": "controlled-editor-20261018",
+  "status": "local implementation/integration verified; Issue18 remains awaiting full acceptance and authorized public pin; entire15-21 delivery not ready",
+  "tests": {
+    "shared_platform_text": 395,
+    "independent_consumer": 90,
+    "feature_editor": 16,
+    "agentkit_ui": 20,
+    "agentkit_headless": 76,
+    "capability_gate": 38,
+    "composition_gate": 6
+  },
+  "token_probes": {
+    "design/reviews/controlled-editor-20261018/current-tokens/input-token-observations.json": 612,
+    "design/reviews/controlled-editor-20261018/current-tokens/navigation-content-token-observations.json": 408,
+    "design/reviews/controlled-editor-20261018/current-tokens/popup-token-observations.json": 192,
+    "design/reviews/controlled-editor-20261018/current-tokens/selection-token-observations.json": 2016,
+    "design/reviews/controlled-editor-20261018/current-tokens/query-async-token-observations.json": 264,
+    "design/reviews/controlled-editor-20261018/current-tokens/slider-composition-token-observations.json": 264,
+    "design/reviews/controlled-editor-20261018/current-tokens/command-async-token-observations.json": 168,
+    "design/reviews/controlled-editor-20261018/current-tokens/action-token-observations.json": 576
+  },
+  "accepted_logs": [
+    "shared-final",
+    "consumer-final",
+    "consumer-feature-final",
+    "clippy-accepted",
+    "consumer-clippy-final",
+    "agentkit-final",
+    "agentkit-clippy-final",
+    "headless-first",
+    "capability-check-final",
+    "capability-tests-final",
+    "composition-check-accepted",
+    "composition-tests-accepted",
+    "pure-rust-accepted",
+    "reference-final",
+    "gold7-final",
+    "default-gallery",
+    "gallery-release-audit",
+    "agentkit-boundaries-current",
+    "agentkit-headless-boundaries-accepted",
+    "standalone-shared-accepted",
+    "standalone-consumer",
+    "standalone-feature"
+  ],
+  "historical_failed_attempts": "Retained logs: ambient Python lacked tomllib; ambient standalone Cargo1.83 fixed by explicit original rust-toolchain; stale composition hashes reviewed and rebound; duplicate Gallery modules fixed by shared imports. Only accepted logs above count as current results.",
+  "native": {
+    "passed": "real Gallery Light prefix selection0..15→1..16, clear/undo, late request rejection, A/B isolation; final import-only adapter wiring reran prefix/clear/undo",
+    "scope": "exact hashes and actual Metal screenshots; logical semantics only",
+    "unverified": [
+      "physical Chinese IME",
+      "VoiceOver/native AX",
+      "AgentKit native window",
+      "multitheme final experience"
+    ],
+    "performance": "not measured"
+  },
+  "public_patch_paths": 18,
+  "agentkit_patch_paths": 6,
+  "independent_patch_result_files": 263,
+  "snapshot": "43464060e86629da37735a26c47d90da60d7264cd05d2c6d5abd886f843d1978",
+  "remote": {
+    "open_issues": 21,
+    "open_tekesui_prs": 0,
+    "mutations": []
+  },
+  "display_steering": "U2790B external30Hz detected after prior native evidence; use external for subsequent non120Hz acceptance; no system-setting change",
+  "next": "#20 public viewport reuse and actual AgentKit multiline integration; #21 actions; retained17 movements/native/publicpin gates"
+}

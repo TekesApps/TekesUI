@@ -1,0 +1,41 @@
+{
+  "status": "partial Issue28: viewport prerequisite only",
+  "identity": "cb1a9074ea7b8e03b9c5d227318e8cb30e8192b7505daf24efd79c29e06f2c16",
+  "scope_inputs_sha256": {
+    "crates/tekes-ui-controls/src/lib.rs": "84b1f6fc6c664c2daa30e85f17524411461ef310d75487215d6f2455d4f43626",
+    "crates/tekes-ui-controls/src/scroll_view.rs": "35681f2f171112aac7737096ca3d53a5ed20a1e49698c1c85384f57c61ee4a84",
+    "crates/tekes-ui-controls/src/scroll_view/reveal.rs": "e12098744667b4d081cc862c20c167575f7780e8057080a41b193cf27de15ba0",
+    "examples/composition-consumer/tests/scroll_reveal.rs": "bce7a59a814048b5965e76c248e78d34177bb556ba479d7892e3347c393fa21a",
+    "design/source/interaction-contracts.json": "578852bdc38c730183f87e2563faff07a950952b22b8f262ac4d70abed701374",
+    "design/tokens.json": "91c9828dacbf818e1970a2764dba71597a20d38560b7165f35aa92b7080e2e38"
+  },
+  "tests": {
+    "controls-final": 426,
+    "full-consumer": 192,
+    "scroll-api-final": 8
+  },
+  "initial_controls_unit_tests": 247,
+  "strict_Clippy": [
+    "controls all targets",
+    "Gallery all targets",
+    "independent consumer all targets with token audit"
+  ],
+  "canonical_actual_token_probes": 17,
+  "bounded_token_cases": 6432,
+  "token_complete": false,
+  "tokens_sets_api_values_unchanged": true,
+  "shared_location": "original ScrollArea, no duplicate scroll state machine; existing ProgressTransition and JSON geometry duration/standard reveal easing",
+  "native": "not claimed for this new shared source; prior153090 scoped native receipt belongs to immutable older source",
+  "Gold7": "API/motion contract only; final actual component/product experience pending",
+  "remaining": [
+    "version/mount-safe stable item ContentHost command",
+    "nested ancestor mapping and clipped-target proof",
+    "real mixed consumer with unchanged composer selection/preedit/focus",
+    "GPU/native/Gold7 on final source and independent immutable consumer acceptance"
+  ],
+  "performance": "not measured",
+  "Git": "no commit,push,tag,Issue closure",
+  "cleanup": "refresh-cleanup.json and closing-cleanup.json: unused exact test executables removed, latest common cache and all sources/evidence kept",
+  "governance": "closing-checks.json: generated public bindings,DS,pureRust,Gold7 contract,45row composition audit and capability inventory passed",
+  "public_type_scope": "Four reviewed existing ScrollArea support types;45 registered components unchanged"
+}

@@ -212,7 +212,28 @@ impl Navigation {
             .flat_map(|s| &s.items)
             .find(|(p, _)| *p == page)
         {
-            self.scroll.reveal(*rect);
+            // Sidebar focus uses the same visible focus ring as controls.
+            // Reserve the worst-case 1x backing-pixel antialias guard so the
+            // ring remains fully visible on both 1x and 2x displays.
+            let ring_outset = proposal::metric("stroke", "c-focus-width")
+                .expect("focus width token")
+                + proposal::metric("spacing", "c-focus-offset").expect("focus offset token")
+                + proposal::FOCUS_ANTIALIAS_GUARD_PHYSICAL_PIXELS;
+            let focus_bounds = rect.inset(-ring_outset);
+            let Some(visible_document) = self.geometry().visible_document_rect() else {
+                return;
+            };
+            let dx = if focus_bounds.min_x() < visible_document.min_x() {
+                focus_bounds.min_x() - visible_document.min_x()
+            } else {
+                (focus_bounds.max_x() - visible_document.max_x()).max(0.0)
+            };
+            let dy = if focus_bounds.min_y() < visible_document.min_y() {
+                focus_bounds.min_y() - visible_document.min_y()
+            } else {
+                (focus_bounds.max_y() - visible_document.max_y()).max(0.0)
+            };
+            self.scroll.scroll_by(dx, dy);
         }
     }
 
@@ -306,6 +327,43 @@ mod tests {
         let p = Point::new(p.x, p.y - n.scroll.offset.y);
         assert!(n.bounds().contains(p));
         assert_eq!(n.hit(p), Some(page.index()));
+    }
+
+    #[test]
+    fn focus_reveal_keeps_the_complete_ring_inside_a_short_sidebar_viewport() {
+        let mut n = Navigation::default();
+        n.resize(512.0);
+        let settings = pages()
+            .into_iter()
+            .find(|page| {
+                matches!(page, Page::Workbench(i) if super::super::workbench::entry(*i).renderer() == "settings")
+            })
+            .expect("Settings navigation item");
+        let first = pages()[0];
+        let ring_outset = proposal::metric("stroke", "c-focus-width").expect("focus width token")
+            + proposal::metric("spacing", "c-focus-offset").expect("focus offset token")
+            + proposal::FOCUS_ANTIALIAS_GUARD_PHYSICAL_PIXELS;
+
+        for page in [first, settings, *pages().last().unwrap(), first] {
+            n.reveal(page);
+            let geometry = n.geometry();
+            let visible = geometry
+                .visible_viewport_rect()
+                .expect("sidebar has a visible scrolling viewport");
+            let document_row = n
+                .sections()
+                .iter()
+                .flat_map(|section| &section.items)
+                .find(|(candidate, _)| *candidate == page)
+                .map(|(_, row)| *row)
+                .expect("focused navigation item remains in the current filter");
+            let origin = geometry.content_origin();
+            let ring = document_row.inset(-ring_outset).offset(origin.x, origin.y);
+            assert!(
+                ring.min_y() >= visible.min_y() - 0.01 && ring.max_y() <= visible.max_y() + 0.01,
+                "complete keyboard focus ring for {page:?} stays visible: {ring:?} vs {visible:?}"
+            );
+        }
     }
 
     #[test]

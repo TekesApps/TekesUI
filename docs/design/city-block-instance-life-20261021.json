@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-21",
+  "asset_bytes": 12151672,
+  "sha256": {
+    "city-block.glb": "24d57747da7bb6d1d4a1609b4b56fa06bc64fe268f64ac36c8cea5ddae04d955",
+    "city-block.json": "c3101bb0910da15e09528dcc6e73ecc98900397324a7cdba6b00ebd44fbee0ab"
+  },
+  "deterministic_export": true,
+  "stationary_lights": 24,
+  "vehicle_headlights": 20,
+  "total_lights": 44,
+  "shadow_proxies": 64,
+  "pedestrians_evening": 32,
+  "pedestrians_late": 5,
+  "building_occupancy": 0.5,
+  "seconds_per_night_hour": 60,
+  "gpu_instance_bytes": 144,
+  "frame_clock_upload_bytes_max": 32,
+  "per_frame_vertex_instance_light_position_uploads": 0,
+  "tests": {
+    "viewer": 14,
+    "city": 1,
+    "scene_cpu": 10,
+    "scene_gpu": 8,
+    "total": 33
+  },
+  "night_pixel_regression": {
+    "warm_pixels_evening": 2119,
+    "warm_pixels_midnight": 505,
+    "proxy_shadow_pixels": 3227
+  },
+  "fresh_native_cpu_gpu_percentages": null,
+  "notes": [
+    "Pixel regression isolates room and light behavior; not a device utilization metric.",
+    "Proxy ellipsoid shadows are approximate.",
+    "Window interiors and curtains are procedural facade effects, not enterable 3D rooms.",
+    "Pedestrian departures use GPU visibility schedules, not homefinding path planning."
+  ]
+}

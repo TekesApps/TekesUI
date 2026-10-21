@@ -1,0 +1,87 @@
+[
+  {
+    "component": "tui.disclosure",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/content-status.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/content-status.json"
+  },
+  {
+    "component": "tui.button",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/action.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/action.json"
+  },
+  {
+    "component": "tui.icon-button",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/action.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/action.json"
+  },
+  {
+    "component": "tui.link",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/action.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/action.json"
+  },
+  {
+    "component": "tui.text-field",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/input.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/input.json"
+  },
+  {
+    "component": "tui.text-area",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/input.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/input.json"
+  },
+  {
+    "component": "tui.search-field",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/input.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/input.json"
+  },
+  {
+    "component": "tui.combo-box",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/combo-async.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/combo-async.json"
+  },
+  {
+    "component": "tui.slider",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/slider-composition.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/slider-composition.json"
+  },
+  {
+    "component": "tui.checkbox",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/selection.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/selection.json"
+  },
+  {
+    "component": "tui.radio-group",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/selection.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/selection.json"
+  },
+  {
+    "component": "tui.switch",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/selection.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/selection.json"
+  },
+  {
+    "component": "tui.segmented-control",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/action.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/action.json"
+  },
+  {
+    "component": "tui.select",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/combo-async.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/combo-async.json"
+  },
+  {
+    "component": "tui.tabs",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/content-status.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/content-status.json"
+  },
+  {
+    "component": "tui.breadcrumb",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/content-status.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/content-status.json"
+  },
+  {
+    "component": "tui.command-palette",
+    "old": "design/reviews/slider-semantics-20261019/current-tokens/command-async.json",
+    "new": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/command-async.json"
+  }
+]
