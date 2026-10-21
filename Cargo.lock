@@ -1019,6 +1019,7 @@ name = "tekes-ui-3d"
 version = "0.1.0"
 dependencies = [
  "png 0.17.16",
+ "serde_json",
  "tekes-ui-city",
  "tekes-ui-platform-macos",
  "tekes-ui-render",

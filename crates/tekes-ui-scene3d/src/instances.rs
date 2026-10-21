@@ -11,6 +11,17 @@ pub struct Route3D {
 pub enum Deformation3D {
     #[default]
     None,
+    /// Closed-route stop, accelerate, cruise and brake cycle, evaluated on GPU.
+    /// Optional local-Z sliding doors share the exact same route schedule.
+    Transit {
+        dwell_seconds: f32,
+        acceleration_seconds: f32,
+        phase_seconds: f32,
+        door_slide: f32,
+        /// Optional visible arc-length interval (e.g. a finite through line).
+        /// The hidden return leg remains GPU-driven, outside this interval.
+        route_window: Option<[f32; 2]>,
+    },
     /// Root-anchored quadratic bending, with analytically transformed normals.
     Wind {
         amplitude: f32,
@@ -70,6 +81,18 @@ pub struct FollowRoute3D {
     pub phase: f32,
     pub lateral_offset: f32,
 }
+/// Repeated timed travel on a route, composable with wind/swing deformation.
+/// Visibility before/after travel supports boarding, alighting and timed arrivals.
+#[derive(Clone, Copy, Debug)]
+pub struct RouteSchedule3D {
+    pub period_seconds: f32,
+    pub phase_seconds: f32,
+    pub start_seconds: f32,
+    pub duration_seconds: f32,
+    pub before_visibility: f32,
+    pub after_visibility: f32,
+    pub fade_seconds: f32,
+}
 /// Independent top-down retirement, composed with any deformation or route.
 #[derive(Clone, Copy, Debug)]
 pub struct Removal3D {
@@ -84,6 +107,13 @@ pub struct Visibility3D {
     pub start_seconds: f32,
     pub fade_seconds: f32,
 }
+/// Route-driven rolling about a local X axle. Compatible with Transit schedules.
+#[derive(Clone, Copy, Debug)]
+pub struct Rolling3D {
+    pub radius: f32,
+    pub axle_y: f32,
+    pub axle_z: f32,
+}
 #[derive(Clone, Debug)]
 pub struct Instance3D {
     pub translation: [f32; 3],
@@ -91,6 +121,8 @@ pub struct Instance3D {
     pub scale: [f32; 3],
     pub tint: [f32; 4],
     pub route: Option<FollowRoute3D>,
+    pub route_schedule: Option<RouteSchedule3D>,
+    pub rolling: Option<Rolling3D>,
     pub deformation: Deformation3D,
     pub removal: Option<Removal3D>,
     /// Optional host-controlled clock channel (0..4); None uses environment time.
@@ -105,6 +137,8 @@ impl Default for Instance3D {
             scale: [1.; 3],
             tint: [1.; 4],
             route: None,
+            route_schedule: None,
+            rolling: None,
             deformation: Deformation3D::None,
             removal: None,
             clock: None,
@@ -174,6 +208,8 @@ pub(crate) struct GpuInstance {
     pub removal: [f32; 4],
     pub timeline: [f32; 4],
     pub detail: [f32; 4],
+    pub schedule: [f32; 4],
+    pub schedule_visibility: [f32; 4],
 }
 impl GpuInstance {
     pub fn identity() -> Self {
@@ -188,6 +224,8 @@ impl GpuInstance {
             removal: [0.; 4],
             timeline: [0.; 4],
             detail: [1., 0., 0., 0.],
+            schedule: [0.; 4],
+            schedule_visibility: [0.; 4],
         }
     }
     pub fn from_instance(i: &Instance3D, routes: &[(u32, u32)]) -> Result<Self, Error> {
@@ -231,6 +269,55 @@ impl GpuInstance {
             g.axis[3] = r.phase;
             g.pivot[3] = r.lateral_offset;
         }
+        if let Some(wheel) = i.rolling {
+            if i.route.is_none()
+                || !wheel.radius.is_finite()
+                || wheel.radius <= 0.
+                || !wheel.axle_y.is_finite()
+                || !wheel.axle_z.is_finite()
+                || (i.scale[1] - i.scale[2]).abs() > 0.000001
+            {
+                return Err(err(
+                    "rolling requires a route, positive radius, finite axle and equal Y/Z scale",
+                ));
+            }
+            // Spare detail channels: no larger GPU instance or per-frame uploads.
+            g.detail[1] = wheel.radius;
+            g.detail[2] = wheel.axle_y;
+            g.detail[3] = wheel.axle_z;
+        }
+        if let Some(s) = i.route_schedule {
+            if i.route.is_none()
+                || matches!(i.deformation, Deformation3D::Transit { .. })
+                || [
+                    s.period_seconds,
+                    s.phase_seconds,
+                    s.start_seconds,
+                    s.duration_seconds,
+                    s.fade_seconds,
+                ]
+                .iter()
+                .any(|v| !v.is_finite())
+                || s.period_seconds <= 0.
+                || s.phase_seconds < 0.
+                || s.start_seconds < 0.
+                || s.duration_seconds <= 0.
+                || s.start_seconds + s.duration_seconds > s.period_seconds
+                || s.fade_seconds <= 0.
+                || s.fade_seconds > s.duration_seconds * 0.5
+                || !(0.0..=1.0).contains(&s.before_visibility)
+                || !(0.0..=1.0).contains(&s.after_visibility)
+            {
+                return Err(err("invalid independent route schedule"));
+            }
+            g.schedule = [
+                s.period_seconds,
+                s.start_seconds,
+                s.duration_seconds,
+                s.phase_seconds,
+            ];
+            g.schedule_visibility = [s.before_visibility, s.after_visibility, s.fade_seconds, 0.];
+        }
         if let Some(r) = i.removal {
             if !r.start_seconds.is_finite()
                 || r.start_seconds < 0.
@@ -247,6 +334,39 @@ impl GpuInstance {
         }
         match i.deformation {
             Deformation3D::None => {}
+            Deformation3D::Transit {
+                dwell_seconds,
+                acceleration_seconds,
+                phase_seconds,
+                door_slide,
+                route_window,
+            } => {
+                if i.route.is_none()
+                    || !dwell_seconds.is_finite()
+                    || dwell_seconds < 3.
+                    || !acceleration_seconds.is_finite()
+                    || acceleration_seconds <= 0.
+                    || !phase_seconds.is_finite()
+                    || phase_seconds < 0.
+                    || !door_slide.is_finite()
+                {
+                    return Err(err(
+                        "transit requires a route, dwell >=3, positive acceleration and nonnegative phase",
+                    ));
+                }
+                g.effect = [8., dwell_seconds, acceleration_seconds, phase_seconds];
+                g.axis[0] = door_slide;
+                if let Some([lo, hi]) = route_window {
+                    if !lo.is_finite() || !hi.is_finite() || lo < 0. || hi <= lo {
+                        return Err(err(
+                            "transit route window requires finite ordered nonnegative distances",
+                        ));
+                    }
+                    g.pivot[0] = lo;
+                    g.pivot[1] = hi;
+                    g.axis[1] = 1.;
+                }
+            }
             Deformation3D::Float {
                 amplitude,
                 frequency,
@@ -400,6 +520,44 @@ pub(crate) fn pack_routes(routes: &[Route3D]) -> Result<PackedRoutes, Error> {
 mod tests {
     use super::*;
     #[test]
+    fn scheduled_routes_validate_timing_and_compose_with_limb_motion() {
+        let mut instance = Instance3D {
+            route: Some(FollowRoute3D {
+                route: 0,
+                distance: 0.,
+                speed: 0.3,
+                speed_variation: 0.,
+                phase: 0.,
+                lateral_offset: 0.,
+            }),
+            route_schedule: Some(RouteSchedule3D {
+                period_seconds: 60.,
+                phase_seconds: 0.,
+                start_seconds: 3.,
+                duration_seconds: 2.,
+                before_visibility: 1.,
+                after_visibility: 0.,
+                fade_seconds: 0.25,
+            }),
+            deformation: Deformation3D::Swing {
+                amplitude: 0.4,
+                frequency: 4.2,
+                phase: 0.,
+                pivot: [0., 0.5, 0.],
+                axis: [1., 0., 0.],
+            },
+            ..Default::default()
+        };
+        let packed = GpuInstance::from_instance(&instance, &[(0, 3)]).unwrap();
+        assert_eq!(packed.schedule, [60., 3., 2., 0.]);
+        assert_eq!(packed.effect[0], 3.);
+        instance.route_schedule.as_mut().unwrap().duration_seconds = 100.;
+        assert!(GpuInstance::from_instance(&instance, &[(0, 3)]).is_err());
+        instance.route_schedule.as_mut().unwrap().duration_seconds = 2.;
+        instance.route = None;
+        assert!(GpuInstance::from_instance(&instance, &[(0, 3)]).is_err());
+    }
+    #[test]
     fn clock_channels_and_visibility_are_bounded_and_aligned() {
         let i = Instance3D {
             clock: Some(0),
@@ -412,7 +570,7 @@ mod tests {
         };
         let packed = GpuInstance::from_instance(&i, &[]).unwrap();
         assert_eq!(packed.timeline, [1., 2., 42., 5.]);
-        assert_eq!(std::mem::size_of::<GpuInstance>(), 160);
+        assert_eq!(std::mem::size_of::<GpuInstance>(), 192);
         let mut bad = i.clone();
         bad.clock = Some(4);
         assert!(GpuInstance::from_instance(&bad, &[]).is_err());
@@ -443,7 +601,7 @@ mod tests {
         ] {
             assert!(GpuInstance::from_instance(&instance(hold, removal, initial), &[]).is_err());
         }
-        assert_eq!(std::mem::size_of::<GpuInstance>(), 160);
+        assert_eq!(std::mem::size_of::<GpuInstance>(), 192);
     }
     #[test]
     fn removal_composes_with_swing_and_rejects_invalid_timing() {

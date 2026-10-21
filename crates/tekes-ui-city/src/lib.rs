@@ -6,10 +6,23 @@ pub struct Route {
     pub name: String,
     pub points: Vec<[f32; 3]>,
 }
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Activity {
+    #[default]
+    Walking,
+    Strolling,
+    Jogging,
+    Listening,
+}
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Actor {
     pub route: usize,
+    #[serde(default)]
+    pub appearance: usize,
+    #[serde(default)]
+    pub activity: Activity,
     pub distance: f32,
     pub speed: f32,
     #[serde(default)]
@@ -48,18 +61,56 @@ pub struct Construction {
     pub levels: f32,
     pub phase: f32,
 }
+/// Authored stationary fixtures; scheduling is data, not renderer policy.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FixtureLight {
+    pub position: [f32; 3],
+    pub direction: [f32; 3],
+    pub color: [f32; 3],
+    pub radius: f32,
+    pub outer_cos: f32,
+    #[serde(default)]
+    pub construction: bool,
+    #[serde(default)]
+    pub dimming: Option<[f32; 3]>,
+}
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StationDemand {
+    pub occupied_residents: f32,
+    pub occupied_jobs: f32,
+    pub rail_share: f32,
+}
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DistrictConfig {
     pub asset: String,
     #[serde(default)]
+    pub lights: Vec<FixtureLight>,
+    #[serde(default)]
     pub construction: Option<Construction>,
     pub routes: Vec<Route>,
     pub vehicles: Vec<Actor>,
     pub pedestrians: Vec<Actor>,
+    #[serde(default)]
+    pub boats: Vec<Actor>,
+    #[serde(default)]
+    pub trains: Vec<Actor>,
+    #[serde(default)]
+    pub station_demand: Option<StationDemand>,
     pub trees: Vec<Tree>,
     pub wind_amplitude: f32,
     pub wave_amplitude: f32,
+}
+impl Construction {
+    /// Conservative end of the last removal step; shared shader timing is immutable.
+    pub fn scaffold_removed_at(&self) -> f32 {
+        (self.levels.ceil() - self.phase).max(0.) * self.seconds_per_floor
+            + self.scaffold_hold_seconds
+            + self.facade_delay_floors * self.seconds_per_floor
+            + self.levels.ceil() * self.scaffold_removal_seconds_per_floor
+    }
 }
 impl DistrictConfig {
     pub fn from_json(bytes: &[u8]) -> Result<Self, String> {
@@ -68,6 +119,41 @@ impl DistrictConfig {
         Ok(c)
     }
     pub fn validate(&self) -> Result<(), String> {
+        if self.station_demand.as_ref().is_some_and(|d| {
+            !d.occupied_residents.is_finite()
+                || d.occupied_residents < 0.
+                || !d.occupied_jobs.is_finite()
+                || d.occupied_jobs < 0.
+                || !(0.0..=1.0).contains(&d.rail_share)
+        }) {
+            return Err("invalid station demand".into());
+        }
+        if self.lights.len() > 64 {
+            return Err("too many fixture lights".into());
+        }
+        for l in &self.lights {
+            if l.position
+                .iter()
+                .chain(l.direction.iter())
+                .chain(l.color.iter())
+                .any(|x| !x.is_finite())
+                || !l.radius.is_finite()
+                || l.radius <= 0.
+                || !(-1. ..1.).contains(&l.outer_cos)
+                || l.color.iter().any(|x| *x < 0.)
+                || l.direction.iter().map(|x| x * x).sum::<f32>() < 1e-8
+            {
+                return Err("invalid fixture light".into());
+            }
+            if l.dimming.is_some_and(|p| {
+                p.iter().any(|x| !x.is_finite())
+                    || p[0] < 0.
+                    || p[1] <= p[0]
+                    || !(0.0..=1.0).contains(&p[2])
+            }) {
+                return Err("invalid fixture dimming schedule".into());
+            }
+        }
         if !self.asset.ends_with(".glb") || self.asset.contains(['/', '\\']) {
             return Err("district asset must name a local GLB file".into());
         }
@@ -75,6 +161,8 @@ impl DistrictConfig {
             || self.routes.len() > 64
             || self.vehicles.len() > 4096
             || self.pedestrians.len() > 4096
+            || self.boats.len() > 64
+            || self.trains.len() > 16
             || self.trees.len() > 4096
         {
             return Err("district count exceeds supported recipe limits".into());
@@ -97,7 +185,13 @@ impl DistrictConfig {
                 }
             }
         }
-        for a in self.vehicles.iter().chain(&self.pedestrians) {
+        for a in self
+            .vehicles
+            .iter()
+            .chain(&self.pedestrians)
+            .chain(&self.boats)
+            .chain(&self.trains)
+        {
             if a.route >= self.routes.len()
                 || !a.distance.is_finite()
                 || !a.phase.is_finite()
@@ -116,6 +210,12 @@ impl DistrictConfig {
             {
                 return Err("invalid actor route, speed, scale or color".into());
             }
+        }
+        if self.vehicles.iter().any(|a| a.appearance >= 5) {
+            return Err("unsupported vehicle appearance".into());
+        }
+        if self.pedestrians.iter().any(|a| a.appearance >= 8) {
+            return Err("unsupported pedestrian appearance".into());
         }
         for t in &self.trees {
             if t.species > 2

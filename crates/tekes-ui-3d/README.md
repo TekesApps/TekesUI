@@ -69,9 +69,9 @@ target/release/tekes-ui-3d --demo city-block --time 20 --snapshot /tmp/city-bloc
 
 原创滨水街区：四栋已建成建筑、一处逐层施工工地及回转塔吊、10 辆车、28 位行人、18 株树（三种树形与带叶脉的叶片）、口袋公园、池塘和动态滨水水面。人车与树缩小到街区比例；行人各自速度不同，车辆用有界、错相的速度变化保持同车道间距。工地约每 8 秒长一层，完成后停留；`R` 可重新开始。`Space` 暂停 / 播放，拖动环绕、滚轮缩放、`A` 自动旋转，失焦 / Reduced Motion 冻结。
 
-模块边界：`tekes-ui-city` 只保存配置与时钟，`district.rs` 做宿主适配，`tekes-ui-scene3d` 提供通用 GPU 实例、路径、摆动、风、水波和渐进显露；模型生成器与 GLB/JSON 独立。`assets/generate_city_block.py` 需要离线 Pillow，可确定性重建约 1.3 MB 自包含 GLB；运行应用无需 Python。未使用第三方模型或游戏资源。
+模块边界：`tekes-ui-city` 只保存配置与时钟，`district.rs` 做宿主适配，`tekes-ui-scene3d` 提供通用 GPU 实例、路径、摆动、风、水波和渐进显露；模型生成器与 GLB/JSON 独立。`assets/generate_city_block.py` 需要离线 Pillow，可确定性重建当前约 12 MB 自包含 GLB；运行应用无需 Python。未使用第三方模型或游戏资源。
 
-实例、路径、索引网格和纹理在导入 / 配置时上传。动态帧更新 16 字节环境时间 uniform；相机矩阵变化时才更新 128 字节相机 uniform；不逐帧上传人物、车辆、树叶或施工顶点。叶片使用 glTF MASK，避免透明实例排序；材质 mipmap 在导入时由 GPU 生成，使用三线性及 8× 各向异性过滤，配合 4× MSAA 缓解缩小时的锯齿与纹理闪烁。mipmap 约增加三分之一纹理显存。当前光照仍为简化漫反射，没有实时阴影、PBR 反射或完整交通模拟。
+实例、路径、索引网格和纹理在导入 / 配置时上传。动态帧更新 16 字节环境时间与最多 16 字节实例时钟 uniform；相机矩阵变化时才更新 128 字节相机 uniform；不逐帧上传人物、车辆、树叶或施工顶点。叶片使用 glTF MASK，避免透明实例排序；材质 mipmap 在导入时由 GPU 生成，使用三线性及 8× 各向异性过滤，配合 4× MSAA 缓解缩小时的锯齿与纹理闪烁。mipmap 约增加三分之一纹理显存。当前光照仍为简化漫反射，使用局部灯与粗粒度软阴影代理，不提供 PBR 反射或完整交通模拟。
 
 测试分别隔离车流、行人、树木、水面、施工高度和塔吊，比较真实 GPU 图像；持续 120 帧检查实例 / 几何上传保持为零，并回归暂停、Reduced Motion、复位及 Demo 切换。离屏测试不代表原生窗口持续帧率或城市规模性能验收。
 
@@ -80,6 +80,42 @@ target/release/tekes-ui-3d --demo city-block --time 20 --snapshot /tmp/city-bloc
 
 施工分三个独立节点：主体框架、稍后跟进的外立面、外挂脚手架。脚手架包含钢管、斜撑、踏板与护栏，随楼层逐段搭高；外立面完工后保留约 6 秒，再从顶层向下拆除，楼体保持完整。当前配置约第 49 秒开始拆架、约第 63 秒拆完；`--time 46` / `--time 55` / `--time 80` 可分别查看建成带架、拆架中与拆完的状态。`R` 重新开始，暂停与 Reduced Motion 同时冻结全流程。
 
+
+City Block also includes a procedural motorboat with a curved GPU wake. Water, boat buoyancy and wake use the same traveling wave field; the river bed stays below the lowest wave trough. Construction scaffolding is dismantled first, then the independently swinging tower crane retires over three seconds (approximately 64.8–67.8 seconds in the bundled recipe). The finished building remains. Pause, reset, inactivity and Reduced Motion use the existing district clock for all these effects.
+
+
+City Block authoring uses a consistent four metres per scene unit: ordinary stories are 3.2 m, ground stories 3.8 m, and entrance doors 2.24 m. Facade UVs use complete window bays and one row per actual story. People, passenger cars, street trees, benches, sidewalks and river railings use this same scale. The construction base is permanent, while independent hoarding and stored materials retire on the GPU after scaffolding removal. Run `python3 crates/tekes-ui-3d/assets/check_city_block.py` to check exported GLB geometry, atlas story spacing, actor dimensions and normals without Pillow or the runtime. The helper's optional facade sizing leaves existing generators' default UV behavior unchanged.
+
+City Block variety uses eight volumetric pedestrian appearances (adults, children and seniors, with independent skin/hair/clothing colors). `Activity` in the data-only city recipe selects walking, strolling, listening with headphones, or jogging with bent arms and a forward-leaning torso. Routes, individual speeds, bounded speed changes and stride parameters are configured once and evaluated by the existing generic GPU motion. Vehicles include an original streamlined electric sedan, police car, ambulance, fire engine and refuse truck. Roof HVAC layouts and door/awning palettes use seeded offline variation with roof clearances; regeneration is deterministic. The GLB is approximately 4.35 MB; generation and appearance selection add no per-frame CPU geometry work.
+
+The module boundary remains: `scene3d` owns reusable GPU rendering/motion primitives; `city` owns recipe data, activity labels and clock; `3d::district` maps that data to generic instance batches; offline assets own visual geometry and palettes. City-specific activity or vehicle logic does not belong in the renderer. This is a lightweight procedural scene runtime; collision avoidance and pathfinding are not implemented by the current route animation.
+
+The architecture authoring is now split into `assets/city_architecture.py` (original facade atlases, setbacks, window/sill/cornice relief, balconies) and `assets/city_shopfronts.py` (aperture shells, recessed street entrances, displays, signs, canopies and furniture). Upper facades use four-by-four 512×512 atlases; masonry and signs have separate small original textures. Three stepped buildings and the completed construction facade retain the same metric story heights. Entrances explicitly face their assigned street: apartments west, office north, hotel east, shops south, construction west. The office and hotel have separate 3.04 m × 2.4 m garage openings and sloped connections to the road; cars do not enter/exit them in the current route demo.
+
+Ground-floor walls are actual aperture shells around a recessed core. Storefront windows contain shallow geometry for shelves, goods or reception counters. Door leaves, frames, handles, transoms, sign fascia, canopy brackets and paving are independent details baked into each building's static mesh. Cafe furniture stays in the frontage strip and lateral pedestrian variation is restricted to keep that strip clear. Runtime input/motion ownership is unchanged; rendering retains shared GPU buffers and cached draws. The exported district is approximately 11.42 MB / 108k triangles. Facade atlas storage is approximately 4 MiB including mip levels, versus 8 MiB previously (other textures and render targets excluded).
+
+City Block now joins the northern apartment/office frontage at a party wall and keeps 1.0m/1.4m walkable service alleys. Four additional GPU-driven pedestrians use the alleys; geometry audits check the complete routes, building footprints and outward door/garage corridors. The original generated asset is currently about 12 MB.
+
+The viewer renders autonomous district animation at up to 60Hz while retaining display cadence for input/drag/auto-rotation. Time still advances on every display callback; this reduces redundant frames rather than slowing actors. Opaque GPU bundles also omit repeated pipeline/material/camera bindings. Native CPU/Metal measurements, scope and replay commands are in [the layout/performance report](../../docs/design/city-block-tight-layout-performance-20261021.md). `scripts/summarize-metal-trace.py` filters one PID and merges overlapping GPU intervals; its activity percentage is not whole-device utilization and Metal memory overlaps process unified memory.
+
+
+City Block 支持 `Lighting → Day / Night` 或 **N** 切换昼夜，命令行 `--night` 可用于夜景快照。四栋楼分别使用确定性随机的窗景：部分窗内有站立、坐着或看书的室内人物剪影，百叶窗与家具遮挡保留；夜晚部分窗户、招牌和路灯自发光。人物是 GPU 计算的原创窗内剪影，可走动、坐下、阅读；不是可进入房间中的活动 NPC。切换只更新通用 GPU 光照参数，不重建资产；自主动画默认上限 60 FPS，交互由原生显示同步回调驱动；当前 macOS host 最高请求 120Hz。实际帧率受屏幕、系统调度与 GPU 负载影响，移动到不同刷新率屏幕时无需手动切换。`Animation → Limit to 60 FPS (H)` 可限制街区自主动画与自动旋转到 60 FPS，再按 H 恢复自动；`--benchmark-120hz` 仍保留用于指定 120Hz 的测试上限。右上角 FPS 为已取得 drawable 并提交的帧率，不是屏幕标称刷新率。昼夜与系统 UI 主题独立，夜间 HUD 保持可读。可在暂停时切换，恢复播放后沿原时间继续。
+
+
+夜间生活：四栋楼的入住率在 `assets/generate_city_block.py::BUILDING_OCCUPANCY` 分别配置，当前均以 50% 演示。已入住/空置分配固定，昼夜共用；空置窗户保持暗淡、没有人物且永不亮灯。已入住房间再按独立节奏和作息决定开灯，切入夜晚从 20:00 开始，60 秒相当于 1 小时，午夜后多数熄灯，保留少量夜猫子。暂停冻结作息与动作，R 复位，重新进入夜晚重启夜间作息。
+
+施工楼使用单独的无住户、无窗户自发光材质；两个工地聚光灯照明施工区，并随围挡撤场淡出/拆除。六盏路灯照亮路面；所有轿车、警车、救护车、消防车、垃圾车都有夜间前灯与红色尾灯，前灯光锥跟随 GPU 路线转向。树、行人、车辆和楼体使用粗粒度椭球投影代理形成地面遮挡。通用局部灯光、路线运动、窗景和城市配方保持分离，动画不逐帧上传顶点、实例或灯位。
+
+
+实例随时间改变状态：施工/撤场使用独立时钟，入夜冻结进度，回到白天从原进度继续；人物、车船、树木、水面继续。32 位行人分散在入夜约 25–245 秒离场，保留 5 位夜间行人；这是可见性时间线，尚未加入“找家门并走进去”的行为规划。午夜后雨棚灯按打烊曲线熄灭，门口双墙灯降至 35%，主路灯降至 55%，两盏次要滨水路灯关闭。灯具自发光和投向表面的局部光同时变化。每栋楼的墙灯与下照灯沿自身入口法线放置，灯光配置与模型从同一份生成数据导出。
+
+时间机制分为：城市 JSON/作息和施工暂停累计（数据与宿主层）→通用时钟/可见性/调光参数（Scene3D API）→实例变换、人物淡出、光照和窗景（wgpu）。没有逐帧 CPU 人物/车辆/灯位计算，也没有像素往返。暂停、恢复、R 复位与昼夜切换沿用同一时钟生命周期。
+
+
+窗帘同样是窗格实例的 GPU 时间状态：部分已入住房间分批缓慢拉合双侧布帘；帘布有柔和褶皱，遮住人物与家具轮廓，同时透出低强度室内光。空置房间不会因此发光；远处降低褶皱对比，避免细条纹闪烁。不新增窗帘动画帧贴图或逐帧 CPU 几何。
+
+
+施工外壳增加独立 `construction-dust-screen` 节点：四面防尘织网和原创虚构 TEKES BUILD / BUILDING TOMORROW 品牌横幅。屏障沿用通用 GPU 分层搭高、完工后逐层拆除，与脚手架共享施工时钟；夜间停工一并冻结。使用单张 128×128 MASK 网布与一张 384×64 横幅，新增112 个索引顶点 / 56 个三角形，避免透明实例排序；不逐帧上传网布或横幅几何。
 ## Background performance measurements
 
 The standalone viewer's Animation menu includes **Background benchmark (B)**;
@@ -90,13 +126,32 @@ Keep the 3D window visible at a fixed size, for example on a second display.
 Minimizing, fully covering it, or switching away from its desktop can stop native
 GPU presentation and invalidate a sustained rendering measurement.
 
-
-The city adapter enables `ScreenDetail3D` after configuring immutable instances.
-
 ## Frame rate and display refresh
 
-The viewer defaults to following native display-link callbacks; the current macOS host requests up to 120 Hz. Moving between screens needs no manual frame-rate switch. Actual FPS depends on display scheduling and GPU load. **Animation → Limit to 60 FPS (H)** caps autonomous district animation and automatic rotation; press H again to restore automatic cadence. `--benchmark-120hz` sets a fixed 120 Hz test ceiling.
+The viewer defaults to a 60 FPS ceiling for autonomous animation and automatic rotation. Display changes still adapt automatically up to that ceiling. **Animation → Limit to 60 FPS (H)** is checked by default; press H to allow native display cadence (the macOS host requests up to 120 Hz). Actual FPS depends on display scheduling and GPU load. `--benchmark-120hz` sets a fixed 120 Hz test ceiling.
 
 The upper-right HUD updates twice per second and counts acquired, submitted drawable frames rather than animation callbacks. Its milliseconds show average frame interval, not GPU execution time or display scanout timing. Idle resets the sample without running a separate HUD timer. Numeric labels do not accumulate in the text cache.
 
 Native 60-second near/far 120 Hz measurements are in [the report](../../docs/design/city-block-120hz-20261021.md); screen switching checks are in [the automatic refresh report](../../docs/design/city-block-auto-refresh-20261021.md). Those native results use the full working demo assets and city/night WIP, not only this scoped commit.
+
+## Ground railway and station
+
+City Block adds an original E235-inspired three-coach demonstration on two opposing ground tracks, with rails, catenary and an island platform. `assets/city_transit.py` authors the infrastructure, `assets/city_train.py` authors coach/cab/door/interior geometry, and `assets/city_train_liveries.py` keeps livery colors separate for later variants. No third-party train models, logos or photographed textures are bundled. This is a three-coach visual demo, not the real eleven-car formation.
+
+`src/transit.rs` supplies immutable instances; generic Scene3D GPU schedules perform dwell, acceleration, braking and door motion. `src/station.rs` derives a bounded crowd from occupied residents/jobs and supplies boarding/alighting routes. Passenger body/limbs share GPU route timing. Platform routes remain level until the exit stairs, and coach gangways use opaque bellows and connecting floors. Whole coaches fade at the route window boundary rather than exposing a clipped cross-section. Only glass uses alpha blending; windshields use a separate darker material.
+
+Transparent instance order is resolved on GPU within each primitive (up to 64 instances); primitive groups retain the renderer's existing camera ordering. This is not global order-independent transparency for intersecting glass meshes. The shared interior geometry includes longitudinal seating, seated and standing figures, and night-emissive LED diffusers and surfaces.
+
+## Scene panning
+
+**Shift + left drag** or **middle drag** moves the entire displayed scene; **Shift + arrow keys** moves it in small steps. Option + left drag / arrow keys are aliases. Plain left drag orbits the camera, right drag rotates the model, scroll / + / − zoom, and R resets the view including pan. The View menu exposes the four pan directions. Pan distances are normalized by the 3D viewport, so the scene follows the pointer consistently across window sizes and display scales. `Camera3D::pan_by` is a reusable, platform-independent screen-space camera offset; only camera uniforms change, with no geometry or instance uploads.
+
+The minimum camera zoom multiplier is 0.04 (previously 0.2), allowing five times more magnification at the close limit. Scroll or + continues zooming in; Shift drag can bring off-center details into view, and R restores the fitted home view.
+
+Train wheels are separate shared wheelset meshes (`transit-wheel-0..3`), including axle, circular tires, brake discs and visible hub bolts/inspection marks. Bogie frames and axle boxes stay fixed. Generic `Rolling3D` composes with route/Transit motion: local X rotation uses travelled distance / scaled radius, rotating both vertices and normals on GPU. Stops, acceleration and braking use the same integrated distance as the train. The four wheelset batches add 24 instances for six coaches and reuse spare GPU instance channels, keeping the 192-byte record unchanged and adding no per-frame CPU transforms or uploads. Road wheels reuse this same rolling API; see below.
+
+The ground railway and island station now occupy the strip between the eastern road and the river. Water, the quay and boat navigation route move together to preserve clearance. The independent `city_clouds.py` / `clouds.rs` module adds five shared cloud instances drifting on a GPU route. A descending projected-size fade (`ScreenDetail3D.fade_pixels`) keeps clouds hidden up close and smoothly introduces them when zooming out; no per-frame CPU cloud movement or geometry uploads are added.
+
+Road wheels (`city_road_wheels.py`, `road_wheels.rs`) now use the same GPU rolling path as trains. Sedans/police cars and ambulances have two axles; fire and garbage trucks have three. Each wheelset clones its body instance route, phase, speed variation, scale and optional route schedule; only the wheel radius/axle and neutral tint differ. Turning speed therefore follows the exact integrated body travel, including speed changes, zero-speed parking and paused scene clocks. Vertices and normals rotate together on GPU. Six shared wheelset meshes replace static tires inside vehicle bodies; road wheels use the same GPU LOD thresholds as the bodies, and do not add lights or shadow proxies. No per-frame CPU wheel simulation or instance/vertex uploads are added.
+
+Passenger side glazing now has a 0.24-unit (0.96 m at authoring scale) height, wider solid piers and a taller sill/header; glass area is approximately 30% lower than the initial lit-window model. Door panes shrink about 25%. These are visual model proportions guided by JR East exterior photos, not asserted manufacturer dimensions. Night passenger-window emission remains enabled.

@@ -38,12 +38,17 @@ class Geometry:
         rgba=[linear(v) for v in color]+[1]
         for i,point in enumerate(pts):p.extend(point);n.extend(normals[i] if normals else normal);t.extend(uv[i] if uv else [(0,1),(1,1),(1,0),(0,0)][i]);c.extend(rgba)
         indices.extend([start,start+1,start+2,start,start+2,start+3])
-    def box(self,x,y,z,w,h,d,mat,color=(255,255,255),facade=None):
+    def box(self,x,y,z,w,h,d,mat,color=(255,255,255),facade=None,facade_floor_height=None,facade_bay_width=None,facade_grid=(512/24,1024/32)):
         a,b=x-w/2,x+w/2;c,e=y-h/2,y+h/2;f,g=z-d/2,z+d/2
         faces=[[(a,c,g),(b,c,g),(b,e,g),(a,e,g)],[(b,c,f),(a,c,f),(a,e,f),(b,e,f)],[(b,c,g),(b,c,f),(b,e,f),(b,e,g)],[(a,c,f),(a,c,g),(a,e,g),(a,e,f)]]
         for index,pts in enumerate(faces):
             width=w if index<2 else d
             uv=[(0,h/10),(width/5,h/10),(width/5,0),(0,0)] if facade is not None else None
+            if facade is not None and facade_floor_height is not None:
+                # This atlas has one 24x32 pixel window bay per story.
+                u=max(1,round(width/facade_bay_width))/facade_grid[0]
+                v=h/facade_floor_height/facade_grid[1]
+                uv=[(0,v),(u,v),(u,0),(0,0)]
             self.quad(pts,facade if facade is not None else mat,color,uv)
         self.quad([(a,e,g),(b,e,g),(b,e,f),(a,e,f)],mat,color)
         self.quad([(a,c,f),(b,c,f),(b,c,g),(a,c,g)],mat,color)
@@ -58,17 +63,25 @@ class Geometry:
                 for point in pts:
                     n=[(point[0]-x)/(rx*rx),(point[1]-y)/(ry*ry),(point[2]-z)/(rz*rz)];length=math.sqrt(sum(v*v for v in n));ns.append([v/length for v in n])
                 self.quad(pts,mat,color,normals=ns)
-    def cylinder(self,x,y,z,r,h,mat,color=(255,255,255),axis='y'):
+    def cylinder(self,x,y,z,r,h,mat,color=(255,255,255),axis='y',segments=16,smooth=False):
         def point(t,v):
             if axis=='x':return (x+v,y+r*math.cos(t),z+r*math.sin(t))
             return (x+r*math.cos(t),y+v,z+r*math.sin(t))
-        for i in range(16):
-            a,b=i*math.tau/16,(i+1)*math.tau/16
-            self.quad([point(a,-h/2),point(b,-h/2),point(b,h/2),point(a,h/2)],mat,color)
+        for i in range(segments):
+            a,b=i*math.tau/segments,(i+1)*math.tau/segments
+            pts=[point(a,-h/2),point(b,-h/2),point(b,h/2),point(a,h/2)]
+            ns=None
+            if smooth:
+                n=lambda t:(0,math.cos(t),math.sin(t)) if axis=='x' else (math.cos(t),0,math.sin(t))
+                ns=[n(a),n(b),n(b),n(a)]
+                if axis=='y':pts.reverse();ns.reverse()
+            self.quad(pts,mat,color,normals=ns)
         for sign in [-1,1]:
             center=(x+sign*h/2,y,z) if axis=='x' else (x,y+sign*h/2,z)
-            for i in range(0,16,2):
-                self.quad([center,point(i*math.tau/16,sign*h/2),point((i+1)*math.tau/16,sign*h/2),point((i+2)*math.tau/16,sign*h/2)],mat,color)
+            for i in range(0,segments,2):
+                pts=[center,point(i*math.tau/segments,sign*h/2),point((i+1)*math.tau/segments,sign*h/2),point((i+2)*math.tau/segments,sign*h/2)]
+                if smooth and ((axis=='x' and sign<0) or (axis=='y' and sign>0)):pts.reverse()
+                self.quad(pts,mat,color)
     def beam(self,start,end,width,mat,color):
         direction=[end[i]-start[i] for i in range(3)];length=math.sqrt(sum(v*v for v in direction));v=[x/length for x in direction]
         ref=[0,1,0] if abs(v[1])<.9 else [1,0,0]

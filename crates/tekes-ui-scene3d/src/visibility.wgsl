@@ -31,6 +31,7 @@ var<workgroup> upper:array<vec3<f32>,64>;
 @compute @workgroup_size(1) fn compact(@builtin(global_invocation_id) id:vec3<u32>) {
     if id.x>=arrayLength(&policies) {return;}
     let policy=policies[id.x];
+    if policy.motion.z>0.0 {return;}
     let center=extent[id.x*2u].xyz;
     let base_radius=length(extent[id.x*2u+1u].xyz);
     let matrix=camera.matrix*camera.model;
@@ -62,7 +63,11 @@ var<workgroup> upper:array<vec3<f32>,64>;
         let diameter=select(base_radius*2.0,policy.sizes.x,policy.sizes.x>0.0)*scale;
         let row_y=vec3(matrix[0][1],matrix[1][1],matrix[2][1]);
         let pixels=diameter*length(row_y)*viewport.y*0.5/max(abs(clip.w),0.00001);
-        let fade=select(1.0,smoothstep(policy.sizes.y,policy.sizes.z,pixels),policy.sizes.z>0.0);
+        var fade=1.0;
+        if policy.sizes.z>0.0 {
+            if policy.sizes.y>policy.sizes.z {fade=1.0-smoothstep(policy.sizes.z,policy.sizes.y,pixels);}
+            else {fade=smoothstep(policy.sizes.y,policy.sizes.z,pixels);}
+        }
         if fade<=0.0 {continue;}
         instance.detail.x=fade;
         if policy.motion.y>0.0 && (instance.effect.x==1.0 || instance.effect.x==3.0) {
@@ -73,4 +78,24 @@ var<workgroup> upper:array<vec3<f32>,64>;
         visible[policy.counts.z+count]=instance;count++;
     }
     args[id.x].count=count;
+}
+
+// Bounded alpha batches are ordered on GPU without reading transforms back.
+// One thread owns the primitive; stable insertion order handles equal depths.
+@compute @workgroup_size(1) fn sort_alpha(@builtin(global_invocation_id) id:vec3<u32>) {
+    if id.x>=arrayLength(&policies) {return;}
+    let policy=policies[id.x];if policy.motion.z<=0.0 {return;}
+    let center=extent[id.x*2u].xyz;let matrix=camera.matrix*camera.model;
+    var keys:array<f32,64>;
+    for(var j=0u;j<policy.counts.x;j++) {
+        let instance=instances[policy.counts.z+j];
+        let moved=move_value(center,vec3(0.0,1.0,0.0),instance);
+        let clip=matrix*vec4(moved.p,1.0);let depth=clip.z/clip.w;
+        var at=j;
+        loop {if at==0u {break;}if keys[at-1u]<=depth {break;}
+            keys[at]=keys[at-1u];visible[policy.counts.z+at]=visible[policy.counts.z+at-1u];at--;
+        }
+        keys[at]=depth;visible[policy.counts.z+at]=instance;
+    }
+    args[id.x].count=policy.counts.x;
 }

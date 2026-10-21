@@ -11,6 +11,7 @@ pub struct Camera3D {
     zoom: f32,
     rotation: Quat,
     orthographic: bool,
+    pan: [f32; 2],
 }
 impl Default for Camera3D {
     fn default() -> Self {
@@ -20,6 +21,7 @@ impl Default for Camera3D {
             zoom: 1.,
             rotation: Quat::IDENTITY,
             orthographic: false,
+            pan: [0.; 2],
         }
     }
 }
@@ -58,7 +60,17 @@ impl Camera3D {
         if !factor.is_finite() || factor <= 0. {
             return Err(err("zoom factor must be finite and positive"));
         }
-        self.zoom = (self.zoom as f64 * factor as f64).clamp(0.2, 8.) as f32;
+        self.zoom = (self.zoom as f64 * factor as f64).clamp(0.04, 8.) as f32;
+        Ok(())
+    }
+    /// Move the displayed scene by fractions of the viewport (right/up positive).
+    /// This screen-space camera offset preserves orbit, model orientation and zoom.
+    pub fn pan_by(&mut self, horizontal: f32, vertical: f32) -> Result<(), Error> {
+        if !horizontal.is_finite() || !vertical.is_finite() {
+            return Err(err("pan offsets must be finite"));
+        }
+        self.pan[0] = (self.pan[0] as f64 + horizontal as f64).clamp(-16., 16.) as f32;
+        self.pan[1] = (self.pan[1] as f64 + vertical as f64).clamp(-16., 16.) as f32;
         Ok(())
     }
     /// Rotate the entire model around its fitted center, independently of orbit.
@@ -115,7 +127,9 @@ impl Camera3D {
                 (radius * 0.001).max(0.00001),
             )
         };
-        let view_projection = projection * Mat4::look_at_rh(eye, center, Vec3::Y);
+        let screen_offset =
+            Mat4::from_translation(Vec3::new(self.pan[0] * 2., self.pan[1] * 2., 0.));
+        let view_projection = screen_offset * projection * Mat4::look_at_rh(eye, center, Vec3::Y);
         let model = Mat4::from_translation(center)
             * Mat4::from_quat(self.rotation)
             * Mat4::from_translation(-center);
@@ -137,7 +151,7 @@ mod tests {
         assert!(c.pitch() < std::f32::consts::FRAC_PI_2);
         assert_eq!(c.zoom(), 8.);
         c.zoom_by(1e-20).unwrap();
-        assert_eq!(c.zoom(), 0.2);
+        assert_eq!(c.zoom(), 0.04);
         c.rotate_model(0.5, 0.2, 0.1).unwrap();
         assert!((Quat::from_array(c.model_rotation()).length() - 1.).abs() < 1e-6);
         let before = c.clone();
@@ -162,6 +176,35 @@ mod tests {
         assert!((m.w_axis.z - zoomed.w_axis.z).abs() < 1e-6);
         c.reset();
         assert!(!c.orthographic);
+    }
+    #[test]
+    fn pan_tracks_viewport_fraction_without_changing_depth_or_orientation() {
+        for orthographic in [false, true] {
+            for aspect in [0.7, 1.8] {
+                let mut c = Camera3D::default();
+                c.set_orthographic(orthographic);
+                c.orbit(0.7, 0.2).unwrap();
+                c.zoom_by(0.35).unwrap();
+                c.rotate_model(0.2, 0.1, 0.).unwrap();
+                let original = c.clone();
+                let before = c.matrices(Vec3::ZERO, 2., aspect).unwrap();
+                c.pan_by(0.25, -0.1).unwrap();
+                let after = c.matrices(Vec3::ZERO, 2., aspect).unwrap();
+                for point in [Vec3::ZERO, Vec3::new(0.2, -0.3, 0.1)] {
+                    let a = Mat4::from_cols_array_2d(&before[0]).project_point3(point);
+                    let b = Mat4::from_cols_array_2d(&after[0]).project_point3(point);
+                    assert!((b - a).abs_diff_eq(Vec3::new(0.5, -0.2, 0.), 1e-5));
+                }
+                assert_eq!(before[1], after[1]);
+                assert_eq!(c.zoom(), original.zoom());
+                assert_eq!(c.yaw(), original.yaw());
+                let valid = c.clone();
+                assert!(c.pan_by(f32::NAN, 0.).is_err());
+                assert_eq!(c, valid);
+                c.reset();
+                assert_eq!(c, Camera3D::default());
+            }
+        }
     }
     #[test]
     fn model_rotation_preserves_the_fitted_center() {

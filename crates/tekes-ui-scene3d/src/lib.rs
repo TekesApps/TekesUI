@@ -18,7 +18,7 @@ pub use camera::Camera3D;
 pub use gpu::Renderer3D;
 pub use instances::{
     Deformation3D, Environment3D, FollowRoute3D, Instance3D, InstanceBatch3D, InstanceScene3D,
-    Lighting3D, Removal3D, Route3D, Visibility3D,
+    Lighting3D, Removal3D, Rolling3D, Route3D, RouteSchedule3D, Visibility3D,
 };
 use tekes_ui_scene::{ImageId, ImageQuad, Rect, Scene};
 

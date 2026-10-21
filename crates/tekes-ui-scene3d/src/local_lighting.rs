@@ -97,7 +97,7 @@ impl LocalLightingGpu {
             contents: &vec![
                 0;
                 16 + LIGHTS * 48
-                    + SHADOWS * 32
+                    + SHADOWS * 48
                     + LIGHTS * (4 + SHADOWS * 4)
                     + 16
                     + 1024 * 8

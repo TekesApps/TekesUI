@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::PathBuf, time::Instant};
 use tekes_ui_platform_macos::*;
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{GlyphAtlas, ImageId, Point as ScenePoint, Rect, Scene};
-use tekes_ui_scene3d::{Asset3D, Camera3D, Renderer3D, Scene3D};
+use tekes_ui_scene3d::{Asset3D, Camera3D, Lighting3D, Renderer3D, Scene3D};
 use tekes_ui_text::{
     coretext::{CoreTextFonts, CoreTextRasterizer, CoreTextShaper},
     model::{Paragraph, ShapeOptions},
@@ -11,16 +11,20 @@ use tekes_ui_text::{
     style::TextStyle,
     traits::Shaper,
 };
-use tekes_ui_tokens::{ColorRole, Theme};
+use tekes_ui_tokens::{ColorRole, Rgba, Theme};
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 /// Schedule autonomous animation without reducing input/rotation responsiveness.
 /// Uses display target timestamps; scene clocks still receive every host delta.
-#[derive(Default)]
 struct AnimationCadence {
     next: Option<f64>,
     /// Zero follows every native display-link callback (including screen changes).
     hz: u32,
+}
+impl Default for AnimationCadence {
+    fn default() -> Self {
+        Self { next: None, hz: 60 }
+    }
 }
 impl AnimationCadence {
     fn due(&mut self, target: f64) -> bool {
@@ -145,6 +149,7 @@ pub fn run() -> Result<()> {
     let mut benchmark_background = false;
     let mut benchmark_120hz = false;
     let mut play = false;
+    let mut night = false;
     let mut scene_time = None;
     let mut args = std::env::args_os().skip(1);
     while let Some(arg) = args.next() {
@@ -174,10 +179,12 @@ pub fn run() -> Result<()> {
             benchmark_background = true;
         } else if arg == "--auto-rotate" {
             auto_rotate = true;
+        } else if arg == "--night" {
+            night = true;
         } else if arg == "--play" {
             play = true;
         } else if input.replace(PathBuf::from(arg)).is_some() {
-            return Err("usage: tekes-ui-3d [model.glb|model.gltf] [--demo cube|manhattan|city-block] [--snapshot output.png] [--auto-rotate] [--play] [--benchmark-background] [--benchmark-120hz]".into());
+            return Err("usage: tekes-ui-3d [model.glb|model.gltf] [--demo cube|manhattan|city-block] [--snapshot output.png] [--auto-rotate] [--play] [--night] [--benchmark-background] [--benchmark-120hz]".into());
         }
     }
     let path = input.unwrap_or_else(|| {
@@ -194,9 +201,13 @@ pub fn run() -> Result<()> {
             .to_string_lossy()
             .into_owned(),
     )?;
+    viewer.night = night;
     viewer.benchmark_background = benchmark_background;
     if benchmark_120hz {
         viewer.cadence.set_hz(120);
+    }
+    if let Some(d) = &mut viewer.district {
+        d.set_night(night);
     }
     if auto_rotate {
         viewer.command(10)?;
@@ -214,12 +225,13 @@ pub fn run() -> Result<()> {
     if let Some(path) = snapshot {
         viewer.init(Renderer::new_headless()?, (960, 720), 1.)?;
         let scene = viewer.scene()?;
+        let clear = viewer.clear_color();
         let bytes = viewer.ui.as_mut().unwrap().render_to_rgba8(
             &scene,
             &mut viewer.atlas,
             (960, 720),
             1.,
-            ColorRole::DocumentCanvas.resolve(viewer.theme),
+            clear,
         )?;
         let mut encoder = png::Encoder::new(std::fs::File::create(path)?, 960, 720);
         encoder.set_color(png::ColorType::Rgba);
@@ -272,7 +284,20 @@ fn menus() -> MenuBar {
                     item("Orbit right", 5),
                     item("Orbit up", 6),
                     item("Orbit down", 7),
-                    item("Rotate model", 8),
+                    item("Rotate model (right drag)", 8),
+                    MenuItem::Separator,
+                    item("Pan left (Shift+←)", 20),
+                    item("Pan right (Shift+→)", 21),
+                    item("Pan up (Shift+↑)", 22),
+                    item("Pan down (Shift+↓)", 23),
+                ],
+            ),
+            Menu::new(
+                "Lighting",
+                vec![
+                    item("Day / 白天", 15),
+                    item("Night / 夜晚", 16),
+                    item("Toggle day / night (N)", 17),
                 ],
             ),
             Menu::new(
@@ -286,6 +311,12 @@ fn menus() -> MenuBar {
             ),
         ],
     }
+}
+#[derive(Clone, Copy)]
+enum DragMode {
+    Orbit,
+    Rotate,
+    Pan,
 }
 struct Viewer {
     view: Scene3D,
@@ -303,17 +334,19 @@ struct Viewer {
     raster: CoreTextRasterizer,
     text: HashMap<String, Paragraph>,
     theme: Theme,
-    drag: Option<(MouseButton, Point, bool)>,
+    drag: Option<(MouseButton, Point, DragMode)>,
     active: bool,
     benchmark_background: bool,
     reduced: bool,
     playing: bool,
     spin: bool,
+    night: bool,
+    night_since: f32,
     cadence: AnimationCadence,
     frame_rate: FrameRate,
     last: Option<f64>,
     pending_redraw: bool,
-    menu_state: Option<(bool, bool, bool, bool)>,
+    menu_state: Option<(bool, bool, bool, bool, bool)>,
     cached_scene: Option<Scene>,
 }
 impl Viewer {
@@ -354,6 +387,8 @@ impl Viewer {
             reduced: false,
             playing,
             spin: false,
+            night: false,
+            night_since: 0.,
             cadence: AnimationCadence::default(),
             frame_rate: FrameRate::default(),
             last: None,
@@ -393,12 +428,44 @@ impl Viewer {
         self.ui = Some(ui);
         Ok(())
     }
+    fn lighting(&self) -> Lighting3D {
+        if self.night {
+            Lighting3D {
+                ambient: [0.065, 0.09, 0.15],
+                direction: [-0.5, 0.8, -0.3],
+                directional: [0.08, 0.10, 0.17],
+                emissive_strength: 1.,
+                effect_time_origin: self.night_since,
+            }
+        } else {
+            Lighting3D {
+                emissive_strength: if self.district.is_some() { 0. } else { 1. },
+                ..Default::default()
+            }
+        }
+    }
+    fn clear_color(&self) -> Rgba {
+        if self.night {
+            Rgba::new(0.012, 0.025, 0.055, 1.)
+        } else {
+            ColorRole::DocumentCanvas.resolve(self.theme)
+        }
+    }
     fn scene(&mut self) -> Result<Scene> {
+        let lighting = self.lighting();
+        self.gpu
+            .as_mut()
+            .ok_or("GPU not initialized")?
+            .set_lighting(lighting)?;
         if let Some(district) = &self.district {
             self.gpu
                 .as_mut()
                 .ok_or("GPU not initialized")?
                 .set_environment(district.environment())?;
+            self.gpu
+                .as_mut()
+                .unwrap()
+                .set_motion_clocks(district.motion_clocks())?;
         }
         self.gpu
             .as_mut()
@@ -417,7 +484,10 @@ impl Viewer {
         let labels = [
             (
                 if self.name == "city-block.glb" {
-                    "WATERFRONT · Living City Block".to_owned()
+                    format!(
+                        "WATERFRONT · Living City Block · {}",
+                        if self.night { "夜晚" } else { "白天" }
+                    )
                 } else if self.name == "manhattan.glb" {
                     "MANHATTAN · Skyline".to_owned()
                 } else {
@@ -429,14 +499,15 @@ impl Viewer {
             ),
             (format!("{} · glTF 2.0 · wgpu", self.name), 24., 48., 12.),
             (
-                "拖动：视角  ·  右键 / Shift 拖动：旋转模型  ·  滚轮 / + −：缩放".to_owned(),
+                "拖动：视角  ·  Shift / 中键拖动：平移  ·  右键拖动：旋转  ·  滚轮 / + −：缩放"
+                    .to_owned(),
                 24.,
                 self.size.1 - 62.,
                 13.,
             ),
             (
                 format!(
-                    "方向键：视角  ·  R：复位  ·  Space：{}  ·  A：自动旋转",
+                    "方向键：视角  ·  Shift 方向键：平移  ·  R：复位  ·  Space：{}  ·  A：自动旋转  ·  N：昼夜",
                     if self.district.is_some() {
                         if self.playing {
                             "暂停街区动态"
@@ -493,7 +564,11 @@ impl Viewer {
                 paragraph,
                 ScenePoint::new(x, y),
                 self.scale,
-                ColorRole::PrimaryText.resolve(self.theme),
+                if self.night {
+                    Rgba::new(0.87, 0.90, 0.96, 1.)
+                } else {
+                    ColorRole::PrimaryText.resolve(self.theme)
+                },
             );
         }
         self.cached_scene = Some(scene.clone());
@@ -503,29 +578,33 @@ impl Viewer {
         if self.last.is_some() && self.frame_rate.refresh(Instant::now()) {
             self.cached_scene = None;
         }
+        let lighting = self.lighting();
+        let clear = self.clear_color();
         if self.cached_scene.is_none() {
             self.ui_scene()?;
         }
         let scene = self.cached_scene.as_ref().unwrap();
         let gpu = self.gpu.as_mut().ok_or("GPU not initialized")?;
+        gpu.set_lighting(lighting)?;
         let view = &self.view;
         let camera = &self.camera;
-        let environment = self.district.as_ref().map(DistrictDemo::environment);
+        let environment = self
+            .district
+            .as_ref()
+            .map(|d| (d.environment(), d.motion_clocks()));
         let mut acquired = false;
-        self.ui.as_mut().unwrap().render_with_gpu(
-            scene,
-            &mut self.atlas,
-            ColorRole::DocumentCanvas.resolve(self.theme),
-            |encoder| {
+        self.ui
+            .as_mut()
+            .unwrap()
+            .render_with_gpu(scene, &mut self.atlas, clear, |encoder| {
                 acquired = true;
-                if let Some(environment) = environment {
-                    gpu.set_environment_and_clocks(environment, [0.; 4])
+                if let Some((environment, clocks)) = environment {
+                    gpu.set_environment_and_clocks(environment, clocks)
                         .map_err(|e| tekes_ui_render::RenderError::Surface(e.to_string()))?;
                 }
                 gpu.encode_camera(view, camera, encoder)
                     .map_err(|e| tekes_ui_render::RenderError::Surface(e.to_string()))
-            },
-        )?;
+            })?;
         if acquired && self.last.is_some() {
             self.frame_rate.frames += 1;
         }
@@ -559,6 +638,10 @@ impl Viewer {
             .replace_gpu_image(self.image.unwrap(), gpu.output())?;
         self.playing = district.is_some();
         self.district = district;
+        if let Some(d) = &mut self.district {
+            d.set_night(self.night);
+        }
+        self.night_since = 0.;
         self.view = view;
         self.gpu = Some(gpu);
         self.name = format!("{demo}.glb");
@@ -577,7 +660,8 @@ impl Viewer {
                 self.camera = self.home.clone();
                 self.view.seek(0.)?;
                 if let Some(district) = &mut self.district {
-                    district.clock.reset();
+                    district.reset();
+                    self.night_since = 0.;
                 }
             }
             2 => self.camera.zoom_by(0.85)?,
@@ -586,6 +670,10 @@ impl Viewer {
             5 => self.camera.orbit(0.18, 0.)?,
             6 => self.camera.orbit(0., 0.15)?,
             7 => self.camera.orbit(0., -0.15)?,
+            20 => self.camera.pan_by(-0.06, 0.)?,
+            21 => self.camera.pan_by(0.06, 0.)?,
+            22 => self.camera.pan_by(0., 0.06)?,
+            23 => self.camera.pan_by(0., -0.06)?,
             8 => self.camera.rotate_model(0.25, 0.15, 0.)?,
             9 if self.district.is_some() => {
                 self.playing = !self.playing;
@@ -610,6 +698,24 @@ impl Viewer {
             19 => self
                 .cadence
                 .set_hz(if self.cadence.hz == 60 { 0 } else { 60 }),
+            15..=17 => {
+                let was_night = self.night;
+                self.night = match id {
+                    15 => false,
+                    16 => true,
+                    _ => !self.night,
+                };
+                if self.night && !was_night {
+                    self.night_since = self
+                        .district
+                        .as_ref()
+                        .map_or(0., |d| d.clock.seconds() as f32);
+                }
+                if let Some(d) = &mut self.district {
+                    d.set_night(self.night);
+                }
+                self.cached_scene = None;
+            }
             11 => self.select_demo("rubiks-cube")?,
             12 => self.select_demo("manhattan")?,
             14 => self.select_demo("city-block")?,
@@ -702,20 +808,38 @@ impl Viewer {
                         .stage()
                         .contains(ScenePoint::new(e.position.x as f32, e.position.y as f32)) =>
                 {
-                    self.drag = Some((button, e.position, e.modifiers.shift))
+                    let mode = if button == MouseButton::Middle
+                        || (button == MouseButton::Left && (e.modifiers.shift || e.modifiers.alt))
+                    {
+                        DragMode::Pan
+                    } else if button == MouseButton::Right {
+                        DragMode::Rotate
+                    } else {
+                        DragMode::Orbit
+                    };
+                    self.drag = Some((button, e.position, mode))
                 }
                 MouseEventKind::Dragged { button } => {
-                    if let Some((held, previous, rotate)) = self.drag
+                    if let Some((held, previous, mode)) = self.drag
                         && held == button
                     {
                         let x = (e.position.x - previous.x) as f32 * 0.008;
                         let y = (e.position.y - previous.y) as f32 * 0.008;
-                        if button == MouseButton::Right || rotate {
-                            self.camera.rotate_model(x, y, 0.)?;
-                        } else if button == MouseButton::Left {
-                            self.camera.orbit(-x, y)?;
+                        match mode {
+                            DragMode::Pan => {
+                                let stage = self.stage();
+                                self.camera.pan_by(
+                                    (e.position.x - previous.x) as f32 / stage.size.width.max(1.),
+                                    -(e.position.y - previous.y) as f32 / stage.size.height.max(1.),
+                                )?;
+                            }
+                            DragMode::Rotate => self.camera.rotate_model(x, y, 0.)?,
+                            DragMode::Orbit if button == MouseButton::Left => {
+                                self.camera.orbit(-x, y)?
+                            }
+                            _ => {}
                         }
-                        self.drag = Some((held, e.position, rotate));
+                        self.drag = Some((held, e.position, mode));
                     }
                 }
                 MouseEventKind::Up { .. } => self.drag = None,
@@ -735,8 +859,8 @@ impl Viewer {
                     _ => None,
                 };
                 if let Some((x, y)) = direction {
-                    if e.modifiers.shift {
-                        self.camera.rotate_model(x, y, 0.)?;
+                    if e.modifiers.shift || e.modifiers.alt {
+                        self.camera.pan_by(x * 0.4, y * 0.4)?;
                     } else {
                         self.camera.orbit(x, y)?;
                     }
@@ -749,6 +873,7 @@ impl Viewer {
                         "a" => 10,
                         "b" => 18,
                         "h" => 19,
+                        "n" => 17,
                         _ => 0,
                     };
                     self.command(id)?;
@@ -768,7 +893,6 @@ impl Viewer {
                 self.reduced = reduced;
                 self.view.reduced_motion = reduced;
                 self.last = None;
-                self.cadence.reset();
             }
             Event::SystemAppearanceChanged {
                 dark,
@@ -802,6 +926,7 @@ impl Viewer {
         let menu_state = (
             self.playing,
             self.spin,
+            self.night,
             self.benchmark_background,
             self.cadence.hz == 60,
         );
@@ -810,6 +935,8 @@ impl Viewer {
             window.set_command_checked(CommandId(10), self.spin);
             window.set_command_checked(CommandId(18), self.benchmark_background);
             window.set_command_checked(CommandId(19), self.cadence.hz == 60);
+            window.set_command_checked(CommandId(15), !self.night);
+            window.set_command_checked(CommandId(16), self.night);
             self.menu_state = Some(menu_state);
         }
         if redraw {
@@ -848,7 +975,7 @@ mod tests {
                     .init(Renderer::new_headless().unwrap(), (320, 240), 1.)
                     .unwrap();
             }
-            for time in [0., 1.2, 24., 46., 55., 80., 0.] {
+            for time in [0., 1.2, 24., 46., 55., 64., 66., 70., 80., 0.] {
                 for viewer in [&mut direct, &mut combined] {
                     if let Some(d) = &mut viewer.district {
                         d.clock.seek(time).unwrap();
@@ -870,8 +997,13 @@ mod tests {
                     )
                     .unwrap();
                 let scene = combined.ui_scene().unwrap();
-                let environment = combined.district.as_ref().map(DistrictDemo::environment);
+                let environment = combined
+                    .district
+                    .as_ref()
+                    .map(|d| (d.environment(), d.motion_clocks()));
+                let lighting = combined.lighting();
                 let gpu = combined.gpu.as_mut().unwrap();
+                gpu.set_lighting(lighting).unwrap();
                 let camera = &combined.camera;
                 let view = &combined.view;
                 let actual = combined
@@ -885,8 +1017,9 @@ mod tests {
                         1.,
                         ColorRole::DocumentCanvas.resolve(combined.theme),
                         |encoder| {
-                            if let Some(environment) = environment {
+                            if let Some((environment, clocks)) = environment {
                                 gpu.set_environment(environment).unwrap();
+                                gpu.set_motion_clocks(clocks).unwrap();
                             }
                             gpu.encode_camera(view, camera, encoder)
                                 .map_err(|e| tekes_ui_render::RenderError::Surface(e.to_string()))
@@ -917,8 +1050,23 @@ mod tests {
     }
     #[test]
     fn district_gpu_motion_is_visible_independent_and_does_not_upload_geometry() {
+        // Isolate geometry/actor lifecycle checks from independent material
+        // animation, which has its own night/interior pixel regression below.
+        let mut bytes = std::fs::read(demo_asset("city-block")).unwrap();
+        let json_len = u32::from_le_bytes(bytes[12..16].try_into().unwrap()) as usize;
+        let mut json: serde_json::Value =
+            serde_json::from_slice(&bytes[20..20 + json_len]).unwrap();
+        for material in json["materials"].as_array_mut().unwrap() {
+            if let Some(extras) = material.get_mut("extras").and_then(|v| v.as_object_mut()) {
+                extras.remove("tekes_interior");
+            }
+        }
+        let encoded = serde_json::to_vec(&json).unwrap();
+        assert!(encoded.len() <= json_len);
+        bytes[20..20 + json_len].fill(b' ');
+        bytes[20..20 + encoded.len()].copy_from_slice(&encoded);
         let mut viewer = Viewer::new(
-            Asset3D::load(demo_asset("city-block")).unwrap(),
+            Asset3D::from_slice(&bytes).unwrap(),
             "city-block.glb".into(),
         )
         .unwrap();
@@ -952,13 +1100,25 @@ mod tests {
         let mut delta = std::collections::BTreeMap::new();
         for feature in [
             "car",
+            "car-police",
+            "car-ambulance",
+            "car-fire",
+            "car-garbage",
+            "activity-jogging",
+            "activity-listening",
+            "activity-strolling",
             "person",
             "tree",
             "water",
             "construction-frame",
             "construction-facade",
             "construction-scaffold",
+            "construction-dust-screen",
+            "construction-hoarding",
             "crane-boom",
+            "boat",
+            "boat-wake",
+            "crane-retirement",
         ] {
             let district = viewer.district.as_ref().unwrap();
             district
@@ -966,21 +1126,53 @@ mod tests {
                 .unwrap();
             let mut config = crate::district::instance_recipe_for_test(district);
             for batch in &mut config.batches {
-                let selected = if feature == "person" {
-                    batch.node.starts_with("person-")
-                } else if feature == "tree" {
-                    batch.node.starts_with("tree-")
-                } else if feature == "water" {
-                    batch.node == "water" || batch.node == "pond"
-                } else {
-                    batch.node == feature
-                };
+                let selected =
+                    if feature.starts_with("activity-") && batch.node.starts_with("person-") {
+                        let activity = match feature {
+                            "activity-jogging" => tekes_ui_city::Activity::Jogging,
+                            "activity-listening" => tekes_ui_city::Activity::Listening,
+                            _ => tekes_ui_city::Activity::Strolling,
+                        };
+                        batch.instances.retain(|i| {
+                            i.route.is_some_and(|r| {
+                                district.config.pedestrians.iter().any(|a| {
+                                    a.activity == activity
+                                        && a.route == r.route
+                                        && a.distance == r.distance
+                                        && a.phase == r.phase
+                                })
+                            })
+                        });
+                        true
+                    } else if feature == "car" {
+                        batch.node.starts_with("car") || batch.node.starts_with("road-wheel-")
+                    } else if feature == "crane-retirement" {
+                        batch.node.starts_with("crane-")
+                    } else if feature == "person" {
+                        batch.node.starts_with("person-")
+                    } else if feature == "tree" {
+                        batch.node.starts_with("tree-")
+                    } else if feature == "water" {
+                        batch.node == "water" || batch.node == "pond"
+                    } else {
+                        batch.node == feature
+                    };
+                if batch.node == "construction-dust-screen" && feature != "construction-dust-screen"
+                {
+                    batch.instances.clear();
+                }
                 if feature == "construction-frame" && batch.node == "construction-facade" {
+                    batch.instances.clear();
+                }
+                if batch.node == "sky-cloud" && feature != "sky-cloud" {
                     batch.instances.clear();
                 }
                 if !selected {
                     for instance in &mut batch.instances {
+                        instance.removal = None;
                         instance.route = None;
+                        instance.route_schedule = None;
+                        instance.rolling = None;
                         instance.deformation = tekes_ui_scene3d::Deformation3D::None;
                     }
                 }
@@ -998,18 +1190,44 @@ mod tests {
                 .as_mut()
                 .unwrap()
                 .clock
-                .seek(if feature.starts_with("construction-") {
+                .seek(if feature == "construction-hoarding" {
+                    65.
+                } else if feature.starts_with("car-") {
+                    4.5
+                } else if feature.starts_with("construction-") {
                     20.
                 } else {
                     1.2
                 })
                 .unwrap();
             let b = capture(&mut viewer);
-            let changed = a
+            let mut changed = a
                 .chunks_exact(4)
                 .zip(b.chunks_exact(4))
                 .filter(|(a, b)| a != b)
                 .count();
+            // A service vehicle can begin behind a building. Observe its whole route,
+            // while every other instance remains frozen, rather than mistaking occlusion for no motion.
+            if feature.starts_with("car-") {
+                for seconds in [10., 20., 30., 40.] {
+                    if changed > 10 {
+                        break;
+                    }
+                    viewer
+                        .district
+                        .as_mut()
+                        .unwrap()
+                        .clock
+                        .seek(seconds)
+                        .unwrap();
+                    let frame = capture(&mut viewer);
+                    changed = a
+                        .chunks_exact(4)
+                        .zip(frame.chunks_exact(4))
+                        .filter(|(a, b)| a != b)
+                        .count();
+                }
+            }
             assert!(
                 changed > 10,
                 "feature must change actual pixels: {feature} ({changed})"
@@ -1023,19 +1241,44 @@ mod tests {
                     "completed building must stop growing"
                 );
             }
-            if feature == "construction-scaffold" {
+            if feature == "crane-retirement" {
+                viewer.district.as_mut().unwrap().clock.seek(66.).unwrap();
+                let removing = capture(&mut viewer);
+                viewer.district.as_mut().unwrap().clock.seek(70.).unwrap();
+                let removed = capture(&mut viewer);
+                assert!(removing != removed, "crane must retire progressively");
+                for batch in &mut config.batches {
+                    if batch.node.starts_with("crane-") {
+                        batch.instances.clear();
+                    }
+                }
+                viewer
+                    .gpu
+                    .as_mut()
+                    .unwrap()
+                    .configure_instances(&viewer.view, &config)
+                    .unwrap();
+                assert!(
+                    removed == capture(&mut viewer),
+                    "retired crane must leave no pixels"
+                );
+            }
+            if matches!(
+                feature,
+                "construction-scaffold" | "construction-hoarding" | "construction-dust-screen"
+            ) {
                 viewer.district.as_mut().unwrap().clock.seek(55.).unwrap();
                 let removing = capture(&mut viewer);
                 viewer.district.as_mut().unwrap().clock.seek(80.).unwrap();
                 let removed = capture(&mut viewer);
                 assert!(
                     removing != removed,
-                    "scaffold must dismantle after completion"
+                    "temporary site structures must dismantle after completion"
                 );
                 config
                     .batches
                     .iter_mut()
-                    .find(|b| b.node == "construction-scaffold")
+                    .find(|b| b.node == feature)
                     .unwrap()
                     .instances
                     .clear();
@@ -1047,7 +1290,7 @@ mod tests {
                     .unwrap();
                 assert!(
                     removed == capture(&mut viewer),
-                    "finished removal must leave no scaffold pixels"
+                    "finished removal must leave no temporary site pixels"
                 );
             }
             delta.insert(feature, changed);
@@ -1119,7 +1362,7 @@ mod tests {
         );
         let image = viewer.image;
         let count = viewer.ui.as_ref().unwrap().image_count();
-        for command in [11, 12, 14] {
+        for command in [11, 12, 13, 14] {
             viewer.command(command).unwrap();
             viewer.scene().unwrap();
             assert_eq!(viewer.image, image);
@@ -1129,7 +1372,476 @@ mod tests {
             "CITY_BLOCK_GPU_CHECK: feature_changed_pixels={delta:?}, geometry_bytes={geometry}, instance_route_upload_bytes={bytes}; 120 frames: vertex/pose/instance uploads=0"
         );
     }
-
+    #[test]
+    fn district_day_night_changes_light_without_rebuilding_geometry_or_instances() {
+        let mut viewer = Viewer::new(
+            Asset3D::load(demo_asset("city-block")).unwrap(),
+            "city-block.glb".into(),
+        )
+        .unwrap();
+        viewer
+            .init(Renderer::new_headless().unwrap(), (960, 720), 1.)
+            .unwrap();
+        let capture = |v: &mut Viewer| {
+            let scene = v.scene().unwrap();
+            let clear = v.clear_color();
+            v.ui.as_mut()
+                .unwrap()
+                .render_to_rgba8(&scene, &mut v.atlas, (960, 720), 1., clear)
+                .unwrap()
+        };
+        let day = capture(&mut viewer);
+        let gpu = viewer.gpu.as_ref().unwrap();
+        let before = (
+            gpu.geometry_upload_bytes(),
+            gpu.geometry_resident_bytes(),
+            gpu.instance_upload_bytes(),
+            gpu.draw_bundle_builds(),
+        );
+        let uniforms = gpu.environment_upload_bytes();
+        viewer.command(16).unwrap();
+        let night = capture(&mut viewer);
+        assert!(viewer.night);
+        let gpu = viewer.gpu.as_ref().unwrap();
+        assert_eq!(
+            before,
+            (
+                gpu.geometry_upload_bytes(),
+                gpu.geometry_resident_bytes(),
+                gpu.instance_upload_bytes(),
+                gpu.draw_bundle_builds()
+            )
+        );
+        assert_eq!(gpu.environment_upload_bytes() - uniforms, 48);
+        let lit = day
+            .chunks_exact(4)
+            .zip(night.chunks_exact(4))
+            .filter(|(d, n)| n[0] as i32 > d[0] as i32 + 24 && n[0] as i32 > n[2] as i32 + 12)
+            .count();
+        assert!(
+            lit > 100,
+            "night must have real emissive windows, pixels={lit}"
+        );
+        let luminance = |data: &[u8]| {
+            data.chunks_exact(4)
+                .map(|p| p[0] as u64 + p[1] as u64 + p[2] as u64)
+                .sum::<u64>()
+        };
+        assert!(luminance(&night) < luminance(&day));
+        let count = gpu.environment_upload_bytes();
+        capture(&mut viewer);
+        assert_eq!(
+            viewer.gpu.as_ref().unwrap().environment_upload_bytes(),
+            count
+        );
+        viewer.command(17).unwrap();
+        assert_eq!(capture(&mut viewer), day);
+        let gpu = viewer.gpu.as_mut().unwrap();
+        assert!(
+            gpu.set_lighting(Lighting3D {
+                direction: [0.; 3],
+                ..Default::default()
+            })
+            .is_err()
+        );
+    }
+    #[test]
+    fn completed_construction_joins_shared_window_life_without_reuploading() {
+        use tekes_ui_scene3d::{Deformation3D, Environment3D, LocalLighting3D};
+        let mut viewer = Viewer::new(
+            Asset3D::load(demo_asset("city-block")).unwrap(),
+            "city-block.glb".into(),
+        )
+        .unwrap();
+        viewer
+            .init(Renderer::new_headless().unwrap(), (960, 720), 1.)
+            .unwrap();
+        let mut recipe =
+            crate::district::instance_recipe_for_test(viewer.district.as_ref().unwrap());
+        for batch in &mut recipe.batches {
+            if batch.node == "construction-facade" {
+                // Keep the facade fully visible to isolate occupancy activation
+                // from construction visibility and retiring work lights.
+                for i in &mut batch.instances {
+                    i.deformation = Deformation3D::None;
+                }
+            } else {
+                batch.instances.clear();
+            }
+        }
+        let gpu = viewer.gpu.as_mut().unwrap();
+        gpu.configure_instances(&viewer.view, &recipe).unwrap();
+        gpu.configure_local_lighting(&LocalLighting3D::default())
+            .unwrap();
+        gpu.set_lighting(Lighting3D {
+            ambient: [0.065, 0.09, 0.15],
+            directional: [0.08, 0.10, 0.17],
+            ..Default::default()
+        })
+        .unwrap();
+        gpu.set_environment(Environment3D {
+            time_seconds: 10.,
+            ..Default::default()
+        })
+        .unwrap();
+        let capture = |v: &mut Viewer, t: f32| {
+            let gpu = v.gpu.as_mut().unwrap();
+            gpu.set_motion_clocks([t, 0., 0., 0.]).unwrap();
+            gpu.render_camera(&v.view, &v.camera).unwrap();
+            let mut scene = Scene::new();
+            v.view
+                .paint(&mut scene, Rect::new(0., 0., 960., 720.), v.image.unwrap());
+            v.ui.as_mut()
+                .unwrap()
+                .render_to_rgba8(
+                    &scene,
+                    &mut v.atlas,
+                    (960, 720),
+                    1.,
+                    Rgba::new(0., 0., 0., 1.),
+                )
+                .unwrap()
+        };
+        let empty = capture(&mut viewer, 30.);
+        assert_eq!(
+            empty,
+            capture(&mut viewer, 40.),
+            "unfinished facade must stay unoccupied and unlit"
+        );
+        let occupied = capture(&mut viewer, 80.);
+        let lit = empty
+            .chunks_exact(4)
+            .zip(occupied.chunks_exact(4))
+            .filter(|(a, b)| b[0] as i32 > a[0] as i32 + 15 && b[1] as i32 > a[1] as i32 + 8)
+            .count();
+        assert!(
+            lit > 30,
+            "completed facade must acquire shared interior lighting, pixels={lit}"
+        );
+        let gpu = viewer.gpu.as_ref().unwrap();
+        assert_eq!(
+            gpu.interior_style_evaluations(),
+            32,
+            "handover reuses the existing 32 styles"
+        );
+        let bytes = (
+            gpu.geometry_upload_bytes(),
+            gpu.instance_upload_bytes(),
+            gpu.draw_bundle_builds(),
+        );
+        assert_eq!(occupied, capture(&mut viewer, 100.));
+        let gpu = viewer.gpu.as_ref().unwrap();
+        assert_eq!(
+            bytes,
+            (
+                gpu.geometry_upload_bytes(),
+                gpu.instance_upload_bytes(),
+                gpu.draw_bundle_builds()
+            )
+        );
+    }
+    #[test]
+    fn construction_holds_built_height_across_night_and_resumes_without_rewinding() {
+        let mut viewer = Viewer::new(
+            Asset3D::load(demo_asset("city-block")).unwrap(),
+            "city-block.glb".into(),
+        )
+        .unwrap();
+        viewer
+            .init(Renderer::new_headless().unwrap(), (960, 720), 1.)
+            .unwrap();
+        let mut recipe =
+            crate::district::instance_recipe_for_test(viewer.district.as_ref().unwrap());
+        for batch in &mut recipe.batches {
+            if !batch.node.starts_with("construction-") && !batch.node.starts_with("crane-") {
+                batch.instances.clear();
+            }
+        }
+        viewer
+            .gpu
+            .as_mut()
+            .unwrap()
+            .configure_instances(&viewer.view, &recipe)
+            .unwrap();
+        // Hold lighting and other clocks fixed to compare construction geometry,
+        // rather than the intentionally different day/night surface colors.
+        let capture = |v: &mut Viewer| {
+            let clocks = v.district.as_ref().unwrap().motion_clocks();
+            let gpu = v.gpu.as_mut().unwrap();
+            gpu.set_lighting(Lighting3D {
+                emissive_strength: 0.,
+                ..Default::default()
+            })
+            .unwrap();
+            gpu.set_motion_clocks(clocks).unwrap();
+            gpu.set_environment(Default::default()).unwrap();
+            gpu.render_camera(&v.view, &v.camera).unwrap();
+            let mut scene = Scene::new();
+            v.view
+                .paint(&mut scene, Rect::new(0., 0., 960., 720.), v.image.unwrap());
+            v.ui.as_mut()
+                .unwrap()
+                .render_to_rgba8(
+                    &scene,
+                    &mut v.atlas,
+                    (960, 720),
+                    1.,
+                    Rgba::new(0., 0., 0., 1.),
+                )
+                .unwrap()
+        };
+        for start in [18., 39., 57., 70.] {
+            viewer.command(15).unwrap();
+            viewer.command(1).unwrap();
+            viewer.district.as_mut().unwrap().clock.seek(start).unwrap();
+            let built = capture(&mut viewer);
+            viewer.command(16).unwrap();
+            assert_eq!(
+                built,
+                capture(&mut viewer),
+                "night entry must preserve construction at {start}"
+            );
+            viewer
+                .district
+                .as_mut()
+                .unwrap()
+                .clock
+                .seek(start + 300.)
+                .unwrap();
+            viewer.command(16).unwrap(); // Repeated Night selection must not restart it.
+            assert_eq!(
+                built,
+                capture(&mut viewer),
+                "whole night must hold construction at {start}"
+            );
+            viewer.command(15).unwrap();
+            assert_eq!(
+                built,
+                capture(&mut viewer),
+                "day must resume at the same height"
+            );
+            viewer
+                .district
+                .as_mut()
+                .unwrap()
+                .clock
+                .seek(start + 315.)
+                .unwrap();
+            if start < 70. {
+                assert_ne!(
+                    built,
+                    capture(&mut viewer),
+                    "day must resume building/dismantling"
+                );
+            } else {
+                assert_eq!(
+                    built,
+                    capture(&mut viewer),
+                    "retired site structures must stay removed"
+                );
+            }
+        }
+    }
+    #[test]
+    fn night_interiors_sleep_and_local_lights_cast_shadows_without_frame_uploads() {
+        use tekes_ui_scene3d::{Environment3D, LocalLighting3D};
+        let mut viewer = Viewer::new(
+            Asset3D::load(demo_asset("city-block")).unwrap(),
+            "city-block.glb".into(),
+        )
+        .unwrap();
+        viewer
+            .init(Renderer::new_headless().unwrap(), (960, 720), 1.)
+            .unwrap();
+        // At this physical resolution, room actors require a close camera.
+        viewer.camera.zoom_by(0.35).unwrap();
+        viewer.command(16).unwrap();
+        let district = viewer.district.as_ref().unwrap();
+        let mut recipe = crate::district::instance_recipe_for_test(district);
+        for batch in &mut recipe.batches {
+            batch.instances.clear();
+        }
+        let lighting = viewer.lighting();
+        let gpu = viewer.gpu.as_mut().unwrap();
+        gpu.configure_instances(&viewer.view, &recipe).unwrap();
+        gpu.configure_local_lighting(&LocalLighting3D::default())
+            .unwrap();
+        gpu.set_lighting(lighting).unwrap();
+        let capture = |v: &mut Viewer, time: f32| {
+            let gpu = v.gpu.as_mut().unwrap();
+            gpu.set_motion_clocks([0., time, 0., 0.]).unwrap();
+            gpu.set_environment(Environment3D {
+                time_seconds: time,
+                ..Default::default()
+            })
+            .unwrap();
+            gpu.render_camera(&v.view, &v.camera).unwrap();
+            let scene = v.ui_scene().unwrap();
+            let clear = v.clear_color();
+            v.ui.as_mut()
+                .unwrap()
+                .render_to_rgba8(&scene, &mut v.atlas, (960, 720), 1., clear)
+                .unwrap()
+        };
+        let evening = capture(&mut viewer, 10.);
+        let walking = capture(&mut viewer, 18.);
+        let midnight = capture(&mut viewer, 300.);
+        let bright = |p: &[u8]| {
+            p.chunks_exact(4)
+                .filter(|c| c[0] > 140 && c[1] > 100 && c[0] as i32 > c[2] as i32 + 15)
+                .count()
+        };
+        let a = bright(&evening);
+        let b = bright(&midnight);
+        assert!(
+            a > 500 && b > 20 && b * 2 < a,
+            "lit windows must decline but night owls remain: {a} -> {b}"
+        );
+        assert!(
+            evening
+                .chunks_exact(4)
+                .zip(walking.chunks_exact(4))
+                .filter(|(a, b)| a != b)
+                .count()
+                > 50,
+            "window silhouettes should move with frozen exterior actors"
+        );
+        let config = DistrictDemo::load(&demo_asset("city-block").with_extension("json")).unwrap();
+        config
+            .configure(viewer.gpu.as_mut().unwrap(), &viewer.view)
+            .unwrap();
+        viewer.scene().unwrap();
+        let gpu = viewer.gpu.as_ref().unwrap();
+        let baseline = (
+            gpu.geometry_upload_bytes(),
+            gpu.instance_upload_bytes(),
+            gpu.draw_bundle_builds(),
+        );
+        let with_shadows = capture(&mut viewer, 12.);
+        let mut lights = crate::district::lighting_recipe_for_test(&config);
+        lights.shadows.clear();
+        viewer
+            .gpu
+            .as_mut()
+            .unwrap()
+            .configure_local_lighting(&lights)
+            .unwrap();
+        let without_shadows = capture(&mut viewer, 12.);
+        let shadow_pixels = with_shadows
+            .chunks_exact(4)
+            .zip(without_shadows.chunks_exact(4))
+            .filter(|(a, b)| b[0] as i32 > a[0] as i32 + 3)
+            .count();
+        assert!(
+            shadow_pixels > 40,
+            "local lights must have real receiver occlusion, pixels={shadow_pixels}"
+        );
+        viewer
+            .gpu
+            .as_mut()
+            .unwrap()
+            .configure_local_lighting(&LocalLighting3D::default())
+            .unwrap();
+        let no_lights = capture(&mut viewer, 12.);
+        assert!(
+            without_shadows
+                .chunks_exact(4)
+                .zip(no_lights.chunks_exact(4))
+                .filter(|(a, b)| a[0] as i32 > b[0] as i32 + 10)
+                .count()
+                > 500,
+            "street and head lights must illuminate surfaces"
+        );
+        let gpu = viewer.gpu.as_ref().unwrap();
+        assert_eq!(
+            baseline,
+            (
+                gpu.geometry_upload_bytes(),
+                gpu.instance_upload_bytes(),
+                gpu.draw_bundle_builds()
+            )
+        );
+        eprintln!(
+            "NIGHT_GPU_CHECK: lit pixels evening={a}, midnight={b}; shadow pixels={shadow_pixels}; geometry/instance uploads and bundles unchanged"
+        );
+    }
+    #[test]
+    fn gpu_departure_timeline_matches_removing_instances_and_reuses_geometry() {
+        use tekes_ui_scene3d::Environment3D;
+        let mut viewer = Viewer::new(
+            Asset3D::load(demo_asset("city-block")).unwrap(),
+            "city-block.glb".into(),
+        )
+        .unwrap();
+        viewer
+            .init(Renderer::new_headless().unwrap(), (960, 720), 1.)
+            .unwrap();
+        let lighting = viewer.lighting();
+        viewer.gpu.as_mut().unwrap().set_lighting(lighting).unwrap();
+        let capture = |v: &mut Viewer, clock: f32| {
+            let gpu = v.gpu.as_mut().unwrap();
+            gpu.set_environment(Environment3D {
+                time_seconds: 12.,
+                ..Default::default()
+            })
+            .unwrap();
+            gpu.set_motion_clocks([0., clock, 0., 0.]).unwrap();
+            gpu.render_camera(&v.view, &v.camera).unwrap();
+            let scene = v.ui_scene().unwrap();
+            let clear = v.clear_color();
+            v.ui.as_mut()
+                .unwrap()
+                .render_to_rgba8(&scene, &mut v.atlas, (960, 720), 1., clear)
+                .unwrap()
+        };
+        let evening = capture(&mut viewer, 0.);
+        let gpu = viewer.gpu.as_ref().unwrap();
+        let before = (
+            gpu.geometry_upload_bytes(),
+            gpu.instance_upload_bytes(),
+            gpu.draw_bundle_builds(),
+        );
+        let late = capture(&mut viewer, 300.);
+        let gpu = viewer.gpu.as_ref().unwrap();
+        assert_eq!(
+            before,
+            (
+                gpu.geometry_upload_bytes(),
+                gpu.instance_upload_bytes(),
+                gpu.draw_bundle_builds()
+            )
+        );
+        assert!(
+            evening
+                .chunks_exact(4)
+                .zip(late.chunks_exact(4))
+                .filter(|(a, b)| a != b)
+                .count()
+                > 100
+        );
+        let mut recipe =
+            crate::district::instance_recipe_for_test(viewer.district.as_ref().unwrap());
+        for batch in &mut recipe.batches {
+            batch.instances.retain(|i| i.visibility.is_none());
+        }
+        viewer
+            .gpu
+            .as_mut()
+            .unwrap()
+            .configure_instances(&viewer.view, &recipe)
+            .unwrap();
+        viewer
+            .gpu
+            .as_mut()
+            .unwrap()
+            .configure_screen_detail(&viewer.view, &crate::district::screen_detail(&recipe))
+            .unwrap();
+        assert_eq!(
+            late,
+            capture(&mut viewer, 300.),
+            "GPU hidden actors must match omitted draws, leaving only late walkers"
+        );
+    }
     #[test]
     fn manhattan_demo_keeps_static_geometry_on_gpu_and_switches_without_image_leaks() {
         let asset = Asset3D::load(demo_asset("manhattan")).unwrap();
@@ -1250,6 +1962,8 @@ mod cadence_tests {
     #[test]
     fn auto_follows_native_callbacks_and_screen_refresh_changes() {
         let mut cadence = AnimationCadence::default();
+        assert_eq!(cadence.hz, 60);
+        cadence.set_hz(0);
         let mut timestamp = 0.;
         for hz in [120., 60., 90., 120.] {
             for _ in 0..hz as usize {

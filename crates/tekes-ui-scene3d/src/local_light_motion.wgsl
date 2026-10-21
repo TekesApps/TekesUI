@@ -1,6 +1,6 @@
 struct LightInput { attachment:Instance, center_radius:vec4<f32>, direction_cone:vec4<f32>, color:vec4<f32>, dimming:vec4<f32> }
 struct LocalLight { position_radius:vec4<f32>, direction_cone:vec4<f32>, color:vec4<f32> }
-struct ShadowProxy { center:vec4<f32>, radii:vec4<f32> }
+struct ShadowProxy { center:vec4<f32>, radii:vec4<f32>, inverse_radii:vec4<f32> }
 struct ShadowList { count:u32, indices:array<u32,96> }
 struct LightScene { counts:vec4<u32>, lights:array<LocalLight,64>, shadows:array<ShadowProxy,96>, shadow_lists:array<ShadowList,64>, grid:vec4<f32>, light_cells:array<vec2<u32>,1024> }
 @group(1) @binding(0) var<storage,read> light_inputs:array<LightInput>;
@@ -17,10 +17,12 @@ fn evaluate_attachment(index:u32){
         if input.attachment.removal.w>0.0 {
             energy*=1.0-smoothstep(input.attachment.removal.x,input.attachment.removal.x+input.attachment.removal.y,instance_time(input.attachment));
         }
-        light_output.lights[index].color=vec4(input.color.rgb*energy,0.0);
+        light_output.lights[index].color=vec4(input.color.rgb*energy,1.0/(input.center_radius.w*input.center_radius.w));
     } else {
         light_output.shadows[index-lights].center=vec4(moved.p,moved.visibility);
-        light_output.shadows[index-lights].radii=vec4(input.direction_cone.xyz*input.attachment.scale.xyz,0.0);
+        let radii=input.direction_cone.xyz*input.attachment.scale.xyz;
+        light_output.shadows[index-lights].radii=vec4(radii,0.0);
+        light_output.shadows[index-lights].inverse_radii=vec4(1.0/(radii*max(0.02,moved.visibility)),0.0);
     }
 }
 

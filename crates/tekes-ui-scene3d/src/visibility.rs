@@ -9,7 +9,8 @@ pub struct ScreenDetail3D {
     pub node: String,
     /// Reference world-space diameter before instance scale. Zero uses bounds.
     pub reference_size: f32,
-    /// Disappear below x pixels, fully present at y pixels (smoothstep).
+    /// Disappear at x pixels, fully present at y pixels (smoothstep).
+    /// Descending thresholds show distant details and fade them out up close.
     pub fade_pixels: [f32; 2],
     /// Wind/swing becomes static below x, full animation above y. Zero disables.
     pub motion_pixels: [f32; 2],
@@ -20,6 +21,7 @@ pub struct ScreenDetail3D {
 pub(crate) struct VisibilityGpu {
     pub pipeline: wgpu::ComputePipeline,
     pub bounds_pipeline: wgpu::ComputePipeline,
+    pub alpha_pipeline: wgpu::ComputePipeline,
     pub layout: wgpu::BindGroupLayout,
     pub viewport: wgpu::Buffer,
 }
@@ -86,6 +88,14 @@ impl VisibilityGpu {
             compilation_options: Default::default(),
             cache: None,
         });
+        let alpha_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("3D GPU transparent instance ordering"),
+            layout: Some(&pipeline_layout),
+            module: &shader,
+            entry_point: Some("sort_alpha"),
+            compilation_options: Default::default(),
+            cache: None,
+        });
         let viewport = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("3D physical viewport"),
             contents: bytemuck::cast_slice(&[1_f32; 4]),
@@ -94,6 +104,7 @@ impl VisibilityGpu {
         Self {
             pipeline,
             bounds_pipeline,
+            alpha_pipeline,
             layout,
             viewport,
         }

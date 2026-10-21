@@ -1,5 +1,5 @@
 struct LocalLight { position_radius:vec4<f32>, direction_cone:vec4<f32>, color:vec4<f32> }
-struct ShadowProxy { center:vec4<f32>, radii:vec4<f32> }
+struct ShadowProxy { center:vec4<f32>, radii:vec4<f32>, inverse_radii:vec4<f32> }
 struct ShadowList { count:u32, indices:array<u32,96> }
 struct LightScene { counts:vec4<u32>, lights:array<LocalLight,64>, shadows:array<ShadowProxy,96>, shadow_lists:array<ShadowList,64>, grid:vec4<f32>, light_cells:array<vec2<u32>,1024> }
 @group(2) @binding(0) var<storage,read> local_scene:LightScene;
@@ -13,6 +13,7 @@ fn local_illumination(p:vec3<f32>,normal:vec3<f32>)->vec3<f32>{
     var result=vec3(0.0);
     if environment.ambient_emission.w<=0.0 {return result;}
     let n=normalize(normal);
+    let origin=p+n*0.035;
     var candidates=light_candidates(p);
     loop {
         if all(candidates==vec2(0u)) {break;}
@@ -38,22 +39,29 @@ fn local_illumination(p:vec3<f32>,normal:vec3<f32>)->vec3<f32>{
         var visibility=1.0;
         // Offset receiver to avoid self-shadow. Segment/ellipsoid intersection
         // gives bounded soft proxy shadows without CPU rasterization/readback.
-        let origin=p+n*0.035;
         for(var candidate=0u;candidate<local_scene.shadow_lists[j].count;candidate++){
             let k=local_scene.shadow_lists[j].indices[candidate];
             let proxy=local_scene.shadows[k];
             if proxy.center.w<=0.01 {continue;}
-            let r=proxy.radii.xyz*max(0.02,proxy.center.w);
-            let o=(origin-proxy.center.xyz)/r;
+            // Radius/fade reciprocals are shared GPU preparation, not recomputed
+            // for every shaded fragment and every candidate shadow.
+            let inverse_r=proxy.inverse_radii.xyz;
+            let o=(origin-proxy.center.xyz)*inverse_r;
             if dot(o,o)<1.05 {continue;}
-            let ray=(light.position_radius.xyz-origin)/r;
+            let ray=(light.position_radius.xyz-origin)*inverse_r;
             let along=clamp(-dot(o,ray)/dot(ray,ray),0.0,1.0);
             let nearest=o+ray*along;
-            if along>0.005 && along<0.995 {
-                visibility=min(visibility,smoothstep(0.75,1.12,length(nearest)));
+            let nearest2=dot(nearest,nearest);
+            // Outside the penumbra smoothstep is exactly one: avoid its sqrt.
+            if along>0.005 && along<0.995 && nearest2<1.2544 {
+                visibility=min(visibility,smoothstep(0.75,1.12,sqrt(nearest2)));
+                // min cannot recover from full occlusion; no remaining proxy
+                // can affect this light's result. Keep all soft shadow values.
+                if visibility<=0.0 {break;}
             }
         }
-        let falloff=pow(1.0-d2/(radius*radius),2.0)/(1.0+0.24*d2);
+        let attenuation=1.0-d2*light.color.w;
+        let falloff=attenuation*attenuation/(1.0+0.24*d2);
         result+=light.color.rgb*(cosine*spot*falloff*visibility);
     }
     return result*environment.ambient_emission.w;
