@@ -1,0 +1,109 @@
+{
+  "identity": "identity.json",
+  "status": "targeted native keyboard regression passed",
+  "nav_without_retab": "B->A, Home/Enter->B with Navigation owner throughout",
+  "explicit_busy_tab": "event27 Tab, event28 Visibility1, then event30 Execute/event32 HistoryCommitted; owner remains Visibility1 until deliberate ShiftTab at event33",
+  "focus_events": [
+    [
+      5,
+      "Some(Visibility(0))"
+    ],
+    [
+      8,
+      "Some(Navigation)"
+    ],
+    [
+      28,
+      "Some(Visibility(1))"
+    ],
+    [
+      34,
+      "Some(Panel(2))"
+    ],
+    [
+      41,
+      "Some(Navigation)"
+    ],
+    [
+      48,
+      "Some(Visibility(0))"
+    ],
+    [
+      65,
+      "Some(Navigation)"
+    ],
+    [
+      68,
+      "Some(Panel(0))"
+    ],
+    [
+      77,
+      "Some(Panel(0))"
+    ],
+    [
+      80,
+      "Some(Panel(1))"
+    ],
+    [
+      89,
+      "Some(Panel(2))"
+    ],
+    [
+      92,
+      "Some(Visibility(1))"
+    ],
+    [
+      109,
+      "Some(Panel(1))"
+    ],
+    [
+      112,
+      "Some(Visibility(1))"
+    ],
+    [
+      130,
+      "Some(Visibility(0))"
+    ]
+  ],
+  "passed": [
+    "Tab/ShiftTab reach all toolbar owners",
+    "Panel Space increments; Right Enter resets",
+    "Enter opens overflow",
+    "menu Tab/ShiftTab contained",
+    "outside click closes menu without side toggle",
+    "trailing Space hides and Enter shows",
+    "ShiftTab skips hidden trailing Panel",
+    "leading mounts on first explicit toggle",
+    "swap remains absent"
+  ],
+  "visibility_events": [
+    [
+      true,
+      true
+    ],
+    [
+      true,
+      false
+    ],
+    [
+      true,
+      true
+    ],
+    [
+      false,
+      true
+    ]
+  ],
+  "history_entries_preserved": true,
+  "history_cursor_restored": true,
+  "history_revision_before": 6,
+  "history_revision_after": 10,
+  "source_modified": false,
+  "app_left_open": true,
+  "limitations": [
+    "CUA native key events, not physical keyboard observation",
+    "no OS input method or AX/VoiceOver",
+    "geometry-change while key held covered by producer unit tests, not reproduced natively",
+    "no performance acceptance"
+  ]
+}

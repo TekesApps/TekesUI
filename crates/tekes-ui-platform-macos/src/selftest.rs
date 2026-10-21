@@ -931,7 +931,7 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
     };
     use objc2_foundation::NSRect;
     use std::{cell::Cell, rc::Rc};
-    struct Measure(Rc<Cell<f64>>);
+    struct Measure(Rc<Cell<f64>>, Rc<Cell<Option<f64>>>);
     impl WindowHandler for Measure {
         fn handle(&mut self, event: Event, window: &mut Window) {
             if event == Event::Created {
@@ -945,8 +945,10 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
                 assert!(leading >= 0. && leading <= window.size().width);
                 if height == 0. {
                     assert_eq!((safe_height, leading), (0., 0.));
+                    assert_eq!(window.titlebar_control_center_y(), None);
                 } else {
                     assert!(leading > 0.);
+                    self.1.set(window.titlebar_control_center_y());
                 }
             }
             // A synthetic object callback is not a live native gesture.
@@ -959,7 +961,8 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
     let mut rows = vec![];
     for extended in [false, true] {
         let height = Rc::new(Cell::new(-1.));
-        let shared = Shared::new(mtm, Box::new(Measure(height.clone())));
+        let center = Rc::new(Cell::new(None));
+        let shared = Shared::new(mtm, Box::new(Measure(height.clone(), center.clone())));
         let rect = NSRect::new(NSPoint::new(0., 0.), NSSize::new(720., 480.));
         let window = unsafe {
             NSWindow::initWithContentRect_styleMask_backing_defer(
@@ -1001,6 +1004,15 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
             .unwrap();
         shared.ready.set(true);
         shared.dispatch(Event::Created);
+        if extended {
+            let button = window
+                .standardWindowButton(objc2_app_kit::NSWindowButton::CloseButton)
+                .unwrap();
+            let r = view.convertRect_fromView(button.bounds(), Some(&button));
+            let expected_center = r.origin.y + r.size.height * 0.5;
+            assert_eq!(center.get(), Some(expected_center));
+            println!("TITLEBAR_NATIVE_CONTROL_CENTER y={expected_center}");
+        }
         let expected = if extended {
             window.frame().size.height - window.contentLayoutRect().size.height
         } else {

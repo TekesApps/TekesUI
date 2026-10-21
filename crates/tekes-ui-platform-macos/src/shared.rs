@@ -548,13 +548,11 @@ impl Window {
         self.view.size_points()
     }
 
-    /// Native unified-titlebar exclusion in this view's top-left point space.
-    /// Height follows AppKit layout; the leading extent follows visible traffic
-    /// lights instead of hard-coded window-control coordinates.
-    pub fn titlebar_safe_area(&self) -> (f64, f64) {
+    /// Current native window-button bounds in this content view's coordinate
+    /// space. Only visible buttons overlapping extended content participate.
+    fn titlebar_controls_bounds(&self) -> Option<objc2_foundation::NSRect> {
         let size = self.size();
-        let mut leading: f64 = 0.;
-        let mut height = self.titlebar_content_height();
+        let mut bounds: Option<objc2_foundation::NSRect> = None;
         for kind in [
             NSWindowButton::CloseButton,
             NSWindowButton::MiniaturizeButton,
@@ -567,8 +565,6 @@ impl Window {
                 let rect = self
                     .view
                     .convertRect_fromView(button.bounds(), Some(&button));
-                // Ordinary content and fullscreen chrome may not overlap the
-                // traffic lights at all. Only reserve their actual visible area.
                 let right = rect.origin.x + rect.size.width;
                 let bottom = rect.origin.y + rect.size.height;
                 if right > 0.
@@ -576,12 +572,47 @@ impl Window {
                     && bottom > 0.
                     && rect.origin.y < size.height
                 {
-                    leading = leading.max(right.clamp(0., size.width));
-                    height = height.max(bottom.clamp(0., size.height));
+                    bounds = Some(match bounds {
+                        None => rect,
+                        Some(previous) => {
+                            let x = previous.origin.x.min(rect.origin.x);
+                            let y = previous.origin.y.min(rect.origin.y);
+                            objc2_foundation::NSRect::new(
+                                objc2_foundation::NSPoint::new(x, y),
+                                NSSize::new(
+                                    (previous.origin.x + previous.size.width).max(right) - x,
+                                    (previous.origin.y + previous.size.height).max(bottom) - y,
+                                ),
+                            )
+                        }
+                    });
                 }
             }
         }
+        bounds
+    }
+
+    /// Native unified-titlebar exclusion in this view's top-left point space.
+    /// Height follows AppKit layout; the leading extent follows visible traffic
+    /// lights instead of hard-coded window-control coordinates.
+    pub fn titlebar_safe_area(&self) -> (f64, f64) {
+        let size = self.size();
+        let bounds = self.titlebar_controls_bounds();
+        let height = self
+            .titlebar_content_height()
+            .max(bounds.map_or(0., |r| (r.origin.y + r.size.height).clamp(0., size.height)));
+        let leading = bounds.map_or(0., |r| (r.origin.x + r.size.width).clamp(0., size.width));
         (height, leading)
+    }
+
+    /// Vertical alignment reference for controls in the native window toolbar,
+    /// in top-left content-view points. AppKit's toolbar allocation need not be
+    /// symmetric around its traffic lights. None means native buttons do not
+    /// overlap this content view (ordinary content or hidden/fullscreen chrome).
+    /// Inline View toolbars continue to use their own arranged center.
+    pub fn titlebar_control_center_y(&self) -> Option<f64> {
+        self.titlebar_controls_bounds()
+            .map(|r| r.origin.y + r.size.height * 0.5)
     }
 
     /// `backingScaleFactor`。

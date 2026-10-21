@@ -1,0 +1,72 @@
+{
+  "identity": "identity.json",
+  "status": "partial; native navigation async focus loss reproduced",
+  "passed": [
+    "Tab/ShiftTab reach leading/nav/all three Panel toolbars/trailing",
+    "Space leading open and trailing hide",
+    "Enter trailing show",
+    "Panel Space increments; Right+Enter resets",
+    "Panel overflow opens via Enter",
+    "Tab/ShiftTab remain within open menu",
+    "outside click on trailing dismisses menu without toggling it",
+    "disabled back skipped at document A",
+    "keyboard nav B->A and reentry forward A->B",
+    "20pt chrome and no swap preserved"
+  ],
+  "failure": {
+    "trigger": "Navigation Enter with no user focus transfer",
+    "actual": "busy clears Navigation owner to None; completion does not restore it; next Home/Enter ignored",
+    "expected": "cancel old arm and block busy actions; retain and restore logical focus anchor if no explicit focus change",
+    "evidence": "native-events.json initial Navigation36Down -> focusNone -> Home/Enter ownerNone"
+  },
+  "focus_owners": [
+    "Some(Visibility(0))",
+    "Some(Navigation)",
+    "None",
+    "Some(Visibility(0))",
+    "Some(Navigation)",
+    "Some(Panel(0))",
+    "Some(Panel(0))",
+    "Some(Panel(1))",
+    "Some(Panel(2))",
+    "Some(Visibility(1))",
+    "Some(Panel(1))",
+    "Some(Visibility(1))",
+    "Some(Panel(2))",
+    "Some(Panel(1))",
+    "Some(Panel(0))",
+    "Some(Navigation)",
+    "None",
+    "Some(Visibility(0))"
+  ],
+  "visibility_events": [
+    [
+      true,
+      true
+    ],
+    [
+      true,
+      false
+    ],
+    [
+      true,
+      true
+    ],
+    [
+      false,
+      true
+    ]
+  ],
+  "history_entries_preserved": true,
+  "history_cursor_restored": true,
+  "history_revision_before": 4,
+  "history_revision_after": 6,
+  "source_modified": false,
+  "app_left_open": true,
+  "not_verified": [
+    "physical keyboard and external display perception",
+    "AX/VoiceOver",
+    "native focus-loss while holding key",
+    "performance"
+  ]
+}

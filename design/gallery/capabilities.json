@@ -80,7 +80,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/layout-surface.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/layout-surface.json",
           "case_count": 96,
           "complete": false,
           "excluded": [
@@ -179,7 +179,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/grid-layout.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/grid-layout.json",
           "case_count": 96,
           "complete": false,
           "excluded": [
@@ -278,7 +278,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/separator.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/separator.json",
           "case_count": 144,
           "complete": false,
           "excluded": [
@@ -775,7 +775,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/content-status.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/content-status.json",
           "case_count": 144,
           "complete": false,
           "excluded": [
@@ -887,7 +887,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/layout-surface.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/layout-surface.json",
           "case_count": 96,
           "complete": false,
           "excluded": [
@@ -930,7 +930,7 @@
         ],
         "resolved_sources": {
           "tekes_ui_controls::Toolbar": {
-            "line": 2654,
+            "line": 2681,
             "source": "crates/tekes-ui-controls/src/widgets.rs",
             "symbol": "Toolbar"
           },
@@ -951,7 +951,7 @@
       "route": "component-toolbar",
       "source": "crates/tekes-ui-controls/src/widgets.rs",
       "source_symbol": {
-        "line": 2654,
+        "line": 2681,
         "public_name": "Toolbar",
         "status": "declaration-present",
         "symbol": "Toolbar"
@@ -1050,8 +1050,8 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/toolbar.json",
-          "case_count": 72,
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/toolbar-image-probe.json",
+          "case_count": 144,
           "complete": false,
           "excluded": [
             "legacy ToolbarView runtime",
@@ -1061,7 +1061,7 @@
             "native/VoiceOver/Gold7 experience",
             "performance"
           ],
-          "scope": "Actual ToolbarControl in original ContentHost: six states, four themes, three existing brands. Reuses ButtonContent and Menu; legacy ToolbarView is not exercised by this probe.",
+          "scope": "Actual ToolbarControl in original ContentHost: inline/window profiles, six states, four themes, three existing brands. Reuses ButtonContent and Menu; legacy ToolbarView is not exercised by this probe.",
           "tokens": [
             "color:border",
             "color:border-focused",
@@ -1078,6 +1078,9 @@
             "radius:c-button-md-radius",
             "radius:radius-floating",
             "size:size-action-button",
+            "size:size-icon-button",
+            "size:size-icon-standard",
+            "size:size-toolbar-chrome",
             "spacing:c-focus-offset",
             "spacing:space-micro",
             "spacing:space-regular",
@@ -1600,7 +1603,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/action.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/action.json",
           "case_count": 108,
           "complete": false,
           "excluded": [
@@ -1828,7 +1831,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/action.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/action.json",
           "case_count": 108,
           "complete": false,
           "excluded": [
@@ -2044,7 +2047,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/action.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/action.json",
           "case_count": 84,
           "complete": false,
           "excluded": [
@@ -2290,7 +2293,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/input.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/input.json",
           "case_count": 204,
           "complete": false,
           "excluded": [
@@ -2540,7 +2543,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/input.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/input.json",
           "case_count": 204,
           "complete": false,
           "excluded": [
@@ -2790,7 +2793,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/input.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/input.json",
           "case_count": 204,
           "complete": false,
           "excluded": [
@@ -3039,7 +3042,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/combo-async.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/combo-async.json",
           "case_count": 132,
           "complete": false,
           "excluded": [
@@ -3243,7 +3246,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/slider-composition.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/slider-composition.json",
           "case_count": 264,
           "complete": false,
           "excluded": [
@@ -3301,7 +3304,7 @@
         ],
         "resolved_sources": {
           "tekes_ui_controls::Checkbox": {
-            "line": 872,
+            "line": 899,
             "source": "crates/tekes-ui-controls/src/widgets.rs",
             "symbol": "Checkbox"
           }
@@ -3312,7 +3315,7 @@
       "route": "component-checkbox",
       "source": "crates/tekes-ui-controls/src/widgets.rs",
       "source_symbol": {
-        "line": 872,
+        "line": 899,
         "public_name": "Checkbox",
         "status": "declaration-present",
         "symbol": "Checkbox"
@@ -3510,7 +3513,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/selection.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/selection.json",
           "case_count": 864,
           "complete": false,
           "excluded": "constants, baked alias expansion, motion/layout accessors, host font backend, and unexecuted branches are not complete dependency coverage",
@@ -3762,7 +3765,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/selection.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/selection.json",
           "case_count": 576,
           "complete": false,
           "excluded": "constants, baked alias expansion, motion/layout accessors, host font backend, and unexecuted branches are not complete dependency coverage",
@@ -4011,7 +4014,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/selection.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/selection.json",
           "case_count": 576,
           "complete": false,
           "excluded": "constants, baked alias expansion, motion/layout accessors, host font backend, and unexecuted branches are not complete dependency coverage",
@@ -4239,7 +4242,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/action.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/action.json",
           "case_count": 108,
           "complete": false,
           "excluded": [
@@ -4292,7 +4295,7 @@
         ],
         "resolved_sources": {
           "tekes_ui_controls::Field": {
-            "line": 1302,
+            "line": 1329,
             "source": "crates/tekes-ui-controls/src/widgets.rs",
             "symbol": "Field"
           },
@@ -4308,7 +4311,7 @@
       "route": "component-field",
       "source": "crates/tekes-ui-controls/src/widgets.rs",
       "source_symbol": {
-        "line": 1302,
+        "line": 1329,
         "public_name": "Field",
         "status": "declaration-present",
         "symbol": "Field"
@@ -4377,7 +4380,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/field.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/field.json",
           "case_count": 48,
           "complete": false,
           "excluded": [
@@ -4420,7 +4423,7 @@
         ],
         "resolved_sources": {
           "tekes_ui_controls::Select": {
-            "line": 1237,
+            "line": 1264,
             "source": "crates/tekes-ui-controls/src/widgets.rs",
             "symbol": "Select"
           },
@@ -4436,7 +4439,7 @@
       "route": "component-select",
       "source": "crates/tekes-ui-controls/src/widgets.rs",
       "source_symbol": {
-        "line": 1237,
+        "line": 1264,
         "public_name": "Select",
         "status": "declaration-present",
         "symbol": "Select"
@@ -4619,7 +4622,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/combo-async.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/combo-async.json",
           "case_count": 132,
           "complete": false,
           "excluded": [
@@ -4684,7 +4687,7 @@
         ],
         "resolved_sources": {
           "tekes_ui_controls::NumberField": {
-            "line": 1258,
+            "line": 1285,
             "source": "crates/tekes-ui-controls/src/widgets.rs",
             "symbol": "NumberField"
           },
@@ -4700,7 +4703,7 @@
       "route": "component-number-field",
       "source": "crates/tekes-ui-controls/src/widgets.rs",
       "source_symbol": {
-        "line": 1258,
+        "line": 1285,
         "public_name": "NumberField",
         "status": "declaration-present",
         "symbol": "NumberField"
@@ -4805,7 +4808,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/number.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/number.json",
           "case_count": 60,
           "complete": false,
           "excluded": [
@@ -4854,7 +4857,7 @@
         ],
         "resolved_sources": {
           "tekes_ui_controls::Tabs": {
-            "line": 1137,
+            "line": 1164,
             "source": "crates/tekes-ui-controls/src/widgets.rs",
             "symbol": "Tabs"
           },
@@ -4870,7 +4873,7 @@
       "route": "component-tabs",
       "source": "crates/tekes-ui-controls/src/widgets.rs",
       "source_symbol": {
-        "line": 1137,
+        "line": 1164,
         "public_name": "Tabs",
         "status": "declaration-present",
         "symbol": "Tabs"
@@ -5106,7 +5109,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/content-status.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/content-status.json",
           "case_count": 180,
           "complete": false,
           "excluded": [
@@ -5290,7 +5293,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/content-status.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/content-status.json",
           "case_count": 84,
           "complete": false,
           "excluded": [
@@ -5538,7 +5541,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/command-async.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/command-async.json",
           "case_count": 168,
           "complete": false,
           "excluded": [
@@ -5809,7 +5812,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/collection-focus.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/collection-focus.json",
           "case_count": 108,
           "complete": false,
           "excluded": [
@@ -6075,7 +6078,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/collection-focus.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/collection-focus.json",
           "case_count": 108,
           "complete": false,
           "excluded": [
@@ -6264,7 +6267,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/collection-focus.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/collection-focus.json",
           "case_count": 216,
           "complete": false,
           "excluded": [
@@ -6442,7 +6445,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/collection-focus.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/collection-focus.json",
           "case_count": 72,
           "complete": false,
           "excluded": [
@@ -6490,7 +6493,7 @@
         ],
         "resolved_sources": {
           "tekes_ui_controls::Menu": {
-            "line": 1167,
+            "line": 1194,
             "source": "crates/tekes-ui-controls/src/widgets.rs",
             "symbol": "Menu"
           },
@@ -6506,7 +6509,7 @@
       "route": "component-menu",
       "source": "crates/tekes-ui-controls/src/widgets.rs",
       "source_symbol": {
-        "line": 1167,
+        "line": 1194,
         "public_name": "Menu",
         "status": "declaration-present",
         "symbol": "Menu"
@@ -6629,7 +6632,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/menu-content.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/menu-content.json",
           "case_count": 288,
           "complete": false,
           "excluded": [
@@ -6760,7 +6763,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/tooltip.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/tooltip.json",
           "case_count": 240,
           "complete": false,
           "excluded": [
@@ -6907,7 +6910,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/popover-content.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/popover-content.json",
           "case_count": 192,
           "complete": false,
           "excluded": [
@@ -6963,7 +6966,7 @@
         ],
         "resolved_sources": {
           "tekes_ui_controls::Dialog": {
-            "line": 1211,
+            "line": 1238,
             "source": "crates/tekes-ui-controls/src/widgets.rs",
             "symbol": "Dialog"
           },
@@ -6979,7 +6982,7 @@
       "route": "component-dialog",
       "source": "crates/tekes-ui-controls/src/widgets.rs",
       "source_symbol": {
-        "line": 1211,
+        "line": 1238,
         "public_name": "Dialog",
         "status": "declaration-present",
         "symbol": "Dialog"
@@ -7435,7 +7438,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/passive-feedback.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/passive-feedback.json",
           "case_count": 96,
           "complete": false,
           "excluded": [
@@ -7587,7 +7590,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/passive-feedback.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/passive-feedback.json",
           "case_count": 96,
           "complete": false,
           "excluded": [
@@ -7797,7 +7800,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/passive-feedback.json",
+          "artifact": "design/reviews/toolbar-native-calibration-20261021/probes-images-final/passive-feedback.json",
           "case_count": 24,
           "complete": false,
           "excluded": [
@@ -8705,27 +8708,30 @@
     "source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json"
   },
   "inputs_sha256": {
+    "crates/tekes-ui-3d/src/city_views.rs": "fe0dd6c3c314d5aec9012f1a1cc693266bf8a2b6bd7214cdc46b54b09b27d275",
     "crates/tekes-ui-3d/src/clouds.rs": "d0b8091da3ce185ed7cbcdc9fb564eba5e9d5c1dc6b2a3345511cbc5d1306019",
     "crates/tekes-ui-3d/src/district.rs": "62afaf3e8376ed389c4222483579824ecd581bcfa803ca1d3dd944d216e32253",
-    "crates/tekes-ui-3d/src/main.rs": "98ebbc967e742769a762adf87fadb0920bf25502aaefb0eaaf66790ad48fcc2a",
+    "crates/tekes-ui-3d/src/main.rs": "100afadde8df0de00f0cc9afd3918993e5cec7289767616588fdb3657bc0b891",
     "crates/tekes-ui-3d/src/road_wheels.rs": "154e3255ede8e1f4712253cd151d43eb8d77fcbc3b49c629c5955c96e384662a",
     "crates/tekes-ui-3d/src/station.rs": "0e9f4fef6cb82bc83aed5d7105f9882163b7a20c017ccd540ba022049e1494cb",
     "crates/tekes-ui-3d/src/transit.rs": "830ab22f7ed97190518c5c36ef6157acf5db8779514b01fea8b52a510fff0d18",
-    "crates/tekes-ui-3d/src/viewer.rs": "41778114033e81c88169c985d9eea72ba6803d4ba2d340f2eda3335c5bc2fd9a",
+    "crates/tekes-ui-3d/src/viewer.rs": "d1b6912434ae8056909bcd2383b2274968e2d7f0206ab643b1daf3d68dcfbae8",
     "crates/tekes-ui-app-host/examples/navigation_prototype.rs": "8fe1c2dbc6f28301bc81b236dac6089ed9a9f12c237654a414f50daa647ac922",
     "crates/tekes-ui-app-host/examples/text_sharpness.rs": "0166220f8ebda4221d7d8616c52a5d98a86b6c0e6f8e55c01cc1dcd64efc083b",
+    "crates/tekes-ui-app-host/examples/toolbar_artwork_metrics.rs": "105082460111126efbd6a232cb4d8cc4c73ade89f7be054213cdd203a4c5ce03",
     "crates/tekes-ui-app-host/src/gpu.rs": "7c06c1e8eb52319ba8c2211bff31bf7f5819ac02328992e74837631334371111",
-    "crates/tekes-ui-app-host/src/lib.rs": "df736157dbcadbf1252a04fd0674393e53f1127125f978cbaf505aab168fd0aa",
+    "crates/tekes-ui-app-host/src/lib.rs": "860edb798da1bcf807191d32edd594814928b0abd338a11304e4cce555363237",
     "crates/tekes-ui-app-host/src/module_process.rs": "6f052cb33081edad27cd901f1c493ddc7da22dcd1a10a07718b8866f2244782d",
     "crates/tekes-ui-app-host/src/navigation/host.rs": "356fd20b80140bc4b2fc719cd37223067a0456c8c8c93837b686086fe9934725",
     "crates/tekes-ui-app-host/src/navigation/mod.rs": "f7ac122be60332b8a14310d74120c96ed3152c0efbb9d1ef76f41ad92cad996f",
     "crates/tekes-ui-app-host/src/navigation/model.rs": "9d3f6f2bb468f8a5dc6943ce26f0de5a09c06d68019f1b08e2cc1c08a752a407",
     "crates/tekes-ui-app-host/src/navigation/store.rs": "dd1087e50b7c87b280fa9d88091cbc38b6085a305041c2377d70bf4730dfb060",
-    "crates/tekes-ui-app-host/src/navigation_window.rs": "f5388b2e97594165e60d258f9991e96891f8ffc2bab30379a4a27d2a37641ee1",
+    "crates/tekes-ui-app-host/src/navigation_window.rs": "95beac7f94840156690cb040d29ed07c46c64cc803b4fb5d0a3db2992f560efc",
+    "crates/tekes-ui-app-host/src/sidebar_motion.rs": "26a26e146502520ceec897c1282294e189794834d49d63787dea6264b347a8e2",
     "crates/tekes-ui-app-host/src/text.rs": "cdac32bf97b68751ccf11684d8753f3338c545d4781d3e465718e6207bbbf983",
-    "crates/tekes-ui-app-host/src/window.rs": "7002c0bc41a0b4df5ac245505040dad324f29ffc9422824638b789dc7e7478c9",
-    "crates/tekes-ui-app-host/src/window_toolbar.rs": "5cf710959a4600686013263d8530d75b1601c8bee37bb6910d99b0337f86700e",
-    "crates/tekes-ui-app-protocol/src/component.rs": "3f02c180a54e877cca7f6096ff9dfa055a918d44e9bebb2326599b927f5f0ee0",
+    "crates/tekes-ui-app-host/src/window.rs": "fd142a48433f145fa6687e62c766c7fd825a4e196000481a987c3f16b98a9d1d",
+    "crates/tekes-ui-app-host/src/window_toolbar.rs": "2d93b8a7abbfab4083457f16311db80c96fdffe3e3cbe98281d2d87302d517f5",
+    "crates/tekes-ui-app-protocol/src/component.rs": "9690f9953b84c69f18e9e88c08b728cbb9c8b7fdcc2a01289cb072c0e1ea368c",
     "crates/tekes-ui-app-protocol/src/lib.rs": "8ac9b81443446d35d3ab1054f9aeed6cc6bcbcbfd8753d0ddc8fd141fe08a3cb",
     "crates/tekes-ui-city/src/lib.rs": "c1932d3ff7adc5046861af80880e032dce44b6fc80bef7b6ac874cbccfd63642",
     "crates/tekes-ui-compare/src/layout.rs": "e4d4a915dea00b58c6e901b55618108686445c9fd7c23ad247af3b955b6b7ab1",
@@ -8765,8 +8771,8 @@
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
     "crates/tekes-ui-controls/src/text_surface.rs": "44afcd0bd4d7ed886887eefc3e5f80036c2cba60f417a34ec6e991b2750593f7",
     "crates/tekes-ui-controls/src/ticking_number.rs": "a3801f24c525cd31de4807260b6b53a28b49e344b02c991d7c93631972f37b3b",
-    "crates/tekes-ui-controls/src/toolbar.rs": "08f4009ab0664791bd8ab33a2e456d99112ee39665d40348597f8805abdb463b",
-    "crates/tekes-ui-controls/src/widgets.rs": "654e44574e5b6cb547710fd5c568a87928f953c6f9024f3327642677fb9e6425",
+    "crates/tekes-ui-controls/src/toolbar.rs": "c61b269954ae42bf253fa043ae70bbca3b280e9db7fef5e867cef00ecc0548c6",
+    "crates/tekes-ui-controls/src/widgets.rs": "cd57b81ce8ed1ccae232f8e03b3f6ca8354049e41929c3ee25cd0c17974ad918",
     "crates/tekes-ui-controls/tests/action_contract.rs": "6947bd4e8ae3fee2e8fe5c254a1e36cad8dbb8beb2a18abc840ba61aa1c50bcf",
     "crates/tekes-ui-controls/tests/choice_contract.rs": "4ee09801a24dd52ffc229e45c7ed7adbb2e5ad25b61fea71fb233ec63787a564",
     "crates/tekes-ui-controls/tests/choice_selection_states.rs": "f3677639bcb21f1312db3a08d35a804884ba06fe04510ff128a1953fcd100649",
@@ -8804,7 +8810,7 @@
     "crates/tekes-ui-controls/tests/selection_availability.rs": "c8e9b61598c97ae64c5d58a8545f7067148235f6bf4291f53ecea031219942da",
     "crates/tekes-ui-controls/tests/selection_contract.rs": "0d71ee2c2042dc0ca86091851b3cc23d49f56a621890a3c3582914de54036f28",
     "crates/tekes-ui-controls/tests/separator_scale.rs": "cbed16c03a8f57ad41ef7f77b4a1480c79014223f44fad4cec0a9742addd6c07",
-    "crates/tekes-ui-controls/tests/toolbar_contract.rs": "9264f88b72ddebc1bd2a4679125df6876e81aae3b67ded8698754ad4af1e0ef6",
+    "crates/tekes-ui-controls/tests/toolbar_contract.rs": "2d2308015cdf1332095f2a17e21654382b849573ab6efd6f70e9c1f72fda67ab",
     "crates/tekes-ui-controls/tests/tooltip_lifecycle.rs": "df505ecdebff9d5517158b4b999cf180dca661c9dcb6ab56de18e03076353b9a",
     "crates/tekes-ui-controls/tests/tooltip_reentry.rs": "c9caca680b6d79339ff9fdddfa41a8271363b6f1b9b4bae1ce3b614a9bb73d55",
     "crates/tekes-ui-design-export/src/effects.rs": "187193a7959c24212f72a0931b953498ae6195283dd7b9940ef02168ea8039d3",
@@ -8874,21 +8880,23 @@
     "crates/tekes-ui-icons/src/animation.rs": "ce1223acc6f0f285f0f77ff5b6284f6d00922b479e11f012dcbf11274ba1136f",
     "crates/tekes-ui-icons/src/catalog.rs": "81d5971f877f30335da98bbcf938a7adbe5547e6bf4eac29ee6aeac99f1ef340",
     "crates/tekes-ui-icons/src/lib.rs": "87263b2eb5756f65b57b6a50185fa606ab8060cc49620ad10238406cd1df1aa7",
-    "crates/tekes-ui-module-runtime/examples/process_component_services.rs": "ec8b71f26dc0f2bceabc4a197a608d919a714d5576ce3903214e1b18470ddf05",
-    "crates/tekes-ui-module-runtime/examples/process_component_view.rs": "b16145bc11255bf889494b6e23539e2dc0222eddb4ed6b45adefef084a74e8fe",
+    "crates/tekes-ui-module-runtime/examples/process_component_services.rs": "08c5e9f20386bddd896787b3d6de4f9728610b5f47603ae8eeac65e0033afe6c",
+    "crates/tekes-ui-module-runtime/examples/process_component_view.rs": "fc6d32a81fec3b432c899ba3cd3df4995cfeb0015b49e80dcb67e0a849d17574",
     "crates/tekes-ui-module-runtime/examples/process_container_backend.rs": "5bd59158fa90d09d23e04f4c714ca53a797554c4c81025a3fbf15846437fdf6a",
-    "crates/tekes-ui-module-runtime/src/container.rs": "d7149203d2b79f69aa8e2a94ae307a530c03e7250fdecbfcd4f0e00939a0e401",
+    "crates/tekes-ui-module-runtime/examples/process_container_toolbar.rs": "ca13c939a4cca5719ac8b7a282acfea43ba9f4fcf51a621eae700a11da138976",
+    "crates/tekes-ui-module-runtime/src/container.rs": "b34423866204a1ee7e0346b5609ac3c4e1e278025ef8317962f44c54bb53b5e9",
+    "crates/tekes-ui-module-runtime/src/container_toolbar.rs": "de76b685cde714e2026669dc3afdaf7dfee934c194b2898fdd7fcab21babf2db",
     "crates/tekes-ui-module-runtime/src/control.rs": "0afdd8ef712f6934700da50be9a800b09618928ebad8407ecc0d19ead686bb30",
-    "crates/tekes-ui-module-runtime/src/lib.rs": "4a45970865a423bd666545160dc742456db2ac0b919a1fb30fa2d0a0676bb709",
+    "crates/tekes-ui-module-runtime/src/lib.rs": "276d4844375a722ee573f0ad1b6cf2e0d4e00cca87fd2e445f0902b1fd0a3e8c",
     "crates/tekes-ui-module-runtime/src/panel_image.rs": "ce8b98c0b6136624b580dfc831bc11c9b9b946a0c8ed6f21145ab846ee4932a0",
     "crates/tekes-ui-module-runtime/src/parent.rs": "46363561918b55d920fccde12677c4d5a35fdedbbea46d518aede29a9dee99f3",
     "crates/tekes-ui-module-runtime/src/pipes.rs": "a8f4f729ff56e76c61d3af5a91d6750795e7ee79ceddec9319c38fe703183c88",
     "crates/tekes-ui-module-runtime/src/process.rs": "86e2b3ba3bda15f306197ca931d59805211bb33e4e5f4ff28954d45ae5a9fddc",
     "crates/tekes-ui-module-runtime/src/process_view.rs": "8539dd57311861495efe8d5b885cc96c18105cb1a8d316f8ab0fbf4d8e0a326d",
-    "crates/tekes-ui-module-runtime/src/services.rs": "022fccc4478329de038f2fb214e46209b499f63ad25c2fc8a2e391523ac692c9",
+    "crates/tekes-ui-module-runtime/src/services.rs": "d32ac0c5c5340f6c9c8a330f3b64d3d09f4aa300b1d19b7cab27a6cb6291c2b3",
     "crates/tekes-ui-module-runtime/src/surface.rs": "a19aedf8a4c9a55008fec5b57e31320000d21bd847dc98a48194e99a84043e68",
     "crates/tekes-ui-module-runtime/src/transport.rs": "d482d142b5d6c3479378cb70a39b54715ee120d9062c0d7ad4e3c058dbb4fdad",
-    "crates/tekes-ui-module-runtime/src/view.rs": "7f713ba040cfd8ea773989a995b19e0e66e8e0768e23d69fc22c09d739a5a5dd",
+    "crates/tekes-ui-module-runtime/src/view.rs": "45e23fcebbf46ab9cc2859ea78aeaeee9cca75581041256e1fd9e2ce0d185d53",
     "crates/tekes-ui-module-runtime/src/worker_entry.rs": "a0a9cb113c791103978c668de4909fba9ddbc5330898e67dcd87600f7c86dbcd",
     "crates/tekes-ui-module-runtime/tests/panel_pixels.rs": "9fb649384067100907b17ac3f36a90e412cb1d1bfd5336f400629bb0b4058e7e",
     "crates/tekes-ui-motion/examples/sample_motion.rs": "c915cde16f97e214fffa834554708fae9a35c433794a4894068e102a6c7e67ab",
@@ -8911,7 +8919,7 @@
     "crates/tekes-ui-motion/tests/symbols.rs": "0028d172a90136de8d3243e2d47ecc17af5d937686a62a97467f3f9551d1eca5",
     "crates/tekes-ui-motion/tests/typing.rs": "d66f5fdf5b0dcef8553aadca8064ab7aee3ce2f3c3e07231decc4d979fdc3e09",
     "crates/tekes-ui-platform-macos/examples/scroll_oracle.rs": "ddb0871ea3c311b0fb8b163576a7863cbcb67cd57229bf260738c9ea01506d82",
-    "crates/tekes-ui-platform-macos/examples/toolbar_metrics.rs": "e9b6117940b1091885382d3f7f3e9b59a65aa827f1f5d9fefffbe18211ea5a77",
+    "crates/tekes-ui-platform-macos/examples/toolbar_metrics.rs": "899f29db6a1bd0643e3bbcaf73a1599e87eae952c37197aca11eafc6e0dbf484",
     "crates/tekes-ui-platform-macos/examples/window.rs": "495817d6e5838bb10548ea7491d8711b0d221914dc1873bec0665819aa1a76b0",
     "crates/tekes-ui-platform-macos/src/accessibility.rs": "7289ad33538964abaa6add86428f4967dc728b1fde29f480e7fccc03002a809d",
     "crates/tekes-ui-platform-macos/src/app.rs": "32c93329906e6275630a4b3e64f32aa7c1f3920352e3ae0c7538512fe21e7641",
@@ -8924,8 +8932,8 @@
     "crates/tekes-ui-platform-macos/src/placement.rs": "a2167cf41d3f8bbe27b578726d871d57e0faac0d6e949e00923943105bc35aee",
     "crates/tekes-ui-platform-macos/src/presentation.rs": "25bbd094b63b0d2873d646eb00710de86146b30e5464dae33383f18d1431c3b6",
     "crates/tekes-ui-platform-macos/src/screens.rs": "ebec69d32c1c6de2a050f33448a88e211c4a119ba68133ebbdb3bd47d3f4ef23",
-    "crates/tekes-ui-platform-macos/src/selftest.rs": "bcd57db39a787cd3881519caf88877f49e8a278d8917c5d8b90f8a6a466d0b4a",
-    "crates/tekes-ui-platform-macos/src/shared.rs": "58d172c8056beb040e8997b82134dec3b959e72c4270a09f7969a270657348ad",
+    "crates/tekes-ui-platform-macos/src/selftest.rs": "35f3648f7aa94f2c668ded7b34340a6eed3f97676fe953b634d54e73a999ecba",
+    "crates/tekes-ui-platform-macos/src/shared.rs": "49de948feecdb200ceeffdfb1f9f56c5db9ee55e66140ab5471653366549efb6",
     "crates/tekes-ui-platform-macos/src/text_key.rs": "9546715dcec3acd93f938866702f0f3c7653a5e2c776db88ccbd2907fb6e4773",
     "crates/tekes-ui-platform-macos/src/view.rs": "56264e670f1465d48ebd8b2e76fdcb31d939b8c3ff130c101b2d90727884cf8f",
     "crates/tekes-ui-platform-macos/src/wake.rs": "84a2b77a4f31181b4d7f42e19a9eeeff584c8c0cd417abc4231457f64d3f4ddd",
@@ -8963,13 +8971,14 @@
     "crates/tekes-ui-scene3d/examples/snapshot.rs": "803aa0be0cf68c73cb017dc08eb6a1c39168e320a290826f0e12cea61621a0cb",
     "crates/tekes-ui-scene3d/src/animation.rs": "3cd0348dc3bd3f551390e870eddfc871c1b21e00e50409fd33e8591b2096c5f3",
     "crates/tekes-ui-scene3d/src/asset.rs": "c1d3b895b2a0c60840101e9db9880c74e478e2713268285aa370f47bbaf36662",
-    "crates/tekes-ui-scene3d/src/camera.rs": "159d7893e8ef57301a770a604d1147bda3ee91aa89a270e2585b14512ccd4216",
+    "crates/tekes-ui-scene3d/src/camera.rs": "156f1d1f975c6d626fac3b5920042ad0b8b4e713e2e854c73e536b9001a58a06",
     "crates/tekes-ui-scene3d/src/deform.rs": "e79d235ad2238cfc7cf16eafd046a4335989b559489f5bbc902e72ead7a05fa3",
-    "crates/tekes-ui-scene3d/src/gpu.rs": "d0c661aabba4875532cce33a5c46576982ae9973bddd8fe6d2a4c6973fe5a58e",
+    "crates/tekes-ui-scene3d/src/gpu.rs": "80e73f9e9fd9eb5a658586379abd753810255f39bdd92c4c0991334221e998da",
     "crates/tekes-ui-scene3d/src/instances.rs": "56d8569368c86874a25669eea8f11ca4bcaeb040da88a52b1d0e7f6930fd4a45",
     "crates/tekes-ui-scene3d/src/interiors.rs": "6c6145fe3b4f576fd5a520776dbd3bbaa12b7f3784680af2239df8be1189b508",
-    "crates/tekes-ui-scene3d/src/lib.rs": "1c3da4e91ba666f6b19d2eb22f897978059221aad7983504e20a9bfde440b6f4",
+    "crates/tekes-ui-scene3d/src/lib.rs": "ae7f8e854076fe0e5f7ae9ce3cc4e56206d6a317e0be60f588ab67d9da388d95",
     "crates/tekes-ui-scene3d/src/local_lighting.rs": "ffccc83263501d3da0d1e3bea6352f151f7f7ffa29ec149a97d9c6194043dfbb",
+    "crates/tekes-ui-scene3d/src/route_sample.rs": "0d821fedd52361f74f14ff3cee10bedda61a2e31f958c3f152687ee92300d2c1",
     "crates/tekes-ui-scene3d/src/visibility.rs": "af319c4639dd75bf1a77203e409468283be446db7f0288d96dd96e0ab7fcfb0d",
     "crates/tekes-ui-scene3d/tests/component.rs": "4a85476d3b26540f6e9435852ed579fdc4103478b081d7e9c85f8d95b3a9a8a2",
     "crates/tekes-ui-text/src/compare.rs": "9f5970836dde517f584ead75b6c857b074ea3c28338bc9b5996586d4b7776a0a",
@@ -9005,7 +9014,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "83ea4764ffb55e8d32b2e85899594b0b490a40c36689351d57b7a95d08065df2",
+    "design/gallery/component-coverage.json": "453144b4913a1bd215390bd57e16c5476d810e3277227598ed74b556ba3b536f",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "7292e546b5e37f5ab16adfafce8bcb76d6d21072eb66bd05f21bf876e3656c67",
@@ -9014,25 +9023,25 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json": "07e807d924ea0109023be25224b48763b59eb81f98ac3552bac9750b0f3059cd",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json": "b50872467c94d2a6d626d95f787070a33bd9325a338c9284d7659f390337a8fd",
     "design/integration.json": "9addde2be2860ecf53ee957a2cd1800a2ae311f29c15c1255eb79b846bdd5f79",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/action.json": "69743ac961b6b68dc701e43043e2338d5803a9300430e88ff7eaeb0417d623b2",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/collection-focus.json": "df4aa4bca587b0c38f2cf5308ecfac721f4951cccd9ef26195ae13a3b317fec5",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/combo-async.json": "a5821fe63d5ff170e5c353268f017366275079b811acbc5618aa7d5876d6ff86",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/command-async.json": "f603c505612eca56170edc5b35999b5ce08c8087a5db2ca47d60292c5a078492",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/content-status.json": "97132299426dd903c3d0f43c652ef9d47ee09d1300984281d43b57f8f4292895",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/field.json": "12490fce6fe837bb241ab3c3110c9f7298668ef44218e120236fbf661750db41",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/grid-layout.json": "60095c5273dabe0cd114fdfa2510aa4e5739f419d618d386c23077180c90ed66",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/input.json": "0a2ef5f57c612c1d831adc624d8cee96974a88b76b2b1db7b6b744e4abeeeb2a",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/layout-surface.json": "b93a19ab5623a8020e0706a4999deb42d2bdd62e346c0f070854a34b3680b931",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/menu-content.json": "f5ef0846b3e0b367f434981cfab511da4be7e214c59834ad025d7adc78d1a34d",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/number.json": "779de73370aef27e85274a092fe493c04f8ea1eb72d8025fac329465cbab6b7b",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/passive-feedback.json": "f9e0234384421445dc759a15eecf74835f68cc323d3933b4b5d8cd91f04d2478",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/popover-content.json": "51eb36e386e7ff132a8cd2be370899690c6eb171b694d2a64121f0c343f4f952",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/selection.json": "0e520666b0b11f1c47b14bcb0515f4e87d8ac04899211e666df0ee91bbcd6d9e",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/separator.json": "96d650c232ef3ac57692031e487d28280059165f490a35ab3f017af52f38bd2b",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/slider-composition.json": "bb5e37f3b3bb4e8e8bd08fa64972c5b9d8c5c027070214feb6f86dea88dce5f5",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/toolbar.json": "ae91a4985f35f14ff8c16246d0549790dd18dcdcba0ae6ae00f602495cbfbb59",
-    "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final/tooltip.json": "3111a1c50aa1d2c5fe5ff1255f1476655ba9dd22318498389e3a4232abb12d87",
-    "design/tokens.json": "b00412c0a631b9710a9d9441b853a4199c8358390cd2881d749c008ef1c38282",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/action.json": "25d753c1f09aa2dab57cccbb0ddf2910d901be46eb6363772f81df60973c7900",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/collection-focus.json": "5c4d8e28a84ff221541f27fcccec33a1483706b31f9e58cf2c58fe6701dc03a6",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/combo-async.json": "df9dc1f2d861c0b8ad7b6f643533a76484a1d82e09f70546ab95e56c5cea4006",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/command-async.json": "0c4fc3a81c17f385316ac2c53cc2825c82597db2bb43ffdf59e8b0b4ad120a6b",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/content-status.json": "72256b62a1981363cea478d04c80523074ff05794421f3b87145ec8fb1711e9c",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/field.json": "d79d970fd2bb1cd6903b41593a1ab0329b8953cd3e25e72d9a8138e392b03c0f",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/grid-layout.json": "78cfd81ad0e8f9b601a01150e736d24efbfed2ce0113c74ba1887bc6c2e6903d",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/input.json": "7a0ffa4da48721e1efeb6052989b8640ab480ba28b692f03c31c8ee8daf1cd34",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/layout-surface.json": "48dabef98a7cef78e4c02781306f2a813c54e1395b9b9e56452e8b320c3e3c88",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/menu-content.json": "ef6b9fc19c2c27deb69c29410b4237e51b373c7d8bb60d0fd734578ebc2dffb1",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/number.json": "6f2b03b0c070cdb8e636f8972106a2aa4630532d4b4948de82dafbdd8c20e176",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/passive-feedback.json": "ac2ee854bfd168309eb4f3aafc6bb0c2c4833ea8d3b148d6442b5379eaf2648d",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/popover-content.json": "350c0ca3920bcdcfd34dbe7bb51523709dad5d1213d894878ab0edb184a46b19",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/selection.json": "a87a8e1d0659c40ce259da9f128e62c106fa5e5a4e40c278175bc467148e040f",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/separator.json": "7eb35f53eeee6e3a31f2dd749e148cb70aa4600cbc968cf48c70c8dddd7dae2d",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/slider-composition.json": "e1d9d23a917a52a6119e3e01c4d0feb947b4d0e8bc78cc32d49b22fc73992fe6",
+    "design/reviews/toolbar-native-calibration-20261021/probes-images-final/tooltip.json": "d873510683882d54826af92afb2a2e060dd9c5d557678a025737e6c93ac5f8fd",
+    "design/reviews/toolbar-native-calibration-20261021/toolbar-image-probe.json": "d6d1a90a6ec308a0a51dbd942076362cc6721986e97e1bbfa999121e6af5f79e",
+    "design/tokens.json": "c3a6ba40408950772c0a02b43d53de2948d8e0b4a058b1f21fdb67c4cea69299",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",
     "scripts/generate-component-capabilities.py": "d348de240e96dc516459cb7c91403de5640f47a00e71f504554e46f0d07d7c31"
   },

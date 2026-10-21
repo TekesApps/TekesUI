@@ -1,7 +1,7 @@
 use crate::{Error, err};
 use glam::{EulerRot, Mat4, Quat, Vec3};
 
-/// Platform-independent orbit camera and model orientation. Angles are radians.
+/// Platform-independent orbit/first-person camera and model orientation. Angles are radians.
 /// Hosts map mouse/keyboard/scroll events into this state; no timers or platform
 /// event dependencies live in the component.
 #[derive(Clone, Debug, PartialEq)]
@@ -12,6 +12,7 @@ pub struct Camera3D {
     rotation: Quat,
     orthographic: bool,
     pan: [f32; 2],
+    pose: Option<([f32; 3], [f32; 3], f32)>,
 }
 impl Default for Camera3D {
     fn default() -> Self {
@@ -22,10 +23,37 @@ impl Default for Camera3D {
             rotation: Quat::IDENTITY,
             orthographic: false,
             pan: [0.; 2],
+            pose: None,
         }
     }
 }
 impl Camera3D {
+    /// Explicit world-space perspective pose for walkthroughs and vehicle cameras.
+    /// Up is world Y. This clears orbit/pan/model rotation; zoom adjusts field of view.
+    pub fn look_at(&mut self, eye: [f32; 3], target: [f32; 3], fov_y: f32) -> Result<(), Error> {
+        let delta = Vec3::from_array(target) - Vec3::from_array(eye);
+        if eye.iter().chain(target.iter()).any(|v| !v.is_finite())
+            || !delta.is_finite()
+            || !delta.length_squared().is_finite()
+            || delta.length_squared() < 1e-10
+            || delta.cross(Vec3::Y).length_squared() < 1e-10
+            || !fov_y.is_finite()
+            || !(0.1..3.).contains(&fov_y)
+        {
+            return Err(err(
+                "camera pose requires finite distinct points, nonvertical direction and valid field of view",
+            ));
+        }
+        self.pose = Some((eye, target, fov_y));
+        self.orthographic = false;
+        self.pan = [0.; 2];
+        self.rotation = Quat::IDENTITY;
+        Ok(())
+    }
+    /// Return to the retained orbit settings.
+    pub fn clear_pose(&mut self) {
+        self.pose = None;
+    }
     /// Parallel projection for architectural/isometric scenes. Zoom still scales
     /// the visible area; perspective remains the default for existing consumers.
     pub fn set_orthographic(&mut self, enabled: bool) {
@@ -100,6 +128,19 @@ impl Camera3D {
         radius: f32,
         aspect: f32,
     ) -> Result<[[[f32; 4]; 4]; 2], Error> {
+        if let Some((eye, target, fov)) = self.pose {
+            let projection = Mat4::perspective_infinite_reverse_rh(
+                (fov * self.zoom).clamp(0.2, 2.6),
+                aspect,
+                (radius * 0.0001).clamp(0.00001, 0.01),
+            );
+            let vp = projection
+                * Mat4::look_at_rh(Vec3::from_array(eye), Vec3::from_array(target), Vec3::Y);
+            if !vp.is_finite() {
+                return Err(err("camera exceeds finite coordinate range"));
+            }
+            return Ok([vp.to_cols_array_2d(), Mat4::IDENTITY.to_cols_array_2d()]);
+        }
         let distance =
             radius * 3.2 * if self.orthographic { 1. } else { self.zoom } / aspect.min(1.);
         let eye = center
@@ -142,6 +183,29 @@ impl Camera3D {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn world_pose_projects_forward_and_rejects_singular_views_without_mutating() {
+        let mut c = Camera3D::default();
+        c.look_at([1., 0.4, 2.], [1., 0.4, 3.], 70_f32.to_radians())
+            .unwrap();
+        let matrices = c.matrices(Vec3::new(20., 10., -20.), 30., 1.5).unwrap();
+        let vp = Mat4::from_cols_array_2d(&matrices[0]);
+        let forward = vp.project_point3(Vec3::new(1., 0.4, 3.));
+        assert!(forward.x.abs() < 1e-6 && forward.y.abs() < 1e-6 && forward.z > 0.);
+        assert_eq!(Mat4::from_cols_array_2d(&matrices[1]), Mat4::IDENTITY);
+        let valid = c.clone();
+        for (eye, target, fov) in [
+            ([0.; 3], [0.; 3], 1.),
+            ([0.; 3], [0., 1., 0.], 1.),
+            ([f32::NAN, 0., 0.], [0., 0., 1.], 1.),
+            ([0.; 3], [0., 0., 1.], f32::INFINITY),
+        ] {
+            assert!(c.look_at(eye, target, fov).is_err());
+            assert_eq!(valid, c);
+        }
+        c.clear_pose();
+        assert_eq!(c, Camera3D::default());
+    }
     #[test]
     fn controls_are_bounded_finite_and_resettable() {
         let mut c = Camera3D::default();

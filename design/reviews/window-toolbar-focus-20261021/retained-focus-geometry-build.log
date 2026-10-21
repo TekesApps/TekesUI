@@ -1,0 +1,35 @@
+RUN ['cargo', '+1.95.0', 'test', '-p', 'tekes-ui-app-host', '--lib', '--locked']
+   Compiling tekes-ui-app-host v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-app-host)
+    Finished `test` profile [unoptimized] target(s) in 0.60s
+     Running unittests src/lib.rs (target/review-cache/debug/deps/tekes_ui_app_host-cc091541505ce6d4)
+
+running 19 tests
+test window::native_toolbar_alignment_tests::native_toolbar_alignment_preserves_full_allocation_without_centering_in_it ... ok
+test window::toolbar_geometry_tests::animated_side_geometry_keeps_opposite_fixed_and_closes_without_gap ... ok
+test window::toolbar_geometry_tests::unified_height_changes_content_viewport_and_all_pointer_coordinates_together ... ok
+test window::toolbar_geometry_tests::side_visibility_expands_center_and_keeps_unrelated_column_fixed ... ok
+test navigation_window::tests::document_navigation_has_no_layout_parameters ... ok
+test sidebar_motion::tests::reduced_motion_finishes_and_inactive_time_does_not_advance ... ok
+test sidebar_motion::tests::reverses_from_current_geometry_without_moving_other_side ... ok
+test window::toolbar_geometry_tests::dormant_panel_has_no_process_and_drops_pre_mount_input ... ok
+test window::window_focus_tests::modified_system_tab_does_not_enter_or_restyle_a_toolbar_focus_scope ... ok
+test window::window_focus_tests::height_only_viewport_change_revokes_arm_even_when_toolbar_frame_does_not_move ... ok
+test window::window_focus_tests::temporary_input_barrier_restores_logical_owner_but_never_old_arm_or_stolen_focus ... ok
+test window::window_focus_tests::escape_cancels_original_pointer_arm_and_empty_window_tab_is_safe ... ok
+test window::window_focus_tests::unavailable_toolbar_rejects_action_but_leaves_native_chrome_drag_available ... ok
+test window::window_focus_tests::arrow_roving_and_same_ids_remain_with_original_module_owner ... ok
+test window::window_focus_tests::awaiting_current_geometry_preserves_owner_without_replaying_old_space ... ok
+test window::window_focus_tests::overlay_owns_tab_and_outside_pointer_before_visibility_controls ... ok
+test window::window_focus_tests::hidden_disabled_and_reordered_groups_reconcile_existing_focus ... ok
+test window::window_focus_tests::tab_escape_and_deactivation_cancel_late_space_without_losing_next_activation ... ok
+test window::window_focus_tests::whole_window_tabs_traverse_original_hosts_and_reverse_without_preclick ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+RUN ['cargo', '+1.95.0', 'clippy', '-p', 'tekes-ui-app-host', '--all-targets', '--locked', '--', '-D', 'warnings']
+    Checking tekes-ui-app-host v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-app-host)
+    Finished `dev` profile [unoptimized] target(s) in 0.81s
+RUN ['cargo', '+1.95.0', 'build', '--manifest-path', 'examples/app-host-demo/Cargo.toml', '--features', 'three-panels', '--locked']
+   Compiling tekes-ui-app-host v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-app-host)
+   Compiling tekes-ui-app-host-demo v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/examples/app-host-demo)
+    Finished `dev` profile [unoptimized] target(s) in 1.11s

@@ -25,12 +25,14 @@ pub struct ToolbarIconAction {
 #[derive(Debug)]
 pub struct ToolbarControl {
     actions: Vec<ToolbarAction>,
+    text_role: proposal::TextRole,
     icons: std::collections::HashMap<u64, ImageId>,
     selected: std::collections::HashSet<u64>,
     buttons: Vec<crate::composition::ButtonContent>,
     visible: Vec<usize>,
     hidden: Vec<usize>,
     trigger: crate::composition::ButtonContent,
+    overflow_icon: Option<ImageId>,
     viewport: Rect,
     held: Option<usize>,
     focused: Option<usize>,
@@ -40,17 +42,20 @@ pub struct ToolbarControl {
     trigger_rect: Rect,
     menu: MenuView,
     frame: Rect,
+    clip: Rect,
 }
 impl Default for ToolbarControl {
     fn default() -> Self {
         Self {
             actions: Vec::new(),
+            text_role: proposal::TextRole::UiBody,
             icons: Default::default(),
             selected: Default::default(),
             buttons: Vec::new(),
             visible: Vec::new(),
             hidden: Vec::new(),
             trigger: crate::composition::ButtonContent::new("…"),
+            overflow_icon: None,
             viewport: Rect::default(),
             held: None,
             focused: None,
@@ -60,10 +65,49 @@ impl Default for ToolbarControl {
             trigger_rect: Rect::default(),
             menu: MenuView::new(0),
             frame: Rect::default(),
+            clip: Rect::default(),
         }
     }
 }
 impl ToolbarControl {
+    /// Native-window contribution styling is owned by this shared control and
+    /// JSON Design System. Inline toolbar defaults remain unchanged.
+    pub fn window() -> Self {
+        Self {
+            text_role: proposal::TextRole::ToolbarLabel,
+            ..Self::default()
+        }
+    }
+    /// Borrow a host-resolved canonical More image. Small ink stays centered
+    /// in the same standard icon slot; resource ownership remains with caller.
+    pub fn set_overflow_icon(&mut self, image: Option<ImageId>) {
+        if self.overflow_icon != image {
+            self.cancel();
+            self.overflow_icon = image;
+        }
+    }
+    fn overflow_size(&self, text: &mut impl ButtonTextRenderer) -> Size {
+        if self.overflow_icon.is_some() {
+            crate::layout_view::IconButtonView::measure(false)
+        } else {
+            Button::measure(text, "…", f32::MAX, ButtonSize::Body, self.text_role)
+        }
+    }
+    fn item_size(&self, text: &mut impl ButtonTextRenderer, action: &ToolbarAction) -> Size {
+        let icon = crate::layout_view::IconButtonView::measure(false);
+        if self.icons.contains_key(&action.id) {
+            icon
+        } else {
+            let label = Button::measure(
+                text,
+                &action.title,
+                f32::MAX,
+                ButtonSize::Body,
+                self.text_role,
+            );
+            Size::new(label.width, label.height.max(icon.height))
+        }
+    }
     fn padding() -> f32 {
         proposal::metric("spacing", "space-regular").expect("toolbar spacing")
     }
@@ -83,6 +127,22 @@ impl ToolbarControl {
                 .collect(),
         );
     }
+    /// Resolve one declared icon through the host's existing image capability;
+    /// other actions remain text. Geometry changes cancel an old input arm.
+    pub fn set_action_icon(&mut self, id: u64, image: Option<ImageId>) -> bool {
+        if !self.actions.iter().any(|action| action.id == id)
+            || self.icons.get(&id).copied() == image
+        {
+            return false;
+        }
+        self.cancel();
+        if let Some(image) = image {
+            self.icons.insert(id, image);
+        } else {
+            self.icons.remove(&id);
+        }
+        true
+    }
     pub fn set_actions(&mut self, actions: Vec<ToolbarAction>) {
         self.icons.clear();
         self.update_actions(actions);
@@ -100,6 +160,12 @@ impl ToolbarControl {
         if self.actions != actions {
             let focused_id = self.focused.and_then(|i| self.actions.get(i)).map(|a| a.id);
             let overflow_focused = self.focused == Some(self.actions.len());
+            let same_ids = self.actions.len() == actions.len()
+                && self
+                    .actions
+                    .iter()
+                    .zip(&actions)
+                    .all(|(old, new)| old.id == new.id);
             self.cancel();
             self.buttons
                 .resize_with(actions.len(), || crate::composition::ButtonContent::new(""));
@@ -107,7 +173,21 @@ impl ToolbarControl {
             self.focused = focused_id
                 .and_then(|id| self.actions.iter().position(|a| a.id == id))
                 .or_else(|| overflow_focused.then_some(self.actions.len()));
-            crate::composition::Component::set_focus(self, self.has_focus, self.focus_visible);
+            for (button, action) in self.buttons.iter_mut().zip(&self.actions) {
+                button.button.state.disabled = !action.enabled;
+            }
+            if same_ids {
+                crate::composition::Component::set_focus(self, self.has_focus, self.focus_visible);
+            } else {
+                self.visible.clear();
+                self.hidden.clear();
+                self.trigger_rect = Rect::default();
+                self.menu.replace_items(0);
+                for button in &mut self.buttons {
+                    button.button.clear_layout();
+                }
+                self.trigger.button.clear_layout();
+            }
         }
     }
     pub fn measure(&self, text: &mut impl ButtonTextRenderer) -> Size {
@@ -115,26 +195,10 @@ impl ToolbarControl {
             return Size::default();
         }
         let pad = Self::padding();
-        let mut size = Button::measure(
-            text,
-            "…",
-            f32::MAX,
-            ButtonSize::Body,
-            proposal::TextRole::UiBody,
-        );
+        let mut size = self.overflow_size(text);
         size.width = 0.;
         for action in &self.actions {
-            let item = if self.icons.contains_key(&action.id) {
-                crate::layout_view::IconButtonView::measure(false)
-            } else {
-                Button::measure(
-                    text,
-                    &action.title,
-                    f32::MAX,
-                    ButtonSize::Body,
-                    proposal::TextRole::UiBody,
-                )
-            };
+            let item = self.item_size(text, action);
             size.width += item.width;
             size.height = size.height.max(item.height);
         }
@@ -150,6 +214,27 @@ impl ToolbarControl {
         frame: Rect,
         palette: Palette,
     ) {
+        self.render_clipped(scene, text, frame, palette, None)
+    }
+    /// Preserve full row geometry while clipping both painting and hit targets
+    /// to the containing component's visible area.
+    pub fn render_clipped(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        frame: Rect,
+        palette: Palette,
+        clip: Option<Rect>,
+    ) {
+        let clip = clip
+            .and_then(|clip| frame.intersection(&clip))
+            .unwrap_or_else(|| {
+                if clip.is_some() {
+                    Rect::default()
+                } else {
+                    frame
+                }
+            });
         let pad = Self::padding();
         let inner = Rect::new(
             frame.min_x() + pad,
@@ -160,29 +245,14 @@ impl ToolbarControl {
         let sizes: Vec<_> = self
             .actions
             .iter()
-            .map(|a| {
-                if self.icons.contains_key(&a.id) {
-                    crate::layout_view::IconButtonView::measure(false)
-                } else {
-                    Button::measure(
-                        text,
-                        &a.title,
-                        f32::MAX,
-                        ButtonSize::Body,
-                        proposal::TextRole::UiBody,
-                    )
-                }
-            })
+            .map(|a| self.item_size(text, a))
             .collect();
         let total = sizes.iter().map(|s| s.width).sum::<f32>()
             + pad * self.actions.len().saturating_sub(1) as f32;
-        let overflow = Button::measure(
-            text,
-            "…",
-            f32::MAX,
-            ButtonSize::Body,
-            proposal::TextRole::UiBody,
-        );
+        let mut overflow = self.overflow_size(text);
+        overflow.height = overflow
+            .height
+            .max(sizes.iter().map(|s| s.height).fold(0., f32::max));
         let mut visible = Vec::new();
         let mut used = 0.;
         for (i, s) in sizes.iter().enumerate() {
@@ -194,13 +264,14 @@ impl ToolbarControl {
             used = next;
         }
         let hidden: Vec<_> = (visible.len()..self.actions.len()).collect();
-        if self.frame != frame || self.hidden != hidden {
+        if self.frame != frame || self.clip != clip || self.hidden != hidden {
             self.cancel();
         }
         if self.hidden != hidden {
             self.menu.replace_items(hidden.len());
         }
         self.frame = frame;
+        self.clip = clip;
         self.visible = visible;
         self.hidden = hidden;
         if self.has_focus {
@@ -217,13 +288,20 @@ impl ToolbarControl {
         self.menu.set_row_styles(styles);
         let mut x = inner.min_x();
         for &i in &self.visible {
-            let size = sizes[i];
+            let size = Size::new(
+                sizes[i].width,
+                sizes.iter().map(|s| s.height).fold(0., f32::max),
+            );
             let rect = Rect::new(
                 x,
                 frame.min_y() + (frame.size.height - size.height) * 0.5,
                 size.width,
                 size.height,
             );
+            self.buttons[i].button.chrome_height =
+                (self.text_role == proposal::TextRole::ToolbarLabel).then(|| {
+                    proposal::metric("size", "size-toolbar-chrome").expect("window toolbar chrome")
+                });
             self.buttons[i].button.state.disabled = !self.actions[i].enabled;
             self.buttons[i].button.state.selected = self.selected.contains(&self.actions[i].id);
             self.buttons[i].button.render(
@@ -235,11 +313,11 @@ impl ToolbarControl {
                     &self.actions[i].title
                 },
                 rect,
-                Some(frame),
+                Some(clip),
                 palette,
                 ButtonVariant::Quiet,
                 ButtonSize::Body,
-                proposal::TextRole::UiBody,
+                self.text_role,
                 ButtonTextAlign::Center,
             );
             if let Some(&image) = self.icons.get(&self.actions[i].id) {
@@ -247,7 +325,7 @@ impl ToolbarControl {
                     .expect("toolbar icon token")
                     .min(rect.size.width)
                     .min(rect.size.height);
-                scene.push_clip(frame);
+                scene.push_clip(clip);
                 scene.push_image(ImageQuad {
                     rect: Rect::new(
                         rect.center().x - side / 2.,
@@ -270,18 +348,44 @@ impl ToolbarControl {
                 overflow.width.min(inner.size.width),
                 overflow.height,
             );
+            self.trigger.button.chrome_height =
+                (self.text_role == proposal::TextRole::ToolbarLabel).then(|| {
+                    proposal::metric("size", "size-toolbar-chrome").expect("window toolbar chrome")
+                });
             self.trigger.button.render(
                 scene,
                 text,
-                "…",
+                if self.overflow_icon.is_some() {
+                    ""
+                } else {
+                    "…"
+                },
                 self.trigger_rect,
-                Some(frame),
+                Some(clip),
                 palette,
                 ButtonVariant::Quiet,
                 ButtonSize::Body,
-                proposal::TextRole::UiBody,
+                self.text_role,
                 ButtonTextAlign::Center,
             );
+            if let Some(image) = self.overflow_icon {
+                let side = proposal::metric("size", "size-icon-standard")
+                    .expect("toolbar icon slot")
+                    .min(self.trigger_rect.size.width)
+                    .min(self.trigger_rect.size.height);
+                scene.push_clip(clip);
+                scene.push_image(ImageQuad {
+                    rect: Rect::new(
+                        self.trigger_rect.center().x - side / 2.,
+                        self.trigger_rect.center().y - side / 2.,
+                        side,
+                        side,
+                    ),
+                    image,
+                    opacity: 1.,
+                });
+                scene.pop_clip();
+            }
         }
     }
     /// Called after all ordinary content so the popup can overlay sibling panes.
@@ -317,7 +421,7 @@ impl ToolbarControl {
             .visible
             .iter()
             .copied()
-            .filter(|&i| self.actions[i].enabled)
+            .filter(|&i| self.actions.get(i).is_some_and(|action| action.enabled))
             .collect();
         if !self.hidden.is_empty() && self.frame.size.width > Self::padding() * 2. {
             stops.push(self.actions.len());
@@ -472,7 +576,7 @@ impl crate::composition::Component for ToolbarControl {
                 ..Default::default()
             };
         }
-        if !self.has_focus {
+        if !self.has_focus || self.visible.is_empty() && self.hidden.is_empty() {
             return ContentResponse::default();
         }
         if key.down
@@ -621,8 +725,21 @@ impl crate::composition::Component for ToolbarControl {
             self.set_focus(self.has_focus, self.focus_visible);
         }
         let Some(i) = self.held else {
+            let before = self
+                .buttons
+                .iter()
+                .map(|button| button.button.state.hovered)
+                .collect::<Vec<_>>();
+            let trigger_before = self.trigger.button.state.hovered;
             self.pointer_move(pointer.position);
-            return ContentResponse::default();
+            return ContentResponse {
+                changed: trigger_before != self.trigger.button.state.hovered
+                    || before
+                        .iter()
+                        .zip(&self.buttons)
+                        .any(|(old, button)| *old != button.button.state.hovered),
+                ..Default::default()
+            };
         };
         let result = if i == self.actions.len() {
             self.trigger.pointer_event(pointer)
@@ -722,6 +839,120 @@ mod tests {
             modifiers: PointerModifiers::default(),
             click_count: 1,
         }
+    }
+    #[test]
+    fn mixed_window_actions_share_height_center_and_hover_geometry() {
+        let mut toolbar = ToolbarControl::window();
+        toolbar.set_actions(vec![
+            ToolbarAction {
+                id: 1,
+                title: "Window label".into(),
+                enabled: true,
+            },
+            ToolbarAction {
+                id: 2,
+                title: "Icon".into(),
+                enabled: true,
+            },
+        ]);
+        toolbar.set_action_icon(2, Some(ImageId(7)));
+        let mut text = Text { height: 16. };
+        let height = toolbar.measure(&mut text).height;
+        toolbar.render(
+            &mut Scene::new(),
+            &mut text,
+            Rect::new(0., 0., 600., height),
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        );
+        let first = toolbar.buttons[0].button.layout().unwrap().frame;
+        let second = toolbar.buttons[1].button.layout().unwrap().frame;
+        assert_eq!(first.size.height, second.size.height);
+        assert_eq!(first.center().y, second.center().y);
+        let chrome_a = toolbar.buttons[0].button.chrome_bounds().unwrap();
+        let chrome_b = toolbar.buttons[1].button.chrome_bounds().unwrap();
+        assert_eq!(chrome_a.size.height, chrome_b.size.height);
+        assert_eq!(chrome_a.size.height, 20.);
+        assert_eq!(chrome_a.center().y, first.center().y);
+        let margin = Point::new(first.center().x, first.min_y() + 1.);
+        assert!(!chrome_a.contains(margin));
+        toolbar.pointer_down(margin);
+        assert_eq!(toolbar.pointer_up(margin), Some(1));
+        assert!(first.size.height >= crate::layout_view::IconButtonView::measure(false).height);
+        assert_eq!(toolbar.text_role, proposal::TextRole::ToolbarLabel);
+        assert_eq!(
+            ToolbarControl::default().text_role,
+            proposal::TextRole::UiBody
+        );
+    }
+    #[test]
+    fn replacing_or_clearing_registration_rejects_old_geometry_without_panicking() {
+        let mut toolbar = toolbar();
+        let mut text = Text { height: 16. };
+        toolbar.render(
+            &mut Scene::new(),
+            &mut text,
+            Rect::new(0., 0., 600., 48.),
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        );
+        let point = toolbar.buttons[0].button.layout().unwrap().frame.center();
+        toolbar.pointer_event(&pointer(point, PointerPhase::Down));
+        toolbar.set_focus(true, true);
+        toolbar.set_actions(vec![ToolbarAction {
+            id: 99,
+            title: "Replacement".into(),
+            enabled: true,
+        }]);
+        assert!(
+            !toolbar
+                .pointer_event(&pointer(point, PointerPhase::Up))
+                .activated
+        );
+        assert!(
+            !toolbar
+                .pointer_event(&pointer(point, PointerPhase::Down))
+                .consumed
+        );
+        assert_eq!(toolbar.take_action(), None);
+        toolbar.set_actions(vec![]);
+        toolbar.set_focus(false, false);
+        toolbar.render_overlay(
+            &mut Scene::new(),
+            &mut text,
+            Rect::new(0., 0., 600., 400.),
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        );
+        assert!(!toolbar.focusable());
+    }
+    #[test]
+    fn unheld_hover_reports_only_real_redraw_and_mixed_icons_keep_the_action_ids() {
+        let mut toolbar = toolbar();
+        assert!(toolbar.set_action_icon(11, Some(ImageId(1))));
+        assert!(!toolbar.set_action_icon(999, Some(ImageId(2))));
+        let mut scene = Scene::new();
+        let mut text = Text { height: 16. };
+        toolbar.render(
+            &mut scene,
+            &mut text,
+            Rect::new(0., 0., 600., 48.),
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        );
+        let point = toolbar.buttons[0].button.layout().unwrap().frame.center();
+        let hovered = toolbar.pointer_event(&pointer(point, PointerPhase::Move));
+        assert!(hovered.changed && !hovered.consumed);
+        assert!(
+            !toolbar
+                .pointer_event(&pointer(point, PointerPhase::Move))
+                .changed
+        );
+        let exited = toolbar.pointer_event(&pointer(Point::new(900., 900.), PointerPhase::Move));
+        assert!(exited.changed && !exited.consumed);
+        toolbar.pointer_event(&pointer(point, PointerPhase::Down));
+        assert!(
+            toolbar
+                .pointer_event(&pointer(point, PointerPhase::Up))
+                .activated
+        );
+        assert_eq!(toolbar.take_action(), Some(11));
     }
     #[test]
     fn pure_icon_toolbar_uses_square_hits_original_ids_and_named_overflow() {

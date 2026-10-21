@@ -12,7 +12,9 @@ impl ProcessModule for Counter {
     fn started(&mut self, emitter: &ComponentEmitter) -> Result<()> {
         emitter.emit(ComponentEvent::Toolbar {
             revision: 1,
-            scope: ToolbarScope::Window { window: 1 },
+            scope: ToolbarScope::Window {
+                window: emitter.window_identity().unwrap_or(1),
+            },
             items: vec![ToolbarAction {
                 command: tekes_ui_app_protocol::ToolbarItem {
                     id: 7,
@@ -99,8 +101,11 @@ fn invalid_peer(mode: &str) -> Result<()> {
         session, required, ..
     } = serde_json::from_str(&line)?
     else {
-        anyhow::bail!("missing start");
+        anyhow::bail!("missing start")
     };
+    let bound = std::env::args()
+        .nth(4)
+        .and_then(|value| value.parse::<u64>().ok());
     let mut packet = ServerMessage {
         version: VERSION,
         session,
@@ -115,6 +120,21 @@ fn invalid_peer(mode: &str) -> Result<()> {
     }
     println!("{}", serde_json::to_string(&packet)?);
     std::io::stdout().flush()?;
+    if matches!(mode, "fault-window" | "fault-view") {
+        packet.serial += 1;
+        packet.output = Output::Event(ComponentEvent::Toolbar {
+            revision: 1,
+            scope: if mode == "fault-window" {
+                ToolbarScope::Window {
+                    window: bound.unwrap() + 1,
+                }
+            } else {
+                ToolbarScope::View
+            },
+            items: vec![],
+        });
+        println!("{}", serde_json::to_string(&packet)?);
+    }
     if mode == "fault-response" {
         packet.serial += 1;
         packet.output = Output::Response {
@@ -221,9 +241,64 @@ fn main() -> Result<()> {
         until(|| matches!(faulty.status(), ProcessStatus::Failed { .. }))?;
         ensure!(faulty.invoke(7).is_err());
     }
+    let scoped_a =
+        ProcessComponent::spawn_in_window(ProcessComponentOptions::new("counter", 42), 11, || {})?;
+    let scoped_b =
+        ProcessComponent::spawn_in_window(ProcessComponentOptions::new("counter", 42), 29, || {})?;
+    ensure!(ready(&scoped_a)? != ready(&scoped_b)?);
+    for (bound, window) in [(&scoped_a, 11), (&scoped_b, 29)] {
+        ensure!(bound.window_identity() == Some(window));
+        ensure!(
+            bound.view_capabilities().is_none(),
+            "headless allocated View"
+        );
+        let registration = bound.toolbar_registration().unwrap();
+        ensure!(registration.session == *bound.session());
+        ensure!(
+            matches!(registration.output,Output::Event(ComponentEvent::Toolbar{scope:ToolbarScope::Window{window:w},revision:1,..}) if w==window)
+        );
+        ensure!(response(bound, bound.invoke(7)?)? == json!(1));
+        ensure!(
+            bound
+                .request(RequestBody::Invoke {
+                    command: 7,
+                    registration: 1,
+                    window: window + 1
+                })
+                .is_err()
+        );
+        ensure!(
+            bound
+                .request_from(
+                    first.session(),
+                    RequestBody::Invoke {
+                        command: 7,
+                        registration: 1,
+                        window
+                    }
+                )
+                .is_err()
+        );
+    }
+    ensure!(
+        ProcessComponent::spawn_in_window(ProcessComponentOptions::new("counter", 42), 0, || {})
+            .is_err()
+    );
+    for mode in ["fault-window", "fault-view"] {
+        let bad =
+            ProcessComponent::spawn_in_window(ProcessComponentOptions::new(mode, 42), 11, || {})?;
+        until(|| matches!(bad.status(), ProcessStatus::Failed { .. }))?;
+        ensure!(bad.toolbar_registration().is_none());
+    }
+    ensure!(response(&scoped_a, scoped_a.invoke(7)?)? == json!(2));
+    response(&scoped_a, scoped_a.request(RequestBody::Stop)?)?;
+    until(|| scoped_a.status() == ProcessStatus::Closed)?;
+    ensure!(response(&scoped_b, scoped_b.invoke(7)?)? == json!(2));
+    response(&scoped_b, scoped_b.request(RequestBody::Stop)?)?;
+    until(|| scoped_b.status() == ProcessStatus::Closed)?;
     println!(
         "{}",
-        json!({"result":"passed", "pids":[a,b,c],"headless":true,"factory_in_parent":false,"separate_state":true,"toolbar_without_frame":true,"hung_close_reaped":true,"drop_reaped":true,"graceful_stop":true,"other_worker_survived":true,"performance_test":false,"bounded_requests":true,"invalid_session_rejected":true,"unknown_response_rejected":true,"output_overflow_rejected":true,"oversized_output_rejected":true})
+        json!({"result":"passed", "pids":[a,b,c],"headless":true,"factory_in_parent":false,"separate_state":true,"toolbar_without_frame":true,"hung_close_reaped":true,"drop_reaped":true,"graceful_stop":true,"other_worker_survived":true,"performance_test":false,"bounded_requests":true,"invalid_session_rejected":true,"unknown_response_rejected":true,"output_overflow_rejected":true,"oversized_output_rejected":true,"bound_headless_windows":[11,29],"foreign_window_and_view_rejected":true,"stale_owner_rejected":true})
     );
     Ok(())
 }

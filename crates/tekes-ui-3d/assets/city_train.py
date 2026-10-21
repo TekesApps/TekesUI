@@ -38,8 +38,8 @@ def add_train_assets(a,plain,headlights,taillights,livery=YAMANOTE_E235):
     a.materials[glazing].update(alphaMode='BLEND');a.materials[glazing]['pbrMetallicRoughness']['baseColorFactor'][3]=.40
     # Shared night-only glow for every passenger pane, including both door sides.
     a.materials[glazing]['emissiveFactor']=[1.0,.94,.80]
-    cab_glazing=material(a,'Train cab tinted windshield',(35,55,62))
-    a.materials[cab_glazing].update(alphaMode='BLEND');a.materials[cab_glazing]['pbrMetallicRoughness']['baseColorFactor'][3]=.78
+    cab_glazing=material(a,'Train cab tinted windshield',(132,161,170))
+    a.materials[cab_glazing].update(alphaMode='BLEND');a.materials[cab_glazing]['pbrMetallicRoughness']['baseColorFactor'][3]=.18
     rubber=material(a,'Train glazing and door rubber',(29,39,44))
     trim=material(a,'Train extruded window and door frames',livery.frame)
     green_m=material(a,'E235-style green vertical door areas',green)
@@ -88,6 +88,12 @@ def add_train_assets(a,plain,headlights,taillights,livery=YAMANOTE_E235):
         g.box(0,.16,sign*1.65,.60,.10,.12,plain,(101,117,123))
         g.box(0,.42,sign*1.58,.50,.10,.19,plain,(60,72,78))
         g.box(-.15,.65,sign*1.46,.12,.25,.10,wall)
+        # Original driver console: readable foreground from the cab camera.
+        g.box(0,.575,sign*1.63,.50,.075,.12,plain,(55,66,72))
+        for x in [-.14,.035]:
+            g.box(x,.622,sign*1.635,.125,.018,.075,plain,(26,38,44))
+            g.box(x,.632,sign*1.635,.098,.004,.055,plain,(118,164,168))
+        g.cylinder(.18,.64,sign*1.60,.013,.055,plain,(35,43,47),segments=12,smooth=True)
 
     def gangway(g,sign):
         z=sign*1.57

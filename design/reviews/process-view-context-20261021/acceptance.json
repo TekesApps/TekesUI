@@ -1,0 +1,27 @@
+{
+  "base_main": "1294987dacabb33c0e411c13ee5ea544a1123f8e",
+  "status": "subsequent-wip-api-gpu-accepted-native-pending",
+  "source_sha256": {
+    "crates/tekes-ui-module-runtime/src/services.rs": "01963b847be9ee865a411ac587e68505c958017c44ebcf6585f73a4bb587bea5",
+    "crates/tekes-ui-module-runtime/examples/process_component_view.rs": "e3b5cf1a03efcbb1c2ddd23d8ee4d45f500d1f812cb7d153c1e6850e00b6d440",
+    "design/gallery/capabilities.json": "8d25926684e80ec2870e4cb2117a57e58e9b40758811d610b9e6731ad578df61",
+    "docs/design/process-view-context-20261021.md": "e1c81b404f77da09d6daef91fd3fdc00ef804cf38cee68af25c9616bb71cf9e3"
+  },
+  "unit_tests": 14,
+  "same_factory_view_attachments": [
+    [
+      1,
+      2
+    ],
+    [
+      91,
+      73
+    ]
+  ],
+  "actual_gpu_cases": 16,
+  "headless_stays_without_view": true,
+  "evidence": "verify.log",
+  "native_and_gold7": "pending",
+  "performance": false,
+  "publication": "not part of PR40/checkpoint tag"
+}

@@ -1,0 +1,29 @@
+{
+  "format": "tekesui-window-toolbar-focus/1",
+  "status": "scoped API/integration and independent native accepted",
+  "identity": "geometry-identity.json",
+  "local_validation": "retained-focus-geometry-build.log",
+  "producer_tests_passed": 19,
+  "independent_native": "design/reviews/window-toolbar-focus-geometry-consumer-20261021/acceptance.json",
+  "native_scope": "CUA native keyboard events + current actual App; not physical keyboard or AX/VoiceOver",
+  "source_still_matches": true,
+  "old_failure_retained": "design/reviews/window-toolbar-focus-consumer-20261021/acceptance.json",
+  "busy_focus_transfer_order_verified": [
+    27,
+    28,
+    30,
+    32,
+    33,
+    34
+  ],
+  "token_receipt_freshness": "token-receipt-freshness.json",
+  "performance": false,
+  "remaining": [
+    "per-action AX and deferred VoiceOver",
+    "V1 remote content keyboard/IME/AX",
+    "generic Content toolbar groups/registry",
+    "physical external-display perception and full Gold7/pages",
+    "next exact public source delivery"
+  ],
+  "cleanup": "cleanup.json"
+}

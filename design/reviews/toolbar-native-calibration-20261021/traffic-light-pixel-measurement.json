@@ -1,0 +1,29 @@
+{
+  "source": "design/reviews/sidebar-motion-20261021/final2-startup.png",
+  "scale": 2,
+  "kind": "pixel color-bound analysis; no image edit",
+  "observations": [
+    {
+      "color": "red",
+      "box_pixels": [
+        38,
+        38,
+        66,
+        66
+      ],
+      "diameter_pt": 14.0,
+      "center_y_pt": 26.0
+    },
+    {
+      "color": "green",
+      "box_pixels": [
+        130,
+        38,
+        158,
+        66
+      ],
+      "diameter_pt": 14.0,
+      "center_y_pt": 26.0
+    }
+  ]
+}

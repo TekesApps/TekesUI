@@ -1,0 +1,86 @@
+{
+  "identity": "identity.json",
+  "pixel_measurement": {
+    "traffic-red": {
+      "bounds_px": [
+        38,
+        38,
+        66,
+        66
+      ],
+      "height_pt": 14.0,
+      "center_y_pt": 26.0
+    },
+    "leading-ink": {
+      "bounds_px": [
+        192,
+        38,
+        220,
+        66
+      ],
+      "height_pt": 14.0,
+      "center_y_pt": 26.0
+    },
+    "trailing-visible-frame": {
+      "bounds_px": [
+        2120,
+        32,
+        2184,
+        72
+      ],
+      "height_pt": 20.0,
+      "center_y_pt": 26.0
+    },
+    "capital-I": {
+      "bounds_px": [
+        521,
+        39,
+        525,
+        67
+      ],
+      "height_pt": 14.0,
+      "center_y_pt": 26.5
+    },
+    "overflow-more": {
+      "bounds_px": [
+        673,
+        50,
+        696,
+        54
+      ],
+      "height_pt": 2.0,
+      "center_y_pt": 26.0
+    },
+    "scope": "fixed RGB regions from 2x original CUA screenshots; no image editing"
+  },
+  "native_hit_outside_visual": "clicked screen(630,24), above visible32px top and within retained20px hit top; module Increment(1)/count1 visible",
+  "overflow_menu": "opened by click and action clicked; overflow-action.png",
+  "visibility_events": [
+    [
+      true,
+      true
+    ],
+    [
+      true,
+      false
+    ],
+    [
+      true,
+      true
+    ],
+    [
+      false,
+      true
+    ]
+  ],
+  "nav_json_unchanged": true,
+  "swap_events": 0,
+  "source_modified": false,
+  "app_left_open": true,
+  "limitations": [
+    "only four active regular icons plus more",
+    "VoiceOver not exercised",
+    "no physical display/120Hz/performance acceptance",
+    "no Host global keyboard routing acceptance"
+  ]
+}

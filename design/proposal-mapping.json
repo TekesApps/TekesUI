@@ -2475,7 +2475,7 @@
     "color": 156,
     "opacity": 12,
     "radius": 43,
-    "size": 54,
+    "size": 55,
     "spacing": 32,
     "stroke": 7
   },
@@ -2486,6 +2486,7 @@
     "ui-caption",
     "ui-heading",
     "code",
+    "toolbar-label",
     "doc-body",
     "doc-h1",
     "doc-h2",

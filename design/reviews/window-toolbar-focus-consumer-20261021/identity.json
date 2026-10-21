@@ -1,0 +1,14 @@
+{
+  "input": {
+    "input_binary": "design/reviews/window-toolbar-focus-20261021/retained/TekesAppHost.focus-final",
+    "sha256": "5b27bb2a9ecd372878ff2576e1505b181b5e636117944a9e88fcf063c93a4ad1",
+    "source_sha256": {
+      "crates/tekes-ui-app-host/src/window.rs": "d0056d4ce648c1ae4c424c992769e9b9fca006820ab8ff4e177bbef089d9b2bd",
+      "crates/tekes-ui-app-host/src/window_toolbar.rs": "2d93b8a7abbfab4083457f16311db80c96fdffe3e3cbe98281d2d87302d517f5",
+      "crates/tekes-ui-app-host/src/navigation_window.rs": "95beac7f94840156690cb040d29ed07c46c64cc803b4fb5d0a3db2992f560efc"
+    },
+    "status": "built; native pending"
+  },
+  "signed_sha256": "97d109f8fd28ce39448ef1412dee5e9235ea2116c9503800eb4a1035f87f90d5",
+  "scope": "native consumer verification; no source change"
+}

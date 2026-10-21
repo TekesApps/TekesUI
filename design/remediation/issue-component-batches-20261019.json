@@ -78,7 +78,7 @@
         "design/reviews/frozen-ci-after-padding-intent-20261021/acceptance.json"
       ],
       "review_ready": "design/reviews/batch23-independent-20261019/HANDOFF.md",
-      "remaining": "Scoped public delivery/remote CI and final independent review; no automatic commit/push or Issue closure",
+      "remaining": "PR40/main1294987 remote CI and stage tag delivered. Newer all-WIP process scope/local-toolbar and window calibration need their own exact staged delivery/final review; no claim that source/GPU or bounded native evidence completes every Issue.",
       "local_delivery_progress": "Independent current-WIP package fully replays: source gates, strict workspace/consumer Clippy,1054 workspace tests/1ignore/3explicit timing skips,136 consumer tests,brand build and portable three-process draft replay. Current-root supplementary Python CI and real design-export CLI pass; scopes recorded separately. Test executables cleaned; source/evidence/cache retained. Public/remote/independent reviewer delivery remains. Current root public compile bindings3 passed; test executable cleaned. Prospective batch2 CI explicitly locks dependencies and skips only the three user-deferred timing tests; YAML parsed and commands verified. Evidence in batch2-ci-policy-20261020; no new remote CI claim.",
       "local_inventory_gate_progress": "Current registry45 components/5 patterns/2 examples:38 capability tests passed after replacing fixed sample count with registry-derived independent count and route expectations. Concurrent Scene3D experience is not accepted.",
       "current_wip_gate_boundary": "Latest scoped current #26 and exact all-WIP frozen-CI3a5ba330 recipe passed:12actualtokenreceipts5184bounded,44governance/8composition/3bindings,45registry components;1164workspace/168consumer. Original old gate counts/receipts remain historical; independent/public/native acceptance separate.",
@@ -148,6 +148,15 @@
           "independent final source audit/consumer delivery",
           "exact matrix/remaining findings linked back to original audit issues; no whole goal or native maturity promotion"
         ]
+      },
+      "next_source_checkpoint_preflight": {
+        "status": "current source-stable workspace correctness passed; next exact exported-tree gates and public delivery pending",
+        "workspace_passed": 1296,
+        "ignored": 23,
+        "timing_skipped": 3,
+        "performance": false,
+        "source_drift": [],
+        "evidence": "design/reviews/window-toolbar-focus-20261021/next-stage-workspace-final.log"
       }
     },
     {
@@ -426,7 +435,7 @@
         "same-final-candidate combined overlay/content-slot acceptance; current Menu/Dialog/Popover minimum contracts now have separate scoped receipts",
         "Current three choice consumers now bounded API/GPU/native accepted; applicable physical IME/VoiceOver and final combined scope remain",
         "VoiceOver hearing deferred by user",
-        "Window Toolbar remains future architecture; not implemented by this scoped motion repair",
+        "Window toolbar action/icon process adapters and shared native-size calibration now have bounded consumer evidence; arbitrary Content items, per-action AX, whole-window keyboard traversal and matched final family/page acceptance remain",
         "same final combined candidate/page acceptance",
         "Tooltip applicable hearing and same-combined-candidate/page/ClientKit-Gold7 acceptance; final-source system reactivation now scoped accepted"
       ],
@@ -457,6 +466,47 @@
         "identity": "a33e3e7dd203e845bb4e3d1de6ca561500127a260569f9d4ce04f679086d2840",
         "receipt": "design/reviews/tooltip-system-reactivation-20261021/acceptance.json",
         "status": "bounded final-WIP native restoration accepted; hearing and combined candidate/page experience remain"
+      },
+      "process_toolbar_scopes_progress": {
+        "status": "implemented; native/Gold7 pending",
+        "evidence": "docs/design/process-toolbar-scopes-20261021.md",
+        "public_api": "15 runtime/Mach + 1 unchanged legacy wire + 9 shared Toolbar + 3 public Toolbar tests; strict Clippy passed",
+        "real_consumer": "original ContentHost, CoreText/GPU, scope switching, 12 theme/brand cases, icon ownership; hide/disable/inactive restore late-release pointer/keyboard cancellation passed",
+        "owner": "Root: module-runtime and shared Toolbar; AppHost: current window/native animation verification",
+        "limits": "remote keyboard/IME/AX, full per-action native semantic children, matched-candidate native/Gold7 pending; public stage40 tag unchanged"
+      },
+      "window_toolbar_calibration": {
+        "status": "scoped independent native/API/token accepted; broad architecture and Gold7 pending",
+        "root_cause": "AppKit reserved66pt != traffic center26pt; artwork ink differs despite shared viewBox; compact chrome must be distinct from larger hit target",
+        "shared_sites": [
+          "platform-macos Window::titlebar_control_center_y",
+          "JSON toolbar-label / size-toolbar-chrome",
+          "shared ToolbarControl::window and original Button optional chrome_height",
+          "canonical four regular SVG and original More borrowed image"
+        ],
+        "actual_consumer": "public Toolbar ContentHost, original AppHost module/nav/visibility bars; independent current75688ce native measured14pt regular ink,20pt chrome,2ptMore at center26",
+        "evidence": [
+          "docs/design/toolbar-native-calibration-20261021.md",
+          "design/reviews/toolbar-chrome-consumer-20261021/acceptance.json"
+        ],
+        "owner": "Root shared source; Rust AppHost independent native reviewer",
+        "remaining": "window keyboard/focus graph, per-action semantics/AX, generic Content toolbar registry, remaining icon optical classification, full Gold7/final public candidate"
+      },
+      "window_keyboard_progress": {
+        "status": "scoped independent native/API/integration accepted on da51e14a; broad Toolbar architecture and AX pending",
+        "root_cause": "window omitted cross-group focus routing; then actual native exposed async busy was confused with permanent unmount/disable",
+        "shared_repair": "original AppHost window owner routes original ContentHosts; no control state-machine fork",
+        "applicables": [
+          "Window module toolbars",
+          "navigation toolbar",
+          "leading/trailing visibility toolbar"
+        ],
+        "exceptions": [
+          "V1 remote content keyboard/IME/AX unsupported",
+          "generic arbitrary Content toolbar groups and per-action AX pending"
+        ],
+        "evidence": "docs/design/window-toolbar-focus-20261021.md",
+        "final_native": "design/reviews/window-toolbar-focus-geometry-consumer-20261021/acceptance.json"
       }
     },
     {
@@ -941,10 +991,17 @@
     "next": "AppHost consumption, V2 optional View/event disposition and final native/Gold7"
   },
   "stage40_host_keyboard_remaining": {
-    "owner": "Rust AppHost",
-    "finding": "window KeyInput does not route Tab/ordinary keys to navigation and visibility toolbars; default route is current Panel toolbar. Shared ToolbarControl fix is not final window keyboard/AX acceptance.",
-    "evidence": "AppHost independent read-only source review of window.rs:1094-1129",
-    "public_api_fix": "crates/tekes-ui-controls/tests/toolbar_contract.rs",
-    "status": "not implemented at window integration layer; tracked in original Toolbar architecture scope, no duplicate issue"
+    "owner": "Root implementation; Rust AppHost independent native reviewer",
+    "historical_finding": "At stage40 window ordinary keys routed only to current Panel; navigation/visibility lacked window traversal. First5b27 follow-up fixed routing but lost logical focus during async navigation busy.",
+    "implementation": "one existing ContentHost/Toolbar owner; current geometry-identity da51e14a retains logical focus through temporary barriers, rejects old arms, honors explicit transfers and modal boundaries",
+    "evidence": [
+      "docs/design/window-toolbar-focus-20261021.md",
+      "design/reviews/window-toolbar-focus-20261021/geometry-identity.json",
+      "design/reviews/window-toolbar-focus-20261021/retained-focus-geometry-build.log",
+      "design/reviews/window-toolbar-focus-consumer-20261021/acceptance.json"
+    ],
+    "status": "current da51 scoped API/integration/native accepted; per-action AX and complete Gold7/page acceptance separate",
+    "final_native": "design/reviews/window-toolbar-focus-geometry-consumer-20261021/acceptance.json",
+    "producer_tests_passed": 19
   }
 }

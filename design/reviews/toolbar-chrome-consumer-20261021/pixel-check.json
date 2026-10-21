@@ -1,0 +1,53 @@
+{
+  "traffic-red": {
+    "bounds_px": [
+      38,
+      38,
+      66,
+      66
+    ],
+    "height_pt": 14.0,
+    "center_y_pt": 26.0
+  },
+  "leading-ink": {
+    "bounds_px": [
+      192,
+      38,
+      220,
+      66
+    ],
+    "height_pt": 14.0,
+    "center_y_pt": 26.0
+  },
+  "trailing-visible-frame": {
+    "bounds_px": [
+      2120,
+      32,
+      2184,
+      72
+    ],
+    "height_pt": 20.0,
+    "center_y_pt": 26.0
+  },
+  "capital-I": {
+    "bounds_px": [
+      521,
+      39,
+      525,
+      67
+    ],
+    "height_pt": 14.0,
+    "center_y_pt": 26.5
+  },
+  "overflow-more": {
+    "bounds_px": [
+      673,
+      50,
+      696,
+      54
+    ],
+    "height_pt": 2.0,
+    "center_y_pt": 26.0
+  },
+  "scope": "fixed RGB regions from 2x original CUA screenshots; no image editing"
+}

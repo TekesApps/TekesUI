@@ -1,0 +1,11 @@
+{
+  "runtime_source_drift": [],
+  "reviewed_documentation_updates": [
+    "design/remediation/issue-component-batches-20261019.json",
+    "docs/design/window-toolbar-focus-20261021.md"
+  ],
+  "next_checkpoint_parent": "1294987dacabb33c0e411c13ee5ea544a1123f8e",
+  "current_owned_native_input": "da51e14a36f6e8325287c58621124c9ecffd096f362046955dbbc7a40bd67a89",
+  "next_publication": "exact tree design/pure-Rust gates and remote CI; preserve older frozen packages",
+  "goal": "all eight batches remain active, not complete"
+}

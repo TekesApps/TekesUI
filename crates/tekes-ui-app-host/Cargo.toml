@@ -20,5 +20,6 @@ tekes-ui-controls = { path = "../tekes-ui-controls" }
 tekes-ui-scene = { path = "../tekes-ui-scene" }
 tekes-ui-tokens = { path = "../tekes-ui-tokens" }
 tekes-ui-text = { path = "../tekes-ui-text" }
+tekes-ui-motion = { path = "../tekes-ui-motion" }
 resvg = { version = "0.48.0", default-features = false }
 tekes-ui-icons = { path = "../tekes-ui-icons" }

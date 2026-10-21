@@ -277,7 +277,10 @@ def build():
             shade=leaf_rng.randint(205,255);g.quad(points,leaf,(shade,shade,shade))
         g.finish(name)
     # Original streamlined electric sedan: tapered nose, sloped glass and panoramic roof.
-    g=Geometry(a);paint=(224,230,229);glass=(35,57,68)
+    g=Geometry(a);paint=(224,230,229);glass=(198,220,228)
+    car_glass=a.material('Car transparent glazing',(255,255,255))
+    a.materials[car_glass].update(alphaMode='BLEND')
+    a.materials[car_glass]['pbrMetallicRoughness']['baseColorFactor'][3]=.20
     def normal(a,b):
         n=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]
         length=math.sqrt(sum(v*v for v in n));return [v/length for v in n]
@@ -304,7 +307,7 @@ def build():
     for j,row in enumerate(glass_rows):
         gn.append([normal(delta(glass_rows[min(j+1,6)][i],glass_rows[max(j-1,0)][i]),delta(row[min(i+1,12)],row[max(i-1,0)])) for i in range(13)])
     for j in range(6):
-        for i in range(12):g.quad([glass_rows[j][i],glass_rows[j+1][i],glass_rows[j+1][i+1],glass_rows[j][i+1]],plain,glass,normals=[gn[j][i],gn[j+1][i],gn[j+1][i+1],gn[j][i+1]])
+        for i in range(12):g.quad([glass_rows[j][i],glass_rows[j+1][i],glass_rows[j+1][i+1],glass_rows[j][i+1]],car_glass,glass,normals=[gn[j][i],gn[j+1][i],gn[j+1][i+1],gn[j][i+1]])
         for side in [-1,1]:
             z0,h0,w0=profile[j];z1,h1,w1=profile[j+1]
             pts=[(side*w0,.46,z0),(side*w1,.46,z1),(side*w1,h1,z1),(side*w0,h0,z0)]
@@ -313,13 +316,24 @@ def build():
                 if j==0:pts=[pts[0],pts[1],pts[2],((pts[0][0]+pts[2][0])/2,(pts[0][1]+pts[2][1])/2,(pts[0][2]+pts[2][2])/2)]
                 else:pts=[pts[0],pts[1],pts[3],((pts[3][0]+pts[0][0])/2,(pts[3][1]+pts[0][1])/2,(pts[3][2]+pts[0][2])/2)]
             if side<0:pts.reverse()
-            g.quad(pts,plain,glass,normals=[(side,0,0)]*4)
+            g.quad(pts,car_glass,glass,normals=[(side,0,0)]*4)
     for side in [-1,1]:
         g.beam((side*.32,.46,.47),(side*.27,.77,.12),.018,plain,paint)
         g.beam((side*.32,.46,-.59),(side*.27,.74,-.35),.018,plain,paint)
         for z in [-.28,.24]:g.box(side*.365,.445,z,.012,.018,.10,plain,(86,103,108))
         g.box(side*.25,.365,.791,.19,.028,.025,headlights,(255,255,255))
         g.box(side*.25,.36,-.799,.19,.028,.025,taillights,(255,255,255))
+    # Simple original cockpit, visible through the newly transparent glazing.
+    g.box(0,.48,.25,.49,.045,.18,plain,(50,58,64))
+    g.box(0,.52,.25,.16,.09,.012,plain,(25,34,41))
+    g.box(0,.525,.243,.13,.055,.008,plain,(128,166,175))
+    # Ring steering wheel, angled toward the driver rather than a solid disc.
+    for j in range(24):
+        a0=j*math.tau/24;a1=(j+1)*math.tau/24
+        g.beam((.12+.072*math.cos(a0),.55+.057*math.sin(a0),.17),(.12+.072*math.cos(a1),.55+.057*math.sin(a1),.17),.008,plain,(37,43,48))
+    for x in [-.12,.12]:
+        g.box(x,.48,-.11,.19,.05,.27,plain,(73,80,83))
+        g.box(x,.56,-.22,.19,.16,.045,plain,(73,80,83))
     # Standard passenger-car proportions: lower cabin and 1.8–2.1 m width.
     for positions,normals,_,_,_ in g.groups.values():
         for k in range(0,len(positions),3):

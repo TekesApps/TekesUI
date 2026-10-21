@@ -24,3 +24,6 @@ version = "0.3.2"
 
 [dev-dependencies]
 png.workspace = true
+
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+tekes-ui-text.workspace = true

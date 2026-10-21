@@ -29,6 +29,17 @@ use tekes_ui_render::Renderer;
 use tekes_ui_scene::{ImageId, ImageQuad, Point, Quad, Rect, Scene};
 use tekes_ui_tokens::{Palette, Rgba, Theme};
 const MIN_COLUMN: f32 = 120.;
+fn window_toolbar_geometry(
+    native_height: f32,
+    native_center: Option<f32>,
+    measured: f32,
+    scale: f32,
+) -> (f32, f32) {
+    let paint = native_center.map_or(measured, |center| (center * 2.).max(measured));
+    let allocation = (native_height.max(paint) * scale).ceil() / scale;
+    (allocation, (paint * scale).ceil() / scale)
+}
+
 fn content_geometry(bounds: Rect, toolbar_height: f32) -> Rect {
     Rect::new(
         bounds.min_x(),
@@ -65,6 +76,61 @@ fn visible_frames(frames: &[Rect], whole: Rect, leading: bool, trailing: bool) -
         (end - start).max(0.),
         whole.size.height,
     );
+    result
+}
+// Pixel-snapped presentation and input share this geometry. The opposite side
+// remains fixed when only one visibility channel changes.
+fn presented_frames(frames: &[Rect], whole: Rect, progress: [f32; 2], scale: f32) -> Vec<Rect> {
+    if progress.iter().all(|p| *p == 0. || *p == 1.) {
+        return visible_frames(frames, whole, progress[0] == 1., progress[1] == 1.);
+    }
+    let snap = |x: f32| (x * scale).round() / scale;
+    let left_end = if progress[0] == 1. {
+        frames[0].max_x()
+    } else {
+        snap(whole.min_x() + frames[0].size.width * progress[0])
+    };
+    let center_start = if progress[0] == 1. {
+        frames[1].min_x()
+    } else {
+        snap(whole.min_x() + (frames[1].min_x() - whole.min_x()) * progress[0])
+    };
+    let center_end = if progress[1] == 1. {
+        frames[1].max_x()
+    } else {
+        snap(whole.max_x() - (whole.max_x() - frames[1].max_x()) * progress[1])
+    };
+    let right_start = if progress[1] == 1. {
+        frames[2].min_x()
+    } else {
+        snap(whole.max_x() - frames[2].size.width * progress[1])
+    };
+    let mut result = vec![
+        Rect::new(
+            whole.min_x(),
+            whole.min_y(),
+            (left_end - whole.min_x()).max(0.),
+            whole.size.height,
+        ),
+        Rect::new(
+            center_start,
+            whole.min_y(),
+            (center_end - center_start).max(0.),
+            whole.size.height,
+        ),
+        Rect::new(
+            right_start,
+            whole.min_y(),
+            (whole.max_x() - right_start).max(0.),
+            whole.size.height,
+        ),
+    ];
+    if progress[0] == 1. {
+        result[0] = frames[0];
+    }
+    if progress[1] == 1. {
+        result[2] = frames[2];
+    }
     result
 }
 struct Inbox {
@@ -124,7 +190,7 @@ impl Panel {
             bounds: Rect::default(),
             toolbar_host: {
                 let mut host =
-                    ContentHost::new(Content::new(ComponentId(1), ToolbarControl::default()))
+                    ContentHost::new(Content::new(ComponentId(1), ToolbarControl::window()))
                         .expect("one toolbar action has a unique identity");
                 host.set_action_events(true);
                 host
@@ -192,6 +258,34 @@ impl Panel {
                 wake.wake();
             }
         });
+    }
+    fn configure_toolbar(
+        &mut self,
+        viewport: Rect,
+        overflow_icon: tekes_ui_scene::ImageId,
+        input_open: bool,
+    ) {
+        let toolbar = self
+            .toolbar_host
+            .get_mut(ComponentId(1))
+            .unwrap()
+            .component_mut::<ToolbarControl>()
+            .unwrap();
+        toolbar.set_viewport(viewport);
+        toolbar.set_overflow_icon(Some(overflow_icon));
+        toolbar.set_actions(
+            self.toolbar
+                .iter()
+                .map(|item| ToolbarAction {
+                    id: item.id,
+                    title: item.title.clone(),
+                    enabled: input_open
+                        && self.failed.is_none()
+                        && item.enabled
+                        && (!item.geometry_dependent || self.frame_viewport == self.viewport),
+                })
+                .collect(),
+        );
     }
     fn toolbar_event(&mut self, event: &ContentEvent) -> Result<bool> {
         self.toolbar_host.event(event);
@@ -278,6 +372,9 @@ impl Panel {
         self.scale = scale;
         self.toolbar_height = toolbar_height;
         if changed {
+            // A height-only content resize can leave the toolbar paint frame
+            // unchanged. Revoke old arms before advancing viewport ownership.
+            self.toolbar_host.event(&ContentEvent::Cancel);
             self.viewport += 1;
             eprintln!(
                 "GEOMETRY panel={} viewport={} width={:.3} height={:.3} toolbar_height={:.3} scale={:.3}",
@@ -302,8 +399,18 @@ impl Drop for Panel {
         self.inbox.cv.notify_all();
     }
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ToolbarTarget {
+    Visibility(usize),
+    Navigation,
+    Panel(usize),
+}
+
 pub struct Host {
     leading_visible: bool,
+    sidebar_motion: crate::sidebar_motion::SidebarMotion,
+    motion_epoch: std::time::Instant,
+    reduced_motion: bool,
     trailing_visible: bool,
     visibility_bars: [crate::window_toolbar::VisibilityToolbar; 2],
     navigation_options: Option<NavigationOptions>,
@@ -316,13 +423,16 @@ pub struct Host {
     panels: Vec<Panel>,
     renderer: Option<Renderer>,
     text: Text,
+    toolbar_images: std::collections::HashMap<(String, u32), tekes_ui_scene::ImageId>,
     outer: SplitView,
     inner: SplitView,
     outer_view: SplitViewView,
     inner_view: SplitViewView,
     drag_split: Option<usize>,
     pressed: Option<usize>,
-    toolbar_pressed: Option<usize>,
+    toolbar_pressed: Option<ToolbarTarget>,
+    toolbar_focus: Option<ToolbarTarget>,
+    toolbar_focus_visible: bool,
     focused: usize,
     completion: Option<SyncSender<Vec<SyncSender<()>>>>,
     order: Vec<usize>,
@@ -338,6 +448,9 @@ impl Host {
         let n = module_ids.len();
         Self {
             leading_visible: n != 3,
+            sidebar_motion: crate::sidebar_motion::SidebarMotion::new(n != 3, true),
+            motion_epoch: std::time::Instant::now(),
+            reduced_motion: false,
             trailing_visible: true,
             visibility_bars: [
                 crate::window_toolbar::VisibilityToolbar::new(0x5601, "tekes-side-bar"),
@@ -353,6 +466,7 @@ impl Host {
             panels: Vec::new(),
             renderer: None,
             text: Text::new(),
+            toolbar_images: std::collections::HashMap::new(),
             outer: SplitView::new(1. / 3.),
             inner: SplitView::new(2. / 3.),
             outer_view: SplitViewView::new(Axis::Horizontal),
@@ -360,6 +474,8 @@ impl Host {
             drag_split: None,
             pressed: None,
             toolbar_pressed: None,
+            toolbar_focus: None,
+            toolbar_focus_visible: false,
             focused: if n == 3 { 1 } else { 0 },
             completion: None,
             order: (0..n).collect(),
@@ -404,6 +520,12 @@ impl Host {
     }
     fn draw(&mut self, w: &Window) -> Result<()> {
         self.init(w)?;
+        let progress = self.sidebar_motion.sample(
+            self.motion_epoch.elapsed(),
+            self.reduced_motion,
+            w.is_active(),
+        )?;
+        let transitioning = self.sidebar_motion.needs_frame();
         if let Some(nav) = &mut self.navigation {
             if self
                 .navigation_ack
@@ -450,7 +572,7 @@ impl Host {
         } else {
             let mut hidden_splitters = Scene::new();
             let a = self.outer_view.render_at_scale(
-                if self.leading_visible {
+                if self.leading_visible && !transitioning {
                     &mut scene
                 } else {
                     &mut hidden_splitters
@@ -462,7 +584,7 @@ impl Host {
                 w.scale() as f32,
             );
             let b = self.inner_view.render_at_scale(
-                if self.trailing_visible {
+                if self.trailing_visible && !transitioning {
                     &mut scene
                 } else {
                     &mut hidden_splitters
@@ -485,16 +607,42 @@ impl Host {
             ]
         };
         if self.panels.len() == 3 {
-            frames = visible_frames(&frames, whole, self.leading_visible, self.trailing_visible);
+            frames = presented_frames(&frames, whole, progress, w.scale() as f32);
+            if transitioning {
+                for gap in [
+                    Rect::new(
+                        frames[0].max_x(),
+                        0.,
+                        (frames[1].min_x() - frames[0].max_x()).max(0.),
+                        whole.size.height,
+                    ),
+                    Rect::new(
+                        frames[1].max_x(),
+                        0.,
+                        (frames[2].min_x() - frames[1].max_x()).max(0.),
+                        whole.size.height,
+                    ),
+                ] {
+                    if gap.size.width > 0. {
+                        tekes_ui_controls::extended::separator_at_scale(
+                            &mut scene,
+                            gap,
+                            palette,
+                            Axis::Vertical,
+                            w.scale() as f32,
+                        );
+                    }
+                }
+            }
         }
         let targets = if self.panels.len() > 1 {
             vec![
-                if self.leading_visible {
+                if self.leading_visible && !transitioning {
                     self.outer_view.resize_target(&self.outer)
                 } else {
                     None
                 },
-                if self.trailing_visible {
+                if self.trailing_visible && !transitioning {
                     self.inner_view.resize_target(&self.inner)
                 } else {
                     None
@@ -570,81 +718,91 @@ impl Host {
                 }
             }
         }
-        let mut toolbar_height = native_height as f32;
+        let mut measured_toolbar_height = 0.0_f32;
         if self.panels.len() == 3 {
-            toolbar_height = toolbar_height.max(self.visibility_bars[0].prepare(
-                renderer,
-                w.scale() as f32,
-                whole,
-                &mut self.text,
-                self.leading_visible,
-                if self.leading_visible {
-                    "Hide leading panel"
-                } else {
-                    "Show leading panel"
-                },
-            )?);
-            self.visibility_bars[1].set_secondary(
-                0x5603,
-                "tekes-swap-horizontal",
-                "Swap center and trailing",
-                self.trailing_visible && self.navigation.as_ref().is_none_or(|n| !n.busy),
-            );
-            toolbar_height = toolbar_height.max(self.visibility_bars[1].prepare(
-                renderer,
-                w.scale() as f32,
-                whole,
-                &mut self.text,
-                self.trailing_visible,
-                if self.trailing_visible {
-                    "Hide trailing panel"
-                } else {
-                    "Show trailing panel"
-                },
-            )?);
+            measured_toolbar_height =
+                measured_toolbar_height.max(self.visibility_bars[0].prepare(
+                    renderer,
+                    w.scale() as f32,
+                    whole,
+                    &mut self.text,
+                    self.leading_visible,
+                    if self.leading_visible {
+                        "Hide leading panel"
+                    } else {
+                        "Show leading panel"
+                    },
+                )?);
+            measured_toolbar_height =
+                measured_toolbar_height.max(self.visibility_bars[1].prepare(
+                    renderer,
+                    w.scale() as f32,
+                    whole,
+                    &mut self.text,
+                    self.trailing_visible,
+                    if self.trailing_visible {
+                        "Hide trailing panel"
+                    } else {
+                        "Show trailing panel"
+                    },
+                )?);
         }
         if let Some(nav) = &mut self.navigation {
-            toolbar_height = toolbar_height.max(nav.prepare(
+            measured_toolbar_height = measured_toolbar_height.max(nav.prepare(
                 renderer,
                 w.scale() as f32,
                 whole,
                 &mut self.text,
             )?);
         }
+        let overflow_icon = crate::window_toolbar::icon_image(
+            &mut self.toolbar_images,
+            renderer,
+            "tekes-more",
+            w.scale() as f32,
+        )?;
+        let panel_input_open = self
+            .navigation
+            .as_ref()
+            .is_none_or(|nav| nav.host.input_open && !nav.busy);
         for p in &mut self.panels {
+            p.configure_toolbar(whole, overflow_icon, panel_input_open);
             let toolbar = p
                 .toolbar_host
                 .get_mut(ComponentId(1))
                 .unwrap()
                 .component_mut::<ToolbarControl>()
                 .unwrap();
-            toolbar.set_viewport(whole);
-            toolbar.set_actions(
-                p.toolbar
-                    .iter()
-                    .map(|item| ToolbarAction {
-                        id: item.id,
-                        title: item.title.clone(),
-                        enabled: p.failed.is_none()
-                            && item.enabled
-                            && (!item.geometry_dependent || p.frame_viewport == p.viewport),
-                    })
-                    .collect(),
-            );
-            toolbar_height = toolbar_height.max(toolbar.measure(&mut self.text).height);
+            measured_toolbar_height =
+                measured_toolbar_height.max(toolbar.measure(&mut self.text).height);
         }
         let scale = w.scale() as f32;
-        toolbar_height = (toolbar_height * scale).ceil() / scale;
+        // AppKit's reserved height and its traffic-light center are distinct.
+        // Keep content below the full native chrome, but center every toolbar
+        // contribution on the actual window controls. Oversized content may
+        // grow the row rather than clip its labels or hit regions.
+        let (toolbar_height, toolbar_paint_height) = window_toolbar_geometry(
+            native_height as f32,
+            w.titlebar_control_center_y().map(|y| y as f32),
+            measured_toolbar_height,
+            scale,
+        );
         if self
             .panels
             .iter()
             .any(|p| p.toolbar_height != toolbar_height)
         {
             eprintln!(
-                "TOOLBAR_HEIGHT height={} native={} leading={}",
-                toolbar_height, native_height, leading
+                "TOOLBAR_HEIGHT height={} native={} leading={} paint_height={} native_center={:?}",
+                toolbar_height,
+                native_height,
+                leading,
+                toolbar_paint_height,
+                w.titlebar_control_center_y()
             );
         }
+        self.reconcile_toolbar_focus(w.is_active());
+        let renderer = self.renderer.as_mut().unwrap();
         for (slot, bounds) in frames.iter().enumerate() {
             let index = self.order[slot];
             if bounds.size.width <= 0. {
@@ -657,6 +815,15 @@ impl Host {
             let p = &mut self.panels[index];
             p.start(w.wake_proxy());
             p.geometry(*bounds, scale, toolbar_height)?;
+            p.configure_toolbar(whole, overflow_icon, panel_input_open);
+            let focused = w.is_active()
+                && !transitioning
+                && panel_input_open
+                && self.toolbar_focus == Some(ToolbarTarget::Panel(index));
+            p.toolbar_host.focus(
+                if focused { Some(ComponentId(1)) } else { None },
+                focused && self.toolbar_focus_visible,
+            );
             let content = content_geometry(*bounds, p.toolbar_height);
             scene.push_quad(Quad::new(content, palette.color("surface-panel").unwrap()));
             if let Some(id) = p.image {
@@ -681,7 +848,7 @@ impl Host {
                 0.
             });
             let end = bounds.max_x().min(if frames.len() == 3 {
-                whole.max_x() - 96.
+                whole.max_x() - 48.
             } else {
                 whole.max_x()
             });
@@ -689,7 +856,7 @@ impl Host {
                 start,
                 bounds.min_y(),
                 (end - start).max(0.),
-                p.toolbar_height,
+                toolbar_paint_height,
             );
             p.toolbar_host
                 .render(&mut scene, &mut self.text, bar, whole, Theme::LIGHT.into())
@@ -703,7 +870,7 @@ impl Host {
                     leading as f32 + if frames.len() == 3 { 48. } else { 0. },
                     0.,
                     112.,
-                    toolbar_height,
+                    toolbar_paint_height,
                 ),
                 whole,
             )?;
@@ -712,13 +879,13 @@ impl Host {
             self.visibility_bars[0].render(
                 &mut scene,
                 &mut self.text,
-                Rect::new(leading as f32, 0., 48., toolbar_height),
+                Rect::new(leading as f32, 0., 48., toolbar_paint_height),
                 whole,
             )?;
             self.visibility_bars[1].render(
                 &mut scene,
                 &mut self.text,
-                Rect::new(whole.max_x() - 96., 0., 96., toolbar_height),
+                Rect::new(whole.max_x() - 48., 0., 48., toolbar_paint_height),
                 whole,
             )?;
         }
@@ -737,6 +904,17 @@ impl Host {
         }
         renderer.resize(w.drawable_size(), w.scale() as f32);
         renderer.render(&scene, &mut self.text.atlas, Rgba::gray(1.))?;
+        if cfg!(debug_assertions)
+            && (transitioning || w.is_animating())
+            && let Some(nav) = &self.navigation
+        {
+            nav.trace(serde_json::json!({
+                "event":"sidebar-layout-sample", "progress":progress,
+                "active":w.is_active(), "animating":transitioning,
+                "display_link_frames":w.animation_frame_count(),
+                "bounds":frames.iter().map(|r| [r.min_x(),r.min_y(),r.size.width,r.size.height]).collect::<Vec<_>>()
+            }));
+        }
         if self.navigation_order.is_some()
             && self.navigation_ack.is_none()
             && self.panels.iter().all(|p| {
@@ -789,31 +967,257 @@ impl Host {
             }
         }
         self.accept(w)?;
+        let animate = self.sidebar_motion.needs_frame() && w.is_active();
+        if !w.set_animating(animate) && animate {
+            w.request_redraw();
+        }
         Ok(())
     }
-    fn swap_center_trailing(&mut self) -> Result<()> {
-        if self.panels.len() != 3
-            || !self.trailing_visible
-            || self.navigation.as_ref().is_some_and(|n| n.busy)
+    // Window ownership only. Each group retains the original ContentHost and
+    // ToolbarControl focus, action, overlay and cancellation implementation.
+    fn toolbar_host(&self, target: ToolbarTarget) -> Option<&ContentHost> {
+        match target {
+            ToolbarTarget::Visibility(i) => self.visibility_bars.get(i).map(|b| &b.host),
+            ToolbarTarget::Navigation => self.navigation.as_ref().map(|n| &n.toolbar),
+            ToolbarTarget::Panel(i) => self.panels.get(i).map(|p| &p.toolbar_host),
+        }
+    }
+    fn toolbar_host_mut(&mut self, target: ToolbarTarget) -> Option<&mut ContentHost> {
+        match target {
+            ToolbarTarget::Visibility(i) => self.visibility_bars.get_mut(i).map(|b| &mut b.host),
+            ToolbarTarget::Navigation => self.navigation.as_mut().map(|n| &mut n.toolbar),
+            ToolbarTarget::Panel(i) => self.panels.get_mut(i).map(|p| &mut p.toolbar_host),
+        }
+    }
+    fn toolbar_groups(&self) -> Vec<ToolbarTarget> {
+        let mut groups = Vec::new();
+        if self.panels.len() == 3 {
+            groups.push(ToolbarTarget::Visibility(0));
+        }
+        if self.navigation.is_some() {
+            groups.push(ToolbarTarget::Navigation);
+        }
+        groups.extend(
+            self.order
+                .iter()
+                .filter(|&&i| i < self.panels.len())
+                .map(|&i| ToolbarTarget::Panel(i)),
+        );
+        if self.panels.len() == 3 {
+            groups.push(ToolbarTarget::Visibility(1));
+        }
+        groups
+    }
+    fn toolbar_available(&self, target: ToolbarTarget) -> bool {
+        match target {
+            ToolbarTarget::Visibility(_) => self.panels.len() == 3,
+            ToolbarTarget::Navigation => self
+                .navigation
+                .as_ref()
+                .is_some_and(|n| n.host.input_open && !n.busy && n.error.is_none()),
+            ToolbarTarget::Panel(i) => self.panels.get(i).is_some_and(|p| {
+                p.bounds.size.width > 0.
+                    && !self.sidebar_motion.needs_frame()
+                    && (self.panels.len() != 3
+                        || (i != self.order[0] || self.leading_visible)
+                            && (i != self.order[2] || self.trailing_visible))
+                    && self
+                        .navigation
+                        .as_ref()
+                        .is_none_or(|n| n.host.input_open && !n.busy)
+            }),
+        }
+    }
+    fn toolbar_temporarily_blocked(&self, target: ToolbarTarget) -> bool {
+        let navigating = self
+            .navigation
+            .as_ref()
+            .is_some_and(|n| n.busy && n.error.is_none());
+        match target {
+            ToolbarTarget::Navigation => navigating,
+            ToolbarTarget::Panel(i) => self.panels.get(i).is_some_and(|p| {
+                (navigating || self.sidebar_motion.needs_frame() || p.frame_viewport != p.viewport)
+                    && p.failed.is_none()
+                    && p.bounds.size.width > 0.
+                    && (self.panels.len() != 3
+                        || (i != self.order[0] || self.leading_visible)
+                            && (i != self.order[2] || self.trailing_visible))
+            }),
+            ToolbarTarget::Visibility(_) => false,
+        }
+    }
+    fn toolbar_focus_targets(&self) -> Vec<ToolbarTarget> {
+        self.toolbar_groups()
+            .into_iter()
+            .filter(|&target| {
+                self.toolbar_available(target)
+                    && self
+                        .toolbar_host(target)
+                        .is_some_and(|h| !h.focus_targets().is_empty())
+            })
+            .collect()
+    }
+    fn open_toolbar(&self) -> Option<ToolbarTarget> {
+        self.toolbar_groups().into_iter().find(|&target| {
+            self.toolbar_available(target)
+                && self
+                    .toolbar_host(target)
+                    .and_then(|h| h.get(ComponentId(1)))
+                    .and_then(|n| n.component::<ToolbarControl>())
+                    .is_some_and(|t| t.is_open())
+        })
+    }
+    fn set_toolbar_focus(&mut self, target: Option<ToolbarTarget>, visible: bool) {
+        let target = target.filter(|target| self.toolbar_focus_targets().contains(target));
+        for group in self.toolbar_groups() {
+            if let Some(host) = self.toolbar_host_mut(group) {
+                if Some(group) != target {
+                    host.event(&ContentEvent::Cancel);
+                    host.focus(None, false);
+                } else {
+                    host.focus(Some(ComponentId(1)), visible);
+                }
+            }
+        }
+        if let Some(ToolbarTarget::Panel(i)) = target {
+            self.focused = i;
+        }
+        self.toolbar_focus = target;
+        self.toolbar_focus_visible = visible;
+        self.trace_toolbar_focus();
+    }
+    fn trace_toolbar_focus(&self) {
+        if let Some(nav) = &self.navigation {
+            nav.trace(serde_json::json!({"event":"window-toolbar-focus","owner":format!("{:?}",self.toolbar_focus),"visible":self.toolbar_focus_visible}));
+        }
+    }
+    fn reconcile_toolbar_focus(&mut self, active: bool) {
+        let targets = self.toolbar_focus_targets();
+        if self.toolbar_focus.is_some_and(|owner| {
+            !targets.contains(&owner) && !self.toolbar_temporarily_blocked(owner)
+        }) {
+            self.set_toolbar_focus(None, false);
+        }
+        let focus = self.toolbar_focus;
+        let visible = self.toolbar_focus_visible;
+        for group in self.toolbar_groups() {
+            let enabled = active && Some(group) == focus && targets.contains(&group);
+            if let Some(host) = self.toolbar_host_mut(group) {
+                if !enabled && host.focused().is_some() {
+                    host.event(&ContentEvent::Cancel);
+                }
+                host.focus(
+                    if enabled { Some(ComponentId(1)) } else { None },
+                    enabled && visible,
+                );
+            }
+        }
+    }
+    fn dispatch_toolbar(&mut self, target: ToolbarTarget, event: &ContentEvent) -> Result<bool> {
+        if !self.toolbar_available(target) {
+            if let Some(host) = self.toolbar_host_mut(target) {
+                host.event(&ContentEvent::Cancel);
+            }
+            return Ok(matches!(
+                event,
+                ContentEvent::Pointer(_)
+                    | ContentEvent::PointerDown(_)
+                    | ContentEvent::PointerMove(_)
+                    | ContentEvent::PointerUp(_)
+            ));
+        }
+        match target {
+            ToolbarTarget::Navigation => self.navigation.as_mut().unwrap().event(event),
+            ToolbarTarget::Panel(i) => self.panels[i].toolbar_event(event),
+            ToolbarTarget::Visibility(i) => {
+                let action = self.visibility_bars[i].event(event);
+                let bubbles = self.visibility_bars[i].host.event_bubbled();
+                if action.is_some() {
+                    self.toggle_visibility(i)?;
+                }
+                Ok(bubbles)
+            }
+        }
+    }
+    fn cancel_toolbar_input(&mut self) {
+        self.toolbar_pressed = None;
+        for target in self.toolbar_groups() {
+            if let Some(host) = self.toolbar_host_mut(target) {
+                host.event(&ContentEvent::Cancel);
+            }
+        }
+    }
+    fn toolbar_key_input(&mut self, key: ContentKeyEvent) -> Result<()> {
+        if matches!(key.key, Some(ControlKey::Tab { .. }))
+            && (key.modifiers.command || key.modifiers.control || key.modifiers.alt)
         {
             return Ok(());
         }
-        if let Some(i) = self.pressed.take() {
-            self.panels[i].request(InputKind::Cancel, 0., 0.)?;
+        if let Some(owner) = self.open_toolbar() {
+            self.dispatch_toolbar(owner, &ContentEvent::KeyInput(key))?;
+            return Ok(());
         }
-        self.toolbar_pressed = None;
-        self.drag_split = None;
-        self.outer_view.cancel(&mut self.outer);
-        self.inner_view.cancel(&mut self.inner);
-        for panel in &mut self.panels {
-            panel.toolbar_event(&ContentEvent::Cancel)?;
-        }
-        self.order.swap(1, 2);
-        self.focused = self.order[1];
-        if let Some(nav) = &self.navigation {
-            nav.trace(serde_json::json!({"event":"panel-swap","order":self.order,"pids":self.panels.iter().map(|p|p.pid).collect::<Vec<_>>()}));
+        if key.down
+            && !key.modifiers.command
+            && !key.modifiers.control
+            && !key.modifiers.alt
+            && let Some(ControlKey::Tab { reverse }) = key.key
+        {
+            let targets = self.toolbar_focus_targets();
+            let groups = self.toolbar_groups();
+            let next = self
+                .toolbar_focus
+                .and_then(|owner| groups.iter().position(|&g| g == owner))
+                .and_then(|index| {
+                    (1..=groups.len())
+                        .map(|step| {
+                            groups[if reverse {
+                                (index + groups.len() - step) % groups.len()
+                            } else {
+                                (index + step) % groups.len()
+                            }]
+                        })
+                        .find(|g| targets.contains(g))
+                })
+                .or_else(|| {
+                    if reverse {
+                        targets.last().copied()
+                    } else {
+                        targets.first().copied()
+                    }
+                });
+            self.cancel_toolbar_input();
+            self.set_toolbar_focus(next, true);
+        } else if key.down && key.key == Some(ControlKey::Escape) {
+            self.cancel_toolbar_input();
+            self.reconcile_toolbar_focus(true);
+        } else if let Some(owner) = self.toolbar_focus {
+            self.dispatch_toolbar(owner, &ContentEvent::KeyInput(key))?;
         }
         Ok(())
+    }
+    fn toolbar_target_at(&self, p: Point) -> Option<ToolbarTarget> {
+        // Menus own outside clicks too; do not activate another toolbar behind one.
+        self.open_toolbar().or_else(|| {
+            if self.panels.len() == 3
+                && let Some(i) = self.visibility_bars.iter().position(|b| b.rect.contains(p))
+            {
+                return Some(ToolbarTarget::Visibility(i));
+            }
+            if self.navigation.as_ref().is_some_and(|n| n.rect.contains(p)) {
+                return Some(ToolbarTarget::Navigation);
+            }
+            self.order
+                .iter()
+                .copied()
+                .find(|&i| {
+                    self.panels.get(i).is_some_and(|panel| {
+                        panel.bounds.contains(p)
+                            && p.y < panel.bounds.min_y() + panel.toolbar_height
+                    })
+                })
+                .map(ToolbarTarget::Panel)
+        })
     }
     fn toggle_visibility(&mut self, side: usize) -> Result<()> {
         if side == 0 {
@@ -821,6 +1225,15 @@ impl Host {
         } else {
             self.trailing_visible = !self.trailing_visible;
         }
+        self.sidebar_motion.retarget(
+            side,
+            if side == 0 {
+                self.leading_visible
+            } else {
+                self.trailing_visible
+            },
+            self.motion_epoch.elapsed(),
+        )?;
         if let Some(i) = self.pressed.take() {
             self.panels[i].request(InputKind::Cancel, 0., 0.)?;
         }
@@ -840,7 +1253,8 @@ impl Host {
         if hidden {
             let i = self.order[slot];
             self.panels[i].request(InputKind::Cancel, 0., 0.)?;
-            self.panels[i].bounds = Rect::default();
+            // Keep paint alive until the reveal reaches zero; input is gated
+            // below immediately and the worker remains mounted for reopening.
             if self.focused == i {
                 self.focused = self.order[1];
             }
@@ -902,8 +1316,16 @@ impl Host {
         {
             nav.trace(serde_json::json!({"event":"mouse","kind":format!("{:?}",m.kind),"x":m.position.x,"y":m.position.y,"active":w.is_active(),"key_window":w.is_key_window()}));
         }
+        if cfg!(debug_assertions)
+            && let Event::Key(key) = &event
+            && let Some(nav) = &self.navigation
+        {
+            nav.trace(serde_json::json!({"event":"window-toolbar-key","code":key.key_code,"kind":format!("{:?}",key.kind),"active":w.is_active(),"owner":format!("{:?}",self.toolbar_focus)}));
+        }
         match event {
-            Event::Created | Event::Redraw | Event::Wake => self.draw(w)?,
+            Event::Created | Event::Redraw | Event::Wake | Event::AnimationFrame(_) => {
+                self.draw(w)?
+            }
             Event::Resized { .. } => {
                 w.request_redraw();
             }
@@ -915,53 +1337,36 @@ impl Host {
                         button: MouseButton::Left,
                         ..
                     } => {
-                        if self.panels.len() == 3
-                            && let Some(i) =
-                                self.visibility_bars.iter().position(|b| b.rect.contains(p))
-                        {
-                            self.visibility_bars[i].pressed = true;
-                            self.visibility_bars[i].event(&content_event);
-                        } else if let Some(nav) = &mut self.navigation
-                            && (nav.rect.contains(p) || nav.is_open())
-                        {
-                            nav.pressed = true;
-                            if nav.event(&content_event)? {
-                                nav.pressed = false;
-                                nav.event(&ContentEvent::Cancel)?;
+                        if let Some(target) = self.toolbar_target_at(p) {
+                            if self.toolbar_focus_targets().contains(&target) {
+                                self.set_toolbar_focus(Some(target), false);
+                            }
+                            self.toolbar_pressed = Some(target);
+                            if self.dispatch_toolbar(target, &content_event)? {
+                                self.cancel_toolbar_input();
                                 w.try_begin_titlebar_drag();
                             }
-                        } else if let Some(i) = self.panels.iter().position(|panel| {
-                            panel.toolbar_host.get(ComponentId(1)).is_some_and(|c| {
-                                c.component::<ToolbarControl>().is_some_and(|t| t.is_open())
-                            })
-                        }) {
-                            self.toolbar_pressed = Some(i);
-                            self.panels[i].toolbar_event(&content_event)?;
                         } else if self.panels.len() == 3
                             && self.leading_visible
+                            && !self.sidebar_motion.needs_frame()
                             && self.outer_view.pointer_down(p, &mut self.outer)
                         {
                             self.drag_split = Some(0);
                         } else if self.panels.len() == 3
                             && self.trailing_visible
+                            && !self.sidebar_motion.needs_frame()
                             && self.inner_view.pointer_down(p, &mut self.inner)
                         {
                             self.drag_split = Some(1);
-                        } else if let Some(i) =
-                            self.panels.iter().position(|v| v.bounds.contains(p))
-                        {
+                        } else if let Some(i) = self.panels.iter().enumerate().position(|(i, v)| {
+                            !self.sidebar_motion.needs_frame()
+                                && (self.leading_visible || i != self.order[0])
+                                && (self.trailing_visible || i != self.order[2])
+                                && v.bounds.contains(p)
+                        }) {
                             self.focused = i;
-                            if p.y < self.panels[i].bounds.min_y() + self.panels[i].toolbar_height {
-                                self.toolbar_pressed = Some(i);
-                                if self.panels[i].toolbar_event(&content_event)? {
-                                    self.toolbar_pressed = None;
-                                    self.panels[i].toolbar_event(&ContentEvent::Cancel)?;
-                                    let begun = w.try_begin_titlebar_drag();
-                                    eprintln!(
-                                        "TITLEBAR_HANDOFF panel={i} phase=down started={begun} original_arm_cancelled=true"
-                                    );
-                                }
-                            } else if self
+                            self.set_toolbar_focus(None, false);
+                            if self
                                 .navigation
                                 .as_ref()
                                 .is_none_or(|nav| nav.host.input_open && !nav.busy)
@@ -992,27 +1397,8 @@ impl Host {
                         self.outer_view.pointer_up(&mut self.outer);
                         self.inner_view.pointer_up(&mut self.inner);
                         self.drag_split = None;
-                        for i in 0..2 {
-                            if self.visibility_bars[i].pressed {
-                                self.visibility_bars[i].pressed = false;
-                                if let Some(action) = self.visibility_bars[i].event(&content_event)
-                                {
-                                    if action == 0x5603 {
-                                        self.swap_center_trailing()?;
-                                    } else {
-                                        self.toggle_visibility(i)?;
-                                    }
-                                }
-                            }
-                        }
-                        if let Some(nav) = &mut self.navigation
-                            && nav.pressed
-                        {
-                            nav.pressed = false;
-                            nav.event(&content_event)?;
-                        }
-                        if let Some(i) = self.toolbar_pressed.take() {
-                            self.panels[i].toolbar_event(&content_event)?;
+                        if let Some(target) = self.toolbar_pressed.take() {
+                            self.dispatch_toolbar(target, &content_event)?;
                         }
                         if let Some(i) = self.pressed.take() {
                             let b = self.panels[i].bounds;
@@ -1044,25 +1430,12 @@ impl Host {
                             self.inner.set_ratio(self.inner.ratio().max(limit));
                         }
                         _ => {
-                            if let Some(i) = self.visibility_bars.iter().position(|b| b.pressed) {
-                                self.visibility_bars[i].event(&content_event);
-                            } else if let Some(nav) = &mut self.navigation
-                                && nav.pressed
-                            {
-                                if nav.event(&content_event)? {
-                                    nav.pressed = false;
-                                    nav.event(&ContentEvent::Cancel)?;
-                                    w.try_begin_titlebar_drag();
-                                }
-                            } else if let Some(i) = self.toolbar_pressed {
-                                if self.panels[i].toolbar_event(&content_event)? {
-                                    // Propagation is not capture transfer. Explicitly
-                                    // cancel the old arm before native handoff.
-                                    self.toolbar_pressed = None;
-                                    self.panels[i].toolbar_event(&ContentEvent::Cancel)?;
+                            if let Some(target) = self.toolbar_pressed {
+                                if self.dispatch_toolbar(target, &content_event)? {
+                                    self.cancel_toolbar_input();
                                     let begun = w.try_begin_titlebar_drag();
                                     eprintln!(
-                                        "TITLEBAR_HANDOFF panel={i} phase=drag started={begun} original_arm_cancelled=true"
+                                        "TITLEBAR_HANDOFF owner={target:?} phase=drag started={begun} original_arm_cancelled=true"
                                     );
                                 }
                             } else if let Some(i) = self.pressed {
@@ -1092,33 +1465,11 @@ impl Host {
                 w.request_redraw();
             }
             Event::Key(k) if w.is_active() => {
-                if let Some(nav) = &mut self.navigation
-                    && nav.is_open()
-                {
-                    nav.event(&ContentEvent::KeyInput(toolbar_key(k)))?;
-                } else if let Some(i) = self.panels.iter().position(|p| {
-                    p.toolbar_host.get(ComponentId(1)).is_some_and(|c| {
-                        c.component::<ToolbarControl>().is_some_and(|t| t.is_open())
-                    })
-                }) {
-                    let event = ContentEvent::KeyInput(toolbar_key(k));
-                    self.panels[i].toolbar_event(&event)?;
-                } else if k.kind == KeyEventKind::Down
-                    && !k.is_repeat
-                    && k.characters == "r"
-                    && self.panels.len() == 3
-                {
-                    self.swap_center_trailing()?;
-                    eprintln!("PANEL_ORDER {:?}", self.order);
-                } else if !self.panels.is_empty() {
-                    if k.key_code == 53 {
-                        self.toolbar_pressed = None;
-                        self.panels[self.focused].toolbar_event(&ContentEvent::Cancel)?;
-                    } else {
-                        let event = ContentEvent::KeyInput(toolbar_key(k));
-                        self.panels[self.focused].toolbar_event(&event)?;
-                    }
-                }
+                self.toolbar_key_input(toolbar_key(k))?;
+                w.request_redraw();
+            }
+            Event::SystemMotionChanged(reduced) => {
+                self.reduced_motion = reduced;
                 w.request_redraw();
             }
             Event::Focus(true) => {
@@ -1127,11 +1478,18 @@ impl Host {
                 w.request_redraw();
             }
             Event::Focus(false) => {
+                self.cancel_toolbar_input();
+                self.reconcile_toolbar_focus(false);
+                self.sidebar_motion.sample(
+                    self.motion_epoch.elapsed(),
+                    self.reduced_motion,
+                    false,
+                )?;
+                w.set_animating(false);
                 for bar in &mut self.visibility_bars {
                     bar.cancel();
                 }
                 if let Some(nav) = &mut self.navigation {
-                    nav.pressed = false;
                     nav.event(&ContentEvent::Cancel)?;
                 }
                 if let Some(i) = self.pressed.take() {
@@ -1301,6 +1659,29 @@ mod toolbar_geometry_tests {
         assert_eq!(visible_frames(&original, whole, true, true), original);
     }
     #[test]
+    fn animated_side_geometry_keeps_opposite_fixed_and_closes_without_gap() {
+        let whole = Rect::new(0., 0., 1100., 640.);
+        let base = vec![
+            Rect::new(0., 0., 366.3333, 640.),
+            Rect::new(367.3333, 0., 365.3334, 640.),
+            Rect::new(733.6667, 0., 366.3333, 640.),
+        ];
+        for progress in [0., 0.1, 0.5, 0.9, 1.] {
+            let left = presented_frames(&base, whole, [progress, 1.], 2.);
+            assert_eq!(left[2], base[2]);
+            let right = presented_frames(&base, whole, [1., progress], 2.);
+            assert_eq!(right[0], base[0]);
+            for frames in [left, right] {
+                assert!(frames[0].max_x() <= frames[1].min_x());
+                assert!(frames[1].max_x() <= frames[2].min_x() || frames[2] == Rect::default());
+                for r in frames {
+                    assert!(r.size.width >= 0.);
+                }
+            }
+        }
+        assert_eq!(presented_frames(&base, whole, [0., 0.], 2.)[1], whole);
+    }
+    #[test]
     fn unified_height_changes_content_viewport_and_all_pointer_coordinates_together() {
         for x in [0., 366., 734.] {
             let panel = Rect::new(x, 0., 365., 640.);
@@ -1312,5 +1693,447 @@ mod toolbar_geometry_tests {
                 assert!(content.contains(point));
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod native_toolbar_alignment_tests {
+    #[test]
+    fn native_toolbar_alignment_preserves_full_allocation_without_centering_in_it() {
+        assert_eq!(
+            super::window_toolbar_geometry(66., Some(26.), 48., 2.),
+            (66., 52.)
+        );
+        assert_eq!(
+            super::window_toolbar_geometry(40., Some(20.), 32., 1.),
+            (40., 40.)
+        );
+        assert_eq!(
+            super::window_toolbar_geometry(0., None, 48., 2.),
+            (48., 48.)
+        );
+        assert_eq!(
+            super::window_toolbar_geometry(66., Some(26.), 80., 2.),
+            (80., 80.)
+        );
+        assert_eq!(
+            super::window_toolbar_geometry(65.75, Some(25.75), 48., 2.),
+            (66., 51.5)
+        );
+    }
+}
+
+#[cfg(test)]
+mod window_focus_tests {
+    use super::*;
+    use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer};
+    use tekes_ui_scene::Size;
+    use tekes_ui_tokens::{Rgba, proposal};
+    struct Labels;
+    impl ButtonTextRenderer for Labels {
+        fn measure(&mut self, text: &str, role: proposal::TextRole, _: f32) -> Size {
+            Size::new(text.chars().count() as f32 * 8., role.style().line_height)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+    }
+    fn draw_group(host: &mut ContentHost, rect: Rect) {
+        host.render(
+            &mut Scene::new(),
+            &mut Labels,
+            rect,
+            Rect::new(0., 0., 1000., 400.),
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    }
+    fn fixture() -> Host {
+        let ids = (0..3).map(|i| format!("window-test-{i}")).collect();
+        let mut h = Host::new(ids, false, None);
+        h.panels = (0..3)
+            .map(|i| Panel::new(i, format!("window-test-{i}")))
+            .collect();
+        h.leading_visible = true;
+        for (i, p) in h.panels.iter_mut().enumerate() {
+            p.bounds = Rect::new(80. + i as f32 * 240., 0., 240., 300.);
+            p.toolbar_height = 66.;
+            p.toolbar = vec![
+                ToolbarItem {
+                    id: 7,
+                    title: "Increment".into(),
+                    enabled: true,
+                    geometry_dependent: false,
+                },
+                ToolbarItem {
+                    id: 8,
+                    title: "Reset".into(),
+                    enabled: true,
+                    geometry_dependent: false,
+                },
+            ];
+            let t = p
+                .toolbar_host
+                .get_mut(ComponentId(1))
+                .unwrap()
+                .component_mut::<ToolbarControl>()
+                .unwrap();
+            t.set_actions(
+                p.toolbar
+                    .iter()
+                    .map(|a| ToolbarAction {
+                        id: a.id,
+                        title: a.title.clone(),
+                        enabled: a.enabled,
+                    })
+                    .collect(),
+            );
+            t.set_viewport(Rect::new(0., 0., 1000., 400.));
+            draw_group(
+                &mut p.toolbar_host,
+                Rect::new(p.bounds.min_x(), 0., 240., 52.),
+            );
+        }
+        for (i, b) in h.visibility_bars.iter_mut().enumerate() {
+            b.rect = Rect::new(if i == 0 { 0. } else { 820. }, 0., 48., 52.);
+            b.host
+                .get_mut(ComponentId(1))
+                .unwrap()
+                .component_mut::<ToolbarControl>()
+                .unwrap()
+                .set_actions(vec![ToolbarAction {
+                    id: if i == 0 { 0x5601 } else { 0x5602 },
+                    title: "Show".into(),
+                    enabled: true,
+                }]);
+            draw_group(&mut b.host, b.rect);
+        }
+        h
+    }
+    fn key(h: &mut Host, key: ControlKey, down: bool) {
+        h.toolbar_key_input(ContentKeyEvent {
+            key: Some(key),
+            down,
+            repeat: false,
+            modifiers: Default::default(),
+            native_code: 0,
+            characters: String::new(),
+            characters_ignoring_modifiers: String::new(),
+        })
+        .unwrap();
+    }
+    fn commands(h: &Host) -> Vec<(usize, u64)> {
+        h.panels
+            .iter()
+            .enumerate()
+            .flat_map(|(i, p)| {
+                p.inbox
+                    .queue
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .filter(|r| r.kind == InputKind::Command)
+                    .map(|r| (i, r.command.unwrap()))
+                    .collect::<Vec<_>>()
+            })
+            .collect()
+    }
+    fn focused_groups(h: &Host) -> Vec<ToolbarTarget> {
+        h.toolbar_groups()
+            .into_iter()
+            .filter(|&t| h.toolbar_host(t).unwrap().focused().is_some())
+            .collect()
+    }
+    #[test]
+    fn whole_window_tabs_traverse_original_hosts_and_reverse_without_preclick() {
+        let mut h = fixture();
+        let targets = vec![
+            ToolbarTarget::Visibility(0),
+            ToolbarTarget::Panel(0),
+            ToolbarTarget::Panel(1),
+            ToolbarTarget::Panel(2),
+            ToolbarTarget::Visibility(1),
+        ];
+        assert_eq!(h.toolbar_focus_targets(), targets);
+        for target in targets.iter().chain(targets.iter().take(1)) {
+            key(&mut h, ControlKey::Tab { reverse: false }, true);
+            assert_eq!(h.toolbar_focus, Some(*target));
+            assert_eq!(focused_groups(&h), vec![*target]);
+        }
+        key(&mut h, ControlKey::Tab { reverse: true }, true);
+        assert_eq!(h.toolbar_focus, Some(ToolbarTarget::Visibility(1)));
+        assert!(commands(&h).is_empty());
+    }
+    #[test]
+    fn arrow_roving_and_same_ids_remain_with_original_module_owner() {
+        let mut h = fixture();
+        h.set_toolbar_focus(Some(ToolbarTarget::Panel(1)), true);
+        key(&mut h, ControlKey::Right, true);
+        key(&mut h, ControlKey::Enter, true);
+        key(&mut h, ControlKey::Enter, false);
+        assert_eq!(commands(&h), vec![(1, 8)]);
+        h.set_toolbar_focus(Some(ToolbarTarget::Panel(0)), true);
+        key(&mut h, ControlKey::Space, true);
+        key(&mut h, ControlKey::Space, false);
+        assert_eq!(commands(&h), vec![(0, 7), (1, 8)]);
+    }
+    #[test]
+    fn tab_escape_and_deactivation_cancel_late_space_without_losing_next_activation() {
+        let mut h = fixture();
+        h.set_toolbar_focus(Some(ToolbarTarget::Panel(0)), true);
+        key(&mut h, ControlKey::Space, true);
+        key(&mut h, ControlKey::Tab { reverse: false }, true);
+        key(&mut h, ControlKey::Space, false);
+        assert!(commands(&h).is_empty());
+        key(&mut h, ControlKey::Space, true);
+        key(&mut h, ControlKey::Escape, true);
+        key(&mut h, ControlKey::Space, false);
+        assert!(commands(&h).is_empty());
+        key(&mut h, ControlKey::Space, true);
+        h.cancel_toolbar_input();
+        h.reconcile_toolbar_focus(false);
+        assert!(focused_groups(&h).is_empty());
+        h.reconcile_toolbar_focus(true);
+        key(&mut h, ControlKey::Space, false);
+        assert!(commands(&h).is_empty());
+        assert_eq!(focused_groups(&h), vec![ToolbarTarget::Panel(1)]);
+        key(&mut h, ControlKey::Space, true);
+        key(&mut h, ControlKey::Space, false);
+        assert_eq!(commands(&h), vec![(1, 7)]);
+    }
+    #[test]
+    fn hidden_disabled_and_reordered_groups_reconcile_existing_focus() {
+        let mut h = fixture();
+        h.set_toolbar_focus(Some(ToolbarTarget::Panel(0)), true);
+        key(&mut h, ControlKey::Space, true);
+        h.leading_visible = false;
+        h.reconcile_toolbar_focus(true);
+        key(&mut h, ControlKey::Space, false);
+        assert_eq!(h.toolbar_focus, None);
+        assert!(commands(&h).is_empty());
+        assert!(!h.toolbar_focus_targets().contains(&ToolbarTarget::Panel(0)));
+        h.leading_visible = true;
+        h.order = vec![2, 0, 1];
+        h.set_toolbar_focus(Some(ToolbarTarget::Panel(0)), true);
+        key(&mut h, ControlKey::Tab { reverse: false }, true);
+        assert_eq!(h.toolbar_focus, Some(ToolbarTarget::Panel(1)));
+        h.panels[1]
+            .toolbar_host
+            .get_mut(ComponentId(1))
+            .unwrap()
+            .component_mut::<ToolbarControl>()
+            .unwrap()
+            .set_actions(vec![ToolbarAction {
+                id: 7,
+                title: "Disabled".into(),
+                enabled: false,
+            }]);
+        h.reconcile_toolbar_focus(true);
+        assert_eq!(h.toolbar_focus, None);
+        assert!(commands(&h).is_empty());
+    }
+    #[test]
+    fn overlay_owns_tab_and_outside_pointer_before_visibility_controls() {
+        let mut h = fixture();
+        let owner = ToolbarTarget::Panel(1);
+        draw_group(&mut h.panels[1].toolbar_host, Rect::new(320., 0., 60., 52.));
+        h.set_toolbar_focus(Some(owner), true);
+        key(&mut h, ControlKey::Space, true);
+        key(&mut h, ControlKey::Space, false);
+        assert_eq!(h.open_toolbar(), Some(owner));
+        draw_group(&mut h.panels[1].toolbar_host, Rect::new(320., 0., 60., 52.));
+        key(&mut h, ControlKey::Tab { reverse: false }, true);
+        assert_eq!(h.toolbar_focus, Some(owner));
+        let p = Point::new(24., 26.);
+        assert_eq!(h.toolbar_target_at(p), Some(owner));
+        h.dispatch_toolbar(owner, &ContentEvent::PointerDown(p))
+            .unwrap();
+        h.dispatch_toolbar(owner, &ContentEvent::PointerUp(p))
+            .unwrap();
+        assert!(h.leading_visible);
+        assert!(h.trailing_visible);
+        assert!(commands(&h).is_empty());
+        assert_eq!(h.open_toolbar(), None);
+    }
+    #[test]
+    fn escape_cancels_original_pointer_arm_and_empty_window_tab_is_safe() {
+        let mut h = fixture();
+        let owner = ToolbarTarget::Panel(0);
+        h.set_toolbar_focus(Some(owner), false);
+        let p = Point::new(110., 26.);
+        h.toolbar_pressed = Some(owner);
+        h.dispatch_toolbar(owner, &ContentEvent::PointerDown(p))
+            .unwrap();
+        key(&mut h, ControlKey::Escape, true);
+        h.dispatch_toolbar(owner, &ContentEvent::PointerUp(p))
+            .unwrap();
+        assert!(commands(&h).is_empty());
+        assert_eq!(h.toolbar_pressed, None);
+        let mut h = Host::new(vec!["empty".into()], false, None);
+        key(&mut h, ControlKey::Tab { reverse: false }, true);
+        key(&mut h, ControlKey::Tab { reverse: true }, true);
+        assert_eq!(h.toolbar_focus, None);
+    }
+    #[test]
+    fn temporary_input_barrier_restores_logical_owner_but_never_old_arm_or_stolen_focus() {
+        let mut h = fixture();
+        let owner = ToolbarTarget::Panel(1);
+        h.set_toolbar_focus(Some(owner), true);
+        key(&mut h, ControlKey::Space, true);
+        h.sidebar_motion
+            .retarget(0, true, std::time::Duration::from_secs(1))
+            .unwrap();
+        assert!(h.sidebar_motion.needs_frame());
+        h.reconcile_toolbar_focus(true);
+        assert_eq!(h.toolbar_focus, Some(owner));
+        assert!(focused_groups(&h).is_empty());
+        key(&mut h, ControlKey::Escape, true);
+        assert_eq!(h.toolbar_focus, Some(owner));
+        key(&mut h, ControlKey::Space, false);
+        assert!(commands(&h).is_empty());
+        h.sidebar_motion
+            .sample(std::time::Duration::from_secs(2), false, true)
+            .unwrap();
+        h.reconcile_toolbar_focus(true);
+        assert_eq!(focused_groups(&h), vec![owner]);
+        key(&mut h, ControlKey::Space, false);
+        assert!(commands(&h).is_empty());
+        h.sidebar_motion
+            .retarget(0, false, std::time::Duration::from_secs(3))
+            .unwrap();
+        h.reconcile_toolbar_focus(true);
+        key(&mut h, ControlKey::Tab { reverse: false }, true);
+        assert_eq!(h.toolbar_focus, Some(ToolbarTarget::Visibility(1)));
+        h.sidebar_motion
+            .sample(std::time::Duration::from_secs(4), false, true)
+            .unwrap();
+        h.reconcile_toolbar_focus(true);
+        assert_eq!(focused_groups(&h), vec![ToolbarTarget::Visibility(1)]);
+    }
+    #[test]
+    fn modified_system_tab_does_not_enter_or_restyle_a_toolbar_focus_scope() {
+        let mut h = fixture();
+        h.set_toolbar_focus(Some(ToolbarTarget::Panel(1)), false);
+        draw_group(
+            &mut h.panels[1].toolbar_host,
+            Rect::new(320., 0., 240., 52.),
+        );
+        assert!(!h.panels[1].toolbar_host.needs_render());
+        h.toolbar_key_input(ContentKeyEvent {
+            key: Some(ControlKey::Tab { reverse: false }),
+            down: true,
+            repeat: false,
+            modifiers: InputModifiers {
+                command: true,
+                ..Default::default()
+            },
+            native_code: 48,
+            characters: String::new(),
+            characters_ignoring_modifiers: String::new(),
+        })
+        .unwrap();
+        assert_eq!(h.toolbar_focus, Some(ToolbarTarget::Panel(1)));
+        assert!(!h.panels[1].toolbar_host.needs_render());
+        assert!(commands(&h).is_empty());
+    }
+    #[test]
+    fn unavailable_toolbar_rejects_action_but_leaves_native_chrome_drag_available() {
+        let mut h = fixture();
+        h.leading_visible = false;
+        let owner = ToolbarTarget::Panel(0);
+        assert!(
+            h.dispatch_toolbar(owner, &ContentEvent::PointerDown(Point::new(110., 26.)))
+                .unwrap()
+        );
+        h.dispatch_toolbar(owner, &ContentEvent::PointerUp(Point::new(110., 26.)))
+            .unwrap();
+        assert!(commands(&h).is_empty());
+    }
+    #[test]
+    fn awaiting_current_geometry_preserves_owner_without_replaying_old_space() {
+        let mut h = fixture();
+        let owner = ToolbarTarget::Panel(1);
+        h.set_toolbar_focus(Some(owner), true);
+        key(&mut h, ControlKey::Space, true);
+        h.panels[1].viewport = 1;
+        for item in &mut h.panels[1].toolbar {
+            item.geometry_dependent = true;
+        }
+        h.panels[1]
+            .toolbar_host
+            .get_mut(ComponentId(1))
+            .unwrap()
+            .component_mut::<ToolbarControl>()
+            .unwrap()
+            .set_actions(vec![
+                ToolbarAction {
+                    id: 7,
+                    title: "Increment".into(),
+                    enabled: false,
+                },
+                ToolbarAction {
+                    id: 8,
+                    title: "Reset".into(),
+                    enabled: false,
+                },
+            ]);
+        h.reconcile_toolbar_focus(true);
+        assert_eq!(h.toolbar_focus, Some(owner));
+        assert!(focused_groups(&h).is_empty());
+        h.panels[1].frame_viewport = 1;
+        h.panels[1]
+            .toolbar_host
+            .get_mut(ComponentId(1))
+            .unwrap()
+            .component_mut::<ToolbarControl>()
+            .unwrap()
+            .set_actions(vec![
+                ToolbarAction {
+                    id: 7,
+                    title: "Increment".into(),
+                    enabled: true,
+                },
+                ToolbarAction {
+                    id: 8,
+                    title: "Reset".into(),
+                    enabled: true,
+                },
+            ]);
+        draw_group(
+            &mut h.panels[1].toolbar_host,
+            Rect::new(320., 0., 240., 52.),
+        );
+        h.reconcile_toolbar_focus(true);
+        assert_eq!(focused_groups(&h), vec![owner]);
+        key(&mut h, ControlKey::Space, false);
+        assert!(commands(&h).is_empty());
+        key(&mut h, ControlKey::Space, true);
+        key(&mut h, ControlKey::Space, false);
+        assert_eq!(commands(&h), vec![(1, 7)]);
+    }
+    #[test]
+    fn height_only_viewport_change_revokes_arm_even_when_toolbar_frame_does_not_move() {
+        let mut h = fixture();
+        let owner = ToolbarTarget::Panel(1);
+        h.set_toolbar_focus(Some(owner), true);
+        key(&mut h, ControlKey::Space, true);
+        h.panels[1]
+            .geometry(Rect::new(320., 0., 240., 320.), 1., 66.)
+            .unwrap();
+        assert_eq!(h.panels[1].toolbar_host.focused(), None);
+        h.reconcile_toolbar_focus(true);
+        assert_eq!(h.toolbar_focus, Some(owner));
+        key(&mut h, ControlKey::Space, false);
+        assert!(commands(&h).is_empty());
+        key(&mut h, ControlKey::Space, true);
+        key(&mut h, ControlKey::Space, false);
+        assert_eq!(commands(&h), vec![(1, 7)]);
     }
 }

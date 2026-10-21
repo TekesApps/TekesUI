@@ -1448,6 +1448,11 @@
         "name": "size-attachment-height",
         "usage": "最小逻辑尺寸；字号增大后重排，不裁切",
         "value": "{p-size-96}"
+      },
+      {
+        "name": "size-toolbar-chrome",
+        "usage": "Window toolbar visible hover/selected chrome height; independent of original >=32pt hit frame",
+        "value": "{p-size-20}"
       }
     ]
   },
@@ -1732,6 +1737,14 @@
             "fontWeight": 400,
             "lineHeight": 18,
             "name": "code"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "ui",
+            "fontSize": 20,
+            "fontWeight": 400,
+            "lineHeight": 24,
+            "name": "toolbar-label"
           }
         ]
       },

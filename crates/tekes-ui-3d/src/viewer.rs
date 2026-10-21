@@ -1,8 +1,9 @@
+use crate::city_views::{CityView, CityViews};
 use crate::district::DistrictDemo;
 use std::{collections::HashMap, path::PathBuf, time::Instant};
 use tekes_ui_platform_macos::*;
 use tekes_ui_render::Renderer;
-use tekes_ui_scene::{GlyphAtlas, ImageId, Point as ScenePoint, Rect, Scene};
+use tekes_ui_scene::{GlyphAtlas, ImageId, Point as ScenePoint, Quad, Rect, Scene};
 use tekes_ui_scene3d::{Asset3D, Camera3D, Lighting3D, Renderer3D, Scene3D};
 use tekes_ui_text::{
     coretext::{CoreTextFonts, CoreTextRasterizer, CoreTextShaper},
@@ -157,6 +158,7 @@ pub fn run() -> Result<()> {
     let mut play = false;
     let mut night = false;
     let mut scene_time = None;
+    let mut city_view = CityView::Overview;
     let mut args = std::env::args_os().skip(1);
     while let Some(arg) = args.next() {
         if arg == "--demo" {
@@ -168,6 +170,14 @@ pub fn run() -> Result<()> {
             if !["cube", "manhattan", "health-cabin", "city-block"].contains(&demo.as_str()) {
                 return Err("--demo requires cube, manhattan, health-cabin or city-block".into());
             }
+        } else if arg == "--view" {
+            let value = args
+                .next()
+                .ok_or("--view requires overview, pedestrian, driver, train-cab or passenger")?;
+            city_view = CityView::ALL
+                .into_iter()
+                .find(|v| value == v.argument())
+                .ok_or("unknown city view")?;
         } else if arg == "--snapshot" {
             snapshot = Some(PathBuf::from(
                 args.next().ok_or("--snapshot requires a PNG path")?,
@@ -207,6 +217,7 @@ pub fn run() -> Result<()> {
             .to_string_lossy()
             .into_owned(),
     )?;
+    viewer.select_city_view(city_view)?;
     viewer.night = night;
     viewer.benchmark_background = benchmark_background;
     if benchmark_120hz {
@@ -300,6 +311,14 @@ fn menus() -> MenuBar {
                 ],
             ),
             Menu::new(
+                "City viewpoint",
+                CityView::ALL
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, v)| item(v.label(), 30 + i as u32))
+                    .collect(),
+            ),
+            Menu::new(
                 "Lighting",
                 vec![
                     item("Day / 白天", 15),
@@ -328,6 +347,8 @@ enum DragMode {
 struct Viewer {
     view: Scene3D,
     district: Option<DistrictDemo>,
+    city_views: Option<CityViews>,
+    overview_camera: Camera3D,
     camera: Camera3D,
     home: Camera3D,
     name: String,
@@ -353,7 +374,7 @@ struct Viewer {
     frame_rate: FrameRate,
     last: Option<f64>,
     pending_redraw: bool,
-    menu_state: Option<(bool, bool, bool, bool, bool)>,
+    menu_state: Option<(bool, bool, bool, bool, bool, usize)>,
     cached_scene: Option<Scene>,
 }
 impl Viewer {
@@ -369,12 +390,18 @@ impl Viewer {
         } else {
             None
         };
+        let city_views = district
+            .as_ref()
+            .map(|d| CityViews::new(&d.config))
+            .transpose()?;
         let playing = district.is_some();
         let home = camera_for_asset(&name);
         let fonts = CoreTextFonts::new();
         Ok(Self {
             view,
             district,
+            city_views,
+            overview_camera: home.clone(),
             camera: home.clone(),
             home,
             name,
@@ -405,15 +432,21 @@ impl Viewer {
         })
     }
     fn stage(&self) -> Rect {
+        self.stage_for(self.district.is_some())
+    }
+    fn stage_for(&self, city: bool) -> Rect {
         Rect::new(
             16.,
-            76.,
+            if city { 116. } else { 76. },
             (self.size.0 - 32.).max(1.),
-            (self.size.1 - 152.).max(1.),
+            (self.size.1 - if city { 192. } else { 152. }).max(1.),
         )
     }
     fn pixels(&self) -> (u32, u32) {
-        let r = self.stage();
+        self.pixels_for(self.district.is_some())
+    }
+    fn pixels_for(&self, city: bool) -> (u32, u32) {
+        let r = self.stage_for(city);
         (
             (r.size.width * self.scale).round().max(1.) as u32,
             (r.size.height * self.scale).round().max(1.) as u32,
@@ -461,6 +494,7 @@ impl Viewer {
         }
     }
     fn scene(&mut self) -> Result<Scene> {
+        self.update_city_camera()?;
         let lighting = self.lighting();
         self.gpu
             .as_mut()
@@ -488,6 +522,9 @@ impl Viewer {
         }
         self.atlas.begin_frame();
         let mut scene = Scene::new();
+        if self.following() && !self.night {
+            scene.push_quad(Quad::new(self.stage(), Rgba::new(0.71, 0.83, 0.89, 1.)));
+        }
         self.view
             .paint(&mut scene, self.stage(), self.image.unwrap());
         let labels = [
@@ -508,10 +545,12 @@ impl Viewer {
                 20.,
                 20.,
             ),
-            (format!("{} · glTF 2.0 · wgpu", self.name), 24., 48., 12.),
+            (if self.city_views.as_ref().is_some_and(|v|v.waiting(self.district.as_ref().unwrap().clock.seconds() as f32)) {
+                "列车已驶出街区 · 站台候车，下一班驶入时自动跟随".to_owned()
+            } else {format!("{} · glTF 2.0 · wgpu", self.name)}, 24., 48., 12.),
             (
-                "拖动：视角  ·  Shift / 中键拖动：平移  ·  右键拖动：旋转  ·  滚轮 / + −：缩放"
-                    .to_owned(),
+                if self.following() {"拖动 / 方向键：转头观察  ·  滚轮 / + −：视野  ·  1–5：切换视角  ·  街区时间保持连续"}
+                else {"拖动：视角  ·  Shift / 中键拖动：平移  ·  右键拖动：旋转  ·  滚轮 / + −：缩放"}.to_owned(),
                 24.,
                 self.size.1 - 62.,
                 13.,
@@ -582,10 +621,54 @@ impl Viewer {
                 },
             );
         }
+        if let Some(views) = &self.city_views {
+            let selected = views.selected;
+            for (index, view) in CityView::ALL.into_iter().enumerate() {
+                let rect = self.tab_rect(index);
+                let active = selected == view;
+                scene.push_quad(
+                    Quad::new(
+                        rect,
+                        if active {
+                            Rgba::new(0.16, 0.38, 0.66, 1.)
+                        } else if self.night {
+                            Rgba::new(0.10, 0.14, 0.20, 1.)
+                        } else {
+                            Rgba::new(0.90, 0.93, 0.96, 1.)
+                        },
+                    )
+                    .with_corner_radius(6.),
+                );
+                let paragraph = self.text.entry(view.label().to_owned()).or_insert_with(|| {
+                    self.shaper.shape(
+                        view.label(),
+                        &TextStyle::system(13.),
+                        &ShapeOptions {
+                            width: Some(140.),
+                            line_spacing: 0.,
+                        },
+                    )
+                });
+                push_paragraph(
+                    &mut scene,
+                    &mut self.atlas,
+                    &mut self.raster,
+                    paragraph,
+                    ScenePoint::new(rect.origin.x + 8., rect.origin.y + 6.),
+                    self.scale,
+                    if active || self.night {
+                        Rgba::new(1., 1., 1., 1.)
+                    } else {
+                        Rgba::new(0.14, 0.18, 0.24, 1.)
+                    },
+                );
+            }
+        }
         self.cached_scene = Some(scene.clone());
         Ok(scene)
     }
     fn draw(&mut self) -> Result<()> {
+        self.update_city_camera()?;
         if self.last.is_some() && self.frame_rate.refresh(Instant::now()) {
             self.cached_scene = None;
         }
@@ -628,10 +711,11 @@ impl Viewer {
             view.select_clip(0)?;
         }
         let context = self.ui.as_ref().ok_or("GPU not initialized")?.gpu_context();
+        let pixels = self.pixels_for(demo == "city-block");
         let mut gpu = if demo != "rubiks-cube" {
-            Renderer3D::new_antialiased(&context, &view, self.pixels())?
+            Renderer3D::new_antialiased(&context, &view, pixels)?
         } else {
-            Renderer3D::new(&context, &view, self.pixels())?
+            Renderer3D::new(&context, &view, pixels)?
         };
         let district = if demo == "city-block" {
             Some(DistrictDemo::load(
@@ -658,6 +742,12 @@ impl Viewer {
         self.name = format!("{demo}.glb");
         self.home = camera_for_asset(&self.name);
         self.camera = self.home.clone();
+        self.overview_camera = self.home.clone();
+        self.city_views = self
+            .district
+            .as_ref()
+            .map(|d| CityViews::new(&d.config))
+            .transpose()?;
         self.spin = false;
         self.drag = None;
         self.last = None;
@@ -665,9 +755,62 @@ impl Viewer {
         self.cached_scene = None;
         Ok(())
     }
+    fn tab_rect(&self, index: usize) -> Rect {
+        let width = ((self.size.0 - 48.) / 5.).min(148.);
+        Rect::new(24. + index as f32 * width, 78., width - 4., 30.)
+    }
+    fn following(&self) -> bool {
+        self.city_views
+            .as_ref()
+            .is_some_and(|v| v.selected != CityView::Overview)
+    }
+    fn select_city_view(&mut self, view: CityView) -> Result<()> {
+        if self.city_views.is_none() {
+            return Ok(());
+        }
+        if !self.following() {
+            self.overview_camera = self.camera.clone();
+        }
+        self.city_views.as_mut().unwrap().select(view);
+        self.camera = if view == CityView::Overview {
+            self.overview_camera.clone()
+        } else {
+            Camera3D::default()
+        };
+        self.spin = false;
+        self.drag = None;
+        self.cached_scene = None;
+        self.update_city_camera()
+    }
+    fn update_city_camera(&mut self) -> Result<()> {
+        if let (Some(views), Some(district)) = (&self.city_views, &self.district) {
+            views.update(&mut self.camera, district.clock.seconds() as f32)?;
+            if let Some(gpu) = &mut self.gpu {
+                gpu.set_blended_emission_scale(
+                    if matches!(views.selected, CityView::TrainCab | CityView::Passenger)
+                        && !views.waiting(district.clock.seconds() as f32)
+                    {
+                        0.
+                    } else {
+                        1.
+                    },
+                )?;
+            }
+        }
+        Ok(())
+    }
+    fn turn_camera(&mut self, x: f32, y: f32) -> Result<()> {
+        if self.following() {
+            self.city_views.as_mut().unwrap().turn(x, y);
+            Ok(())
+        } else {
+            self.camera.orbit(x, y).map_err(Into::into)
+        }
+    }
     fn command(&mut self, id: u32) -> Result<()> {
         match id {
             1 => {
+                self.select_city_view(CityView::Overview)?;
                 self.camera = self.home.clone();
                 self.view.seek(0.)?;
                 if let Some(district) = &mut self.district {
@@ -677,10 +820,10 @@ impl Viewer {
             }
             2 => self.camera.zoom_by(0.85)?,
             3 => self.camera.zoom_by(1. / 0.85)?,
-            4 => self.camera.orbit(-0.18, 0.)?,
-            5 => self.camera.orbit(0.18, 0.)?,
-            6 => self.camera.orbit(0., 0.15)?,
-            7 => self.camera.orbit(0., -0.15)?,
+            4 => self.turn_camera(-0.18, 0.)?,
+            5 => self.turn_camera(0.18, 0.)?,
+            6 => self.turn_camera(0., 0.15)?,
+            7 => self.turn_camera(0., -0.15)?,
             20 => self.camera.pan_by(-0.06, 0.)?,
             21 => self.camera.pan_by(0.06, 0.)?,
             22 => self.camera.pan_by(0., 0.06)?,
@@ -704,7 +847,7 @@ impl Viewer {
                     self.view.pause();
                 }
             }
-            10 => self.spin = !self.spin,
+            10 if !self.following() => self.spin = !self.spin,
             18 => self.benchmark_background = !self.benchmark_background,
             19 => self
                 .cadence
@@ -731,6 +874,7 @@ impl Viewer {
             12 => self.select_demo("manhattan")?,
             13 => self.select_demo("health-cabin")?,
             14 => self.select_demo("city-block")?,
+            30..=34 => self.select_city_view(CityView::ALL[(id - 30) as usize])?,
             _ => {}
         }
         Ok(())
@@ -815,6 +959,23 @@ impl Viewer {
                 redraw = false;
             }
             Event::Mouse(e) => match e.kind {
+                MouseEventKind::Down {
+                    button: MouseButton::Left,
+                    ..
+                } if self.city_views.is_some()
+                    && (0..5).any(|i| {
+                        self.tab_rect(i)
+                            .contains(ScenePoint::new(e.position.x as f32, e.position.y as f32))
+                    }) =>
+                {
+                    let index = (0..5)
+                        .find(|&i| {
+                            self.tab_rect(i)
+                                .contains(ScenePoint::new(e.position.x as f32, e.position.y as f32))
+                        })
+                        .unwrap();
+                    self.select_city_view(CityView::ALL[index])?;
+                }
                 MouseEventKind::Down { button, .. }
                     if self
                         .stage()
@@ -837,19 +998,25 @@ impl Viewer {
                     {
                         let x = (e.position.x - previous.x) as f32 * 0.008;
                         let y = (e.position.y - previous.y) as f32 * 0.008;
-                        match mode {
-                            DragMode::Pan => {
-                                let stage = self.stage();
-                                self.camera.pan_by(
-                                    (e.position.x - previous.x) as f32 / stage.size.width.max(1.),
-                                    -(e.position.y - previous.y) as f32 / stage.size.height.max(1.),
-                                )?;
+                        if self.following() {
+                            self.turn_camera(-x, -y)?;
+                        } else {
+                            match mode {
+                                DragMode::Pan => {
+                                    let stage = self.stage();
+                                    self.camera.pan_by(
+                                        (e.position.x - previous.x) as f32
+                                            / stage.size.width.max(1.),
+                                        -(e.position.y - previous.y) as f32
+                                            / stage.size.height.max(1.),
+                                    )?;
+                                }
+                                DragMode::Rotate => self.camera.rotate_model(x, y, 0.)?,
+                                DragMode::Orbit if button == MouseButton::Left => {
+                                    self.camera.orbit(-x, y)?
+                                }
+                                _ => {}
                             }
-                            DragMode::Rotate => self.camera.rotate_model(x, y, 0.)?,
-                            DragMode::Orbit if button == MouseButton::Left => {
-                                self.camera.orbit(-x, y)?
-                            }
-                            _ => {}
                         }
                         self.drag = Some((held, e.position, mode));
                     }
@@ -871,13 +1038,18 @@ impl Viewer {
                     _ => None,
                 };
                 if let Some((x, y)) = direction {
-                    if e.modifiers.shift || e.modifiers.alt {
+                    if !self.following() && (e.modifiers.shift || e.modifiers.alt) {
                         self.camera.pan_by(x * 0.4, y * 0.4)?;
                     } else {
-                        self.camera.orbit(x, y)?;
+                        self.turn_camera(x, y)?;
                     }
                 } else {
                     let id = match e.characters.to_lowercase().as_str() {
+                        "1" => 30,
+                        "2" => 31,
+                        "3" => 32,
+                        "4" => 33,
+                        "5" => 34,
                         "r" => 1,
                         "+" | "=" => 2,
                         "-" => 3,
@@ -941,6 +1113,7 @@ impl Viewer {
             self.night,
             self.benchmark_background,
             self.cadence.hz == 60,
+            self.city_views.as_ref().map_or(0, |v| v.selected as usize),
         );
         if self.menu_state != Some(menu_state) {
             window.set_command_checked(CommandId(9), self.playing);
@@ -949,6 +1122,14 @@ impl Viewer {
             window.set_command_checked(CommandId(19), self.cadence.hz == 60);
             window.set_command_checked(CommandId(15), !self.night);
             window.set_command_checked(CommandId(16), self.night);
+            for i in 0..5 {
+                window.set_command_checked(
+                    CommandId(30 + i),
+                    self.city_views
+                        .as_ref()
+                        .is_some_and(|v| v.selected as u32 == i),
+                );
+            }
             self.menu_state = Some(menu_state);
         }
         if redraw {
@@ -969,6 +1150,49 @@ impl WindowHandler for Viewer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn city_tabs_keep_time_pause_and_gpu_resources_when_changing_seats() {
+        let mut viewer = Viewer::new(
+            Asset3D::load(demo_asset("city-block")).unwrap(),
+            "city-block.glb".into(),
+        )
+        .unwrap();
+        viewer
+            .init(Renderer::new_headless().unwrap(), (640, 480), 1.)
+            .unwrap();
+        viewer.district.as_mut().unwrap().clock.seek(12.).unwrap();
+        viewer.command(9).unwrap();
+        viewer.scene().unwrap(); // Initial rest-pose uniforms precede steady-state checks.
+        let geometry = viewer.gpu.as_ref().unwrap().geometry_upload_bytes();
+        let instances = viewer.gpu.as_ref().unwrap().instance_upload_bytes();
+        let mut images = Vec::new();
+        for mode in CityView::ALL {
+            viewer.select_city_view(mode).unwrap();
+            let scene = viewer.scene().unwrap();
+            let clear = viewer.clear_color();
+            let pixels = viewer
+                .ui
+                .as_mut()
+                .unwrap()
+                .render_to_rgba8(&scene, &mut viewer.atlas, (640, 480), 1., clear)
+                .unwrap();
+            assert!(images.iter().all(|previous| previous != &pixels));
+            images.push(pixels);
+            assert_eq!(viewer.district.as_ref().unwrap().clock.seconds(), 12.);
+            assert!(!viewer.playing);
+            let gpu = viewer.gpu.as_ref().unwrap();
+            assert_eq!(gpu.geometry_upload_bytes(), geometry);
+            assert_eq!(gpu.instance_upload_bytes(), instances);
+            assert_eq!(gpu.last_frame_pose_upload_bytes(), 0);
+        }
+        for name in ["rubiks-cube", "city-block"] {
+            viewer.select_demo(name).unwrap();
+            assert_eq!(
+                viewer.gpu.as_ref().unwrap().output().size(),
+                viewer.pixels()
+            );
+        }
+    }
     #[test]
     fn shared_frame_matches_standalone_and_keeps_cached_draws_valid() {
         for name in ["rubiks-cube", "city-block", "health-cabin"] {

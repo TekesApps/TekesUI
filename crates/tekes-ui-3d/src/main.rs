@@ -1,4 +1,6 @@
 #[cfg(target_os = "macos")]
+mod city_views;
+#[cfg(target_os = "macos")]
 mod clouds;
 #[cfg(target_os = "macos")]
 mod district;

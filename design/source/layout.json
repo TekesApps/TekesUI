@@ -142,7 +142,11 @@
       "default_height": "Native window-top toolbar uses the current AppKit contentLayoutRect converted into the extended content view; no fixed 52/56/66 pt assumption. Ordinary non-extended content returns zero overlap.",
       "inline": "Explicit View-local Toolbar bounds remain caller-owned; native titlebar sizing does not expand inline toolbars.",
       "input": "Use the same current native chrome height for painting, module viewport version/size, and pointer coordinate conversion.",
-      "drag": "Eligible native titlebar chrome may take an unhandled or explicitly bubbled primary drag; cancel the previous component interaction first and pass the retained original native mouse-down to AppKit. Captured selection/slider/splitter gestures keep ownership."
+      "drag": "Eligible native titlebar chrome may take an unhandled or explicitly bubbled primary drag; cancel the previous component interaction first and pass the retained original native mouse-down to AppKit. Captured selection/slider/splitter gestures keep ownership.",
+      "alignment": "Keep native reserved chrome height separate from visible native control center; align all window toolbar contributions to the actual traffic-light center. Oversized text may grow the toolbar instead of clipping.",
+      "typography": "Window ToolbarControl uses toolbar-label; inline ToolbarControl retains ui-body. Default system capital height is calibrated against the native 14pt traffic-light ink, not the full line box.",
+      "icons": "Regular window toolbar artwork targets 21 units of visible vertical ink on the 24-unit canonical artboard, displayed in the existing 16pt standard icon slot. Semantic small marks/dots remain small and centered. Normalize shared artwork at design time; no per-icon runtime rescaling.",
+      "actions": "Text/icon actions share one decorative size-toolbar-chrome height, centered inside the original >=size-icon-button hit/semantic frame. Hover/selected/focus paint remains owned by Button; handlers use the full clipped hit frame. Larger measured labels grow the chrome instead of clipping."
     }
   },
   "scroll_area": {

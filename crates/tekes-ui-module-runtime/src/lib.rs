@@ -69,3 +69,6 @@ pub use container::ProcessContainer;
 
 #[cfg(target_os = "macos")]
 mod process_view;
+
+#[cfg(target_os = "macos")]
+mod container_toolbar;

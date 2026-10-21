@@ -175,3 +175,34 @@ pub struct ViewAttach {
     pub endpoint: String,
     pub required: ViewCapabilities,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn legacy_start_wire_and_exhaustive_client_patterns_remain_unchanged() {
+        fn version(message: ClientMessage) -> u32 {
+            match message {
+                ClientMessage::Start { version, .. } => version,
+                ClientMessage::StartView { version, .. } => version,
+                ClientMessage::Request { version, .. } => version,
+            }
+        }
+        let session = Session {
+            module: "counter".into(),
+            instance: 1,
+            host_epoch: 42,
+        };
+        let legacy = ClientMessage::Start {
+            version: VERSION,
+            session,
+            required: Capabilities::HEADLESS,
+        };
+        let value = serde_json::to_value(&legacy).unwrap();
+        assert_eq!(
+            value,
+            serde_json::json!({"kind":"Start","data":{"version":2,"session":{"module":"counter","instance":1,"host_epoch":42},"required":{"services":true,"toolbar":true,"view":false}}})
+        );
+        assert_eq!(version(legacy), VERSION);
+    }
+}
