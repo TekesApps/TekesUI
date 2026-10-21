@@ -1,0 +1,3942 @@
+{
+  "cases": [
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Standard }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Light, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 0,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 0,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 1,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 1,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 1.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "surface-1"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ]
+      ],
+      "panel": false,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": false,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    },
+    {
+      "brand": 2,
+      "component": "tui.stack",
+      "content_state": "rest",
+      "lookups": [],
+      "no_dynamic_lookups": true,
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }",
+      "zero_lookup_reason": "StackView owns geometry only. Actual themed SurfaceView painting runs outside this capture; child paint dependencies are not attributed to Stack."
+    },
+    {
+      "brand": 2,
+      "component": "tui.surface",
+      "content_state": "rest",
+      "lookups": [
+        [
+          "color",
+          "separator"
+        ],
+        [
+          "color",
+          "surface-panel"
+        ],
+        [
+          "radius",
+          "radius-panel"
+        ],
+        [
+          "spacing",
+          "space-loose"
+        ],
+        [
+          "stroke",
+          "stroke-rule"
+        ]
+      ],
+      "panel": true,
+      "partial": true,
+      "scale": 2.0,
+      "state_asserted": true,
+      "theme": "Theme { appearance: Dark, contrast: Increased }"
+    }
+  ],
+  "complete": false,
+  "excluded": [
+    "child token dependencies attributed to layout owners",
+    "all caller and alias-closure branches",
+    "native and whole-page/ClientKit acceptance"
+  ],
+  "format": "tekesui-runtime-token-observation/1",
+  "scope": "Actual public StackView geometry and SurfaceView paint have separate nested-free lookup scopes.4themes/3brands/@1,@2/Canvas,Panel/ancestor clipping. Gallery and external consumer scale forwarding validated separately.",
+  "inputs_sha256": {
+    "crates/tekes-ui-controls/Cargo.toml": "2440aadfcbdb1e1fec9c86444ac3e07ec2ad2ea04022999ba2b464752e13e0bd",
+    "crates/tekes-ui-controls/src/chart.rs": "f30cda0a769e0007ca6c7336d72584ed3da8c31870d845a8208b912ca489e120",
+    "crates/tekes-ui-controls/src/collections_view.rs": "6e41766fab863f68d0bfb7a9d32b541f85fdc3bb249e5c70af99dbc1abbf6cc7",
+    "crates/tekes-ui-controls/src/composite.rs": "466f71e95125ad3dd2cbe9de9dde783a180ed37ffc2ab8aae05738255c203fef",
+    "crates/tekes-ui-controls/src/composition.rs": "a55bdfba8f2e13f74643c1f0a7032a9c66f365a3018c94dfd3bdbe89b84aeb41",
+    "crates/tekes-ui-controls/src/composition/actions.rs": "f1a015320d9df08628d952a56adbc9f0d2626fc0bd90d4f0d3a40d28ac686d0a",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "2bc27d38499f22101e0ac35b6da9ce86383c12d6efe38bc64230ca66a8d12b59",
+    "crates/tekes-ui-controls/src/composition/content_reading.rs": "043eb142fc958925024b1cca1d4c473f4be2c73c792df0de9f803ebee2c46b7e",
+    "crates/tekes-ui-controls/src/composition/content_reveal.rs": "be8033d7ef4db46dc4de526214dfc261d70a8c1ce4e685e814d8198a75941450",
+    "crates/tekes-ui-controls/src/composition/help.rs": "4e0b40a69520a135f5bb00d5584dfa1023bf1c9dd11faec9389535f51bf8fcbf",
+    "crates/tekes-ui-controls/src/composition/key.rs": "9c78585d2d39165f07c74c416165b130ba95d324e7c651b0b0f1c8057844524e",
+    "crates/tekes-ui-controls/src/composition/label.rs": "ba9f1e5d886366635f94c30845e7001d5eaa830134ca4d31be5758d8c6827044",
+    "crates/tekes-ui-controls/src/composition/menu.rs": "dd821b02aced9a741e14bedea84d540cf9ed8ab435453eeb4ab7257fe20a654b",
+    "crates/tekes-ui-controls/src/composition/pointer.rs": "bab363a222d7c6195349569a4a317ca4586070463964a3503212c3c7aa3927d6",
+    "crates/tekes-ui-controls/src/control_motion.rs": "cd67d5e00d63126a5c14b1c096be060cdf8615e23555a37788ec122a84a6fac8",
+    "crates/tekes-ui-controls/src/draft.rs": "e1632400d3010211fd9718b92b02149c2ba115d587309367d424738117152994",
+    "crates/tekes-ui-controls/src/extended.rs": "b86575722cb7590dfdf03b96f218f4bbc97c0f845c872f44f7ca9cd94d299df8",
+    "crates/tekes-ui-controls/src/feedback_view.rs": "c1e4e22ebb46f8553ce47eb03e0a9f5ad0de73c7615a2c192d754b68c71b1f40",
+    "crates/tekes-ui-controls/src/layout.rs": "1fb04f0f3061b0439dded808949aa7dd89d03e6fef6084c53bfb9707062d6e35",
+    "crates/tekes-ui-controls/src/layout_view.rs": "855ce70ecfaa1aeec965072593f0925b5053b3d33e6adfd83f7ccc589652cefd",
+    "crates/tekes-ui-controls/src/lib.rs": "63df40ae30da29555f0b74f226f265bb9543e60e2230b9977d224cc770cceddc",
+    "crates/tekes-ui-controls/src/paint.rs": "f586b50e5d9e1e65226b7b13d9e34d1cbf985557acec13fa256dc5c8ba10ad55",
+    "crates/tekes-ui-controls/src/reading.rs": "2bcd3f8445f10e523ff907bb8e4f9267b338acaa3bfc306ebabf23ee4b4a969d",
+    "crates/tekes-ui-controls/src/scroll_view.rs": "ed31b11d668ef1c40ceed5e4312ab1df55171444f0ef9f93d0b2515263fedcb1",
+    "crates/tekes-ui-controls/src/scroll_view/reveal.rs": "e1783d26d68f45d1e04addd2b4ca38d067a546017adc5de82f87de68e79ef868",
+    "crates/tekes-ui-controls/src/selection.rs": "0c089ab889da7bb1117039ffb22daca572a9e3526c9a04967b1266473d7a6dd8",
+    "crates/tekes-ui-controls/src/text_input.rs": "fd25003400dbf9ed92c94e354d8fed4aa12e737e14eb2ade26c34e1002801b4a",
+    "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
+    "crates/tekes-ui-controls/src/text_surface.rs": "44afcd0bd4d7ed886887eefc3e5f80036c2cba60f417a34ec6e991b2750593f7",
+    "crates/tekes-ui-controls/src/ticking_number.rs": "a3801f24c525cd31de4807260b6b53a28b49e344b02c991d7c93631972f37b3b",
+    "crates/tekes-ui-controls/src/toolbar.rs": "08f4009ab0664791bd8ab33a2e456d99112ee39665d40348597f8805abdb463b",
+    "crates/tekes-ui-controls/src/widgets.rs": "654e44574e5b6cb547710fd5c568a87928f953c6f9024f3327642677fb9e6425",
+    "crates/tekes-ui-controls/tests/navigation_contract.rs": "fa9f923d0ccea329a20e2b7a1244c1b98990667ddbeb9953137a76352770e59d",
+    "crates/tekes-ui-design-export/src/effects.rs": "187193a7959c24212f72a0931b953498ae6195283dd7b9940ef02168ea8039d3",
+    "crates/tekes-ui-design-export/src/freshness.rs": "c4b3e0448d5f68531e54bc6563db9e26b41da11265b7392a9e759b44184c2b74",
+    "crates/tekes-ui-design-export/src/gallery_brands.rs": "289dfb15d825e9f2c325488f08506ffcdf7aa14145f5a10de07ced96d4486c93",
+    "crates/tekes-ui-design-export/src/lib.rs": "39cfc4bb5636f2202468821a119bdf6c6f60e8291ba4e77ad0a701fea54fd0a7",
+    "crates/tekes-ui-design-export/src/main.rs": "fe8846f83e206ba0c834fd1ac0948d548e8c658dba7a322264dabc4c70c7ae96",
+    "crates/tekes-ui-design-export/src/proposal.rs": "ca9f87cd401f281b89fe01a6c8bfe7ce63ee2ce9c80caee63cd5ddb06a519267",
+    "crates/tekes-ui-design-export/src/validator.rs": "bb11f08be7b145c90dbacb1cbd20c8afc7102ef690925af81dafe6b1b6eebc7a",
+    "crates/tekes-ui-tokens/Cargo.toml": "4c647031d8e4054f8645bbc21b9fd6b2bc98043075d6f7dd8d58c2e6cbedf6f2",
+    "crates/tekes-ui-tokens/src/alpha.rs": "aa3017df323ade39c0f6041ad2ff0a5d0d936186cc66f69c9bb6ebb67e1d780b",
+    "crates/tekes-ui-tokens/src/audit.rs": "f0af9c25388a6d3d170a918958b15238daf6efc537dfa8c663a08c6fb14070d7",
+    "crates/tekes-ui-tokens/src/color.rs": "680b9dfed0189d878ab4a8f5a5a8d4daf86ec31735e881519ebe317b6aabad86",
+    "crates/tekes-ui-tokens/src/lib.rs": "21f4239091bbb47834f9b4315dd4f753fc0a249e4ed5104f67b8fb874386cd6e",
+    "crates/tekes-ui-tokens/src/metrics.rs": "91a1038e07cb013b6e31878dc0e571b813f26bf97c674fcead9458c57438fb49",
+    "crates/tekes-ui-tokens/src/palette.rs": "8bd75a15da0d00de2fe34bd5e7f50a0a8541239d82fe9eea599ca20fff3005ed",
+    "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
+    "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
+    "design/brand/apricot.json": "07442028268d7673e89fd1287b9b235e9765418610d73205650f627a049d12ce",
+    "design/brand/config.json": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
+    "design/brand/gallery.json": "ba7cc2b8678d71fa397f99faa51f03733d5ae68ff384f5ce822bd07cd52d5e14",
+    "design/brand/heather.json": "5aa3f8498da5dcb13810816ae24129ea14046f2ce55c57033c42bb8758d1e11c",
+    "design/brand/mist-blue.json": "b3485d1104e10cb10faf9b49790fb1974f46d1272d070d83ed60946b1590dbf8",
+    "design/brand/policy.json": "8ab0d7c6c9605a72ace5af335cf90ffa8abe3243534ac9c4ca68f3fc39bf488c",
+    "design/brand/rose.json": "b5ed8911d1caf79c76a0d16127212e63139f3494f32f5e86a843ba7321f4b09c",
+    "design/brand/sage.json": "6e7fafedf0766dfa98f35631778846c16cc44ef4671df0dbb62da4e174c00fc9",
+    "design/brand/sea-glass.json": "4f9c77586a09c8ce2b8284d7581cfdfdc0cdeb96f8a757a88dbff5c9bf9b556b",
+    "design/brand/warm-sand.json": "08d379e0e4fdc4ccb8d9239f42ce112ca535e719787e4feea56280b0f5c08bd9",
+    "design/brand/warm-stone.json": "39dd02e76b0617babeef0f89081ea94536f1d3b13466370978b5201f8c18df5c",
+    "design/brand/warm-taupe.json": "e4ee17d8634f49c2e8f78c33df87d6048a604023e32d1e8eb98dabafb440cd10",
+    "design/brand/wheat.json": "a998867d0ea6926465d7f82a3e0e03239ac358b93a76e5edadc51a8ad672b11a",
+    "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json": "07e807d924ea0109023be25224b48763b59eb81f98ac3552bac9750b0f3059cd",
+    "design/source/base.tokens.json": "f7d3a739b023fb72a7e137290d72abb58545d443751bbac969148e53a9a6c95a",
+    "design/source/interaction-contracts.json": "049148e71a7698b0d05e5d385bc17401ce469f20b191f1de4db6a4cbbdd076e9",
+    "design/source/layout.json": "6f4ae3453ba0d11726db53f081dc9244fe9db1bfad906882ac9901168f9ca466",
+    "design/source/legacy.tokens.json": "e2532db5200b6310cf934ecd12bad820f60ef0dd3195a1d563f5ef7512149eda",
+    "design/source/motion.json": "73b22d880193b33b0d35ce20e26e4196cf2dab2a116af573823d4d82ace3c53c",
+    "design/source/rust-mapping.json": "cd34ddf901603272874201fd835cea8841f2fdc5875bcf640d647c70b39f3e76",
+    "design/source/token-metadata.json": "0e9108b59a26b560087fe31c0bfc80dcfdceea67a65dd7fd4c541a4e0f46c9e5",
+    "design/tokens.json": "b00412c0a631b9710a9d9441b853a4199c8358390cd2881d749c008ef1c38282",
+    "scripts/audit-navigation-tokens.py": "5daff11d387c76450a5117f273dfee0ba046e1eae00447d0efa3e68b3630c8c1",
+    "scripts/audit-layout-surface-tokens.py": "83e337823a09b11d41abc4bf57624a72fcacec64468fcc485f394002fabf398f",
+    "crates/tekes-ui-controls/tests/layout_surface_tokens.rs": "7e914d2b70394ab377c81f542a3a54b1e86343db092d5c5db1efe7387db5f269",
+    "Cargo.lock": "0d724b7f92bf1c91628241ae1ce804ddc44be5124d6d49cff49b3c76a838e818"
+  },
+  "probe_command": [
+    "cargo",
+    "test",
+    "--locked",
+    "-p",
+    "tekes-ui-controls",
+    "--features",
+    "token-audit",
+    "--test",
+    "layout_surface_tokens"
+  ],
+  "public_api_test": "crates/tekes-ui-controls/tests/layout_surface_tokens.rs",
+  "native_acceptance": "separate/unverified"
+}

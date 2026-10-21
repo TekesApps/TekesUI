@@ -97,6 +97,12 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-toolbar",
         "tekes_ui_controls::feedback_view::ToolbarView",
     );
+    bind::<tekes_ui_controls::ToolbarControl>(
+        &mut actual,
+        "tui.toolbar",
+        "component-toolbar",
+        "tekes_ui_controls::ToolbarControl",
+    );
     bind::<tekes_ui_controls::TextSurface>(
         &mut actual,
         "tui.text",
@@ -703,6 +709,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::TickingNumberError",
     );
     public_type::<tekes_ui_controls::Toolbar>(&mut actual, "tekes_ui_controls::Toolbar");
+    public_type::<tekes_ui_controls::ToolbarAction>(
+        &mut actual,
+        "tekes_ui_controls::ToolbarAction",
+    );
+    public_type::<tekes_ui_controls::ToolbarControl>(
+        &mut actual,
+        "tekes_ui_controls::ToolbarControl",
+    );
+    public_type::<tekes_ui_controls::ToolbarIconAction>(
+        &mut actual,
+        "tekes_ui_controls::ToolbarIconAction",
+    );
     public_type::<tekes_ui_controls::collections_view::ChartView>(
         &mut actual,
         "tekes_ui_controls::collections_view::ChartView",
@@ -756,7 +774,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::collections_view::MarkdownView",
     );
     #[allow(dead_code)]
-    fn public_trait_85<T: tekes_ui_controls::collections_view::PassiveCollectionView + ?Sized>() {}
+    fn public_trait_88<T: tekes_ui_controls::collections_view::PassiveCollectionView + ?Sized>() {}
     actual.push("tekes_ui_controls::collections_view::PassiveCollectionView");
     public_type::<tekes_ui_controls::collections_view::TreeView>(
         &mut actual,
@@ -775,7 +793,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::ButtonContent",
     );
     #[allow(dead_code)]
-    fn public_trait_90<T: tekes_ui_controls::composition::Component + ?Sized>() {}
+    fn public_trait_93<T: tekes_ui_controls::composition::Component + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::Component");
     public_type::<tekes_ui_controls::composition::ComponentId>(
         &mut actual,
@@ -1274,7 +1292,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_215<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_218<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

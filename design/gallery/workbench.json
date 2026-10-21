@@ -234,9 +234,10 @@
       "api": "tekes_ui_controls::Toolbar",
       "api_bindings": [
         "tekes_ui_controls::Toolbar",
-        "tekes_ui_controls::feedback_view::ToolbarView"
+        "tekes_ui_controls::feedback_view::ToolbarView",
+        "tekes_ui_controls::ToolbarControl"
       ],
-      "api_notes": "Current action-group model and view. Window-level registration/lifecycle remain architecture work in #14."
+      "api_notes": "Existing action-group model/View and additive original Component ToolbarControl with measured single-row overflow, stable IDs and icons. Module/window process contributions are separate experimental infrastructure; arbitrary caller Content slots and complete remote keyboard/IME/AX remain unaccepted."
     },
     {
       "title": "Text",

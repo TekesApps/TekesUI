@@ -137,6 +137,17 @@
         },
         "remaining": "public/remote/independent reviewer separate; no Issue closure inferred",
         "source_boundary": "Exact7e5092c9 remains historical before newIssue35 Content-help/source/JSON increment. New scoped validation has separate receipts; do not advertise7e as all latest WIP."
+      },
+      "stage40_current_progress": {
+        "public_checkpoint": "2ee8e97a8ed7b0ef6615463e76e227a7e6456980",
+        "pr": "https://github.com/TekesApps/TekesUI/pull/40",
+        "current_work": "Actual token probes18 rerun; Toolbar public classifications and bounded Component conclusions reviewed; new keyboard-entry/navigation regression and72actual token cases passed; old fixed-count bindings80/icon176 tests corrected to exact registry sets. Full final-source gates still running.",
+        "source_review": "docs/design/stage40-audit-refresh-20261021.md",
+        "remaining": [
+          "final public input CI",
+          "independent final source audit/consumer delivery",
+          "exact matrix/remaining findings linked back to original audit issues; no whole goal or native maturity promotion"
+        ]
       }
     },
     {
@@ -611,7 +622,7 @@
     }
   ],
   "current_execution_batch": 6,
-  "current_step": "User-authorized ProcessComponent foundation (View optional) now owned by Rust TekesUI. Sole existing parent/texture backend extracted to module-runtime with compatibility paths; 3 worker-entry unit,440controls/307consumer,three-worker AppHost and independent two-worker GPU checks passed. Nonblocking lifecycle,headless service protocol,RAII close,standard Content adapter and final native/Gold7 delivery remain; no final migration notices. Toolbar/native geometry and SplitView scoped public/GPU proof retained separately; physical window drag pending. Eight-batch goal remains active.",
+  "current_step": "PR40 staged delivery: actual runtime observations and source audit refreshed; original ToolbarControl keyboard entry repaired. Shared ProcessComponent/V2 View public API and independent GPU consumer accepted within experimental scope. Final published-tree gates and native/Gold7 integration remain; all eight batches retain their original scope.",
   "new_consumer_findings": [
     {
       "issue": 31,
@@ -928,5 +939,12 @@
     "status": "partial; standard legacy Component bounded acceptance passed",
     "evidence": "design/reviews/process-container-component-20261021/acceptance.json",
     "next": "AppHost consumption, V2 optional View/event disposition and final native/Gold7"
+  },
+  "stage40_host_keyboard_remaining": {
+    "owner": "Rust AppHost",
+    "finding": "window KeyInput does not route Tab/ordinary keys to navigation and visibility toolbars; default route is current Panel toolbar. Shared ToolbarControl fix is not final window keyboard/AX acceptance.",
+    "evidence": "AppHost independent read-only source review of window.rs:1094-1129",
+    "public_api_fix": "crates/tekes-ui-controls/tests/toolbar_contract.rs",
+    "status": "not implemented at window integration layer; tracked in original Toolbar architecture scope, no duplicate issue"
   }
 }

@@ -1,0 +1,164 @@
+--- design/reviews/toolbar-splitter-defaults-20261021/before-native-handoff/crates/tekes-ui-platform-macos/src/shared.rs
++++ crates/tekes-ui-platform-macos/src/shared.rs
+@@ -25,7 +25,7 @@
+ 
+ use objc2::rc::Retained;
+ use objc2::runtime::AnyObject;
+-use objc2_app_kit::NSWindow;
++use objc2_app_kit::{NSEvent, NSEventType, NSWindow, NSWindowButton};
+ use objc2_foundation::{MainThreadMarker, NSSize, NSString};
+ 
+ use crate::event::{Event, Size};
+@@ -83,6 +83,9 @@
+     handler: RefCell<Option<Box<dyn WindowHandler>>>,
+     queue: RefCell<VecDeque<QueuedEvent>>,
+     dispatching: Cell<bool>,
++    // AppKit requires the original native down, even when a component first
++    // offers its unhandled drag later. Never retain a RefCell borrow over AppKit.
++    pub(crate) titlebar_drag_origin: RefCell<Option<Retained<NSEvent>>>,
+     pub redraw_pending: Cell<bool>,
+     pub last_geometry: Cell<Option<GeometryState>>,
+     pub last_motion: Cell<Option<bool>>,
+@@ -133,6 +136,7 @@
+             handler: RefCell::new(Some(handler)),
+             queue: RefCell::new(VecDeque::new()),
+             dispatching: Cell::new(false),
++            titlebar_drag_origin: RefCell::new(None),
+             redraw_pending: Cell::new(false),
+             last_geometry: Cell::new(None),
+             last_motion: Cell::new(None),
+@@ -188,6 +192,9 @@
+ 
+     /// 投递一个事件。重入时在当前 handler 返回后按顺序处理。
+     pub fn dispatch(self: &Rc<Self>, event: Event) {
++        if matches!(event, Event::Focus(false) | Event::CloseRequested) {
++            self.titlebar_drag_origin.borrow_mut().take();
++        }
+         self.enqueue(QueuedEvent {
+             event,
+             drawable: None,
+@@ -270,6 +277,7 @@
+     pub fn finish(&self) {
+         crate::wake::native::unregister(&self.wake_state);
+         self.closed.set(true);
++        self.titlebar_drag_origin.borrow_mut().take();
+         self.animating.set(false);
+         self.discard_metal_frames();
+         if let Some(o) = self.objects.get() {
+@@ -315,6 +323,11 @@
+             .window
+             .occlusionState()
+             .contains(objc2_app_kit::NSWindowOcclusionState::Visible)
++    }
++
++    /// Publish hover shapes after layout. AppKit restores the default cursor on exit.
++    pub fn set_cursor_regions(&self, regions: Vec<crate::CursorRegion>) {
++        self.view.set_cursor_regions(regions);
+     }
+ 
+     pub fn is_key_window(&self) -> bool {
+@@ -535,6 +548,42 @@
+         self.view.size_points()
+     }
+ 
++    /// Native unified-titlebar exclusion in this view's top-left point space.
++    /// Height follows AppKit layout; the leading extent follows visible traffic
++    /// lights instead of hard-coded window-control coordinates.
++    pub fn titlebar_safe_area(&self) -> (f64, f64) {
++        let size = self.size();
++        let mut leading: f64 = 0.;
++        let mut height = self.titlebar_content_height();
++        for kind in [
++            NSWindowButton::CloseButton,
++            NSWindowButton::MiniaturizeButton,
++            NSWindowButton::ZoomButton,
++        ] {
++            if let Some(button) = self.window.standardWindowButton(kind) {
++                if button.isHidden() {
++                    continue;
++                }
++                let rect = self
++                    .view
++                    .convertRect_fromView(button.bounds(), Some(&button));
++                // Ordinary content and fullscreen chrome may not overlap the
++                // traffic lights at all. Only reserve their actual visible area.
++                let right = rect.origin.x + rect.size.width;
++                let bottom = rect.origin.y + rect.size.height;
++                if right > 0.
++                    && rect.origin.x < size.width
++                    && bottom > 0.
++                    && rect.origin.y < size.height
++                {
++                    leading = leading.max(right.clamp(0., size.width));
++                    height = height.max(bottom.clamp(0., size.height));
++                }
++            }
++        }
++        (height, leading)
++    }
++
+     /// `backingScaleFactor`。
+     pub fn scale(&self) -> f64 {
+         self.view.scale_factor()
+@@ -554,14 +603,54 @@
+         NonNull::new(ptr.cast_mut().cast::<c_void>()).expect("Retained 不会是空指针")
+     }
+ 
+-    /// Hand the current left-button press to AppKit for native window dragging.
+-    /// Call synchronously from a mouse-down handler on an empty titlebar region.
++    /// Height of native titlebar/toolbar chrome overlapping this content view,
++    /// in logical points. Ordinary non-extended content returns zero. Query the
++    /// current window geometry; do not hardcode an OS-specific toolbar height.
++    pub fn titlebar_content_height(&self) -> f64 {
++        let layout = self
++            .view
++            .convertRect_fromView(self.window.contentLayoutRect(), None);
++        let height = layout.origin.y;
++        if height.is_finite() {
++            height.clamp(0., self.size().height.max(0.))
++        } else {
++            0.
++        }
++    }
++
++    /// Hand an eligible titlebar press to AppKit. May be called synchronously
++    /// on down or after a component offers an unhandled drag. Cancel the old
++    /// component interaction first: AppKit may not deliver a matching mouse-up.
+     pub fn begin_titlebar_drag(&self) {
+-        if let Some(event) = self.window.currentEvent() {
+-            if event.r#type() == objc2_app_kit::NSEventType::LeftMouseDown {
+-                self.window.performWindowDragWithEvent(&event);
+-            }
+-        }
++        let _ = self.try_begin_titlebar_drag();
++    }
++
++    /// Same handoff with an explicit result. Uses the retained original native
++    /// down, never the dragged event, and consumes that origin at most once.
++    pub fn try_begin_titlebar_drag(&self) -> bool {
++        let Some(current) = self.window.currentEvent() else {
++            return false;
++        };
++        if !self.is_active()
++            || !matches!(
++                current.r#type(),
++                NSEventType::LeftMouseDown | NSEventType::LeftMouseDragged
++            )
++            || current.windowNumber() != self.window.windowNumber()
++            || NSEvent::pressedMouseButtons() & 1 == 0
++        {
++            return false;
++        }
++        let Some(origin) = self.shared.titlebar_drag_origin.borrow_mut().take() else {
++            return false;
++        };
++        if origin.r#type() != NSEventType::LeftMouseDown
++            || origin.windowNumber() != self.window.windowNumber()
++        {
++            return false;
++        }
++        self.window.performWindowDragWithEvent(&origin);
++        true
+     }
+ 
+     /// 关闭窗口。不经过 `CloseRequested`，直接关。

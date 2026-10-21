@@ -1,0 +1,20 @@
+[package]
+name = "tekesui-grid-layout-review"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[features]
+token-audit = ["tekes-ui-controls/token-audit"]
+
+[dependencies]
+tekes-ui-controls = { path = "../../../../crates/tekes-ui-controls" }
+tekes-ui-scene = { path = "../../../../crates/tekes-ui-scene" }
+tekes-ui-text = { path = "../../../../crates/tekes-ui-text" }
+tekes-ui-tokens = { path = "../../../../crates/tekes-ui-tokens" }
+tekes-ui-render = { path = "../../../../crates/tekes-ui-render" }
+tekes-ui-platform-macos = { path = "../../../../crates/tekes-ui-platform-macos" }
+serde_json = "1"
+png = "0.17.16"

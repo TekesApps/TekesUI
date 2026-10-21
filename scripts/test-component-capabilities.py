@@ -191,7 +191,13 @@ class CapabilityTests(unittest.TestCase):
                 capabilities.resolve_api(api)
 
     def test_every_component_has_explicit_compiled_model_view_bindings(self):
-        self.assertEqual(sum(len(c['public_api_bindings']['paths']) for c in self.data['components']), 80)
+        registry = json.loads((ROOT / capabilities.REGISTRY).read_text())['entries']
+        expected = {entry['component']: entry['api_bindings']
+                    for entry in registry if entry['kind'] == 'component'}
+        actual = {component['id']: component['public_api_bindings']['paths']
+                  for component in self.data['components']}
+        self.assertEqual(actual, expected)
+        self.assertIn('tekes_ui_controls::ToolbarControl', actual['tui.toolbar'])
         for c in self.data['components']:
             self.assertEqual(c['public_api_bindings']['paths'][0], c['api'])
             self.assertEqual(c['public_api_bindings']['status'], 'compiler-check-required')

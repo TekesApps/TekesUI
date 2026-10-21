@@ -283,7 +283,18 @@ mod tests {
         assert_eq!(catalog.entries.len(), tekes_ui_icons::Glyph::ALL.len());
         assert!(catalog.notices.is_empty());
         catalog.add_proposals();
-        assert_eq!(catalog.entries.len(), 176);
+        let expected: std::collections::BTreeSet<_> = tekes_ui_icons::Glyph::ALL
+            .iter()
+            .map(|glyph| glyph.name)
+            .collect();
+        let actual: std::collections::BTreeSet<_> = catalog
+            .entries
+            .iter()
+            .map(|entry| entry.name.as_str())
+            .collect();
+        assert_eq!(actual, expected);
+        assert_eq!(catalog.entries.len(), expected.len());
+        assert!(actual.contains("tekes-swap-horizontal"));
         assert!(catalog.entries.iter().all(|entry| entry.before.is_none()));
     }
     #[test]

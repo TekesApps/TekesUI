@@ -1,0 +1,162 @@
+--- design/reviews/content-item-portable-candidate-20261021-attempt2/portable-source/crates/tekes-ui-controls/src/text_surface.rs
++++ crates/tekes-ui-controls/src/text_surface.rs
+@@ -3,7 +3,7 @@
+ //! Font preparation and glyph rasterization are injected by the host. The
+ //! component owns the paragraph transform and uses that same transform for
+ //! drawing, selection, caret reveal, and hit testing.
+-use std::{ops::Range, rc::Rc};
++use std::{cell::RefCell, ops::Range, rc::Rc};
+ 
+ use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
+ use tekes_ui_text::Paragraph;
+@@ -83,6 +83,17 @@
+     /// No field chrome or insets. Selection and the shared keyboard-focus
+     /// indicator remain visible; a parent supplies decoration and scrolling.
+     Content,
++}
++
++/// One intrinsic measurement retained until arrangement. This is derived data;
++/// measuring must not publish editing/scroll/IME geometry.
++#[derive(Debug)]
++struct MeasuredParagraph {
++    text: String,
++    role: proposal::TextRole,
++    width: Option<f32>,
++    type_scale: f32,
++    paragraph: Rc<Paragraph>,
+ }
+ 
+ /// A single- or multi-line text surface using the shared TextInput and
+@@ -104,6 +115,7 @@
+     pub inner: Rect,
+     pub role: proposal::TextRole,
+     shaped_role: Option<proposal::TextRole>,
++    measured: RefCell<Option<MeasuredParagraph>>,
+     pub error: bool,
+     pub type_scale: f32,
+     pub clauses: Vec<Range<usize>>,
+@@ -147,6 +159,7 @@
+                 proposal::TextRole::UiBody
+             },
+             shaped_role: None,
++            measured: RefCell::new(None),
+             error: false,
+             type_scale: 1.0,
+             clauses: Vec::new(),
+@@ -337,7 +350,14 @@
+             || self.shaped_role != Some(self.role)
+         {
+             self.navigation = None;
+-            self.paragraph = Some(shape(&self.input.text, width));
++            let measured = self.measured.get_mut().take().filter(|m| {
++                m.text == self.input.text
++                    && m.role == self.role
++                    && m.width == width
++                    && m.type_scale == type_scale
++            });
++            self.paragraph =
++                Some(measured.map_or_else(|| shape(&self.input.text, width), |m| m.paragraph));
+             self.shaped.clone_from(&self.input.text);
+             self.width = width;
+             self.shaped_role = Some(self.role);
+@@ -670,10 +690,42 @@
+         mut shape: impl FnMut(&str, Option<f32>) -> Rc<Paragraph>,
+     ) -> f32 {
+         let insets = self.content_insets();
+-        let paragraph = shape(
+-            &self.input.text,
+-            self.wrap_width((width - insets.left - insets.right).max(0.), scale),
+-        );
++        let width = self.wrap_width((width - insets.left - insets.right).max(0.), scale);
++        let arranged = self.paragraph.as_ref().filter(|_| {
++            self.shaped == self.input.text
++                && self.shaped_role == Some(self.role)
++                && self.width == width
++                && self.type_scale == type_scale
++        });
++        let paragraph = if let Some(paragraph) = arranged {
++            paragraph.clone()
++        } else {
++            let cached = self
++                .measured
++                .borrow()
++                .as_ref()
++                .filter(|m| {
++                    m.text == self.input.text
++                        && m.role == self.role
++                        && m.width == width
++                        && m.type_scale == type_scale
++                })
++                .map(|m| m.paragraph.clone());
++            if let Some(paragraph) = cached {
++                paragraph
++            } else {
++                // No interior borrow held across the application's font callback.
++                let paragraph = shape(&self.input.text, width);
++                *self.measured.borrow_mut() = Some(MeasuredParagraph {
++                    text: self.input.text.clone(),
++                    role: self.role,
++                    width,
++                    type_scale,
++                    paragraph: paragraph.clone(),
++                });
++                paragraph
++            }
++        };
+         (paragraph.height as f32 + insets.top + insets.bottom)
+             .max(self.minimum_outer_height(type_scale))
+     }
+@@ -1215,6 +1267,53 @@
+     }
+ 
+     #[test]
++    fn intrinsic_measurement_reuses_full_paragraph_without_publishing_geometry() {
++        use std::cell::Cell;
++        let mut surface = TextSurface::new("Chinese / emoji", true, true);
++        surface.presentation = TextSurfacePresentation::Content;
++        let calls = Cell::new(0);
++        let shape = |_: &str, _: Option<f32>| {
++            calls.set(calls.get() + 1);
++            Rc::new(empty_paragraph())
++        };
++        let frame = Rect::new(10., 20., 200., 100.);
++        surface.measured_outer_height(200., 2., 1., shape);
++        surface.measured_outer_height(200., 2., 1., shape);
++        assert_eq!(calls.get(), 1);
++        assert!(surface.paragraph.is_none());
++        assert_eq!(surface.outer, Rect::default());
++        surface.layout_with(frame, None, 2., 1., shape);
++        assert_eq!(calls.get(), 1);
++        let original = surface.paragraph.clone().unwrap();
++        surface.measured_outer_height(200., 2., 1., shape);
++        assert_eq!(calls.get(), 1);
++        // Speculative measurement does not replace the currently published
++        // paragraph/selection geometry; arrangement adopts it only on a match.
++        surface.measured_outer_height(220., 2., 1., shape);
++        assert_eq!(calls.get(), 2);
++        assert!(Rc::ptr_eq(surface.paragraph.as_ref().unwrap(), &original));
++        surface.layout_with(frame, None, 2., 1., shape);
++        assert_eq!(calls.get(), 2);
++        surface.input.text.push('!');
++        // Same width as the outstanding measurement, but edited text.
++        surface.layout_with(Rect::new(10., 20., 220., 100.), None, 2., 1., shape);
++        assert_eq!(calls.get(), 3);
++        surface.measured_outer_height(200., 2., 1.5, shape);
++        surface.layout_with(frame, None, 2., 1.5, shape);
++        assert_eq!(calls.get(), 4);
++        surface.set_role(proposal::TextRole::UiHeading);
++        surface.layout_with(frame, None, 2., 1.5, shape);
++        assert_eq!(calls.get(), 5);
++        surface.measured_outer_height(220., 2., 1.5, shape);
++        // Measured wrap width and the new arranged wrap width differ.
++        surface.layout_with(Rect::new(10., 20., 240., 100.), None, 2., 1.5, shape);
++        assert_eq!(calls.get(), 7);
++        surface.wrap = false;
++        surface.layout_with(frame, None, 2., 1.5, shape);
++        assert_eq!(calls.get(), 8);
++    }
++
++    #[test]
+     fn fractional_text_surface_background_uses_ancestor_clip_and_keeps_inner_clip() {
+         let parent = Rect::new(10.0, 10.0, 140.0, 80.0);
+         let frame = Rect::new(24.1875, 24.3125, 100.0, 44.0);

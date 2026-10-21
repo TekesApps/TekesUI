@@ -203,6 +203,9 @@ impl ToolbarControl {
         self.frame = frame;
         self.visible = visible;
         self.hidden = hidden;
+        if self.has_focus {
+            crate::composition::Component::set_focus(self, true, self.focus_visible);
+        }
         let styles = self
             .hidden
             .iter()
@@ -308,6 +311,18 @@ impl ToolbarControl {
     }
     pub fn set_viewport(&mut self, viewport: Rect) {
         self.viewport = viewport;
+    }
+    fn focus_stops(&self) -> Vec<usize> {
+        let mut stops: Vec<_> = self
+            .visible
+            .iter()
+            .copied()
+            .filter(|&i| self.actions[i].enabled)
+            .collect();
+        if !self.hidden.is_empty() && self.frame.size.width > Self::padding() * 2. {
+            stops.push(self.actions.len());
+        }
+        stops
     }
     pub fn take_action(&mut self) -> Option<u64> {
         self.last_action.take()
@@ -422,6 +437,16 @@ impl crate::composition::Component for ToolbarControl {
         self.actions.iter().any(|a| a.enabled)
     }
     fn set_focus(&mut self, focused: bool, visible: bool) {
+        let stops = self.focus_stops();
+        let next = if focused && !self.focused.is_some_and(|i| stops.contains(&i)) {
+            stops.first().copied()
+        } else {
+            self.focused
+        };
+        if (!focused && self.has_focus) || next != self.focused {
+            self.cancel();
+        }
+        self.focused = next;
         self.has_focus = focused;
         self.focus_visible = visible;
         for (i, button) in self.buttons.iter_mut().enumerate() {
@@ -446,6 +471,33 @@ impl crate::composition::Component for ToolbarControl {
                 changed: true,
                 ..Default::default()
             };
+        }
+        if !self.has_focus {
+            return ContentResponse::default();
+        }
+        if key.down
+            && key.modifiers == Default::default()
+            && matches!(
+                key.key,
+                Some(ControlKey::Left | ControlKey::Right | ControlKey::Home | ControlKey::End)
+            )
+        {
+            let stops = self.focus_stops();
+            if let Some(index) = self
+                .focused
+                .and_then(|i| stops.iter().position(|&s| s == i))
+            {
+                let target = match key.key {
+                    Some(ControlKey::Home) => 0,
+                    Some(ControlKey::End) => stops.len() - 1,
+                    Some(ControlKey::Left) => index.saturating_sub(1),
+                    _ => (index + 1).min(stops.len() - 1),
+                };
+                self.cancel();
+                self.focused = Some(stops[target]);
+                self.set_focus(true, true);
+                return ContentResponse::consumed(true);
+            }
         }
         let Some(i) = self.focused else {
             return ContentResponse::default();
@@ -506,12 +558,15 @@ impl crate::composition::Component for ToolbarControl {
                 })
             }
             ContentEvent::Key { key, down } => {
-                self.last_action = self.key(*key, *down);
-                ContentResponse {
-                    consumed: true,
-                    activated: self.last_action.is_some(),
-                    ..Default::default()
-                }
+                self.key_event(&crate::composition::ContentKeyEvent {
+                    key: Some(*key),
+                    down: *down,
+                    repeat: false,
+                    modifiers: Default::default(),
+                    native_code: 0,
+                    characters: String::new(),
+                    characters_ignoring_modifiers: String::new(),
+                })
             }
             ContentEvent::Cancel => {
                 self.cancel();

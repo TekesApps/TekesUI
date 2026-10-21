@@ -1,0 +1,330 @@
+--- design/reviews/toolbar-splitter-defaults-20261021/before-bubbling/crates/tekes-ui-controls/src/composition.rs
++++ crates/tekes-ui-controls/src/composition.rs
+@@ -94,6 +94,7 @@
+ }
+ #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+ pub struct ContentResponse {
++    /// At least one recipient handled the event; propagation is independent.
+     pub consumed: bool,
+     pub changed: bool,
+     pub capture_pointer: bool,
+@@ -376,6 +377,12 @@
+             ContentResponse::default()
+         }
+     }
++    /// Continue propagation after this component handled an ordinary routed event.
++    /// Unhandled events always bubble. Defaults to false; this does not surrender
++    /// pointer capture or override IME, focus-traversal, overlay or modal barriers.
++    fn bubble_handled_event(&self, _event: &ContentEvent) -> bool {
++        false
++    }
+     fn overlay_pointer_event(&mut self, pointer: &PointerEvent) -> ContentResponse {
+         if pointer.is_primary() {
+             self.overlay_event(&pointer.routing_event())
+@@ -419,6 +426,7 @@
+     clip: Rect,
+     mount: u64,
+     preserve_activation_focus: bool,
++    bubble_handled_events: Option<bool>,
+     padding_focus: Option<(ComponentId, u64)>,
+     label: Option<label::LabelState>,
+     help: Option<String>,
+@@ -433,6 +441,7 @@
+             clip: Rect::default(),
+             mount: actions::next_mount(),
+             preserve_activation_focus: false,
++            bubble_handled_events: None,
+             padding_focus: None,
+             label: None,
+             help: None,
+@@ -496,6 +505,19 @@
+     pub fn preserving_focus(mut self) -> Self {
+         self.preserve_activation_focus = true;
+         self
++    }
++    /// Opt this instance into bubbling handled ordinary events to its ancestors.
++    /// Does not alter action recording, focus ownership or pointer capture.
++    /// For per-event policy, override Component::bubble_handled_event instead.
++    pub fn bubbling_handled_events(mut self, enabled: bool) -> Self {
++        self.bubble_handled_events = Some(enabled);
++        self
++    }
++    fn bubbles(&self, event: &ContentEvent, response: &ContentResponse) -> bool {
++        !response.consumed
++            || self
++                .bubble_handled_events
++                .unwrap_or_else(|| self.component.bubble_handled_event(event))
+     }
+     pub fn component<T: Component>(&self) -> Option<&T> {
+         (self.component.as_ref() as &dyn Any).downcast_ref()
+@@ -752,30 +774,89 @@
+             c.focus_ids(ids)
+         }
+     }
++    // A route follows the topmost real target and its ancestors, never siblings
++    // behind an unhandled target. Keep processing and propagation independent.
+     fn route(
+         &mut self,
+         event: &ContentEvent,
+         position: Point,
+         actions: &mut Option<Vec<actions::PendingAction>>,
+-    ) -> Option<(ComponentId, ContentResponse)> {
++    ) -> Option<(ComponentId, ContentResponse, bool)> {
+         if !self.component.active() {
+             return None;
+         }
+         let action = self.component.semantics().role.is_action_owner();
+-        if !action && let Some(children) = self.component.children_mut() {
+-            for c in children.iter_mut().rev() {
+-                if let Some(r) = c.route(event, position, actions) {
+-                    return Some(r);
+-                }
+-            }
+-        }
+-        if self.component.interactive() && self.visible().is_some_and(|r| r.contains(position)) {
+-            let r = self.deliver_actions(event, false, actions);
+-            if r.consumed {
+-                return Some((self.id, r));
+-            }
++        let child = if !action && let Some(children) = self.component.children_mut() {
++            children
++                .iter_mut()
++                .rev()
++                .find_map(|c| c.route(event, position, actions))
++        } else {
++            None
++        };
++        if child.is_some_and(|(_, _, bubbles)| !bubbles) {
++            return child;
++        }
++        if child.is_some()
++            || self.component.interactive() && self.visible().is_some_and(|r| r.contains(position))
++        {
++            let response = self.deliver_actions(event, false, actions);
++            return Some(self.finish_bubble(event, child, response));
+         }
+         None
++    }
++    fn finish_bubble(
++        &self,
++        event: &ContentEvent,
++        child: Option<(ComponentId, ContentResponse, bool)>,
++        response: ContentResponse,
++    ) -> (ComponentId, ContentResponse, bool) {
++        let bubbles = self.bubbles(event, &response);
++        let Some((id, previous, _)) = child else {
++            return (self.id, response, bubbles);
++        };
++        // A parent cannot take capture/focus from the original handled target.
++        let owner = if previous.consumed || previous.capture_pointer {
++            id
++        } else {
++            self.id
++        };
++        (
++            owner,
++            ContentResponse {
++                consumed: previous.consumed || response.consumed,
++                changed: previous.changed || response.changed,
++                capture_pointer: previous.capture_pointer
++                    || !previous.consumed && response.capture_pointer,
++                activated: previous.activated || response.activated,
++                text_key: previous.text_key.or(response.text_key),
++            },
++            bubbles,
++        )
++    }
++    fn route_from(
++        &mut self,
++        id: ComponentId,
++        event: &ContentEvent,
++        actions: &mut Option<Vec<actions::PendingAction>>,
++    ) -> Option<(ComponentId, ContentResponse, bool)> {
++        if !self.component.active() {
++            return None;
++        }
++        if self.id == id {
++            let response = self.deliver_actions(event, false, actions);
++            return Some((id, response, self.bubbles(event, &response)));
++        }
++        let child = self
++            .component
++            .children_mut()?
++            .iter_mut()
++            .find_map(|c| c.route_from(id, event, actions))?;
++        if !child.2 {
++            return Some(child);
++        }
++        let response = self.deliver_actions(event, false, actions);
++        Some(self.finish_bubble(event, Some(child), response))
+     }
+     // Hit classification is independent of event consumption: even a disabled
+     // or currently unhandled real control shields its bounds from a parent's
+@@ -833,19 +914,37 @@
+     fn move_pointer(
+         &mut self,
+         event: &ContentEvent,
++        position: Point,
+         actions: &mut Option<Vec<actions::PendingAction>>,
+-    ) {
++    ) -> (Option<(ComponentId, ContentResponse, bool)>, bool) {
+         if !self.component.active() {
+-            return;
+-        }
+-        if self.component.interactive() {
+-            self.deliver_actions(event, false, actions);
+-        }
++            return (None, false);
++        }
++        let mut hit = None;
++        let mut changed = false;
+         if let Some(children) = self.component.children_mut() {
+-            for c in children {
+-                c.move_pointer(event, actions)
+-            }
+-        }
++            for child in children.iter_mut() {
++                let (result, redraw) = child.move_pointer(event, position, actions);
++                changed |= redraw;
++                if result.is_some() {
++                    hit = result;
++                }
++            }
++        }
++        let inside = self.visible().is_some_and(|r| r.contains(position));
++        if self.component.interactive() || hit.is_some_and(|(_, _, bubbles)| bubbles) {
++            // Outside delivery clears old hover but cannot consume another
++            // branch's event. Stopped ancestors still receive an exit update.
++            let stopped = hit.is_some_and(|(_, _, bubbles)| !bubbles);
++            if !stopped || !inside {
++                let response = self.deliver_actions(event, false, actions);
++                changed |= response.changed;
++                if !stopped && (hit.is_some() || inside) {
++                    hit = Some(self.finish_bubble(event, hit, response));
++                }
++            }
++        }
++        (hit, changed)
+     }
+     fn reveal(&mut self, id: ComponentId, frame: Rect) -> Option<Rect> {
+         if self.id == id {
+@@ -936,6 +1035,7 @@
+     last_layout: Option<(Rect, Rect)>,
+     item_reveal: Option<content_reveal::ItemReveal>,
+     help: help::HelpState,
++    event_bubbled: Option<bool>,
+ }
+ impl ContentHost {
+     pub fn new(mut root: Content) -> Result<Self, CompositionError> {
+@@ -957,6 +1057,7 @@
+             last_layout: None,
+             item_reveal: None,
+             help: Default::default(),
++            event_bubbled: None,
+         })
+     }
+     pub fn get(&self, id: ComponentId) -> Option<&Content> {
+@@ -1305,7 +1406,14 @@
+         self.help_focus(id, visible);
+         changed
+     }
++    /// Whether the last event may continue to the enclosing host. A handled
++    /// event can bubble, so consumed alone is not a propagation decision.
++    /// Modal, IME and system command barriers remain authoritative.
++    pub fn event_bubbled(&self) -> bool {
++        self.event_bubbled.unwrap_or(false)
++    }
+     pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {
++        self.event_bubbled = None;
+         let previous_caret = self.focused.and_then(|id| {
+             self.focused_text()
+                 .filter(|surface| {
+@@ -1314,7 +1422,7 @@
+                 })
+                 .map(|surface| (id, surface.input.caret))
+         });
+-        let result = self.key_routed_event(event);
++        let mut result = self.key_routed_event(event);
+         self.reconcile_active_inputs();
+         // Document text has no nested scroll owner. Explicit navigation/drag
+         // reveals through the same ancestor path as ordinary focus. Pointer
+@@ -1330,7 +1438,14 @@
+             let frame = surface.caret();
+             self.root.reveal(id, frame);
+         }
++        // Preserve the existing modal barrier for hosts which only inspect
++        // consumed; explicit bubbling cannot expose background input.
++        if self.modal.is_some() {
++            result.consumed = true;
++        }
+         self.dirty |= result.changed;
++        self.event_bubbled =
++            Some(self.modal.is_none() && self.event_bubbled.unwrap_or(!result.consumed));
+         result
+     }
+     /// Use the caller's existing font backend before/after an input callback.
+@@ -1441,10 +1556,12 @@
+             if matches!(routed, ContentEvent::PointerUp(_)) {
+                 self.captured = None;
+             }
+-            return self
+-                .root
+-                .find_mut(id)
+-                .map(|content| content.deliver_actions(event, false, &mut self.actions))
++            let result = self.root.route_from(id, event, &mut self.actions);
++            return result
++                .map(|(_, response, bubbles)| {
++                    self.event_bubbled = Some(bubbles);
++                    response
++                })
+                 .unwrap_or_default();
+         }
+         if let Some(id) = self.scope().overlay_id() {
+@@ -1518,10 +1635,14 @@
+             let changed = self.focus(Some(ids[next]), true);
+             return ContentResponse::consumed(changed);
+         }
+-        if matches!(routed, ContentEvent::PointerMove(_)) {
++        if let ContentEvent::PointerMove(position) = routed {
+             let (scope, actions) = self.scope_with_actions();
+-            scope.move_pointer(event, actions);
+-            return ContentResponse::consumed(true);
++            let (hit, changed) = scope.move_pointer(event, *position, actions);
++            let (_, mut response, bubbles) =
++                hit.unwrap_or((ComponentId(0), ContentResponse::default(), true));
++            response.changed |= changed;
++            self.event_bubbled = Some(bubbles);
++            return response;
+         }
+         if let Some(id) = self.padding_focus_target(event) {
+             // Resolve before ordinary pointer dispatch. In particular there is
+@@ -1538,20 +1659,21 @@
+                 scope.route(event, *p, actions)
+             }
+             _ => self.focused.and_then(|id| {
+-                self.root
+-                    .find_mut(id)
+-                    .map(|c| (id, c.deliver_actions(event, false, &mut self.actions)))
++                let (scope, actions) = self.scope_with_actions();
++                scope.route_from(id, event, actions)
+             }),
+         };
+-        if let Some((id, r)) = result {
++        if let Some((id, r, bubbles)) = result {
++            self.event_bubbled = Some(bubbles);
+             if matches!(routed, ContentEvent::PointerDown(_)) && event.is_primary_pointer() {
+                 if r.capture_pointer {
+                     self.captured = Some(id)
+                 }
+-                if self
+-                    .root
+-                    .find(id)
+-                    .is_some_and(|c| c.component.focusable() && !c.preserve_activation_focus)
++                if r.consumed
++                    && self
++                        .root
++                        .find(id)
++                        .is_some_and(|c| c.component.focusable() && !c.preserve_activation_focus)
+                 {
+                     self.focus(Some(id), false);
+                 }

@@ -1,0 +1,18 @@
+--- design/reviews/field-metadata-20261019/source/crates/tekes-ui-gallery/src/host.rs
++++ crates/tekes-ui-gallery/src/host.rs
+@@ -125,6 +125,7 @@
+         }
+         self.scene.clear();
+         self.gallery.build_scene(&mut self.scene);
++        window.set_cursor_regions(self.gallery.cursor_regions());
+         window.set_text_input_state(self.gallery.text_input_state());
+         self.sync_accessibility(window);
+         let clear = Gallery::background(theme);
+@@ -370,6 +371,7 @@
+                 let change = self.gallery.handle_input(&event);
+                 self.apply_change(change, window);
+                 window.set_text_input_state(self.gallery.text_input_state());
++                window.set_cursor_regions(self.gallery.cursor_regions());
+                 // Focus changes must reach assistive clients even when an
+                 // occluded window cannot produce another rendered frame.
+                 self.sync_accessibility(window);

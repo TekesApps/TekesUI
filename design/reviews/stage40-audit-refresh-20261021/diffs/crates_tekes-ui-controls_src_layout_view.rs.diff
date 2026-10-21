@@ -1,0 +1,109 @@
+--- design/reviews/padding-focus-routing-20261021/native-verified-source/crates/tekes-ui-controls/src/layout_view.rs
++++ crates/tekes-ui-controls/src/layout_view.rs
+@@ -379,6 +379,20 @@
+         clip: Option<Rect>,
+         palette: Palette,
+     ) -> SplitViewLayout {
++        self.render_at_scale(scene, model, bounds, clip, palette, 1.)
++    }
++    /// Preserve logical pane/divider/hit geometry; paint decorative ink at the
++    /// actual host scale through the existing shared separator policy.
++    #[allow(clippy::too_many_arguments)]
++    pub fn render_at_scale(
++        &mut self,
++        scene: &mut Scene,
++        model: &mut SplitView,
++        bounds: Rect,
++        clip: Option<Rect>,
++        palette: Palette,
++        backing_scale: f32,
++    ) -> SplitViewLayout {
+         if !valid(bounds, clip) {
+             self.cancel(model);
+             self.layout = SplitViewLayout::default();
+@@ -400,7 +414,7 @@
+             && self.layout.divider.visible_frame().is_some_and(has_area)
+         {
+             let clipped = safe_clip(scene, clip);
+-            super::extended::separator(
++            super::extended::separator_at_scale(
+                 scene,
+                 divider,
+                 palette,
+@@ -408,6 +422,7 @@
+                     Axis::Horizontal => Axis::Vertical,
+                     Axis::Vertical => Axis::Horizontal,
+                 },
++                backing_scale,
+             );
+             if clipped {
+                 scene.pop_clip();
+@@ -417,6 +432,21 @@
+     }
+     pub fn layout(&self) -> SplitViewLayout {
+         self.layout
++    }
++    /// Clipped resize target and movement axis for a host's native hover cursor.
++    /// Constrained, hidden, and inactive splitters do not advertise resizing.
++    pub fn resize_target(&self, model: &SplitView) -> Option<(Rect, Axis)> {
++        if !self.window_active
++            || !self.layout.frame.visible_frame().is_some_and(has_area)
++            || !self.layout.divider.visible_frame().is_some_and(has_area)
++            || model.is_constrained(self.layout.frame.frame(), self.axis)
++        {
++            return None;
++        }
++        self.layout
++            .divider_hit
++            .filter(|r| has_area(*r))
++            .map(|r| (r, self.axis))
+     }
+     pub fn pointer_down(&mut self, p: Point, model: &mut SplitView) -> bool {
+         if !self.window_active || !self.layout.divider_hit.is_some_and(|r| r.contains(p)) {
+@@ -3751,6 +3781,46 @@
+     }
+ 
+     #[test]
++    fn split_resize_target_follows_axis_clip_constraints_and_activation() {
++        for axis in [Axis::Horizontal, Axis::Vertical] {
++            let mut view = SplitViewView::new(axis);
++            let mut model = SplitView::new(0.5);
++            let bounds = Rect::new(0., 0., 400., 400.);
++            let clip = Rect::new(40., 40., 300., 300.);
++            assert_eq!(view.resize_target(&model), None);
++            let layout = view.render(
++                &mut Scene::default(),
++                &mut model,
++                bounds,
++                Some(clip),
++                Theme::LIGHT.into(),
++            );
++            assert_eq!(
++                view.resize_target(&model),
++                layout.divider_hit.map(|r| (r, axis))
++            );
++            let (target, _) = view.resize_target(&model).unwrap();
++            assert!(target.min_x() >= clip.min_x() && target.max_x() <= clip.max_x());
++            assert!(target.min_y() >= clip.min_y() && target.max_y() <= clip.max_y());
++            view.set_window_active(false, &mut model);
++            assert_eq!(view.resize_target(&model), None);
++            view.set_window_active(true, &mut model);
++            assert!(view.resize_target(&model).is_some());
++            model.min_pane = 300.;
++            assert_eq!(view.resize_target(&model), None);
++            model.min_pane = 0.;
++            view.render(
++                &mut Scene::default(),
++                &mut model,
++                Rect::default(),
++                None,
++                Theme::LIGHT.into(),
++            );
++            assert_eq!(view.resize_target(&model), None);
++        }
++    }
++
++    #[test]
+     fn split_view_runtime_cancel_restores_ratio_for_escape_and_invalid_layout() {
+         let mut v = SplitViewView::new(Axis::Horizontal);
+         let mut model = SplitView::new(0.5);
