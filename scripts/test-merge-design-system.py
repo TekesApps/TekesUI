@@ -34,7 +34,22 @@ class MergeTests(unittest.TestCase):
         expected=self.current_bundle(merge.load(ROOT/'design/brand/config.json'))
         self.assertEqual(self.reference['proposal']['tokens'],expected)
         self.assertEqual(self.reference['proposal']['brand']['config']['brand_id'],'example-neutral')
-        self.assertEqual(len(self.report['text_profiles']),16)
+        authored=merge.load(ROOT/'design/source/base.tokens.json')
+        names=[style['name'] for group in authored['type']['groups'] for style in group['styles']]
+        self.assertEqual(len(names),len(set(names)))
+        self.assertEqual(self.report['text_profiles'],names)
+        self.assertIn('toolbar-label',names)
+    def test_new_author_text_role_is_projected_without_changing_historical_import(self):
+        root=self.fixture();base=merge.load(root/'design/source/base.tokens.json')
+        style=dict(base['type']['groups'][0]['styles'][0]);style['name']='consumer-test-role'
+        base['type']['groups'][0]['styles'].append(style)
+        (root/'design/source/base.tokens.json').write_bytes(merge.bytes_json(base))
+        changed,report=merge.merge(root)
+        names=[style['name'] for group in base['type']['groups'] for style in group['styles']]
+        self.assertEqual(report['text_profiles'],names)
+        projected=[style['name'] for group in changed['proposal']['tokens']['type']['groups'] for style in group['styles']]
+        self.assertEqual(projected,names)
+        self.assertEqual(names.count('consumer-test-role'),1)
     def test_current_inputs_are_used_instead_of_historical_generated_tokens(self):
         root=self.fixture()
         base=merge.load(root/'design/source/base.tokens.json')
