@@ -665,13 +665,16 @@ impl Perf {
         }
         if self.cfg.content == ContentKind::Scene3d {
             assert!(self.gallery.open_route("component-scene3d/playground"));
-            self.gallery.set_view_size(window.size().width as f32,window.size().height as f32);
+            self.gallery
+                .set_view_size(window.size().width as f32, window.size().height as f32);
             // Layout chooses the physical viewport; settle it before timing.
             for _ in 0..2 {
-                self.gallery.prepare(renderer,self.scale);
+                self.gallery.prepare(renderer, self.scale);
                 self.gallery.build_scene(&mut Scene::new());
             }
-            self.gallery.start_scene3d_rotation(std::env::var("TEKES_PERF_SCENE3D_ANIMATION").as_deref()==Ok("1"));
+            self.gallery.start_scene3d_rotation(
+                std::env::var("TEKES_PERF_SCENE3D_ANIMATION").as_deref() == Ok("1"),
+            );
         }
         self.prewarm_ms = t.elapsed().as_secs_f64() * 1e3;
         self.window_info = match window.screen_info() {
@@ -741,7 +744,9 @@ impl Perf {
         }
     }
     fn scroll_at(&self, elapsed: f64) -> f32 {
-        if self.cfg.content==ContentKind::Scene3d {return 0.;}
+        if self.cfg.content == ContentKind::Scene3d {
+            return 0.;
+        }
         let range = if matches!(
             self.cfg.content,
             ContentKind::Editor | ContentKind::ScrollArea
@@ -758,7 +763,7 @@ impl Perf {
     /// 编这一帧的可见内容。
     fn build(&mut self, ctx: &mut FrameCtx<'_>, scroll: f32) {
         if self.cfg.content == ContentKind::Scene3d {
-            self.gallery.prepare(ctx.renderer,self.scale);
+            self.gallery.prepare(ctx.renderer, self.scale);
             self.gallery.build_scene(ctx.scene);
             return;
         }
@@ -857,8 +862,10 @@ impl Perf {
             symbols.tick(elapsed, dt);
         }
         if self.cfg.content == ContentKind::Scene3d {
-            let dt=self.animation_target.map_or(f.refresh_interval,|last|(f.target_timestamp-last).max(0.));
-            self.animation_target=Some(f.target_timestamp);
+            let dt = self.animation_target.map_or(f.refresh_interval, |last| {
+                (f.target_timestamp - last).max(0.)
+            });
+            self.animation_target = Some(f.target_timestamp);
             self.gallery.animate(dt as f32);
         }
         if self.cfg.content == ContentKind::Motion {
@@ -956,7 +963,9 @@ impl Perf {
         }
         if self.phase == Phase::WarmUp {
             self.phase = Phase::Measure;
-            if self.cfg.content==ContentKind::Scene3d {self.scene3d_start=self.gallery.scene3d_diagnostics();}
+            if self.cfg.content == ContentKind::Scene3d {
+                self.scene3d_start = self.gallery.scene3d_diagnostics();
+            }
             self.measure_start_target = Some(f.target_timestamp);
             self.measure_start_cpu = process_cpu_seconds();
             self.measure_start = Some(Instant::now());
@@ -973,9 +982,10 @@ impl Perf {
             ]);
             self.cpu_rate_last = Some((now, current));
         }
-        if self.cfg.content==ContentKind::Scene3d {
-            let (bytes,meshes)=self.gallery.scene3d_frame_work();
-            self.scene3d_pose_bytes+=bytes; self.scene3d_deformed_meshes+=meshes as u64;
+        if self.cfg.content == ContentKind::Scene3d {
+            let (bytes, meshes) = self.gallery.scene3d_frame_work();
+            self.scene3d_pose_bytes += bytes;
+            self.scene3d_deformed_meshes += meshes as u64;
         }
         let c = ctx.renderer.last_frame_counts();
         self.counts
@@ -1547,7 +1557,12 @@ mod tests {
         assert_eq!(c.speed, 600.0);
         assert_eq!(c.content, ContentKind::Text);
         assert_eq!(c.out, Some(PathBuf::from("/tmp/x.json")));
-        assert_eq!(PerfConfig::parse("scroll:60",None,Some("scene3d"),None).unwrap().content,ContentKind::Scene3d);
+        assert_eq!(
+            PerfConfig::parse("scroll:60", None, Some("scene3d"), None)
+                .unwrap()
+                .content,
+            ContentKind::Scene3d
+        );
         assert!(PerfConfig::parse("zoom", None, None, None).is_err());
         assert!(PerfConfig::parse("scroll:abc", None, None, None).is_err());
         assert!(PerfConfig::parse("scroll:0", None, None, None).is_err());

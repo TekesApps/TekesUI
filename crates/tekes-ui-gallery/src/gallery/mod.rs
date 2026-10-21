@@ -31,8 +31,8 @@ pub mod navigation;
 pub mod pages;
 #[cfg(test)]
 mod quality_effects;
-pub mod snapshot;
 mod scene3d_preview;
+pub mod snapshot;
 pub mod static_text;
 pub mod text;
 pub mod text_demo;
@@ -335,7 +335,8 @@ impl Gallery {
             {
                 self.scene3d.reset();
             }
-            self.scene3d.prepare(renderer, self.workbench.reduced, scale);
+            self.scene3d
+                .prepare(renderer, self.workbench.reduced, scale);
         }
         if self.content_page() == Page::Icons {
             let icon_type_scale = if matches!(self.page, Page::Workbench(_)) {
@@ -513,7 +514,8 @@ impl Gallery {
                     &mut layer,
                 );
                 if workbench::entry(i).renderer() == "scene3d" && self.workbench.show_live(i) {
-                    self.scene3d.paint(&mut layer, self.workbench.preview_rect(i), ctx.text, theme);
+                    self.scene3d
+                        .paint(&mut layer, self.workbench.preview_rect(i), ctx.text, theme);
                 }
                 if !self.workbench.show_live(i) {
                     self.viewport.append_visible_with_geometry(
@@ -652,7 +654,8 @@ impl Gallery {
             self.text
                 .set_motion_context(self.motion_now, self.workbench.reduced);
         }
-        let scene3d_dirty = self.scene3d_visible() && self.scene3d.advance(dt, self.workbench.reduced);
+        let scene3d_dirty =
+            self.scene3d_visible() && self.scene3d.advance(dt, self.workbench.reduced);
         let component_frame_pending = self.text.motion_frame_requested();
         let mut dirty = self.viewport.tick(dt)
             | self.sidebar.scroll.tick(dt)

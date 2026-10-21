@@ -6320,11 +6320,14 @@ mod scene3d_contract {
     use super::*;
     #[test]
     fn scene3d_reset_is_consumed_once_and_only_implemented_stories_are_exposed() {
-        let i = entries().iter().position(|e| e.renderer() == "scene3d").unwrap();
+        let i = entries()
+            .iter()
+            .position(|e| e.renderer() == "scene3d")
+            .unwrap();
         assert!(!entry(i).supports_story("behaviors"));
         let mut workbench = Workbench::default();
         assert!(!workbench.take_scene3d_reset(i));
-        workbench.state(i).activate(0,"scene3d");
+        workbench.state(i).activate(0, "scene3d");
         assert!(workbench.take_scene3d_reset(i));
         assert!(!workbench.take_scene3d_reset(i));
     }
