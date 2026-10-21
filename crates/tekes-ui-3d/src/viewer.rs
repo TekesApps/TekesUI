@@ -503,20 +503,23 @@ impl Viewer {
         if self.last.is_some() && self.frame_rate.refresh(Instant::now()) {
             self.cached_scene = None;
         }
-        let scene = self.ui_scene()?;
+        if self.cached_scene.is_none() {
+            self.ui_scene()?;
+        }
+        let scene = self.cached_scene.as_ref().unwrap();
         let gpu = self.gpu.as_mut().ok_or("GPU not initialized")?;
         let view = &self.view;
         let camera = &self.camera;
         let environment = self.district.as_ref().map(DistrictDemo::environment);
         let mut acquired = false;
         self.ui.as_mut().unwrap().render_with_gpu(
-            &scene,
+            scene,
             &mut self.atlas,
             ColorRole::DocumentCanvas.resolve(self.theme),
             |encoder| {
                 acquired = true;
                 if let Some(environment) = environment {
-                    gpu.set_environment(environment)
+                    gpu.set_environment_and_clocks(environment, [0.; 4])
                         .map_err(|e| tekes_ui_render::RenderError::Surface(e.to_string()))?;
                 }
                 gpu.encode_camera(view, camera, encoder)

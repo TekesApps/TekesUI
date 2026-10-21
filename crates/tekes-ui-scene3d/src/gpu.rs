@@ -433,34 +433,39 @@ impl Renderer3D {
             self.transparent_order
                 .sort_unstable_by(|a, b| a.1.total_cmp(&b.1));
         }
-        self.deformer.encode(encoder);
-        if let Some(batch_bind) = &self.visibility_batch {
+        {
+            // One compute pass avoids repeated backend encoder creation. wgpu
+            // still tracks storage hazards between dispatches (deform -> bounds
+            // -> compaction); the render pass boundary publishes all outputs.
             let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                label: Some("3D GPU projected LOD and frustum culling"),
+                label: Some("3D GPU scene preparation"),
                 timestamp_writes: None,
             });
-            if self.visibility_bounds_dirty || self.last_frame_pose_upload_bytes > 0 {
-                pass.set_pipeline(&self.visibility.bounds_pipeline);
-                for draw in self.visible_draws.iter().flatten() {
-                    pass.set_bind_group(0, &draw.compute, &[]);
-                    pass.dispatch_workgroups(1, 1, 1);
+            self.deformer.encode_in_pass(&mut pass);
+            if let Some(batch_bind) = &self.visibility_batch {
+                if self.visibility_bounds_dirty || self.last_frame_pose_upload_bytes > 0 {
+                    pass.set_pipeline(&self.visibility.bounds_pipeline);
+                    for draw in self.visible_draws.iter().flatten() {
+                        pass.set_bind_group(0, &draw.compute, &[]);
+                        pass.dispatch_workgroups(1, 1, 1);
+                    }
+                    self.visibility_bounds_dirty = false;
                 }
-                self.visibility_bounds_dirty = false;
+                pass.set_pipeline(&self.visibility.pipeline);
+                pass.set_bind_group(0, batch_bind, &[]);
+                pass.dispatch_workgroups(self.visible_draws.len() as u32, 1, 1);
             }
-            pass.set_pipeline(&self.visibility.pipeline);
-            pass.set_bind_group(0, batch_bind, &[]);
-            pass.dispatch_workgroups(self.visible_draws.len() as u32, 1, 1);
-        }
-        self.interiors.encode(
-            encoder,
-            [
-                self.environment_state.time_seconds,
-                self.lighting_state.effect_time_origin,
-                self.lighting_state.emissive_strength,
-            ],
-        );
-        if self.lighting_state.emissive_strength > 0. {
-            self.local_lighting.encode(encoder);
+            self.interiors.encode_in_pass(
+                &mut pass,
+                [
+                    self.environment_state.time_seconds,
+                    self.lighting_state.effect_time_origin,
+                    self.lighting_state.emissive_strength,
+                ],
+            );
+            if self.lighting_state.emissive_strength > 0. {
+                self.local_lighting.encode_in_pass(&mut pass);
+            }
         }
         let msaa_view = &self.msaa_view;
         let resolved_view = self
@@ -1031,6 +1036,70 @@ impl Renderer3D {
             self.environment_upload_bytes += 16;
             self.environment_state = environment;
         }
+        Ok(())
+    }
+    /// Apply the environment and independent clocks atomically in one queue
+    /// write. Retains the current lighting fields between the two ranges.
+    /// Uploads 80 bytes instead of two 16-byte writes, saving one staging
+    /// allocation/queue operation when both clock ranges change every frame.
+    pub fn set_environment_and_clocks(
+        &mut self,
+        environment: crate::Environment3D,
+        clocks: [f32; 4],
+    ) -> Result<(), Error> {
+        let e = [
+            environment.time_seconds,
+            environment.wind_direction[0],
+            environment.wind_direction[1],
+            environment.wind_strength,
+        ];
+        if e.iter().any(|v| !v.is_finite())
+            || environment.time_seconds < 0.
+            || environment.wind_strength < 0.
+        {
+            return Err(err("environment parameters must be finite and nonnegative"));
+        }
+        if clocks.iter().any(|v| !v.is_finite() || *v < 0.) {
+            return Err(err("motion clocks must be finite and nonnegative"));
+        }
+        let old = self.environment_state;
+        if e == [
+            old.time_seconds,
+            old.wind_direction[0],
+            old.wind_direction[1],
+            old.wind_strength,
+        ] && clocks == self.motion_clocks
+        {
+            return Ok(());
+        }
+        let l = self.lighting_state;
+        let values = [
+            e[0],
+            e[1],
+            e[2],
+            e[3],
+            l.ambient[0],
+            l.ambient[1],
+            l.ambient[2],
+            l.emissive_strength,
+            l.direction[0],
+            l.direction[1],
+            l.direction[2],
+            0.,
+            l.directional[0],
+            l.directional[1],
+            l.directional[2],
+            l.effect_time_origin,
+            clocks[0],
+            clocks[1],
+            clocks[2],
+            clocks[3],
+        ];
+        self.queue
+            .write_buffer(&self.environment_buffer, 0, bytemuck::cast_slice(&values));
+        self.environment_state = environment;
+        self.motion_clocks = clocks;
+        self.environment_upload_bytes += 80;
         Ok(())
     }
     pub fn instance_upload_bytes(&self) -> u64 {
@@ -1757,6 +1826,7 @@ mod tests {
         let mut full =
             Renderer3D::with_lighting_shader(&ui.gpu_context(), &view, (192, 192), 4, &reference)
                 .unwrap();
+        full.local_lighting.enable_split_reference(&full.device);
         let actual_image = ui.register_gpu_image(gpu.output()).unwrap();
         let expected_image = ui.register_gpu_image(full.output()).unwrap();
         let mut recipe = LocalLighting3D::default();
@@ -1815,17 +1885,57 @@ mod tests {
                 radii: [0.10, 0.16, 0.07],
             });
         }
+        for renderer in [&mut gpu, &mut full] {
+            renderer
+                .set_lighting(crate::Lighting3D {
+                    ambient: [0.15, 0.22, 0.30],
+                    direction: [0.1, 1.0, 0.2],
+                    directional: [0.8, 0.3, 0.2],
+                    effect_time_origin: 1.25,
+                    ..Default::default()
+                })
+                .unwrap();
+        }
         let mut shadow_difference = 0;
         for time in [0., 3., 5.9, 6., 10.] {
-            for renderer in [&mut gpu, &mut full] {
+            for (index, renderer) in [&mut gpu, &mut full].into_iter().enumerate() {
                 renderer.configure_local_lighting(&recipe).unwrap();
-                renderer.set_motion_clocks([time, 0., 0., 0.]).unwrap();
-                renderer
-                    .set_environment(Environment3D {
-                        time_seconds: time,
-                        ..Default::default()
-                    })
-                    .unwrap();
+                let environment = Environment3D {
+                    time_seconds: time,
+                    ..Default::default()
+                };
+                if index == 0 {
+                    renderer
+                        .set_environment_and_clocks(environment, [time, 0., 0., 0.])
+                        .unwrap();
+                    let bytes = renderer.environment_upload_bytes();
+                    renderer
+                        .set_environment_and_clocks(environment, [time, 0., 0., 0.])
+                        .unwrap();
+                    assert_eq!(
+                        renderer.environment_upload_bytes(),
+                        bytes,
+                        "identical state must not upload"
+                    );
+                    assert!(
+                        renderer
+                            .set_environment_and_clocks(
+                                Environment3D {
+                                    time_seconds: time + 1.,
+                                    ..environment
+                                },
+                                [f32::NAN, 0., 0., 0.]
+                            )
+                            .is_err()
+                    );
+                    assert_eq!(
+                        renderer.environment_state.time_seconds, time,
+                        "invalid clocks must not partially mutate environment"
+                    );
+                } else {
+                    renderer.set_motion_clocks([time, 0., 0., 0.]).unwrap();
+                    renderer.set_environment(environment).unwrap();
+                }
                 renderer.render(&view, 0.3, 1.).unwrap();
             }
             let actual = capture(&mut ui, &view, actual_image);

@@ -323,20 +323,21 @@ impl Deformer {
     pub fn dirty_mesh_count(&self) -> usize {
         self.meshes.iter().filter(|mesh| mesh.dirty).count()
     }
-    /// Pass boundary makes storage writes visible to the subsequent vertex pass.
-    pub fn encode(&self, encoder: &mut wgpu::CommandEncoder) {
+    // Dispatch boundaries preserve storage dependencies inside the shared pass.
+    pub fn encode_in_pass(&self, pass: &mut wgpu::ComputePass<'_>) {
         if !self.meshes.iter().any(|mesh| mesh.dirty) {
             return;
         }
-        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-            label: Some("3D morph + skin"),
-            timestamp_writes: None,
-        });
         pass.set_pipeline(&self.pipeline);
         for mesh in self.meshes.iter().filter(|mesh| mesh.dirty) {
             pass.set_bind_group(0, &mesh.bind, &[]);
             pass.dispatch_workgroups(mesh.vertex_count.div_ceil(64), 1, 1);
         }
+    }
+    #[cfg(test)]
+    pub fn encode(&self, encoder: &mut wgpu::CommandEncoder) {
+        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor::default());
+        self.encode_in_pass(&mut pass);
     }
 }
 fn mesh_params(mesh: &Mesh, model: Mat4) -> Params {

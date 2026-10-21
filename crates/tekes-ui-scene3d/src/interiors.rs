@@ -54,17 +54,13 @@ impl InteriorGpu {
             evaluations: 0,
         }
     }
-    pub fn encode(&mut self, encoder: &mut wgpu::CommandEncoder, input: [f32; 3]) {
+    pub fn encode_in_pass(&mut self, pass: &mut wgpu::ComputePass<'_>, input: [f32; 3]) {
         let Some((pipeline, bind)) = &self.compute else {
             return;
         };
         if self.previous == Some(input) {
             return;
         }
-        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-            label: Some("3D GPU shared window styles"),
-            timestamp_writes: None,
-        });
         pass.set_pipeline(pipeline);
         pass.set_bind_group(0, bind, &[]);
         pass.dispatch_workgroups(1, 1, 1);

@@ -58,9 +58,8 @@ pub(crate) struct LocalLightingGpu {
     pub bind: wgpu::BindGroup,
     output: wgpu::Buffer,
     compute: wgpu::ComputePipeline,
-    cull: wgpu::ComputePipeline,
-    grid_bounds: wgpu::ComputePipeline,
-    cull_lights: wgpu::ComputePipeline,
+    #[cfg(test)]
+    split_reference: Option<Vec<wgpu::ComputePipeline>>,
     motion_layout: wgpu::BindGroupLayout,
     output_layout: wgpu::BindGroupLayout,
     compute_binds: Option<(wgpu::BindGroup, wgpu::BindGroup)>,
@@ -148,38 +147,17 @@ impl LocalLightingGpu {
             label: Some("3D evaluate light attachments"),
             layout: Some(&pipeline_layout),
             module: &shader,
-            entry_point: Some("evaluate"),
+            entry_point: Some("evaluate_scene"),
             compilation_options: Default::default(),
             cache: None,
         });
-        let cull = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("3D cull per-light shadow candidates"),
-            layout: Some(&pipeline_layout),
-            module: &shader,
-            entry_point: Some("cull_shadows"),
-            compilation_options: Default::default(),
-            cache: None,
-        });
-        let grid_pipeline = |entry| {
-            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-                label: Some(entry),
-                layout: Some(&pipeline_layout),
-                module: &shader,
-                entry_point: Some(entry),
-                compilation_options: Default::default(),
-                cache: None,
-            })
-        };
-        let grid_bounds = grid_pipeline("grid_bounds");
-        let cull_lights = grid_pipeline("cull_lights");
         Self {
             layout,
             bind,
             output,
             compute,
-            cull,
-            grid_bounds,
-            cull_lights,
+            #[cfg(test)]
+            split_reference: None,
             motion_layout,
             output_layout,
             compute_binds: None,
@@ -309,26 +287,58 @@ impl LocalLightingGpu {
         self.count = count;
         Ok(())
     }
-    pub fn encode(&self, encoder: &mut wgpu::CommandEncoder) {
+    pub fn encode_in_pass(&self, pass: &mut wgpu::ComputePass<'_>) {
         if self.count == 0 {
             return;
         }
         let (motion, output) = self.compute_binds.as_ref().unwrap();
-        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-            label: Some("3D GPU local lights"),
-            timestamp_writes: None,
-        });
-        pass.set_pipeline(&self.compute);
         pass.set_bind_group(0, motion, &[]);
         pass.set_bind_group(1, output, &[]);
-        pass.dispatch_workgroups(self.count.div_ceil(64), 1, 1);
-        // Dispatch boundary makes every evaluated attachment available before
-        // the candidate pass reads it; no CPU readback or per-frame list upload.
-        pass.set_pipeline(&self.cull);
+        #[cfg(test)]
+        if let Some(pipelines) = &self.split_reference {
+            for (pipeline, groups) in pipelines.iter().zip([self.count.div_ceil(64), 1, 1, 16]) {
+                pass.set_pipeline(pipeline);
+                pass.dispatch_workgroups(groups, 1, 1);
+            }
+            return;
+        }
+        pass.set_pipeline(&self.compute);
+        // Single workgroup: all attachment, shadow and grid dependencies are
+        // synchronized by storageBarrier within it, entirely on the GPU.
         pass.dispatch_workgroups(1, 1, 1);
-        pass.set_pipeline(&self.grid_bounds);
-        pass.dispatch_workgroups(1, 1, 1);
-        pass.set_pipeline(&self.cull_lights);
-        pass.dispatch_workgroups(16, 1, 1);
+    }
+    #[cfg(test)]
+    pub(crate) fn enable_split_reference(&mut self, device: &wgpu::Device) {
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("3D split light reference"),
+            source: wgpu::ShaderSource::Wgsl(
+                format!(
+                    "{}\n{}",
+                    include_str!("instance_motion.wgsl"),
+                    include_str!("local_light_motion.wgsl")
+                )
+                .into(),
+            ),
+        });
+        let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: None,
+            bind_group_layouts: &[Some(&self.motion_layout), Some(&self.output_layout)],
+            immediate_size: 0,
+        });
+        self.split_reference = Some(
+            ["evaluate", "cull_shadows", "grid_bounds", "cull_lights"]
+                .iter()
+                .map(|entry| {
+                    device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                        label: Some(entry),
+                        layout: Some(&layout),
+                        module: &shader,
+                        entry_point: Some(entry),
+                        compilation_options: Default::default(),
+                        cache: None,
+                    })
+                })
+                .collect(),
+        );
     }
 }

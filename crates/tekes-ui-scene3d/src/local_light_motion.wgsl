@@ -5,8 +5,8 @@ struct ShadowList { count:u32, indices:array<u32,96> }
 struct LightScene { counts:vec4<u32>, lights:array<LocalLight,64>, shadows:array<ShadowProxy,96>, shadow_lists:array<ShadowList,64>, grid:vec4<f32>, light_cells:array<vec2<u32>,1024> }
 @group(1) @binding(0) var<storage,read> light_inputs:array<LightInput>;
 @group(1) @binding(1) var<storage,read_write> light_output:LightScene;
-@compute @workgroup_size(64) fn evaluate(@builtin(global_invocation_id) id:vec3<u32>){
-    let index=id.x;let lights=light_output.counts.x;
+fn evaluate_attachment(index:u32){
+    let lights=light_output.counts.x;
     if index>=lights+light_output.counts.y {return;}
     let input=light_inputs[index];
     let moved=move_value(input.center_radius.xyz,input.direction_cone.xyz*input.attachment.scale.xyz,input.attachment);
@@ -29,8 +29,7 @@ struct LightScene { counts:vec4<u32>, lights:array<LocalLight,64>, shadows:array
 // bounding box misses the sphere cannot occlude any such receiver. Build this
 // conservative list after attachment motion, once per light, entirely on GPU.
 // Keep original proxy order and the exact per-fragment soft-shadow calculation.
-@compute @workgroup_size(64) fn cull_shadows(@builtin(global_invocation_id) id:vec3<u32>){
-    let index=id.x;
+fn cull_shadow_candidates(index:u32){
     if index>=light_output.counts.x {return;}
     let light=light_output.lights[index];
     var count=0u;
@@ -54,8 +53,8 @@ struct LightScene { counts:vec4<u32>, lights:array<LocalLight,64>, shadows:array
 
 // Conservative world-XZ broad phase: all animated light spheres contribute to
 // bounds; each cell keeps two ordered bit masks, with no truncation/overflow.
-// Independent dispatches publish the bounds before cell construction.
-@compute @workgroup_size(1) fn grid_bounds(){
+// A workgroup storage barrier publishes bounds before cell construction.
+fn build_grid_bounds(){
     var lo=vec2(1e30);var hi=vec2(-1e30);
     for(var j=0u;j<light_output.counts.x;j++){
         let light=light_output.lights[j];
@@ -67,8 +66,8 @@ struct LightScene { counts:vec4<u32>, lights:array<LocalLight,64>, shadows:array
     let step=max((hi-lo)/32.0,vec2(0.00001));
     light_output.grid=vec4(lo,1.0/step);
 }
-@compute @workgroup_size(64) fn cull_lights(@builtin(global_invocation_id) id:vec3<u32>){
-    let cell=id.x;if cell>=1024u {return;}
+fn cull_light_cell(cell:u32){
+    if cell>=1024u {return;}
     let step=1.0/light_output.grid.zw;
     let lo=light_output.grid.xy+vec2(f32(cell%32u),f32(cell/32u))*step;
     let hi=lo+step;
@@ -83,3 +82,21 @@ struct LightScene { counts:vec4<u32>, lights:array<LocalLight,64>, shadows:array
     }
     light_output.light_cells[cell]=mask;
 }
+
+// All dependencies fit in one 64-lane workgroup (64 lights + 96 proxies).
+// Barriers synchronize storage only inside this group; do not dispatch more
+// groups or rely on a nonexistent device-wide workgroup barrier.
+@compute @workgroup_size(64) fn evaluate_scene(@builtin(local_invocation_index) lane:u32){
+    for(var batch=0u;batch<3u;batch++) {evaluate_attachment(lane+batch*64u);}
+    storageBarrier();
+    if lane==0u {build_grid_bounds();}
+    cull_shadow_candidates(lane);
+    storageBarrier();
+    for(var cell=lane;cell<1024u;cell+=64u) {cull_light_cell(cell);}
+}
+// Split reference entry points are compiled only by the Rust GPU regression
+// helper. They preserve the previous four-dispatch ordering for comparison.
+@compute @workgroup_size(64) fn evaluate(@builtin(global_invocation_id) id:vec3<u32>){evaluate_attachment(id.x);}
+@compute @workgroup_size(64) fn cull_shadows(@builtin(global_invocation_id) id:vec3<u32>){cull_shadow_candidates(id.x);}
+@compute @workgroup_size(1) fn grid_bounds(){build_grid_bounds();}
+@compute @workgroup_size(64) fn cull_lights(@builtin(global_invocation_id) id:vec3<u32>){cull_light_cell(id.x);}
