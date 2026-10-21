@@ -1,0 +1,123 @@
+{
+  "format": "tekesui-controlled-preflight/1",
+  "issue": 26,
+  "owner": "root: single shared implementation owner",
+  "status": "implemented and scoped API/consumer/CoreText-GPU/governance/sender clean-extract verified; receiver/public-pin/final combined native acceptance pending",
+  "root_causes": [
+    "Controlled editor validation was available only via mutating apply; composed application updates could not preflight without cloning/replacing the original editor or copying validation.",
+    "Reading callbacks accept document versions before application mutation and do not roll back arbitrary application errors."
+  ],
+  "shared_fix": [
+    "TextInput::check_external_value and apply share private prepare_external_value; no duplicated checks or stored reservation.",
+    "TextSurface exposes immutable delegation preserving all caches, clauses, focus, scroll and history."
+  ],
+  "applicable": "All TextInput/TextSurface callers, including TextField/TextArea/SearchField/read-only content; no automatic component migrations or Agent-specific state.",
+  "exceptions": [
+    "Duplicate acknowledged publication remains Unchanged during local edits/preedit; no replay.",
+    "Predictions are same-turn only, actual apply revalidates original instance/baseline/publication.",
+    "Arbitrary caller/tree callbacks remain caller responsibility; no rollback guarantee.",
+    "Direct legacy public-field ABA is outside existing controlled contract."
+  ],
+  "source_identity": "ae57a9a96755ccf18282e3803c209d32f21b47a0eccb77500284345763980d6e",
+  "source_manifest": "verified-source-manifest.json",
+  "public_api": {
+    "new_tests": 5,
+    "missing_api_red": "red.log",
+    "controls": 395,
+    "strict_clippy": true,
+    "branches": "all7current conflicts,Unchanged,Applied flags,normalization/graphemes/history,edit/undo ABA,new publication,destination/preedit changes"
+  },
+  "real_consumer": {
+    "tests": 168,
+    "new_tests": 4,
+    "source": "examples/composition-consumer/src/controlled_reading.rs",
+    "flow": "entire editor/app preflight -> reading-token validation -> synchronous original editor and Transcript commit",
+    "reject_no_partial_update": true,
+    "duplicate_ack_preedit_and_transcript_append": true
+  },
+  "GPU": {
+    "root": "gpu-result.json",
+    "portable": "portable-evidence/gpu-result.json",
+    "cases_each": 48,
+    "frames_each": 192,
+    "scope": "actual public Content + CoreText and GPU, synthetic preedit; no physical IME/native/hearing or matched ClientKit visual claim"
+  },
+  "tokens": {
+    "files": 12,
+    "bounded_cases": 5184,
+    "complete": false
+  },
+  "gates": {
+    "inventory_components": 45,
+    "governance_tests": 44,
+    "composition_tests": 8,
+    "compile_bindings": 3,
+    "receipt": "gates.json"
+  },
+  "portable": {
+    "identity": "2b16eaa6200fecdde9a0c615166064effb9446249cde05087d5d7c288d81d4ec",
+    "base": "bd3ed1b0af81b044306af90d3594bb31110147b7194bda6053b1d2e185871c9a",
+    "files": 463,
+    "delta_paths": 17,
+    "controls": 388,
+    "consumer": 168,
+    "strict_clippy": true,
+    "same_registry_pins": true,
+    "receipt": "portable-acceptance.json",
+    "handoff": "HANDOFF.md",
+    "contract_fixture_boundary": "REPLAY.md; design fixtures are not current runtime inventories or acceptance claims"
+  },
+  "requirements": [
+    {
+      "item": 1,
+      "status": "all conflict/unchanged/applied prediction parity passed"
+    },
+    {
+      "item": 2,
+      "status": "same-turn original editor and no-mutation surface/layout/GPU passed"
+    },
+    {
+      "item": 3,
+      "status": "ABA/destination/publication/preedit/reconfirm regression passed"
+    },
+    {
+      "item": 4,
+      "status": "complete independent public consumer passed; AgentKit real RunView pending receiver"
+    },
+    {
+      "item": 5,
+      "status": "docs and local exact replay passed; exact public commit/CI and AgentKit final acceptance pending"
+    }
+  ],
+  "Gold7": {
+    "G5": "contract/real integration/GPU passed; final combined native/physical IME separate",
+    "G7": "public API/docs/small replay delivered locally; receiver and public-pin pending",
+    "G1-G3": "no visible styling change; matched ClientKit/whole visual remains unaccepted",
+    "G4,G6": "no new gesture/physics change; no performance tests"
+  },
+  "protected_wip_changes": [
+    "crates/tekes-ui-controls/src/text_input/external.rs",
+    "crates/tekes-ui-controls/src/text_surface.rs",
+    "examples/composition-consumer/src/lib.rs"
+  ],
+  "frozen_bd3_unchanged": true,
+  "cleanup": "cleanup.json",
+  "remaining": [
+    {
+      "work": "AgentKit exact candidate complete RunView adaptation and independent acceptance",
+      "owner": "authorized Rust AgentKit session",
+      "proof": "exact2b16identity, full app legal/rejection and original editor/Transcript/version/preedit evidence"
+    },
+    {
+      "work": "final combined candidate native and matched ClientKit/Gold7 visuals",
+      "owner": "root",
+      "proof": "same exact source across family/page layers; physical inputs and hearing separately"
+    },
+    {
+      "work": "public exact source and CI",
+      "owner": "root within explicit authorization",
+      "proof": "published immutable commit + passing CI, not this local archive"
+    }
+  ],
+  "constraints": "No commit/push/tag/merge/Issue closure, performance, VoiceOver, new frameworks, private ClientKit or frozen-source edits"
+}

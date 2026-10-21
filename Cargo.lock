@@ -9,6 +9,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 
 [[package]]
+name = "anyhow"
+version = "1.0.104"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
+
+[[package]]
 name = "arrayref"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -473,6 +479,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
+name = "mach2"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a1b95cd5421ec55b445b5ae102f5ea0e768de1f82bd3001e11f426c269c3aea"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -638,8 +653,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "180788110936d59bab6bd83b6060ffdfffb3b922ba1396b312ae795e1de9d81d"
 dependencies = [
  "bitflags 2.13.2",
+ "libc",
  "objc2",
  "objc2-core-foundation",
+ "objc2-foundation",
 ]
 
 [[package]]
@@ -650,9 +667,11 @@ checksum = "a0125f776a10d00af4152d74616409f0d4a2053a6f57fa5b7d6aa2854ac04794"
 dependencies = [
  "bitflags 2.13.2",
  "block2",
+ "dispatch2",
  "objc2",
  "objc2-core-foundation",
  "objc2-foundation",
+ "objc2-io-surface",
 ]
 
 [[package]]
@@ -1030,6 +1049,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "tekes-ui-app-host"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "resvg",
+ "serde",
+ "serde_json",
+ "tekes-ui-app-protocol",
+ "tekes-ui-controls",
+ "tekes-ui-icons",
+ "tekes-ui-module-runtime",
+ "tekes-ui-platform-macos",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
+ "wgpu",
+]
+
+[[package]]
+name = "tekes-ui-app-protocol"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "tekes-ui-city"
 version = "0.1.0"
 dependencies = [
@@ -1046,6 +1093,17 @@ dependencies = [
  "serde_json",
  "sha2",
  "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
+]
+
+[[package]]
+name = "tekes-ui-composition-consumer"
+version = "0.0.0"
+dependencies = [
+ "tekes-ui-controls",
+ "tekes-ui-icons",
  "tekes-ui-scene",
  "tekes-ui-text",
  "tekes-ui-tokens",
@@ -1079,6 +1137,7 @@ dependencies = [
  "png 0.17.16",
  "resvg",
  "serde_json",
+ "tekes-ui-composition-consumer",
  "tekes-ui-controls",
  "tekes-ui-icons",
  "tekes-ui-motion",
@@ -1094,6 +1153,23 @@ dependencies = [
 [[package]]
 name = "tekes-ui-icons"
 version = "0.1.0"
+
+[[package]]
+name = "tekes-ui-module-runtime"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "mach2",
+ "objc2-io-surface",
+ "png 0.17.16",
+ "serde_json",
+ "tekes-ui-app-protocol",
+ "tekes-ui-controls",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-tokens",
+ "wgpu",
+]
 
 [[package]]
 name = "tekes-ui-motion"
@@ -1120,16 +1196,20 @@ dependencies = [
 name = "tekes-ui-render"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "bytemuck",
  "objc2",
  "objc2-core-foundation",
  "objc2-core-graphics",
+ "objc2-io-surface",
+ "objc2-metal",
  "objc2-quartz-core",
  "png 0.17.16",
  "pollster",
  "tekes-ui-scene",
  "tekes-ui-tokens",
  "wgpu",
+ "wgpu-hal",
 ]
 
 [[package]]

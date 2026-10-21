@@ -1,0 +1,6 @@
+{
+  "root_cause": "Gallery duplicates EmptyState sizing and mismatches SurfaceView JSON padding; public EmptyStateView has no natural measurement entry",
+  "before_image": "../feedback-button-centering-20261019/observed/empty-state-before.png",
+  "before_geometry": "../feedback-button-centering-20261019/observed/empty-state-before.json",
+  "status": "reproducing"
+}

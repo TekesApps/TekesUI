@@ -16,6 +16,8 @@ use crate::perf::{FrameCtx, Perf};
 
 #[derive(Debug)]
 pub struct Host {
+    #[cfg(feature = "composition-review")]
+    wake_acceptance: Option<crate::wake_acceptance::WakeAcceptance>,
     gallery: Gallery,
     scene: Scene,
     renderer: Option<Renderer>,
@@ -30,11 +32,14 @@ pub struct Host {
     pending_redraw: bool,
     last_animation_target: Option<f64>,
     window_active: bool,
+    accessibility_events: Vec<serde_json::Value>,
 }
 
 impl Host {
     pub fn new(gallery: Gallery) -> Host {
         Host {
+            #[cfg(feature = "composition-review")]
+            wake_acceptance: crate::wake_acceptance::WakeAcceptance::from_env(),
             gallery,
             scene: Scene::new(),
             renderer: None,
@@ -47,6 +52,7 @@ impl Host {
             pending_redraw: false,
             last_animation_target: None,
             window_active: true,
+            accessibility_events: Vec::new(),
         }
     }
 
@@ -94,6 +100,18 @@ impl Host {
         window.set_animating(animate);
     }
 
+    fn sync_accessibility(&self, window: &Window) {
+        window.set_accessibility_nodes(self.gallery.accessibility_nodes());
+        if let Some(out) = std::env::var_os("TEKESUI_GALLERY_AX_OUT") {
+            let nodes:Vec<_>=window.accessibility_nodes().into_iter().map(|n|serde_json::json!({
+                "component":n.key.component,"part":n.key.part,"parent":n.parent.map(|p|serde_json::json!({"component":p.component,"part":p.part})),"role":format!("{:?}",n.role),"description":n.description,"expanded":n.expanded,"invalid":n.invalid,"label":n.label,"value":n.value,"enabled":n.enabled,"focused":n.focused,"selected":n.selected,"read_only":n.read_only,"selection":n.text_selection,"frame":{"x":n.frame.origin.x,"y":n.frame.origin.y,"width":n.frame.size.width,"height":n.frame.size.height}
+            })).collect();
+            let out = std::path::PathBuf::from(out);
+            std::fs::create_dir_all(&out).expect("AX audit output");
+            std::fs::write(out.join("native-tree.json"),serde_json::to_vec_pretty(&serde_json::json!({"nodes":nodes,"screen":format!("{:?}",window.screen_info()),"backing_scale":window.scale(),"host_window_active":self.window_active,"window_key":window.is_key_window(),"window_active":window.is_active(),"scope":"accepted native publication readback; VoiceOver acceptance separate","actions":self.accessibility_events})).unwrap()).expect("AX snapshot");
+        }
+    }
+
     fn redraw(&mut self, window: &Window) {
         self.redraws += 1;
         let size = window.size();
@@ -107,7 +125,9 @@ impl Host {
         }
         self.scene.clear();
         self.gallery.build_scene(&mut self.scene);
+        window.set_cursor_regions(self.gallery.cursor_regions());
         window.set_text_input_state(self.gallery.text_input_state());
+        self.sync_accessibility(window);
         let clear = Gallery::background(theme);
         self.log(format_args!(
             "Redraw #{} size {}x{} drawable {:?} quads {}",
@@ -141,6 +161,10 @@ impl Host {
 
 impl WindowHandler for Host {
     fn handle(&mut self, event: Event, window: &mut Window) {
+        #[cfg(feature = "composition-review")]
+        if let Some(audit) = &mut self.wake_acceptance {
+            audit.observe(&event, window);
+        }
         if self.log_all
             && !matches!(
                 event,
@@ -289,12 +313,27 @@ impl WindowHandler for Host {
                     window.close();
                 }
             }
+            Event::Accessibility { target, action } => {
+                let change = self.gallery.accessibility_action(*target, action);
+                if std::env::var_os("TEKESUI_GALLERY_AX_OUT").is_some()
+                    && self.accessibility_events.len() < 128
+                {
+                    self.accessibility_events.push(serde_json::json!({"component":target.component,"part":target.part,"action":format!("{action:?}"),"changed":change.redraw}));
+                }
+                window.set_text_input_state(self.gallery.text_input_state());
+                self.apply_change(change, window);
+                self.sync_accessibility(window);
+                self.sync_animation(window, self.gallery.needs_animation());
+            }
             Event::CloseRequested => {
                 self.log(format_args!(
                     "CloseRequested -> close；Redraw 共 {} 次",
                     self.redraws
                 ));
                 window.close();
+                if let Some(out) = std::env::var_os("TEKESUI_GALLERY_AX_OUT") {
+                    std::fs::write(std::path::PathBuf::from(out).join("close-readback.json"),serde_json::to_vec_pretty(&serde_json::json!({"accepted_nodes_after_close":window.accessibility_nodes().len()})).unwrap()).expect("closed AX readback");
+                }
             }
             Event::TextCommand(command)
                 if matches!(command.as_str(), "copy:" | "paste:" | "cut:") =>
@@ -332,6 +371,10 @@ impl WindowHandler for Host {
                 let change = self.gallery.handle_input(&event);
                 self.apply_change(change, window);
                 window.set_text_input_state(self.gallery.text_input_state());
+                window.set_cursor_regions(self.gallery.cursor_regions());
+                // Focus changes must reach assistive clients even when an
+                // occluded window cannot produce another rendered frame.
+                self.sync_accessibility(window);
                 self.sync_animation(window, self.gallery.needs_animation());
             }
             // handle_input 返回哪些状态变了；没变就什么都不做（不请求重绘）。

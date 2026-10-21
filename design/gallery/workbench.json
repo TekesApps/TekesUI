@@ -121,7 +121,11 @@
       "docs": "Arranges children evenly along one axis. Configure axis and gap; remaining children share the available main-axis space.",
       "keywords": "stack default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Stack"
+      "api": "tekes_ui_controls::extended::Stack",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Stack",
+        "tekes_ui_controls::layout_view::StackView"
+      ]
     },
     {
       "title": "Grid",
@@ -133,7 +137,11 @@
       "docs": "Places children in row-major cells with fixed columns and gaps. Use for regular collections; variable-height tracks are outside this fixture.",
       "keywords": "grid default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Grid"
+      "api": "tekes_ui_controls::extended::Grid",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Grid",
+        "tekes_ui_controls::layout_view::GridView"
+      ]
     },
     {
       "title": "Separator",
@@ -145,7 +153,11 @@
       "docs": "Adds a decorative horizontal or vertical division between adjacent content. It does not expose interactive state.",
       "keywords": "separator default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Separator"
+      "api": "tekes_ui_controls::extended::Separator",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Separator",
+        "tekes_ui_controls::layout_view::SeparatorView"
+      ]
     },
     {
       "title": "SplitView",
@@ -157,7 +169,11 @@
       "docs": "Divides a container into leading and trailing panes with a draggable ratio and minimum pane width. Narrow containers switch between panes; advanced persistence is not shown.",
       "keywords": "split-view default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::SplitView"
+      "api": "tekes_ui_controls::extended::SplitView",
+      "api_bindings": [
+        "tekes_ui_controls::extended::SplitView",
+        "tekes_ui_controls::layout_view::SplitViewView"
+      ]
     },
     {
       "title": "ScrollArea",
@@ -168,7 +184,11 @@
       "slug": "component-scroll-area",
       "docs": "Independent axis policies, viewport bounds, visible content, native momentum, bounce and proportional scroll thumb.",
       "keywords": "scroll-area default variants states keyboard edge-cases",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::ScrollArea",
+      "api_bindings": [
+        "tekes_ui_controls::ScrollArea"
+      ]
     },
     {
       "title": "Disclosure",
@@ -180,7 +200,11 @@
       "docs": "Shows or hides a bounded detail region. Enter and Space toggle it; collapsed content is not mounted in this fixture.",
       "keywords": "disclosure default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Disclosure"
+      "api": "tekes_ui_controls::extended::Disclosure",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Disclosure",
+        "tekes_ui_controls::layout_view::DisclosureView"
+      ]
     },
     {
       "title": "Surface / Panel",
@@ -191,7 +215,11 @@
       "slug": "component-surface",
       "docs": "A semantic surface container. Panel is the bordered variant, not a duplicate component.",
       "keywords": "",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::feedback_view::SurfaceView",
+      "api_bindings": [
+        "tekes_ui_controls::feedback_view::SurfaceView"
+      ]
     },
     {
       "title": "Toolbar",
@@ -202,7 +230,14 @@
       "slug": "component-toolbar",
       "docs": "A horizontal group of real actions with shared spacing.",
       "keywords": "",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::Toolbar",
+      "api_bindings": [
+        "tekes_ui_controls::Toolbar",
+        "tekes_ui_controls::feedback_view::ToolbarView",
+        "tekes_ui_controls::ToolbarControl"
+      ],
+      "api_notes": "Existing action-group model/View and additive original Component ToolbarControl with measured single-row overflow, stable IDs and icons. Module/window process contributions are separate experimental infrastructure; arbitrary caller Content slots and complete remote keyboard/IME/AX remain unaccepted."
     },
     {
       "title": "Text",
@@ -213,7 +248,12 @@
       "slug": "component-text",
       "docs": "Read-only multiline text with selection, copying, reflow and scrolling.",
       "keywords": "text default variants states keyboard edge-cases",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::TextSurface",
+      "api_bindings": [
+        "tekes_ui_controls::TextSurface"
+      ],
+      "api_notes": "Shared TextSurface/TextInput capability; read-only/multiline/search policy belongs to this registered variant, not a separate editor state machine."
     },
     {
       "title": "Icon",
@@ -224,7 +264,11 @@
       "slug": "component-icon",
       "docs": "Actual vector assets rendered by the shared icon path, with fixed size specimens.",
       "keywords": "icon default variants states keyboard edge-cases",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::layout_view::IconView",
+      "api_bindings": [
+        "tekes_ui_controls::layout_view::IconView"
+      ]
     },
     {
       "title": "Button",
@@ -235,7 +279,11 @@
       "slug": "component-button",
       "docs": "Triggers one action on release inside or on keyboard activation. Disabled and loading controls cannot activate.",
       "keywords": "button default variants states keyboard edge-cases",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::Button",
+      "api_bindings": [
+        "tekes_ui_controls::Button"
+      ]
     },
     {
       "title": "IconButton",
@@ -247,7 +295,11 @@
       "docs": "Compact icon action with required accessible name. Enter, Space, and press-release pointer activation share the Button interaction model.",
       "keywords": "icon-button default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::IconButton"
+      "api": "tekes_ui_controls::extended::IconButton",
+      "api_bindings": [
+        "tekes_ui_controls::extended::IconButton",
+        "tekes_ui_controls::layout_view::IconButtonView"
+      ]
     },
     {
       "title": "Link",
@@ -259,7 +311,11 @@
       "docs": "Underlined navigation action with hover, pressed and focus-visible treatments. Enter activates; Space remains page navigation.",
       "keywords": "link default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Link"
+      "api": "tekes_ui_controls::extended::Link",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Link",
+        "tekes_ui_controls::layout_view::LinkView"
+      ]
     },
     {
       "title": "TextField",
@@ -270,7 +326,12 @@
       "slug": "component-text-field",
       "docs": "Single-line input using the shared TextInput UTF-16 model, native IME, selection, clipboard and undo.",
       "keywords": "text-field default variants states keyboard edge-cases",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::TextSurface",
+      "api_bindings": [
+        "tekes_ui_controls::TextSurface"
+      ],
+      "api_notes": "Shared TextSurface/TextInput capability; read-only/multiline/search policy belongs to this registered variant, not a separate editor state machine."
     },
     {
       "title": "TextArea",
@@ -281,7 +342,12 @@
       "slug": "component-text-area",
       "docs": "Plain multiline input using the same TextInput and scroll model. TextEditor is an internal adapter, not a separate public editor.",
       "keywords": "text-area default variants states keyboard edge-cases",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::TextSurface",
+      "api_bindings": [
+        "tekes_ui_controls::TextSurface"
+      ],
+      "api_notes": "Shared TextSurface/TextInput capability; read-only/multiline/search policy belongs to this registered variant, not a separate editor state machine."
     },
     {
       "title": "SearchField",
@@ -292,7 +358,12 @@
       "slug": "component-search-field",
       "docs": "Single-line TextInput variant with controlled filtering and clear behavior.",
       "keywords": "search-field default variants states keyboard edge-cases",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::TextSurface",
+      "api_bindings": [
+        "tekes_ui_controls::TextSurface"
+      ],
+      "api_notes": "Shared TextSurface/TextInput capability; read-only/multiline/search policy belongs to this registered variant, not a separate editor state machine."
     },
     {
       "title": "ComboBox",
@@ -304,7 +375,11 @@
       "docs": "Editable text input that filters a fixed option set. Arrow keys move, Enter commits, Escape closes; query is deterministic and local.",
       "keywords": "combo-box default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::ComboBox"
+      "api": "tekes_ui_controls::extended::ComboBox",
+      "api_bindings": [
+        "tekes_ui_controls::extended::ComboBox",
+        "tekes_ui_controls::layout_view::ComboBoxView"
+      ]
     },
     {
       "title": "Slider",
@@ -316,7 +391,11 @@
       "docs": "Adjusts a numeric value from 0 to 100 in steps of 5. Arrow keys, Home/End and pointer drag update the same model.",
       "keywords": "slider default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Slider"
+      "api": "tekes_ui_controls::extended::Slider",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Slider",
+        "tekes_ui_controls::SliderView"
+      ]
     },
     {
       "title": "Checkbox",
@@ -327,7 +406,11 @@
       "slug": "component-checkbox",
       "docs": "A three-state selection model. Space toggles; mixed becomes checked; disabled never changes.",
       "keywords": "checkbox default variants states keyboard edge-cases",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::Checkbox",
+      "api_bindings": [
+        "tekes_ui_controls::Checkbox"
+      ]
     },
     {
       "title": "RadioGroup",
@@ -339,7 +422,11 @@
       "docs": "Selects one of three mutually exclusive options. Arrow keys move selection and Space selects; disabled items are skipped.",
       "keywords": "radio-group default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::RadioGroup"
+      "api": "tekes_ui_controls::extended::RadioGroup",
+      "api_bindings": [
+        "tekes_ui_controls::extended::RadioGroup",
+        "tekes_ui_controls::RadioGroupView"
+      ]
     },
     {
       "title": "Switch",
@@ -351,7 +438,11 @@
       "docs": "Toggles a boolean preference with Space or pointer activation. Disabled state prevents changes.",
       "keywords": "switch default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Switch"
+      "api": "tekes_ui_controls::extended::Switch",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Switch",
+        "tekes_ui_controls::SwitchView"
+      ]
     },
     {
       "title": "SegmentedControl",
@@ -363,7 +454,11 @@
       "docs": "Chooses one of three adjacent views. Arrow keys move selection and Space selects the focused segment.",
       "keywords": "segmented-control default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::SegmentedControl"
+      "api": "tekes_ui_controls::extended::SegmentedControl",
+      "api_bindings": [
+        "tekes_ui_controls::extended::SegmentedControl",
+        "tekes_ui_controls::layout_view::SegmentedControlView"
+      ]
     },
     {
       "title": "Field",
@@ -374,7 +469,12 @@
       "slug": "component-field",
       "docs": "A label, input slot and help or validation message. The input remains a real TextInput.",
       "keywords": "",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::Field",
+      "api_bindings": [
+        "tekes_ui_controls::Field",
+        "tekes_ui_controls::feedback_view::FieldView"
+      ]
     },
     {
       "title": "Select",
@@ -383,9 +483,14 @@
       "component": "tui.select",
       "renderer": "select",
       "slug": "component-select",
-      "docs": "Single selection over a fixed option set. Reuses the Menu navigation model. ComboBox remains planned until editable completion exists.",
+      "docs": "Single selection over a fixed option set. Reuses Menu navigation; editable query and IME completion belong to the separate ComboBox contract.",
       "keywords": "",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::Select",
+      "api_bindings": [
+        "tekes_ui_controls::Select",
+        "tekes_ui_controls::layout_view::SelectView"
+      ]
     },
     {
       "title": "NumberField",
@@ -396,7 +501,12 @@
       "slug": "component-number-field",
       "docs": "A bounded numeric model with increment/decrement and clamping. The editable numeric text variant remains a documented gap.",
       "keywords": "",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::NumberField",
+      "api_bindings": [
+        "tekes_ui_controls::NumberField",
+        "tekes_ui_controls::feedback_view::NumberFieldView"
+      ]
     },
     {
       "title": "Tabs",
@@ -407,7 +517,12 @@
       "slug": "component-tabs",
       "docs": "One active panel. Arrow keys move and select; Home/End select the first/last tab.",
       "keywords": "tabs default variants states keyboard edge-cases",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::Tabs",
+      "api_bindings": [
+        "tekes_ui_controls::Tabs",
+        "tekes_ui_controls::TabsView"
+      ]
     },
     {
       "title": "Breadcrumb",
@@ -419,7 +534,11 @@
       "docs": "Shows the Workspace / Documents / Drafts hierarchy. Activating an ancestor changes the local current-location fixture.",
       "keywords": "breadcrumb default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Breadcrumb"
+      "api": "tekes_ui_controls::extended::Breadcrumb",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Breadcrumb",
+        "tekes_ui_controls::layout_view::BreadcrumbView"
+      ]
     },
     {
       "title": "CommandPalette",
@@ -431,7 +550,11 @@
       "docs": "Opens a searchable command list with deterministic commands. Type to filter, arrows to move, Enter to run and Escape to close.",
       "keywords": "command-palette default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::CommandPalette"
+      "api": "tekes_ui_controls::extended::CommandPalette",
+      "api_bindings": [
+        "tekes_ui_controls::extended::CommandPalette",
+        "tekes_ui_controls::layout_view::CommandPaletteView"
+      ]
     },
     {
       "title": "List",
@@ -443,7 +566,11 @@
       "docs": "Single-select list with five fixture rows. Up/Down and Home/End move selection; data virtualization is not represented.",
       "keywords": "list default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::List"
+      "api": "tekes_ui_controls::extended::List",
+      "api_bindings": [
+        "tekes_ui_controls::extended::List",
+        "tekes_ui_controls::collections_view::ListView"
+      ]
     },
     {
       "title": "Tree",
@@ -455,7 +582,11 @@
       "docs": "Expandable Workspace tree with visible-row keyboard navigation. Right opens or enters children; Left closes or returns to parent.",
       "keywords": "tree default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Tree"
+      "api": "tekes_ui_controls::extended::Tree",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Tree",
+        "tekes_ui_controls::collections_view::TreeView"
+      ]
     },
     {
       "title": "DataTable",
@@ -467,7 +598,11 @@
       "docs": "Sortable Name, Kind and Updated columns with selectable fixture rows. Sorting reorders stable row identities; virtualization and arbitrary schemas are out of scope.",
       "keywords": "data-table default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::DataTable"
+      "api": "tekes_ui_controls::extended::DataTable",
+      "api_bindings": [
+        "tekes_ui_controls::extended::DataTable",
+        "tekes_ui_controls::collections_view::DataTableView"
+      ]
     },
     {
       "title": "Chart",
@@ -479,7 +614,11 @@
       "docs": "Single-series vertical bars with selectable finite values. Line, scatter, stacked and multi-series charts are not included.",
       "keywords": "chart default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::BarChart"
+      "api": "tekes_ui_controls::BarChart",
+      "api_bindings": [
+        "tekes_ui_controls::BarChart",
+        "tekes_ui_controls::collections_view::ChartView"
+      ]
     },
     {
       "title": "Menu",
@@ -490,7 +629,12 @@
       "slug": "component-menu",
       "docs": "An anchored action menu. Arrow keys move, Enter activates and Escape dismisses.",
       "keywords": "menu default variants states keyboard edge-cases",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::Menu",
+      "api_bindings": [
+        "tekes_ui_controls::Menu",
+        "tekes_ui_controls::MenuView"
+      ]
     },
     {
       "title": "Tooltip",
@@ -502,7 +646,11 @@
       "docs": "Brief supplemental text appears on hover or focus-visible. Escape dismisses it until pointer leave or focus changes.",
       "keywords": "tooltip default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Tooltip"
+      "api": "tekes_ui_controls::extended::Tooltip",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Tooltip",
+        "tekes_ui_controls::feedback_view::TooltipView"
+      ]
     },
     {
       "title": "Popover",
@@ -514,7 +662,11 @@
       "docs": "Anchored content opens from its invoker and closes on Escape or outside click. Closing restores focus to the invoker.",
       "keywords": "popover default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Popover"
+      "api": "tekes_ui_controls::extended::Popover",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Popover",
+        "tekes_ui_controls::feedback_view::PopoverView"
+      ]
     },
     {
       "title": "Dialog",
@@ -525,7 +677,12 @@
       "slug": "component-dialog",
       "docs": "A modal confirmation scope. Tab stays within the dialog; Escape cancels and restores the invoker.",
       "keywords": "dialog default variants states keyboard edge-cases",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::Dialog",
+      "api_bindings": [
+        "tekes_ui_controls::Dialog",
+        "tekes_ui_controls::DialogView"
+      ]
     },
     {
       "title": "Toast",
@@ -537,7 +694,11 @@
       "docs": "Temporary status message with a deterministic fixture timer. Use Advance fixture timer or Dismiss; no wall clock is used.",
       "keywords": "toast default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Toast"
+      "api": "tekes_ui_controls::extended::Toast",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Toast",
+        "tekes_ui_controls::feedback_view::ToastView"
+      ]
     },
     {
       "title": "Banner",
@@ -549,7 +710,11 @@
       "docs": "Persistent workspace notice with a dismiss action. Reset restores its initial visible state.",
       "keywords": "banner default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Banner"
+      "api": "tekes_ui_controls::extended::Banner",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Banner",
+        "tekes_ui_controls::feedback_view::BannerView"
+      ]
     },
     {
       "title": "StatusBadge",
@@ -561,7 +726,11 @@
       "docs": "Compact informational, running, succeeded and failed status labels. This is presentational and has no action.",
       "keywords": "status-badge default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::StatusBadge"
+      "api": "tekes_ui_controls::extended::StatusBadge",
+      "api_bindings": [
+        "tekes_ui_controls::extended::StatusBadge",
+        "tekes_ui_controls::feedback_view::StatusBadgeView"
+      ]
     },
     {
       "title": "Progress",
@@ -573,7 +742,11 @@
       "docs": "Displays a bounded 0–100% value and advances by 10% per action. Indeterminate progress is not shown in this story.",
       "keywords": "progress default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Progress"
+      "api": "tekes_ui_controls::extended::Progress",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Progress",
+        "tekes_ui_controls::feedback_view::ProgressView"
+      ]
     },
     {
       "title": "EmptyState",
@@ -585,7 +758,11 @@
       "docs": "Explains an empty collection and offers a create action. The fixture action creates one local document row.",
       "keywords": "empty-state default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::EmptyState"
+      "api": "tekes_ui_controls::extended::EmptyState",
+      "api_bindings": [
+        "tekes_ui_controls::extended::EmptyState",
+        "tekes_ui_controls::feedback_view::EmptyStateView"
+      ]
     },
     {
       "title": "Skeleton",
@@ -596,7 +773,11 @@
       "slug": "component-skeleton",
       "docs": "A static loading placeholder with semantic surface tokens; no uncontrolled shimmer.",
       "keywords": "",
-      "status": "experimental"
+      "status": "experimental",
+      "api": "tekes_ui_controls::feedback_view::SkeletonView",
+      "api_bindings": [
+        "tekes_ui_controls::feedback_view::SkeletonView"
+      ]
     },
     {
       "title": "Markdown",
@@ -608,7 +789,11 @@
       "docs": "Read-only Markdown subset for headings, paragraphs, bullets and fenced code. Full CommonMark extensions are unsupported.",
       "keywords": "markdown default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::Markdown"
+      "api": "tekes_ui_controls::extended::Markdown",
+      "api_bindings": [
+        "tekes_ui_controls::extended::Markdown",
+        "tekes_ui_controls::collections_view::MarkdownView"
+      ]
     },
     {
       "title": "CodeBlock",
@@ -620,7 +805,11 @@
       "docs": "Read-only light code specimen using the Design System code text role. Syntax highlighting, editing and copy controls are outside this component.",
       "keywords": "code-block default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::CodeBlock"
+      "api": "tekes_ui_controls::extended::CodeBlock",
+      "api_bindings": [
+        "tekes_ui_controls::extended::CodeBlock",
+        "tekes_ui_controls::collections_view::CodeBlockView"
+      ]
     },
     {
       "title": "DiffView",
@@ -632,7 +821,11 @@
       "docs": "Deterministic line diff using bounded LCS with delete/add fallback for large inputs. Intraline changes are not highlighted.",
       "keywords": "diff-view default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::DiffView"
+      "api": "tekes_ui_controls::extended::DiffView",
+      "api_bindings": [
+        "tekes_ui_controls::extended::DiffView",
+        "tekes_ui_controls::collections_view::DiffViewRuntime"
+      ]
     },
     {
       "title": "Forms & validation",

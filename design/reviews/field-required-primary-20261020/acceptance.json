@@ -1,0 +1,92 @@
+{
+  "status": "applied to active WIP; API/consumer/native-object/source gates verified; active-window and VoiceOver acceptance pending",
+  "source_hashes": {
+    "crates/tekes-ui-controls/src/composition.rs": "fe54463cf12298429e373c7712321766b87bf25df2ea66986e5081fdf69472a2",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "11d0d7d3df12da37c7dd9ac74572969729c2becf25f82f8778088b644401ca8c",
+    "crates/tekes-ui-gallery/src/actions_acceptance.rs": "f984ee083fe61f057fe858f9e077194e1c1c00fa2a486635999db0fc08ddf8d1",
+    "crates/tekes-ui-gallery/src/gallery/accessibility.rs": "f754d094afa3d8d341d650f7ee0d30568dc6fe79ed7f47b5d6357c221fa181c5",
+    "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "cb70698c13fb461490ef2ebf9dfeabea7978789de174ca10e0efd1d747ee6afd",
+    "crates/tekes-ui-platform-macos/Cargo.toml": "dbefa83c4f7a50e0abdac2b6f8702422f1381263d5fc5c06bf0d97b2612392fa",
+    "crates/tekes-ui-platform-macos/src/accessibility.rs": "e126d71da9b2d5f04f130a2d00961e120bffd1b298bb71a33d7392e44991eb0c",
+    "crates/tekes-ui-platform-macos/src/selftest.rs": "a4512cdf7aae825ce81227c1c1f6e4b79fc16d75f58b6a07053d2138ca04a325",
+    "crates/tekes-ui-platform-macos/src/view.rs": "0bc864ceb663f4a8bdc9da280dd0f9bc0e27b759b753c7ad9a7ef84636fe609a",
+    "examples/composition-consumer/examples/native.rs": "82c78629929d5770debef9a292146850ffe53f37da26f4c2cc67a04a2d240447",
+    "examples/composition-consumer/tests/scenarios.rs": "ac000faf20b91427dc2aaaf18b2d1fa6e2f3df11dcd7af9dc545dd844a663b53",
+    "crates/tekes-ui-controls/tests/field_required.rs": "5b66885812dec91c74579b00e362a3e2525eddcc4bb52d94e0d295b096297580",
+    "crates/tekes-ui-platform-macos/tests/required_native.rs": "23fca934b0dbdd08950e8c11ab4123c4a8db3d70b95371692c1695474ef90000",
+    "design/reviews/input-family-consumer-20261020/host/src/main.rs": "d12572537ec2134287249e43f0ca462e7a50ff7f7b3a710f824870cbab028f61"
+  },
+  "shared_cause": "Field.required not published in common semantic/native snapshot",
+  "shared_fix": "same existing metadata bool carried through ContentSemantics/AccessibilityNode, actual AppKit getter and native/Gallery publishers; existing notification and stale-object fences retained",
+  "applies_to": "all existing Field/TextFieldContent hosts; nonform controls defaultfalse; read-only/disabled/invalid independent; bare View hosts publish declarative model metadata",
+  "API": "6 tests total across Field required32-combination contract and existing48-palette metadata contract",
+  "actual_consumer": "normal/error/disabled existing public Field integration passed",
+  "native_object": "36 actual objc selector/lifetime checks; windows0; no human VoiceOver or active-window claim",
+  "gates": {
+    "fresh_actual_token_probes": [
+      {
+        "path": "design/reviews/field-required-primary-20261020/token-probes/action.json",
+        "cases": 576,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/field-required-primary-20261020/token-probes/combo-async.json",
+        "cases": 264,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/field-required-primary-20261020/token-probes/command-async.json",
+        "cases": 168,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/field-required-primary-20261020/token-probes/content-status.json",
+        "cases": 408,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/field-required-primary-20261020/token-probes/field.json",
+        "cases": 48,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/field-required-primary-20261020/token-probes/input.json",
+        "cases": 612,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/field-required-primary-20261020/token-probes/number.json",
+        "cases": 60,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/field-required-primary-20261020/token-probes/selection.json",
+        "cases": 2016,
+        "complete": false
+      },
+      {
+        "path": "design/reviews/field-required-primary-20261020/token-probes/slider-composition.json",
+        "cases": 264,
+        "complete": false
+      }
+    ],
+    "governance_tests": 42,
+    "composition_audit_tests": 8,
+    "current_component_matrix": 45,
+    "strict_clippy": "controls/platform and real composition consumer all-targets passed",
+    "typechecks": "Gallery and migrated input review host passed"
+  },
+  "negative_evidence": "old runtime token receipt rejected after source change; all9actual probes rerun before rebinding; old receipts preserved",
+  "compatibility": "direct Rust struct literals require required field; existing constructor defaultsfalse; future source upgrade migration documented. No existing frozen/public source changed.",
+  "protected_unrelated_inputs": 549,
+  "unexpected_changes": [],
+  "cleanup": "cleanup.json",
+  "native_window": "old copied host retained under its previous identity until current native round completes; must rebuild/retest latest semantic version before accepting it",
+  "GPU_Gold7": "no new visual rules or tokens; no new full Gold7/physical experience claim",
+  "publication": "no commit/push/tag/merge/Issue writes; public61dd and532 followup unaffected",
+  "performance": "not measured",
+  "head": "b3013c720d98f89159bc20f7bc64e9ba1f71b314",
+  "format_boundary": "Owned14 source changes rustfmt-check passed; full-root fmt remains blocked by pre-existing unrelated Gallery WIP differences. Original logs retained; unrelated files not modified.",
+  "pure_rust": "passed with installed /opt/homebrew/bin/python3.14; default Xcode Python lacks required tomllib and its setup failure is retained",
+  "format_followup": "Original format-boundary records application-time state; later six-file formatting-only repair passes full workspace format: design/reviews/gallery-format-gate-20261020/acceptance.json"
+}

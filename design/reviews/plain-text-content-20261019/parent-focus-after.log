@@ -1,0 +1,12 @@
+   Compiling tekes-ui-controls v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-controls)
+   Compiling tekes-ui-composition-consumer v0.0.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/examples/composition-consumer)
+    Finished `test` profile [unoptimized] target(s) in 1.93s
+     Running tests/plain_text.rs (target/review-cache/debug/deps/plain_text-aed00080b41252fb)
+
+running 3 tests
+test ordinary_surface_buttons_footnote_and_plain_document_share_existing_public_controls ... ok
+test focusing_and_navigating_document_reveals_caret_through_parent_not_entire_block ... ok
+test parent_scroll_does_not_change_body_wrap_and_narrow_resize_remeasures_whole_surface ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+

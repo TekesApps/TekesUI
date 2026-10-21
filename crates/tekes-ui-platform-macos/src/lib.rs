@@ -8,15 +8,25 @@
 //!
 //! 纯数据部分（事件、菜单描述、配置）不含平台代码，在任何平台上都能编译和单测。
 
+pub mod accessibility;
 pub mod config;
 pub mod event;
 pub mod menu;
 pub mod placement;
+mod text_key;
+mod wake;
+pub use text_key::{TextKeyContext, TextKeyDisposition, TextKeyEvent};
+pub use wake::{WakeResult, WindowWake};
 
+pub use accessibility::{
+    AccessibilityAction, AccessibilityKey, AccessibilityNode, AccessibilityRange,
+    AccessibilityRole, AccessibilitySortDirection, AccessibilityTextLayout,
+};
 pub use config::{AppConfig, WindowConfig};
 pub use event::{
-    AnimationFrame, Event, KeyEvent, KeyEventKind, Modifiers, MouseButton, MouseEvent,
-    MouseEventKind, Point, ScrollEvent, ScrollPhase, Size, TextInputState, Vec2,
+    AnimationFrame, CursorIcon, CursorRegion, Event, KeyEvent, KeyEventKind, Modifiers,
+    MouseButton, MouseEvent, MouseEventKind, Point, ScrollEvent, ScrollPhase, Size, TextInputState,
+    Vec2,
 };
 pub use menu::{CommandId, KeyEquivalent, Menu, MenuBar, MenuCommand, MenuError, MenuItem};
 pub use placement::{Layout, PlacementReport, Rect, ScreenChoice, ScreenInfo, WindowPlacement};

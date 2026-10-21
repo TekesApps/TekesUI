@@ -1,0 +1,152 @@
+{
+  "format": "tekesui-choice-selection-review/1",
+  "date": "2026-10-18T01:45:41.330760+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues": [
+    3,
+    8,
+    12,
+    14
+  ],
+  "issues_open": 14,
+  "prs_all_states": 0,
+  "github_changed_since_ledger": false,
+  "root_fixes": [
+    "SelectView consumes outside-dismiss click and cancels trigger rearm",
+    "Gallery trigger no longer depends on blur workaround",
+    "Select measured state fixtures reuse existing navigation matrix; ComboBox reuses TextSurface pointer fixture and original View",
+    "Gallery统一输入76/36 Enter equivalent path; platform raw event contract unchanged; existing independent native consumer already binds both"
+  ],
+  "public_api": {
+    "new_tests": 2,
+    "choice_contract_tests": 10,
+    "choice_state_tests": 1,
+    "choice_state_cases": 180,
+    "select_exact_states": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "selected",
+      "open"
+    ],
+    "combo_exact_states": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled",
+      "selected",
+      "open",
+      "empty"
+    ],
+    "shared_three_packages_tests": 338,
+    "independent_consumer_tests": 32,
+    "gallery_select_tests": 2,
+    "gallery_combo_pointer_tests": 1,
+    "gallery_states_tests": 2,
+    "full_gallery_return_tests": 1,
+    "compiled_public_toggle_red": 1,
+    "compiled_full_gallery76_red": 1,
+    "strict_clippy": "controls/Gallery all-targets composition-review after native fix; consumer pass"
+  },
+  "governance": {
+    "components": 45,
+    "public_states": 115,
+    "fixture_unverified": 141,
+    "required_states": 269,
+    "remaining_choice_requirements": 10,
+    "capability_tests": 37,
+    "composition_tests": 6,
+    "reference": "pass",
+    "gold7_mechanical": "pass; experience incomplete",
+    "pure_rust": "pass",
+    "fmt": "pass"
+  },
+  "gpu": {
+    "final_verified_whole_pages": 288,
+    "earlier_reference_pages": 288,
+    "earlier_reference_source": "popup-geometry-20261018 frozen same-component pages, not re-execution of this batch baseline",
+    "changed_from_earlier": 288,
+    "reason": "more exact state specimens and actual measured arrangement",
+    "pre_native_map_current_batch_pages": 288,
+    "identical_after_native_map_fix": 288,
+    "additional_tall_navigation_pngs": 4,
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "widths_and_type": [
+      "720x512 type150",
+      "1440x960 type100"
+    ],
+    "reduced_motion": true,
+    "visual_review": "representative frames only; state combinations and full experience incomplete"
+  },
+  "token_observations": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "choice-trigger-token-observations.json": 84,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "choice-selection-token-observations.json": 180,
+    "action-token-observations.json": 576
+  },
+  "token_limits": {
+    "complete": false,
+    "choice_scope": "15 exact states; Select empty/loading/error and ComboBox loading/error excluded",
+    "choice_state_field": "audit metadata with explicit public assertion, no new runtime state"
+  },
+  "native": {
+    "bundle_id": "com.tekesui.gallery.audit.selectioninput20261018",
+    "hash_stage": "after codesign",
+    "observed": [
+      "Select original Gallery already closed via host blur; no false native toggle red claim",
+      "native Return failure found, Space diagnosis then full Gallery36/76 regression",
+      "final native Down Return selects Compact and closes, label/log agree",
+      "ComboBox Com Down Enter Comfortable, no-match query/no popup, disabled edit rejected"
+    ],
+    "not_tested": [
+      "disabled Select keyboard activation; focus stayed on host Disabled toggle in attempted case",
+      "all themes/state combinations natively",
+      "physical IME",
+      "control-level AX",
+      "VoiceOver",
+      "complete motion/Reduced Motion experience this batch"
+    ],
+    "AX": "window/menu only",
+    "exit_inventory": []
+  },
+  "limits": [
+    "10 choice requirements retained",
+    "trigger/value/query/candidate and caller status ownership distinguished",
+    "no new token/runtime state layer/public type/UI framework or broad migration",
+    "performance deferred"
+  ],
+  "source_sha256": {
+    "crates/tekes-ui-controls/src/layout_view.rs": "17d70011f76d7f7b549033a79adac6c00c021352a1e6a2c2328611cf28b5b548",
+    "design/remediation/composition-audit.json": "a1ebebc5c0b684248298feeb86a8e5081a4b059b0022336381ddf3588ad530a6",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs": "b5cee209aa1fc8fa0f23e3468ea65d109d0c0a2da968c31ed8e9a705b7211242",
+    "docs/design/issue-remediation-current-20261017.md": "f8969edaa40ae6f028f9d092146840daee45aee49e380670dd286f6d37d2191b",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "e1e8509e8b4b2db40560cd832005af1c5c1a9805c4618963c72bdbf4cac9c749",
+    "scripts/generate-component-capabilities.py": "904f56c432be7f04d551e2bf26854c0dca66cbdb158aa4df0e0b01ea15140438",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "b6443da8f04c33a3fe0f4fc19d440f59b88943dc9d358f1ed895ffb4f8b34fbb",
+    "design/gallery/capabilities.json": "50c0177959617a41cfe173d7a13783395863829375bf6836efdd9f4fa62fd211",
+    "docs/design/composition-audit-20261018.md": "79ee10534192795e580a2dd0b20026af944489e6cb10018a83d58e985015aae0",
+    "design/remediation/ledger.json": "76d31ac9f162feaf340ac907b33c033511c502397ae6048eeeea3287fcbda315",
+    "design/gallery/component-coverage.json": "6e7b2974742f748720592e11c59e78c08ee0a16fc0bd50914c1fc4b7e9986db2",
+    "crates/tekes-ui-controls/tests/choice_contract.rs": "098cb000305d3e93b4e3775a4c533948c056e62c3e351a3d417d2aca37e625e4",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs": "39d2d43cd77f33b7533dfb7f94d4d72f2184aa9ab5f72719f60bd9d52e124308",
+    "scripts/test-component-capabilities.py": "c9547d71f4dff761fcefdb6c24d4d7efe975d9dfddce2ee067d8b2603df28a31",
+    "examples/composition-consumer/tests/scenarios.rs": "fc51f707f6be92277d6954e07f3fa30465524feba8e369ee48dacc2d2839c704",
+    "crates/tekes-ui-controls/tests/choice_selection_states.rs": "ff203ae9c333b5bc35b8c575f72251df26a6e3f1c4510404212e81e4ff5a7a47",
+    "scripts/audit-choice-selection-tokens.py": "6db3a4448265c4fc63072fbfba68e8c13986e255c47e38cbf764fefbbe803fde",
+    "docs/design/choice-selection-20261018.md": "361bbf063c19e1785586a8963366d480307a19333555d69db4385b12aca44330"
+  },
+  "wip_protection": "wip-protection.json",
+  "goal_status": "active"
+}

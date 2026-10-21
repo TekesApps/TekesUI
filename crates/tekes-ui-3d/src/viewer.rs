@@ -110,6 +110,11 @@ fn camera_for_asset(name: &str) -> Camera3D {
         camera.zoom_by(0.56).unwrap();
         camera.set_orthographic(true);
         camera
+    } else if name == "health-cabin.glb" {
+        let mut camera = Camera3D::default();
+        camera.orbit(0.52, -0.08).unwrap();
+        camera.zoom_by(0.75).unwrap();
+        camera
     } else {
         home_camera()
     }
@@ -139,6 +144,7 @@ pub fn run() -> Result<()> {
         .and_then(|s| s.to_str())
     {
         Some("tekes-ui-manhattan") => "manhattan",
+        Some("tekes-ui-health-cabin") => "health-cabin",
         Some("tekes-ui-city-block") => "city-block",
         _ => "cube",
     }
@@ -156,11 +162,11 @@ pub fn run() -> Result<()> {
         if arg == "--demo" {
             demo = args
                 .next()
-                .ok_or("--demo requires cube, manhattan or city-block")?
+                .ok_or("--demo requires cube, manhattan, health-cabin or city-block")?
                 .to_string_lossy()
                 .into_owned();
-            if !["cube", "manhattan", "city-block"].contains(&demo.as_str()) {
-                return Err("--demo requires cube, manhattan or city-block".into());
+            if !["cube", "manhattan", "health-cabin", "city-block"].contains(&demo.as_str()) {
+                return Err("--demo requires cube, manhattan, health-cabin or city-block".into());
             }
         } else if arg == "--snapshot" {
             snapshot = Some(PathBuf::from(
@@ -184,7 +190,7 @@ pub fn run() -> Result<()> {
         } else if arg == "--play" {
             play = true;
         } else if input.replace(PathBuf::from(arg)).is_some() {
-            return Err("usage: tekes-ui-3d [model.glb|model.gltf] [--demo cube|manhattan|city-block] [--snapshot output.png] [--auto-rotate] [--play] [--night] [--benchmark-background] [--benchmark-120hz]".into());
+            return Err("usage: tekes-ui-3d [model.glb|model.gltf] [--demo cube|manhattan|health-cabin|city-block] [--snapshot output.png] [--auto-rotate] [--play] [--night] [--benchmark-background] [--benchmark-120hz]".into());
         }
     }
     let path = input.unwrap_or_else(|| {
@@ -270,6 +276,7 @@ fn menus() -> MenuBar {
                 vec![
                     item("Rubik’s Cube", 11),
                     item("Manhattan Skyline", 12),
+                    item("AI 健康小屋", 13),
                     item("Waterfront City Block", 14),
                 ],
             ),
@@ -415,7 +422,9 @@ impl Viewer {
     fn init(&mut self, mut ui: Renderer, pixels: (u32, u32), scale: f32) -> Result<()> {
         self.scale = scale;
         self.size = (pixels.0 as f32 / scale, pixels.1 as f32 / scale);
-        let mut gpu = if ["manhattan.glb", "city-block.glb"].contains(&self.name.as_str()) {
+        let mut gpu = if ["manhattan.glb", "health-cabin.glb", "city-block.glb"]
+            .contains(&self.name.as_str())
+        {
             Renderer3D::new_antialiased(&ui.gpu_context(), &self.view, self.pixels())?
         } else {
             Renderer3D::new(&ui.gpu_context(), &self.view, self.pixels())?
@@ -488,6 +497,8 @@ impl Viewer {
                         "WATERFRONT · Living City Block · {}",
                         if self.night { "夜晚" } else { "白天" }
                     )
+                } else if self.name == "health-cabin.glb" {
+                    "AI 健康小屋 · 带窗版".to_owned()
                 } else if self.name == "manhattan.glb" {
                     "MANHATTAN · Skyline".to_owned()
                 } else {
@@ -718,6 +729,7 @@ impl Viewer {
             }
             11 => self.select_demo("rubiks-cube")?,
             12 => self.select_demo("manhattan")?,
+            13 => self.select_demo("health-cabin")?,
             14 => self.select_demo("city-block")?,
             _ => {}
         }
@@ -959,7 +971,7 @@ mod tests {
     use super::*;
     #[test]
     fn shared_frame_matches_standalone_and_keeps_cached_draws_valid() {
-        for name in ["rubiks-cube", "city-block"] {
+        for name in ["rubiks-cube", "city-block", "health-cabin"] {
             let mut direct = Viewer::new(
                 Asset3D::load(demo_asset(name)).unwrap(),
                 format!("{name}.glb"),
@@ -1841,6 +1853,62 @@ mod tests {
             capture(&mut viewer, 300.),
             "GPU hidden actors must match omitted draws, leaving only late walkers"
         );
+    }
+    #[test]
+    fn health_cabin_imports_glass_and_animates_hinges_on_gpu() {
+        let asset = Asset3D::load(demo_asset("health-cabin")).unwrap();
+        assert_eq!(asset.clips().len(), 1);
+        let mut viewer = Viewer::new(asset, "health-cabin.glb".into()).unwrap();
+        viewer
+            .init(Renderer::new_headless().unwrap(), (960, 720), 1.)
+            .unwrap();
+        let capture = |v: &mut Viewer| {
+            let scene = v.scene().unwrap();
+            v.ui.as_mut()
+                .unwrap()
+                .render_to_rgba8(
+                    &scene,
+                    &mut v.atlas,
+                    (960, 720),
+                    1.,
+                    ColorRole::DocumentCanvas.resolve(v.theme),
+                )
+                .unwrap()
+        };
+        let closed = capture(&mut viewer);
+        let allocations = viewer.gpu.as_ref().unwrap().vertex_buffer_allocations();
+        for id in [2, 4, 6, 8] {
+            viewer.command(id).unwrap();
+            assert_ne!(closed, capture(&mut viewer));
+            assert_eq!(
+                viewer.gpu.as_ref().unwrap().last_frame_pose_upload_bytes(),
+                0
+            );
+            assert_eq!(viewer.gpu.as_ref().unwrap().last_frame_deformed_meshes(), 0);
+            viewer.command(1).unwrap();
+            assert_eq!(closed, capture(&mut viewer));
+        }
+        viewer.view.seek(2.).unwrap();
+        assert_ne!(closed, capture(&mut viewer));
+        let dirty = viewer.gpu.as_ref().unwrap().last_frame_deformed_meshes();
+        assert!(
+            dirty > 0 && dirty < allocations / 2,
+            "hinges must only deform the door/window primitives"
+        );
+        viewer.command(1).unwrap();
+        assert_eq!(closed, capture(&mut viewer));
+        viewer.command(9).unwrap();
+        assert!(viewer.playing);
+        viewer.view.reduced_motion = true;
+        assert!(!viewer.view.advance(0.5).unwrap());
+        let image = viewer.image;
+        let count = viewer.ui.as_ref().unwrap().image_count();
+        for command in [11, 12, 13] {
+            viewer.command(command).unwrap();
+            viewer.scene().unwrap();
+            assert_eq!(viewer.image, image);
+            assert_eq!(viewer.ui.as_ref().unwrap().image_count(), count);
+        }
     }
     #[test]
     fn manhattan_demo_keeps_static_geometry_on_gpu_and_switches_without_image_leaks() {

@@ -1,0 +1,38 @@
+{
+  "format": "tekesui-icon-defaults-review/1",
+  "basis": "HEAD plus all WIP",
+  "goal_status": "active",
+  "open_issues": 14,
+  "all_state_prs": 0,
+  "shared_tests": 312,
+  "consumer_tests": 25,
+  "gallery_geometry_regression": 1,
+  "gpu_after": 432,
+  "icon_before_preserved": 144,
+  "button_unchanged_pairs": 288,
+  "plus_symmetry": "passed",
+  "native": "scoped pointer/Return/Space/disabled/focus verified",
+  "accessibility": "system AX still lacks controls; VoiceOver not verified",
+  "performance": "not run",
+  "token_cases": {
+    "action": 576,
+    "input": 612,
+    "selection": 2016
+  },
+  "token_complete": false,
+  "owned_sources": {
+    "examples/composition-consumer/tests/scenarios.rs": "bd8af8b3c9596f8af74111c1dbf46b5be1a134f3ba92aeadf4f95fcd7b04669d",
+    "docs/design/composition-audit-20261018.md": "55c04a7d6c03d2a2133af4443801dae979aac1e855fc299bdaa4c0bc8e97891a",
+    "crates/tekes-ui-controls/tests/action_contract.rs": "1e37f31aa7c0f0213127a3e1ccaa66506260629ccf08a15af33e040350f6b66e",
+    "design/gallery/component-coverage.json": "58a73d09eab989f6f27f57eca34c5ac5e4e0557501cfd7fe30468ef6e108948c",
+    "design/gallery/capabilities.json": "4b3f222ecca8dfca3c5f4c2b31aa174b2aca30e9570c58164fcc06d5a1a110f9",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "0441a38345cf811adddd415204f345de92fbe8f6ff60b89bbc34b8aefec9f73a",
+    "design/remediation/composition-audit.json": "fd04a78882abf96e93795e8dcdaca1e01336e424ae2897763b0359dd8658452d",
+    "crates/tekes-ui-controls/src/layout_view.rs": "f0945f844769047b8ec4965e2a3057a313985100a671913567fbde5fbd67d905",
+    "crates/tekes-ui-controls/src/widgets.rs": "b0d85678466459604e0d51f55697523f161094c0a2bad999c4b6ee7253b8c128",
+    "design/remediation/ledger.json": "a27a156e5b8fc02c60c093ea85bf119ca9dc3bea4781bbdf1cba06cf89a4578d",
+    "docs/design/icon-defaults-20261018.md": "96216dfc233398edb53765086fe38195f96249c60566e9b4fdc44cd7bb616612"
+  },
+  "protected_baseline_files": 13356,
+  "changed_baseline_files": 10
+}

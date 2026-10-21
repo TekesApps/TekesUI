@@ -1,0 +1,21 @@
+--- design/reviews/toolbar-splitter-defaults-20261021/before/crates/tekes-ui-gallery/src/gallery/workbench.rs
++++ crates/tekes-ui-gallery/src/gallery/workbench.rs
+@@ -1155,6 +1155,18 @@
+     snapshot: bool,
+     motion_now: Duration,
+     window_active: bool,
++}
++impl Workbench {
++    pub fn resize_target(&self, i: usize) -> Option<(Rect, Axis)> {
++        if entries()[i].renderer() != "split-view" || !self.show_live(i) {
++            return None;
++        }
++        let state = self.states.get(&i)?;
++        state
++            .extended
++            .split_view
++            .resize_target(&state.extended.split)
++    }
+ }
+ impl Default for Workbench {
+     fn default() -> Self {

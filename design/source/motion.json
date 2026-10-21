@@ -58,7 +58,8 @@
     "press_feedback": 0.06,
     "hover_feedback": 0.2,
     "selection_snap": 0.12,
-    "disclosure_reveal": 0.3
+    "disclosure_reveal": 0.3,
+    "overlay_presence": 0.15
   },
   "control_transitions": {
     "button_hover": {
@@ -75,6 +76,10 @@
     },
     "disclosure_reveal": {
       "duration": "disclosure_reveal",
+      "easing": "standard"
+    },
+    "overlay_presence": {
+      "duration": "overlay_presence",
       "easing": "standard"
     }
   }

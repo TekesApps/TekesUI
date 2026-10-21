@@ -1,0 +1,25 @@
+{
+  "updated_at": "2026-10-21T08:24:02.226868+00:00",
+  "scope": "Shared propagation/native chrome/SplitView only; broader Issues/Goal still incomplete",
+  "API": "separator_scale5; controls440, consumer307; public native geometry/origin hidden contract; platform43",
+  "actual_gallery_gpu": "168 bounded panel cases (504 files), panel borders only",
+  "actual_divider_gpu": "72 real public SplitView cases;24 changed normal-density cases,48 unchanged 1x/increased contrast cases;144 lossless before/after PNGs",
+  "native_geometry": "ordinary content0/leading0, unified fullsize66/leading79 on this system; dynamic query, no hardcoded66",
+  "physical_native": "AppHost receipt explicitly leaves actual click/drag/narrow popup/splitter consumption/recovery pending; no VoiceOver enabled",
+  "gold7": {
+    "G3": {
+      "contract": "passed",
+      "real_component_code": "passed",
+      "GPU": "passed bounded divider/panels",
+      "external_whole_experience": "pending"
+    },
+    "G4_G6": {
+      "contract_and_code": "scoped tests passed; cancel before native handoff and original down retained",
+      "external_window_drag_and_capture": "pending"
+    },
+    "G7": "public API and independent backend verified in scoped tests; ProcessComponent/ProcessContainer whole delivery pending"
+  },
+  "measurement_regression_resolution": "design/reviews/process-container-foundation-20261021/consumer-current-final.log",
+  "frozen_b430_archive_sha256": "b68a98f63d120320d9ccd19b3559f60f13e8563c2fbbae5ea404a5b7486f8cb4",
+  "ProcessComponent": "explicit latest user-authorized foundation priority, not a claim of full batch6/1-8 completion"
+}

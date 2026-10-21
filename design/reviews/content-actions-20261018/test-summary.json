@@ -1,0 +1,134 @@
+{
+  "batch": "content-actions-20261018",
+  "status": "public implementation/realconsumers/native-entry verified; Issue21 awaiting remaining acceptance/publicpin; full15-21 handoff notready",
+  "tests": {
+    "shared-final": 395,
+    "consumer-final": 105,
+    "editor-feature": 16,
+    "viewport-feature": 7,
+    "actions-feature": 10,
+    "agentkit-final": 25,
+    "agentkit-headless": 76,
+    "standalone-shared": 395,
+    "standalone-consumer": 105,
+    "standalone-editor-feature": 16,
+    "standalone-viewport-feature": 7,
+    "standalone-actions-feature": 10
+  },
+  "gates": {
+    "capability_tests": 38,
+    "composition_tests": 6,
+    "registered_components": 45,
+    "strictClippy_shared_gallery_consumer_agentkit": "passed",
+    "defaultGallery": "passed",
+    "pureRust": "passed",
+    "reference": "passed",
+    "Gold7": "mechanical checks only; bounded nativeLight review separate"
+  },
+  "token_probes": {
+    "design/reviews/content-actions-20261018/current-tokens/input-token-observations.json": 612,
+    "design/reviews/content-actions-20261018/current-tokens/navigation-content-token-observations.json": 408,
+    "design/reviews/content-actions-20261018/current-tokens/popup-token-observations.json": 192,
+    "design/reviews/content-actions-20261018/current-tokens/selection-token-observations.json": 2016,
+    "design/reviews/content-actions-20261018/current-tokens/query-async-token-observations.json": 264,
+    "design/reviews/content-actions-20261018/current-tokens/slider-composition-token-observations.json": 264,
+    "design/reviews/content-actions-20261018/current-tokens/command-async-token-observations.json": 168,
+    "design/reviews/content-actions-20261018/current-tokens/action-token-observations.json": 576
+  },
+  "action_supplement": {
+    "path": "design/reviews/content-actions-20261018/action-delivery-token-observations.json",
+    "cases": 84,
+    "complete": false
+  },
+  "accepted_logs": [
+    "shared-final",
+    "consumer-final",
+    "editor-feature",
+    "viewport-feature",
+    "actions-feature",
+    "clippy-final",
+    "consumer-clippy-final",
+    "agentkit-final",
+    "agentkit-clippy-final",
+    "agentkit-headless",
+    "agentkit-ui-boundaries",
+    "agentkit-headless-boundaries",
+    "capability-check",
+    "capability-tests",
+    "composition-check",
+    "composition-tests",
+    "pure-rust",
+    "reference",
+    "gold7",
+    "default-gallery",
+    "gallery-second",
+    "standalone-shared",
+    "standalone-consumer",
+    "standalone-editor-feature",
+    "standalone-viewport-feature",
+    "standalone-actions-feature",
+    "diff-check"
+  ],
+  "historical_attempts": "Initial atomic apply_patch failed before writes; exact source inspected and corrected. Initial Gallery unused import removed before strictClippy and native signed binary. Earlier stage logs retained; only accepted logs count. Live test processes advanced without restarting after startup delay.",
+  "snapshot": "26f3897e2bb51f3a729770baac40e2bf4b043e251cb490a8abc8f7a6fcc86fa7",
+  "native": {
+    "screen": "U2790B,builtinfalse,scale2,max_fps30; no systemsettings changed",
+    "actual_actions": [
+      {
+        "target": 9301,
+        "kind": "Activate",
+        "source": "Pointer"
+      },
+      {
+        "target": 9301,
+        "kind": "Activate",
+        "source": "Keyboard"
+      },
+      {
+        "target": 9301,
+        "kind": "Activate",
+        "source": "Keyboard"
+      },
+      {
+        "target": 9301,
+        "kind": "Activate",
+        "source": "Accessibility"
+      },
+      {
+        "target": 9303,
+        "kind": "Submit",
+        "source": "Keyboard"
+      }
+    ],
+    "passed": [
+      "real pointer1,Space/Enter2,nativeAXbutton entry1",
+      "disabledB0,normaledit0,CmdEnterSubmit1",
+      "focuscycle total5,not replayed"
+    ],
+    "unverified": [
+      "physicalChineseIME/manualcandidate",
+      "VoiceOver/fullnativeAX",
+      "AgentKit nativewindow",
+      "complete multitheme finalexperience"
+    ],
+    "performance": "not measured"
+  },
+  "protection": {
+    "root_baseline": 22958,
+    "agentkit_baseline": 125,
+    "unrelated_changed": [],
+    "missing": []
+  },
+  "patchset": {
+    "public_paths": 13,
+    "agentkit_paths": 5,
+    "result_files": 290,
+    "actual_application_verified": true
+  },
+  "remote": {
+    "open_issues": 21,
+    "open_tekesui_prs": 0,
+    "mutations": []
+  },
+  "next": "#17 standard line-boundary/vertical editing command correctness then unified15-21 acceptance; no premature AgentKit handoff"
+}

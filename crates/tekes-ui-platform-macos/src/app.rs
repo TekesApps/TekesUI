@@ -8,8 +8,9 @@ use objc2::{DefinedClass, MainThreadOnly, define_class, msg_send, sel};
 use objc2_app_kit::{
     NSApplication, NSApplicationActivationPolicy, NSApplicationDelegate,
     NSApplicationTerminateReply, NSBackingStoreType, NSEvent, NSEventModifierFlags, NSEventType,
-    NSMenuItem, NSWindow, NSWindowCollectionBehavior, NSWindowDelegate, NSWindowOcclusionState,
-    NSWindowStyleMask, NSWorkspace, NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification,
+    NSMenuItem, NSToolbar, NSWindow, NSWindowCollectionBehavior, NSWindowDelegate,
+    NSWindowOcclusionState, NSWindowStyleMask, NSWindowTitleVisibility, NSWindowToolbarStyle,
+    NSWorkspace, NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification,
 };
 use objc2_foundation::{
     MainThreadMarker, NSNotification, NSObject, NSObjectProtocol, NSPoint, NSProcessInfo, NSRect,
@@ -50,6 +51,18 @@ define_class!(
             self.launch();
         }
 
+        #[unsafe(method(applicationDidBecomeActive:))]
+        fn did_become_active(&self, _notification: &NSNotification) {
+            let shared = &self.ivars().shared;
+            let active = shared.objects.get().is_some_and(|o| o.window.isKeyWindow());
+            shared.dispatch(Event::Focus(active));
+        }
+
+        #[unsafe(method(applicationDidResignActive:))]
+        fn did_resign_active(&self, _notification: &NSNotification) {
+            self.ivars().shared.dispatch(Event::Focus(false));
+        }
+
         #[unsafe(method(applicationShouldTerminateAfterLastWindowClosed:))]
         fn should_terminate_after_last_window_closed(&self, _app: &NSApplication) -> bool {
             self.ivars().app_config.quit_after_last_window_closed
@@ -78,7 +91,9 @@ define_class!(
         fn window_will_close(&self, _notification: &NSNotification) {
             // 之后不再投递事件。是否结束应用由 applicationShouldTerminateAfterLastWindowClosed: 决定。
             let shared = &self.ivars().shared;
+            crate::wake::native::unregister(&shared.wake_state);
             shared.closed.set(true);
+            shared.titlebar_drag_origin.borrow_mut().take();
             shared.animating.set(false);
             if let Some(o) = shared.objects.get() {
                 o.view.invalidate_display_link();
@@ -100,7 +115,9 @@ define_class!(
 
         #[unsafe(method(windowDidBecomeKey:))]
         fn window_did_become_key(&self, _notification: &NSNotification) {
-            self.ivars().shared.dispatch(Event::Focus(true));
+            let shared = &self.ivars().shared;
+            let active = NSApplication::sharedApplication(shared.mtm).isActive();
+            shared.dispatch(Event::Focus(active));
         }
 
         #[unsafe(method(windowDidResignKey:))]
@@ -176,7 +193,12 @@ impl AppDelegate {
                 NSWindowStyleMask::Titled
                     | NSWindowStyleMask::Closable
                     | NSWindowStyleMask::Miniaturizable
-                    | NSWindowStyleMask::Resizable,
+                    | NSWindowStyleMask::Resizable
+                    | if wc.unified_titlebar {
+                        NSWindowStyleMask::FullSizeContentView
+                    } else {
+                        NSWindowStyleMask::empty()
+                    },
                 NSBackingStoreType::Buffered,
                 false,
             )
@@ -184,6 +206,18 @@ impl AppDelegate {
         // SAFETY: 窗口不是由窗口控制器创建的，必须关掉关闭时自动 release。
         unsafe { window.setReleasedWhenClosed(false) };
         window.setTitle(&NSString::from_str(&wc.title));
+        if wc.unified_titlebar {
+            window.setTitleVisibility(NSWindowTitleVisibility::Hidden);
+            window.setTitlebarAppearsTransparent(true);
+            window.setToolbarStyle(NSWindowToolbarStyle::Unified);
+            // AppKit owns the unified chrome and genuine traffic lights. Items are
+            // rendered by TekesUI in the extended content view, not duplicated here.
+            let toolbar = NSToolbar::initWithIdentifier(
+                NSToolbar::alloc(mtm),
+                &NSString::from_str("TekesUI.UnifiedChrome"),
+            );
+            window.setToolbar(Some(&toolbar));
+        }
         // 全屏菜单项 toggleFullScreen: 需要这个行为才有效。
         window.setCollectionBehavior(NSWindowCollectionBehavior::FullScreenPrimary);
         if let Some(min) = wc.min_size {
@@ -230,6 +264,9 @@ impl AppDelegate {
         *shared.placement.borrow_mut() = report;
         shared.ready.set(true);
         shared.dispatch(Event::Created);
+        // Publish initial keyboard ownership before the first geometry/frame;
+        // hosts must not assume a newly created background window is active.
+        shared.dispatch(Event::Focus(app.isActive() && window.isKeyWindow()));
         shared.check_appearance(true);
         view.sync_geometry(true);
 

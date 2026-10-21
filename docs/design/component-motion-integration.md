@@ -92,4 +92,4 @@ Gallery `TextEngine` 实现可选 `ButtonTextRenderer::motion_context` 与帧请
 
 真实 Button/Switch/Disclosure 的组件测试检查中途改目标、终点、Reduced Motion、可见几何和失活；`gallery/quality_effects.rs` 使用真实 CoreText 适配器与 GPU 比较三者起始/中间/结束帧，验证像素确实变化且命中框固定。生产浮层 GPU 检查另覆盖三种浮层、四主题与 1×/2×；截图、最终源码与日志绑定在 Gold7 本轮收据。它们不是性能/持续120Hz测试，也不能代替真实输入法或读屏验收。
 
-剩余动效逐组件核对：浮层进退场和完整组件状态覆盖尚未宣称完成。不能把本次三个组件的接线扩大解释为全部 Gold7 或全部组件验收通过。
+后续浮层接线已完成 Menu/Dialog/Popover 的共享 `OverlayPresence`，由 JSON `overlay_presence` 的 150ms 标量过渡驱动。语义关闭即刻移除命中并恢复焦点，退场帧重建当前 atlas 字形；反向重开、Reduced Motion、上下文失效和卸载分别处理。当前逐图元 alpha 并非离屏图层合成，静止几何和 elevation 不变。Select/过滤菜单复用这一生命周期；四主题 GPU 及有限原生样本见 [Gold7 第三批收据](../../design/reviews/gold7-20261017/alignment-pass3/receipt.json)。剩余完整组件状态覆盖仍需逐项核对，不能扩大解释为全部 Gold7 或全部组件体验验收通过。

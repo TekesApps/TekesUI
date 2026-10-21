@@ -1,0 +1,65 @@
+{
+  "status": "navigation repair API/consumer/GPU/active external native passed; visual focus-order defect remains",
+  "root_cause": "SegmentedControl.key used forward lookup for End starting at last index; disabled last item left selection unchanged. Actual SegmentedControlView delegates to same model. Both direct model and actual View fail in red-both.log on enabled mask011,selected0,End expected1 got0.",
+  "classification": "public component navigation contract; no missing design semantics, foundational input primitive, or container capability",
+  "shared_fix": "existing reverse lookup match in crates/tekes-ui-controls/src/extended.rs includes End; no API/token/state/abstraction added",
+  "applicable": [
+    "all direct public SegmentedControl.key consumers",
+    "all actual SegmentedControlView consumers including retained Gallery"
+  ],
+  "exceptions": [
+    "Home remains forward lookup; End reverses from last index",
+    "arrow no-wrap policy preserved; a disabled item is skipped",
+    "RadioGroup already handles End with reverse enabled lookup; no duplicate change",
+    "no enabled item produces no selection change; required/invalid controlled selection beyond supported domain separate"
+  ],
+  "API": {
+    "tests": 2,
+    "cases": 516,
+    "scope": "all enabled masks/nonempty sets/valid starts for lengths1..5,Home/End in model and realView",
+    "core_total": 347
+  },
+  "real_consumer": {
+    "tests": 36,
+    "new_navigation_cases": 192,
+    "scope": "4themes/3brands/2sizes/4enabled masks/Home+End, actual CoreText labels and View, repeat-bound ownership",
+    "native_host": "host/; current exact source small app; native focus metadata intentionally not asserted (view lacks public focus-index accessor); no full AX/family claim"
+  },
+  "GPU": {
+    "comparisons": 48,
+    "frames": 144,
+    "scope": "4themes/3brands/2sizes/paired280pt1x+640pt2x; actual End equals correct target and differs from old selection",
+    "motion": "Reduced Motion true",
+    "images": "image-manifest.json",
+    "inspection": [
+      "theme0-brand0-compactfalse-width640-actual.png",
+      "theme3-brand2-compacttrue-width280-actual.png"
+    ]
+  },
+  "Gold7": {
+    "navigation": "automated and rendered target pass; native pending",
+    "visual": "NOT whole-component passed: inspected focus ring right edge is covered by subsequent adjacent segment painting",
+    "followup": "after this navigation native chain, inspect shared composite focus paint ordering; reuse existing paint::focus_ring, no page patch",
+    "IME": "not applicable to non-editable segmented labels",
+    "performance": "not measured"
+  },
+  "native": {
+    "status": "passed",
+    "pid": 49476,
+    "evidence": "native/result.json",
+    "checkpoints": 11,
+    "scope": "real native Tab/Home/End/disabled/restored-focus actions; actual AX selected and enabled states observed",
+    "VoiceOver": "off; not tested",
+    "focus_metadata": "not accepted; native host lacks true sub-focus projection; no whole AX/family claim"
+  },
+  "cleanup": "closed; process absent/source and signed identity verified/unused runtime removed; code/evidence retained",
+  "protection": "protection.json",
+  "remaining": [
+    "shared focus paint-order defect; native hearing and broader family acceptance remain"
+  ],
+  "publication": "no commit/push/tag/merge/Issue changes",
+  "performance": "not measured",
+  "actual_token_dependency": "fresh-probe-summary.json: nine current-source actual probes, 4416 bounded cases; no complete-dependency claim",
+  "focus_order_analysis": "focus-order-preflight.json; current candidate source unchanged",
+  "recorder_note": "Initial checkpoint was saved before a diagnostic print used stale activations field and failed; corrected print to selected, did not replay or overwrite native initial evidence."
+}

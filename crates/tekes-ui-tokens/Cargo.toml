@@ -7,6 +7,10 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+[features]
+default = []
+token-audit = []
+
 [build-dependencies]
 sha2.workspace = true
 serde_json.workspace = true

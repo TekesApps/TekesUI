@@ -1,0 +1,87 @@
+{
+  "status": "scoped native state/focus checks passed; original host undo omission excluded",
+  "screen": "U2790B@2",
+  "evidence": "active AppKit window + AX selection and tool-driven native keys; not physical IME or VoiceOver",
+  "checks": [
+    {
+      "state": "rest",
+      "component": 9501,
+      "check": "selected UTF16 A+emoji+B deletion",
+      "snapshot": 66
+    },
+    {
+      "state": "rest",
+      "component": 9502,
+      "check": "selected UTF16 A+emoji+B deletion",
+      "snapshot": 105
+    },
+    {
+      "state": "rest",
+      "component": 9503,
+      "check": "selected UTF16 A+emoji+B deletion",
+      "snapshot": 123
+    },
+    {
+      "state": "error",
+      "component": 9501,
+      "check": "selected UTF16 A+emoji+B deletion",
+      "snapshot": 182
+    },
+    {
+      "state": "error",
+      "component": 9502,
+      "check": "selected UTF16 A+emoji+B deletion",
+      "snapshot": 197
+    },
+    {
+      "state": "error",
+      "component": 9503,
+      "check": "selected UTF16 A+emoji+B deletion",
+      "snapshot": 212
+    },
+    {
+      "state": "readonly",
+      "check": "all three unchanged under delete; disabled no focus",
+      "delete_attempts": [
+        144,
+        150,
+        156
+      ]
+    },
+    {
+      "state": "disabled",
+      "check": "all three unchanged under delete; disabled no focus",
+      "delete_attempts": [
+        164,
+        170,
+        174
+      ]
+    }
+  ],
+  "focus_tail": [
+    {
+      "component": 9501,
+      "snapshot": 268
+    },
+    {
+      "component": 9502,
+      "snapshot": 272
+    },
+    {
+      "component": 9503,
+      "snapshot": 283
+    },
+    {
+      "component": 9502,
+      "snapshot": 302
+    }
+  ],
+  "source_manifest": "../host-source-manifest.json",
+  "limitations": [
+    "clipboard roundtrip not yet verified",
+    "required markers and publisher tests do not prove VoiceOver announcement",
+    "native shortcut undo failed on original host; NOT counted passed",
+    "not entire Gold7 matrix"
+  ],
+  "verifier_note": "disabled no focused text responder delivers raw Key events rather than deleteBackward TextCommand"
+}

@@ -18,14 +18,14 @@
 //! 不持有任何 `RefCell` 借用，所以 `handle` 里随便调它的方法都不会二次借用。
 
 use std::cell::{Cell, OnceCell, RefCell};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::rc::Rc;
 
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
-use objc2_app_kit::NSWindow;
+use objc2_app_kit::{NSEvent, NSEventType, NSWindow, NSWindowButton};
 use objc2_foundation::{MainThreadMarker, NSSize, NSString};
 
 use crate::event::{Event, Size};
@@ -62,13 +62,30 @@ struct QueuedEvent {
 }
 
 pub(crate) struct Shared {
+    pub(crate) wake_state: std::sync::Arc<crate::wake::WakeState>,
     pub presentation: std::sync::Arc<crate::presentation::PresentationObserver>,
     pub caret_scheduled: Cell<bool>,
     pub text_input: RefCell<Option<crate::event::TextInputState>>,
+    pub accessibility_nodes: RefCell<Vec<crate::accessibility::AccessibilityNode>>,
+    pub accessibility_text_layouts: RefCell<
+        HashMap<
+            crate::accessibility::AccessibilityKey,
+            crate::accessibility::AccessibilityTextLayout,
+        >,
+    >,
+    pub accessibility_elements: RefCell<
+        HashMap<
+            crate::accessibility::AccessibilityKey,
+            Retained<crate::accessibility::NativeAccessibilityElement>,
+        >,
+    >,
     pub mtm: MainThreadMarker,
     handler: RefCell<Option<Box<dyn WindowHandler>>>,
     queue: RefCell<VecDeque<QueuedEvent>>,
     dispatching: Cell<bool>,
+    // AppKit requires the original native down, even when a component first
+    // offers its unhandled drag later. Never retain a RefCell borrow over AppKit.
+    pub(crate) titlebar_drag_origin: RefCell<Option<Retained<NSEvent>>>,
     pub redraw_pending: Cell<bool>,
     pub last_geometry: Cell<Option<GeometryState>>,
     pub last_motion: Cell<Option<bool>>,
@@ -99,16 +116,27 @@ impl std::fmt::Debug for Shared {
     }
 }
 
+impl Drop for Shared {
+    fn drop(&mut self) {
+        crate::wake::native::unregister(&self.wake_state);
+    }
+}
+
 impl Shared {
     pub fn new(mtm: MainThreadMarker, handler: Box<dyn WindowHandler>) -> Rc<Shared> {
         Rc::new(Shared {
+            wake_state: Default::default(),
             presentation: Default::default(),
             caret_scheduled: Cell::new(false),
             text_input: RefCell::new(None),
+            accessibility_nodes: RefCell::new(Vec::new()),
+            accessibility_text_layouts: RefCell::new(HashMap::new()),
+            accessibility_elements: RefCell::new(HashMap::new()),
             mtm,
             handler: RefCell::new(Some(handler)),
             queue: RefCell::new(VecDeque::new()),
             dispatching: Cell::new(false),
+            titlebar_drag_origin: RefCell::new(None),
             redraw_pending: Cell::new(false),
             last_geometry: Cell::new(None),
             last_motion: Cell::new(None),
@@ -164,6 +192,9 @@ impl Shared {
 
     /// 投递一个事件。重入时在当前 handler 返回后按顺序处理。
     pub fn dispatch(self: &Rc<Self>, event: Event) {
+        if matches!(event, Event::Focus(false) | Event::CloseRequested) {
+            self.titlebar_drag_origin.borrow_mut().take();
+        }
         self.enqueue(QueuedEvent {
             event,
             drawable: None,
@@ -244,7 +275,9 @@ impl Shared {
 
     /// 应用结束时丢弃处理器，让它的 Drop 在 `run()` 返回之前执行。
     pub fn finish(&self) {
+        crate::wake::native::unregister(&self.wake_state);
         self.closed.set(true);
+        self.titlebar_drag_origin.borrow_mut().take();
         self.animating.set(false);
         self.discard_metal_frames();
         if let Some(o) = self.objects.get() {
@@ -278,6 +311,11 @@ pub struct Window {
 }
 
 impl Window {
+    /// UI-thread creation of a background-safe notification proxy. Clones do
+    /// not retain this window; queued work is discarded when it closes.
+    pub fn wake_proxy(&self) -> crate::WindowWake {
+        crate::wake::native::register(&self.shared)
+    }
     /// Visibility at this instant; a fully covered/minimized window cannot be
     /// used as evidence of visible presentation cadence.
     pub fn is_occluded(&self) -> bool {
@@ -287,8 +325,20 @@ impl Window {
             .contains(objc2_app_kit::NSWindowOcclusionState::Visible)
     }
 
+    /// Publish hover shapes after layout. AppKit restores the default cursor on exit.
+    pub fn set_cursor_regions(&self, regions: Vec<crate::CursorRegion>) {
+        self.view.set_cursor_regions(regions);
+    }
+
     pub fn is_key_window(&self) -> bool {
         self.window.isKeyWindow()
+    }
+
+    /// Effective keyboard scope, including application activation. A background
+    /// application's retained key window alone does not establish active input.
+    pub fn is_active(&self) -> bool {
+        objc2_app_kit::NSApplication::sharedApplication(self.shared.mtm).isActive()
+            && self.window.isKeyWindow()
     }
 
     /// Enable optional drawable receipts for benchmarking; disabled in normal UI.
@@ -334,18 +384,86 @@ impl Window {
             .map(|v| v.clone())
             .unwrap_or_default()
     }
+    /// Enable Started/Finished provenance around text-owner key-downs. Legacy
+    /// callback events are still delivered exactly once. Default is disabled.
+    /// Reject changes during a key span, so the FIFO markers stay balanced.
+    pub fn set_text_key_events(&self, enabled: bool) -> bool {
+        !self.shared.closed.get() && self.view.set_text_key_events(enabled)
+    }
     pub fn set_text_input_state(&self, state: Option<crate::event::TextInputState>) {
+        if self.shared.closed.get() {
+            return;
+        }
         let blink = state
             .as_ref()
             .is_some_and(|s| !s.read_only && s.selection.is_empty());
+        let discard = crate::event::TextInputState::conversion_ended(
+            self.shared.text_input.borrow().as_ref(),
+            state.as_ref(),
+        );
         *self.shared.text_input.borrow_mut() = state;
         if blink && !self.shared.caret_scheduled.replace(true) {
             self.view.schedule_caret_blink();
         }
         if let Some(context) = self.view.inputContext() {
+            // Publish the cleared marked range before asking IMK to finish its
+            // conversion. No RefCell borrow may survive a native callback.
+            if discard {
+                context.discardMarkedText();
+            }
             context.invalidateCharacterCoordinates();
         }
     }
+    /// Publish the host-owned accessibility tree. Node data stays in the host
+    /// snapshot; native AX elements only expose it and route requested actions.
+    pub fn set_accessibility_nodes(&self, nodes: Vec<crate::accessibility::AccessibilityNode>) {
+        if self.shared.closed.get() {
+            return;
+        }
+        let nodes = if crate::accessibility::validate_accessibility_nodes(&nodes) {
+            nodes
+        } else {
+            Vec::new()
+        };
+        if *self.shared.accessibility_nodes.borrow() == nodes {
+            return;
+        }
+        let previous = self.shared.accessibility_nodes.replace(nodes);
+        self.view.accessibility_nodes_changed(&previous);
+    }
+    /// Replace per-owner shaped text layouts. Publish before the corresponding
+    /// node snapshot so AX notifications observe matching text and geometry.
+    /// This never changes keyboard focus, text selection, or IME ownership.
+    /// Omitted keys are removed; invalid/duplicate keys fail closed as a batch.
+    pub fn set_accessibility_text_layouts(
+        &self,
+        layouts: Vec<(
+            crate::accessibility::AccessibilityKey,
+            crate::accessibility::AccessibilityTextLayout,
+        )>,
+    ) {
+        if self.shared.closed.get() {
+            return;
+        }
+        let mut accepted = HashMap::new();
+        for (key, layout) in layouts {
+            if !layout.is_valid() || accepted.insert(key, layout).is_some() {
+                accepted.clear();
+                break;
+            }
+        }
+        *self.shared.accessibility_text_layouts.borrow_mut() = accepted;
+    }
+
+    /// Owned readback of the accepted tree, after validation. Changing this
+    /// copy never mutates native AX elements; publication still uses the setter.
+    pub fn accessibility_nodes(&self) -> Vec<crate::accessibility::AccessibilityNode> {
+        if self.shared.closed.get() {
+            return Vec::new();
+        }
+        self.shared.accessibility_nodes.borrow().clone()
+    }
+
     pub fn clipboard_text(&self) -> Option<String> {
         use objc2_app_kit::NSPasteboardTypeString;
         text_pasteboard()
@@ -430,6 +548,42 @@ impl Window {
         self.view.size_points()
     }
 
+    /// Native unified-titlebar exclusion in this view's top-left point space.
+    /// Height follows AppKit layout; the leading extent follows visible traffic
+    /// lights instead of hard-coded window-control coordinates.
+    pub fn titlebar_safe_area(&self) -> (f64, f64) {
+        let size = self.size();
+        let mut leading: f64 = 0.;
+        let mut height = self.titlebar_content_height();
+        for kind in [
+            NSWindowButton::CloseButton,
+            NSWindowButton::MiniaturizeButton,
+            NSWindowButton::ZoomButton,
+        ] {
+            if let Some(button) = self.window.standardWindowButton(kind) {
+                if button.isHidden() {
+                    continue;
+                }
+                let rect = self
+                    .view
+                    .convertRect_fromView(button.bounds(), Some(&button));
+                // Ordinary content and fullscreen chrome may not overlap the
+                // traffic lights at all. Only reserve their actual visible area.
+                let right = rect.origin.x + rect.size.width;
+                let bottom = rect.origin.y + rect.size.height;
+                if right > 0.
+                    && rect.origin.x < size.width
+                    && bottom > 0.
+                    && rect.origin.y < size.height
+                {
+                    leading = leading.max(right.clamp(0., size.width));
+                    height = height.max(bottom.clamp(0., size.height));
+                }
+            }
+        }
+        (height, leading)
+    }
+
     /// `backingScaleFactor`。
     pub fn scale(&self) -> f64 {
         self.view.scale_factor()
@@ -447,6 +601,56 @@ impl Window {
         let layer = self.view.metal_layer();
         let ptr: *const AnyObject = Retained::as_ptr(&layer).cast();
         NonNull::new(ptr.cast_mut().cast::<c_void>()).expect("Retained 不会是空指针")
+    }
+
+    /// Height of native titlebar/toolbar chrome overlapping this content view,
+    /// in logical points. Ordinary non-extended content returns zero. Query the
+    /// current window geometry; do not hardcode an OS-specific toolbar height.
+    pub fn titlebar_content_height(&self) -> f64 {
+        let layout = self
+            .view
+            .convertRect_fromView(self.window.contentLayoutRect(), None);
+        let height = layout.origin.y;
+        if height.is_finite() {
+            height.clamp(0., self.size().height.max(0.))
+        } else {
+            0.
+        }
+    }
+
+    /// Hand an eligible titlebar press to AppKit. May be called synchronously
+    /// on down or after a component offers an unhandled drag. Cancel the old
+    /// component interaction first: AppKit may not deliver a matching mouse-up.
+    pub fn begin_titlebar_drag(&self) {
+        let _ = self.try_begin_titlebar_drag();
+    }
+
+    /// Same handoff with an explicit result. Uses the retained original native
+    /// down, never the dragged event, and consumes that origin at most once.
+    pub fn try_begin_titlebar_drag(&self) -> bool {
+        let Some(current) = self.window.currentEvent() else {
+            return false;
+        };
+        if !self.is_active()
+            || !matches!(
+                current.r#type(),
+                NSEventType::LeftMouseDown | NSEventType::LeftMouseDragged
+            )
+            || current.windowNumber() != self.window.windowNumber()
+            || NSEvent::pressedMouseButtons() & 1 == 0
+        {
+            return false;
+        }
+        let Some(origin) = self.shared.titlebar_drag_origin.borrow_mut().take() else {
+            return false;
+        };
+        if origin.r#type() != NSEventType::LeftMouseDown
+            || origin.windowNumber() != self.window.windowNumber()
+        {
+            return false;
+        }
+        self.window.performWindowDragWithEvent(&origin);
+        true
     }
 
     /// 关闭窗口。不经过 `CloseRequested`，直接关。

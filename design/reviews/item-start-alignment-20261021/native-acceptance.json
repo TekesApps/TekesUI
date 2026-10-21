@@ -1,0 +1,32 @@
+{
+  "identity": "f7ec0ff10948d4b28bee9c33e7e60efbaa2a626cd7166807854e5cbdd35dfcb6",
+  "binary_sha256": "13de98c54968d367b8a919c7bd462186c2de3343df05b695762ce582dfa6c04f",
+  "accepted_active_external_checkpoints": 17,
+  "actual_animation_phase_frames": 1,
+  "history_frames": 259,
+  "selected_axis_actual_clip_start": true,
+  "visible_middle_target_moves": true,
+  "clip_and_same_extent_movement_interrupt_then_explicit_recovery": true,
+  "narrow_large_type_and_ReducedMotion": true,
+  "original_editor_focus_reverse_selection_native_undo_redo": true,
+  "manual_browse_survives_unrelated_render": true,
+  "accessibility": "actual original native AX names/frames/text selection observed; no VoiceOver hearing claim",
+  "diagnostics_excluded": [
+    "initial AX text click did not focus; recovered with actual coordinate pointer",
+    "native paste shortcut unsupported in copied review host; no paste acceptance claimed; ordinary typeText established real undo/redo edit"
+  ],
+  "native_IME": "ordinary native X input only; physical system candidate/preedit not claimed; public and GPU original preedit retained separately",
+  "Gold7": "scoped original controls/focus/placement screenshots only,not matched ClientKit product-page acceptance; deliberate root clip is a functional stress fixture",
+  "images": {
+    "start-full-viewport.jpg": "8afc6edd2e5058b54d74d1db232444099b60bd70c1cf93f51bc7a32abecb6459",
+    "start-clipped.jpg": "710b0e9afed4e6f762ba6e4bf5f75e0e3a8464ec5a6b6f5e76693889e0a98253",
+    "start-narrow-large-type.jpg": "5a78468a56393fdd47455ab4f273b89079c520b176ed11b39f9c06a08981a247",
+    "final-start-and-original-editor.jpg": "20b510fc38c875fad756f031db439041954564e906b211f9fe02f098f8ecd054"
+  },
+  "performance": "not measured",
+  "remaining": [
+    "new isolated exact source and independent AgentKit integration/native",
+    "matched ClientKit/Gold7 product-page experience",
+    "public pin and CI under separately scoped authorization"
+  ]
+}

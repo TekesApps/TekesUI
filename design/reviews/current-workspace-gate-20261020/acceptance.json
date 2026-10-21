@@ -1,0 +1,44 @@
+{
+  "status": "passed",
+  "head": "b3013c720d98f89159bc20f7bc64e9ba1f71b314",
+  "baseline": "current active checkout including all WIP; not public61dd or prepared532",
+  "checks": [
+    "cargo clippy --workspace --all-targets --locked --offline -- -D warnings",
+    "cargo fmt --all --check"
+  ],
+  "verified_source_inputs": 562,
+  "changed_inputs": [],
+  "boundary": "Whole-workspace regression includes real offscreen GPU and native-object tests, not active-window, physical IME, VoiceOver, final Gold7 or performance acceptance. Concurrent new component tests do not expand experience acceptance scope.",
+  "outputs": "63 exact executable artifacts removed after unused check; shared deps/cache and existing pending copied app preserved",
+  "publication": "none",
+  "workspace_regression": {
+    "passed": 1094,
+    "failed": 0,
+    "ignored": 13,
+    "measured": 0,
+    "filtered_out": 3
+  },
+  "test_targets": 65,
+  "native_object_marker": true,
+  "changed_inputs_after_tests": [],
+  "ignored_tests": [
+    "test gallery::pages::icons::catalogue_review::local_full_catalogue_pixels_and_scroll_culling ... ignored, requires explicit TEKESUI_ICON_DIR and TEKESUI_ICONS_REVIEW_OUT",
+    "test gallery::scene3d_preview::tests::scene3d_adapts_resolution_while_paused_without_geometry_reuploads ... ignored, requires a real wgpu GPU adapter",
+    "test gallery::scene3d_preview::tests::scene3d_gallery_composes_gpu_image_and_stops_off_page ... ignored, requires a real wgpu GPU adapter",
+    "test gallery::scene3d_preview::tests::scene3d_gallery_routes_clipped_input_and_reuses_gpu_geometry ... ignored, requires a real wgpu GPU adapter",
+    "test foreign_context_and_wrong_image_kind_are_rejected_before_gpu_binding ... ignored, requires real wgpu GPU adapters",
+    "test gpu_storage_color_order_clipping_replacement_and_lifetime ... ignored, requires a real wgpu GPU adapter",
+    "test deform::tests::gpu_morph_and_skin_match_cpu_geometry_including_normals ... ignored, requires a real wgpu GPU adapter",
+    "test deform::tests::shared_indices_preserve_geometry_and_frame_uploads ... ignored, requires a real wgpu GPU adapter",
+    "test deform::tests::vertex_count_does_not_change_frame_uploads ... ignored, requires a real wgpu GPU adapter",
+    "test gpu::tests::camera_motion_reuses_deformation_and_seek_invalidates_it ... ignored, requires a real wgpu GPU adapter",
+    "test gpu::tests::distant_close_surfaces_do_not_z_fight ... ignored, requires a real wgpu GPU adapter",
+    "test gpu::tests::indexed_smooth_and_flat_normal_images_match_expanded_cpu_reference ... ignored, requires a real wgpu GPU adapter",
+    "test gpu_animation_changes_pixels_and_resizes ... ignored, requires a real wgpu GPU adapter: cargo test -p tekes-ui-scene3d -- --ignored"
+  ],
+  "explicit_skips": [
+    "timing_is_off_by_default_and_costs_nothing_to_drain",
+    "cpu_segments_are_consistent_and_frames_are_numbered",
+    "gpu_time_agrees_with_wall_clock_on_a_heavy_frame"
+  ]
+}

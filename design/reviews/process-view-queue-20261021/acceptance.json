@@ -1,0 +1,200 @@
+{
+  "status": "partial foundation; unified ProcessComponent V1 View queue/GPU retirement bounded acceptance passed",
+  "root_cause": "AppHost maintained its own Inbox/worker/two-frame acknowledgement and GPU wait loop; public base had no shared nonblocking View path",
+  "shared_fix": [
+    "ProcessComponent backend selection; V1 View transport private",
+    "View queue/coalescing/budget/received-frame ownership in module-runtime",
+    "actual queue GPU completion + cancellable nonblocking polling in common retirement worker",
+    "public native capability requirement/rejection separate from existence of View"
+  ],
+  "applicable": [
+    "fixed PanelModule V1 consumers",
+    "AppHost migration after its current native navigation phase",
+    "future ProcessContainer standard Content adapter"
+  ],
+  "reasonable_exceptions": [
+    "V1 adapter is explicit compatibility; no V2 View handshake or independent toolbar claimed",
+    "keyboard/scroll/IME/AX unsupported requirements fail; existing editors stay unconverted",
+    "Core View queue is not a standard Content Component yet"
+  ],
+  "public_api": {
+    "unit_checks": 13,
+    "strict_all_target_clippy": "passed",
+    "V1_queue": {
+      "actual_gpu_retirement_releases_budget": true,
+      "cases": [
+        {
+          "max_gpu_delta": 0,
+          "revision": 0,
+          "seq": 1,
+          "viewport": 1
+        },
+        {
+          "max_gpu_delta": 0,
+          "revision": 1,
+          "seq": 2,
+          "viewport": 1
+        },
+        {
+          "max_gpu_delta": 0,
+          "pixel_size": [
+            160,
+            128
+          ],
+          "revision": 1,
+          "seq": 80,
+          "viewport": 80
+        },
+        {
+          "max_gpu_delta": 0,
+          "pixel_size": [
+            160,
+            128
+          ],
+          "revision": 2,
+          "seq": 81,
+          "viewport": 80
+        }
+      ],
+      "close_blocked_output": {
+        "pid": 8588,
+        "request_received": true,
+        "seq": 12345
+      },
+      "close_with_unretired_frames": true,
+      "cpu_import_does_not_ack": true,
+      "framework_wakes": true,
+      "input_queue_bound": 256,
+      "late_frame_after_close_rejected": true,
+      "layout_coalescing_preserves_command": true,
+      "performance_test": false,
+      "result": "QUEUED_VIEW_GPU_OK",
+      "scope": "shared V1 queued transport and GPU completion; standard Content/optional View negotiation/native desktop pending",
+      "two_frame_budget": true,
+      "unexpected_idle_exit_detected": true,
+      "unsupported_service_and_ime_rejected": true
+    }
+  },
+  "legacy_gpu": {
+    "cancellation": {
+      "blocked_pipe_read": {
+        "pid": 8591,
+        "request_received": true,
+        "seq": 12345
+      },
+      "cancel_before_launch": true,
+      "cancel_unblocked_owner": true,
+      "reaped": true
+    },
+    "cases": [
+      {
+        "max_gpu_delta": 0,
+        "pid": 8592,
+        "revision": 0,
+        "right_consumed": true,
+        "scale": 1.0,
+        "seq": 1,
+        "slot": 0,
+        "viewport": 1
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 8592,
+        "revision": 1,
+        "right_consumed": true,
+        "scale": 1.0,
+        "seq": 2,
+        "slot": 0,
+        "viewport": 1
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 8592,
+        "revision": 1,
+        "right_consumed": true,
+        "scale": 2.0,
+        "seq": 3,
+        "slot": 0,
+        "viewport": 2
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 8593,
+        "revision": 0,
+        "right_consumed": true,
+        "scale": 1.0,
+        "seq": 1,
+        "slot": 1,
+        "viewport": 1
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 8593,
+        "revision": 0,
+        "right_consumed": true,
+        "scale": 1.0,
+        "seq": 2,
+        "slot": 1,
+        "viewport": 1
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 8593,
+        "revision": 0,
+        "right_consumed": true,
+        "scale": 2.0,
+        "seq": 3,
+        "slot": 1,
+        "viewport": 2
+      }
+    ],
+    "parent_factory_called": false,
+    "parent_pid": 8590,
+    "result": "INDEPENDENT_BACKEND_GPU_OK",
+    "scope": "public worker/transport/import extraction; no AppHost/Gallery dependency; not completed ProcessContainer lifecycle or UI acceptance",
+    "worker_pids": [
+      8592,
+      8593
+    ]
+  },
+  "headless_regression": {
+    "bounded_requests": true,
+    "drop_reaped": true,
+    "factory_in_parent": false,
+    "graceful_stop": true,
+    "headless": true,
+    "hung_close_reaped": true,
+    "invalid_session_rejected": true,
+    "other_worker_survived": true,
+    "output_overflow_rejected": true,
+    "oversized_output_rejected": true,
+    "performance_test": false,
+    "pids": [
+      8596,
+      8595,
+      8597
+    ],
+    "result": "passed",
+    "separate_state": true,
+    "toolbar_without_frame": true,
+    "unknown_response_rejected": true
+  },
+  "native": "no native desktop/VoiceOver operation this phase; AppHost native navigation phase independently owned",
+  "gold7": "lifecycle/resource/identity contracts bounded verified; actual final container experience pending",
+  "consumer_migration": "AppHost notified with API and receipts; must first finish current native navigation acceptance, then delete its duplicate queues/ack/completion loop",
+  "pending": [
+    "AppHost consuming same queue and GPU retirement",
+    "standard Content measure/layout/paint/clip/event/focus/mount/unmount adapter",
+    "Renderer image registration lifetime contract for unmount/drop",
+    "V2 View capability/identity/input negotiation preserving Agent editing/IME/AX",
+    "hide/show/current geometry/capture and native external-display/Gold7 acceptance",
+    "final exact standalone candidate and both authorized consumer handoffs"
+  ],
+  "source_snapshot": "scoped current changed files, not a complete standalone release archive",
+  "executables": {
+    "process_component_services": "dd7ef12224b8a8293a7829b260a20dcac8e0721402015efb0872710cb69c30f0",
+    "process_container_backend": "9d6cbb6cb03612ff4ccff98d693b2095960aeef4b9d807e8d4b987a376998ec7"
+  },
+  "performance_test": false,
+  "git_mutations": false
+}

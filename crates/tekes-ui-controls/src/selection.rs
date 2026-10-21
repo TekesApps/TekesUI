@@ -53,7 +53,7 @@ impl SliderView {
     ) -> SliderLayout {
         if invalid_rect(frame) || invalid_clip(clip) {
             self.layout = SliderLayout::default();
-            self.cancel();
+            self.blur();
             return self.layout;
         }
         if model.disabled {
@@ -101,7 +101,7 @@ impl SliderView {
             thumb: geom.thumb,
         };
         if self.layout.visible.is_none() || model.disabled {
-            self.cancel();
+            self.blur();
         }
         self.layout
     }
@@ -112,6 +112,7 @@ impl SliderView {
     pub fn blur(&mut self) {
         self.focused = false;
         self.focus_visible = false;
+        self.hovered = false;
         self.cancel();
     }
     pub fn set_window_active(&mut self, active: bool) {
@@ -120,8 +121,44 @@ impl SliderView {
             self.blur();
         }
     }
+    /// Semantic value update on the current visible mount. `None` rejects the
+    /// request; `Some(false)` consumes a valid request already at its value.
+    /// A valid semantic update supersedes an in-flight pointer gesture.
+    pub fn set_value(&mut self, value: f64, model: &mut Slider) -> Option<bool> {
+        if !value.is_finite() || !self.value_update_available(model) {
+            return None;
+        }
+        self.cancel();
+        Some(model.set(value))
+    }
+    /// Relative semantic update using the original model's step and bounds.
+    pub fn adjust_value(&mut self, increase: bool, model: &mut Slider) -> Option<bool> {
+        if !self.value_update_available(model) {
+            return None;
+        }
+        self.cancel();
+        Some(model.key(if increase {
+            ControlKey::Up
+        } else {
+            ControlKey::Down
+        }))
+    }
+    fn value_update_available(&mut self, model: &Slider) -> bool {
+        if model.disabled {
+            self.blur();
+        }
+        !model.disabled && self.window_active && self.layout.visible.is_some()
+    }
     pub fn pointer_move(&mut self, point: Point, model: &mut Slider) -> bool {
-        let hovered = self.layout.visible.is_some_and(|r| r.contains(point));
+        if model.disabled {
+            let changed = self.captured || self.hovered || self.focused;
+            self.blur();
+            return changed;
+        }
+
+        let hovered = self.window_active
+            && !model.disabled
+            && self.layout.visible.is_some_and(|r| r.contains(point));
         let mut changed = std::mem::replace(&mut self.hovered, hovered) != hovered;
         if self.captured && (!self.window_active || model.disabled) {
             self.cancel();
@@ -132,6 +169,12 @@ impl SliderView {
         changed
     }
     pub fn pointer_down(&mut self, point: Point, model: &mut Slider) -> bool {
+        // Availability observations end the current gesture even before paint.
+        if model.disabled {
+            self.blur();
+            return false;
+        }
+
         if !self.window_active
             || model.disabled
             || !self.layout.visible.is_some_and(|r| r.contains(point))
@@ -145,10 +188,22 @@ impl SliderView {
         true
     }
     pub fn pointer_up(&mut self, _point: Point, model: &Slider) -> bool {
+        // Availability observations end the current gesture even before paint.
+        if model.disabled {
+            self.blur();
+            return false;
+        }
+
         let captured = std::mem::replace(&mut self.captured, false);
         captured && self.window_active && !model.disabled
     }
     pub fn key(&mut self, key: ControlKey, down: bool, model: &mut Slider) -> bool {
+        // Availability observations end the current gesture even before paint.
+        if model.disabled {
+            self.blur();
+            return false;
+        }
+
         if !self.focused || !self.window_active {
             return false;
         }
@@ -238,8 +293,17 @@ pub struct RadioGroupView {
     pressed: Option<usize>,
     window_active: bool,
     disabled: bool,
+    error: bool,
 }
 impl RadioGroupView {
+    /// Validation is independent of selection, focus and disabled interaction.
+    /// The host supplies the explanatory message (for example through Field).
+    pub fn set_error(&mut self, error: bool) {
+        self.error = error;
+    }
+    pub fn error(&self) -> bool {
+        self.error
+    }
     pub fn new() -> Self {
         Self::default()
     }
@@ -256,7 +320,7 @@ impl RadioGroupView {
     ) -> RadioGroupLayout {
         if invalid_rect(bounds) || invalid_clip(clip) {
             self.layout = RadioGroupLayout::default();
-            self.cancel();
+            self.blur();
             return self.layout.clone();
         }
         let normalized = ControlFrame::new(bounds, clip).frame();
@@ -330,6 +394,7 @@ impl RadioGroupView {
                     indicator,
                     palette,
                     ControlState {
+                        error: self.error,
                         selected: model.selected == Some(index),
                         disabled: self.disabled || !model.is_enabled(index),
                         hovered: self.hovered == Some(index),
@@ -349,8 +414,12 @@ impl RadioGroupView {
                         label,
                         ButtonTextAlign::Leading,
                         palette
-                            .color("primary-text")
-                            .expect("Design System primary text"),
+                            .color(if self.disabled || !model.is_enabled(index) {
+                                "disabled-text"
+                            } else {
+                                "primary-text"
+                            })
+                            .expect("Design System label text"),
                     );
                     scene.pop_clip();
                 }
@@ -368,8 +437,11 @@ impl RadioGroupView {
             indicators,
             labels: label_slots,
         };
-        if self.disabled {
+        if self.disabled || self.pressed.is_some_and(|index| !model.is_enabled(index)) {
             self.cancel();
+        }
+        if all_hidden {
+            self.blur();
         }
         if all_hidden
             || self
@@ -381,6 +453,12 @@ impl RadioGroupView {
         self.layout.clone()
     }
     pub fn focus(&mut self, model: &RadioGroup, index: Option<usize>, focus_visible: bool) {
+        // A deferred focus request must not outlive the disabled scope.
+        // Re-enabling requires a fresh eligible focus request from the host.
+        if self.disabled {
+            self.blur();
+            return;
+        }
         let next = index
             .filter(|i| *i < model.len() && model.is_enabled(*i))
             .or(model.selected.filter(|i| model.is_enabled(*i)))
@@ -394,6 +472,7 @@ impl RadioGroupView {
     pub fn blur(&mut self) {
         self.focused = None;
         self.focus_visible = false;
+        self.hovered = None;
         self.cancel();
     }
     pub fn set_window_active(&mut self, active: bool) {
@@ -411,12 +490,19 @@ impl RadioGroupView {
         }
     }
     pub fn pointer_move(&mut self, point: Point) -> bool {
-        let next = self.layout.rows.iter().position(|row| row.contains(point));
+        let next = (self.window_active && !self.disabled)
+            .then(|| self.layout.rows.iter().position(|row| row.contains(point)))
+            .flatten();
         let changed = self.hovered != next;
         self.hovered = next;
         changed
     }
     pub fn pointer_down(&mut self, point: Point, model: &RadioGroup) -> SelectionEvent {
+        // A disabled or removed captured row cannot revive on a later release.
+        if self.pressed.is_some_and(|index| !model.is_enabled(index)) {
+            self.cancel();
+        }
+
         if !self.window_active {
             return SelectionEvent::Ignored;
         }
@@ -454,6 +540,11 @@ impl RadioGroupView {
         }
     }
     pub fn key(&mut self, key: ControlKey, down: bool, model: &mut RadioGroup) -> SelectionEvent {
+        // A disabled or removed captured row cannot revive on a later release.
+        if self.pressed.is_some_and(|index| !model.is_enabled(index)) {
+            self.cancel();
+        }
+
         if !self.window_active || self.focused.is_none() {
             return SelectionEvent::Ignored;
         }
@@ -491,7 +582,9 @@ impl RadioGroupView {
         }
         if navigation {
             self.focus_visible = true;
-            let changed = model.key(key);
+            let previous = model.selected;
+            model.key_from(key, self.focused);
+            let changed = model.selected != previous;
             if self.focused != model.selected {
                 self.cancel();
             }
@@ -536,12 +629,14 @@ impl Default for RadioGroupView {
             pressed: None,
             window_active: true,
             disabled: false,
+            error: false,
         }
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct SwitchView {
+    error: bool,
     placement: ControlFrame,
     hovered: bool,
     focused: bool,
@@ -556,6 +651,13 @@ pub struct SwitchView {
     motion_suspended: bool,
 }
 impl SwitchView {
+    /// Host validation does not disable toggling or erase the current value.
+    pub fn set_error(&mut self, error: bool) {
+        self.error = error;
+    }
+    pub fn error(&self) -> bool {
+        self.error
+    }
     pub fn new() -> Self {
         Self::default()
     }
@@ -621,10 +723,11 @@ impl SwitchView {
                 scene.push_clip(clip);
             }
             let state = ControlState {
+                error: self.error,
                 selected: model.checked,
                 disabled: model.disabled,
                 hovered: self.hovered,
-                pressed: self.pointer_armed || self.space_armed,
+                pressed: (self.pointer_armed && self.hovered) || self.space_armed,
                 focused: self.focused && self.window_active,
                 focus_visible: self.focus_visible,
                 ..Default::default()
@@ -816,10 +919,11 @@ impl SwitchView {
                 scene.push_clip(clip);
             }
             let state = ControlState {
+                error: self.error,
                 selected: model.checked,
                 disabled: model.disabled,
                 hovered: self.hovered,
-                pressed: self.pointer_armed || self.space_armed,
+                pressed: (self.pointer_armed && self.hovered) || self.space_armed,
                 focused: self.focused && self.window_active,
                 focus_visible: self.focus_visible,
                 ..Default::default()
@@ -865,8 +969,12 @@ impl SwitchView {
                 label,
                 ButtonTextAlign::Leading,
                 palette
-                    .color("primary-text")
-                    .expect("Design System primary text"),
+                    .color(if model.disabled {
+                        "disabled-text"
+                    } else {
+                        "primary-text"
+                    })
+                    .expect("Design System label text"),
             );
             scene.pop_clip();
         }
@@ -911,21 +1019,39 @@ impl SwitchView {
         }
     }
     pub fn pointer_move(&mut self, point: Point) -> bool {
-        let next = self.placement.contains(point);
+        let next = self.window_active && self.placement.contains(point);
         let changed = self.hovered != next;
         self.hovered = next;
         changed
     }
     pub fn pointer_down(&mut self, point: Point, model: &Switch) -> bool {
-        if !self.window_active || model.disabled || !self.placement.contains(point) {
+        if model.disabled {
+            self.cancel();
+            return false;
+        }
+
+        if !self.window_active
+            || model.disabled
+            || self.space_armed
+            || !self.placement.contains(point)
+        {
             return false;
         }
         self.pointer_armed = true;
+        self.hovered = true;
         self.focused = true;
         self.focus_visible = false;
         true
     }
     pub fn pointer_up(&mut self, point: Point, model: &mut Switch) -> SelectionEvent {
+        if model.disabled {
+            return if self.cancel() {
+                SelectionEvent::Handled
+            } else {
+                SelectionEvent::Ignored
+            };
+        }
+
         if !std::mem::replace(&mut self.pointer_armed, false) {
             return SelectionEvent::Ignored;
         }
@@ -939,12 +1065,21 @@ impl SwitchView {
         }
     }
     pub fn key(&mut self, key: ControlKey, down: bool, model: &mut Switch) -> SelectionEvent {
+        // Availability observations terminate either old activation owner even
+        // when this key belongs to a parent. Preserve normal key consumption.
+        if model.disabled {
+            self.cancel();
+            return if self.focused && self.window_active && key == ControlKey::Space {
+                SelectionEvent::Handled
+            } else {
+                SelectionEvent::Ignored
+            };
+        }
         if !self.focused || !self.window_active || key != ControlKey::Space {
             return SelectionEvent::Ignored;
         }
         if down {
-            if model.disabled {
-                self.space_armed = false;
+            if self.pointer_armed {
                 return SelectionEvent::Handled;
             }
             self.space_armed = true;
@@ -982,6 +1117,7 @@ fn rows_visibility_for(layout: &RadioGroupLayout, index: usize) -> Option<Rect> 
 impl Default for SwitchView {
     fn default() -> Self {
         Self {
+            error: false,
             placement: ControlFrame::default(),
             hovered: false,
             focused: false,
@@ -1002,6 +1138,289 @@ impl Default for SwitchView {
 mod tests {
     use super::*;
     use tekes_ui_tokens::Theme;
+
+    #[test]
+    fn hidden_or_invalid_selection_layout_releases_keyboard_focus_and_capture() {
+        let palette = Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        for (bounds, clip) in [
+            (
+                Rect::new(0., 0., 160., 30.),
+                Some(Rect::new(500., 500., 1., 1.)),
+            ),
+            (Rect::new(f32::NAN, 0., 160., 30.), None),
+        ] {
+            let mut scene = Scene::new();
+            let mut text = TestText::default();
+            let mut slider = Slider::new(50., 0., 100., 5.).unwrap();
+            let mut slider_view = SliderView::new();
+            slider_view.render(
+                &mut scene,
+                slider,
+                Rect::new(0., 0., 160., 30.),
+                None,
+                palette,
+            );
+            assert!(slider_view.pointer_down(Point::new(80., 15.), &mut slider));
+            let before = slider.value();
+            slider_view.render(&mut scene, slider, bounds, clip, palette);
+            assert!(!slider_view.is_focused());
+            assert!(!slider_view.is_captured());
+            assert!(!slider_view.key(ControlKey::Right, true, &mut slider));
+            assert_eq!(slider.value(), before);
+
+            let mut radio = RadioGroup::new(2);
+            let mut radio_view = RadioGroupView::new();
+            radio_view.render(
+                &mut scene,
+                &mut text,
+                &radio,
+                Rect::new(0., 0., 160., 0.),
+                None,
+                palette,
+                &["One", "Two"],
+            );
+            radio_view.focus(&radio, Some(0), true);
+            radio_view.render(
+                &mut scene,
+                &mut text,
+                &radio,
+                bounds,
+                clip,
+                palette,
+                &["One", "Two"],
+            );
+            assert_eq!(radio_view.focused(), None);
+            assert_eq!(
+                radio_view.key(ControlKey::Right, true, &mut radio),
+                SelectionEvent::Ignored
+            );
+            assert_eq!(radio.selected, Some(0));
+        }
+    }
+
+    #[test]
+    fn switch_overlapping_pointer_and_space_have_one_activation_owner() {
+        let mut scene = Scene::new();
+        let mut model = Switch::default();
+        let mut view = SwitchView::new();
+        view.render(
+            &mut scene,
+            model,
+            Rect::new(0., 0., 48., 26.),
+            None,
+            Palette {
+                theme: Theme::LIGHT,
+                brand: 0,
+            },
+        );
+        let inside = Point::new(12., 12.);
+        assert!(view.pointer_down(inside, &model));
+        view.key(ControlKey::Space, true, &mut model);
+        assert_eq!(view.pointer_up(inside, &mut model), SelectionEvent::Changed);
+        assert_eq!(
+            view.key(ControlKey::Space, false, &mut model),
+            SelectionEvent::Handled
+        );
+        assert!(model.checked);
+        view.key(ControlKey::Space, true, &mut model);
+        assert!(!view.pointer_down(inside, &model));
+        assert_eq!(view.pointer_up(inside, &mut model), SelectionEvent::Ignored);
+        assert_eq!(
+            view.key(ControlKey::Space, false, &mut model),
+            SelectionEvent::Changed
+        );
+        assert!(!model.checked);
+        assert_eq!(
+            view.key(ControlKey::Space, false, &mut model),
+            SelectionEvent::Handled
+        );
+    }
+
+    #[test]
+    fn radio_disabling_an_armed_row_cancels_even_after_reenable() {
+        let mut scene = Scene::new();
+        let mut text = TestText::default();
+        let mut model = RadioGroup::new(2);
+        let mut view = RadioGroupView::new();
+        let palette = Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        let bounds = Rect::new(0., 0., 160., 0.);
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            bounds,
+            None,
+            palette,
+            &["One", "Two"],
+        );
+        let inside = layout.rows[1].frame().center();
+        assert_eq!(view.pointer_down(inside, &model), SelectionEvent::Handled);
+        model.set_enabled(1, false);
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            bounds,
+            None,
+            palette,
+            &["One", "Two"],
+        );
+        model.set_enabled(1, true);
+        assert_eq!(view.pointer_up(inside, &mut model), SelectionEvent::Ignored);
+        assert_eq!(model.selected, Some(0));
+    }
+
+    #[test]
+    fn slider_view_keeps_finite_thumb_and_bounded_value_for_extreme_ranges_and_steps() {
+        let palette = Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        let mut view = SliderView::new();
+        let mut scene = Scene::new();
+        let frame = Rect::new(0., 0., 160., 30.);
+        let snapped = Slider::new(9.8, 0., 10., 6.).unwrap();
+        assert_eq!(snapped.value(), 10.);
+        let mut model = Slider::new(0., -f64::MAX, f64::MAX, 1.).unwrap();
+        let layout = view.render(&mut scene, model, frame, None, palette);
+        assert!(layout.thumb.min_x().is_finite());
+        assert_eq!(layout.thumb.center().x, frame.center().x);
+        assert!(view.pointer_down(layout.thumb.center(), &mut model));
+        view.pointer_move(Point::new(layout.track.max_x(), 15.), &mut model);
+        assert_eq!(model.value(), f64::MAX);
+        let layout = view.render(&mut scene, model, frame, None, palette);
+        assert!(layout.thumb.max_x().is_finite());
+        view.pointer_move(Point::new(layout.track.min_x(), 15.), &mut model);
+        assert_eq!(model.value(), -f64::MAX);
+        let mut large_step = Slider::new(f64::MAX * 0.75, 0., f64::MAX, f64::MAX * 0.75).unwrap();
+        view.focus(true);
+        assert!(view.key(ControlKey::Right, true, &mut large_step));
+        assert_eq!(large_step.value(), f64::MAX);
+    }
+
+    #[test]
+    fn radio_navigation_starts_at_retained_focus_when_selection_differs() {
+        let mut model = RadioGroup::new(4);
+        model.set_enabled(3, false);
+        let mut view = RadioGroupView::new();
+        view.focus(&model, Some(2), true);
+        assert_eq!(
+            view.key(ControlKey::Right, true, &mut model),
+            SelectionEvent::Handled
+        );
+        assert_eq!(model.selected, Some(0));
+        assert_eq!(view.focused(), Some(0));
+        assert_eq!(
+            view.key(ControlKey::Home, true, &mut model),
+            SelectionEvent::Handled
+        );
+        view.focus(&model, Some(2), true);
+        assert_eq!(
+            view.key(ControlKey::Left, true, &mut model),
+            SelectionEvent::Changed
+        );
+        assert_eq!(model.selected, Some(1));
+        assert_eq!(view.focused(), Some(1));
+    }
+
+    #[test]
+    fn selection_labels_use_disabled_semantic_ink_for_group_item_and_switch() {
+        let palette = Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        let mut scene = Scene::new();
+        let mut text = TestText::default();
+        let mut model = RadioGroup::new(2);
+        model.set_enabled(1, false);
+        let mut view = RadioGroupView::new();
+        let bounds = Rect::new(0., 0., 180., 0.);
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            bounds,
+            None,
+            palette,
+            &["One", "Two"],
+        );
+        assert_eq!(
+            text.inks,
+            vec![
+                palette.color("primary-text").unwrap(),
+                palette.color("disabled-text").unwrap()
+            ]
+        );
+        text.inks.clear();
+        view.set_disabled(true);
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            bounds,
+            None,
+            palette,
+            &["One", "Two"],
+        );
+        assert_eq!(text.inks, vec![palette.color("disabled-text").unwrap(); 2]);
+        text.inks.clear();
+        SwitchView::new().render_labeled(
+            &mut scene,
+            &mut text,
+            Switch {
+                checked: true,
+                disabled: true,
+            },
+            Rect::new(0., 100., 180., 32.),
+            None,
+            palette,
+            "Disabled",
+        );
+        assert_eq!(text.inks, vec![palette.color("disabled-text").unwrap()]);
+    }
+
+    #[test]
+    fn switch_pointer_leaving_clears_pressed_paint_and_returning_restores_it() {
+        let palette = Palette {
+            theme: Theme::LIGHT,
+            brand: 0,
+        };
+        let mut scene = Scene::new();
+        let mut view = SwitchView::new();
+        let mut model = Switch::default();
+        let frame = Rect::new(0., 0., 48., 26.);
+        view.render(&mut scene, model, frame, None, palette);
+        let inside = Point::new(12., 12.);
+        assert!(view.pointer_down(inside, &model));
+        let track_ink = |scene: &Scene| {
+            scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    tekes_ui_scene::Primitive::Quad(quad) => Some(quad.fill),
+                    _ => None,
+                })
+                .unwrap()
+        };
+        scene.clear();
+        view.render(&mut scene, model, frame, None, palette);
+        assert_eq!(track_ink(&scene), palette.color("button-pressed").unwrap());
+        view.pointer_move(Point::new(100., 100.));
+        scene.clear();
+        view.render(&mut scene, model, frame, None, palette);
+        assert_eq!(track_ink(&scene), palette.color("surface-3").unwrap());
+        view.pointer_move(inside);
+        scene.clear();
+        view.render(&mut scene, model, frame, None, palette);
+        assert_eq!(track_ink(&scene), palette.color("button-pressed").unwrap());
+        assert_eq!(view.pointer_up(inside, &mut model), SelectionEvent::Changed);
+    }
 
     #[test]
     fn slider_owns_clipped_drag_mapping_and_cancels_capture() {
@@ -1424,6 +1843,7 @@ mod tests {
         draw_count: usize,
         motion: Option<ControlMotionContext>,
         frame_requests: usize,
+        inks: Vec<tekes_ui_tokens::Rgba>,
     }
     impl ButtonTextRenderer for TestText {
         fn motion_context(&self) -> Option<ControlMotionContext> {
@@ -1456,9 +1876,10 @@ mod tests {
             _: proposal::TextRole,
             _: Rect,
             _: ButtonTextAlign,
-            _: tekes_ui_tokens::Rgba,
+            ink: tekes_ui_tokens::Rgba,
         ) {
             self.draw_count += 1;
+            self.inks.push(ink);
         }
     }
 

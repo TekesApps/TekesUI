@@ -1,0 +1,148 @@
+{
+  "format": "tekesui-gold7-alignment-pass/1",
+  "date": "2026-10-17",
+  "source_state": "uncommitted worktree; no new commit/push/tag",
+  "base_commit": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "source_manifest": "source-manifest.json",
+  "source_recovery": {
+    "base_git_commit": "bc3de79466834e99062a1b4ef0872323e2860001",
+    "overlay_archive": "sources-delta.tar.gz",
+    "verify": "source-manifest.json"
+  },
+  "requirements_all_complete": false,
+  "verified_code_repairs": [
+    "overlay-presence-lifecycle",
+    "split-native-capture-and-reset",
+    "durable-form-draft-outbox",
+    "explicit-live-edge-reading"
+  ],
+  "checks": [
+    {
+      "check": "tests",
+      "command": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--release",
+        "--locked",
+        "--offline"
+      ],
+      "exit": 0,
+      "seconds": 28.47
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--release",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 5.43
+    },
+    {
+      "check": "build",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "tekes-ui-gallery",
+        "--release",
+        "--locked",
+        "--offline"
+      ],
+      "exit": 0,
+      "seconds": 6.74
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.51
+    },
+    {
+      "check": "pure-rust",
+      "command": [
+        "python3",
+        "scripts/check-pure-rust.py"
+      ],
+      "exit": 0,
+      "seconds": 0.36
+    },
+    {
+      "check": "design-system",
+      "command": [
+        "target/design-check-venv/bin/python",
+        "scripts/check-design-system.py"
+      ],
+      "exit": 0,
+      "seconds": 0.32
+    },
+    {
+      "check": "gold7",
+      "command": [
+        "python3",
+        "scripts/check-gold7.py",
+        "--json"
+      ],
+      "exit": 0,
+      "seconds": 0.06
+    },
+    {
+      "check": "gold7-checker",
+      "command": [
+        "python3",
+        "scripts/test-check-gold7.py"
+      ],
+      "exit": 0,
+      "seconds": 0.69
+    },
+    {
+      "check": "diff",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.02
+    }
+  ],
+  "rust_test_totals": {
+    "passed": 791,
+    "failed": 0,
+    "ignored": 1
+  },
+  "gpu": {
+    "overlay_lifecycle_images": 72,
+    "initial_single_theme_lifecycle_images": 18,
+    "static_production_overlay_images": 24,
+    "other_production_control_motion_frames": 4,
+    "focus_images": 8,
+    "scope": "Actual production views, CoreText glyphs and GPU; 4 themes. Overlay lifecycle at 2x includes 0/60/200ms enter and 200/260/400ms exit, atlas clear and live rebuild. Unit visual verification, no performance acceptance."
+  },
+  "native_observation": "native.json",
+  "package_identity": "package-binary-comparison.json",
+  "first_integration_failures": "tests-initial-failed.log",
+  "limitations": [
+    "Per-primitive alpha is not isolated group compositing; resting appearance preserved",
+    "Draft fixture is explicit single-writer local transport simulation; no power-loss or real service acceptance",
+    "Reading fixture supports append-only text, not arbitrary prepend/replacement",
+    "Gold7 remaining per-component/page states and full physical display/IME/VoiceOver reviews retained",
+    "Media runtime remains missing under no-new-component scope",
+    "No CPU/drop-frame/continuous120Hz acceptance"
+  ]
+}

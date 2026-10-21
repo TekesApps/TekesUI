@@ -1,0 +1,113 @@
+{
+  "format": "tekesui-combo-async-review/1",
+  "date": "2026-10-18T03:22:00.601528+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues_open": 14,
+  "prs_all_states": 0,
+  "github_changed_since_ledger": false,
+  "root_fixes": [
+    "ContentHost routes control keys to composing editor before overlays; retains original editor Escape/caret handling; unhandled keys native",
+    "ContentHost delivers captured PointerMove/PointerUp to original owner before newly opened overlays",
+    "private independent ComboBox caller reuses TextFieldContent/ComboBox/ComboBoxView and existing Status/Feedback; no new token/state/protocol",
+    "status-only updates retain editor draft/selection/marked, cached value, focus and candidate; data replacement reconciles unique domain labels and cancels stale options capture"
+  ],
+  "scope_exceptions": [
+    "unique labels are fixture domain identity, not general stable-ID contract",
+    "Gallery consumer cases composition-review/test gated; default build excludes experimental caller fixtures",
+    "native live async transitions, physical IME, full motion and native controls AX/VoiceOver not accepted",
+    "captured content drag wins over newly opened overlays; menu own capture remains with existing menu when no content capture",
+    "standalone View hosts own their event routing"
+  ],
+  "validation": {
+    "compiled_red_regressions": 2,
+    "red_logs": [
+      "logs/ime-before-compiled.log",
+      "logs/capture-before.log"
+    ],
+    "public_composition_tests": 15,
+    "independent_consumer_total": 39,
+    "new_consumer_tests": 3,
+    "new_consumer_token_cases": 36,
+    "combined_query_async_cases": 264,
+    "shared_packages": 347,
+    "gallery_narrow_large_type_fixture": 1,
+    "strict_clippy": "root workspace all-targets composition-review and consumer all-targets pass",
+    "default_build": "pass",
+    "review_build": "pass after generated capabilities",
+    "capability_tests": 37,
+    "composition_audit_tests": 6,
+    "reference_gold7_mechanical_pure_rust_root_consumer_fmt": "pass",
+    "diagnostic_logs": "early logs include superseded compile failures and initial blanket IME guard failure; compiled red and final full suites above authoritative"
+  },
+  "tokens": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "query-async-token-observations.json": 264,
+    "command-results-token-observations.json": 120,
+    "action-token-observations.json": 576
+  },
+  "gpu": {
+    "pages": 144,
+    "earlier_reference_pages": 144,
+    "changed_from_earlier": 144,
+    "earlier_reference": "choice-focus-20261018/gpu-brand*-*x same component frozen reference; not immediate baseline re-execution",
+    "reason": "three independent caller specimens and measured reflow",
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "experience": "representative Light narrow150 and DarkIC brand2@2x inspected; full family acceptance incomplete"
+  },
+  "native": {
+    "observed": [
+      "signed composition-review Gallery renders independent Loading/Error/Validation specimens",
+      "fill and application Preview420/type150 observed; cached value, feedback, focus and clipping readable"
+    ],
+    "not_accepted": [
+      "native live async transitions",
+      "complete motion",
+      "physical IME",
+      "controlsAX/VoiceOver"
+    ],
+    "identity": "native/build-identity.json",
+    "AX": "window/menu only",
+    "exit_inventory": [],
+    "scope": "Gallery only; no system settings"
+  },
+  "governance": {
+    "public_states": 123,
+    "fixture_gaps": 133,
+    "required": 269,
+    "remaining_choice_profile_requirements": 2,
+    "retained": "CommandPalette loading/error plus full native async/motion/AX/unified acceptance"
+  },
+  "limits": [
+    "public tests CoreText with no-op glyph painter; GPU/native separate",
+    "complete state combinations/token dependencies not claimed",
+    "performance deferred",
+    "no expanded migration or new components"
+  ],
+  "source_sha256": {
+    "crates/tekes-ui-controls/src/composition.rs": "6f8eef7601fb093c53a083055d7b591f914549802f42da5ced3a9e9b9424108c",
+    "crates/tekes-ui-controls/tests/composition.rs": "7699f62d65c69d40fb063c084e157730cfbd478c03ed9a0912c7e4798e2b31fb",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs": "d57e5a7725ee1ac3f31b3c38ba5fa0daa9dc5a50de24fa525b605a2518c8f06d",
+    "design/gallery/capabilities.json": "510d851ab8ea2df91527c7424f9e5f29a3aecae24dc3d400c6a6b99e401bfb94",
+    "design/gallery/component-coverage.json": "efa7cb57c6692707c1ad6df9644bf9b279822870521e62d299b366a0fbb0230a",
+    "design/remediation/composition-audit.json": "bc26243c183d5ba351c2066bdb8ea8793ed5cbf590da79e60ee594683e69487a",
+    "design/remediation/ledger.json": "7ba9d3ba61cd002d9c12b889279ddf92d4b4d4ad735ca11880159dae4c539b53",
+    "docs/design/composition-audit-20261018.md": "747eac7ddc08677453de62ab121fedc9adf8f81c51ecf922c9a792186295efe4",
+    "docs/design/issue-remediation-current-20261017.md": "3543e03f569547ea38ad12ad42dbbfdcf9598c2198e0a747e2a590b26c6c74b7",
+    "examples/composition-consumer/src/lib.rs": "c6f03103b5b31fd7fbea18ece29b7dea4125b3fe5f956d3cb33f201202dd2d8b",
+    "examples/composition-consumer/src/combo_status.rs": "ec75b4527d80f350e07c4a595f16f7343ebc29f8a23799fa7bc773c6c4f23d44",
+    "examples/composition-consumer/tests/combo_status.rs": "968f5a0fc0548191a8d787f83b4faad38d93221764c609933ed49958324e0502",
+    "scripts/audit-combo-async-tokens.py": "814fb9f26b6449a057ca85a86350966bef0fe36d28584da739207b991294a977",
+    "docs/design/combo-async-20261018.md": "a0400d04b7a1a57b63b32593e455b4560c8f29a527313337e58550e60fd95dd8"
+  },
+  "goal_status": "active",
+  "wip_protection": "wip-protection.json"
+}

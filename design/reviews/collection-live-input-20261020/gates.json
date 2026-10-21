@@ -1,0 +1,22 @@
+[
+  {
+    "name": "bindings",
+    "exit": 0
+  },
+  {
+    "name": "inventory",
+    "exit": 0
+  },
+  {
+    "name": "composition",
+    "exit": 0
+  },
+  {
+    "name": "composition-tests",
+    "exit": 0
+  },
+  {
+    "name": "governance",
+    "exit": 0
+  }
+]

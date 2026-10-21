@@ -1,0 +1,42 @@
+{
+  "identity": "43ea9e62734840927f121eb76d91bf8895bfa9169b3bc6705d6df6b236dac079",
+  "binary_sha256": "6150fc85c2026a419607dc9f62ccb9b5dfcb380be0f280a16ac12d336fa9da73",
+  "scope": "Original mixed Text/Panel/Button nested ScrollContent,exact producer source,tool-driven actual external native input; no whole-page/library promotion",
+  "accepted_active_external_checkpoints": 22,
+  "raw_checkpoints": 29,
+  "excluded_observations": {
+    "active-composer-focus": "initial background focus was correctly refused",
+    "coordinate-title-tab-entry": "successful activation/control Tab entry,boot evidence",
+    "original-composer-directed-selection": "initial caret was already at end; no selection yet",
+    "native-key-input-before-reveal": "plain native n/i input,not marked text",
+    "coordinate-pointer-nearest": "first coordinate was titlebar,not action; not a pass",
+    "native-user-wheel-history": "first coordinate missed scroll viewport; not a pass",
+    "narrow-user-browse-retained": "same underlying render as previous read; not independent redraw proof"
+  },
+  "actual_animation_phase_frames": 7,
+  "history_frames": 148,
+  "history_purpose": "functional input/motion phase proof only; no FPS/timing/performance acceptance",
+  "original_composer_editor_focus_directed_selection_and_undo_retained": true,
+  "nested_target_centered_in_both_ancestors_at_normal_and_narrow_large_type": true,
+  "fully_clipped_rejected_then_recovered": true,
+  "unrelated_scroll_branch_unchanged": true,
+  "coordinate_pointer_and_native_wheel_verified_after_correcting_pixel_coordinates": true,
+  "manual_browse_survives_unrelated_render_without_timer_reassertion": true,
+  "reduced_motion": "private renderer policy true produced no Animating phase; no system preference changed",
+  "native_IME": "ordinary native n/i input only; marked/preedit retention proved separately in public real CoreText/GPU tests; no physical/system-candidate claim on this source",
+  "native_mid_animation_wheel_race": "not claimed here; deterministic host-clock public tests cover interruption and old momentum",
+  "VoiceOver": "not enabled; off in end-of-round CUA inventory; no hearing claimed",
+  "images": {
+    "centered-focus.jpg": "7630ce77a0d99fce7751b18a56c76bb8d6b7cba462b10ebbddc1a0c8607900d9",
+    "narrow-large-type-focus.jpg": "a7ace63809372c48b06759757f1f0a499d46da8cf956dd32a2ce2311c7d86833",
+    "manual-browse-focus.jpg": "b33b335bdad90850d7b9a23863c1dd205431832609721619b678aea0d771bd07",
+    "final-restored-focus.jpg": "3f657773d11a5bd5d90969a5d6bb7349c090ffcb9e9e877549771d1834aa0013"
+  },
+  "remaining": [
+    "independent isolated immutable consumer input and actual AgentKit integration",
+    "matched ClientKit product-page experience",
+    "physical IME if required by final consumer acceptance",
+    "public exact source/CI under separate authorization"
+  ],
+  "performance": "not measured"
+}

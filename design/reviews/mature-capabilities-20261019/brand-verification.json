@@ -1,0 +1,16 @@
+{
+  "result": "passed",
+  "public_consumer": "two external workspaces on current shared WIP; publicAPI/realCoreText/realGPU used",
+  "frames": 16,
+  "viewed": [
+    "brand-gpu/consumer-apricot/light@1x.png",
+    "brand-gpu/consumer-seaglass/dark-ic@2x.png"
+  ],
+  "gold7": "bounded component state/brand isolation and centering reviewed; no native or animated-time claims",
+  "native": "not performed; not required to establish offline BrandConfig public consumer path",
+  "source": "brand-source-inputs.json",
+  "raw_receipt": "brand-gpu/receipt.json",
+  "cleanup": "brand-cleanup.log",
+  "performance": "not measured",
+  "delivery": "WIP only,no new Git pin or Issue closure"
+}

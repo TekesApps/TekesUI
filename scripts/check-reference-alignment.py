@@ -11,9 +11,11 @@ import copy
 import hashlib
 import importlib
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +28,26 @@ color = importlib.import_module('brand_color')
 
 def read(path):
     return json.loads((ROOT / path).read_text())
+
+
+def source_revision(root=ROOT):
+    """Optional provenance; input hashes remain the audit authority.
+
+    Do not inherit a parent checkout's HEAD for an exported source directory.
+    A local initialized repository may also intentionally have no commit yet.
+    """
+    if not (root / '.git').exists():
+        return None
+    result = subprocess.run(
+        ['git', '-C', str(root), 'rev-parse', '--verify', 'HEAD'],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+    )
+    if result.returncode:
+        return None
+    revision = result.stdout.strip()
+    if not re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}', revision):
+        raise ValueError('invalid Git revision in audit provenance')
+    return revision
 
 
 def relationship_errors(tokens, policy):
@@ -149,11 +171,13 @@ def audit():
         profiles.append({'id': name, 'themes': 4, 'declared_contrast_checks': len(pairs),
                          'contrast_failures': sum(p['status'] != 'pass' for p in pairs)})
     managed_roles = brand.dependency_names(reference)
+    revision = source_revision()
     return {
         'format': 'tekesui-reference-alignment-report/1',
         'date': contract['date'],
-        'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
-        'source_state': 'working-tree; hashes identify audited inputs, not a clean commit',
+        'source_commit': revision,
+        'source_state': ('working-tree; hashes identify audited inputs, not a clean commit' if revision
+                         else 'source snapshot; Git HEAD unavailable; input hashes identify audited bytes'),
         'inputs_sha256': {str(p): hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in sorted(set(inputs))},
         'attachment_provenance': provenance,
         'static_result': 'fail' if errors else 'pass',
@@ -165,7 +189,7 @@ def audit():
         'components': contract['components'],
         'differences_requiring_review': ['brand seed versus fixed Clay', 'theme-paired on-solid foreground',
                                    'neutral focus', 'opaque constrained subtle tones versus alpha tint',
-                                   'no shadows', 'no press scaling', 'typography and composer sizes'],
+                                   'semantic elevation differs from the reference; current roles are defined in design/source/layout.json', 'no press scaling', 'typography and composer sizes'],
         'native_result': 'unverified',
         'limitations': ['Declared contrast pairs only; arbitrary nesting is not covered',
                        'No pixel capture, real IME, VoiceOver, provider or performance acceptance',
@@ -178,6 +202,13 @@ def audit():
 def self_test():
     # Mutate relationships, not reference HEX constants: order reversal, vanished
     # state distinction, and brand leakage must all be rejected.
+    # Actual exported and unborn repositories must not need a fabricated commit.
+    assert source_revision(ROOT / 'scripts') is None
+    with tempfile.TemporaryDirectory(prefix='tekesui-reference-provenance-') as directory:
+        root = Path(directory)
+        assert source_revision(root) is None
+        subprocess.run(['git', 'init', '--quiet', str(root)], check=True)
+        assert source_revision(root) is None
     tokens = read('design/tokens.json')['proposal']['tokens']
     policy = read('design/brand/policy.json')
     assert not relationship_errors(tokens, policy)

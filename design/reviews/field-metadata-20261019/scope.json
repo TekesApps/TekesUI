@@ -1,0 +1,20 @@
+{
+  "classification": "existing public Field metadata layout/typography contract",
+  "root_cause": "Wrapping label consumes full width before required marker allocation; marker measured with label role but drawn with body role",
+  "shared_fix": "FieldView::render_with_presentation reuses existing text measurement and layout, reserves same-role marker width before shaping label",
+  "applies_to": [
+    "all FieldView callers",
+    "ordinary/emphasized forms",
+    "TextFieldContent existing shared adapter"
+  ],
+  "exceptions": [
+    "Field has no independent disabled state; original TextSurface owns editor availability",
+    "read_only_content intentionally has no metadata",
+    "first-line trailing required marker; no new inline rich-text protocol"
+  ],
+  "new_abstraction_token_or_component": false,
+  "performance_measured": false,
+  "public_issue_closure_implied": false,
+  "native": "passed_scoped:12 active external checkpoints; app closed and round cleaned",
+  "gold7": "passed_scoped; original broad Issues remain open"
+}

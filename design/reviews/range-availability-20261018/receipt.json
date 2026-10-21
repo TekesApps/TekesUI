@@ -1,0 +1,141 @@
+{
+  "format": "tekesui-range-availability-review/1",
+  "date": "2026-10-18T03:44:31.222246+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues_open": 14,
+  "prs_all_states": 0,
+  "github_changed_since_ledger": false,
+  "root_fixes": [
+    "Slider model-aware disabled events reuse blur to release stale drag before paint",
+    "Switch disabled pointer boundaries cancel both previous pointer/Space ownership through existing cancel",
+    "RadioGroup model-aware pointer/key boundaries cancel captured disabled/removed row through existing cancel",
+    "Gallery five existing move dispatch branches now accept real primary Dragged; actual native Slider drag had failed while synthetic Moved test passed; original Views and SplitView policy retained"
+  ],
+  "applicable_components": [
+    "Slider",
+    "Switch",
+    "RadioGroup",
+    "native move dispatch for Dialog/Tabs/Menu/Select/ordinary Workbench"
+  ],
+  "scope_exceptions": [
+    "Checkbox already delegates Button cancellation",
+    "APIs without current model cannot observe a changed model; unseen disable/reenable cannot be inferred",
+    "Slider public state verification is not a built-in Component range semantics/actions adapter; still missing",
+    "native acceptance for other components and full controlsAX/VoiceOver remain incomplete",
+    "primary Dragged only; other buttons unchanged; SplitView keeps existing early capture policy",
+    "no new token/state/framework/shared abstraction"
+  ],
+  "validation": {
+    "compiled_red_regressions": 4,
+    "red_logs": [
+      "logs/availability-before.log",
+      "logs/native-drag-before.log"
+    ],
+    "public_availability_event_paths": 16,
+    "shared_packages": 350,
+    "independent_consumer_total": 43,
+    "slider_state_probe_cases": 216,
+    "gallery_actual_drag_red_green": 1,
+    "gallery_split_native_drag_regression": 1,
+    "gallery_slider_and_radio_switch_integration": "pass",
+    "strict_clippy": "root workspace all-targets composition-review and consumer all-targets pass",
+    "authoritative_logs": [
+      "logs/availability-after.log",
+      "logs/shared.log",
+      "logs/consumer-full.log",
+      "logs/slider-current.log",
+      "logs/native-drag-after.log",
+      "logs/native-split-regression.log",
+      "logs/root-clippy-final.log",
+      "logs/consumer-clippy.log",
+      "logs/default-build-final.log",
+      "logs/review-build-final.log"
+    ],
+    "capability_tests": 38,
+    "composition_audit_tests": 6,
+    "reference_gold7_mechanical_pure_rust_root_consumer_fmt": "pass",
+    "diagnostic_logs": "slider-first had incorrect changed=true expectation for Home already at minimum; corrected test follows existing API contract"
+  },
+  "tokens": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "query-async-token-observations.json": 264,
+    "command-async-token-observations.json": 168,
+    "slider-token-observations.json": 216,
+    "action-token-observations.json": 576
+  },
+  "token_total": 4452,
+  "tokens_reexecuted": "all8 groups after shared selection source change; all inputs current; complete=false",
+  "gpu": {
+    "pages": 432,
+    "components": [
+      "Slider",
+      "RadioGroup",
+      "Switch"
+    ],
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "final_after_native_fix": true,
+    "historical_comparison": "historical-comparison.json;72 same-component brand0@1x references, not immediate-before rerun; Radio/Switch48 identical, Slider24 changed; intervening WIP not attributed wholesale to this batch",
+    "experience": "representative native Slider fill/420/type150 and GPU Slider/Radio/Switch narrow states inspected; full family acceptance remains open"
+  },
+  "native": {
+    "observed": [
+      "before:50 unchanged by drag; retry55 unchanged; track click90/keyboard55 worked",
+      "after:real drag50->90, then Right90->95",
+      "disabled appearance/value95/focus returned to availability button",
+      "six original SliderView state specimens; fill and application420/type150"
+    ],
+    "before_identity": "native/build-identity-before-native-fix.json",
+    "identity": "native/build-identity.json",
+    "not_accepted": [
+      "native disable/reenable while pointer physically held",
+      "all-component native drag/cancel combinations",
+      "controlsAX/VoiceOver",
+      "physical IME",
+      "live async/full motion"
+    ],
+    "AX": "window/menu only",
+    "exit_inventory": [],
+    "scope": "Gallery only; no system settings"
+  },
+  "governance": {
+    "public_states": 131,
+    "fixture_gaps": 125,
+    "required": 269,
+    "next_shared_dependency": "Slider Component range semantics/actions adapter and native mapping missing",
+    "retained": "other component-family fixtures plus complete native async/motion/AX/unified acceptance"
+  },
+  "limits": [
+    "public runtime/consumer proofs are distinct from GPU/native",
+    "complete state combinations/token dependencies not claimed",
+    "performance deferred",
+    "no expanded component migration"
+  ],
+  "source_sha256": {
+    "design/gallery/capabilities.json": "a82acdcab75b4b899cd72b96e4fffc57f9e2803b1c7920b75ecd259b0b76f5a8",
+    "design/gallery/component-coverage.json": "82a9d3f8eb67635684fb2cf6e5c54f1b696fb56ded5ef9119c5ed2ebf6d6696b",
+    "design/remediation/composition-audit.json": "ffe6b42e572d81e0bca03237a59021b40fb9240df40f4e6ad8ab68a4328233bc",
+    "design/remediation/ledger.json": "f83c0a20965ba17a6fa12f6688c2c0e06b985d3d610d617d01d23c6e231ded90",
+    "docs/design/composition-audit-20261018.md": "f35101ca39cc361a5091c6171b31588487a046b62fe9bedcfa50146c672e4b85",
+    "docs/design/issue-remediation-current-20261017.md": "c732abf8a275f88eb9be2fac126f75af7400b4c763ca8adcdd0aa9212d90d433",
+    "scripts/generate-component-capabilities.py": "d1f5b45d4c414baba23c9a475e6a991b26b99f73a368ac1e8c72690f5b403207",
+    "scripts/test-component-capabilities.py": "272fa9d70ae06972871966310e978c65f179c8967c769b089e56e9e7292a4f66",
+    "crates/tekes-ui-controls/src/selection.rs": "87bccbc8d0cf86d1bca243707e785f5c0a02a8fc7e6570005c623eb843b5cd4f",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "8db2327c3fada68f11491912a9e1ec2372b7c1ee9220d59b1a33ccc9815d6137",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "5af772ba038764519fb5694edc6c80f46aa55bf79e3606dbe04072e7f1015b72",
+    "crates/tekes-ui-controls/tests/selection_availability.rs": "6b7bd61cd844364ffbe5fd29d9b5b6cb32dc9ff07044194d54b484f59f392d78",
+    "examples/composition-consumer/tests/slider_states.rs": "9ba39cb152181ee5ab65b94d83e5573417fc706582a67eb6dc7712db5a1fc184",
+    "scripts/audit-slider-tokens.py": "8e7fbc985db4ebd304b5e547e8e93632da4ada06fa105138cf563a495caf1418",
+    "docs/design/range-availability-20261018.md": "4972547f309fbf6d4200bf551e94de192844bf6d0567721e89670b584a5de8c5"
+  },
+  "goal_status": "active",
+  "wip_protection": "wip-protection.json"
+}

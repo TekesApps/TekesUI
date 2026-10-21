@@ -1,0 +1,27 @@
+{
+  "result": "passed_scoped",
+  "source_identity": "203d38ff425a272bb917a54ec89563f0a9c0999b1f09bfea2ebb96359796305b",
+  "scope": "Field required metadata fix and stock TextFieldContent integration only",
+  "G1_G2": "existing neutral surfaces, role-based label/help/error inks retained across4 themes; no palette/token addition",
+  "G3": "same-role required marker reserved before shaping; marker/label first-baseline GPU assertion;96 final CoreText/Metal images and external360pt actual layout sampled",
+  "G4": "no new transition or timing behavior; no Reduced Motion or physical animation result inferred",
+  "G5": "native AX edits and BackSpace keep UTF16 caret/value; disabled pointer preserves original input; ordinary editor adapter unchanged",
+  "G6": "12 active external native checkpoints cover focus traverse, real pointer, AX set and native key dispatch; physicalIME/VoiceOver separate and not rerun",
+  "G7": "public3 tests/48palette cases, actual consumer142 tests and independent archive replay, GPU, native and source identities separate",
+  "visual_samples": [
+    "gpu-before/field-0-140@2x-type-1.5-body.png",
+    "gpu-final/field-0-140@2x-type-1.5-body.png",
+    "gpu-final/field-3-344@1x-type-1.5-consumer.png",
+    "native/active-error-wide.png",
+    "native/active-narrow.png"
+  ],
+  "limits": [
+    "required marker first-line trailing placement; no inline rich text protocol",
+    "Field has no own disabled state; stock editor availability is unchanged",
+    "not all Gold7 requirements or original Issue1/12 closure"
+  ],
+  "evidence_sha256": {
+    "gpu-acceptance.json": "4112181e91c3e89738106ab999e06b9ebe5439c85207b613c3e2b1e528055315",
+    "native/acceptance.json": "20958d11ac28fc60aaa61f5210153be68e4a2c93ce55b83b326c224ce33549c2"
+  }
+}

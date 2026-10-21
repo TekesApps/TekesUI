@@ -1,0 +1,8 @@
+--- design/reviews/content-item-portable-candidate-20261021-attempt2/portable-source/crates/tekes-ui-text/src/coretext/mod.rs
++++ crates/tekes-ui-text/src/coretext/mod.rs
+@@ -7,4 +7,4 @@
+ pub use fonts::CoreTextFonts;
+ pub use oracle::{OracleOptions, Placement, framesetter_line_ranges, render_oracle};
+ pub use rasterizer::{CoreTextRasterizer, PADDING};
+-pub use shaper::{CoreTextShaper, PreparedText};
++pub use shaper::{CoreTextShaper, DisplayParagraph, PreparedText};

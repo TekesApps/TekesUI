@@ -1,0 +1,286 @@
+[
+  {
+    "name": "unittest",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts/tests"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "test-analyze-metal-trace",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/test-analyze-metal-trace.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "test-analyze-present-waits",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/test-analyze-present-waits.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "test-check-gold7",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/test-check-gold7.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "test-component-capabilities",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/test-component-capabilities.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "test-component-review",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/test-component-review.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "test-composition-audit",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/test-composition-audit.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "test-consumer-brand",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/test-consumer-brand.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "test-merge-design-system",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/test-merge-design-system.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "test-scroll-performance-summary",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/test-scroll-performance-summary.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "test-symbol-final-gates",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/test-symbol-final-gates.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "test-symbol-performance-scripts",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/test-symbol-performance-scripts.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "test-trace-gallery-presentation",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/test-trace-gallery-presentation.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "generate-gallery-brands",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/generate-gallery-brands.py",
+      "--check"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "generate-component-capabilities",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/generate-component-capabilities.py",
+      "--check"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "check-reference-alignment-selftest",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/check-reference-alignment.py",
+      "--self-test"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "check-reference-alignment",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/check-reference-alignment.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "check-gold7",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/check-gold7.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "check-pure-rust-selftest",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "-I",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/check-pure-rust.py",
+      "--self-test"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "check-pure-rust",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "-I",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/check-pure-rust.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "check-design-baseline-selftest",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "-I",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/check-design-baseline.py",
+      "--self-test"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "merge-design-system",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/merge-design-system.py",
+      "--check"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "check-design-system",
+    "command": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-tools/gallery-gates-20261019/bin/python",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/scripts/check-design-system.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "export-generate",
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--offline",
+      "-p",
+      "tekes-ui-design-export",
+      "--",
+      "--generate",
+      "design/tokens.json",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/gallery-lifecycle-gates-20261019/tokens.rs"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "export-check",
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--offline",
+      "-p",
+      "tekes-ui-design-export",
+      "--",
+      "--check",
+      "design/tokens.json",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/gallery-lifecycle-gates-20261019/tokens.rs"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "fmt",
+    "command": [
+      "cargo",
+      "fmt",
+      "--check"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "clippy",
+    "command": [
+      "cargo",
+      "clippy",
+      "--workspace",
+      "--all-targets",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "workspace-tests",
+    "command": [
+      "cargo",
+      "test",
+      "--workspace",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--message-format=json"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "independent",
+    "command": [
+      "cargo",
+      "test",
+      "--manifest-path",
+      "examples/composition-consumer/Cargo.toml",
+      "--locked",
+      "--offline",
+      "-j",
+      "2",
+      "--message-format=json"
+    ],
+    "exit_code": 0
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "capability_inventory": "actual-root --check passed",
+  "targeted_context": "tui.text-field read-only context emitted10651bytes with no stderr",
+  "governance": "42 tests passed",
+  "token_inputs": "all9current receipts match on-disk input hashes; refresh script executes actual probes and checks source before/after",
+  "composition_audit": "failed stale11files; not promoted",
+  "new_component_acceptance": "not inferred"
+}

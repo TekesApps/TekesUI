@@ -51,7 +51,19 @@ pub fn draw_with_navigation(
     hover: Option<usize>,
     navigation: &super::navigation::Navigation,
 ) {
-    draw_navigation(scene, theme, text, page, hover, navigation, true);
+    draw_with_navigation_focus(scene, theme, text, page, hover, None, navigation);
+}
+
+pub(super) fn draw_with_navigation_focus(
+    scene: &mut Scene,
+    theme: Theme,
+    text: &mut TextEngine,
+    page: Page,
+    hover: Option<usize>,
+    focus: Option<Page>,
+    navigation: &super::navigation::Navigation,
+) {
+    draw_navigation(scene, theme, text, page, (hover, focus), navigation, true);
 }
 
 fn draw_navigation(
@@ -59,7 +71,7 @@ fn draw_navigation(
     theme: Theme,
     text: &mut TextEngine,
     page: Page,
-    hover: Option<usize>,
+    interaction: (Option<usize>, Option<Page>),
     navigation: &super::navigation::Navigation,
     cull: bool,
 ) {
@@ -99,7 +111,7 @@ fn draw_navigation(
             {
                 continue;
             }
-            if let Some(fill) = row_fill(theme, *p == page, hover == Some(p.index())) {
+            if let Some(fill) = row_fill(theme, *p == page, interaction.0 == Some(p.index())) {
                 scene.push_quad(Quad::new(row, fill).with_corner_radius(CornerRadius::Row.value()));
             }
             let label = tekes_ui_scene::Rect::new(
@@ -109,6 +121,9 @@ fn draw_navigation(
                 row.size.height,
             );
             text.label_in(scene, theme, label, p.name(), CATALOG_STYLE);
+            if interaction.1 == Some(*p) {
+                tekes_ui_controls::paint::focus_ring(scene, row, theme, CornerRadius::Row.value());
+            }
             if matches!(p,Page::Workbench(i) if super::workbench::entry(*i).planned()) {
                 text.label_in(
                     scene,
@@ -170,7 +185,7 @@ mod tests {
                         theme,
                         &mut text,
                         page,
-                        Some(page.index()),
+                        (Some(page.index()), None),
                         &navigation,
                         false,
                     );
@@ -190,7 +205,7 @@ mod tests {
                         theme,
                         &mut text,
                         page,
-                        Some(page.index()),
+                        (Some(page.index()), None),
                         &navigation,
                         true,
                     );

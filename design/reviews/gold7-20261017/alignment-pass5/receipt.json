@@ -1,0 +1,167 @@
+{
+  "format": "tekesui-gold7-alignment-pass/1",
+  "date": "2026-10-17",
+  "base_commit": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "source_recovery": "Overlay source-snapshot.tar.gz on base_commit. Includes preserved previous WIP; only modified/untracked source files are archived.",
+  "committed": false,
+  "pushed": false,
+  "tag_created": false,
+  "requirements_all_complete": false,
+  "verified_code_repairs": [
+    "measured-applicable-state-matrices",
+    "responsive-feedback-and-reachable-document",
+    "inset-aware-document-wrapping"
+  ],
+  "checks": [
+    {
+      "check": "tests",
+      "command": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--release",
+        "--locked",
+        "--offline",
+        "--",
+        "--skip",
+        "gpu_time_agrees_with_wall_clock_on_a_heavy_frame",
+        "--skip",
+        "cpu_segments_are_consistent_and_frames_are_numbered"
+      ],
+      "exit": 0,
+      "seconds": 17.5
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--release",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 2.62
+    },
+    {
+      "check": "build",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "tekes-ui-gallery",
+        "--release",
+        "--locked",
+        "--offline"
+      ],
+      "exit": 0,
+      "seconds": 7.34
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.6
+    },
+    {
+      "check": "pure-rust",
+      "command": [
+        "python3",
+        "scripts/check-pure-rust.py"
+      ],
+      "exit": 0,
+      "seconds": 0.42
+    },
+    {
+      "check": "design-system",
+      "command": [
+        "target/design-check-venv/bin/python",
+        "scripts/check-design-system.py"
+      ],
+      "exit": 0,
+      "seconds": 0.31
+    },
+    {
+      "check": "gold7",
+      "command": [
+        "python3",
+        "scripts/check-gold7.py",
+        "--json"
+      ],
+      "exit": 0,
+      "seconds": 0.11
+    },
+    {
+      "check": "gold7-checker",
+      "command": [
+        "python3",
+        "scripts/test-check-gold7.py"
+      ],
+      "exit": 0,
+      "seconds": 0.77
+    },
+    {
+      "check": "diff",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.03
+    }
+  ],
+  "rust_tests": {
+    "passed": 827,
+    "failed": 0,
+    "ignored": 1,
+    "explicitly_filtered": [
+      "gpu_time_agrees_with_wall_clock_on_a_heavy_frame",
+      "cpu_segments_are_consistent_and_frames_are_numbered"
+    ]
+  },
+  "coverage": {
+    "geometry_cases": 1712,
+    "implemented_canonical_slugs": 68,
+    "component_review_records": 45,
+    "page_gpu_images": 521,
+    "native_observations": {
+      "build": "Final packaged Gallery executable matched final Cargo binary outside code signing metadata",
+      "window": "720 logical pt wide; native minimum outer height 512pt; screenshots 1440x1024 at backing scale2",
+      "text_scale": 1.5,
+      "samples": [
+        "Checkbox real state matrix: complete left focus rings and wrapped captions observed after fix",
+        "Checkbox Playground: pointer toggled checked; Space toggled again; full label remained visible and aligned",
+        "Banner: actual page scrolling revealed full message and dismiss action; pointer dismissed and event log displayed banner: dismissed"
+      ],
+      "voiceover_tested": false,
+      "physical_ime_tested": false,
+      "native_all_components_accepted": false,
+      "performance_measured": false
+    },
+    "geometry_scope": [
+      "scene_nonempty",
+      "distinct_action_hit_regions_disjoint"
+    ],
+    "actual_events": "Tests include measured matrix geometry, Checkbox text/control alignment, real scrolling to Banner/Toast dismiss, pointer down/up, hidden model and dismissed event."
+  },
+  "limitations": [
+    "General offscreen Tab order still uses visible hit targets; no logical focus registry for all ordinary actions",
+    "Native component Accessibility bridge missing; VoiceOver/physical IME untested",
+    "Visual state matrices are simulated comparisons using real views, not real focus acceptance",
+    "Only selected GPU and native images manually inspected; not full all-component experience acceptance",
+    "No CPU/drop-frame/120Hz performance measurement"
+  ],
+  "artifact_manifest": "artifact-manifest.json"
+}

@@ -1,0 +1,204 @@
+{
+  "cases": {
+    "final-before60": {
+      "pid": 20821,
+      "cpu_percent_one_core": 20.061697583086456,
+      "cpu_seconds": 60.00507866700001,
+      "gpu_frame_ms": 6.308691720664548,
+      "gpu_active_frame_ms": 5.923385584531476,
+      "actual_fps": 60.00917308518717,
+      "window_gpu_busy_percent": 35.76872114569522,
+      "counter_coverage_seconds": 59.984986041,
+      "process_footprint_mib_range": [
+        592.1887130737305,
+        599.2512130737305
+      ]
+    },
+    "final-before120": {
+      "pid": 20821,
+      "cpu_percent_one_core": 13.71852744588358,
+      "cpu_seconds": 60.002538167,
+      "gpu_frame_ms": 7.836831313919939,
+      "gpu_active_frame_ms": 7.662162505445835,
+      "actual_fps": 119.6121973509134,
+      "window_gpu_busy_percent": 89.78303927295248,
+      "counter_coverage_seconds": 60.044045959,
+      "process_footprint_mib_range": [
+        635.8293380737305,
+        645.6887130737305
+      ]
+    },
+    "final-after60": {
+      "pid": 22955,
+      "cpu_percent_one_core": 21.955103089719042,
+      "cpu_seconds": 60.005046,
+      "gpu_frame_ms": 6.165765487551665,
+      "gpu_active_frame_ms": 5.449674850131389,
+      "actual_fps": 60.00029409183072,
+      "window_gpu_busy_percent": 33.02119093992171,
+      "counter_coverage_seconds": 59.999708667,
+      "process_footprint_mib_range": [
+        587.8292922973633,
+        592.3136672973633
+      ]
+    },
+    "final-after120": {
+      "pid": 22955,
+      "cpu_percent_one_core": 12.851703217126827,
+      "cpu_seconds": 60.004957084,
+      "gpu_frame_ms": 7.688127531928341,
+      "gpu_active_frame_ms": 7.472108677537569,
+      "actual_fps": 119.59566334443036,
+      "window_gpu_busy_percent": 88.00589424296118,
+      "counter_coverage_seconds": 59.563472291,
+      "process_footprint_mib_range": [
+        634.7042922973633,
+        640.3449172973633
+      ]
+    }
+  },
+  "hashes": {
+    "crates/tekes-ui-3d/assets/city-block.glb": "2e1b747af97be4aed9e07b840e33e2699f2f9bb389e3a17c394f0817de5d860f",
+    "crates/tekes-ui-3d/assets/city-block.json": "37102a014719551cc013691c0b32d58bd4c4336b1bea0bd0a1d4451fabcd596a",
+    "crates/tekes-ui-scene3d/src/local_lighting.wgsl": "8a090e0d3292b7af69f10c8dbe2d43f1d93d503492e857dd440b42894d578545",
+    "crates/tekes-ui-scene3d/src/local_lighting_reference.wgsl": "9612546e17dff4b1df44b58debef229fa356953a57ceb04da72aa71f08ee4106",
+    "Cargo.lock": "8cb5d79c717d0d9d7e5f3654b2c0e1fe2a5be96450728cb1f1d2270838988974",
+    "final-optimized-executable": "d58fc2cfb631b86075635e6f341fb56b59a769094f0e542291521f10987edb51",
+    "final-baseline-executable": "fc534dc22b622e7bfe9f3e634a8035f54a23d853b858faac707bd2e23f48dd1c"
+  },
+  "asset_bytes": 15754716,
+  "cleanup": {
+    "utc": "2026-10-21T07:55:41Z",
+    "removed": [
+      {
+        "path": "/tmp/tekesui-night-transit-20261021/baseline60.trace",
+        "allocated_bytes": 16674816,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-night-transit-20261021/before60.trace",
+        "allocated_bytes": 16564224,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-night-transit-20261021/final-after120.trace",
+        "allocated_bytes": 16576512,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-night-transit-20261021/final-after60.trace",
+        "allocated_bytes": 16633856,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-night-transit-20261021/final-before120.trace",
+        "allocated_bytes": 16617472,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/tmp/tekesui-night-transit-20261021/final-before60.trace",
+        "allocated_bytes": 16658432,
+        "kind": "raw-trace"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2i46qvhuy4re5",
+        "allocated_bytes": 4673536,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2klymntfqqdml",
+        "allocated_bytes": 41336832,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2k14qebyua071",
+        "allocated_bytes": 39665664,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2keiejafjav4n",
+        "allocated_bytes": 7102464,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-2vxu49by4mjl1",
+        "allocated_bytes": 9691136,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_3d-1xdyxzz9kxuiy",
+        "allocated_bytes": 3485696,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-3lqa40ialirky",
+        "allocated_bytes": 80924672,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-0c3w39up2cejq",
+        "allocated_bytes": 22032384,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-14imt4wrrhrqv",
+        "allocated_bytes": 66805760,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_scene3d-100maud6vrl3i",
+        "allocated_bytes": 23687168,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_city-3ue8r35lfyxq1",
+        "allocated_bytes": 6496256,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_city-03k9webunkcrm",
+        "allocated_bytes": 5988352,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_city-1m5o4r4wrojjn",
+        "allocated_bytes": 5627904,
+        "kind": "validated-crate-incremental"
+      },
+      {
+        "path": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/debug/incremental/tekes_ui_city-2yw2dokylamt4",
+        "allocated_bytes": 13979648,
+        "kind": "validated-crate-incremental"
+      }
+    ],
+    "kept": [],
+    "removed_allocated_bytes": 431222784,
+    "free_before_bytes": 119220432896,
+    "free_after_bytes": 119563558912,
+    "scope": "Only own exported raw traces and the three validated 3D/city crates incremental caches, under an exclusive Cargo lock. Other processes may change system free space."
+  },
+  "tests": {
+    "targeted_passed": 51,
+    "packages": [
+      "tekes-ui-scene3d",
+      "tekes-ui-city",
+      "tekes-ui-3d"
+    ],
+    "real_gpu_ignored_tests_included": true,
+    "strict_clippy": "passed"
+  },
+  "baseline_scope": "Same final train/station asset, instance ABI, inverse-preparation compute and schedules. Only original fragment math replaces optimized fragment math. Not a pre-transit scene comparison.",
+  "window": "Built-in display, filled window 3024x1730, Scene3D physical target 2960x1362, 4x MSAA, R home camera, night, A continuous rotation, B benchmark, 60 seconds per case.",
+  "limitations": [
+    "One sequential paired observation per rate, no exclusive OS/GPU isolation or statistical significance claim.",
+    "60 FPS CPU rose; no CPU saving claim.",
+    "Counter average GPU duration is not frame-time percentile or reciprocal FPS; busy percent is window-layer busy time, not whole-device GPU utilization.",
+    "Process physical footprint is unified memory, not dedicated VRAM.",
+    "After final 120 measurement PID 22955 ended; post-run screenshot final-after120-after.jpg belongs to the relaunched default-size preview and is excluded as sampling evidence. Before screenshot and completed 60s CPU/Metal tables support that case.",
+    "Old baseline60/before60 attempts used obsolete scene versions and e235-before60 failed to attach; excluded from final comparison."
+  ],
+  "references": [
+    "https://www.jreast.co.jp/train/local/e235.html",
+    "https://www.jreast.co.jp/press/2014/20140701.pdf"
+  ]
+}

@@ -30,6 +30,7 @@ pub(super) struct BrandPreview {
     input: TextDemo,
     buttons: HashMap<usize, Button>,
     hits: Vec<(usize, Rect)>,
+    focus_frames: Vec<(usize, Rect)>,
     focus: Option<usize>,
     focus_visible: bool,
     dialog: DialogView,
@@ -46,6 +47,7 @@ impl Default for BrandPreview {
             input: TextDemo::field("Type to preview candidate text", false, false),
             buttons: HashMap::new(),
             hits: Vec::new(),
+            focus_frames: Vec::new(),
             focus: None,
             focus_visible: false,
             dialog: DialogView::default(),
@@ -146,6 +148,7 @@ impl BrandPreview {
         density: usize,
     ) {
         self.hits.clear();
+        self.focus_frames.clear();
         self.dialog_layout = None;
         let x = frame.min_x();
         let y = frame.min_y();
@@ -451,8 +454,13 @@ impl BrandPreview {
         let input_rect = Rect::new(content_x, demo_y, content_w.min(300.), input_h);
         self.input
             .build_search_clipped(ctx, input_rect, clip, scene);
-        if let Some(visible) = self.input.visible_frame() {
-            self.hits.push((INPUT, visible));
+        if let Some(frame) = self.input.frame_at(0) {
+            if frame.size.width > 0. && frame.size.height > 0. {
+                self.focus_frames.push((INPUT, frame));
+            }
+            if let Some(visible) = self.input.visible_frame() {
+                self.hits.push((INPUT, visible));
+            }
         }
         demo_y = input_rect.max_y() + 12.;
         let overlay_h = measured_button_height(
@@ -728,6 +736,9 @@ impl BrandPreview {
             proposal::TextRole::UiBody,
             ButtonTextAlign::default(),
         );
+        if layout.frame.size.width > 0. && layout.frame.size.height > 0. {
+            self.focus_frames.push((id, layout.frame));
+        }
         if let Some(visible) = layout.visible {
             self.hits.push((id, visible));
         }
@@ -881,22 +892,17 @@ impl BrandPreview {
                     map_key(key.key_code, key.modifiers.shift)
                 {
                     if key.kind == KeyEventKind::Down {
-                        let mut seen = HashSet::new();
-                        let mut ids: Vec<_> = self
-                            .hits
-                            .iter()
-                            .map(|(id, _)| *id)
-                            .filter(|id| seen.insert(*id))
-                            .collect();
-                        if self.candidate.is_none() {
-                            ids.retain(|id| ![CONFIRM, CANCEL].contains(id));
+                        if self.tab_would_leave(reverse) {
+                            return None;
                         }
+                        let ids = self.focus_targets();
+                        let ids: Vec<_> = ids.iter().map(|(id, _)| *id).collect();
                         let current = self.focus.and_then(|id| ids.iter().position(|n| *n == id));
                         let next = match (current, reverse) {
                             (None, false) => 0,
                             (None, true) => ids.len().saturating_sub(1),
-                            (Some(i), false) => (i + 1) % ids.len(),
-                            (Some(i), true) => (i + ids.len() - 1) % ids.len(),
+                            (Some(i), false) => i + 1,
+                            (Some(i), true) => i.saturating_sub(1),
                         };
                         self.focus = ids.get(next).copied();
                         self.focus_visible = true;
@@ -1043,6 +1049,7 @@ impl BrandPreview {
                 button.blur();
             }
             self.hits.clear();
+            self.focus_frames.clear();
             self.dialog_layout = None;
         }
     }
@@ -1068,6 +1075,7 @@ impl BrandPreview {
         }
         self.dialog_layout = None;
         self.hits.clear();
+        self.focus_frames.clear();
         for button in self.buttons.values_mut() {
             button.blur();
         }
@@ -1084,6 +1092,88 @@ impl BrandPreview {
 
     pub(super) fn use_fixture_cache(&mut self) {
         self.input.use_fixture_cache();
+    }
+
+    /// First or last full production-layout frame in the current tab order.
+    /// The parent workbench uses this when focus enters the matrix scope.
+    pub(super) fn focus_edge(&mut self, reverse: bool) -> Option<Rect> {
+        let targets = self.focus_targets();
+        let target = if reverse {
+            targets.last().map(|(_, frame)| *frame)
+        } else {
+            targets.first().map(|(_, frame)| *frame)
+        }?;
+        let target_id = if reverse {
+            targets.last().map(|(id, _)| *id)
+        } else {
+            targets.first().map(|(id, _)| *id)
+        }?;
+        self.clear_focus();
+        self.focus = Some(target_id);
+        self.focus_visible = true;
+        if target_id == INPUT {
+            self.input.focus_field();
+        } else if let Some(button) = self.buttons.get_mut(&target_id) {
+            button.state.focused = true;
+            button.state.focus_visible = true;
+        }
+        Some(target)
+    }
+
+    /// Full, unclipped frame of the currently focused production control.
+    pub(super) fn focused_frame(&self) -> Option<Rect> {
+        let focused = self.focus?;
+        self.focus_targets()
+            .into_iter()
+            .find_map(|(id, frame)| (id == focused).then_some(frame))
+    }
+
+    /// Clear keyboard focus when the workbench moves focus outside this scope.
+    pub(super) fn clear_focus(&mut self) {
+        self.input.blur();
+        self.focus = None;
+        self.focus_visible = false;
+        for button in self.buttons.values_mut() {
+            button.blur();
+        }
+    }
+
+    /// Whether the current focused item is at the edge in the requested tab
+    /// direction. With no active item the parent owns scope entry as well.
+    pub(super) fn tab_would_leave(&self, reverse: bool) -> bool {
+        if self.dialog.is_open() {
+            return false;
+        }
+        let targets = self.focus_targets();
+        let Some(focused) = self.focus else {
+            return true;
+        };
+        let Some(index) = targets.iter().position(|(id, _)| *id == focused) else {
+            return true;
+        };
+        if reverse {
+            index == 0
+        } else {
+            index + 1 >= targets.len()
+        }
+    }
+
+    fn focus_targets(&self) -> Vec<(usize, Rect)> {
+        let mut seen = HashSet::new();
+        self.focus_frames
+            .iter()
+            .copied()
+            .filter(|(id, frame)| {
+                frame.size.width > 0.
+                    && frame.size.height > 0.
+                    && seen.insert(*id)
+                    && (*id == INPUT
+                        || self
+                            .buttons
+                            .get(id)
+                            .is_some_and(|button| !button.state.disabled && !button.state.loading))
+            })
+            .collect()
     }
 
     #[cfg(test)]
@@ -1226,6 +1316,114 @@ mod tests {
         assert!(
             extent > 600.0,
             "wrapped captions and controls contribute to scroll extent"
+        );
+        preview.clear_focus();
+        let first_frame = preview.focus_edge(false).unwrap();
+        assert_eq!(
+            Some(first_frame),
+            preview.focus_frames.first().map(|(_, frame)| *frame)
+        );
+        assert_eq!(preview.focused_frame(), Some(first_frame));
+        let last_frame = preview.focus_edge(true).unwrap();
+        assert_eq!(
+            Some(last_frame),
+            preview.focus_frames.last().map(|(_, frame)| *frame)
+        );
+        assert_eq!(preview.focused_frame(), Some(last_frame));
+        let first_id = preview.focus_frames.first().unwrap().0;
+        let second_id = preview.focus_frames.get(1).unwrap().0;
+        let last_id = preview.focus_frames.last().unwrap().0;
+        preview.focus_edge(false).unwrap();
+        assert_eq!(preview.focus, Some(first_id));
+        assert_eq!(preview.focused_frame(), Some(first_frame));
+        assert!(!preview.tab_would_leave(false));
+        assert!(preview.tab_would_leave(true));
+        let tab = || {
+            tekes_ui_platform_macos::Event::Key(tekes_ui_platform_macos::KeyEvent {
+                kind: tekes_ui_platform_macos::KeyEventKind::Down,
+                key_code: 48,
+                modifiers: tekes_ui_platform_macos::Modifiers::NONE,
+                is_repeat: false,
+                characters: String::new(),
+                characters_ignoring_modifiers: String::new(),
+            })
+        };
+        let key = |code, kind| {
+            tekes_ui_platform_macos::Event::Key(tekes_ui_platform_macos::KeyEvent {
+                kind,
+                key_code: code,
+                modifiers: tekes_ui_platform_macos::Modifiers::NONE,
+                is_repeat: false,
+                characters: String::new(),
+                characters_ignoring_modifiers: String::new(),
+            })
+        };
+        assert_eq!(
+            preview.handle(&tab(), &mut super::super::super::text::TextEngine::new()),
+            Some(None)
+        );
+        assert_eq!(
+            preview.focus,
+            Some(second_id),
+            "interior Tab stays in scope"
+        );
+        preview.focus_edge(true).unwrap();
+        assert_eq!(preview.focus, Some(last_id));
+        assert_eq!(preview.focused_frame(), Some(last_frame));
+        assert!(preview.tab_would_leave(false));
+        assert!(!preview.tab_would_leave(true));
+        let before_edge = preview.focus;
+        assert!(
+            preview
+                .handle(&tab(), &mut super::super::super::text::TextEngine::new())
+                .is_none()
+        );
+        assert_eq!(
+            preview.focus, before_edge,
+            "edge Tab bubbles to the workbench"
+        );
+        preview.clear_focus();
+        assert_eq!(preview.focus, None);
+        assert_eq!(preview.focused_frame(), None);
+
+        preview.direction = Some("blue".into());
+        let first_focus = preview.focus_edge(false).unwrap();
+        assert_eq!(preview.focused_frame(), Some(first_focus));
+        assert_eq!(
+            preview.handle(
+                &key(36, tekes_ui_platform_macos::KeyEventKind::Down),
+                &mut super::super::super::text::TextEngine::new()
+            ),
+            Some(None)
+        );
+        assert_eq!(preview.direction.as_deref(), Some("red"));
+
+        preview.direction = Some("blue".into());
+        preview.focus_edge(false).unwrap();
+        let _ = preview.handle(
+            &key(49, tekes_ui_platform_macos::KeyEventKind::Down),
+            &mut super::super::super::text::TextEngine::new(),
+        );
+        let _ = preview.handle(
+            &key(49, tekes_ui_platform_macos::KeyEventKind::Up),
+            &mut super::super::super::text::TextEngine::new(),
+        );
+        assert_eq!(preview.direction.as_deref(), Some("red"));
+
+        let reverse_focus = preview.focus_edge(true).unwrap();
+        assert_eq!(preview.focused_frame(), Some(reverse_focus));
+        assert_eq!(preview.focus, Some(CANCEL));
+        let _ = preview.handle(
+            &key(49, tekes_ui_platform_macos::KeyEventKind::Down),
+            &mut super::super::super::text::TextEngine::new(),
+        );
+        let _ = preview.handle(
+            &key(49, tekes_ui_platform_macos::KeyEventKind::Up),
+            &mut super::super::super::text::TextEngine::new(),
+        );
+        assert_eq!(
+            preview.candidate, None,
+            "reverse edge Space activates Cancel"
         );
     }
 }

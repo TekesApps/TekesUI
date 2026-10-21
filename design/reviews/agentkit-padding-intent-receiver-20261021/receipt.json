@@ -1,0 +1,53 @@
+{
+  "candidate_identity": "a30b18db1a1df1f5a780c245080b22221a63cb20556f7274b76786d4d896584e",
+  "497_consumed_source_hashes_match_sender": true,
+  "receiver_recipe_sha256_verified": true,
+  "counts": {
+    "sdk-controls-text": 438,
+    "sdk-public-consumer": 250,
+    "default-host": 18,
+    "candidate-workspace": 374
+  },
+  "native": {
+    "actual_Composer_and_SideChat_padding_routes": 2,
+    "original_mount_baseline_marked_selection_preserved": true,
+    "real_native_query_bridge": true,
+    "input_method": "synthetic AppKit marked text; not physical IME",
+    "executable_sha256": "80bee0708a08f783c514a01f8b43644dbf8f6765930d3bfe752f2adc2abf95c8",
+    "executable_preserved_by_receiver": "/Users/frankqin/dev/TekesAgentKit/.runtime-fixtures/agentkit-padding-intent-receiver-a30b18/native-demo"
+  },
+  "copied_evidence": {
+    "receiver-report": {
+      "original": "/Users/frankqin/dev/TekesAgentKit/docs/rust-agent-ui-padding-ime-20261021.json",
+      "snapshot": "receiver-report.json",
+      "sha256": "d5a838d863191ebb8dcaf7ff53eb708e775d30b501889fa5ca118a3189cb1090"
+    },
+    "receiver-guide": {
+      "original": "/Users/frankqin/dev/TekesAgentKit/docs/rust-agent-ui-padding-ime-20261021.md",
+      "snapshot": "receiver-guide.md",
+      "sha256": "aea9ecfb7077195ae8f625a515f8d735c459462961cfe8f2c00a4dcf0495235e"
+    },
+    "receiver-recipe": {
+      "original": "/Users/frankqin/dev/TekesAgentKit/.runtime-fixtures/agentkit-padding-intent-receiver-a30b18/receipt.json",
+      "snapshot": "receiver-recipe.json",
+      "sha256": "4c2bf65fe41a7b8b02dfb533597514c0ae8b1bc811169ccf8a23ffb4926e2248"
+    },
+    "native-log": {
+      "original": "/tmp/agentkit-padding-intent-receiver-a30b18-native.log",
+      "snapshot": "native-log.log",
+      "sha256": "d84f9e34671596e2d153ddaf3ae8ef01561d98e5c185481a606b3748f64eb9aa"
+    },
+    "native-screen": {
+      "original": "/Users/frankqin/dev/TekesAgentKit/.runtime-fixtures/agentkit-padding-intent-receiver-a30b18/native-sidechat.png",
+      "snapshot": "native-screen.png",
+      "sha256": "b064f5226cebeb7e2f531be4f987f9e6ca6f76b4d8333793c17b2c32e22100ac"
+    }
+  },
+  "acceptance": "bounded independent actual consumer integration passed; physical IME/candidate window, final ring pixels/hearing/matched page and public exact pin/CI remain; no freeze/Issue closure inferred",
+  "recipe_flags_retained": {
+    "native_acceptance": false,
+    "visual_acceptance": false,
+    "full_runview_acceptance": false
+  },
+  "Git": "no SDK commit/push/close"
+}

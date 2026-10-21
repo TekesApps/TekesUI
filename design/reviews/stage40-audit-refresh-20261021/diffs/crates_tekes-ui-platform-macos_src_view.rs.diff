@@ -1,0 +1,109 @@
+--- design/reviews/toolbar-splitter-defaults-20261021/before-native-handoff/crates/tekes-ui-platform-macos/src/view.rs
++++ crates/tekes-ui-platform-macos/src/view.rs
+@@ -12,7 +12,7 @@
+ use objc2::runtime::ProtocolObject;
+ use objc2::{AllocAnyThread, DefinedClass, MainThreadOnly, Message, define_class, msg_send, sel};
+ use objc2_app_kit::{
+-    NSEvent, NSTextInputClient, NSTrackingArea, NSTrackingAreaOptions, NSView,
++    NSEvent, NSEventType, NSTextInputClient, NSTrackingArea, NSTrackingAreaOptions, NSView,
+     NSViewLayerContentsPlacement, NSViewLayerContentsRedrawPolicy,
+ };
+ use objc2_core_graphics::{CGColorSpace, kCGColorSpaceSRGB};
+@@ -37,6 +37,7 @@
+     text_keys: RefCell<crate::text_key::TextKeyTracker>,
+     layer: RefCell<Option<Retained<CAMetalLayer>>>,
+     tracking_area: RefCell<Option<Retained<NSTrackingArea>>>,
++    cursor_regions: RefCell<Vec<crate::CursorRegion>>,
+     /// 按需创建的显示链接。创建后一直存在，不跑的时候是暂停状态（`isPaused`），
+     /// 窗口关闭或应用结束时 invalidate（它强引用 target，也就是这个视图）。
+     link: RefCell<Option<Retained<CADisplayLink>>>,
+@@ -379,6 +380,21 @@
+             };
+             self.addTrackingArea(&area);
+             *ivars.tracking_area.borrow_mut() = Some(area);
++        }
++
++        #[unsafe(method(resetCursorRects))]
++        fn reset_cursor_rects(&self) {
++            let regions = self.ivars().cursor_regions.borrow().clone();
++            for region in regions {
++                let cursor = match region.icon {
++                    crate::CursorIcon::ResizeHorizontal => resize_cursor(true),
++                    crate::CursorIcon::ResizeVertical => resize_cursor(false),
++                };
++                self.addCursorRect_cursor(NSRect::new(
++                    objc2_foundation::NSPoint::new(region.origin.x, region.origin.y),
++                    NSSize::new(region.size.width, region.size.height),
++                ), &cursor);
++            }
+         }
+ 
+         // ---- 鼠标 ----
+@@ -547,6 +563,16 @@
+ }
+ 
+ impl TekesView {
++    pub(crate) fn set_cursor_regions(&self, regions: Vec<crate::CursorRegion>) {
++        if *self.ivars().cursor_regions.borrow() == regions {
++            return;
++        }
++        *self.ivars().cursor_regions.borrow_mut() = regions;
++        if let Some(window) = self.window() {
++            window.invalidateCursorRectsForView(self);
++        }
++    }
++
+     pub(crate) fn accessibility_children_snapshot(&self) -> Retained<objc2_foundation::NSArray> {
+         crate::accessibility::native::elements_for_parent(&self.ivars().shared, None)
+     }
+@@ -649,6 +675,7 @@
+             text_keys: RefCell::new(Default::default()),
+             layer: RefCell::new(None),
+             tracking_area: RefCell::new(None),
++            cursor_regions: RefCell::new(Vec::new()),
+             link: RefCell::new(None),
+             metal_link: RefCell::new(None),
+             metal_start_pending: Cell::new(false),
+@@ -874,6 +901,17 @@
+     }
+ 
+     fn mouse(&self, e: &NSEvent, kind: MouseEventKind) {
++        // Track the original native type, independently of a synthesized
++        // object's buttonNumber (AppKit's object factory may leave it at zero).
++        match e.r#type() {
++            NSEventType::LeftMouseDown => {
++                *self.ivars().shared.titlebar_drag_origin.borrow_mut() = Some(e.retain());
++            }
++            NSEventType::LeftMouseUp => {
++                self.ivars().shared.titlebar_drag_origin.borrow_mut().take();
++            }
++            _ => {}
++        }
+         let ev = MouseEvent {
+             kind,
+             position: self.view_point(e),
+@@ -973,3 +1011,24 @@
+         }
+     }
+ }
++
++/// Prefer current divider cursors while retaining compatibility with older macOS.
++#[allow(deprecated)]
++fn resize_cursor(horizontal: bool) -> Retained<objc2_app_kit::NSCursor> {
++    use objc2::ClassType;
++    use objc2_app_kit::NSCursor;
++    let selector = if horizontal {
++        sel!(columnResizeCursor)
++    } else {
++        sel!(rowResizeCursor)
++    };
++    // SAFETY: query the class before calling selectors introduced by newer AppKit.
++    let supported: objc2::runtime::Bool =
++        unsafe { msg_send![NSCursor::class(), respondsToSelector: selector] };
++    match (horizontal, supported.as_bool()) {
++        (true, true) => NSCursor::columnResizeCursor(),
++        (false, true) => NSCursor::rowResizeCursor(),
++        (true, false) => NSCursor::resizeLeftRightCursor(),
++        (false, false) => NSCursor::resizeUpDownCursor(),
++    }
++}

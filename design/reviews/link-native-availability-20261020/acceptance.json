@@ -1,0 +1,8 @@
+{
+  "status": "GPU and two repeated physical native chains passed; runtime cleaned",
+  "parent": "design/reviews/link-model-availability-20261020/acceptance.json",
+  "source": "source-manifest.json",
+  "AX": "Link role missing; no role/action acceptance claimed",
+  "VoiceOver": "not enabled; keep off",
+  "native": "native/acceptance.json"
+}

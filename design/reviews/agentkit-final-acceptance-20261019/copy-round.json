@@ -1,0 +1,21 @@
+{
+  "round": "agentkit-final-20261019-142531",
+  "status": "closed-and-runtime-cleaned",
+  "mode": "copy",
+  "app": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/component-review/agentkit-final-20261019-142531/AgentKit UI Review.app",
+  "runtime": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/component-review/agentkit-final-20261019-142531",
+  "evidence": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/component-runs/agentkit-final-20261019-142531",
+  "binary_sha256": "82a1f6ec388ea25aa51eb5d9d9fb53471c1d16426f7893d1b022a0499f483414",
+  "instrumented": true,
+  "audit_patch": "design/reviews/agentkit-final-acceptance-20261019/audit-only.patch",
+  "public_snapshot": "03721866a362b1d31261ebbbc86140eb07e9e23320871c325234a5212591213d",
+  "performance": "not run",
+  "close_path": "window CloseRequested; original+clone Closed",
+  "window_close_proxy_assertion_this_round": true,
+  "cleaned_files": {
+    ".owned.json": "4df3f2003a9cbd2228ff66608ce9cfdf4c21221620e3e23aa77bf8bff0be13b8",
+    "AgentKit UI Review.app/Contents/Info.plist": "2f500bd7ca5164dfec8f9f12c216d80571eecce0b5868b47ca02b9a99986e7ce",
+    "AgentKit UI Review.app/Contents/MacOS/AgentKitReview": "dbe3a99ef0fb0561e9f8b1b51d9fbfbe77ef04e201b2e01e1980a16052ee1678",
+    "AgentKit UI Review.app/Contents/MacOS/AgentKitCore": "82a1f6ec388ea25aa51eb5d9d9fb53471c1d16426f7893d1b022a0499f483414"
+  }
+}

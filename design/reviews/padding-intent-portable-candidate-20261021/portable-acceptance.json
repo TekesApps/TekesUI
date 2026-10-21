@@ -1,0 +1,20 @@
+{
+  "identity": "a30b18db1a1df1f5a780c245080b22221a63cb20556f7274b76786d4d896584e",
+  "archive": "padding-intent-a30b18db1a1d.tar.gz",
+  "archive_sha256": "54b217691907389a0f9bc51bc8cafae4d54151dd2c491f32df7af5eaf25ded9e",
+  "base_identity": "95b140c278a2257c11fb956eaf860313c38bc4829bae70e022cc3d8f33bb38ac",
+  "files": 497,
+  "delta_paths": 5,
+  "status": "sender exact archive clean-extract passed; receiver/public pin/isolated native pending",
+  "all_source_and_locks_unchanged": true,
+  "local_dependencies_inside_extract": true,
+  "checks": "portable-checks.json",
+  "native_boundary": "native example builds on isolated source; root WIP GPU/native receipts remain separate identities; receiver real Composer/physical IME acceptance is separate",
+  "cleanup": [
+    "     Removed 38 files, 108.3MiB total\n",
+    "     Removed 520 files, 101.8MiB total\n",
+    "     Removed 851 files, 210.7MiB total\n"
+  ],
+  "root_cache_lane_restored": true,
+  "cleanup_disk_bytes_released": 475172864
+}

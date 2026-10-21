@@ -1,0 +1,59 @@
+--- design/reviews/toolbar-splitter-defaults-20261021/before-native-handoff/crates/tekes-ui-gallery/src/gallery/workbench/extended.rs
++++ crates/tekes-ui-gallery/src/gallery/workbench/extended.rs
+@@ -604,6 +604,7 @@
+     }
+ 
+     pub(super) fn set_window_active(&mut self, active: bool) {
++        self.split_view.set_window_active(active, &mut self.split);
+         self.slider_view.set_window_active(active);
+         self.radio_view.set_window_active(active);
+         self.switch_view.set_window_active(active);
+@@ -2268,12 +2269,13 @@
+                         (body.size.height - help_height - 16.).max(0.),
+                     );
+                     self.split_bounds = bounds;
+-                    let split_layout = self.split_view.render(
++                    let split_layout = self.split_view.render_at_scale(
+                         scene,
+                         &mut self.split,
+                         bounds,
+                         Some(control_clip),
+                         palette,
++                        ctx.text.backing_scale(),
+                     );
+                     let visible_frame = split_layout.frame.visible_frame();
+                     if self.pointer_dragging == Some(90)
+@@ -3557,6 +3559,33 @@
+     }
+ 
+     #[test]
++    fn gallery_split_cursor_regions_follow_page_and_window_lifecycle() {
++        let mut gallery = crate::gallery::Gallery::new();
++        let story = index("split-view");
++        gallery.apply(crate::gallery::Command::Page(
++            crate::gallery::Page::Workbench(story),
++        ));
++        gallery.set_view_size(1440., 1000.);
++        gallery.build_scene(&mut Scene::new());
++        let regions = gallery.cursor_regions();
++        assert_eq!(regions.len(), 1);
++        assert_eq!(
++            regions[0].icon,
++            tekes_ui_platform_macos::CursorIcon::ResizeHorizontal
++        );
++        assert!(regions[0].size.width > 0. && regions[0].size.height > 0.);
++        gallery.handle_input(&Event::Focus(false));
++        assert!(gallery.cursor_regions().is_empty());
++        gallery.handle_input(&Event::Focus(true));
++        gallery.build_scene(&mut Scene::new());
++        assert_eq!(gallery.cursor_regions().len(), 1);
++        gallery.apply(crate::gallery::Command::Page(
++            crate::gallery::Page::Workbench(index("button")),
++        ));
++        assert!(gallery.cursor_regions().is_empty());
++    }
++
++    #[test]
+     fn gallery_split_capture_routes_across_catalog_boundary() {
+         let mut gallery = crate::gallery::Gallery::new();
+         let story = index("split-view");

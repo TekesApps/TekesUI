@@ -1,0 +1,67 @@
+{
+  "status": "scoped contract/governance repair verified",
+  "root_cause": "Field metadata rest/error assertions were not represented by exact observed states; disabled was incorrectly assigned to metadata instead of its real input child",
+  "shared_fix": "reuse existing content_state/state_asserted receipt contract; no new token, state machine, shared abstraction or production rendering change",
+  "permanent_assertions": "Field contract test now records actual draw ink and asserts primary label/marker, secondary help, failed error and error-over-help precedence",
+  "applies_to": [
+    "all existing FieldView metadata callers",
+    "stock TextFieldContent composed normal/error/disabled form"
+  ],
+  "reasonable_exceptions": {
+    "metadata_disabled": "Field model has no availability flag; existing TextSurface owns disabled interaction and caret/focus. Delegation remains required and is exercised by actual composition consumer. No disabled acceptance requirement is dropped.",
+    "unadorned_text": "read_only_content intentionally omits Field metadata"
+  },
+  "public_API": {
+    "tests": 3,
+    "palette_cases": 48,
+    "rest": 24,
+    "error": 24,
+    "strict_clippy": "passed with token-audit"
+  },
+  "real_consumer": {
+    "command": [
+      "cargo",
+      "test",
+      "--manifest-path",
+      "examples/composition-consumer/Cargo.toml",
+      "--locked",
+      "--offline",
+      "--test",
+      "scenarios",
+      "--message-format=json",
+      "required_metadata_reaches_real_form_slots_and_preserves_editor_state",
+      "--",
+      "--exact"
+    ],
+    "exit_code": 0,
+    "tests": 1,
+    "theme_width_combinations": 8,
+    "fields_per_combination": 3,
+    "normal_error_disabled": "real Component input slots/focus/semantics checked; Field metadata has no independent disabled state",
+    "runtime_source_changes": [],
+    "native_Gold7": "not inferred from this API consumer test"
+  },
+  "governance_tests": 42,
+  "current_context": "Field exact rest/error API verification now accurate; metadata-disabled delegation explicit",
+  "native_and_Gold7": "original Field203 receipts retained with original identity; eight relevant runtime files byte-identical; no new native/GPU/experience acceptance claimed",
+  "source_hashes": {
+    "crates/tekes-ui-controls/tests/field_contract.rs": "e084ab6cc7ba50e52efb1e1fd2c54b8905a1b5fee2b4f00a4dee2d490fea64a2",
+    "design/gallery/component-coverage.json": "21b49b18c830cb1d2b84bd249558441d86b28a2b817cdbb7cf27b3685e8faedf",
+    "design/gallery/capabilities.json": "d9dc5b307d3efd19a4091db3c886d2a4f1341e0b88b0fb4c06686268239741d1",
+    "design/reviews/field-state-contract-20261020/token-probes/field.json": "e92bde81e3eed08744ae6fc8aeadb585ca2281a806d98b1ad47d653c1d362e52"
+  },
+  "protected_runtime_files": 41,
+  "runtime_changes": [],
+  "cleanup": {
+    "removed": [
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/deps/scenarios-a05596d8f3ac9376",
+      "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/deps/field_contract-7e619a9729b60c65"
+    ],
+    "shared_libraries_dependencies": "retained",
+    "source_evidence": "retained"
+  },
+  "performance": "not measured",
+  "publication": "no commit/push/tag/merge/Issue writes",
+  "broader_issues": "remain open; no all-component or full-page maturity promotion",
+  "root_head": "b3013c720d98f89159bc20f7bc64e9ba1f71b314"
+}

@@ -1,0 +1,37 @@
+[
+  {
+    "name": "action",
+    "exit_code": 0,
+    "output": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/action.json"
+  },
+  {
+    "name": "combo-async",
+    "exit_code": 0,
+    "output": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/combo-async.json"
+  },
+  {
+    "name": "command-async",
+    "exit_code": 0,
+    "output": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/command-async.json"
+  },
+  {
+    "name": "content-status",
+    "exit_code": 0,
+    "output": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/content-status.json"
+  },
+  {
+    "name": "input",
+    "exit_code": 0,
+    "output": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/input.json"
+  },
+  {
+    "name": "selection",
+    "exit_code": 0,
+    "output": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/selection.json"
+  },
+  {
+    "name": "slider-composition",
+    "exit_code": 0,
+    "output": "design/reviews/gallery-lifecycle-gates-20261019/current-tokens/slider-composition.json"
+  }
+]

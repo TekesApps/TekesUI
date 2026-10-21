@@ -1,0 +1,63 @@
+{
+  "issue": 36,
+  "status": "部分完成",
+  "scope": "first event-contract stage, not a fixed distributable SDK candidate",
+  "owner": "root sole shared SDK; Rust AgentKit actual Sidebar options receiver",
+  "root_cause": "original public action contract: opening generated a selection and mutable selected loses deferred event-time values",
+  "shared_locations": [
+    "crates/tekes-ui-controls/src/composition.rs",
+    "crates/tekes-ui-controls/src/composition/actions.rs",
+    "crates/tekes-ui-controls/src/composition/adapters.rs",
+    "crates/tekes-ui-controls/src/composite.rs"
+  ],
+  "applicable": "all original flat MenuContent consumers and original ContentHost action queue",
+  "exceptions": [
+    "legacy positional menus use model revision/index; bound values provide owned stable path",
+    "other components have no payload; wrappers delegate action_payload for payload-owning original owners",
+    "original public MenuContent literal remains supported via private original MenuView storage",
+    "no new business state, menu engine, token or UI framework"
+  ],
+  "identity": "b74d8bd29b94f321c45f6b05c30105985a2cffe3c2eea15d7d373f36f4704ba8",
+  "source": {
+    "crates/tekes-ui-controls/src/composition.rs": "a7a4b8430d814b0a9c7a207474c7af483714f571575d1c980a7571addb2395da",
+    "crates/tekes-ui-controls/src/composition/actions.rs": "f1a015320d9df08628d952a56adbc9f0d2626fc0bd90d4f0d3a40d28ac686d0a",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "1b321e3effc19ca0e37bd97a65beb69c0d9dbd7dbcff91229881d5e925826141",
+    "crates/tekes-ui-controls/src/composite.rs": "9747fd015ec2efab18f18bd2082b6163c4f8d79b86e92c4b71b2013aad746af4",
+    "examples/composition-consumer/tests/menu_action_records.rs": "71367b915d842162639cab18018eb006e55e0dfe09b96e026edbdcdbada02034",
+    "docs/design/menu-action-records-20261021.md": "27b925716d27757e750c7be222ebfe0844bbd618a0e5b5373d35c5820164fa88"
+  },
+  "git_baseline_provenance": "d8f5d5ac0d61c008983212a015b790907465041d",
+  "tests": {
+    "targeted_public_consumer": 8,
+    "controls": 426,
+    "consumer": 279
+  },
+  "strict_Clippy": "controls/consumer all-target passed; generated bindings rechecked",
+  "source_gates": "gates.json all6 passed",
+  "public_API_classification": "four reviewed support/composition types, no new component; registry bindings/capability tests pass",
+  "actual_token_probes": 17,
+  "bounded_token_cases": 6432,
+  "complete_token_coverage": false,
+  "native": "not run for this intermediate source",
+  "GPU": "no new visual acceptance for this increment",
+  "Gold7": "mechanical source gate passes; combined native/ClientKit experience remains pending",
+  "compatibility_red": "literal-compatibility-before-fix.log, before-literal-fix source retained; corrected external literal test passes",
+  "remaining": [
+    "original nested item/submenu/separator declarations",
+    "per-item checked/disabled independent from keyboard active item",
+    "original compact/compound trigger and name",
+    "popup generation fencing, edge/clip/scroll/modal/IME lifecycle",
+    "fixed final candidate, second consumer native/GPU, real AgentKit Sidebar options and applicable hearing"
+  ],
+  "evidence": [
+    "checks-final.json",
+    "registry-checks.json",
+    "token-checks-final2.json",
+    "gates.json",
+    "frozen-help-protection.json"
+  ],
+  "cleanup": "cleanup-final.json",
+  "performance": "not measured",
+  "Git": "no scoped commit/push/tag/close",
+  "frozen_help": "3366559a all503source+archive unchanged; independent peer continues"
+}

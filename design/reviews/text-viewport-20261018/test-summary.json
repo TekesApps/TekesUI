@@ -1,0 +1,109 @@
+{
+  "batch": "text-viewport-20261018",
+  "status": "public implementation and actualconsumers verified; originalIssue20 awaits full acceptance/publicpin; complete15-21 handoff notready",
+  "tests": {
+    "shared-final": 395,
+    "consumer-final": 96,
+    "editor-feature": 16,
+    "viewport-feature": 7,
+    "agentkit-final": 22,
+    "agentkit-headless": 76,
+    "standalone-shared": 395,
+    "standalone-consumer": 96,
+    "standalone-editor-feature": 16,
+    "standalone-viewport-feature": 7
+  },
+  "token_probes": {
+    "design/reviews/text-viewport-20261018/current-tokens/input-token-observations.json": 612,
+    "design/reviews/text-viewport-20261018/current-tokens/navigation-content-token-observations.json": 408,
+    "design/reviews/text-viewport-20261018/current-tokens/popup-token-observations.json": 192,
+    "design/reviews/text-viewport-20261018/current-tokens/selection-token-observations.json": 2016,
+    "design/reviews/text-viewport-20261018/current-tokens/query-async-token-observations.json": 264,
+    "design/reviews/text-viewport-20261018/current-tokens/slider-composition-token-observations.json": 264,
+    "design/reviews/text-viewport-20261018/current-tokens/command-async-token-observations.json": 168,
+    "design/reviews/text-viewport-20261018/current-tokens/action-token-observations.json": 576
+  },
+  "viewport_supplement": {
+    "path": "design/reviews/text-viewport-20261018/viewport-token-observations.json",
+    "cases": 96,
+    "complete": false
+  },
+  "gates": {
+    "capability_tests": 38,
+    "composition_tests": 6,
+    "components": 45,
+    "defaultGallery": "passed",
+    "strictClippy_shared_gallery_consumer_agentkit": "passed",
+    "pureRust": "passed",
+    "reference": "passed",
+    "Gold7": "mechanical check only; bounded native Light review separate"
+  },
+  "accepted_logs": [
+    "shared-final",
+    "consumer-final",
+    "editor-feature",
+    "viewport-feature",
+    "clippy-final",
+    "consumer-clippy-final",
+    "agentkit-final",
+    "agentkit-viewport-accepted",
+    "agentkit-clippy-accepted",
+    "agentkit-headless",
+    "agentkit-ui-boundaries",
+    "agentkit-headless-boundaries",
+    "capability-check",
+    "capability-tests",
+    "composition-check",
+    "composition-tests",
+    "pure-rust",
+    "reference",
+    "gold7",
+    "default-gallery",
+    "gallery-native",
+    "gallery-second",
+    "standalone-shared",
+    "standalone-consumer",
+    "standalone-editor-feature",
+    "standalone-viewport-feature",
+    "diff-check"
+  ],
+  "failed_attempts": "Initial test used wrong Preedit fieldname and assumed hardcoded legacy height; corrected against actual publicFieldView. Initial AgentKit test had unused import, corrected and targetedtest/strictClippy rerun. cargo fmt virtualworkspace invocation failed, targeted packages used; unrelated Gallery format-only changes restored exactly. Historical logs retained, not counted as current failures or acceptance.",
+  "snapshot": "f18bf14c39da535345ab3520a37fc17d652e78708524ec67bf53feb471d61727",
+  "native": {
+    "screen": "U2790B,builtin=false,scale2,max_fps30,desktop_origin1512,-98; no systemsettings changed",
+    "passed": [
+      "actualMetal Light 3lines84→20lines160 cappedscroll",
+      "realresize760x640→560x520, caretandSendvisible",
+      "mixedChineseEnglishEmojiCombining nativepaste/longlinewrap/undo",
+      "Transcript y552 retained whenComposer160→84, focus9202 unchanged",
+      "readonly selection and rejectdelete/paste"
+    ],
+    "logical_semantics": "separate, not systemAX acceptance",
+    "unverified": [
+      "physicalChineseIME",
+      "actualcandidatewindow",
+      "VoiceOver/nativeAX",
+      "AgentKit nativewindow",
+      "complete multitheme experience"
+    ],
+    "performance": "not measured"
+  },
+  "protection": {
+    "root_baseline": 22815,
+    "agentkit_baseline": 124,
+    "unrelated_changed": [],
+    "missing": []
+  },
+  "patchset": {
+    "public_paths": 15,
+    "agentkit_paths": 3,
+    "result_files": 276,
+    "actual_patch_application_verified": true
+  },
+  "remote": {
+    "open_issues": 21,
+    "open_tekesui_prs": 0,
+    "mutations": []
+  },
+  "next": "#21 inspectlatest target/kind/source onceonly action routing; retain17movement and original15-21 acceptance/publicpin conditions"
+}

@@ -64,6 +64,51 @@ pub enum Action {
     /// Text-service bridge smoke tests; preedit is synthetic, not a physical IME session.
     Text(String),
     Preedit(String),
+    /// Exact UTF-16 ranges through NSTextInputClient, not a physical IME.
+    TextRange {
+        text: String,
+        replacement: Option<std::ops::Range<usize>>,
+    },
+    PreeditRange {
+        text: String,
+        selection: std::ops::Range<usize>,
+        replacement: Option<std::ops::Range<usize>>,
+    },
+    Unmark,
+    ExpectTextState {
+        text: String,
+        selection: std::ops::Range<usize>,
+        marked: Option<std::ops::Range<usize>>,
+        query: std::ops::Range<usize>,
+        actual: std::ops::Range<usize>,
+    },
+    ExpectNoText,
+    ExpectTextRect {
+        range: std::ops::Range<usize>,
+        actual: std::ops::Range<usize>,
+        nonzero_width: bool,
+    },
+    /// Invoke the real NSAccessibility selectors on a published native element.
+    AXSelect {
+        component: u64,
+        range: std::ops::Range<usize>,
+    },
+    AXReplace {
+        component: u64,
+        text: String,
+    },
+    ExpectAXText {
+        component: u64,
+        text: String,
+        selection: std::ops::Range<usize>,
+        selected: String,
+        query: std::ops::Range<usize>,
+        substring: Option<String>,
+    },
+    /// Read AppKit's advertised legacy AX attributes for a real published owner.
+    /// This audits protocol reachability, not VoiceOver speech or interaction.
+    AuditAXText(u64),
+    ExpectAXMissing(u64),
     TextCommand(&'static str),
     ExpectText {
         text: String,
@@ -153,6 +198,131 @@ extern "C" fn run_step(ctx: *mut c_void) {
     };
     eprintln!("selftest: {action:?}");
     match action {
+        Action::AXSelect { .. }
+        | Action::AXReplace { .. }
+        | Action::ExpectAXText { .. }
+        | Action::AuditAXText(_)
+        | Action::ExpectAXMissing(_) => {
+            use objc2::{DefinedClass, msg_send};
+            use objc2_foundation::NSRange;
+            let content = w.contentView().expect("selftest content");
+            let view = content
+                .downcast_ref::<crate::view::TekesView>()
+                .expect("TekesView");
+            let component = match &action {
+                Action::AXSelect { component, .. }
+                | Action::AXReplace { component, .. }
+                | Action::ExpectAXText { component, .. } => *component,
+                Action::AuditAXText(component) | Action::ExpectAXMissing(component) => *component,
+                _ => unreachable!(),
+            };
+            let element = view
+                .ivars()
+                .shared
+                .accessibility_elements
+                .borrow()
+                .get(&crate::AccessibilityKey {
+                    component,
+                    part: None,
+                })
+                .cloned();
+            if matches!(action, Action::ExpectAXMissing(_)) {
+                assert!(element.is_none(), "closed AX element remains published");
+                eprintln!("SELFTEST PASS AX closed owner removed");
+                return;
+            }
+            let element = element.expect("native AX text element");
+            match action {
+                Action::AuditAXText(_) => unsafe {
+                    use objc2::{rc::Retained, sel};
+                    use objc2_foundation::{NSArray, NSAttributedString, NSValue};
+                    let role: Retained<NSString> = msg_send![&*element, accessibilityRole];
+                    let selected: NSRange = msg_send![&*element, accessibilitySelectedTextRange];
+                    let selections: Option<Retained<NSArray<NSValue>>> =
+                        msg_send![&*element, accessibilitySelectedTextRanges];
+                    let selections = selections.expect("text selection array");
+                    assert_eq!(selections.count(), 1);
+                    assert_eq!(selections.firstObject().unwrap().rangeValue(), selected);
+                    let visible: NSRange = msg_send![&*element, accessibilityVisibleCharacterRange];
+                    assert_ne!(visible.location, isize::MAX as usize);
+                    let first: NSRange = msg_send![&*element, accessibilityRangeForLine:0isize];
+                    assert_eq!(first.location, 0);
+                    let character: NSRange =
+                        msg_send![&*element, accessibilityRangeForIndex:0isize];
+                    assert_eq!(character.location, 0);
+                    let fragment: Option<Retained<NSAttributedString>> =
+                        msg_send![&*element, accessibilityAttributedStringForRange:character];
+                    assert!(fragment.is_some());
+                    let frame: objc2_foundation::NSRect =
+                        msg_send![&*element, accessibilityFrameForRange:character];
+                    assert!(frame.size.height > 0.);
+                    for selector in [
+                        sel!(accessibilityRangeForIndex:),
+                        sel!(accessibilityRangeForPosition:),
+                        sel!(accessibilityVisibleCharacterRange),
+                        sel!(accessibilitySelectedTextRanges),
+                        sel!(setAccessibilitySelectedTextRanges:),
+                        sel!(setAccessibilityFocused:),
+                    ] {
+                        let allowed: objc2::runtime::Bool =
+                            msg_send![&*element, isAccessibilitySelectorAllowed:selector];
+                        assert!(allowed.as_bool(), "text selector blocked: {selector:?}");
+                    }
+                    let ax_window: Option<Retained<objc2::runtime::AnyObject>> =
+                        msg_send![&*element, accessibilityWindow];
+                    let ax_top: Option<Retained<objc2::runtime::AnyObject>> =
+                        msg_send![&*element, accessibilityTopLevelUIElement];
+                    let expected = (&*w as *const NSWindow).cast::<objc2::runtime::AnyObject>();
+                    let window_matches = ax_window
+                        .as_ref()
+                        .is_some_and(|v| std::ptr::eq(&**v, expected));
+                    let top_matches = ax_top
+                        .as_ref()
+                        .is_some_and(|v| std::ptr::eq(&**v, expected));
+                    eprintln!(
+                        "AX_WINDOW_RELATION component={component} window_matches={window_matches} top_matches={top_matches}"
+                    );
+                    let focused: bool = msg_send![&*element, isAccessibilityFocused];
+                    eprintln!(
+                        "AX_MODERN_PASS component={component} role={role} focused={focused} selected={selected:?} visible={visible:?} first={first:?} character={character:?} frame={frame:?}; not VoiceOver speech acceptance"
+                    );
+                },
+                Action::AXSelect { range, .. } => unsafe {
+                    let _: () = msg_send![&*element, setAccessibilitySelectedTextRange: NSRange::new(range.start, range.end - range.start)];
+                },
+                Action::AXReplace { text, .. } => unsafe {
+                    let _: () = msg_send![&*element, setAccessibilitySelectedText: &*NSString::from_str(&text)];
+                },
+                Action::ExpectAXText {
+                    text,
+                    selection,
+                    selected,
+                    query,
+                    substring,
+                    ..
+                } => unsafe {
+                    let count: isize = msg_send![&*element, accessibilityNumberOfCharacters];
+                    let actual: NSRange = msg_send![&*element, accessibilitySelectedTextRange];
+                    let value: objc2::rc::Retained<NSString> =
+                        msg_send![&*element, accessibilityValue];
+                    let selected_text: Option<objc2::rc::Retained<NSString>> =
+                        msg_send![&*element, accessibilitySelectedText];
+                    let sub: Option<objc2::rc::Retained<NSString>> = msg_send![&*element, accessibilityStringForRange: NSRange::new(query.start, query.end - query.start)];
+                    assert_eq!(count as usize, text.encode_utf16().count());
+                    assert_eq!(value.to_string(), text);
+                    assert_eq!(
+                        actual,
+                        NSRange::new(selection.start, selection.end - selection.start)
+                    );
+                    assert_eq!(selected_text.map(|s| s.to_string()), Some(selected));
+                    assert_eq!(sub.map(|s| s.to_string()), substring);
+                    eprintln!(
+                        "SELFTEST PASS AX text={text:?} selection={selection:?} query={query:?}"
+                    );
+                },
+                _ => unreachable!(),
+            }
+        }
         Action::Resize { w: nw, h: nh } => w.setContentSize(NSSize::new(nw, nh)),
         Action::BeginLiveResize => w
             .contentView()
@@ -198,6 +368,12 @@ extern "C" fn run_step(ctx: *mut c_void) {
             }
         }
         Action::Text(_)
+        | Action::TextRange { .. }
+        | Action::PreeditRange { .. }
+        | Action::Unmark
+        | Action::ExpectTextState { .. }
+        | Action::ExpectNoText
+        | Action::ExpectTextRect { .. }
         | Action::Preedit(_)
         | Action::TextCommand(_)
         | Action::ExpectText { .. } => {
@@ -208,6 +384,135 @@ extern "C" fn run_step(ctx: *mut c_void) {
                 .downcast_ref::<crate::view::TekesView>()
                 .expect("TekesView");
             match action {
+                Action::ExpectTextRect {
+                    range,
+                    actual,
+                    nonzero_width,
+                } => {
+                    let mut covered = NSRange::new(isize::MAX as usize, 0);
+                    let rect = unsafe {
+                        view.firstRectForCharacterRange_actualRange(
+                            NSRange::new(range.start, range.end - range.start),
+                            &mut covered,
+                        )
+                    };
+                    assert_eq!(
+                        covered,
+                        NSRange::new(actual.start, actual.end - actual.start)
+                    );
+                    assert!(
+                        rect.origin.x.is_finite()
+                            && rect.origin.y.is_finite()
+                            && rect.size.height > 0.
+                    );
+                    assert_eq!(rect.size.width > 0., nonzero_width);
+                    eprintln!(
+                        "SELFTEST PASS native range rect={range:?} actual={actual:?} rect={rect:?}"
+                    );
+                }
+                Action::TextRange { text, replacement } => unsafe {
+                    let range = replacement.map_or(NSRange::new(isize::MAX as usize, 0), |r| {
+                        NSRange::new(r.start, r.end.saturating_sub(r.start))
+                    });
+                    view.insertText_replacementRange(&NSString::from_str(&text), range);
+                },
+                Action::PreeditRange {
+                    text,
+                    selection,
+                    replacement,
+                } => unsafe {
+                    let range = replacement.map_or(NSRange::new(isize::MAX as usize, 0), |r| {
+                        NSRange::new(r.start, r.end.saturating_sub(r.start))
+                    });
+                    view.setMarkedText_selectedRange_replacementRange(
+                        &NSString::from_str(&text),
+                        NSRange::new(
+                            selection.start,
+                            selection.end.saturating_sub(selection.start),
+                        ),
+                        range,
+                    );
+                },
+                Action::Unmark => view.unmarkText(),
+                Action::ExpectNoText => {
+                    let range = view.selectedRange();
+                    assert_eq!(
+                        range.location,
+                        isize::MAX as usize,
+                        "closed dialog must unpublish text input state"
+                    );
+                    assert!(!view.hasMarkedText());
+                    eprintln!("SELFTEST PASS closed text owner is unpublished");
+                }
+                Action::ExpectTextState {
+                    text,
+                    selection,
+                    marked,
+                    query,
+                    actual,
+                } => {
+                    let selected = view.selectedRange();
+                    let native_marked = view.markedRange();
+                    assert_eq!(
+                        selected,
+                        NSRange::new(selection.start, selection.end - selection.start)
+                    );
+                    assert_eq!(
+                        native_marked,
+                        marked
+                            .as_ref()
+                            .map_or(NSRange::new(isize::MAX as usize, 0), |r| NSRange::new(
+                                r.start,
+                                r.end - r.start
+                            ))
+                    );
+                    let complete = unsafe {
+                        view.attributedSubstringForProposedRange_actualRange(
+                            NSRange::new(0, usize::MAX),
+                            std::ptr::null_mut(),
+                        )
+                    }
+                    .expect("active text query")
+                    .string()
+                    .to_string();
+                    assert_eq!(complete, text);
+                    let mut actual_range = NSRange::new(0, 0);
+                    let partial = unsafe {
+                        view.attributedSubstringForProposedRange_actualRange(
+                            NSRange::new(query.start, query.end - query.start),
+                            &mut actual_range,
+                        )
+                    }
+                    .expect("query slice")
+                    .string()
+                    .to_string();
+                    assert_eq!(
+                        actual_range,
+                        NSRange::new(actual.start, actual.end - actual.start)
+                    );
+                    assert_eq!(
+                        partial,
+                        String::from_utf16_lossy(
+                            &text.encode_utf16().collect::<Vec<_>>()[actual.clone()]
+                        )
+                    );
+                    let rect = unsafe {
+                        view.firstRectForCharacterRange_actualRange(selected, std::ptr::null_mut())
+                    };
+                    assert!(
+                        rect.origin.x.is_finite()
+                            && rect.origin.y.is_finite()
+                            && rect.size.height > 0.
+                    );
+                    let index = view.characterIndexForPoint(NSPoint::new(
+                        rect.origin.x,
+                        rect.origin.y + rect.size.height * 0.5,
+                    ));
+                    assert!(index <= text.encode_utf16().count());
+                    eprintln!(
+                        "SELFTEST PASS exact UTF16 text={text:?} selection={selection:?} marked={marked:?} query={query:?} actual={actual:?} candidate={rect:?} hit={index}"
+                    );
+                }
                 Action::Text(text) => unsafe {
                     view.insertText_replacementRange(
                         &NSString::from_str(&text),
@@ -400,4 +705,350 @@ pub fn run_script(steps: Vec<(u64, Action)>) {
             unsafe { dispatch_async_f(&raw const _dispatch_main_q, ctx, run_step) };
         }
     });
+}
+
+/// Main-thread native-object contract only; creates no application or window.
+/// Uses the actual cached AX element class and its existing stale-object fence.
+#[doc(hidden)]
+pub fn required_metadata_contract() -> usize {
+    use crate::accessibility::NativeAccessibilityElement;
+    use crate::shared::Shared;
+    use crate::{
+        AccessibilityKey, AccessibilityNode, AccessibilityRole, Event, Window, WindowHandler,
+    };
+    use objc2::{msg_send, sel};
+    struct Noop;
+    impl WindowHandler for Noop {
+        fn handle(&mut self, _: Event, _: &mut Window) {}
+    }
+    let mtm = MainThreadMarker::new().expect("run the native object probe on main thread");
+    let shared = Shared::new(mtm, Box::new(Noop));
+    let key = AccessibilityKey {
+        component: 7,
+        part: None,
+    };
+    let mut node = AccessibilityNode {
+        key,
+        parent: None,
+        role: AccessibilityRole::TextField,
+        frame: crate::Rect {
+            origin: crate::Point::default(),
+            size: crate::Size {
+                width: 100.,
+                height: 32.,
+            },
+        },
+        label: "Required metadata probe".into(),
+        value: Some(String::new()),
+        description: None,
+        enabled: true,
+        focused: false,
+        selected: false,
+        expanded: None,
+        invalid: false,
+        required: false,
+        text_selection: None,
+        read_only: false,
+    };
+    let element = NativeAccessibilityElement::new(mtm, &shared, key);
+    shared
+        .accessibility_elements
+        .borrow_mut()
+        .insert(key, element.clone());
+    let mut checks = 0;
+    for role in [AccessibilityRole::TextField, AccessibilityRole::TextArea] {
+        for required in [false, true] {
+            for enabled in [false, true] {
+                for readonly in [false, true] {
+                    for invalid in [false, true] {
+                        node.role = role;
+                        node.required = required;
+                        node.enabled = enabled;
+                        node.read_only = readonly;
+                        node.invalid = invalid;
+                        *shared.accessibility_nodes.borrow_mut() = vec![node.clone()];
+                        assert!(crate::accessibility::validate_accessibility_nodes(&[
+                            node.clone()
+                        ]));
+                        let actual: bool = unsafe { msg_send![&*element, isAccessibilityRequired] };
+                        assert_eq!(actual, required);
+                        let readable: bool = unsafe {
+                            msg_send![&*element,isAccessibilitySelectorAllowed:sel!(isAccessibilityRequired)]
+                        };
+                        assert!(readable);
+                        let writable: bool = unsafe {
+                            msg_send![&*element,isAccessibilitySelectorAllowed:sel!(setAccessibilityRequired:)]
+                        };
+                        assert!(!writable);
+                        checks += 1;
+                    }
+                }
+            }
+        }
+    }
+    shared.accessibility_nodes.borrow_mut().clear();
+    let absent: bool = unsafe { msg_send![&*element, isAccessibilityRequired] };
+    assert!(!absent);
+    checks += 1;
+    node.required = true;
+    *shared.accessibility_nodes.borrow_mut() = vec![node];
+    let replacement = NativeAccessibilityElement::new(mtm, &shared, key);
+    shared
+        .accessibility_elements
+        .borrow_mut()
+        .insert(key, replacement.clone());
+    let stale: bool = unsafe { msg_send![&*element, isAccessibilityRequired] };
+    assert!(!stale);
+    checks += 1;
+    let current: bool = unsafe { msg_send![&*replacement, isAccessibilityRequired] };
+    assert!(current);
+    checks += 1;
+    shared.closed.set(true);
+    let closed: bool = unsafe { msg_send![&*replacement, isAccessibilityRequired] };
+    assert!(!closed);
+    checks += 1;
+    checks
+}
+
+/// Main-thread Link role/action probe. No application, window, or desktop input.
+#[doc(hidden)]
+pub fn link_role_contract() -> usize {
+    use crate::accessibility::NativeAccessibilityElement;
+    use crate::shared::Shared;
+    use crate::{
+        AccessibilityKey, AccessibilityNode, AccessibilityRole, Event, Window, WindowHandler,
+    };
+    use objc2::rc::Retained;
+    use objc2::{msg_send, sel};
+    use objc2_foundation::NSString;
+    struct Noop;
+    impl WindowHandler for Noop {
+        fn handle(&mut self, _: Event, _: &mut Window) {}
+    }
+    let mtm = MainThreadMarker::new().expect("main-thread Link probe");
+    let shared = Shared::new(mtm, Box::new(Noop));
+    let key = AccessibilityKey {
+        component: 8,
+        part: None,
+    };
+    let mut node = AccessibilityNode {
+        key,
+        parent: None,
+        role: AccessibilityRole::Link,
+        frame: crate::Rect {
+            origin: crate::Point::default(),
+            size: crate::Size {
+                width: 100.,
+                height: 32.,
+            },
+        },
+        label: "Read documentation".into(),
+        value: Some(String::new()),
+        description: None,
+        enabled: true,
+        focused: false,
+        selected: false,
+        expanded: None,
+        invalid: false,
+        required: false,
+        text_selection: None,
+        read_only: false,
+    };
+
+    let element = NativeAccessibilityElement::new(mtm, &shared, key);
+    shared
+        .accessibility_elements
+        .borrow_mut()
+        .insert(key, element.clone());
+    let mut checks = 0;
+    for enabled in [false, true] {
+        node.enabled = enabled;
+        *shared.accessibility_nodes.borrow_mut() = vec![node.clone()];
+        assert!(crate::accessibility::validate_accessibility_nodes(&[
+            node.clone()
+        ]));
+        let role: Retained<NSString> = unsafe { msg_send![&*element, accessibilityRole] };
+        assert_eq!(role.to_string(), "AXLink");
+        let allowed: bool = unsafe {
+            msg_send![&*element, isAccessibilitySelectorAllowed:sel!(accessibilityPerformPress)]
+        };
+        assert_eq!(allowed, enabled);
+        let focus_allowed: bool = unsafe {
+            msg_send![&*element, isAccessibilitySelectorAllowed:sel!(setAccessibilityFocused:)]
+        };
+        assert_eq!(focus_allowed, enabled);
+        let value_allowed: bool = unsafe {
+            msg_send![&*element, isAccessibilitySelectorAllowed:sel!(setAccessibilityValue:)]
+        };
+        assert!(!value_allowed);
+        // Enabled dispatch requires a real Window; covered by Gallery consumer tests.
+        // This object-only probe must not create a window or invoke that dispatch.
+        if !enabled {
+            let press: bool = unsafe { msg_send![&*element, accessibilityPerformPress] };
+            assert!(!press);
+            unsafe {
+                let _: () = msg_send![&*element, setAccessibilityFocused:true];
+            }
+        }
+        checks += 1;
+    }
+    shared.accessibility_nodes.borrow_mut().clear();
+    let absent: bool = unsafe { msg_send![&*element, accessibilityPerformPress] };
+    assert!(!absent);
+    checks += 1;
+    *shared.accessibility_nodes.borrow_mut() = vec![node];
+    let replacement = NativeAccessibilityElement::new(mtm, &shared, key);
+    shared
+        .accessibility_elements
+        .borrow_mut()
+        .insert(key, replacement.clone());
+    let stale: bool = unsafe { msg_send![&*element, accessibilityPerformPress] };
+    assert!(!stale);
+    checks += 1;
+    let current: Retained<NSString> = unsafe { msg_send![&*replacement, accessibilityRole] };
+    assert_eq!(current.to_string(), "AXLink");
+    let current_allowed: bool = unsafe {
+        msg_send![&*replacement, isAccessibilitySelectorAllowed:sel!(accessibilityPerformPress)]
+    };
+    assert!(current_allowed);
+    checks += 1;
+    shared.closed.set(true);
+    let closed: bool = unsafe { msg_send![&*replacement, accessibilityPerformPress] };
+    assert!(!closed);
+    checks + 1
+}
+
+/// Hidden native-object contract only: no shown window, global input or drag.
+#[doc(hidden)]
+pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
+    use crate::shared::{Objects, Shared};
+    use crate::view::TekesView;
+    use crate::{Event, Window, WindowHandler};
+    use objc2::MainThreadOnly;
+    use objc2_app_kit::{
+        NSApplicationActivationPolicy, NSBackingStoreType, NSToolbar, NSWindowStyleMask,
+        NSWindowTitleVisibility, NSWindowToolbarStyle,
+    };
+    use objc2_foundation::NSRect;
+    use std::{cell::Cell, rc::Rc};
+    struct Measure(Rc<Cell<f64>>);
+    impl WindowHandler for Measure {
+        fn handle(&mut self, event: Event, window: &mut Window) {
+            if event == Event::Created {
+                let height = window.titlebar_content_height();
+                self.0.set(height);
+                let (safe_height, leading) = window.titlebar_safe_area();
+                println!(
+                    "TITLEBAR_NATIVE_SAFE_AREA content_height={height} reserved_height={safe_height} leading={leading}"
+                );
+                assert!(safe_height >= height && safe_height <= window.size().height);
+                assert!(leading >= 0. && leading <= window.size().width);
+                if height == 0. {
+                    assert_eq!((safe_height, leading), (0., 0.));
+                } else {
+                    assert!(leading > 0.);
+                }
+            }
+            // A synthetic object callback is not a live native gesture.
+            assert!(!window.try_begin_titlebar_drag());
+        }
+    }
+    let mtm = MainThreadMarker::new().expect("main-thread native contract");
+    let app = NSApplication::sharedApplication(mtm);
+    app.setActivationPolicy(NSApplicationActivationPolicy::Prohibited);
+    let mut rows = vec![];
+    for extended in [false, true] {
+        let height = Rc::new(Cell::new(-1.));
+        let shared = Shared::new(mtm, Box::new(Measure(height.clone())));
+        let rect = NSRect::new(NSPoint::new(0., 0.), NSSize::new(720., 480.));
+        let window = unsafe {
+            NSWindow::initWithContentRect_styleMask_backing_defer(
+                NSWindow::alloc(mtm),
+                rect,
+                NSWindowStyleMask::Titled
+                    | NSWindowStyleMask::Closable
+                    | NSWindowStyleMask::Miniaturizable
+                    | NSWindowStyleMask::Resizable
+                    | if extended {
+                        NSWindowStyleMask::FullSizeContentView
+                    } else {
+                        NSWindowStyleMask::empty()
+                    },
+                NSBackingStoreType::Buffered,
+                false,
+            )
+        };
+        unsafe { window.setReleasedWhenClosed(false) };
+        window.setToolbarStyle(NSWindowToolbarStyle::Unified);
+        if extended {
+            window.setTitleVisibility(NSWindowTitleVisibility::Hidden);
+            window.setTitlebarAppearsTransparent(true);
+        }
+        window.setToolbar(Some(&NSToolbar::initWithIdentifier(
+            NSToolbar::alloc(mtm),
+            &NSString::from_str("TekesUI.Titlebar.Contract"),
+        )));
+        let view = TekesView::new(mtm, shared.clone(), rect);
+        window.setContentView(Some(&view));
+        view.layoutSubtreeIfNeeded();
+        shared
+            .objects
+            .set(Objects {
+                window: window.clone(),
+                view: view.clone(),
+            })
+            .ok()
+            .unwrap();
+        shared.ready.set(true);
+        shared.dispatch(Event::Created);
+        let expected = if extended {
+            window.frame().size.height - window.contentLayoutRect().size.height
+        } else {
+            0.
+        };
+        assert!(
+            (height.get() - expected).abs() < 0.001,
+            "native content overlap"
+        );
+        assert!(!window.isVisible());
+        rows.push((extended, height.get(), expected));
+        let down = mouse_event(&window, NSEventType::LeftMouseDown, 100., 20., 1).unwrap();
+        view.mouseDown(&down);
+        assert!(shared.titlebar_drag_origin.borrow().is_some());
+        let drag = mouse_event(&window, NSEventType::LeftMouseDragged, 110., 20., 1).unwrap();
+        view.mouseDragged(&drag);
+        assert_eq!(
+            shared
+                .titlebar_drag_origin
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .r#type(),
+            NSEventType::LeftMouseDown
+        );
+        let right = mouse_event(&window, NSEventType::RightMouseDown, 100., 20., 1).unwrap();
+        view.rightMouseDown(&right);
+        assert_eq!(
+            shared
+                .titlebar_drag_origin
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .r#type(),
+            NSEventType::LeftMouseDown
+        );
+        let up = mouse_event(&window, NSEventType::LeftMouseUp, 110., 20., 1).unwrap();
+        view.mouseUp(&up);
+        assert!(shared.titlebar_drag_origin.borrow().is_none());
+        view.mouseDragged(&drag);
+        assert!(shared.titlebar_drag_origin.borrow().is_none());
+        view.mouseDown(&down);
+        shared.dispatch(Event::Focus(false));
+        assert!(shared.titlebar_drag_origin.borrow().is_none());
+        view.mouseDown(&down);
+        shared.finish();
+        assert!(shared.titlebar_drag_origin.borrow().is_none());
+        window.close();
+    }
+    rows
 }

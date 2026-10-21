@@ -2,7 +2,11 @@ use crate::ScrollGeometry;
 use tekes_ui_scene::{Point, Rect, Size};
 use tekes_ui_tokens::proposal;
 include!(concat!(env!("OUT_DIR"), "/scroll_tokens.rs"));
-#[derive(Debug)]
+mod reveal;
+pub use reveal::{
+    ScrollRevealError, ScrollRevealOptions, ScrollRevealPlacement, ScrollRevealResult,
+};
+#[derive(Clone, Debug)]
 struct Rebound {
     initial: Point,
     velocity: Point,
@@ -22,8 +26,9 @@ pub enum ScrollPolicy {
 }
 
 /// Two-axis document viewport. Momentum deltas come from the operating system;
-/// only the elastic boundary return is animated locally.
-#[derive(Debug, Default)]
+/// elastic boundary return and explicit reveal navigation animate locally using
+/// the host clock. No synthetic in-bounds momentum is introduced.
+#[derive(Clone, Debug, Default)]
 pub struct ScrollView {
     pub offset: Point,
     pub overscroll: Point,
@@ -38,6 +43,8 @@ pub struct ScrollView {
     last_motion: f64,
     last_velocity: Point,
     rebound: Option<Rebound>,
+    reveal_animation: Option<reveal::RevealTransition>,
+    reveal_generation: u64,
     ignore_momentum: bool,
     entry_x: bool,
     entry_y: bool,
@@ -92,6 +99,11 @@ impl ScrollView {
         }
     }
 
+    /// Update geometry without ending a still-valid native scroll sequence.
+    /// Streaming/reflow is not a new input owner. A thumb drag uses obsolete
+    /// track geometry and is released; unavailable directions and illegal
+    /// elastic displacement are cleared. Explicit lifecycle/policy changes
+    /// continue to use `cancel`.
     pub fn layout(&mut self, viewport: Size, document: Size) {
         let valid = |value: f32| {
             if value.is_finite() {
@@ -102,17 +114,102 @@ impl ScrollView {
         };
         let viewport = Size::new(valid(viewport.width), valid(viewport.height));
         let document = Size::new(valid(document.width), valid(document.height));
-        if viewport != self.viewport || document != self.document {
-            self.cancel();
-        }
+        let changed = viewport != self.viewport || document != self.document;
+        let previous_offset = self.offset;
+        let previous_stretch = self.overscroll;
+        let previous_limit = self.limit();
         self.viewport = viewport;
         self.document = document;
         self.scroll_by(0.0, 0.0);
+        if !changed {
+            return;
+        }
+        self.drag = None;
+        self.reveal_animation = None;
+        let enabled = (self.axis_enabled(false), self.axis_enabled(true));
+        if !enabled.0 && !enabled.1 {
+            self.cancel();
+            return;
+        }
+        let limit = self.limit();
+        let valid_stretch =
+            |stretch: f32, offset: f32, previous: f32, limit: f32, extent: f32, enabled: bool| {
+                if !enabled
+                    || offset != previous
+                    || (stretch < 0.0 && offset > 0.0)
+                    || (stretch > 0.0 && offset < limit)
+                {
+                    0.0
+                } else {
+                    let maximum = extent * MAXIMUM_STRETCH_FRACTION as f32;
+                    stretch.clamp(-maximum, maximum)
+                }
+            };
+        self.overscroll = Point::new(
+            valid_stretch(
+                previous_stretch.x,
+                self.offset.x,
+                previous_offset.x,
+                limit.x,
+                viewport.width,
+                enabled.0,
+            ),
+            valid_stretch(
+                previous_stretch.y,
+                self.offset.y,
+                previous_offset.y,
+                limit.y,
+                viewport.height,
+                enabled.1,
+            ),
+        );
+        // Keep an existing return's phase/trajectory when it is still legal.
+        // If reflow clamps one direction, remove only that contribution.
+        if let Some(rebound) = &mut self.rebound {
+            let ratio = |before: f32, after: f32| {
+                if before == 0.0 { 0.0 } else { after / before }
+            };
+            let x = ratio(previous_stretch.x, self.overscroll.x);
+            let y = ratio(previous_stretch.y, self.overscroll.y);
+            rebound.initial.x *= x;
+            rebound.velocity.x *= x;
+            rebound.initial.y *= y;
+            rebound.velocity.y *= y;
+            if rebound.initial == Point::default() {
+                self.rebound = None;
+            }
+        }
+        let edge_became_interior = |before: f32, after: f32, offset: f32| {
+            after > before && offset >= before && offset > 0.0 && offset < after
+        };
+        if self.rebound.is_none()
+            && (edge_became_interior(previous_limit.x, limit.x, self.offset.x)
+                || edge_became_interior(previous_limit.y, limit.y, self.offset.y))
+        {
+            // A former bottom/right edge may now be ordinary document. The
+            // old elastic return no longer owns incoming native momentum.
+            self.ignore_momentum = false;
+        }
+        if !enabled.0 {
+            self.last_velocity.x = 0.0;
+            self.entry_x = false;
+            if self.axis == Some(false) {
+                self.axis = None;
+            }
+        }
+        if !enabled.1 {
+            self.last_velocity.y = 0.0;
+            self.entry_y = false;
+            if self.axis == Some(true) {
+                self.axis = None;
+            }
+        }
     }
     pub fn set_reduced_motion(&mut self, reduced: bool) -> bool {
         self.reduced_motion = reduced;
         if reduced {
-            let dirty = self.overscroll != Point::default();
+            let reveal_changed = self.finish_reveal();
+            let dirty = self.overscroll != Point::default() || reveal_changed;
             self.overscroll = Point::default();
             self.rebound = None;
             dirty
@@ -204,6 +301,13 @@ impl ScrollView {
         }
         if !self.axis_enabled(true) {
             y = 0.0;
+        }
+        if momentum && self.ignore_momentum && self.reveal_animation.is_some() {
+            return false;
+        }
+        if !momentum && (begin || x != 0.0 || y != 0.0) {
+            self.reveal_animation = None;
+            self.ignore_momentum = false;
         }
         let before = (self.offset, self.overscroll);
         let elapsed = (time - self.last_motion).max(0.0);
@@ -340,7 +444,8 @@ impl ScrollView {
         }
     }
     pub fn needs_animation(&self) -> bool {
-        self.rebound.is_some()
+        self.reveal_animation.is_some()
+            || self.rebound.is_some()
             || ((self.gesture || self.momentum)
                 && (self.clock - self.last_input) < VELOCITY_TIMEOUT_S)
     }
@@ -349,6 +454,13 @@ impl ScrollView {
             return false;
         }
         self.clock += f64::from(dt);
+        if let Some(animation) = &mut self.reveal_animation {
+            let (target, finished) = animation.sample(dt);
+            if finished {
+                self.reveal_animation = None;
+            }
+            return self.scroll_by(target.x - self.offset.x, target.y - self.offset.y);
+        }
         let Some(rebound) = &mut self.rebound else {
             return false;
         };
@@ -383,6 +495,7 @@ impl ScrollView {
         }
     }
     pub fn cancel(&mut self) {
+        self.reveal_animation = None;
         self.gesture = false;
         self.momentum = false;
         self.axis = None;
@@ -393,6 +506,7 @@ impl ScrollView {
         self.ignore_momentum = false;
     }
     pub fn reveal(&mut self, rect: Rect) -> bool {
+        self.reveal_animation = None;
         let dx = if rect.min_x() < self.offset.x {
             rect.min_x() - self.offset.x
         } else {

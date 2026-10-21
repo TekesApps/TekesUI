@@ -1,0 +1,17 @@
+{
+  "status": "local policy and actual-root public bindings verified",
+  "workflow": "policy-verification.json",
+  "public_api": "public-bindings.json:3 tests passed",
+  "cleanup": "cleanup.json: test executable removed; shared libraries retained",
+  "protected_sources": 219,
+  "source_changes": [],
+  "prior_brand_builds": "57 inputs compared; only Cargo.lock changed; negative build receipts remain historical, not a new current-lock replay",
+  "performance": "not measured; exact three timing tests deferred in prospective batch2 workflow",
+  "remoteCI": "not executed for this WIP; needs exact authorized public source",
+  "scope_boundaries": [
+    "does not complete batch2 or any open Issue",
+    "does not include this workflow in existing #23 delivery/followup",
+    "no full-workspace Rust/native/GPU acceptance claimed"
+  ],
+  "publication": "no commit/push/merge/tag/Issue write"
+}

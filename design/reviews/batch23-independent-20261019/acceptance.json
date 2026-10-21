@@ -1,0 +1,25 @@
+{
+  "identity": "4bb69cb08ff88123ccb7bf44a1bd620b98eee82128b54a24de412ac43f4d8bff",
+  "status": "local independent build/replay passed; release/remote CI/independent reviewer acceptance pending",
+  "source_checks": 22,
+  "supplemental_root_ci_checks": 16,
+  "workspace": {
+    "passed": 1054,
+    "ignored": 1,
+    "filtered_performance_tests": 3
+  },
+  "consumer": {
+    "passed": 136
+  },
+  "shared_native_inputs": {
+    "receipt": "design/reviews/component-runs/command-ime-final-20261019/receipt.json",
+    "boundary": "native execution was in live checkout; relocation itself did not receive a second human desktop acceptance",
+    "difference": [
+      "design/remediation/issue-component-batches-20261019.json"
+    ]
+  },
+  "cleanup": 297426351,
+  "public_pin": null,
+  "independent_reviewer": "not yet accepted",
+  "scope": "batch 2/3 local foundation delivery only; remaining component families, Toolbar registry, #22/#23 and whole-page review are not complete"
+}

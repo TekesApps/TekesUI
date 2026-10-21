@@ -53,6 +53,13 @@ fn own_clip(frame: Rect, ancestor: Option<Rect>) -> Option<Rect> {
         None => Some(frame),
     }
 }
+// A finite mounted frame can be outside its ancestor viewport. Retain its
+// logical row frames for keyboard reveal without treating a missing paint clip
+// as permission to draw. Zero/invalid constraints represent unavailable layout.
+fn mounted_bounds(frame: Rect, ancestor: Option<Rect>) -> bool {
+    let positive = |rect: Rect| valid_rect(rect) && rect.size.width > 0. && rect.size.height > 0.;
+    positive(frame) && ancestor.is_none_or(positive)
+}
 fn render_quiet_button(
     button: &mut Button,
     scene: &mut Scene,
@@ -90,7 +97,6 @@ fn control_state(
     selected: bool,
     hovered: bool,
     focused: bool,
-    focus_visible: bool,
     disabled: bool,
     pressed: bool,
 ) -> ControlState {
@@ -98,7 +104,8 @@ fn control_state(
         selected,
         hovered,
         focused,
-        focus_visible,
+        // The collection paints keyboard focus after all sibling chrome.
+        focus_visible: false,
         disabled,
         pressed,
         ..Default::default()
@@ -142,6 +149,9 @@ struct CollectionInteraction {
     window_active: bool,
 }
 impl CollectionInteraction {
+    fn cancel_capture(&mut self) -> bool {
+        self.captured.take().is_some()
+    }
     fn focus(&mut self, id: usize, visible: bool) {
         self.focused = Some(id);
         self.focus_visible = visible;
@@ -169,6 +179,49 @@ impl CollectionInteraction {
         if self.hovered.is_some_and(|id| !ids.contains(&id)) {
             self.hovered = None;
         }
+    }
+}
+
+// Keep logical row hit/content clipping separate from keyboard focus ink.
+// Complete rows may expose their canonical outset beyond the control frame;
+// real ancestors still clip it. Overflow-cropped rows retain the viewport clip.
+fn paint_collection_focus(
+    scene: &mut Scene,
+    item: &CollectionItemLayout,
+    frame: Rect,
+    ancestor_clip: Option<Rect>,
+    palette: Palette,
+) {
+    if item.visible.is_none() {
+        return;
+    }
+    let container = ContainerLayout::new(frame, Insets::ZERO, Insets::ZERO, ancestor_clip);
+    let fits = item.frame.min_x() >= frame.min_x()
+        && item.frame.min_y() >= frame.min_y()
+        && item.frame.max_x() <= frame.max_x()
+        && item.frame.max_y() <= frame.max_y();
+    let clip = if fits {
+        container.background_paint_clip()
+    } else {
+        container.visible_clip()
+    };
+    if let Some(clip) = clip {
+        scene.push_clip(clip);
+    }
+    crate::paint::focus_ring(scene, item.frame, palette, ButtonSize::Body.radius());
+    if clip.is_some() {
+        scene.pop_clip();
+    }
+}
+
+fn row_key_target(key: ControlKey, current: usize, ids: &[usize]) -> Option<usize> {
+    let position = ids.iter().position(|id| *id == current)?;
+    match key {
+        ControlKey::Home => ids.first().copied(),
+        ControlKey::End => ids.last().copied(),
+        ControlKey::Up => ids.get(position.saturating_sub(1)).copied(),
+        ControlKey::Down => ids.get((position + 1).min(ids.len() - 1)).copied(),
+        _ => None,
     }
 }
 
@@ -210,6 +263,9 @@ impl ListView {
         }
     }
     pub fn focus(&mut self, index: usize, keyboard: bool) {
+        if self.disabled || !self.state.window_active {
+            return;
+        }
         self.state.focus(index, keyboard);
     }
     pub fn blur(&mut self) {
@@ -290,7 +346,22 @@ impl ListView {
             items: Vec::with_capacity(count),
         };
         if own_clip.is_none() {
-            self.state.blur();
+            if mounted_bounds(frame, clip) {
+                self.state.captured = None;
+                self.state.hovered = None;
+                let mut y = frame.min_y();
+                for (id, height) in heights.iter().copied().enumerate() {
+                    self.layout.items.push(CollectionItemLayout {
+                        id,
+                        frame: Rect::new(frame.min_x(), y, frame.size.width, height),
+                        visible: None,
+                        depth: 0,
+                    });
+                    y += height + gap;
+                }
+            } else {
+                self.state.blur();
+            }
             for button in &mut self.buttons {
                 button.clear_layout();
             }
@@ -310,7 +381,6 @@ impl ListView {
                 model.selected == Some(index),
                 self.state.hovered == Some(index),
                 focused,
-                self.state.focus_visible,
                 self.disabled,
                 self.state.captured == Some(index),
             );
@@ -324,6 +394,17 @@ impl ListView {
             y += heights[index] + gap;
         }
         scene.pop_clip();
+        if !self.disabled
+            && self.state.window_active
+            && self.state.focus_visible
+            && let Some(item) = self
+                .layout
+                .items
+                .iter()
+                .find(|i| Some(i.id) == self.state.focused)
+        {
+            paint_collection_focus(scene, item, frame, clip, palette);
+        }
         self.layout.clone()
     }
     pub fn pointer_move(&mut self, point: Point) -> bool {
@@ -354,6 +435,11 @@ impl ListView {
         else {
             return CollectionEvent::Ignored;
         };
+        // Layout is a mounted geometry snapshot, not authority to select a
+        // source row that disappeared before the next paint.
+        if id >= model.count {
+            return CollectionEvent::Ignored;
+        }
         self.state.focus(id, false);
         self.state.captured = Some(id);
         if model.select(id) {
@@ -366,7 +452,7 @@ impl ListView {
         let Some(id) = self.state.captured.take() else {
             return CollectionEvent::Ignored;
         };
-        if !self.state.window_active || self.disabled {
+        if !self.state.window_active || self.disabled || id >= model.count {
             return CollectionEvent::Ignored;
         }
         if self
@@ -385,29 +471,54 @@ impl ListView {
         }
     }
     pub fn key(&mut self, key: ControlKey, down: bool, model: &mut List) -> CollectionEvent {
-        if !down || self.disabled || !self.state.window_active || self.state.focused.is_none() {
+        if !down || self.disabled || !self.state.window_active {
+            return CollectionEvent::Ignored;
+        }
+        // Cancellation belongs to the held input, even if its source became
+        // unavailable. An unowned Escape remains available to the parent.
+        if key == ControlKey::Escape {
+            return if self.state.cancel_capture() {
+                CollectionEvent::Handled
+            } else {
+                CollectionEvent::Ignored
+            };
+        }
+        let Some(id) = self.state.focused else {
+            return CollectionEvent::Ignored;
+        };
+        if !self.layout.items.iter().any(|item| item.id == id) || id >= model.count {
             return CollectionEvent::Ignored;
         }
         self.state.focus_visible = true;
         if key == ControlKey::Enter {
-            return model
-                .selected
-                .map_or(CollectionEvent::Ignored, CollectionEvent::Activated);
+            model.select(id);
+            return CollectionEvent::Activated(id);
         }
-        if model.key(key) {
-            let id = model.selected.unwrap_or(0);
-            self.state.focus(id, true);
+        if !matches!(
+            key,
+            ControlKey::Up | ControlKey::Down | ControlKey::Home | ControlKey::End
+        ) {
+            return CollectionEvent::Handled;
+        }
+        // Ancestor clipping limits pointer hits, not logical keyboard targets.
+        // Hosts use the focused row frame to reveal content after navigation.
+        let ids = self
+            .layout
+            .items
+            .iter()
+            .filter(|item| item.id < model.count)
+            .map(|item| item.id)
+            .collect::<Vec<_>>();
+        let target = row_key_target(key, id, &ids).unwrap_or(id);
+        self.state.focus(target, true);
+        if model.select(target) {
             CollectionEvent::Changed
-        } else if key == ControlKey::Enter {
-            model
-                .selected
-                .map_or(CollectionEvent::Ignored, CollectionEvent::Activated)
         } else {
             CollectionEvent::Handled
         }
     }
     pub fn cancel(&mut self) {
-        self.state.captured = None;
+        self.state.cancel_capture();
     }
 }
 
@@ -460,6 +571,9 @@ impl TreeView {
         }
     }
     pub fn focus(&mut self, index: usize, keyboard: bool) {
+        if self.disabled || !self.state.window_active {
+            return;
+        }
         self.state.focus(index, keyboard);
     }
     pub fn blur(&mut self) {
@@ -484,7 +598,8 @@ impl TreeView {
         let ids = model.visible();
         let rh = 34.0;
         let gap = row_gap();
-        let icon_slot_width = proposal::metric("size", "size-icon-artboard").unwrap_or(24.0);
+        let icon_slot_width =
+            proposal::metric("size", "size-inline-action").expect("Tree expand action slot token");
         let horizontal_inset = proposal::metric("spacing", "space-relaxed").unwrap_or(12.0);
         let heights = ids
             .iter()
@@ -506,7 +621,28 @@ impl TreeView {
             items: Vec::with_capacity(ids.len()),
         };
         if own_clip.is_none() {
-            self.state.blur();
+            if mounted_bounds(frame, clip) {
+                self.state.captured = None;
+                self.state.hovered = None;
+                let mut y = frame.min_y();
+                for (row, id) in ids.iter().copied().enumerate() {
+                    let indent = depth_indent(model, id);
+                    self.layout.items.push(CollectionItemLayout {
+                        id,
+                        frame: Rect::new(
+                            frame.min_x() + indent,
+                            y,
+                            (frame.size.width - indent).max(0.),
+                            heights[row],
+                        ),
+                        visible: None,
+                        depth: tree_depth(model, id),
+                    });
+                    y += heights[row] + gap;
+                }
+            } else {
+                self.state.blur();
+            }
             for button in &mut self.buttons {
                 button.clear_layout();
             }
@@ -536,7 +672,6 @@ impl TreeView {
                 model.selected == Some(id),
                 self.state.hovered == Some(id),
                 focused,
-                self.state.focus_visible,
                 self.disabled || node.disabled,
                 self.state.captured == Some(id),
             );
@@ -604,6 +739,21 @@ impl TreeView {
             y += heights[row] + gap;
         }
         scene.pop_clip();
+        if !self.disabled
+            && self.state.window_active
+            && self.state.focus_visible
+            && let Some(item) = self
+                .layout
+                .items
+                .iter()
+                .find(|i| Some(i.id) == self.state.focused)
+            && model
+                .nodes()
+                .get(item.id)
+                .is_some_and(|node| !node.disabled)
+        {
+            paint_collection_focus(scene, item, frame, clip, palette);
+        }
         self.layout.clone()
     }
     /// Draw the branch affordances after releasing the host text-shaper borrow.
@@ -667,7 +817,7 @@ impl TreeView {
         else {
             return CollectionEvent::Ignored;
         };
-        if model.nodes().get(id).is_none_or(|n| n.disabled) {
+        if model.nodes().get(id).is_none_or(|n| n.disabled) || !model.visible().contains(&id) {
             return CollectionEvent::Ignored;
         }
         self.state.focus(id, false);
@@ -682,7 +832,11 @@ impl TreeView {
         let Some(id) = self.state.captured.take() else {
             return CollectionEvent::Ignored;
         };
-        if !self.state.window_active || self.disabled {
+        if !self.state.window_active
+            || self.disabled
+            || model.nodes().get(id).is_none_or(|n| n.disabled)
+            || !model.visible().contains(&id)
+        {
             return CollectionEvent::Ignored;
         }
         if !self
@@ -700,22 +854,99 @@ impl TreeView {
         }
     }
     pub fn key(&mut self, key: ControlKey, down: bool, model: &mut Tree) -> CollectionEvent {
-        if !down || self.disabled || !self.state.window_active || self.state.focused.is_none() {
+        if !down || self.disabled || !self.state.window_active {
+            return CollectionEvent::Ignored;
+        }
+        if key == ControlKey::Escape {
+            return if self.state.cancel_capture() {
+                CollectionEvent::Handled
+            } else {
+                CollectionEvent::Ignored
+            };
+        }
+        let Some(id) = self.state.focused else {
+            return CollectionEvent::Ignored;
+        };
+        if model.nodes().get(id).is_none_or(|node| node.disabled)
+            || !model.visible().contains(&id)
+            || !self.layout.items.iter().any(|item| item.id == id)
+        {
             return CollectionEvent::Ignored;
         }
         self.state.focus_visible = true;
         if key == ControlKey::Enter {
-            return model
-                .selected
-                .map_or(CollectionEvent::Ignored, CollectionEvent::Activated);
+            model.select(id);
+            return CollectionEvent::Activated(id);
         }
-        if model.key(key) {
-            let id = model.selected.unwrap_or(0);
-            self.state.focus(id, true);
+        if !matches!(
+            key,
+            ControlKey::Up
+                | ControlKey::Down
+                | ControlKey::Home
+                | ControlKey::End
+                | ControlKey::Left
+                | ControlKey::Right
+        ) {
+            return CollectionEvent::Handled;
+        }
+        if matches!(
+            key,
+            ControlKey::Up | ControlKey::Down | ControlKey::Home | ControlKey::End
+        ) {
+            let ids = model
+                .visible()
+                .into_iter()
+                .filter(|id| !model.nodes()[*id].disabled)
+                .collect::<Vec<_>>();
+            let target = row_key_target(key, id, &ids).unwrap_or(id);
+            self.state.focus(target, true);
+            return if model.select(target) {
+                CollectionEvent::Changed
+            } else {
+                CollectionEvent::Handled
+            };
+        }
+        let selected = model.select(id);
+        let moved = model.key(key);
+        if selected || moved {
+            self.state.focus(model.selected.unwrap_or(id), true);
             CollectionEvent::Changed
         } else {
             CollectionEvent::Handled
         }
+    }
+    /// Set a mounted branch's disclosure state without reinterpreting Enter.
+    /// Preserve selection/focus unless collapse conceals the current owner.
+    pub fn set_expanded(
+        &mut self,
+        index: usize,
+        expanded: bool,
+        model: &mut Tree,
+    ) -> CollectionEvent {
+        if self.disabled
+            || !self.state.window_active
+            || model.nodes().get(index).is_none_or(|n| n.disabled)
+            || !model.visible().contains(&index)
+            || !self.layout.items.iter().any(|item| item.id == index)
+            || !model.nodes().iter().any(|n| n.parent == Some(index))
+        {
+            return CollectionEvent::Ignored;
+        }
+        if model.nodes()[index].expanded == expanded {
+            return CollectionEvent::Handled;
+        }
+        if !model.toggle(index) {
+            return CollectionEvent::Ignored;
+        }
+        let visible = model.visible();
+        if model.selected.is_some_and(|id| !visible.contains(&id)) {
+            model.select(index);
+        }
+        if self.state.focused.is_some_and(|id| !visible.contains(&id)) {
+            self.state.focus(index, true);
+        }
+        self.state.captured = None;
+        CollectionEvent::Toggled(index)
     }
     pub fn cancel(&mut self) {
         self.state.captured = None;
@@ -788,10 +1019,16 @@ impl DataTableView {
         }
     }
     pub fn focus_row(&mut self, row: usize, keyboard: bool) {
+        if self.disabled || !self.state.window_active {
+            return;
+        }
         self.focused_header = None;
         self.state.focus(row, keyboard);
     }
     pub fn focus_header(&mut self, column: usize, keyboard: bool) {
+        if self.disabled || !self.state.window_active {
+            return;
+        }
         self.focused_header = Some(column);
         self.state.focused = None;
         self.state.focus_visible = keyboard;
@@ -907,8 +1144,36 @@ impl DataTableView {
             })
             .collect();
         if own_clip.is_none() {
-            self.state.blur();
-            self.focused_header = None;
+            if mounted_bounds(frame, clip) {
+                self.state.captured = None;
+                self.state.hovered = None;
+                result.headers = (0..model.columns)
+                    .map(|id| CollectionItemLayout {
+                        id,
+                        frame: Rect::new(
+                            frame.min_x() + id as f32 * cw,
+                            frame.min_y(),
+                            cw,
+                            header_band,
+                        ),
+                        visible: None,
+                        depth: 0,
+                    })
+                    .collect();
+                let mut y = frame.min_y() + row_start;
+                for (display, id) in valid_order.iter().copied().enumerate() {
+                    result.rows.push(CollectionItemLayout {
+                        id,
+                        frame: Rect::new(frame.min_x(), y, width, row_heights[display]),
+                        visible: None,
+                        depth: 0,
+                    });
+                    y += row_heights[display] + gap;
+                }
+            } else {
+                self.state.blur();
+                self.focused_header = None;
+            }
             for button in self
                 .header_buttons
                 .iter_mut()
@@ -933,14 +1198,7 @@ impl DataTableView {
             let title = &header_labels[col];
             let button = &mut self.header_buttons[col];
             let header_focused = self.focused_header == Some(col) && self.state.window_active;
-            button.state = control_state(
-                false,
-                false,
-                header_focused,
-                self.state.focus_visible,
-                self.disabled,
-                false,
-            );
+            button.state = control_state(false, false, header_focused, self.disabled, false);
             let button_layout =
                 render_quiet_button(button, scene, text, title, r, own_clip, palette);
             result.headers.push(CollectionItemLayout {
@@ -960,7 +1218,6 @@ impl DataTableView {
                 model.selected_row == Some(id),
                 self.state.hovered == Some(id),
                 focused,
-                self.state.focus_visible,
                 self.disabled,
                 self.state.captured == Some(id),
             );
@@ -996,6 +1253,19 @@ impl DataTableView {
             y += row_height + gap;
         }
         scene.pop_clip();
+        if !self.disabled && self.state.window_active && self.state.focus_visible {
+            let focused = if let Some(column) = self.focused_header {
+                result.headers.iter().find(|i| i.id == column)
+            } else {
+                result
+                    .rows
+                    .iter()
+                    .find(|i| Some(i.id) == self.state.focused)
+            };
+            if let Some(item) = focused {
+                paint_collection_focus(scene, item, frame, clip, palette);
+            }
+        }
         self.layout = result.clone();
         result
     }
@@ -1025,6 +1295,9 @@ impl DataTableView {
             .find(|i| i.visible.is_some_and(|r| r.contains(point)))
             .map(|i| i.id)
         {
+            if col >= model.columns {
+                return CollectionEvent::Ignored;
+            }
             self.focus_header(col, false);
             return if model.sort_by(col) {
                 CollectionEvent::Changed
@@ -1041,6 +1314,9 @@ impl DataTableView {
         else {
             return CollectionEvent::Ignored;
         };
+        if id >= model.rows {
+            return CollectionEvent::Ignored;
+        }
         self.focused_header = None;
         self.state.focus(id, false);
         self.state.captured = Some(id);
@@ -1054,7 +1330,7 @@ impl DataTableView {
         let Some(id) = self.state.captured.take() else {
             return CollectionEvent::Ignored;
         };
-        if !self.state.window_active || self.disabled {
+        if !self.state.window_active || self.disabled || id >= model.rows {
             return CollectionEvent::Ignored;
         }
         if self
@@ -1073,11 +1349,29 @@ impl DataTableView {
         }
     }
     pub fn key(&mut self, key: ControlKey, down: bool, model: &mut DataTable) -> CollectionEvent {
-        if !down
-            || self.disabled
-            || !self.state.window_active
-            || (self.state.focused.is_none() && self.focused_header.is_none())
-        {
+        if !down || self.disabled || !self.state.window_active {
+            return CollectionEvent::Ignored;
+        }
+        if key == ControlKey::Escape {
+            return if self.state.cancel_capture() {
+                CollectionEvent::Handled
+            } else {
+                CollectionEvent::Ignored
+            };
+        }
+        if self.state.focused.is_none() && self.focused_header.is_none() {
+            return CollectionEvent::Ignored;
+        }
+        // Source membership alone is insufficient: the current consumer may
+        // not have mounted this header/row. Clipped mounted rows remain valid.
+        let mounted = if let Some(column) = self.focused_header {
+            column < model.columns && self.layout.headers.iter().any(|h| h.id == column)
+        } else {
+            self.state
+                .focused
+                .is_some_and(|id| id < model.rows && self.layout.rows.iter().any(|r| r.id == id))
+        };
+        if !mounted {
             return CollectionEvent::Ignored;
         }
         self.state.focus_visible = true;
@@ -1090,11 +1384,21 @@ impl DataTableView {
                 };
             }
             if matches!(key, ControlKey::Left | ControlKey::Right) && model.columns > 0 {
-                let next = if key == ControlKey::Right {
-                    (column + 1).min(model.columns - 1)
+                // Use the same mounted/live intersection as rows: source
+                // growth does not publish geometry for new columns yet.
+                let ids = self
+                    .layout
+                    .headers
+                    .iter()
+                    .filter(|header| header.id < model.columns)
+                    .map(|header| header.id)
+                    .collect::<Vec<_>>();
+                let direction = if key == ControlKey::Right {
+                    ControlKey::Down
                 } else {
-                    column.saturating_sub(1)
+                    ControlKey::Up
                 };
+                let next = row_key_target(direction, column, &ids).unwrap_or(column);
                 self.focus_header(next, true);
                 return CollectionEvent::Changed;
             }
@@ -1104,17 +1408,23 @@ impl DataTableView {
             let Some(id) = self.state.focused else {
                 return CollectionEvent::Ignored;
             };
+            if !self.layout.rows.iter().any(|row| row.id == id) {
+                return CollectionEvent::Ignored;
+            }
             return if model.select_row(id) {
                 CollectionEvent::Changed
             } else {
                 CollectionEvent::Activated(id)
             };
         }
+        if self.layout.rows.is_empty() {
+            return CollectionEvent::Ignored;
+        }
         let visible_rows = self
             .layout
             .rows
             .iter()
-            .filter(|row| row.visible.is_some())
+            .filter(|row| row.id < model.rows)
             .map(|row| row.id)
             .collect::<Vec<_>>();
         if visible_rows.is_empty() {
@@ -1150,7 +1460,7 @@ impl DataTableView {
         }
     }
     pub fn cancel(&mut self) {
-        self.state.captured = None;
+        self.state.cancel_capture();
     }
 }
 
@@ -1187,6 +1497,9 @@ impl ChartView {
         }
     }
     pub fn focus(&mut self, keyboard: bool, model: &mut BarChart) {
+        if !self.window_active {
+            return;
+        }
         self.focused = true;
         self.focus_visible = keyboard;
         model.set_focused(true, keyboard);
@@ -1216,7 +1529,7 @@ impl ChartView {
         text_scale: f32,
     ) -> ChartViewLayout {
         let own_clip = own_clip(frame, clip);
-        if own_clip.is_none() {
+        if own_clip.is_none() && !mounted_bounds(frame, clip) {
             self.focused = false;
             self.focus_visible = false;
             self.hovered = None;
@@ -1228,6 +1541,9 @@ impl ChartView {
                 geometry: ChartGeometry::default(),
             };
             return self.layout.clone();
+        }
+        if own_clip.is_none() {
+            self.hovered = None;
         }
         model.set_focused(self.focused && self.window_active, self.focus_visible);
         model.set_hovered(self.hovered);
@@ -1253,47 +1569,53 @@ impl ChartView {
                 .height,
             );
         }
-        let geometry = paint_bar_chart_with_label_metrics(
-            &mut local,
-            frame,
-            palette,
-            model,
-            value_line_height,
-            category_line_height,
-        );
+        let geometry = if own_clip.is_some() {
+            paint_bar_chart_with_label_metrics(
+                &mut local,
+                frame,
+                palette,
+                model,
+                value_line_height,
+                category_line_height,
+            )
+        } else {
+            model.layout_with_label_metrics(frame, value_line_height, category_line_height)
+        };
         let text_alignment = tekes_ui_tokens::proposal::layout::CHART_LABEL.text_alignment;
-        scene.push_clip(own_clip.expect("checked chart clip"));
-        for primitive in local.primitives() {
-            scene.push(primitive.clone());
+        if let Some(clip) = own_clip {
+            scene.push_clip(clip);
+            for primitive in local.primitives() {
+                scene.push(primitive.clone());
+            }
+            for bar in &geometry.bars {
+                let value = bar.value.to_string();
+                let (value_rect, value_align) =
+                    chart_text_frame(text, &value, bar.value_label, text_alignment);
+                text.draw(
+                    scene,
+                    &value,
+                    proposal::TextRole::UiCaption,
+                    value_rect,
+                    value_align,
+                    palette
+                        .color("primary-text")
+                        .expect("DS primary text token"),
+                );
+                let (category_rect, category_align) =
+                    chart_text_frame(text, &bar.label, bar.category_label, text_alignment);
+                text.draw(
+                    scene,
+                    &bar.label,
+                    proposal::TextRole::UiCaption,
+                    category_rect,
+                    category_align,
+                    palette
+                        .color("secondary-text")
+                        .expect("DS secondary text token"),
+                );
+            }
+            scene.pop_clip();
         }
-        for bar in &geometry.bars {
-            let value = bar.value.to_string();
-            let (value_rect, value_align) =
-                chart_text_frame(text, &value, bar.value_label, text_alignment);
-            text.draw(
-                scene,
-                &value,
-                proposal::TextRole::UiCaption,
-                value_rect,
-                value_align,
-                palette
-                    .color("primary-text")
-                    .expect("DS primary text token"),
-            );
-            let (category_rect, category_align) =
-                chart_text_frame(text, &bar.label, bar.category_label, text_alignment);
-            text.draw(
-                scene,
-                &bar.label,
-                proposal::TextRole::UiCaption,
-                category_rect,
-                category_align,
-                palette
-                    .color("secondary-text")
-                    .expect("DS secondary text token"),
-            );
-        }
-        scene.pop_clip();
         self.layout = ChartViewLayout {
             frame,
             visible: own_clip,
@@ -1561,7 +1883,12 @@ impl CodeBlockView {
         let mut blocks = Vec::new();
         let mut y = frame.min_y() + inset;
         let x = frame.min_x() + inset;
-        let w = frame.size.width.clamp(0., 650.);
+        // The code surface owns an inset on both sides. Measuring only from
+        // the left inset made narrow samples measure wider than their visible
+        // area: the final glyphs were clipped at the right edge instead of
+        // wrapping inside the code block. Preserve the 650pt wide specimen
+        // slot while keeping narrow lines inside the same 14pt inset.
+        let w = (frame.size.width - inset * 2.).clamp(0., 650.);
         for (index, source) in model.lines().enumerate() {
             let measured = text.measure(source, role, w);
             let h = measured.height.max(lh);
@@ -1653,9 +1980,13 @@ impl DiffViewRuntime {
                 DiffKind::Removed => ("− ", "status-failed"),
             };
             let rendered = format!("{prefix}{}", line.text);
-            let measured = text.measure(&rendered, role, frame.size.width.clamp(0., 700.));
+            // Diff text starts after an 8pt leading inset, so reserve the same
+            // amount at the trailing edge. This keeps wrapped prefixes and
+            // the corresponding line geometry inside the component frame.
+            let content_width = (frame.size.width - inset * 2.).clamp(0., 700.);
+            let measured = text.measure(&rendered, role, content_width);
             let h = measured.height.max(line_floor);
-            let rect = Rect::new(frame.min_x() + inset, y, frame.size.width.min(700.), h);
+            let rect = Rect::new(frame.min_x() + inset, y, content_width, h);
             let v = visible(rect, own_clip);
             if let Some(v) = v {
                 scene.push_clip(v);
@@ -1808,6 +2139,329 @@ mod tests {
     fn rect() -> Rect {
         Rect::new(10., 20., 240., 180.)
     }
+    #[test]
+    fn wholly_offscreen_mounted_collections_keep_keyboard_geometry_but_no_paint_or_hits() {
+        let palette = Palette::from(Theme::LIGHT);
+        let onscreen = Rect::new(0., 0., 240., 240.);
+        let offscreen = Rect::new(0., 400., 240., 240.);
+        let clip = Some(Rect::new(0., 0., 240., 240.));
+        let labels: [String; 4] = ["one".into(), "two".into(), "three".into(), "four".into()];
+        let mut text = RecordingText::default();
+        let mut scene = Scene::new();
+        let mut list = List::new(4);
+        let mut list_view = ListView::new();
+        list_view.render(
+            &mut scene, &mut text, &list, &labels, onscreen, clip, palette,
+        );
+        list_view.focus(0, true);
+        scene = Scene::new();
+        text.drawn.clear();
+        let layout = list_view.render(
+            &mut scene, &mut text, &list, &labels, offscreen, clip, palette,
+        );
+        assert_eq!(layout.items.len(), 4);
+        assert_eq!(layout.visible, None);
+        assert!(layout.items.iter().all(|row| row.visible.is_none()));
+        assert!(scene.primitives().is_empty());
+        assert!(text.drawn.is_empty());
+        assert_eq!(
+            list_view.key(ControlKey::End, true, &mut list),
+            CollectionEvent::Changed
+        );
+        assert_eq!(list.selected, Some(3));
+        assert_eq!(
+            list_view.pointer_down(layout.items[3].frame.center(), &mut list),
+            CollectionEvent::Ignored
+        );
+        assert_eq!(
+            list_view.key(ControlKey::Home, true, &mut list),
+            CollectionEvent::Changed
+        );
+        assert_eq!(list.selected, Some(0));
+        list_view.render(
+            &mut scene,
+            &mut text,
+            &list,
+            &labels,
+            offscreen,
+            Some(Rect::default()),
+            palette,
+        );
+        assert!(list_view.layout().items.is_empty());
+        assert_eq!(
+            list_view.key(ControlKey::End, true, &mut list),
+            CollectionEvent::Ignored
+        );
+
+        let mut tree = Tree::default();
+        for label in ["one", "two", "three", "four"] {
+            tree.add(label, None);
+        }
+        let mut tree_view = TreeView::new();
+        tree_view.render(&mut scene, &mut text, &tree, onscreen, clip, palette);
+        tree_view.focus(0, true);
+        scene = Scene::new();
+        text.drawn.clear();
+        let layout = tree_view.render(&mut scene, &mut text, &tree, offscreen, clip, palette);
+        assert_eq!(layout.items.len(), 4);
+        assert!(layout.items.iter().all(|row| row.visible.is_none()));
+        assert!(scene.primitives().is_empty());
+        assert!(text.drawn.is_empty());
+        tree_view.key(ControlKey::End, true, &mut tree);
+        assert_eq!(tree.selected, Some(3));
+        assert_eq!(
+            tree_view.pointer_down(layout.items[3].frame.center(), &mut tree),
+            CollectionEvent::Ignored
+        );
+        tree_view.key(ControlKey::Home, true, &mut tree);
+        assert_eq!(tree.selected, Some(0));
+        tree_view.render(
+            &mut scene,
+            &mut text,
+            &tree,
+            offscreen,
+            Some(Rect::default()),
+            palette,
+        );
+        assert!(tree_view.layout().items.is_empty());
+        assert_eq!(
+            tree_view.key(ControlKey::End, true, &mut tree),
+            CollectionEvent::Ignored
+        );
+
+        let rows = labels
+            .iter()
+            .map(|label| vec![label.clone()])
+            .collect::<Vec<_>>();
+        let headers = ["Name".into()];
+        let order = [0, 1, 2, 3];
+        let mut table = DataTable::new(4, 1);
+        let mut table_view = DataTableView::new();
+        table_view.render(
+            &mut scene, &mut text, &table, &headers, &rows, &order, onscreen, clip, palette,
+        );
+        table_view.focus_row(0, true);
+        scene = Scene::new();
+        text.drawn.clear();
+        let layout = table_view.render(
+            &mut scene, &mut text, &table, &headers, &rows, &order, offscreen, clip, palette,
+        );
+        assert_eq!(layout.rows.len(), 4);
+        assert_eq!(layout.headers.len(), 1);
+        assert!(layout.rows.iter().all(|row| row.visible.is_none()));
+        assert!(scene.primitives().is_empty());
+        assert!(text.drawn.is_empty());
+        table_view.key(ControlKey::End, true, &mut table);
+        assert_eq!(table.selected_row, Some(3));
+        assert_eq!(
+            table_view.pointer_down(layout.rows[3].frame.center(), &mut table),
+            CollectionEvent::Ignored
+        );
+        table_view.key(ControlKey::Home, true, &mut table);
+        assert_eq!(table.selected_row, Some(0));
+        table_view.render(
+            &mut scene,
+            &mut text,
+            &table,
+            &headers,
+            &rows,
+            &order,
+            offscreen,
+            Some(Rect::default()),
+            palette,
+        );
+        assert!(table_view.layout().rows.is_empty());
+        assert_eq!(
+            table_view.key(ControlKey::End, true, &mut table),
+            CollectionEvent::Ignored
+        );
+        let mut chart = BarChart::new(vec![
+            crate::ChartDatum::new("first", 1.),
+            crate::ChartDatum::new("last", 2.),
+        ]);
+        let mut chart_view = ChartView::new();
+        chart_view.render(
+            &mut scene, &mut text, &mut chart, onscreen, clip, palette, 1.,
+        );
+        chart_view.focus(true, &mut chart);
+        scene = Scene::new();
+        text.drawn.clear();
+        let layout = chart_view.render(
+            &mut scene, &mut text, &mut chart, offscreen, clip, palette, 1.,
+        );
+        assert_eq!(layout.geometry.bars.len(), 2);
+        assert_eq!(layout.visible, None);
+        assert!(scene.primitives().is_empty());
+        assert!(text.drawn.is_empty());
+        assert_eq!(
+            chart_view.key(ControlKey::End, true, &mut chart),
+            CollectionEvent::Changed
+        );
+        assert_eq!(chart.selected(), Some(1));
+        assert_eq!(
+            chart_view.pointer_down(layout.geometry.bars[1].rect.center(), &mut chart),
+            CollectionEvent::Ignored
+        );
+        chart_view.key(ControlKey::Home, true, &mut chart);
+        assert_eq!(chart.selected(), Some(0));
+        chart_view.render(
+            &mut scene,
+            &mut text,
+            &mut chart,
+            offscreen,
+            Some(Rect::default()),
+            palette,
+            1.,
+        );
+        assert!(chart_view.layout().geometry.bars.is_empty());
+        assert_eq!(
+            chart_view.key(ControlKey::End, true, &mut chart),
+            CollectionEvent::Ignored
+        );
+    }
+
+    #[test]
+    fn offscreen_collection_rows_remain_keyboard_targets_without_pointer_hits() {
+        let mut scene = Scene::new();
+        let mut text = FixedText { height: 14. };
+        let palette = Palette::from(Theme::LIGHT);
+        let frame = Rect::new(0., 0., 240., 240.);
+        let clip = Some(Rect::new(0., 0., 240., 78.));
+        let mut list = List::new(4);
+        let mut list_view = ListView::new();
+        list_view.render(
+            &mut scene,
+            &mut text,
+            &list,
+            &["one".into(), "two".into(), "three".into(), "four".into()],
+            frame,
+            clip,
+            palette,
+        );
+        list_view.focus(0, true);
+        list_view.key(ControlKey::End, true, &mut list);
+        assert_eq!(list.selected, Some(3));
+        assert!(list_view.layout().items[3].visible.is_none());
+        assert_eq!(
+            list_view.pointer_down(list_view.layout().items[3].frame.center(), &mut list),
+            CollectionEvent::Ignored
+        );
+        list_view.focus(3, true);
+        assert_eq!(
+            list_view.key(ControlKey::Enter, true, &mut list),
+            CollectionEvent::Activated(3)
+        );
+        assert_eq!(list.selected, Some(3));
+
+        let mut tree = Tree::default();
+        for label in ["one", "two", "three", "four"] {
+            tree.add(label, None);
+        }
+        tree.set_disabled(1, true);
+        let mut tree_view = TreeView::new();
+        tree_view.render(&mut scene, &mut text, &tree, frame, clip, palette);
+        tree_view.focus(0, true);
+        tree_view.key(ControlKey::End, true, &mut tree);
+        assert_eq!(tree.selected, Some(3));
+        assert!(tree_view.layout().items[3].visible.is_none());
+        assert_eq!(
+            tree_view.pointer_down(tree_view.layout().items[3].frame.center(), &mut tree),
+            CollectionEvent::Ignored
+        );
+        tree_view.focus(3, true);
+        assert_eq!(
+            tree_view.key(ControlKey::Enter, true, &mut tree),
+            CollectionEvent::Activated(3)
+        );
+
+        let mut table = DataTable::new(4, 1);
+        let mut table_view = DataTableView::new();
+        table_view.render(
+            &mut scene,
+            &mut text,
+            &table,
+            &["header".into()],
+            &[
+                vec!["one".into()],
+                vec!["two".into()],
+                vec!["three".into()],
+                vec!["four".into()],
+            ],
+            &[0, 1, 2, 3],
+            frame,
+            clip,
+            palette,
+        );
+        table_view.focus_row(3, true);
+        assert_eq!(
+            table_view.key(ControlKey::Enter, true, &mut table),
+            CollectionEvent::Changed
+        );
+        assert_eq!(table.selected_row, Some(3));
+        assert!(table_view.layout().rows[3].visible.is_none());
+        assert_eq!(
+            table_view.pointer_down(table_view.layout().rows[3].frame.center(), &mut table),
+            CollectionEvent::Ignored
+        );
+    }
+
+    #[test]
+    fn collection_keys_follow_restored_focus_and_reject_disabled_tree_focus() {
+        let mut scene = Scene::new();
+        let mut text = FixedText { height: 14. };
+        let palette = Palette::from(Theme::LIGHT);
+        let frame = Rect::new(0., 0., 240., 240.);
+        let mut list = List::new(4);
+        list.select(0);
+        let mut view = ListView::new();
+        view.render(
+            &mut scene,
+            &mut text,
+            &list,
+            &["one".into(), "two".into(), "three".into(), "four".into()],
+            frame,
+            None,
+            palette,
+        );
+        view.focus(2, true);
+        assert_eq!(
+            view.key(ControlKey::Down, true, &mut list),
+            CollectionEvent::Changed
+        );
+        assert_eq!(list.selected, Some(3));
+        view.focus(1, true);
+        assert_eq!(
+            view.key(ControlKey::Enter, true, &mut list),
+            CollectionEvent::Activated(1)
+        );
+        assert_eq!(list.selected, Some(1));
+
+        let mut tree = Tree::default();
+        tree.add("one", None);
+        tree.add("two", None);
+        tree.add("three", None);
+        tree.select(0);
+        let mut view = TreeView::new();
+        view.render(&mut scene, &mut text, &tree, frame, None, palette);
+        view.focus(1, true);
+        assert_eq!(
+            view.key(ControlKey::Down, true, &mut tree),
+            CollectionEvent::Changed
+        );
+        assert_eq!(tree.selected, Some(2));
+        view.focus(1, true);
+        assert_eq!(
+            view.key(ControlKey::Enter, true, &mut tree),
+            CollectionEvent::Activated(1)
+        );
+        tree.set_disabled(1, true);
+        assert_eq!(
+            view.key(ControlKey::Enter, true, &mut tree),
+            CollectionEvent::Ignored
+        );
+        assert_eq!(tree.selected, None);
+    }
+
     #[test]
     fn list_uses_owned_clip_geometry_and_clips_wide_text() {
         let mut view = ListView::new();
@@ -2129,7 +2783,7 @@ mod tests {
             partial_layout.items[1].frame.min_x()
                 + proposal::metric("spacing", "space-relaxed").unwrap_or(12.0),
             partial_layout.items[1].frame.min_y(),
-            proposal::metric("size", "size-icon-artboard").unwrap_or(24.0),
+            proposal::metric("size", "size-inline-action").expect("Tree expand action slot token"),
             partial_layout.items[1].frame.size.height,
         );
         assert_eq!(
@@ -2407,6 +3061,17 @@ mod tests {
     fn data_table_header_keyboard_focus_routes_to_sorting() {
         let mut model = DataTable::new(0, 2);
         let mut view = DataTableView::new();
+        view.render(
+            &mut Scene::new(),
+            &mut FixedText { height: 14. },
+            &model,
+            &["Name".into(), "Kind".into()],
+            &[],
+            &[],
+            Rect::new(0., 0., 300., 120.),
+            None,
+            Theme::LIGHT.into(),
+        );
         view.focus_header(0, true);
         assert_eq!(
             view.key(ControlKey::Right, true, &mut model),
@@ -2463,7 +3128,7 @@ mod tests {
     }
 
     #[test]
-    fn sorted_data_table_keys_skip_rows_outside_the_visible_clip() {
+    fn sorted_data_table_keys_traverse_logical_rows_beyond_the_visible_clip() {
         let mut model = DataTable::new(5, 1);
         let mut view = DataTableView::new();
         let mut text = FixedText { height: 14. };
@@ -2486,10 +3151,10 @@ mod tests {
         view.focus_row(3, true);
         assert_eq!(
             view.key(ControlKey::Down, true, &mut model),
-            CollectionEvent::Handled
+            CollectionEvent::Changed
         );
-        assert_eq!(model.selected_row, Some(3));
-        assert_eq!(view.state.focused, Some(3));
+        assert_eq!(model.selected_row, Some(2));
+        assert_eq!(view.state.focused, Some(2));
     }
 
     #[test]
@@ -2648,12 +3313,12 @@ mod tests {
         assert!(
             text.measured
                 .iter()
-                .any(|(value, width)| { value == "+ a sufficiently long line" && *width == 80. })
+                .any(|(value, width)| { value == "+ a sufficiently long line" && *width == 64. })
         );
         assert_eq!(text.drawn, ["+ a sufficiently long line"]);
         assert!(diff_layout.blocks[0].frame.size.height >= 72.);
         assert_eq!(diff_layout.blocks[0].frame.min_x(), 8.);
-        assert_eq!(diff_layout.blocks[0].frame.size.width, 80.);
+        assert_eq!(diff_layout.blocks[0].frame.size.width, 64.);
     }
 
     #[test]
@@ -2725,6 +3390,52 @@ mod tests {
                 assert!((origin.x + ink_width * 0.5 - slot.center().x).abs() < 0.001);
             }
         }
+    }
+
+    #[test]
+    fn code_and_diff_wrapped_lines_reserve_both_horizontal_insets() {
+        let mut scene = Scene::new();
+        let mut text = RecordingText::default();
+        let code_frame = Rect::new(20., 10., 120., 240.);
+        let mut code_view = CodeBlockView::new();
+        let code_layout = code_view.render(
+            &mut scene,
+            &mut text,
+            &CodeBlock {
+                language: "rs".into(),
+                source: "a deliberately long line that wraps in a narrow code block".into(),
+            },
+            code_frame,
+            None,
+            Theme::LIGHT.into(),
+            1.5,
+        );
+        assert!(text.measured.iter().any(|(_, width)| *width == 92.));
+        assert_eq!(text.draw_rects[0].min_x(), code_frame.min_x() + 14.);
+        assert_eq!(text.draw_rects[0].max_x(), code_frame.max_x() - 14.);
+        assert!(code_layout.blocks[0].frame.max_x() <= code_frame.max_x() - 14.);
+
+        text.measured.clear();
+        text.draw_rects.clear();
+        let diff_frame = Rect::new(30., 5., 100., 240.);
+        let mut diff_view = DiffViewRuntime::new();
+        let diff_layout = diff_view.render(
+            &mut scene,
+            &mut text,
+            &DiffView::between(
+                "a deliberately long existing line which wraps",
+                "a deliberately long changed line which wraps",
+            ),
+            diff_frame,
+            None,
+            Theme::LIGHT.into(),
+            1.5,
+        );
+        assert!(text.measured.iter().any(|(_, width)| *width == 84.));
+        assert!(diff_layout.blocks.iter().all(|line| {
+            line.frame.min_x() == diff_frame.min_x() + 8.
+                && line.frame.max_x() == diff_frame.max_x() - 8.
+        }));
     }
 
     #[test]

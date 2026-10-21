@@ -1,0 +1,50 @@
+{
+  "format": "tekesui-feedback-outcome-consumer/1",
+  "owner": "root: sole shared implementation owner",
+  "identity": "ea70927e74f71dfbc427fc3f3a0ad94b4ec6fe959abf6d981ea31c908eae9092",
+  "status": "real independent consumer, conformance/full regression/source-guardedGPU and48active external native paint/AX-value configurations verified; matched whole experience incomplete",
+  "root_cause_category": "consumer contract adaptation",
+  "root_cause": "Registered outcome semantics lacked an actual combined consumer; existing badge Info/explicit labels and progress APIs can express it without new shared states",
+  "shared_fix": "Reuse StatusBadgeView/ProgressView/SkeletonView, ContentHost, palette and text measurement; no shared control or token change",
+  "applicable": [
+    "caller-owned independent outcome and measurable/unknown progress presentations"
+  ],
+  "exceptions": [
+    "Progress100% is not proof of success",
+    "Info fill reused for unverified/cancelled only with distinct visible and semantic labels",
+    "no fake percentage for unknown denominator",
+    "passive group has no activation/focus state",
+    "example state is not a builtin shared Kit protocol"
+  ],
+  "public_consumer_tests": 2,
+  "bounded_consumer_cases": 864,
+  "full_consumer_tests": 171,
+  "strict_consumer_clippy": "passed all-targets",
+  "gpu_frames": 576,
+  "retained_final_pngs": 48,
+  "gpu_input_stability": "gpu-input-stability.json",
+  "snapshot": "verified-source-manifest.json",
+  "token_receipts": 17,
+  "bounded_token_cases": 6336,
+  "canonical_token_replays": 6,
+  "exact_reused_token_receipts": 11,
+  "complete_token_dependency_claim": false,
+  "governance_tests": 44,
+  "composition_tests": 8,
+  "generated_binding_tests": 3,
+  "native": "native-acceptance.json:48active U2790B@2 cases and48actual AX/screenshot records; native host closed/cleaned",
+  "Gold7": "unverified; actual images are not a matched ClientKit reference",
+  "remaining": [
+    "applicable VoiceOver hearing, without inferring it from native AX values",
+    "matched ClientKit normal/narrow/large type visual and Gold7 review",
+    "same final combined source delivery and independent acceptance"
+  ],
+  "cleanup": [
+    "cleanup.json",
+    "refresh-cleanup.json",
+    "gpu-cleanup.json",
+    "gate-cleanup.json",
+    "native-cleanup.json"
+  ],
+  "constraints": "no performance/commit/push/tag/merge/Issue closure; AgentKit frozen package unchanged"
+}

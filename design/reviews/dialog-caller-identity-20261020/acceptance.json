@@ -1,0 +1,64 @@
+{
+  "format": "tekesui-scoped-acceptance/1",
+  "scope": "batch6 Dialog invoker focus identity and independent native consumer integration",
+  "status": "bounded implementation and layered verification passed; batch6 and full goal remain incomplete",
+  "root_cause": "Return intent used ComponentId alone. Replacement/remount could receive stale focus; disabled-at-open intent could become valid later. Native consumer inferred model openness from restored focus.",
+  "shared_fix": "ContentHost captures eligible (ComponentId, existing Content.mount), verifies original mount on close; existing focus path checks current eligibility.",
+  "applicable": "All ContentHost modal DialogContent callers, including rich dialog consumer.",
+  "exceptions": "Reorder preserves mount and restores focus. Replacement/remount/removed/disabled callers receive none; a new explicit focus/activation remains valid. No extra abstraction/token.",
+  "consumer_fix": "Use existing DialogContent::is_open() instead of a parallel cached boolean.",
+  "public_api": {
+    "controls_tests": 359,
+    "new_regressions": 4,
+    "red_receipts": [
+      "red.log",
+      "eligibility-red.log"
+    ],
+    "strict_clippy": true
+  },
+  "real_consumer": {
+    "tests": 151,
+    "rich_dialog_mutation_close_combinations": 12,
+    "coretext": true,
+    "strict_native_example_clippy": true
+  },
+  "gpu": {
+    "cases": 24,
+    "frames": 48,
+    "themes": 4,
+    "brands": 3,
+    "source_identity": "gpu-layer-identity.json",
+    "reference": "Explicit fresh-focus reconstruction of earlier invalid outcome; not a pre-fix GPU executable."
+  },
+  "native": {
+    "evidence": "native/validated.json",
+    "close_checkpoints": 8,
+    "display": "U2790B @2",
+    "input": "actual AppKit menu commands exercising public lifecycle and actual AXPress button reopening",
+    "physical_or_voiceover_claim": false
+  },
+  "gold7": "Existing modal scope, visible focus, close/restore semantics and actual GPU/native rendering checked within this bounded focus fix; not full Gold7/page acceptance.",
+  "tokens": {
+    "files": 9,
+    "bounded_cases": 4416,
+    "complete": false,
+    "new_tokens": 0
+  },
+  "gates": {
+    "composition_components": 45,
+    "composition_tests": 8,
+    "capability_governance_tests": 42,
+    "global_final_capability_check_exit": 0,
+    "global_log": "global-capabilities-final.log"
+  },
+  "protected": "protected-final.json",
+  "source": "source-manifest.json",
+  "cleanup": "cleanup.json",
+  "voiceover": "Kept off; hearing verification remains deferred.",
+  "not_done": [
+    "Other overlay/content-slot consumer contracts",
+    "Full final component/page and VoiceOver acceptance",
+    "Independent public delivery of these WIP changes"
+  ],
+  "no_commit_push_tag_issue_close": true
+}

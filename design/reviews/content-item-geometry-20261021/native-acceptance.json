@@ -1,0 +1,28 @@
+{
+  "identity": "cebf06279bbe90cd0bf556d9680d9c8748fa77f726a19e7ffcf65cf60dd4663b",
+  "binary_sha256": "cd62a04c11f5bf9b5d138ffa3f403ac8db8ea87e12d7d2c6141ef7f901a48904",
+  "accepted_active_external_checkpoints": 7,
+  "geometry_change_directions": 2,
+  "animation_phase_frames": 4,
+  "history_frames": 66,
+  "focus_editor_reverse_selection_retained": true,
+  "same_extent_target_motion_interrupts": true,
+  "new_layout_retry_and_normal_animation_complete": true,
+  "narrow_large_type_centered_both_ancestors": true,
+  "ReducedMotion": "private renderer policy, no system setting change",
+  "VoiceOver": "off, no listening claim",
+  "IME": "no physical IME claim; public/GPU preedit evidence separate",
+  "Gold7": "scoped native screenshots: full focus outline, centered original action text, target visible; no matched ClientKit product-page claim",
+  "images": {
+    "new-layout-centered.jpg": "9d71d76248b5a92924eadde338eda1e2bcd22481b5aeed9078c634d9b2b73112",
+    "final-normal.jpg": "7a0217a32bae5841653a061358e646a8549e0b981257d744349046676506094f",
+    "narrow-large-type.jpg": "50dbc71de14c44322ba96ac850ca6e5e23936e639ff4d3d798f46cde7e6a25c8"
+  },
+  "performance": "not measured",
+  "remaining": [
+    "isolated final source replay",
+    "AgentKit integration",
+    "matched product-page experience",
+    "public input and CI under separate authorization"
+  ]
+}

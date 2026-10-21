@@ -1,0 +1,95 @@
+{
+  "batch": "filtered-menu-accessibility-20261019",
+  "sealed_at": "2026-10-18T23:50:58.868800+00:00",
+  "head": "80d6b05649234f953ea452d42e1cbed369fdddbb",
+  "baseline": "HEAD plus ALL WIP",
+  "root_cause": [
+    "missing public original-index filtered semantic entry",
+    "host candidate activation bypassed original model confirmation",
+    "CommandPalette TextDemo missing logical focus registration"
+  ],
+  "shared_fix": "FilteredMenuView is_current/focus_item/activate_item -> existing external MenuView/MenuRuntime and ComboBox::key(Enter); two retained view adapters",
+  "applicable": [
+    "FilteredMenuView",
+    "ComboBoxView",
+    "CommandPaletteView",
+    "default Gallery actual consumers"
+  ],
+  "exceptions": [
+    "keyboard uses live model before next render; semantic/pointer actions require matching presented snapshot",
+    "original indices are within the current source list, not durable reorder IDs",
+    "semantic actions retain existing host IME arbitration; ComboBox does not own a second text state"
+  ],
+  "checks": {
+    "workspace": {
+      "passed": 1030,
+      "ignored_existing": 1
+    },
+    "independent_consumer": 125,
+    "new_public_api_tests": 3,
+    "actual_gallery_ax_total": 20,
+    "new_gallery_tests": 3,
+    "isolated_shared": 354,
+    "isolated_full_consumer": 125,
+    "byte_exact_replay_files": 529,
+    "owned_patch_paths": 17,
+    "bounded_token_cases": 4500,
+    "token_complete": false,
+    "strict_clippy": "workspace/all-targets and independent consumer passed",
+    "fmt": "passed",
+    "python_design_gates": "passed; initial wrapper named nonexistent merge-design-proposal.py; corrected final-tail executes merge-design-system.py and remaining checks; initial clippy style findings corrected before accepted native build"
+  },
+  "native": {
+    "display": "U2790B",
+    "builtin": false,
+    "backing_scale": 2,
+    "mode": "Light",
+    "compiled_inputs_each": 425,
+    "accepted_scopes": [
+      "combo-accepted",
+      "command-accepted"
+    ],
+    "observed": [
+      "Com filters original candidates1/2; AXPress Comfortable commits source2 once",
+      "Command Search filters sole original command2; AXPress restores trigger",
+      "native Down/Escape,empty results,scope transfer,closed popup candidate readback0"
+    ],
+    "before": "inherited menu-accepted binary: visible candidates absent from native AX; original sealed source identity remains authoritative",
+    "prototype": "current captures before equivalent clippy conditional formatting; final source identities use accepted only"
+  },
+  "gold7": "see gold7-review.json; bounded contract/real integration/experience remain separate",
+  "wip": {
+    "baseline_files": 24091,
+    "unchanged": 24083,
+    "changed_existing": [
+      "crates/tekes-ui-controls/src/layout_view.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+      "design/gallery/capabilities.json",
+      "design/gallery/component-coverage.json",
+      "design/remediation/composition-audit.json",
+      "design/remediation/ledger.json"
+    ],
+    "missing": [],
+    "all_changes_owned_or_ledger": true,
+    "head_unchanged": true,
+    "previous_seals_verified": [
+      "menu-accessibility-20261019",
+      "icon-wip-reconciliation-20261019",
+      "list-accessibility-20261019",
+      "selection-accessibility-20261019"
+    ]
+  },
+  "remaining": [
+    "complete VoiceOver",
+    "physical IME",
+    "full theme/brand native matrix",
+    "other existing producers/nested semantic parts/Inspector and notifications"
+  ],
+  "performance": "not measured",
+  "git_writes_by_this_session": false,
+  "issue_mutations": false,
+  "agentkit_frozen_candidate": "unchanged; not recaptured",
+  "issue_state": "21open/0openPR read; no issue marked complete"
+}

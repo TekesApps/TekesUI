@@ -1,0 +1,101 @@
+{
+  "format": "tekesui-command-results-review/1",
+  "date": "2026-10-18T02:09:52.485990+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues_open": 14,
+  "prs_all_states": 0,
+  "github_changed_since_ledger": false,
+  "root_cause": "ComboBoxView.key and CommandPaletteView.key inferred confirmation from selected value change; second same choice returned None",
+  "fix": "both convenience APIs reuse existing key_event confirmation, Enter down + changed + closed; no new state/token/protocol",
+  "scope_exceptions": [
+    "Gallery already uses key_event; native repeat was not broken",
+    "pointer confirmation already emits each activation",
+    "CommandPalette selected is last executed command, not Button.selected skin",
+    "caller TextSurface keeps query ownership"
+  ],
+  "validation": {
+    "public_choice_contract": 13,
+    "compiled_red_regressions": 2,
+    "command_result_cases": 36,
+    "combined_trigger_result_cases": 120,
+    "shared_packages": 342,
+    "independent_consumer": 33,
+    "gallery_command": 8,
+    "gallery_narrow_large_type_fixture": 1,
+    "strict_clippy": "root all-targets composition-review and consumer all-targets pass",
+    "capability_tests": 37,
+    "composition_tests": 6,
+    "reference_gold7_mechanical_pure_rust_fmt": "pass"
+  },
+  "tokens": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "choice-selection-token-observations.json": 180,
+    "command-results-token-observations.json": 120,
+    "action-token-observations.json": 576
+  },
+  "gpu": {
+    "pages": 144,
+    "earlier_reference_pages": 144,
+    "changed_from_earlier": 144,
+    "earlier_reference": "choice-hover-20261018/gpu-final-* frozen same-component pages; not immediate baseline re-execution",
+    "reason": "new actual executed-command specimen and measured row shift",
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "reviewed_examples": [
+      "Light standard720type150 mid",
+      "Dark increased brand2@2x1440type100 mid"
+    ],
+    "experience": "representative only; full family acceptance incomplete"
+  },
+  "native": {
+    "accepted": [
+      "open palette and query focus",
+      "Enter command0 then repeat command0 after reopen",
+      "no-such-command then Enter leaves query/feedback and no popup",
+      "Escape returns trigger",
+      "StateMatrix shows last executed command from actual View events"
+    ],
+    "log_limit": "only last3 visible; public/Gallery tests separately prove repeat counts",
+    "AX": "window and menu only",
+    "identity": "native/build-identity.json",
+    "exit_inventory": []
+  },
+  "governance": {
+    "public_states": 118,
+    "fixture_gaps": 138,
+    "required": 269,
+    "remaining_choice_requirements": 7
+  },
+  "limits": [
+    "Select empty/loading/error, ComboBox loading/error, CommandPalette loading/error retained",
+    "complete combinations/token dependencies/nativeAX/VoiceOver/physicalIME/full Gold7 incomplete",
+    "performance deferred",
+    "no new runtime abstraction or token/state type"
+  ],
+  "source_sha256": {
+    "crates/tekes-ui-controls/src/layout_view.rs": "63651a817c08df1c1672f6f2bcd8b56ced3ba79efc6fd130f0ceb6cceeb49514",
+    "crates/tekes-ui-controls/tests/choice_contract.rs": "2291fa68bf594574c45efd4dd1e9864fe1810506cd510784744c24edcadfdbf6",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "658fec128ca3ce6cc7535724cc8a18703d5d028f206b0079936dbf6a6b20388c",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs": "99c6e896f566455c9162e7b2f1116aca780d2cc376b8649887489ba81c4eab1d",
+    "design/gallery/capabilities.json": "789333e81e6b0b05aa8beea61e262c1c7f2242b9272dc2472bf095b4003984cc",
+    "design/gallery/component-coverage.json": "da4762dc09e5c119a3fb05f2d0a1b9ecd933d949b1a63150dd2f198fde3358dd",
+    "design/remediation/composition-audit.json": "89f81e499e51b0dc8172d21bddc3b8f5787beceb0f23d51e3bb7d5459dd2b905",
+    "design/remediation/ledger.json": "de13f4ad03e22ff458d4aa4c7168d275cd7c2ab833bc2cb0a69a446db7446667",
+    "docs/design/composition-audit-20261018.md": "30eabb1f21ecb43f812fbfd9325c8583c9019c5ed29785a2dbe238ea05b0d43f",
+    "docs/design/issue-remediation-current-20261017.md": "73c92cdf64b1f90cb8d2e1f58b2c28fa660a0895c0a1a013dfdce1ccd98b0c15",
+    "examples/composition-consumer/tests/scenarios.rs": "bf5e5d927bdf5ddafd2859a1f67e5958b1e06412d767965ff71d18375aa6b244",
+    "crates/tekes-ui-controls/tests/command_result_states.rs": "edb45a43138cd0ea757ea6905455d318ab15deabf15433e8a78311f61638087d",
+    "scripts/audit-command-results-tokens.py": "416611349530608ef8a201c8b28bc28cb51a3b89c6cb5e18760480f2a8f451d2",
+    "docs/design/command-results-20261018.md": "e1f99328c49ca087671912c22245a742c912f99faa3002ad26bdbc9ef2e5a8c5"
+  },
+  "goal_status": "active",
+  "wip_protection": "wip-protection.json"
+}

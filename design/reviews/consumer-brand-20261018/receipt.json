@@ -1,0 +1,102 @@
+{
+  "format": "tekesui-consumer-brand-evidence/1",
+  "date": "2026-10-17T22:14:45.604264+00:00",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "checkout": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI",
+  "source": "HEAD plus all WIP; external consumers use explicit path to same exact source",
+  "issue": 7,
+  "status": "已实现待验收",
+  "root_cause": "consumer brand build boundary + unknown Palette fallback",
+  "shared_fixes": [
+    "reuse merge/compiler/schema/policy/projection",
+    "public verify_consumer_inputs and explicit artifact build input",
+    "existing proposal brand metadata",
+    "Palette registered selection validates unknown index",
+    "migration tests read selected projection"
+  ],
+  "new_ui_components": 0,
+  "new_tokens": 0,
+  "validation": {
+    "default_shared_tests": 304,
+    "custom_tokens_tests": 22,
+    "external_cpu_tests": 2,
+    "external_gpu_tests": 2,
+    "artifact_api_tests_in_shared": 2,
+    "governance_tests": 32,
+    "strict_workspace_clippy": "pass",
+    "strict_token_audit_clippy": "pass",
+    "strict_external_consumer_clippy": "pass",
+    "fmt": "pass",
+    "ds": "pass",
+    "gold7_mechanical": "pass",
+    "reference": "pass",
+    "pure_rust": "pass",
+    "capabilities": "pass",
+    "full_workspace_tests": "not rerun",
+    "hosted_ci": "not run; existing scripts/test-*.py loop discovers new test"
+  },
+  "gpu": {
+    "frames": 16,
+    "real_button_draws": 192,
+    "themes": 4,
+    "scales": [
+      1,
+      2
+    ],
+    "seeds": [
+      "#B57251",
+      "#367F7B"
+    ],
+    "component": "production Button with CoreText and real GPU",
+    "runtime_roles_per_theme": 12,
+    "static_independent_color_roles": 101,
+    "native": false
+  },
+  "runtime_observation_refresh": {
+    "input": 612,
+    "selection": 2016,
+    "complete": false
+  },
+  "native": "not rerun; offline consumer API/GPU only; Gallery-only consent retained",
+  "accessibility": "not rerun; #5 production Gallery and VoiceOver remain",
+  "wip_protection": {
+    "baseline_files": 11636,
+    "intentionally_changed_existing": [
+      "design/gallery/capabilities.json",
+      "design/gallery/component-coverage.json",
+      "design/remediation/ledger.json",
+      "docs/design/issue-remediation-current-20261017.md",
+      "crates/tekes-ui-design-export/src/freshness.rs",
+      "crates/tekes-ui-design-export/src/lib.rs",
+      "crates/tekes-ui-design-export/src/proposal.rs",
+      "crates/tekes-ui-tokens/build.rs",
+      "crates/tekes-ui-tokens/src/lib.rs",
+      "crates/tekes-ui-tokens/src/palette.rs"
+    ],
+    "protected_unchanged": 11626
+  },
+  "source_overlay": [
+    "crates/tekes-ui-design-export/src/freshness.rs",
+    "crates/tekes-ui-design-export/src/lib.rs",
+    "crates/tekes-ui-design-export/src/proposal.rs",
+    "crates/tekes-ui-design-export/tests/consumer_artifact.rs",
+    "crates/tekes-ui-tokens/build.rs",
+    "crates/tekes-ui-tokens/src/lib.rs",
+    "crates/tekes-ui-tokens/src/palette.rs",
+    "design/gallery/capabilities.json",
+    "design/gallery/component-coverage.json",
+    "design/remediation/ledger.json",
+    "docs/design/consumer-brand-20261018.md",
+    "docs/design/issue-remediation-current-20261017.md",
+    "examples/brand-consumer/BrandConfig.json",
+    "examples/brand-consumer/Cargo.lock",
+    "examples/brand-consumer/Cargo.toml",
+    "examples/brand-consumer/README.md",
+    "examples/brand-consumer/src/main.rs",
+    "scripts/compile-consumer-brand.py",
+    "scripts/test-consumer-brand.py"
+  ],
+  "source_manifest": "source-manifest.json",
+  "goal_status": "active",
+  "next": "#14 current 45-component composition matrix"
+}

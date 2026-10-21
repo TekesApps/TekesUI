@@ -1,0 +1,31 @@
+[
+  {
+    "name": "consumer",
+    "exit": 0,
+    "command": [
+      "cargo",
+      "test",
+      "--manifest-path",
+      "examples/composition-consumer/Cargo.toml",
+      "--locked",
+      "--test",
+      "scenarios",
+      "feedback_outcome"
+    ]
+  },
+  {
+    "name": "clippy",
+    "exit": 0,
+    "command": [
+      "cargo",
+      "clippy",
+      "--manifest-path",
+      "examples/composition-consumer/Cargo.toml",
+      "--locked",
+      "--all-targets",
+      "--",
+      "-D",
+      "warnings"
+    ]
+  }
+]

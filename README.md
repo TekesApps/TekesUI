@@ -12,6 +12,14 @@
 
 使用、品牌定制与检查命令见 [design/README.md](design/README.md)。原版 24 张 golden 与历史性能结果保留，新提案画面另行审查，不覆盖历史证据。
 
+查询当前公开 API、Gallery route、适用状态与证据边界：
+
+```bash
+python3 scripts/component-context.py --component tui.button
+```
+
+省略 `--component` 输出完整当前清单。此入口只读，清单或源码过期时拒绝输出，不回退到历史提案的 planned 状态；历史工具仍保留在 `integration.json` 的 `tools.historical_context`。详见[当前 context 入口](docs/design/current-context-20261019.md)。
+
 运行当前 Gallery：
 
 ```bash

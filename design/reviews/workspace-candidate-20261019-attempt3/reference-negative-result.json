@@ -1,0 +1,16 @@
+{
+  "mutated_path": [
+    "design/gallery/brands.json",
+    "presets",
+    0,
+    "color",
+    "tokens",
+    6,
+    "value",
+    "dark"
+  ],
+  "exit_code": 1,
+  "source_restored": true,
+  "manifest_verified": true,
+  "purpose": "provenance optionality must not turn invalid projection into a pass"
+}

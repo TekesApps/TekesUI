@@ -1,0 +1,18 @@
+--- design/reviews/padding-focus-routing-20261021/native-verified-source/crates/tekes-ui-controls/src/lib.rs
++++ crates/tekes-ui-controls/src/lib.rs
+@@ -22,6 +22,7 @@
+ };
+ mod selection;
+ mod text_surface;
++mod toolbar;
+ pub use composite::{
+     DialogEvent, DialogLayout, DialogView, MenuEvent, MenuLayout, MenuView, MenuWheelEvent,
+     MenuWheelInput, TabsLayout, TabsView,
+@@ -37,6 +38,7 @@
+ pub use text_surface::{
+     ReflowAnchor, TextSurface, TextSurfaceHost, TextSurfacePresentation, TextSurfaceTextRenderer,
+ };
++pub use toolbar::{ToolbarAction, ToolbarControl, ToolbarIconAction};
+ mod widgets;
+ pub use widgets::{
+     Button, ButtonFramePolicy, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer,

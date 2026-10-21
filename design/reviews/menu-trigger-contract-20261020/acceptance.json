@@ -1,0 +1,74 @@
+{
+  "format": "tekesui-scoped-acceptance/1",
+  "scope": "batch6 semantic MenuContent trigger and unmount contract",
+  "status": "bounded fix accepted; full batch6/goal remains in progress",
+  "root_cause": "MenuContent did not project existing ButtonContent availability to its semantic menu/AX/overlay paths, and lacked unmount presentation cleanup.",
+  "shared_fix": "composition/adapters.rs: reuse trigger.focusable()/semantics(), existing Button cancel and MenuView.deactivate()/clear_presentation(). No new state/token/protocol.",
+  "applicable": "Every MenuContent in arbitrary public Content trees; heterogeneous List is the first regression consumer, not the upper bound.",
+  "exceptions": "Standalone MenuView retains its explicit set_disabled/window APIs; no arbitrary component children added to semantic menus. Ordinary dismissal retains exit; unmount discards paint/hit layout while keeping caller-owned selection.",
+  "public_api": {
+    "new_tests": 4,
+    "controls_total": 363,
+    "red": "red.log",
+    "strict_clippy": "controls-clippy.log"
+  },
+  "real_consumer": {
+    "existing_consumer_suite_total": 152,
+    "new_matrix_cases": 48,
+    "coretext": true,
+    "source": "examples/composition-consumer/tests/scenarios.rs",
+    "token_feature_clippy": "consumer-token-clippy.log"
+  },
+  "gpu": {
+    "cases": 48,
+    "frames": 96,
+    "themes": 4,
+    "brands": 3,
+    "widths_scales": [
+      [
+        360,
+        1
+      ],
+      [
+        720,
+        2
+      ]
+    ],
+    "reference": "Existing standalone MenuView explicitly reconstructs wrong stale-popup outcome; not a pre-fix binary.",
+    "result": "gpu-result.json"
+  },
+  "native": {
+    "checkpoints": 19,
+    "evidence": "native/validated.json",
+    "display": "U2790B @2",
+    "method": "actual AppKit key/menu/AX events, true native published enabled/parts, actual remove/remount; no physical held-pointer or VoiceOver claim",
+    "kept_draft_selection_and_unrelated_row": true
+  },
+  "gold7": "Bounded menu scope/visible focus/trigger availability, dismissal and fresh-intent semantics checked against actual GPU/native images and events. Not whole-page/whole-component maturity.",
+  "tokens": {
+    "actual_files": 10,
+    "bounded_cases_total": 4656,
+    "menu_wrapper_cases": 240,
+    "menu_actual_lookup_ids": 20,
+    "complete": false,
+    "new_tokens": 0,
+    "summary": "menu-token-summary.json"
+  },
+  "gates": {
+    "composition_components": 45,
+    "composition_tests": 8,
+    "capability_governance_tests": 42,
+    "global_final_capability_check_exit": 0,
+    "global_final_log": "global-capabilities-final.log"
+  },
+  "source": "source-manifest.json; additional probe test/script bytes pinned in token-probes/menu-content.json",
+  "protected": "protected-final.json",
+  "cleanup": "cleanup.json",
+  "voiceover": "kept off/deferred",
+  "no_commit_push_tag_issue_close": true,
+  "remaining": [
+    "Popover owned-content public integration/focus and lifecycle",
+    "Other selected batch6 consumers and final combined candidate",
+    "Deferred VoiceOver hearing and remaining batches"
+  ]
+}

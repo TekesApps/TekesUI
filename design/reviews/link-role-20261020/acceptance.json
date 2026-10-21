@@ -1,0 +1,169 @@
+{
+  "status": "implemented; scoped API/consumer/native-object verification passed; revised-role native-window experience pending",
+  "root_cause": "Missing public Link role/native AXLink and absent retained Gallery Link semantic node; Button-only single-action owner classifiers",
+  "shared_fix": [
+    "crates/tekes-ui-controls/src/composition.rs",
+    "crates/tekes-ui-platform-macos/src/accessibility.rs"
+  ],
+  "applicable": "custom Component Link roles, actual retained Gallery Link, generic Gallery/independent consumer semantic publishers",
+  "exceptions": "Button remains Button; decorative text suppressed only under action owners; Link appearance and Enter/Space behavior unchanged; destination stays host-owned; no built-in LinkContent or new registered component",
+  "public_API": {
+    "controls_passed": 345,
+    "test": "link_semantics_reuse_single_action_ownership_and_fixed_children"
+  },
+  "real_consumer": {
+    "gallery": "role/one activation/disabled Focus and Press rejection/inactive late Press passed",
+    "independent_native_example": "compiled; runtime role experience not claimed"
+  },
+  "native_object": {
+    "groups": 6,
+    "windows": 0,
+    "desktop_actions": 0,
+    "scope": "AXLink, Press/Focus selectors, disabled denial, absent/stale/current/closed object checks; enabled Window dispatch excluded"
+  },
+  "Gold7": "existing rendering/Enter-vs-Space preserved; single semantic owner/lifecycle isolation verified automatically; external-window and VoiceOver revised-role acceptance pending",
+  "historical_physical_receipt": "../link-native-availability-20261020/native/acceptance.json; user confirmed normal; not rebound to this revision",
+  "token_probes": {
+    "receipts": 9,
+    "bounded_cases": 4416,
+    "complete": false
+  },
+  "checks": [
+    {
+      "name": "fmt-final",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "gallery-final",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "tekes-ui-gallery",
+        "link_exposes_its_own_role_and_owned_activation",
+        "--locked",
+        "--offline"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "native-object-final",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "tekes-ui-platform-macos",
+        "--test",
+        "link_native",
+        "--locked",
+        "--offline"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "consumer-native",
+      "command": [
+        "cargo",
+        "check",
+        "--manifest-path",
+        "examples/composition-consumer/Cargo.toml",
+        "--example",
+        "native",
+        "--locked",
+        "--offline"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "tekes-ui-controls",
+        "-p",
+        "tekes-ui-platform-macos",
+        "--all-targets",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "gates": [
+    {
+      "name": "token-probes",
+      "command": [
+        "/opt/homebrew/bin/python3.14",
+        "-I",
+        "design/reviews/link-role-20261020/refresh-observations.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "generate",
+      "command": [
+        "/opt/homebrew/bin/python3.14",
+        "-I",
+        "scripts/generate-component-capabilities.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "governance",
+      "command": [
+        "/opt/homebrew/bin/python3.14",
+        "-I",
+        "scripts/test-component-capabilities.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "composition-tests",
+      "command": [
+        "/opt/homebrew/bin/python3.14",
+        "-I",
+        "scripts/test-composition-audit.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "composition-gate",
+      "command": [
+        "/opt/homebrew/bin/python3.14",
+        "-I",
+        "scripts/check-composition-audit.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "capability-gate",
+      "command": [
+        "/opt/homebrew/bin/python3.14",
+        "-I",
+        "scripts/generate-component-capabilities.py",
+        "--check"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "cleanup": "cleanup.json",
+  "protection": "protection.json",
+  "source": "source-inputs.json",
+  "voiceover": "off; deferred by user",
+  "GPU": "not rerun for semantic-only changes; old pixel evidence retains old identity",
+  "publication": "no commits/pushes/tags/Issue writes",
+  "performance": "not measured",
+  "remaining": [
+    "revised-role external-display small-host actual AX/pointer/keyboard acceptance",
+    "VoiceOver only when user available; no automatic restart"
+  ]
+}

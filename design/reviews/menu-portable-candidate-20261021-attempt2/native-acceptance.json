@@ -1,0 +1,100 @@
+{
+  "identity": "b430dae10b89dfd9c0f30e74d81f499a2ddb6778994ffcffead8b79ad942b9aa",
+  "binary_sha256": "bf2ce1104ff89390820bd45c5850341221daec8ccc8566eb564e6249f064db6f",
+  "screen": {
+    "name": "U2790B",
+    "builtin": false,
+    "scale": 2.0
+  },
+  "status": "bounded external native passed; system reactivation after minimize and receiver/full experience pending",
+  "actual_input_choices": [
+    {
+      "kind": "Activate",
+      "mount": 10,
+      "selection": {
+        "index": 1,
+        "label": "Title A–Z",
+        "model_revision": 3,
+        "value_path": [
+          "sort",
+          "titleAscending"
+        ]
+      },
+      "source": "Keyboard",
+      "target": 18201
+    },
+    {
+      "kind": "Activate",
+      "mount": 10,
+      "selection": {
+        "index": 1,
+        "label": "Primary Folder",
+        "model_revision": 3,
+        "value_path": [
+          "group",
+          "folder"
+        ]
+      },
+      "source": "Accessibility",
+      "target": 18201
+    },
+    {
+      "kind": "Activate",
+      "mount": 10,
+      "selection": {
+        "index": 1,
+        "label": "Primary Folder",
+        "model_revision": 3,
+        "value_path": [
+          "group",
+          "folder"
+        ]
+      },
+      "source": "Pointer",
+      "target": 18201
+    },
+    {
+      "kind": "Activate",
+      "mount": 10,
+      "selection": {
+        "index": 4,
+        "label": "Move Pin Down",
+        "model_revision": 3,
+        "value_path": [
+          "movePinDown"
+        ]
+      },
+      "source": "Pointer",
+      "target": 18201
+    }
+  ],
+  "check_focus_snapshot": "runtime/native/continuous-final/0002.json",
+  "left_parent_snapshot": "runtime/native/continuous-final/0010.json",
+  "source_choices_snapshot": "runtime/native/checkpoint-final-tab-and-choice-sources.json",
+  "confirmed": [
+    "AX trigger opening emits no choice",
+    "Keyboard Right/Down/Enter original sort/titleAscending once",
+    "checked Recent distinct from focused unchecked Title A–Z",
+    "AX Group hierarchy and group/folder once",
+    "real coordinate pointer disabled MovePinUp attempted with no choice; Group folder and root MovePinDown each once",
+    "Left actual Group parent; End/Up skips separator/disabled",
+    "Escape/Tab/outside click no choice; Tab focuses Message unchanged",
+    "real resize720->408pt width; menu groups bounded to408, Left available",
+    "minimize closes original chain, clears focus, no extra choice",
+    "Window menu restores visibility but system remains inactive; late AX/key rejected"
+  ],
+  "pending": [
+    "True system reactivation after minimize not obtained by tools; recovery not passed",
+    "Physical IME and VoiceOver hearing not run; off/deferred",
+    "Actual AgentKit Sidebar and matched whole ClientKit/Gold7 experience",
+    "Final public immutable pin/remoteCI per separate authorization"
+  ],
+  "images": [
+    "final-baseline.png",
+    "final-pointer-open-observed.png",
+    "final-group-open.png",
+    "final-narrow-submenu.png"
+  ],
+  "scope": "Exact515-file package and its signed native binary only. Earlier183e Root native/fullCI remain separate; no whole-library maturity promotion.",
+  "performance": "not measured"
+}

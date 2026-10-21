@@ -1,0 +1,88 @@
+{
+  "updated_at": "2026-10-21T08:24:02.226868+00:00",
+  "status": "partial implementation; lower backend extraction verified, ProcessComponent/ProcessContainer final API not ready",
+  "authoritative_contracts": [
+    "docs/design/process-component-navigation.md",
+    "docs/design/process-container-apphost-migration.md",
+    "docs/design/process-container.md"
+  ],
+  "implementation": [
+    "One existing parent transport/frame acquisition and owned surface import moved to module-runtime",
+    "AppHost old import paths are compatibility re-exports, no duplicate implementation",
+    "Public fixed-catalogue worker entry; parent never invokes factory; malformed/unknown/ambiguous worker entry rejected",
+    "Direct IOSurface dependency moved from AppHost to module-runtime; lock versions unchanged"
+  ],
+  "verified": {
+    "module_entry_unit": 3,
+    "current_controls": 440,
+    "current_composition_consumer": 307,
+    "independent_backend_gpu": {
+      "workers": [
+        37108,
+        37109
+      ],
+      "cases": 6,
+      "max_delta": 0,
+      "no_apphost_gallery_dependency": true,
+      "parent_factory_called": false
+    },
+    "apphost_compatibility_gpu": {
+      "workers": [
+        31497,
+        31498,
+        31499
+      ],
+      "panels": 3,
+      "text_pixels": [
+        1899,
+        1953,
+        1618
+      ]
+    },
+    "strict_clippy": "module-runtime + AppHost all-targets passed, after dependency move",
+    "known_text_measurement_test": "Old private Debug/cache comparison replaced by editing/arranged paragraph identity/caret/clip/scroll/focus invariants; 7 text_viewport pass, full307 consumer pass; product behavior unchanged"
+  },
+  "source_hashes_are": "Current implementation snapshot; this is not the final immutable delivery candidate",
+  "source_sha256": {
+    "crates/tekes-ui-module-runtime/src/parent.rs": "37b79d861583aae268424e88f5e68fdbdcd28dfb023d8ac9a0f9314de6e930fa",
+    "crates/tekes-ui-module-runtime/src/surface.rs": "21a60b25399151b8a72e1a89fff8e899963f6df4b4d501a324f15ffa4e351f2e",
+    "crates/tekes-ui-module-runtime/src/worker_entry.rs": "a0a9cb113c791103978c668de4909fba9ddbc5330898e67dcd87600f7c86dbcd",
+    "crates/tekes-ui-module-runtime/src/lib.rs": "4ce660dbffc40cc7eb9a156cc25f0dd1287aa31301f9a24d43f95b8d2001c921",
+    "crates/tekes-ui-module-runtime/Cargo.toml": "2e4fd847146078e03cddb801995a5c535ff15ab664b83257cc7e54b4113a5a07",
+    "crates/tekes-ui-app-host/src/module_process.rs": "6f052cb33081edad27cd901f1c493ddc7da22dcd1a10a07718b8866f2244782d",
+    "crates/tekes-ui-app-host/src/gpu.rs": "7c06c1e8eb52319ba8c2211bff31bf7f5819ac02328992e74837631334371111",
+    "crates/tekes-ui-app-host/Cargo.toml": "8ea6e3c75d60bf040e1128adadcaae5d436c52c2daa40414c1f16ace0728f9bd",
+    "crates/tekes-ui-module-runtime/examples/process_container_backend.rs": "fb0b04451d0db1766c388d2713b99b286f2deb30191ea9a345611b528c340f39",
+    "Cargo.lock": "5b91e544465b7b4d5642299decc690f77076baeb1911856af8290104c1d684e2"
+  },
+  "retained_executable_sha256": {
+    "design/reviews/process-container-foundation-20261021/retained/independent-backend": "be0c2df68a66a477a00da6635e92ea8368bd564094926b9a74129abb43a91b86",
+    "design/reviews/process-container-foundation-20261021/retained/apphost-backend-three": "faa4881754ef1d655fb62ae02b6d96e2891499b2705e08d65b39782a28a2d5bc"
+  },
+  "not_yet_implemented": [
+    "ProcessComponent nonblocking lifecycle and deterministic blocked-producer shutdown/reaping",
+    "Service/toolbar protocol and explicit optional View negotiation; V1 is still View-only",
+    "Headless zero Renderer/GPU/Scene/Atlas/shared-surface path",
+    "RAII rejection/never-imported frame ownership and shared frame-budget/GPU completion lifecycle",
+    "Standard public Content ProcessContainer adapter and two actual UI consumers",
+    "Required keyboard/scroll/IME/AX capabilities and final external native/Gold7 acceptance"
+  ],
+  "ownership": {
+    "Rust TekesUI": "shared runtime/ProcessComponent/ProcessContainer and native platform/propagation/SplitView",
+    "Rust AppHost": "Toolbar + consumer assembly/routing; no duplicate runtime or writable history/cursor"
+  },
+  "delivery_targets": [
+    "01a15c56-b5a8-73d2-991b-5e5ce3fbc611",
+    "01a14920-0d6e-7652-9a60-c74ef1a1f70f"
+  ],
+  "ready_to_migrate_notice_sent": false,
+  "constraints": "No performance, commit, push, tag, Issue close or frozen-package overwrite",
+  "navigation_review_dependencies": [
+    "rename succeeded but directory sync failed: replacement/durability uncertainty",
+    "new Host epoch recovery barrier and revision-confirmed restore",
+    "headless/window toolbar scope must not require Panel/View IDs"
+  ],
+  "navigation_review_boundary": "Read-only review conveyed by authorized AppHost session; no claim that persistence is implemented or passed; generic service/optional-View work remains unblocked.",
+  "dependency_delta_receipt": "design/reviews/process-container-foundation-20261021/dependency-deltas-final.json",
+  "cleanup_allocated_bytes_released": 234921984
+}

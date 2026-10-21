@@ -89,7 +89,8 @@
     "decorative": "1 / backing_scale logical pt",
     "increased_contrast": "stroke-rule",
     "note": "stroke-hairline=0.5 is retained for @2x compatibility only; not a universal width",
-    "required_boundary": "stroke-rule"
+    "required_boundary": "stroke-rule",
+    "split_view": "Reuse decorative 1/backing_scale ink for the divider in normal contrast, stroke-rule in increased contrast. Logical divider allocation, hit slop, minimum panes and drag/cancel contract remain unchanged."
   },
   "inspector": {
     "default": 320,
@@ -136,7 +137,13 @@
     "minimum": [
       720,
       480
-    ]
+    ],
+    "toolbar": {
+      "default_height": "Native window-top toolbar uses the current AppKit contentLayoutRect converted into the extended content view; no fixed 52/56/66 pt assumption. Ordinary non-extended content returns zero overlap.",
+      "inline": "Explicit View-local Toolbar bounds remain caller-owned; native titlebar sizing does not expand inline toolbars.",
+      "input": "Use the same current native chrome height for painting, module viewport version/size, and pointer coordinate conversion.",
+      "drag": "Eligible native titlebar chrome may take an unhandled or explicitly bubbled primary drag; cancel the previous component interaction first and pass the retained original native mouse-down to AppKit. Captured selection/slider/splitter gestures keep ownership."
+    }
   },
   "scroll_area": {
     "content_padding": 12,
@@ -278,6 +285,35 @@
       "shadow": "none",
       "boundary": "separator",
       "boundary_width": "stroke-rule"
+    }
+  },
+  "control_emphasis": {
+    "policy": "Content and primary actions lead. Named quiet actions are identified by their label/icon and transient feedback, without a resting enclosing stroke in normal or increased contrast. Required inputs and selection/error indicators retain explicit boundaries. Keyboard focus is independent. Disabled controls never paint keyboard focus.",
+    "boundary_roles": {
+      "action-primary": {
+        "normal": "fill",
+        "increased": "fill"
+      },
+      "action-quiet": {
+        "normal": "none",
+        "increased": "none"
+      },
+      "action-panel": {
+        "normal": "none",
+        "increased": "none"
+      },
+      "required-input": {
+        "normal": "border",
+        "increased": "border"
+      },
+      "selected": {
+        "normal": "border",
+        "increased": "border"
+      },
+      "error": {
+        "normal": "status-failed",
+        "increased": "status-failed"
+      }
     }
   }
 }

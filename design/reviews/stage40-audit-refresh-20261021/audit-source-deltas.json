@@ -1,0 +1,146 @@
+[
+  {
+    "source": "crates/tekes-ui-controls/src/composition.rs",
+    "old_sha256": "9369b60f0d26faef84b7169703451e0de35946a599a099a97a9942d7fb913119",
+    "old_snapshot": "design/reviews/toolbar-splitter-defaults-20261021/before-bubbling/crates/tekes-ui-controls/src/composition.rs",
+    "current_sha256": "a55bdfba8f2e13f74643c1f0a7032a9c66f365a3018c94dfd3bdbe89b84aeb41",
+    "diff_lines": 330,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-controls_src_composition.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-controls/src/layout_view.rs",
+    "old_sha256": "c6fecfce79f62c29ebbba3ebfb1c60ac99709d7f32b7f85d4234a35579edce51",
+    "old_snapshot": "design/reviews/padding-focus-routing-20261021/native-verified-source/crates/tekes-ui-controls/src/layout_view.rs",
+    "current_sha256": "855ce70ecfaa1aeec965072593f0925b5053b3d33e6adfd83f7ccc589652cefd",
+    "diff_lines": 109,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-controls_src_layout_view.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-controls/src/lib.rs",
+    "old_sha256": "68370760bdbeb230259ed4b0bbf94dae54447719b4645a94242f8c8e22f86376",
+    "old_snapshot": "design/reviews/padding-focus-routing-20261021/native-verified-source/crates/tekes-ui-controls/src/lib.rs",
+    "current_sha256": "63df40ae30da29555f0b74f226f265bb9543e60e2230b9977d224cc770cceddc",
+    "diff_lines": 18,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-controls_src_lib.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-controls/src/text_surface.rs",
+    "old_sha256": "590a1f196998d53d66384e9339ae30f29a908a8097ebabf9c2c0db1cac1c32b8",
+    "old_snapshot": "design/reviews/content-item-portable-candidate-20261021-attempt2/portable-source/crates/tekes-ui-controls/src/text_surface.rs",
+    "current_sha256": "44afcd0bd4d7ed886887eefc3e5f80036c2cba60f417a34ec6e991b2750593f7",
+    "diff_lines": 162,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-controls_src_text_surface.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-gallery/src/host.rs",
+    "old_sha256": "c65ec262e5d9aea60d6d3de585aa14c2c8b54cf468babb5976dcd09c53d42402",
+    "old_snapshot": "design/reviews/field-metadata-20261019/source/crates/tekes-ui-gallery/src/host.rs",
+    "current_sha256": "133bd1d74fbc106b1a88ec356be7c5bfe5f4b7f0662bc54ec890df7e34c5c4db",
+    "diff_lines": 18,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-gallery_src_host.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-platform-macos/src/shared.rs",
+    "old_sha256": "730fe792594ca00d0aafd06cb081791f5c9e113d6a294e55435000a3d2dac36a",
+    "old_snapshot": "design/reviews/toolbar-splitter-defaults-20261021/before-native-handoff/crates/tekes-ui-platform-macos/src/shared.rs",
+    "current_sha256": "58d172c8056beb040e8997b82134dec3b959e72c4270a09f7969a270657348ad",
+    "diff_lines": 164,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-platform-macos_src_shared.rs.diff"
+  },
+  {
+    "source": "design/gallery/public-api-surface.json",
+    "old_sha256": "c2c7dcbcca53601c279606c415137ca4ab81fa49ba84b6e5d5c6ca38f669b9d1",
+    "old_snapshot": "design/reviews/menu-portable-candidate-20261021-attempt2/independent-extract/source/design/gallery/public-api-surface.json",
+    "current_sha256": "7292e546b5e37f5ab16adfafce8bcb76d6d21072eb66bd05f21bf876e3656c67",
+    "diff_lines": 33,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/design_gallery_public-api-surface.json.diff"
+  },
+  {
+    "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+    "old_sha256": "b94d493fb3ce011e68a4ca42eea31d30f9d30ded9fc063ed701286129c610550",
+    "old_snapshot": "design/reviews/toolbar-splitter-defaults-20261021/before/crates/tekes-ui-gallery/src/gallery/workbench.rs",
+    "current_sha256": "14eb0d21cbb124fe945c96bbd442578d2da2829ff5d944fb6b5da719b756deb0",
+    "diff_lines": 21,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-gallery_src_gallery_workbench.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+    "old_sha256": "48e85473fb5c2e2667dc16fab46925c8c3de6a9e26d62bbed14b655dfc615c89",
+    "old_snapshot": "design/reviews/toolbar-splitter-defaults-20261021/before-native-handoff/crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
+    "current_sha256": "8ee7df0b5bf459c8e5f80656883acd4ba123675ad5d29a98ab44feb7b382a139",
+    "diff_lines": 59,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-gallery_src_gallery_workbench_extended.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-gallery/src/gallery/mod.rs",
+    "old_sha256": "24db27129bfe007d35e2ad882c4a6e1cffb23318cd0cf09bb724f3d27ec81049",
+    "old_snapshot": "design/reviews/frozen-ci-after-padding-intent-20261021/source/crates/tekes-ui-gallery/src/gallery/mod.rs",
+    "current_sha256": "7ae965fe71b63d1390aeb680b81be2d5ac3e661a57365d923d40f6f3e3ecb9d7",
+    "diff_lines": 37,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-gallery_src_gallery_mod.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-platform-macos/src/lib.rs",
+    "old_sha256": "2003ad6eca3825bae0a7fa359c2e5d8498b7841617d996108996bbe0a7acb3a0",
+    "old_snapshot": "design/reviews/content-item-portable-candidate-20261021-attempt2/portable-source/crates/tekes-ui-platform-macos/src/lib.rs",
+    "current_sha256": "bbc83c400f9934b29a8d54de89b03d03a29c90641796284a60071b7a6121a039",
+    "diff_lines": 14,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-platform-macos_src_lib.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-controls/tests/pointer_contract.rs",
+    "old_sha256": "fb35a5294c9d927797e0412dc696a8764ca67f1a104de84a39e52ba01810f200",
+    "old_snapshot": "design/reviews/content-item-portable-candidate-20261021-attempt2/portable-source/crates/tekes-ui-controls/tests/pointer_contract.rs",
+    "current_sha256": "7573617af6de52d4c534c8a198d629aff82bdd90870835cfcad7006025b2ff1f",
+    "diff_lines": 255,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-controls_tests_pointer_contract.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-text/src/coretext/shaper.rs",
+    "old_sha256": "8f8031bfdc952a951f0a500e3ea90d86145cb30e4916415bd1dafd979f3cf158",
+    "old_snapshot": "design/reviews/content-item-portable-candidate-20261021-attempt2/portable-source/crates/tekes-ui-text/src/coretext/shaper.rs",
+    "current_sha256": "d545edc433df1437dfd2f126ec264c1d5cbca8fdc769e48d9c0905f6e6bbfbee",
+    "diff_lines": 348,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-text_src_coretext_shaper.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-platform-macos/src/event.rs",
+    "old_sha256": "f6ca08eafed88b257b9e987c8c0f6cf575e513ee5d22df46028f3948ba5d2557",
+    "old_snapshot": "design/reviews/content-item-portable-candidate-20261021-attempt2/portable-source/crates/tekes-ui-platform-macos/src/event.rs",
+    "current_sha256": "4d3a082bc8c3c18434fc34dbe1325d392032d72b6bea80505a0690f10f8516fe",
+    "diff_lines": 24,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-platform-macos_src_event.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-platform-macos/src/view.rs",
+    "old_sha256": "0bc864ceb663f4a8bdc9da280dd0f9bc0e27b759b753c7ad9a7ef84636fe609a",
+    "old_snapshot": "design/reviews/toolbar-splitter-defaults-20261021/before-native-handoff/crates/tekes-ui-platform-macos/src/view.rs",
+    "current_sha256": "56264e670f1465d48ebd8b2e76fdcb31d939b8c3ff130c101b2d90727884cf8f",
+    "diff_lines": 109,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-platform-macos_src_view.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-platform-macos/src/app.rs",
+    "old_sha256": "9862d63d1db6fdfd70895fab619a1246055deb3cefceca51584343e474bd461d",
+    "old_snapshot": null,
+    "current_sha256": "32c93329906e6275630a4b3e64f32aa7c1f3920352e3ae0c7538512fe21e7641",
+    "diff_lines": 0,
+    "diff": null
+  },
+  {
+    "source": "crates/tekes-ui-controls/tests/separator_scale.rs",
+    "old_sha256": "79d099023ea7236019163032d157ade0e6ea8adafe96708b7f8c0740eb972fd1",
+    "old_snapshot": "design/reviews/padding-focus-routing-20261021/native-verified-source/crates/tekes-ui-controls/tests/separator_scale.rs",
+    "current_sha256": "cbed16c03a8f57ad41ef7f77b4a1480c79014223f44fad4cec0a9742addd6c07",
+    "diff_lines": 70,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-controls_tests_separator_scale.rs.diff"
+  },
+  {
+    "source": "crates/tekes-ui-text/src/coretext/mod.rs",
+    "old_sha256": "e54e0afb6df97d2f85264bf818918f0bb320e90ce882c718c92a2d2e107ad2ea",
+    "old_snapshot": "design/reviews/content-item-portable-candidate-20261021-attempt2/portable-source/crates/tekes-ui-text/src/coretext/mod.rs",
+    "current_sha256": "8313d43943f7b9718a792eec04234c30d53025fdfd724bba4fa052e128dd1d38",
+    "diff_lines": 8,
+    "diff": "design/reviews/stage40-audit-refresh-20261021/diffs/crates_tekes-ui-text_src_coretext_mod.rs.diff"
+  }
+]

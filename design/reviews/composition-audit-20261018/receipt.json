@@ -1,0 +1,98 @@
+{
+  "format": "tekesui-composition-audit-evidence/1",
+  "date": "2026-10-17T22:31:56.082440+00:00",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "checkout": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI",
+  "source": "HEAD plus all WIP",
+  "issue": 14,
+  "scope": "complete current component composition audit/planning + existing protocol bug fix; no blanket migration or window Toolbar implementation",
+  "audit": {
+    "components": 45,
+    "public_api_anchors": 94,
+    "shared_runtime_anchors": 13,
+    "source_files": 27,
+    "built_in_participation": {
+      "implemented": 9,
+      "partial": 5,
+      "missing": 31
+    },
+    "leaf_children_not_required": true
+  },
+  "shared_fix": {
+    "root_cause": "failed removal closed contained Dialog before determining mutable/removable boundary",
+    "location": "ContentHost::remove",
+    "applicable": "all owned Content trees, root/fixed/read-only child boundaries",
+    "before_red_log": "removal-before.log",
+    "before_core": "owned-files-before/crates/tekes-ui-controls/src/composition.rs",
+    "after": "preserve scope/focus/presentation on error; valid removal retains original lifecycle"
+  },
+  "validation": {
+    "shared_tests": 305,
+    "protocol_tests": 17,
+    "independent_consumer_tests": 22,
+    "gallery_filtered_tests": 6,
+    "gpu_removal_test": 1,
+    "governance_tests": 32,
+    "audit_guard_tests": 6,
+    "strict_workspace_clippy": "pass",
+    "strict_consumer_clippy": "pass",
+    "strict_token_audit_clippy": "pass",
+    "fmt": "pass",
+    "diff": "pass",
+    "ds": "pass",
+    "gold7_mechanical": "pass",
+    "reference": "pass",
+    "pure_rust": "pass",
+    "capabilities": "pass",
+    "full_workspace_tests": "not rerun",
+    "hosted_ci": "not run; new tests discovered by existing scripts/test-*.py loop"
+  },
+  "gpu": {
+    "frames": 272,
+    "rejected_removal_frames": 32,
+    "identical_before_after_pairs": 16,
+    "minimal_current_frames": 240,
+    "native": false,
+    "visual_review": "selected light 640@1x and dark increased 960@2x; full frame matrix is not full native acceptance"
+  },
+  "runtime_observation_refresh": {
+    "input": 612,
+    "selection": 2016,
+    "complete": false
+  },
+  "native": "not rerun; existing scoped consumer evidence retained historically; Gallery-only consent does not authorize other app/system settings",
+  "accessibility": "full production Gallery export and VoiceOver acceptance remain; source audit identifies actual independent bridge",
+  "wip_protection": {
+    "baseline": 11729,
+    "changed_existing": [
+      "crates/tekes-ui-controls/src/composition.rs",
+      "crates/tekes-ui-controls/tests/composition.rs",
+      "crates/tekes-ui-gallery/src/gallery/composition_acceptance.rs",
+      "design/gallery/capabilities.json",
+      "design/gallery/component-coverage.json",
+      "design/remediation/ledger.json",
+      "docs/design/container-composition-audit-20261017.md",
+      "docs/design/issue-remediation-current-20261017.md",
+      "examples/composition-consumer/tests/scenarios.rs"
+    ],
+    "protected_unchanged": 11720
+  },
+  "source_manifest": "source-manifest.json",
+  "source_overlay": [
+    "crates/tekes-ui-controls/src/composition.rs",
+    "crates/tekes-ui-controls/tests/composition.rs",
+    "crates/tekes-ui-gallery/src/gallery/composition_acceptance.rs",
+    "design/gallery/capabilities.json",
+    "design/gallery/component-coverage.json",
+    "design/remediation/composition-audit.json",
+    "design/remediation/ledger.json",
+    "docs/design/composition-audit-20261018.md",
+    "docs/design/container-composition-audit-20261017.md",
+    "docs/design/issue-remediation-current-20261017.md",
+    "examples/composition-consumer/tests/scenarios.rs",
+    "scripts/check-composition-audit.py",
+    "scripts/test-composition-audit.py"
+  ],
+  "goal_status": "active",
+  "next": "#8 action family states/token dependency verification"
+}

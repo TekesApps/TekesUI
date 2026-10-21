@@ -1,0 +1,70 @@
+{
+  "issue": 23,
+  "source_identity": "2f0902d9f90fb069696c52edc38d9b7e7f8f0d0c4a3f0141e21fe1ac3f3183d0",
+  "status": "local_technical_acceptance_passed_independent_review_pending",
+  "checks": [
+    {
+      "condition": "第二公开consumer普通圆角容器+正文+按钮/footnote；普通Field不退化",
+      "status": "local_pass",
+      "evidence": [
+        "native/acceptance.json",
+        "gpu-acceptance.json"
+      ]
+    },
+    {
+      "condition": "无表单空隙/边框/背景；同几何换行，父文档单滚动拥有者",
+      "status": "local_pass",
+      "evidence": [
+        "gpu-acceptance.json",
+        "native/narrow.json",
+        "native/scrolled.json"
+      ]
+    },
+    {
+      "condition": "中文emoji选择复制、AX可见文本及UTF16范围、真实文本服务",
+      "status": "local_pass_scoped",
+      "evidence": [
+        "native/copied.json",
+        "native/accepted-ax.txt",
+        "native/selected.png"
+      ],
+      "excluded": [
+        "VoiceOver",
+        "physical IME"
+      ]
+    },
+    {
+      "condition": "受控更新/追加保留选区，拒绝过期身份/版本，不复制编辑状态机",
+      "status": "local_pass",
+      "evidence": [
+        "public-api.log",
+        "native/appended-selection.json",
+        "../component-runs/plain-text-active-final-20261019/consumer.log"
+      ]
+    }
+  ],
+  "root_cause": [
+    "shared presentation contract",
+    "parent scroll ownership and caret reveal"
+  ],
+  "shared_fix": [
+    "existing TextSurface/TextFieldContent opt-in presentation",
+    "existing ContentHost focus/reveal",
+    "all explicitly non-scrolling TextSurfaces yield wheel"
+  ],
+  "exceptions": [
+    "ordinary Field defaults and focused selection ink retained",
+    "no automatic component migration",
+    "document-start reveals text, not decorative padding"
+  ],
+  "owner": "root: single shared implementation owner",
+  "native_round": "plain-text-active-final-20261019 accepted and cleaned",
+  "independent_review": {
+    "thread": "01a14920-0d6e-7652-9a60-c74ef1a1f70f",
+    "status": "requested",
+    "request_at": "2026-10-19T14:55:52.634010+00:00",
+    "avoid_duplicate_build": "supersedes older batch2/3 build request when not started; retain separate original conclusions"
+  },
+  "delivery": "local immutable source only; no public commit/pin; no commit/push/Issue closure performed",
+  "root_checkout_boundary": "Concurrent Scene3D WIP preserved, outside source identity. Entire live checkout is not claimed green."
+}

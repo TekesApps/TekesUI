@@ -1,0 +1,59 @@
+{
+  "issue": 35,
+  "status": "已实现待验收",
+  "owner": "root sole SDK implementation; Rust AgentKit actual Sidebar receiver",
+  "root_cause": "Original Content had no help declaration/common delayed route. Editing service did not guarantee readonly labels; nominal line height cropped large/fallback-font captions; stale clock and semantic-frame boundaries needed explicit validation.",
+  "shared_locations": [
+    "crates/tekes-ui-controls/src/composition/help.rs",
+    "crates/tekes-ui-controls/src/composition.rs",
+    "crates/tekes-ui-controls/src/composition/label.rs",
+    "crates/tekes-ui-controls/src/feedback_view.rs TooltipView",
+    "crates/tekes-ui-design-export/src/effects.rs",
+    "design/source/interaction-contracts.json tooltip.content_help"
+  ],
+  "applicable": "original Content semantic/action owners in scrollable List and other existing composition trees; not limited to AgentKit",
+  "exceptions": [
+    "no interactive TooltipContent/arbitrary content slots",
+    "same declaration no-op; unmount clears and needs rebind",
+    "disabled explanation may remain readable but activation rejected",
+    "missing clock clears transient requests; missing readonly service uses original renderer only for text that fits, otherwise semantic-only",
+    "native adapter retains original active-input/Cancel/window lifecycle responsibility"
+  ],
+  "current_verification": {
+    "targeted_API": 18,
+    "root_full": "271consumer/426controls/22tokens/25export; strict controls/consumer/export Clippy passed",
+    "GPU": "final source16cases192frames, actual glyph bounds/full first line/ellipsis and unchanged pixels outside tooltip; final host build/all-target strictClippy pass",
+    "native": "14 actual active external checkpoints on d6a6712a; original AX help/action/mount/scroll/long text; inactive cancellation passed, reactivation pending; native-acceptance-final.json",
+    "independent": "3366559a;13paths/503source; exact archive clean-extract all11checks passed (50text395controls268consumer22tokens25export); receiver pending; e5b30ac0 superseded",
+    "tokens": "17actual probes6432bounded; complete=false; token-checks-accepted.json",
+    "gates": "gates.json all passed"
+  },
+  "rejected_and_red_evidence": [
+    "before-api.log",
+    "ax-press-dwell-before-fix.log",
+    "missing-label-before-fix.log",
+    "gpu-first-pass-rejected-blank-help",
+    "gpu-second-pass-rejected-top-clip",
+    "gpu-height-before-fix.log",
+    "clock-loss-before-fix.log",
+    "semantic-frame-before-fix.log",
+    "tooltip-region-before-fix.log",
+    "native/rejected-metadata-rearm-output.json",
+    "metadata-dismissal-before-fix.log"
+  ],
+  "protocol_matrix": "Tooltip becomes partial original-owner help attachment;10implemented7partial28missing; all45native remain unverified",
+  "earlier_inputs": "all old497 a30b18db and other frozen packets unchanged; fullCI7e5092c9 is before#35",
+  "independent_packet_plan": "3366559a final13path/503file packet; all11exact replay checks passed; e5b superseded before handoff; all old packets immutable",
+  "remaining": [
+    "AgentKit exact336 actual Sidebar receiver and independent experience acceptance",
+    "physical hover, VoiceOver hearing when applicable; actual native reactivation remains pending",
+    "matched ClientKit/Gold7 page and public immutable pin/CI under explicit publication scope"
+  ],
+  "performance": "not measured",
+  "Git": "no commit/push/tag/close",
+  "cleanup": {
+    "disk_bytes_released": 523800576,
+    "scope": "exact replay owned host/consumer/local SDK build outputs in shared review-cache; registry cache reused; executables/source/packets/evidence retained",
+    "receipt": "design/reviews/content-help-portable-candidate-20261021-attempt2/portable-acceptance.json"
+  }
+}

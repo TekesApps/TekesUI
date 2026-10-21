@@ -1,0 +1,25 @@
+{
+  "status": "confirmed shared-contract defect; repair not yet implemented",
+  "owner": "root: sole shared implementation owner",
+  "issues": [
+    1,
+    12
+  ],
+  "root_cause_category": "public component contract/host scale adaptation; existing design semantics sufficient",
+  "root_cause": "Separator painter uses fixed1pt; SeparatorView does not accept host backing scale although shared decorative_border and JSON hairline rule already exist",
+  "source_identity": "1560c56865580607b6c95ee666749eb06302312389890f22ee538d715335557d",
+  "verification": {
+    "actual_public_view_gpu_cases": 144,
+    "actual_gpu_frames": 288,
+    "mismatched_cases": 36,
+    "matching_cases": 108,
+    "failed_scope": "ordinary Light/Dark @2, three brands, horizontal/vertical, three physical phases",
+    "current_physical_width": 2,
+    "existing_shared_contract_physical_width": 1,
+    "increased_contrast": "matches existing stroke-rule; no change proposed",
+    "native": "not run",
+    "whole_Gold7": "not accepted"
+  },
+  "next_action": "After current collection final native validation, reuse decorative_border and existing render_at_scale convention; migrate all standalone Separator view/story paths. Review interactive SplitView divider separately rather than automatically thinning it.",
+  "constraints": "No current production changes; no token/new abstraction; current collection binary and AgentKit frozen inputs unchanged; no performance or Git/Issue mutations"
+}

@@ -1,0 +1,11 @@
+{
+  "changed": [
+    "design/reviews/input-family-consumer-20261020/host/src/main.rs"
+  ],
+  "root_cause": "review-host adaptation omission; TextSurface and production consumer already support undo/redo",
+  "reuse": "same no-Edit-menu command mapping as examples/composition-consumer/examples/native.rs",
+  "scope": "all three aliases in this small host; no library/token/API changes",
+  "checks": "4 API/publisher tests + strict all-target Clippy/build/fmt passed",
+  "native": "new signed process running; final shortcut acceptance pending",
+  "exception": "native platform that supplies undo via Edit menu need not duplicate key fallback"
+}

@@ -1,0 +1,30 @@
+{
+  "scope": "Batch7 shared scroll-input prerequisite for #22; not structured reading-anchor completion",
+  "owner": "root",
+  "API": {
+    "controls": 374,
+    "regressions": 4,
+    "strict_clippy": true
+  },
+  "consumer": {
+    "tests": 159,
+    "new_regressions": 2,
+    "strict_clippy": true
+  },
+  "GPU": {
+    "cases": 48,
+    "frames": 144,
+    "current_final_render_inputs": "final-inputs-stable.json"
+  },
+  "native": "Recorded signed build:12 real-native assertions passed; later foreign renderer input is outside this receipt and requires final combined verification.",
+  "visual": "Not accepted; see visual-feedback.json",
+  "remaining": [
+    "Matched ClientKit/approved Gallery visual reference comparison.",
+    "Implement and validate #22 structured stable Content-item anchor/document transaction; no substitute single TextSurface.",
+    "Continue full batch7 collections and batch8 final page acceptance."
+  ],
+  "performance": "not measured",
+  "git": "No commit/push/issue-close",
+  "cleanup": "cleanup.json",
+  "acceptance": "acceptance.json"
+}

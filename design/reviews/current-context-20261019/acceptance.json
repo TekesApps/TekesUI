@@ -1,0 +1,31 @@
+{
+  "status": "scoped local governance fix passed; live root still correctly fails closed",
+  "verified_at": "2026-10-19T16:04:52.646225+00:00",
+  "source_identity": "378799df29107c5ce81eeda0d51a4f874552c94f30512aac864ecfa4ab62e33f",
+  "shared_fix": "Existing generate-component-capabilities main supports read-only context; tiny default context entry delegates to it; integration now chooses current entry and retains historical tool",
+  "applies_to": "all current registered components; exact IDs/routes; new APIs still require explicit classification",
+  "tests_passed": 42,
+  "gates_passed": [
+    "isolated capability freshness",
+    "full design-system/archive/refs/projection in existing dependency environment",
+    "Gold7 mechanical only",
+    "reference alignment",
+    "composition static audit"
+  ],
+  "root_negative": {
+    "stdout_bytes": 0,
+    "exit_code": 1,
+    "cause": "unclassified TickingNumber and TickingNumberError; no stale/historical fallback"
+  },
+  "CI": "existing test-*.py loop runs the expanded capability suite; current uncommitted changes not validated remotely",
+  "native_or_experience_claim": false,
+  "frozen_Field203d38ff_modified": false,
+  "new_components_accepted": false,
+  "performance": "not measured",
+  "git_write": "none",
+  "fixture_corrections": [
+    "include transitive token observation inputs in temporary CLI fixture",
+    "actual route component-button, not a guessed button route",
+    "use existing Python environment with declared jsonschema dependency for full DS checks"
+  ]
+}

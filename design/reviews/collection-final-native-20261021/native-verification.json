@@ -1,0 +1,153 @@
+{
+  "source_scope": "preserved collection candidate; subsequent independent WIP is not automatically accepted",
+  "live_wip_changed_inputs": [
+    "crates/tekes-ui-controls/src/extended.rs",
+    "crates/tekes-ui-controls/src/layout_view.rs",
+    "examples/composition-consumer/src/lib.rs",
+    "examples/composition-consumer/src/scenarios.rs"
+  ],
+  "source_identity": "1a6a0e81bc0b8084e04924d8e5c710138e4e78e23d79b109a9d0b4338b83f5bc",
+  "binary_sha256": "644930d9aceb3a8cbcbea318a42643f0c1e268010aa94b116e7b9ec6b0ab4eea",
+  "native_checks": [
+    {
+      "check": "List: disabled late focus cannot activate",
+      "sequence": 19,
+      "pass": true
+    },
+    {
+      "check": "List: restore cannot revive old focus",
+      "sequence": 24,
+      "pass": true
+    },
+    {
+      "check": "List: fresh focus enables activation and one final ring",
+      "sequence": 29,
+      "pass": true
+    },
+    {
+      "check": "Tree: disabled late focus cannot activate",
+      "sequence": 37,
+      "pass": true
+    },
+    {
+      "check": "Tree: restore cannot revive old focus",
+      "sequence": 42,
+      "pass": true
+    },
+    {
+      "check": "Tree: fresh focus enables activation and one final ring",
+      "sequence": 47,
+      "pass": true
+    },
+    {
+      "check": "TableRow: disabled late focus cannot activate",
+      "sequence": 55,
+      "pass": true
+    },
+    {
+      "check": "TableRow: restore cannot revive old focus",
+      "sequence": 60,
+      "pass": true
+    },
+    {
+      "check": "TableRow: fresh focus enables activation and one final ring",
+      "sequence": 65,
+      "pass": true
+    },
+    {
+      "check": "TableHeader: disabled late focus cannot activate",
+      "sequence": 73,
+      "pass": true
+    },
+    {
+      "check": "TableHeader: restore cannot revive old focus",
+      "sequence": 78,
+      "pass": true
+    },
+    {
+      "check": "TableHeader: fresh focus enables activation and one final ring",
+      "sequence": 83,
+      "pass": true
+    },
+    {
+      "check": "Chart: no fresh focus rejects native Right",
+      "sequence": 88,
+      "pass": true
+    },
+    {
+      "check": "Chart: fresh focus accepts native Right",
+      "sequence": 93,
+      "pass": true
+    },
+    {
+      "check": "Source shrink: actual native Down selects live row1",
+      "sequence": 98,
+      "pass": true
+    },
+    {
+      "check": "Source shrink: subsequent native Enter remains usable",
+      "sequence": 100,
+      "pass": true
+    },
+    {
+      "check": "Source growth: native Right preserves mounted header0",
+      "sequence": 105,
+      "pass": true
+    },
+    {
+      "check": "Source growth: subsequent Enter sorts original header0",
+      "sequence": 107,
+      "pass": true
+    },
+    {
+      "check": "outside-clip.json",
+      "sequence": 119,
+      "pass": true
+    },
+    {
+      "check": "inside-clip.json",
+      "sequence": 125,
+      "pass": true
+    },
+    {
+      "check": "outside-hit-inside-focus-ink.json",
+      "sequence": 133,
+      "pass": true
+    },
+    {
+      "check": "narrow-navigation.json",
+      "sequence": 177,
+      "pass": true
+    },
+    {
+      "check": "List: disabled real pointer does not change model",
+      "sequence": 140,
+      "pass": true
+    },
+    {
+      "check": "Tree: disabled real pointer does not change model",
+      "sequence": 148,
+      "pass": true
+    },
+    {
+      "check": "TableRow: disabled real pointer does not change model",
+      "sequence": 156,
+      "pass": true
+    },
+    {
+      "check": "TableHeader: disabled real pointer does not change model",
+      "sequence": 164,
+      "pass": true
+    },
+    {
+      "check": "Actual minimize: late inactive focus rejected; header sort retained",
+      "sequence": 180,
+      "pass": true
+    }
+  ],
+  "reactivation": "pending actual system activation",
+  "screen": "U2790B @2",
+  "type_scale": 1.5,
+  "scope": "bounded functional native keyboard/pointer/window only; no child AX, VoiceOver, physical IME, whole-page Gold7 or matched ClientKit visual acceptance",
+  "performance": "not measured"
+}

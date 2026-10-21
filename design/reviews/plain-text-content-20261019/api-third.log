@@ -1,0 +1,11 @@
+   Compiling tekes-ui-controls v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-controls)
+    Finished `test` profile [unoptimized] target(s) in 0.32s
+     Running tests/plain_text_content.rs (target/review-cache/debug/deps/plain_text_content-3d1a69a4a0229c09)
+
+running 3 tests
+test plain_document_keeps_utf16_selection_across_controlled_append_and_rejects_stale_values ... ok
+test plain_document_has_no_form_geometry_and_parent_clipping_does_not_reshape_it ... ok
+test plain_document_delegates_precise_and_wheel_scroll_to_its_single_parent ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+

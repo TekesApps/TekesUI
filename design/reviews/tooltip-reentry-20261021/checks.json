@@ -1,0 +1,14 @@
+[
+  {
+    "name": "api",
+    "exit": 0
+  },
+  {
+    "name": "controls",
+    "exit": 0
+  },
+  {
+    "name": "controls-clippy",
+    "exit": 0
+  }
+]

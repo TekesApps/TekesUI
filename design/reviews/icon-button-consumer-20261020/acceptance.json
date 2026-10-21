@@ -1,0 +1,68 @@
+{
+  "status": "scoped API/real-consumer/GPU/external-native accepted; broader family audit remains",
+  "root_cause_classification": "public component contract and foundation interaction audit; no shared defect reproduced",
+  "shared_fix": "none required: existing IconButtonView/ButtonRuntime availability, cancellation, focus, icon layout and required-name contract reused",
+  "applicable_components": [
+    "existing IconButton model and IconButtonView consumers; Gallery actual publisher retains same public model/name/action path"
+  ],
+  "exceptions": [
+    "IconButton has no text caption to center; approved SVG artboard is centered in natural square frame",
+    "loading/disabled both reject activation; icon palette follows existing component contract; no new spinner protocol",
+    "Space activates on release; Enter on down; unlike Link, Space is owned by button",
+    "no physical held-pointer/VoiceOver or motion-timeline acceptance claimed from synthetic events"
+  ],
+  "public_API": {
+    "tests": 2,
+    "name_geometry_action_cases": 24,
+    "in_flight_boundary_cases": 192,
+    "root_dependencies": "public Rust package dependencies only; actual CoreText text renderer and approved SVG backend",
+    "strict_Clippy": "passed"
+  },
+  "real_consumer": {
+    "host": "host/",
+    "adapter": "existing Component/ContentHost + IconButtonView; host owns placement, action count and native bridge only",
+    "new_registered_components": 0
+  },
+  "GPU": {
+    "cases": 288,
+    "frames": 576,
+    "profiles": "4themes/3brands/2natural sizes/1x+2x/6states",
+    "motion": "Reduced Motion true; temporal normal-motion acceptance separate",
+    "images": "image-manifest.json",
+    "inspection": [
+      "theme0-brand0-compactfalse-scale2-rest-composed.png",
+      "theme3-brand2-compacttrue-scale2-focus-composed.png"
+    ],
+    "checks": "exact direct IconButtonView pixel equality; actual nonblank SVG/chrome; icon artboard center and natural frame"
+  },
+  "native": {
+    "status": "passed",
+    "evidence": "native/result.json",
+    "checkpoints": 14,
+    "pid": 43909,
+    "source_identity_inputs": 286,
+    "screen": "actual active U2790B@2",
+    "scope": "Button role/name; Pointer/Space/Enter/AX once; disabled/loading keyboard+pointer isolation; hidden semantics and keyboard isolation; fresh focus on restore",
+    "AX_boundary": "enabled AX activation recorded; disabled/loading AX rejection covered by independent consumer tests, no VoiceOver hearing claim"
+  },
+  "Gold7": {
+    "G1": "bounded existing neutral/brand palette preserved in realGPU; no style change",
+    "G2": "bounded six-state direct component parity; full-page hierarchy separate",
+    "G3": "natural square and approved SVG centered; inspected Light and high-contrast focus",
+    "G4": "Reduced Motion deterministic renders passed; normal motion timeline not accepted",
+    "G5": "cancel and disable/loading/hide temporal event cases passed; native input pending; IME N/A icon-only",
+    "G6": "bounded active external native actions/focus isolation passed; broader cross-window/assistive audit separate",
+    "G7": "independently buildable small host + exact source closure + native checkpoints passed; code/evidence retained"
+  },
+  "cleanup": {
+    "own_package_artifacts": "cleaned after signed copy; shared dependencies retained",
+    "runtime": "closed; exact process absent, signed identity and unused checks passed; cleaned; cleanup.json",
+    "code_images_logs": "retained"
+  },
+  "voiceover": "off; user deferred",
+  "performance": "not measured",
+  "publication": "no commit/push/tag/merge/Issue writes",
+  "remaining": [
+    "deferred VoiceOver hearing and wider motion audit remain; no batch completion"
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "conclusion": "success",
+  "headSha": "dbe5f72170c26bc1d4c227f8274bb922e3dbf1ca",
+  "jobs": [
+    {
+      "completedAt": "2026-10-19T09:16:25Z",
+      "conclusion": "success",
+      "databaseId": 117979973866,
+      "name": "check",
+      "startedAt": "2026-10-19T09:12:47Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-10-19T09:12:49Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-19T09:12:48Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T09:13:07Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "startedAt": "2026-10-19T09:12:49Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T09:13:17Z",
+          "conclusion": "success",
+          "name": "安装工具链（读取 rust-toolchain.toml）",
+          "number": 3,
+          "startedAt": "2026-10-19T09:13:07Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T09:13:17Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-python@v5",
+          "number": 4,
+          "startedAt": "2026-10-19T09:13:17Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T09:13:40Z",
+          "conclusion": "success",
+          "name": "Design package, brand generation and Rust boundaries",
+          "number": 5,
+          "startedAt": "2026-10-19T09:13:17Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T09:13:41Z",
+          "conclusion": "success",
+          "name": "Run cargo fmt --check",
+          "number": 6,
+          "startedAt": "2026-10-19T09:13:40Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T09:14:18Z",
+          "conclusion": "success",
+          "name": "Run cargo clippy --workspace --all-targets -- -D warnings",
+          "number": 7,
+          "startedAt": "2026-10-19T09:13:41Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T09:16:18Z",
+          "conclusion": "success",
+          "name": "Run cargo test --workspace",
+          "number": 8,
+          "startedAt": "2026-10-19T09:14:18Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T09:16:19Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-python@v5",
+          "number": 15,
+          "startedAt": "2026-10-19T09:16:18Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T09:16:20Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 16,
+          "startedAt": "2026-10-19T09:16:19Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T09:16:24Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 17,
+          "startedAt": "2026-10-19T09:16:20Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/TekesApps/TekesUI/actions/runs/39228327983/job/117979973866"
+    }
+  ],
+  "status": "completed",
+  "url": "https://github.com/TekesApps/TekesUI/actions/runs/39228327983"
+}

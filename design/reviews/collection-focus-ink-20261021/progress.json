@@ -1,0 +1,84 @@
+{
+  "format": "tekesui-collection-focus-ink/1",
+  "owner": "root: sole shared implementation owner",
+  "status": "shared implementation and scoped API/production adapter/Gallery regression/CoreText-GPU/governance passed; exact native and final experience incomplete",
+  "source_identity": "c9f7eee78bbd564f8a49b703eedb96b081b493159291c11a77e14a3d1a1f2625",
+  "root_cause": "Collection content/control-frame clip cut outside-control keyboard focus; later sibling chrome could occlude it.",
+  "shared_fix": [
+    "collections_view.rs::paint_collection_focus reuses ContainerLayout ancestor/background clipping and canonical paint::focus_ring, once after sibling chrome",
+    "widgets.rs existing ButtonSize::radius shared crate-internally; no duplicated radius definition"
+  ],
+  "applicable": [
+    "all ListView rows",
+    "all TreeView rows",
+    "all DataTableView rows and headers"
+  ],
+  "exceptions": [
+    "Actual ancestor clipping is enforced.",
+    "Overflow-cropped rows retain viewport clip; wholly hidden rows emit no focus ink.",
+    "Chart internal-margin implementation unchanged in48real before/after comparisons.",
+    "Hosts retain existing focus-bound reserve/reveal responsibility."
+  ],
+  "compatibility": "No public signatures, models, tokens, row/column geometry, text alignment or pointer targets changed; focus stays in existing interaction state.",
+  "verification": {
+    "API": {
+      "old_failures": 6,
+      "current_new_tests": 9,
+      "controls": 409,
+      "strict_clippy": true,
+      "covers": "true ancestor/partial/fully clipped rows, final paint order, no expanded pointer target, fractional last-column widths"
+    },
+    "real_consumer": {
+      "ordinary_tests": 168,
+      "exact_Gallery_focus_adapter": "extracted byte-for-byte; unchanged production entry",
+      "actual_Gallery_tests": 13,
+      "filtered_gallery_tests": 418,
+      "actual_gallery_strict_clippy": true
+    },
+    "GPU": {
+      "cases": 432,
+      "frames": 1680,
+      "before_after_full_ink_reference_equal": 384,
+      "unchanged_chart": 48,
+      "before": "../collection-focus-availability-20261020/gpu/",
+      "after": "gpu/",
+      "result": "gpu-result.json"
+    },
+    "tokens": {
+      "files": 13,
+      "cases": 5688,
+      "complete": false,
+      "collection_cases": 504,
+      "scope_correction": "Header sort is rest/sort, not selected; selected comes from actual selected rows. Earlier records retained, no longer bound current."
+    },
+    "governance": 44,
+    "composition_tests": 8,
+    "current_components": 45,
+    "compile_bindings": 3,
+    "native": "not run on exact source; no VoiceOver started",
+    "Gold7": "G3/G5 contract/integration/scoped GPU passed; full native, matched ClientKit/whole experience remain unverified"
+  },
+  "source_manifest": "verified-source-manifest.json",
+  "production_delta": "owned-production.patch",
+  "checks": [
+    "final-checks.json",
+    "integration-checks.json",
+    "gates.json"
+  ],
+  "cleanup": "cleanup.json",
+  "frozen_inputs": "AgentKit2b16 and bd3 unchanged; no consumer freeze promotion",
+  "remaining": [
+    {
+      "work": "current exact native availability/keyboard and final focus visibility across family",
+      "owner": "root",
+      "proof": "active external-display small host, exact source/binary/event identity; keyboard/disabled/inactive/focus and clip separately"
+    },
+    {
+      "work": "applicable assistive/matched ClientKit/whole page acceptance",
+      "owner": "root with hearing only when user available",
+      "proof": "exact same final candidate and proper experience scope; no GPU substitution"
+    }
+  ],
+  "constraints": "No performance, commit/push/tag/merge/Issue closure, new UI framework or unrelated WIP edits",
+  "concurrent_context": "concurrent-viewer-context.json: independent3Dviewer byte identity changed after gates; exact component/pattern/example claims unchanged, latest projection refreshed,3Dbehavior not accepted"
+}

@@ -133,10 +133,22 @@ def violations(root: Path, files: list[Path]) -> list[str]:
     root = root.resolve()
     errors = []
     local_graph = {}
-    try:
-        workspace_dependencies = tomllib.loads((root / "Cargo.toml").read_text()).get("workspace", {}).get("dependencies", {})
-    except (OSError, ValueError):
-        workspace_dependencies = {}  # The managed manifest pass reports syntax errors.
+    def workspace_for(manifest_path):
+        # Review evidence contains complete independent Cargo workspaces. Never
+        # interpret their workspace=true dependencies against the outer repo.
+        for directory in manifest_path.parent.parents:
+            if directory != root and root not in directory.parents:
+                break
+            candidate = directory / "Cargo.toml"
+            if candidate.is_file():
+                try:
+                    document = tomllib.loads(candidate.read_text())
+                except (OSError, ValueError):
+                    continue  # The managed manifest pass reports syntax errors.
+                if "workspace" in document:
+                    return directory, document["workspace"].get("dependencies", {})
+        return root, {}
+
     for path in files:
         path = root / path.relative_to(original_root)
         name = path.relative_to(root).as_posix()
@@ -158,6 +170,11 @@ def violations(root: Path, files: list[Path]) -> list[str]:
             build = manifest.get("package", {}).get("build")
             if isinstance(build, str) and Path(build).suffix.lower() in FOREIGN_SUFFIXES:
                 errors.append(f"{name}: foreign build entry {build}")
+            if "workspace" in manifest:
+                workspace_root = path.parent
+                workspace_dependencies = manifest["workspace"].get("dependencies", {})
+            else:
+                workspace_root, workspace_dependencies = workspace_for(path)
             for table in dependency_tables(manifest):
                 for alias, declaration in table.items():
                     dep = declaration if isinstance(declaration, dict) else {}
@@ -167,7 +184,7 @@ def violations(root: Path, files: list[Path]) -> list[str]:
                         if inherited is None:
                             errors.append(f"{name}: unresolved inherited dependency {alias}")
                         dep = inherited if isinstance(inherited, dict) else {}
-                        dependency_base = root
+                        dependency_base = workspace_root
                     dependency = dep.get("package", alias)
                     if package:
                         local_graph[package].add(dependency)
@@ -250,6 +267,22 @@ class GuardTests(unittest.TestCase):
 
     def test_workspace_alias_cannot_hide_gallery_compare_edge(self):
         self.assertTrue(self.check({"Cargo.toml": '[workspace]\n[workspace.dependencies]\nprobe={package="tekes-ui-compare",path="crates/compare"}', "crates/gallery/Cargo.toml": '[package]\nname="tekes-ui-gallery"\n[dependencies]\nprobe.workspace=true', "crates/compare/Cargo.toml": '[package]\nname="tekes-ui-compare"'}))
+
+    def test_nested_review_workspace_resolves_its_own_inheritance(self):
+        self.assertEqual(self.check({
+            "Cargo.toml": '[workspace]\n[workspace.dependencies]\nouter="1"',
+            "reviews/consumer/Cargo.toml": '[workspace]\n[workspace.dependencies]\nshared={package="public-text",path="crates/text"}',
+            "reviews/consumer/crates/demo/Cargo.toml": '[package]\nname="demo"\n[dependencies]\nshared.workspace=true',
+        }), [])
+
+    def test_nested_review_workspace_still_rejects_private_and_escape(self):
+        for declaration in ['{package="TekesClientKit",version="1"}', '{path="../../../escape"}']:
+            with self.subTest(declaration=declaration):
+                self.assertTrue(self.check({
+                    "Cargo.toml": '[workspace]',
+                    "reviews/consumer/Cargo.toml": '[workspace]\n[workspace.dependencies]\nshared='+declaration,
+                    "reviews/consumer/crates/demo/Cargo.toml": '[package]\nname="demo"\n[dependencies]\nshared.workspace=true',
+                }))
 
     def test_indirect_gallery_compare_edge_fails(self):
         self.assertTrue(self.check({"Cargo.toml": '[package]\nname="tekes-ui-gallery"\n[dependencies]\ntekes-ui-text="1"', "crates/text/Cargo.toml": '[package]\nname="tekes-ui-text"\n[dependencies]\ntekes-ui-compare="1"'}))

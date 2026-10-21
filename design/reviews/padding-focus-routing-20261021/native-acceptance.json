@@ -1,0 +1,15 @@
+{
+  "identity": "d5dab70775631b1688640ce2ed9a4955941706213b12b06d97ef6756f812f12f",
+  "binary_sha256": "40f7f2acb425e4c5f25125723b0f946dff0f7e184646039aa7fb0901a90426f0",
+  "accepted_checkpoints": 16,
+  "external_display": "U2790B@2",
+  "original_focus_selection_undo_button_AX_Tab_and_lifecycle": true,
+  "physical_IME": "not performed; API/GPU preedit and native ordinary input are separate",
+  "VoiceOver": "off; no hearing claim",
+  "Gold7": "scoped original control/selection/focus/retained ownership; no matched ClientKit product-page claim",
+  "diagnostics": [
+    "native-entry-diagnostic.json: initial inactive attempts excluded",
+    "Close followed by bound getAXState reopened a new diagnostic process; no post-close reset was accepted; second close plus process-only unused check completed"
+  ],
+  "performance": "not measured"
+}

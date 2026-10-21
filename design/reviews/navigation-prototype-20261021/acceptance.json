@@ -1,0 +1,54 @@
+{
+  "status": "passed scoped minimum headless navigation prototype; native five-process integration pending",
+  "navigation_cases": 16,
+  "navigation_evidence": "verified-final/acceptance.json",
+  "executable_sha256": "0ef30f0c4bcc46a393db249da19e7012d10e9a258568dd526a74e601ab10fb3f",
+  "source_sha256": {
+    "crates/tekes-ui-app-host/src/navigation/host.rs": "356fd20b80140bc4b2fc719cd37223067a0456c8c8c93837b686086fe9934725",
+    "crates/tekes-ui-app-host/src/navigation/store.rs": "dd1087e50b7c87b280fa9d88091cbc38b6085a305041c2377d70bf4730dfb060",
+    "crates/tekes-ui-app-host/src/navigation/mod.rs": "f7ac122be60332b8a14310d74120c96ed3152c0efbb9d1ef76f41ad92cad996f",
+    "crates/tekes-ui-app-host/src/navigation/model.rs": "9d3f6f2bb468f8a5dc6943ce26f0de5a09c06d68019f1b08e2cc1c08a752a407",
+    "crates/tekes-ui-app-host/examples/navigation_prototype.rs": "8fe1c2dbc6f28301bc81b236dac6089ed9a9f12c237654a414f50daa647ac922",
+    "crates/tekes-ui-app-host/src/lib.rs": "a8a57fb03e0acc148e435d02a74097bb729d9e50423d7af270475057866183a1",
+    "crates/tekes-ui-app-host/src/window.rs": "80dd213e78b1559e911e75a063bbd2e1e01cb00f08c4e753866fb12f5b51ca2b",
+    "crates/tekes-ui-app-host/Cargo.toml": "be3436b46888d97b12ebb3fcf8f3189a68c7171ad7b632fea108baad56528bad",
+    "examples/app-host-demo/src/verify.rs": "9b8f52b5290de3901718e1409584148a400f94393ebda009d322f7bd092e2892"
+  },
+  "shared_runtime": "Reuse current TekesUI ProcessComponent/ProcessControl. Shared runtime is still live WIP; not a frozen release candidate. Tested executable retained separately.",
+  "checks": {
+    "apphost_example_build": "passed",
+    "apphost_all_targets_strict_clippy": "passed",
+    "apphost_existing_geometry_unit": "1 passed",
+    "navigation_real_process_fault_cases": 16,
+    "three_view_compatibility": {
+      "result": "NATIVE_GPU_IPC_VERIFIED",
+      "pids": [
+        80336,
+        80337,
+        80338
+      ],
+      "text_pixels": [
+        1899,
+        1953,
+        1618
+      ]
+    }
+  },
+  "failure_groups": {
+    "lost_ready": "same-session retry, stale baseline rejection, local gate",
+    "two_retirement_orders": "kill/restart navigation, reconcile by committed snapshot/identity",
+    "crash_during_recovery": "before/after Ready on navigation, actual Host SIGKILL and new epoch; old tokens rejected"
+  },
+  "not_claimed": [
+    "native toolbar icon painting and physical clicks",
+    "five-process simultaneous window assembly",
+    "real three-View joint context publication",
+    "physical GUI responsiveness under paused disk/child",
+    "IME/AX/full workspace/release acceptance",
+    "power-cut or F_FULLFSYNC hardware durability"
+  ],
+  "storage": "Single OS advisory lock; pending intent fsync before execute; applied receipt journal fsync before nav.json temp fsync/rename/parent-directory fsync; no second Host history",
+  "scope_of_fault_control": "Acceptance factory only; normal navigation::definition has no fault-control topic",
+  "commit_push_release": false,
+  "source_snapshot_note": "Own implementation snapshot, not a full dependency/release archive"
+}

@@ -1,0 +1,109 @@
+{
+  "format": "tekesui-choice-contract-review/1",
+  "date": "2026-10-18T00:29:55.954190+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues_open": 14,
+  "prs_all_states": 0,
+  "github_changed_since_ledger": false,
+  "issues": [
+    3,
+    8,
+    12,
+    14
+  ],
+  "root_fixes": [
+    "shared presented-option snapshot and current-model gate; cancel stale captures",
+    "disabled CommandPalette model/View/trigger cannot open or reset query",
+    "Gallery ComboBox/CommandPalette Escape is not candidate activation"
+  ],
+  "public_api": {
+    "new_contract_tests": 6,
+    "compiled_red_tests": 5,
+    "shared_tests": 325,
+    "consumer_tests": 29,
+    "gallery_new_family_tests": 2,
+    "existing_gallery_combo_tests": 5,
+    "existing_gallery_command_tests": 4,
+    "existing_gallery_select_tests": 1,
+    "strict_clippy": "root review feature and consumer token-audit all-targets pass"
+  },
+  "governance": {
+    "capability_tests": 36,
+    "composition_tests": 6,
+    "components": 45,
+    "public_states": 95,
+    "fixture_unverified": 161,
+    "required_states": 269,
+    "reference_alignment": "15mappings/13profiles x4themes/12688 checks",
+    "gold7_mechanical": "pass; experience incomplete"
+  },
+  "gpu": {
+    "final_pngs": 432,
+    "before_log_fix_pngs": 432,
+    "identical": 432,
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "widths_and_type": [
+      "720x512 type150",
+      "1440x960 type100"
+    ]
+  },
+  "token_observations": {
+    "action": 576,
+    "input": 612,
+    "selection": 2016,
+    "navigation_content": 408,
+    "complete": false,
+    "choice_state_dependencies": "not yet collected/promoted"
+  },
+  "native": {
+    "app": "Gallery only",
+    "bundle_id": "com.tekesui.gallery.audit.choice20261018",
+    "observed": [
+      "ComboBox Com filter/pointer Comfortable selection and disabled input rejection",
+      "CommandPalette query/Escape false-log before-after/keyboard reopen",
+      "Select click open/Down Enter Compact selection"
+    ],
+    "not_tested": [
+      "specific pointer-release and model-update timing in native window",
+      "CommandPalette native disabled trigger",
+      "physical IME",
+      "full AX",
+      "VoiceOver"
+    ],
+    "exit_inventory": []
+  },
+  "open_experience_defect": {
+    "observed": "narrow large-type CommandPalette empty popup overlaps query and fixed-height trigger clips text",
+    "next": "public shared MenuView anchor/available-space reproduction; measured existing choice fixture integration",
+    "evidence": "gpu-final-brand2-2x/state-pages/component-command-palette__states__dark-increased__720x512__type-150__bottom.png"
+  },
+  "limits": [
+    "30 choice required states not fully verified",
+    "no new component/adapter/profile/token/broad migration",
+    "full experience unverified",
+    "no performance"
+  ],
+  "source_sha256": {
+    "design/remediation/ledger.json": "51c40c99361ea3f5dc550e42f6c077e3ade643b17e3a1b5d2eed2049f9a6a948",
+    "docs/design/issue-remediation-current-20261017.md": "e15fbcc34f26097d55633e375bf5a68f64a8513e2e1aa186b4bac738fa21cde9",
+    "crates/tekes-ui-controls/src/layout_view.rs": "4d95ba6f9ba59630fa4b7111b5ea268cfbacc860ce4709a9941750e21ac5b750",
+    "examples/composition-consumer/tests/scenarios.rs": "270bb9316b9d6996e24ef6e41ab0108724d883e2c22341b41885f30665446515",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "c7e8a09084ae358a65e3dde2f0e6ba87f317a35f3bfa4afd130a4759ea8b35dd",
+    "crates/tekes-ui-controls/src/extended.rs": "ca4e37f35015781bcb84072d466690d3f517ab905093fb3851a55e82b0d320fd",
+    "design/gallery/capabilities.json": "b2c82fb69ae7181d21e02bbdbb837af80c47d1fbe33190e64622ab26e0cd32ef",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "699bac79684fbb2b9efb9cbf43a5acf8c6184dc52b423e66d73cb2f16222dd0b",
+    "docs/design/composition-audit-20261018.md": "b8c87189e1599c1ebe8b4c931bd37811006e7d60e01136d40b9fca2b7a336df9",
+    "design/gallery/component-coverage.json": "dfeb513bc29002019f88268ee788593b90d1731f643f9cc22e3fa18f5f1baeab",
+    "design/remediation/composition-audit.json": "0fddfed5d55e9e1efe934941629a45d25dd2b46eea9b896d11211917e0bc5f5c",
+    "crates/tekes-ui-controls/tests/choice_contract.rs": "4d07455837ddb129799995bfebcebaad1077addb4de5104dd3df071673ef4ba9",
+    "docs/design/choice-contract-20261018.md": "0c2b3c8bf2af90e4de1d400fca4a10b7b01c7ede393c391fd3e3fa3762a37ac9"
+  },
+  "wip_protection": "wip-protection.json",
+  "goal_status": "active"
+}

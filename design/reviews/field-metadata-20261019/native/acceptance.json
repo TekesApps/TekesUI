@@ -1,0 +1,71 @@
+{
+  "result": "passed_scoped",
+  "source_identity": "203d38ff425a272bb917a54ec89563f0a9c0999b1f09bfea2ebb96359796305b",
+  "active_checkpoints": [
+    "active-initial",
+    "tab-normal",
+    "tab-error",
+    "tab-wrap",
+    "shift-tab",
+    "error-ax-value",
+    "error-backspace",
+    "normal-ax-value",
+    "normal-backspace",
+    "disabled-pointer",
+    "error-pointer",
+    "active-narrow"
+  ],
+  "screen": {
+    "builtin": false,
+    "name": "U2790B",
+    "scale": 2.0
+  },
+  "checks": [
+    "native Tab/ShiftTab visits normal/error and skips disabled",
+    "AX SetValue followed by native BackSpace preserves correct original editor and UTF16 caret",
+    "disabled real pointer keeps normal focus and original value",
+    "real pointer focuses error editor",
+    "native360pt narrow window keeps semantic frames within viewport and focus/error independently visible"
+  ],
+  "physical_hardware_input": "not claimed; CUA native key events",
+  "excluded": [
+    "physical IME",
+    "VoiceOver",
+    "performance",
+    "all component/page acceptance"
+  ],
+  "evidence_sha256": {
+    "active-error-wide.png": "196ec9eb55f8e555ff785f9b57b8feb7348d39cfd2b468947fd2d43192bd4285",
+    "active-initial-ax.txt": "54184f3bb5d7d5aea0caf118bde9361e38dc238f5ff28d0f392b42b875513f37",
+    "active-initial.json": "0819217d2fe2d4710d696ee7609088786d85ac4e288d01d616d0c202befeca31",
+    "active-narrow-ax.txt": "6bfcb1b6e8697eeb5a467ec824e473774633c89d6e1e708d4e66e4249bc80d8b",
+    "active-narrow.json": "83a5227b6c7a809ec3417abdf9cd98fbabb4cc09d9e7cd7949e768c19c329b4e",
+    "active-narrow.png": "20f43c38e993b2422cc971b5ee53978313fdc37f7d6f2fc927a3009533784aa4",
+    "disabled-pointer-ax.txt": "cb9af20224e5f80297c0d227dbd9a7701ab49e390f0a1956b01c352ec07ccbd5",
+    "disabled-pointer.json": "117b723d5f4eed64640d3cb99a4dc6612042d48e669973e0b131643f32823038",
+    "error-ax-value.json": "d9e0091929c10795d69f365c739aae201fc863c2be6253c47e67daab5f930817",
+    "error-ax-value.txt": "7b20fe2f191d8ced1f9a6a47ebbf94fb8bd076df58d7b8936abce8d61b428dd4",
+    "error-backspace-ax.txt": "a3b7e5ad72560041c81deb3a75ac7cd02a6d24f8163381d86367a172bc11a522",
+    "error-backspace.json": "bbcafedce9085e35001a0fda55cce863f7600c1c5ad3f527fd7ce505dee510de",
+    "error-pointer-ax.txt": "6bfcb1b6e8697eeb5a467ec824e473774633c89d6e1e708d4e66e4249bc80d8b",
+    "error-pointer.json": "f259b706d19d6ffd29f93878194f345a2ca8df60b152ea6124731c640d99e278",
+    "inactive-wide.json": "ffc12b0e6ef1941db4fa6c99d33cfdd701bd941267b1efbecc4da39c8bc8d69b",
+    "inactive-wide.png": "5fe4f3fab113d4212b763c6c02a264b6cdac00ba493ae338db7480cc50a04062",
+    "narrow-ax.txt": "3075027f825b64bb41da8008c4e28619ccb07a7a973930e8de073e0dd6986cd5",
+    "narrow.json": "5edfa191fe3261c2c16e62d1e5863be7b8e1db69115ffde87d55b9812199d7a9",
+    "narrow.png": "5d3b6babd7de79332b5169fa1f9f57b8f1b3cff38f05cfeeb656b08b58d1196c",
+    "normal-ax-value.json": "82bbc4b38f76a995488d3bdc09bf4cc2cee3dfca8cbc24d865d5a89c7a19fe92",
+    "normal-ax-value.txt": "d18c12a1bc87ad6816e16a1fe93a448e4ae36a634b213193d4c26a9958df0cf9",
+    "normal-backspace-ax.txt": "246e77c9dddb0bb022bf8ae314934d603acf8992528c619dcf099c1615ddaf4a",
+    "normal-backspace.json": "117b723d5f4eed64640d3cb99a4dc6612042d48e669973e0b131643f32823038",
+    "shift-tab-ax.txt": "6bfcb1b6e8697eeb5a467ec824e473774633c89d6e1e708d4e66e4249bc80d8b",
+    "shift-tab.json": "1db7307f4f5fd3436b99d8e6ebb847c03196ac1aefc86c33de0850590b56ee87",
+    "static-observation.json": "9286a5155488c542d67f575a49fbd0f4c5eb73ad58b05bae68682cc090f7b809",
+    "tab-error-ax.txt": "6bfcb1b6e8697eeb5a467ec824e473774633c89d6e1e708d4e66e4249bc80d8b",
+    "tab-error.json": "1db7307f4f5fd3436b99d8e6ebb847c03196ac1aefc86c33de0850590b56ee87",
+    "tab-normal-ax.txt": "cb9af20224e5f80297c0d227dbd9a7701ab49e390f0a1956b01c352ec07ccbd5",
+    "tab-normal.json": "18a9da3b553e29bfae92fa172623270c211da970d38ba236b77dd55791e35389",
+    "tab-wrap-ax.txt": "cb9af20224e5f80297c0d227dbd9a7701ab49e390f0a1956b01c352ec07ccbd5",
+    "tab-wrap.json": "18a9da3b553e29bfae92fa172623270c211da970d38ba236b77dd55791e35389"
+  }
+}

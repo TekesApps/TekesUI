@@ -1,0 +1,950 @@
+{
+  "format": "tekesui-issue-component-batches/1",
+  "objective": "依次完成已确认的八个工作批次（不是仅 GitHub #1-#8）",
+  "owner": "root: sole shared implementation owner",
+  "baseline": "active Gallery checkout plus all current WIP",
+  "current_batch": 2,
+  "constraints": [
+    "preserve all unrelated WIP and accepted AgentKit frozen inputs",
+    "pure Rust / JSON DS sole truth",
+    "reuse shared capabilities; no abstraction-only additions",
+    "small host / shared cache / cleanup only owned rebuildable artifacts",
+    "no performance measurement",
+    "no automatic main merge/tag/release beyond specific user authorization"
+  ],
+  "batches": [
+    {
+      "number": 1,
+      "name": "收完整当前反馈组件修复",
+      "issues": [
+        3,
+        4,
+        5,
+        9
+      ],
+      "status": "complete",
+      "completion_requirements": [
+        "当前共享修复公共 API、真实接入、外接屏原生、Gold7 分层通过",
+        "Banner/Toast 用户报告的首行对齐缺陷修复并按最新候选复验",
+        "窗口关闭、VoiceOver 关闭、源码证据保留、产物清理"
+      ],
+      "evidence": [
+        "design/reviews/notice-alignment-20261019/acceptance.json",
+        "docs/design/feedback-actions-20261019.md",
+        "design/reviews/empty-state-measure-20261019/defect.json",
+        "design/reviews/empty-state-measure-20261019/acceptance.json"
+      ],
+      "cleanup": "Closed; zero accepted nodes after close; exact owned app and Gallery package artifacts cleaned; shared libraries/source/evidence retained.",
+      "remaining": "None within this feedback correction batch; broader Issue and whole-library acceptance remain separate."
+    },
+    {
+      "number": 2,
+      "name": "完成审计交付与门禁",
+      "issues": [
+        14,
+        6,
+        8,
+        13
+      ],
+      "status": "in_progress",
+      "completion_requirements": [
+        "#14 审计矩阵、兼容策略、未完成项和精确版本回填原 Issue",
+        "新增门禁同一交付版本 CI 验证",
+        "能力状态与真实 token 证据准确，未验明确保留"
+      ],
+      "evidence": [
+        "design/reviews/audit-gates-empty-measured-20261019/token-gates.json",
+        "design/reviews/audit-gates-empty-measured-20261019/projection-gates.json",
+        "design/reviews/workspace-candidate-20261019-attempt3/reference-fix-results.json",
+        "design/reviews/workspace-candidate-20261019-attempt3/reference-negative-result.json",
+        "design/reviews/workspace-candidate-20261019-attempt3/live-wip-reference-report.json",
+        "design/reviews/batch23-independent-20261019/acceptance.json",
+        "design/reviews/batch23-independent-20261019/archive-verification.json",
+        "design/reviews/inventory-counts-20261019/receipt.json",
+        "design/reviews/field-metadata-20261019/concurrent-wip-boundary.json",
+        "design/reviews/current-context-20261019/acceptance.json",
+        "docs/design/current-context-20261019.md",
+        "design/reviews/composition-audit-current-20261020/acceptance.json",
+        "design/reviews/batch2-ci-policy-20261020/receipt.json",
+        "design/reviews/batch2-brand-public-api-20261020/acceptance.json",
+        "design/reviews/gallery-format-gate-20261020/acceptance.json",
+        "design/reviews/current-workspace-gate-20261020/acceptance.json",
+        "design/reviews/current-workspace-gate-20261020/current-delta-boundary.json",
+        "design/reviews/button-content-alignment-20261020/acceptance.json",
+        "design/reviews/composition-audit-followup-20261020/manifest.json",
+        "design/reviews/collection-live-input-20261020/gates.json",
+        "design/reviews/frozen-ci-after-preflight-20261020/acceptance.json",
+        "design/reviews/audit-current-reconcile-20261021/receipt.json",
+        "design/reviews/frozen-ci-after-padding-intent-20261021/acceptance.json"
+      ],
+      "review_ready": "design/reviews/batch23-independent-20261019/HANDOFF.md",
+      "remaining": "Scoped public delivery/remote CI and final independent review; no automatic commit/push or Issue closure",
+      "local_delivery_progress": "Independent current-WIP package fully replays: source gates, strict workspace/consumer Clippy,1054 workspace tests/1ignore/3explicit timing skips,136 consumer tests,brand build and portable three-process draft replay. Current-root supplementary Python CI and real design-export CLI pass; scopes recorded separately. Test executables cleaned; source/evidence/cache retained. Public/remote/independent reviewer delivery remains. Current root public compile bindings3 passed; test executable cleaned. Prospective batch2 CI explicitly locks dependencies and skips only the three user-deferred timing tests; YAML parsed and commands verified. Evidence in batch2-ci-policy-20261020; no new remote CI claim.",
+      "local_inventory_gate_progress": "Current registry45 components/5 patterns/2 examples:38 capability tests passed after replacing fixed sample count with registry-derived independent count and route expectations. Concurrent Scene3D experience is not accepted.",
+      "current_wip_gate_boundary": "Latest scoped current #26 and exact all-WIP frozen-CI3a5ba330 recipe passed:12actualtokenreceipts5184bounded,44governance/8composition/3bindings,45registry components;1164workspace/168consumer. Original old gate counts/receipts remain historical; independent/public/native acceptance separate.",
+      "current_context_progress": "Current all-WIP governance evidence: design/reviews/ledger-reconcile-20261020/current-gates-after-native.json; reviewed composition conclusions: design/reviews/composition-audit-current-20261020/source-review.json. No blanket component maturity promotion.",
+      "historical_gate_boundaries": [
+        "Earlier stale context/refusal and intermediate source-drift failures were corrected in later source-bound receipts; retained for history, not current blockers."
+      ],
+      "brand_final_public_API_progress": "Added permanent independently isolated projection negatives in design-export integration target:4 tests/29 cases pass on actual root lock; strict Clippy passed. Explicit external public consumer and60file portable source replay passed; registry package versions/checksums match current root lock. All owned executables cleaned. Existing production source/design inputs57 unchanged. Mechanical/build evidence only; no remoteCI or native promotion.",
+      "current_root_format_progress": "Full current workspace rustfmt gate now passes after reviewing6 existing Gallery file formatting changes; before copies retained, all other Rust hashes unchanged. Capability source projection and45row composition audit match current inputs; all9 actual token receipts remain fresh. No functional/native/maturity promotion or public delivery inferred.",
+      "current_workspace_compile": "Current all-WIP workspace strict all-target Clippy and fmt passed on b3013c7; entire input hash set unchanged during checks. Compile/lint evidence only; remote CI/public delivery and independent review remain.",
+      "current_workspace_regression": {
+        "evidence": "design/reviews/current-workspace-gate-20261020/acceptance.json",
+        "totals": {
+          "passed": 1094,
+          "failed": 0,
+          "ignored": 13,
+          "measured": 0,
+          "filtered_out": 3
+        },
+        "native_object": "36 getter/lifetime checks; zero windows",
+        "remaining": "public version/remote CI/independent review and applicable native acceptance remain; no source promotion",
+        "source_boundary": "Historical before five-file Checkbox/Switch repair. Current five-file source hashes match scoped controls341/consumer33 acceptance; do not advertise1094 as current full-workspace run. See current-delta-boundary.json."
+      },
+      "latest_scoped_regression": "Post-CI3a scoped focus availability and ink fixes:2production files,409controls/168consumer/13actualGallery tests/strictClippy/432GPU1680frames/13fresh-token5688/44governance8composition3bindings. FullCI3a remains pre-fix identity; current native/whole experience and public delivery separate.",
+      "current_audit_entry": "docs/design/composition-audit-current-20261021.md; exact current45-row source/line projection and effective historical-scope reconciliation; protocol10implemented/6partial/29missing unchanged, all45native unverified",
+      "current_full_CI_20261020": {
+        "status": "complete local CI recipe passed on exact isolated snapshot; remote/public/independent reviewer and native experience separate",
+        "identity": "3a5ba330c8eca0591869d2afe9704287bf1ee3a559d1fc18dcc0e2d73458b0b5",
+        "receipt": "design/reviews/frozen-ci-after-preflight-20261020/acceptance.json",
+        "tests": {
+          "workspace": 1164,
+          "consumer": 168,
+          "ignored": 16,
+          "timing_skips": 3
+        },
+        "remaining": "same published exact source remoteCI and independent review; applicable native/Gold7 separate"
+      },
+      "current_full_CI_20261021": {
+        "status": "complete local CI recipe passed on exact isolated source; public remoteCI/independent reviewer/native experience separate",
+        "identity": "7e5092c9509c5e0fbdc7e1b2c97800c0c62e168ab7929f02a7e92c4cc9790c35",
+        "receipt": "design/reviews/frozen-ci-after-padding-intent-20261021/acceptance.json",
+        "source_files": 1250,
+        "workspace": {
+          "passed": 1218,
+          "failed": 0,
+          "ignored": 18,
+          "measured": 0,
+          "filtered_out": 3
+        },
+        "consumer": {
+          "passed": 253,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered_out": 0
+        },
+        "remaining": "public/remote/independent reviewer separate; no Issue closure inferred",
+        "source_boundary": "Exact7e5092c9 remains historical before newIssue35 Content-help/source/JSON increment. New scoped validation has separate receipts; do not advertise7e as all latest WIP."
+      },
+      "stage40_current_progress": {
+        "public_checkpoint": "2ee8e97a8ed7b0ef6615463e76e227a7e6456980",
+        "pr": "https://github.com/TekesApps/TekesUI/pull/40",
+        "current_work": "Actual token probes18 rerun; Toolbar public classifications and bounded Component conclusions reviewed; new keyboard-entry/navigation regression and72actual token cases passed; old fixed-count bindings80/icon176 tests corrected to exact registry sets. Full final-source gates still running.",
+        "source_review": "docs/design/stage40-audit-refresh-20261021.md",
+        "remaining": [
+          "final public input CI",
+          "independent final source audit/consumer delivery",
+          "exact matrix/remaining findings linked back to original audit issues; no whole goal or native maturity promotion"
+        ]
+      }
+    },
+    {
+      "number": 3,
+      "name": "收口已有成熟能力",
+      "issues": [
+        4,
+        7,
+        10,
+        11
+      ],
+      "status": "in_progress",
+      "completion_requirements": [
+        "各原 Issue 条件逐项复核当前候选",
+        "独立消费者与可复现交付证据完整",
+        "按授权逐项关闭，不依赖 #12 全部完成"
+      ],
+      "evidence": [
+        "design/reviews/mature-capabilities-20261019/brand-verification.json",
+        "design/reviews/reading-stream-native-20261019/native-acceptance.json",
+        "design/reviews/component-runs/reading-stream-20261019/receipt.json",
+        "design/reviews/draft-process-replay-20261019/receipt.json",
+        "design/reviews/command-ime-final-20261019/native-checks.json",
+        "design/reviews/draft-process-portable-20261019/receipt.json",
+        "design/reviews/batch23-independent-20261019/portable-draft-result.json",
+        "design/reviews/draft-current-after-preflight-20261020/receipt.json"
+      ],
+      "preflight": "design/reviews/mature-capabilities-20261019/remaining-by-original-issue.json",
+      "preflight_progress": "Scoped #4 physical Pinyin Escape and late physical key passed; #7 external brand and #10 native reading evidence retained. #11 portable relative-path 3-process replay passed and cleaned. Final delivery/review remain; batch 2 is not complete.",
+      "review_ready": "design/reviews/batch23-independent-20261019/HANDOFF.md",
+      "remaining": "Exact independent reviewer acceptance and authorized public source/CI delivery; local API/consumer/scoped native/brand/process requirements now have source-bound evidence. No broad Issue closure implied.",
+      "current_draft_process_replay": {
+        "status": "current shared implementation independently built;3real processes passed, no new production fix required",
+        "receipt": "design/reviews/draft-current-after-preflight-20261020/receipt.json",
+        "source_identity": "8aa4c4e5668bdc0be56f2a29672b39beee2e247ccf2f4e5b23e05ce810d24853",
+        "scope": "original RichDialog/TextSurface editor + CoreText and caller file adapter; no GPU/native window claim",
+        "cleanup": "own executable/package removed, source/data/evidence/cache kept"
+      }
+    },
+    {
+      "number": 4,
+      "name": "文本与编辑组件族",
+      "issues": [
+        1,
+        3,
+        5,
+        17,
+        18,
+        20,
+        23,
+        26
+      ],
+      "status": "in_progress",
+      "completion_requirements": [
+        "现有 TextSurface 状态与 token 核验",
+        "原生 selector、IME 优先权、选区、受控同步与 AX",
+        "不重复实现 #17-20；#23 独立新增要求单列"
+      ],
+      "evidence": [
+        "design/reviews/plain-text-content-20261019/api-third.log",
+        "design/reviews/plain-text-content-20261019/parent-focus-before.log",
+        "design/reviews/plain-text-content-20261019/parent-focus-after.log",
+        "design/reviews/plain-text-content-20261019/plain-token-observation-after-focus.json",
+        "design/reviews/plain-text-isolated-20261019/HANDOFF.md",
+        "design/reviews/component-runs/plain-text-active-final-20261019/receipt.json",
+        "design/reviews/plain-text-isolated-20261019/native/acceptance.json",
+        "design/reviews/plain-text-isolated-20261019/gpu-acceptance.json",
+        "docs/design/number-field-state-20261019.md",
+        "design/reviews/number-field-candidate-20261019/native/acceptance.json",
+        "design/reviews/number-field-candidate-20261019/gold7.json",
+        "design/reviews/component-runs/number-field-native-20261019/receipt.json",
+        "docs/design/field-metadata-20261019.md",
+        "design/reviews/field-metadata-20261019/scope.json",
+        "design/reviews/field-metadata-20261019/gpu-acceptance.json",
+        "design/reviews/field-metadata-20261019/portable-export.json",
+        "design/reviews/field-metadata-20261019/HANDOFF.md",
+        "design/reviews/field-metadata-20261019/native/acceptance.json",
+        "design/reviews/field-metadata-20261019/gold7.json",
+        "design/reviews/component-runs/field-metadata-native-20261019/receipt.json",
+        "https://github.com/TekesApps/TekesUI/issues/23#issuecomment-6271592686",
+        "design/reviews/field-state-contract-20261020/acceptance.json",
+        "design/reviews/input-family-consumer-20261020/acceptance.json",
+        "design/reviews/input-family-consumer-20261020/gpu-acceptance.json",
+        "design/reviews/text-mount-20261020/acceptance.json",
+        "design/reviews/field-required-semantics-20261020/acceptance.json",
+        "design/reviews/field-required-primary-20261020/acceptance.json",
+        "design/reviews/input-native-projection-20261020/acceptance.json",
+        "design/reviews/input-family-final-native-20261020/acceptance.json",
+        "design/reviews/input-family-final-native-20261020/native-attempt1/acceptance.json",
+        "design/reviews/input-family-final-native-20261020/shortcut-adapter/delta.json",
+        "design/reviews/input-family-required-gpu-20261020/acceptance.json",
+        "design/reviews/input-family-final-native-20261020/native/acceptance.json",
+        "design/reviews/controlled-preflight-20261020/progress.json"
+      ],
+      "remaining": "Broader text-family final combined acceptance and deferred required/optional VoiceOver hearing remain. #23 exact8cf public delivery, remoteCI and independent technical consumer review are complete; formal freeze promotion and Issue closure were not authorized by that publication scope. Do not repeat the old authorization/build blockers.",
+      "number_field_progress": "Existing bounded stepper shared availability/cancel/focus contract repaired;5 public tests/60 cases,141 consumer tests,strict Clippy,160 GPU frames and16 active external native checkpoints passed on source98fe0a2e. Scoped Gold7 passed; round accepted/cleaned. No editable numeric input,new tokens or built-in Content adapter claimed.",
+      "field_metadata_progress": "Shared Field required marker layout/role repaired.3 API tests/48 palette cases,142 consumers,238 core,strict Clippy,96 final actual GPU frames,12 active U2790B native checkpoints and scopedGold7 pass on203d38ff. Round accepted/cleaned, independent clean-extract replay retained. Broader family/original Issue conditions remain.",
+      "field_portable_delivery": "203d38ff verified archive and source delta, clean-extract3 API/142 consumers pass; temporary outputs and final native runtime cleaned. Scoped local technical acceptance only; no freeze or public promotion.",
+      "issue23_independent_review": "Exact2f0902d9 technical consumer review passed, publicly recorded at#23 comment6271592686. Minimal authorized public delivery/final-pin replay/formal upgrade pending; no duplicate old build requested.",
+      "issue23_minimal_delivery": {
+        "source_identity": "122ae31df7e506ff85b492608550dc0bc0d9fa8cb803382b5d66e2e276511cd4",
+        "base": "431093786de47b48cd566d0d9c0eafa088b10d68",
+        "changed_files": 14,
+        "verified": "3public/233core/134consumer,strictClippy,96GPU,portable replay,8active external native checkpoints and scopedGold7 passed",
+        "pending": [
+          "Formal frozen candidate promotion if explicitly authorized; no sender promotion.",
+          "Issue closure excluded by latest specific publication authorization.",
+          "Broader current-WIP text-family combined acceptance remains separate."
+        ],
+        "handoff": "design/reviews/issue23-delivery-20261020/HANDOFF.md",
+        "native_host": "closed; issue23-final-native-20261020 accepted and cleaned",
+        "public_commit": "61ddf7c68fccd819e20a01ba3104a8a0f8d7e64f",
+        "handoff_sent": true,
+        "CI_followup": {
+          "source_identity": "53228e613cbd4c5da0d398a45c512c10fdab93a81419497aa2515eef11d6a53a",
+          "files": 8,
+          "total_files": 20,
+          "status": "Authorized exact8-file followup published; exact8cf remoteCI successful and independent technical consumer review accepted; no formal pin promotion or Issue closure.",
+          "handoff": "design/reviews/issue23-ci-publish-20261020/HANDOFF.md",
+          "public_commit": "8cf0840790334ba224afc0595897c74231c712e6",
+          "publication_receipt": "design/reviews/issue23-ci-publish-20261020/publication.json",
+          "independent_receipt": "design/reviews/issue23-ci-publish-20261020/consumer-final-receipt.json",
+          "CI_current_check": "design/reviews/content-reading-anchor-20261020/issue23-CI-current.json"
+        }
+      },
+      "field_state_followup": "48 actual metadata palette cases now assert label/marker/help/error ink and message priority; exact rest/error states feed existing shared receipt contract. Disabled remains the real input child responsibility and is checked in the normal/error/disabled consumer across8 theme/width layouts.42 governance tests pass;8 relevant runtime files match Field203; no fresh native or maturity claim; two executables cleaned.",
+      "input_family_small_host": "Independent existing three-alias consumer:3 API tests and strictClippy passed; real native text backend reused without body changes;208 realGPU frames/96 pixel equality checks passed. Native host compiled/strictClippy passed and opened on externalU2790B@2x, but activity still false after title/Raise and60s observation, so native/Gold7 completion not claimed. User activation requested; app retained. Cache package outputs cleaned; source/evidence preserved; no runtime library changes.",
+      "real_text_lifecycle": "Real TextFieldContent lifecycle3 consumer tests/21 configurations passed: reorder retains live preedit/focus/object identity; unmount finalizes visible draft and clears focus/capture; owned reinsert retains undo/selection and never steals focus; stale removed AX/commit rejected. Existing shared implementation sufficient; strictClippy passed, executable cleaned; no new native/physicalIME or maturity acceptance.",
+      "required_semantics_candidate": {
+        "state": "applied to active WIP; independent candidate retained as historical preparation",
+        "source_identity": "7b744e2c5cc9f7590df933b90e5486ed3d0c0aba6373eab784a736f7ec163c1c",
+        "evidence": "design/reviews/field-required-semantics-20261020/acceptance.json",
+        "public_API": "3tests/32 combinations",
+        "real_consumer": "existing required Field integration passed",
+        "native_object": "36 real AX getter/lifetime checks; windows0; no VO claim",
+        "compatibility": "new public struct fields require literal-consumer migration",
+        "remaining": "Primary applied and gates refreshed; retained older native host and final new-version active-window/AX/VoiceOver acceptance remain."
+      },
+      "required_semantics_primary": {
+        "state": "implemented and scoped API/consumer/native-object/source gates passed; active-window/VO not accepted",
+        "evidence": "design/reviews/field-required-primary-20261020/acceptance.json",
+        "report": "docs/design/field-required-semantics-20261020.md",
+        "fresh_probes": 9,
+        "bounded_cases": 4416,
+        "governance": 42,
+        "composition_audit": 8,
+        "root_fmt_boundary": "Resolved by separate formatting-only round; see design/reviews/gallery-format-gate-20261020/acceptance.json; original failure logs preserved.",
+        "cleanup": "43 executable artifacts removed; copied old review app retained for pending native round",
+        "frozen_pin_boundary": "formal431/public61dd/local532 unchanged; future source migration separate"
+      },
+      "actual_native_publisher": "Actual small-host Window publisher and targeted test now use the same existing mapper:96 three-alias required/readonly/disabled/invalid/activity combinations plus live updates pass; strict Clippy passed. No library abstraction added. Previous app bytes unchanged; final active-window/VO pending. Test executable cleaned.",
+      "latest_input_native": "Original state/focus run retained separately; revised signed host now passed3 actual active U2790B@2x delete/CommandZ/ShiftCommandZ chains and3 readonly selected-delete rejection cases. verify-shortcuts.py validates native sequences and snapshots. Required/optional VoiceOver remains; no physicalIME or whole-family promotion. Own package outputs cleaned; runtime retained for pending hearing.",
+      "final_required_GPU": "Same real three-alias host:128 before/after real GPU frames across4themes/4states/paired widths-type scales/@1x/@2x;64 required visible differences,64 optional search surface equalities,192 unchanged editor-state checks. Four before/after images inspected.562 runtime inputs match protected current baseline; native compile sources unchanged. Source/evidence retained, own package cleaned. No native VO/shortcut or fullGold7 claim.",
+      "latest_input_native_cleanup": "User deferred VoiceOver and requested keep off. Native keyboard/readonly accepted; window closed, exact PID absent, copied runtime removed after signed-identity and fresh unused checks. Source,128 required GPU frames and native logs retained; assistive required/optional announcement remains pending.",
+      "issue23_CI_publication_20261020": {
+        "commit": "8cf0840790334ba224afc0595897c74231c712e6",
+        "files": 8,
+        "cumulative_files": 20,
+        "authorized": true,
+        "handoff_sent": true,
+        "CI_run": 39365340268,
+        "receipt": "design/reviews/issue23-ci-publish-20261020/publication.json",
+        "independent_verdict": "AgentKit independent technical review passed on exact8cf0840; consumer-final-receipt.json verifies four native artifacts; development freeze recommended, formal pin promotion not performed",
+        "no_main_merge_tag_or_issue_close": true,
+        "CI_conclusion": "success"
+      },
+      "controlled_preflight_current": {
+        "issue": 26,
+        "owner": "root: single shared implementation owner",
+        "status": "implemented and scoped API/consumer/CoreText-GPU/governance/sender clean-extract verified; receiver/public-pin/final combined native acceptance pending",
+        "root_identity": "ae57a9a96755ccf18282e3803c209d32f21b47a0eccb77500284345763980d6e",
+        "isolated_identity": "2b16eaa6200fecdde9a0c615166064effb9446249cde05087d5d7c288d81d4ec",
+        "receipt": "design/reviews/controlled-preflight-20261020/progress.json"
+      },
+      "label_layout_issue31": {
+        "owner": "Root",
+        "status": "root scoped API/consumer/GPU/native verified; isolated candidate/receiver,matched page visuals and public version pending",
+        "evidence": "docs/design/label-content-integration-20261021.md",
+        "scope": "TextContent,ButtonContent and CompoundButton decorative TextContent only; no Agent product state",
+        "native_identity": "22caa4f3b5a3a52ac7d9c5e18db575abf70950ca05c28ea52f914293dc39ebf0",
+        "native_receipt": "design/reviews/label-content-integration-20261021/native-acceptance.json",
+        "gold7_scope": "design/reviews/label-content-integration-20261021/gold7-label-delta.json",
+        "portable_candidate": {
+          "identity": "545ef8d70d89404f11d916f05e417404277507b07dea808aac051339544431a1",
+          "base_identity": "2b16eaa6200fecdde9a0c615166064effb9446249cde05087d5d7c288d81d4ec",
+          "receipt": "design/reviews/label-portable-candidate-20261021-attempt2/HANDOFF.md",
+          "status": "sender exact archive clean-extract passed; receiver/isolated native/public pin pending"
+        }
+      }
+    },
+    {
+      "number": 5,
+      "name": "动作与选择组件族",
+      "issues": [
+        1,
+        3,
+        5,
+        8,
+        21
+      ],
+      "status": "in_progress",
+      "completion_requirements": [
+        "现有动作及选择组件适用状态与共享视觉语义",
+        "键盘激活、取消、焦点与 AX 状态",
+        "合理例外和真实 token 依赖记录"
+      ],
+      "evidence": [
+        "design/reviews/selection-key-availability-20261020/acceptance.json",
+        "design/reviews/selection-key-availability-20261020/gold7.json",
+        "design/reviews/selection-key-gpu-20261020/acceptance.json",
+        "design/reviews/selection-key-gpu-20261020/native-stage.json",
+        "design/reviews/selection-key-gpu-20261020/native/acceptance.json",
+        "design/reviews/button-content-alignment-20261020/acceptance.json",
+        "design/reviews/button-content-native-20261020/acceptance.json",
+        "design/reviews/link-model-availability-20261020/acceptance.json",
+        "design/reviews/link-native-availability-20261020/acceptance.json",
+        "design/reviews/link-native-availability-20261020/native/acceptance.json",
+        "design/reviews/link-role-20261020/acceptance.json",
+        "design/reviews/link-role-native-20261020/acceptance.json",
+        "design/reviews/icon-button-consumer-20261020/acceptance.json",
+        "design/reviews/segmented-boundary-navigation-20261020/acceptance.json",
+        "design/reviews/segmented-focus-order-20261020/acceptance.json",
+        "design/reviews/radio-disabled-focus-20261020/acceptance.json",
+        "design/reviews/slider-current-20261020/acceptance.json",
+        "design/reviews/slider-native-actions-20261020/acceptance.json"
+      ],
+      "remaining": "Completed scopes remain bounded: deferred VoiceOver hearing across action/selection controls and same-final-candidate combined state/experience acceptance are still required. RadioGroup disabled late-focus repair and Slider real native AX/minimize/reactivation scopes are accepted; do not repeat those fixes. Other batches remain independent.",
+      "owner": "root: sole shared implementation owner; no agents",
+      "selection_GPU_followup": "Existing two-control small host:1440 real frames/288 cases; explicit cancel288 equal and fresh checked values288 visibly different; exact CoreText backend reused; strict Clippy/format/root-lock identity pass; native/final Gold7 pending; own package cleaned.",
+      "selection_native_followup": "Six active U2790B@2x native key/pointer chains and user physical-input confirmation passed on exact signed candidate; no old activation, parent keys continue, fresh Space changes real value. Scoped Gold7 accepted. Exact runtime closed/unused-checked/cleaned; source/evidence/cache retained.",
+      "ordinary_button_alignment": "Shared ButtonContent no longer overrides existing DS default with Leading.2 API tests/144 state cases+body exception, controls343, real CoreText consumer34/72 new cases; strictClippy passed.288 realGPU cases/864frames match default primitive and differ from legacy Leading reference. Active external U2790B@2 native mouse/Space/Enter/AX and disabled/loading isolation passed; verify-native.py and logs retained. Runtime closed/cleaned; no VO or whole-family promotion.",
+      "direct_link_followup": "Public direct Link model key filtering gap repaired with existing crate-only Button helper.16API cases,controls344,consumer35/384 real-model/View comparisons,9fresh token probes4416 cases,42governance/8composition gates passed.48realGPU cases/288frames passed. Two repeated physical active U2790B@2 native Down/Escape/Up/fresh-click chains accepted (68/69/71/73/74 and75/76/78/80/81); operator receipt separate. Window closed/PID58656 absent/owned runtime cleaned. Link AX role still missing; no VO or whole-family promotion.",
+      "link_semantic_followup": "Shared ContentRole::Link / native AXLink, existing single-action ownership + Press/Focus fencing, Gallery retained Link publication/owned activation and two generic mappings repaired. API345, actual Gallery role/action/disabled/inactive test, native-object6 (no windows), independent consumer native example compile and strict Clippy passed. New role external-window/VO/Gold7 experience still pending; no full-family promotion.",
+      "link_independent_consumer": "Public consumer12 theme/brand combinations and36GPU cases/72frames passed. Corrected startup evidence environment; active U2790B@2 native12 checkpoints passed on signed exact source: Pointer/Enter/AX once, Space free, disabled-hidden isolation, fresh focus on restore. PID36749 closed; background observation restart also closed; owned runtime unused-checked and removed. Evidence retained. VoiceOver off/deferred; no whole-family promotion.",
+      "icon_button_current": "Existing shared implementation reused;216 public-consumer lifecycle/name/geometry scenarios, strictClippy,288realGPU cases/576frames passed.14actual active U2790B@2 native checkpoints on PID43909: Button role/name, Pointer/Space/Enter/AX once, disabled/loading keyboard-pointer and hidden keyboard isolation, fresh focus on restore. Signed source286inputs verified; window closed/process absent/unused checked/runtime cleaned. VO off; normal-motion and broader family audit remain.",
+      "segmented_navigation_followup": "End disabled-boundary shared repair passed516API/192realconsumer/controls347/strictClippy/48GPU comparisons144frames and11active external U2790B@2 native checkpoints. Exact PID49476 closed and signed/source/unused verified; owned runtime cleaned. Native current AX selected/enabled states observed; true sub-focus/VoiceOver metadata not accepted. Focus paint-order defect remains separate; batch5 incomplete.",
+      "segmented_current_token_followup": "Nine actual probes refreshed against current all-WIP source;4416 bounded cases,all source hashes match. Evidence fresh-probe-summary.json; coverage rebinding intentionally waits native candidate completion; no blanket gate/maturity claim. Focus-order preflight distinguishes contiguous segments from Tabs lane-gap and Radio indicator placement; no new abstraction proposed.",
+      "segmented_focus_order_preparation": "Shared fixes accepted within scope: existing painter draws focused segment last with indexed hit layouts unchanged; public focused() and existing RadioGroup key_from pattern preserve focus-vs-selection and cancel old Space owner.348core/36consumer/3newexternal+native bridge regression/strictClippy;72Scene cases0occlusion(before48),192GPUframes96before-after cases;9freshprobes4416,42governance/8composition45component gates. Final source102inputs/PID82441 passed16actual active U2790B@2 native checkpoints (event interval17..60), including true AX sub-focus and primary/disabled pointer indices; closed/signed/source/unused checked/runtime cleaned. Old interrupted and missing-pointer-host attempts rejected/preserved. Exact bounded reviewed input tar retained. VO off; no whole-component/batch promotion.",
+      "radio_current": "Disabled-scope late-focus bug fixed in existing RadioGroupView.focus via blur/cancel;350controls/30API cases/720actual consumer/144GPU frames/15active U2790B@2 native checkpoints passed. Source, signed executable and native event interval verified; runtime closed and cleaned. VO remains off; no whole-family promotion.",
+      "slider_current": "Existing shared SliderView/SliderContent reused;5 API consumer tests rerun;432 actual GPU cases864frames static normal/reduced equality;26 active U2790B@2 native checkpoints verified source/signed binary/event sequence: step/bounds/AXSetValue snap, disable keyboard/pointer, retained remove+remount, once-only Tab/selector ShiftTab, sibling ownership, true drag. No production changes; runtime/test/package artifacts cleaned. Native AXIncrement/Decrement, minimize/restore/cross-app and deferred VO remain separate.",
+      "slider_native_actions_current": "Fixed actual common native-example inactive-input gap: late Tab+Right could refocus and mutate while inactive. Existing Window.is_active fence/cancel/focus-clear reused for all mounted scenes; no new layer.149consumer tests/strict native+host Clippy/42governance/8composition/45component gates passed.10real AppKit AX selector calls incl disabled/stale reject and8true U2790B@2 reactivation checkpoints verified. Actual inactive native event regression red/green retained. Window/process closed, owned runtime/test/package artifacts cleaned, VO off. Other families/final candidate/deferred hearing remain."
+    },
+    {
+      "number": 6,
+      "name": "菜单浮层与容器组合族",
+      "issues": [
+        3,
+        4,
+        5,
+        9,
+        14
+      ],
+      "status": "in_progress",
+      "completion_requirements": [
+        "浮层作用域、过渡、中断与调用者恢复",
+        "适用内容槽公共接入与真实消费者",
+        "Window Toolbar 为后续架构，不假装已实现"
+      ],
+      "evidence": [
+        "design/reviews/overlay-deactivation-20261020/acceptance.json",
+        "design/reviews/dialog-caller-identity-20261020/acceptance.json",
+        "design/reviews/menu-trigger-contract-20261020/acceptance.json",
+        "design/reviews/popover-owned-content-20261020/acceptance.json",
+        "design/reviews/filtered-choice-exit-20261020/acceptance.json",
+        "design/reviews/tooltip-lifecycle-20261020/progress.json",
+        "design/reviews/tooltip-native-lifecycle-20261021/acceptance.json",
+        "design/reviews/tooltip-reentry-20261021/acceptance.json",
+        "design/reviews/tooltip-system-reactivation-20261021/acceptance.json",
+        "design/reviews/menu-portable-candidate-20261021-attempt2/portable-acceptance.json",
+        "design/reviews/menu-portable-candidate-20261021-attempt2/native-acceptance.json",
+        "design/reviews/menu-portable-candidate-20261021-attempt2/issue36-acceptance-matrix.json"
+      ],
+      "owner": "root: single shared implementation owner",
+      "overlay_current": "355controls/150real consumer tests and strictClippy passed. Window-specific Menu/Popover clears and Dialog settles existing presence, while normal Menu/FilteredMenu dismissal retains exit and drops semantic hit layout.9actual token probes4416bounded;144GPUcases576frames;final signed host17active component command checkpoints and3actual AppKit pending-entry minimize/reactivate checks on U2790B@2 passed. Test-only own-window restore menu avoids repeated physical foreground requests and still validates real Focus/is_active. Window closed/process unused/runtime/test/package artifacts cleaned.42governance/8composition/45component gates passed on recorded source snapshot. Concurrent3D changes left untouched and unaccepted. Final global capability recheck later refused stale concurrent3D camera/GPU/viewer edits; scoped overlay input/native/token identities remain unchanged. Do not report global final gate green.",
+      "remaining": [
+        "same-final-candidate combined overlay/content-slot acceptance; current Menu/Dialog/Popover minimum contracts now have separate scoped receipts",
+        "Current three choice consumers now bounded API/GPU/native accepted; applicable physical IME/VoiceOver and final combined scope remain",
+        "VoiceOver hearing deferred by user",
+        "Window Toolbar remains future architecture; not implemented by this scoped motion repair",
+        "same final combined candidate/page acceptance",
+        "Tooltip applicable hearing and same-combined-candidate/page/ClientKit-Gold7 acceptance; final-source system reactivation now scoped accepted"
+      ],
+      "dialog_caller_identity_current": "Existing mount identity reused;4public regression tests;359controls/151consumer tests,24GPUcases48frames,8nativeclose checkpoints including realAXPress reopen;9token probes4416bounded. Native window closed and scoped artifacts cleaned. Source identity and cleanup in receipt. Other batch6 work remains.",
+      "menu_trigger_current": "4red/green API regressions;363controls/152consumer tests and strictClippy;48CoreText consumer combinations;48GPU cases96frames;19actual active external native checkpoints;10actual token receipts4656bounded incl240MenuContent-only paint observations(20lookup IDs). Native closed and scoped outputs cleaned. No broader maturity or semantic menu slot expansion.",
+      "popover_owned_current": {
+        "status": "bounded accepted; no builtin/broad maturity promotion",
+        "receipt": "design/reviews/popover-owned-content-20261020/acceptance.json",
+        "owner": "root"
+      },
+      "filtered_choice_current": {
+        "status": "bounded accepted and cleaned; full batch remains in progress",
+        "receipt": "design/reviews/filtered-choice-exit-20261020/acceptance.json",
+        "owner": "root"
+      },
+      "tooltip_lifecycle_current": {
+        "receipt": "design/reviews/tooltip-lifecycle-20261020/progress.json",
+        "status": "shared fix and bounded API/consumer/GPU/token governance passed; native/whole experience incomplete",
+        "source_identity": "0a193337cab24fe38bcd2e0c8c2851f38b4b7678590cd3d955900442b9c97ea0"
+      },
+      "tooltip_native_progress": "Existing shared fix supplemented by16 final-WIP lifecycle checkpoints across4themes on U2790B@2, including real inactive/restored events and fresh keyboard/pointer/caller requests. VoiceOver hearing and combined candidate/page/ClientKit experience remain.",
+      "tooltip_reentry_current": {
+        "identity": "a9d9355a11d0d1031cc381588379f65967e9783e9c146f96e2eca35061c8a3f6",
+        "receipt": "design/reviews/tooltip-reentry-20261021/acceptance.json",
+        "status": "shared fix verified through API/Gallery/independent consumer/GPU/active native and actual inactive rejection; final reactivation/full experience incomplete"
+      },
+      "tooltip_system_reactivation_current": {
+        "identity": "a33e3e7dd203e845bb4e3d1de6ca561500127a260569f9d4ce04f679086d2840",
+        "receipt": "design/reviews/tooltip-system-reactivation-20261021/acceptance.json",
+        "status": "bounded final-WIP native restoration accepted; hearing and combined candidate/page experience remain"
+      }
+    },
+    {
+      "number": 7,
+      "name": "集合与阅读容器族",
+      "issues": [
+        5,
+        8,
+        10,
+        14,
+        22,
+        26
+      ],
+      "status": "in_progress",
+      "completion_requirements": [
+        "List/Tree/DataTable/ScrollArea 稳定身份与真实语义",
+        "增删重排、挂载卸载、行内事件隔离、焦点编辑保留",
+        "#22 混合内容阅读事务独立验证"
+      ],
+      "evidence": [
+        "design/reviews/scroll-layout-input-20261020/progress.json",
+        "design/reviews/scroll-layout-input-20261020/acceptance.json",
+        "design/reviews/content-reading-anchor-20261020/progress.json",
+        "design/reviews/content-reading-anchor-20261020/portable-acceptance.json",
+        "design/reviews/collection-live-input-20261020/progress.json",
+        "design/reviews/controlled-preflight-20261020/progress.json",
+        "design/reviews/collection-focus-availability-20261020/progress.json",
+        "design/reviews/collection-focus-ink-20261021/progress.json",
+        "design/reviews/collection-focus-native-20261021/native-verification.json",
+        "design/reviews/collection-navigation-live-20261021/progress.json",
+        "design/reviews/collection-final-native-20261021/native-verification.json"
+      ],
+      "owner": "root: single shared implementation owner",
+      "remaining": [
+        "#22 scoped API/real consumer/GPU implemented and verified; final native physical momentum/IME/AX and independent delivery remain.",
+        "Matched ClientKit visual reference comparison after user feedback; current stress fixture not accepted visually.",
+        "Remaining List/Tree/DataTable lifecycle and final combined family/page acceptance; VoiceOver deferred."
+      ],
+      "scroll_input_current": {
+        "receipt": "design/reviews/scroll-layout-input-20261020/acceptance.json",
+        "status": "bounded input fix verified/cleaned; #22 structured API now implemented separately, full native/visual acceptance still pending"
+      },
+      "structured_reading_current": {
+        "source_identity": "efe1ae1011883b17376b5154281e177e542677e9a11a471a4a0d80f95d3c4f7a",
+        "receipt": "design/reviews/content-reading-anchor-20261020/progress.json",
+        "status": "383controls/164consumer/48GPU192frames; native/visual/public delivery incomplete",
+        "portable_identity": "bd3ed1b0af81b044306af90d3594bb31110147b7194bda6053b1d2e185871c9a",
+        "portable_status": "Independent sender clean-extract19API/164consumer/strictClippy/48GPU192frames replay passed and local build lane cleaned; external receiver acceptance remains.",
+        "native": "bd3 active external native: prepend/append/header/narrow/type reflow0pt; editor text/selection/focus/latest passed. native-active.json/native-cleanup.json; physical momentum/IME/AX-hearing and final combined WIP pending"
+      },
+      "collection_live_input_current": {
+        "status": "implemented; scoped API/independent CoreText-GPU/production key-adapter verification passed; current native/whole Gold7 incomplete",
+        "source_identity": "4cfc0793e08cde3e8925760d9265baa113eed271cb0a15e34f73d7476ff7881b",
+        "evidence": "design/reviews/collection-live-input-20261020/progress.json",
+        "checks": "387controls/164consumer/144GPU432frames/exactGallerykey/11fresh-token5040/45matrix8regression42governance3bindings; cleaned",
+        "boundary": "#22bd3 package/window not overwritten; new native combined acceptance remains."
+      },
+      "controlled_preflight_current": {
+        "issue": 26,
+        "owner": "root: single shared implementation owner",
+        "status": "implemented and scoped API/consumer/CoreText-GPU/governance/sender clean-extract verified; receiver/public-pin/final combined native acceptance pending",
+        "root_identity": "ae57a9a96755ccf18282e3803c209d32f21b47a0eccb77500284345763980d6e",
+        "isolated_identity": "2b16eaa6200fecdde9a0c615166064effb9446249cde05087d5d7c288d81d4ec",
+        "receipt": "design/reviews/controlled-preflight-20261020/progress.json"
+      },
+      "collection_focus_availability_current": {
+        "receipt": "design/reviews/collection-focus-availability-20261020/progress.json",
+        "status": "availability repair scoped API/actual adapter/CoreText-GPU/token-governance passed; native/full experience pending; separate focus-ink failure confirmed",
+        "source_identity": "e6e1068c04d05e975c231af08f37cd34e4a67cc2a61df55b0549df0c36dc3bb9",
+        "owner": "root: sole shared implementation owner"
+      },
+      "collection_focus_ink_current": {
+        "receipt": "design/reviews/collection-focus-ink-20261021/progress.json",
+        "source_identity": "c9f7eee78bbd564f8a49b703eedb96b081b493159291c11a77e14a3d1a1f2625",
+        "owner": "root: sole shared implementation owner",
+        "status": "shared implementation and scoped API/production adapter/Gallery regression/CoreText-GPU/governance passed; exact native and final experience incomplete",
+        "counts": "409controls/168consumer/13Gallery/432GPU1680frames/13fresh-token5688/44governance8composition3bindings"
+      },
+      "collection_navigation_live_current": {
+        "receipt": "design/reviews/collection-navigation-live-20261021/progress.json",
+        "source_identity": "1acda690e29381f3a75fc314c6fcb9f664c827c00f2b071e9c3a88d609c1115a",
+        "owner": "root",
+        "status": "shared fix and scoped API/consumer/exact Gallery/CoreText-GPU/token governance verified; final native/whole experience pending",
+        "native_boundary": "Original running binary is bound to pre-navigation-fix source; not final current acceptance"
+      },
+      "collection_final_native_current": {
+        "receipt": "design/reviews/collection-final-native-20261021/native-verification.json",
+        "source_identity": "1a6a0e81bc0b8084e04924d8e5c710138e4e78e23d79b109a9d0b4338b83f5bc",
+        "binary_sha256": "644930d9aceb3a8cbcbea318a42643f0c1e268010aa94b116e7b9ec6b0ab4eea",
+        "owner": "root",
+        "native_assertions": 27,
+        "passed_scope": "current family disabled/restore/fresh focus, Chart keyboard focus, live row/column changes, real pointer clipping and disabled isolation, narrow resize, actual minimize/inactive",
+        "remaining": "actual system reactivation then old-focus rejection and fresh-focus recovery; applicable AX/VoiceOver and matched ClientKit/whole-page acceptance remain separate"
+      },
+      "stable_item_reveal_issue28": {
+        "status": "shared API/real mixed consumer/GPU plus7 exact-source active external native checks passed; independent candidate replay/integration pending",
+        "owner": "root",
+        "documentation": "docs/design/content-item-reveal-20261021.md",
+        "public_tests": "examples/composition-consumer/tests/scroll_reveal.rs",
+        "evidence": "design/reviews/content-item-geometry-20261021/progress.json"
+      }
+    },
+    {
+      "number": 8,
+      "name": "剩余展示布局及整页验收",
+      "issues": [
+        1,
+        12,
+        13
+      ],
+      "status": "in_progress",
+      "completion_requirements": [
+        "当前 registry 剩余组件和页面覆盖",
+        "同一最终候选主题、品牌、@1x/@2x、窄窗大字与前后对照",
+        "原生键鼠、适用 IME/VoiceOver 与成熟度有界接受",
+        "性能明确按用户指示延期，不虚报通过"
+      ],
+      "evidence": [
+        "design/reviews/separator-scale-diagnostic-20261021/progress.json",
+        "design/reviews/separator-scale-20261021/progress.json",
+        "design/reviews/grid-layout-availability-20261021/progress.json",
+        "design/reviews/panel-scale-adaptation-20261021/progress.json",
+        "design/reviews/passive-feedback-contract-20261021/acceptance.json",
+        "design/reviews/feedback-outcome-consumer-20261021/acceptance.json",
+        "design/reviews/feedback-outcome-consumer-20261021/native-acceptance.json"
+      ],
+      "preflight": {
+        "receipt": "design/reviews/separator-scale-diagnostic-20261021/progress.json",
+        "status": "confirmed existing Separator scale gap; shared fix queued after collection native closeout",
+        "owner": "root",
+        "scope": "existing registered Separator only; does not expand component cohort"
+      },
+      "separator_scale_current": {
+        "receipt": "design/reviews/separator-scale-20261021/progress.json",
+        "source_identity": "f07266652b0a55118d6e3377fb80de5037b7df0a59e67f0cc9bcd5fb47b3692f",
+        "status": "shared fix scoped API/real Gallery/GPU/token/governance and4-theme external native rendering verified and cleaned; physical clarity/full pages incomplete",
+        "owner": "root",
+        "native": "design/reviews/separator-scale-20261021/native-acceptance.json"
+      },
+      "remaining": [
+        "Remaining original registered display/layout components and same-final-candidate pages",
+        "Separator subjective physical clarity/cross-display and whole-page review; current4-theme external native rendering retained",
+        "Earlier batch collection candidate reactivation and deferred applicable IME/VoiceOver remain explicitly pending; new component cohort/performance excluded"
+      ],
+      "grid_layout_current": {
+        "receipt": "design/reviews/grid-layout-availability-20261021/progress.json",
+        "source_identity": "86c537fa9f2ffcc7e6a4bb76bb2a5df6267009fb1db28fd342753b2e0245fd24",
+        "status": "implemented; bounded API/actual Gallery/real consumer GPU/token governance/external native pointer checks passed; full experience remains incomplete",
+        "owner": "root"
+      },
+      "panel_scale_adaptation_current": {
+        "receipt": "design/reviews/panel-scale-adaptation-20261021/progress.json",
+        "source_identity": "f3997961265f2ff25b87e731ce6b314b5cecbe9f13b1b0eff0e5775e6d0c9a22",
+        "owner": "root",
+        "status": "implemented at existing consumers; real Gallery/independent consumer/GPU/current token governance/four-theme external native paint verified; whole experience incomplete"
+      },
+      "passive_feedback_progress": "Actual caller outcome/progress composition,171consumer/576GPU/48active external native and platform AX values verified; whole experience incomplete",
+      "passive_feedback_remaining": [
+        "applicable VoiceOver hearing",
+        "matched ClientKit/Gold7 whole experience",
+        "final combined candidate delivery"
+      ]
+    }
+  ],
+  "current_execution_batch": 6,
+  "current_step": "PR40 staged delivery: actual runtime observations and source audit refreshed; original ToolbarControl keyboard entry repaired. Shared ProcessComponent/V2 View public API and independent GPU consumer accepted within experimental scope. Final published-tree gates and native/Gold7 integration remain; all eight batches retain their original scope.",
+  "new_consumer_findings": [
+    {
+      "issue": 31,
+      "status": "已实现待验收",
+      "source": "design/reviews/tooltip-reentry-20261021/agentkit-issue31.json",
+      "owner": "root: generic shared text foundation; Rust AgentKit/ClientKit: product Agent presentation/state",
+      "pass_evidence": "all latest original #31 acceptance on exact public input; no host string truncation or short-title substitute",
+      "blocking_delivery": "public exact source/CI require separate authorization; assessment continues without rewriting frozen package",
+      "evidence": "design/reviews/label-content-integration-20261021/native-acceptance.json",
+      "remaining": [
+        "independent545actual consumer/native and matched ClientKit/Gold7 product-page review",
+        "exact published source and CI only within later explicit authorization"
+      ],
+      "implementation": "shared readonly core,original Content/control opt-in,host adapters,intrinsic Stack width and arrange-only Dialog capability recovery implemented",
+      "portable": "design/reviews/label-portable-candidate-20261021-attempt2/HANDOFF.md",
+      "receiver": "545ef8d70d89 sent to authorized Rust AgentKit thread; independent actual integration/native review pending"
+    },
+    {
+      "issue": 27,
+      "status": "已实现待验收",
+      "owner": "root: shared composition preflight; AgentKit: independent actual consumer acceptance",
+      "root_cause": "entry-only service scan missed layout-activated original text surfaces",
+      "shared_fix": "ContentHost::check_text_services reused at entry/after measure/after arrange; existing errors/cancel/editor/reading ownership",
+      "applicable": "all text-surface descendants activated during layout, editable and read-only; labels unaffected",
+      "evidence": "design/reviews/layout-text-preflight-20261021/native-acceptance.json",
+      "public_API": "examples/composition-consumer/tests/layout_text_services.rs",
+      "GPU": "design/reviews/layout-text-preflight-20261021/gpu/result.json",
+      "remaining": [
+        "new immutable independent consumer candidate and receiver receipt",
+        "exact public pin/CI separately authorized"
+      ],
+      "exceptions": "entry-active collapse must retain valid backend until hidden; failed application layout mutations retained; publish native tree only after valid render",
+      "portable": "design/reviews/layout-text-portable-candidate-20261021/HANDOFF.md",
+      "candidate_identity": "292f5fe65195af66624cb28413868eb46db6ab1a81ef1294ab19c8efbd45b0f4",
+      "receiver": "292f exact archive/HANDOFF sent to authorized Rust AgentKit session; finish current545 shared validation first, then independent292f originalprobe/actualconsumer review"
+    },
+    {
+      "issue": 28,
+      "status": "已实现待验收",
+      "owner": "root shared implementation; AgentKit independent integration",
+      "root_cause": "generic shared composition lacks focus-preserving stable item navigation; legacy immediate rectangle/focus reveal cannot express full requested placement/motion/version contract",
+      "shared_fix": "first prerequisite: ScrollArea::reveal_with reuses original viewport/axis/clamp/cancel/wheel and ProgressTransition,existing JSON geometry timing/easing; no new token values",
+      "applicable": "existing ScrollArea and future original ScrollContent item navigation; no new component cohort",
+      "exceptions": "legacy reveal/reveal_focus remain immediate; invalid commands leave current input/navigation unchanged; rectangle-only viewport tests do not satisfy stable item API requirement",
+      "evidence": "design/reviews/content-item-geometry-20261021/progress.json",
+      "public_API": "examples/composition-consumer/tests/item_navigation.rs",
+      "remaining": [
+        "#32 selected-axis actual-visible Start now implemented; exact native/isolated input/AgentKit final page pending",
+        "AgentKit independent original RunView integration and matched ClientKit/Gold7 product-page experience",
+        "public pin and CI under separately scoped authorization"
+      ],
+      "implementation": "Original stable owner/version/item command plus current ancestor-path/document-rect geometry guard; same-extent target movement interrupts stale animation without disturbing editor/focus/selection.",
+      "native": "design/reviews/content-item-reveal-20261021/native-acceptance.json",
+      "native_evidence": "design/reviews/content-item-geometry-20261021/native-acceptance.json",
+      "delivery_candidate": "design/reviews/content-item-portable-candidate-20261021-attempt2/portable-acceptance.json",
+      "candidate_replay": "10b5 exact archive:50text/388controls/206consumer,strict3packageClippy,nativebuild,486source/locksunchanged,315.5MiBownedoutputsremoved",
+      "consumer_gap_top_alignment": {
+        "status": "已实现待消费者验收",
+        "owner": "root SDK;AgentKit business last-item decision",
+        "evidence": "design/reviews/item-start-alignment-20261021/progress.json",
+        "requirement": "ordinary turn top alignment,semantic final turn follows latest; centered remains a limited foundation verification",
+        "remaining": "confirm axis/comfort margins then extend existing original reveal placement,keep old10b5/c779 immutable",
+        "issue": 32,
+        "candidate": "5882774a0e73dfcb423efb4260c150e03f50f5cc9a87bd2331c1e171963faacd"
+      }
+    },
+    {
+      "issue": 29,
+      "title": "Exact compact decorative actions and pointer activation phase",
+      "status": "已实现待验收",
+      "owner": "root shared implementation; AgentKit independent consumer",
+      "evidence": "design/reviews/compact-action-20261021/progress.json",
+      "implementation": "Explicit original Button exact-frame policy plus ButtonContent pointer Press/Release,shared original committed pointer arm and decorative CompoundButton; no custom consumer input state machine.",
+      "remaining": [
+        "isolated candidate/AgentKit actual integration",
+        "matched product-page experience",
+        "public source and CI under separate authorization"
+      ],
+      "native_evidence": "design/reviews/compact-action-20261021/native-acceptance.json",
+      "exact_token_evidence": "design/reviews/compact-action-20261021/compact-token-observation.json",
+      "delivery_candidate": "design/reviews/compact-action-portable-candidate-20261021/portable-acceptance.json",
+      "independent_sender_replay": "c779:50text/388controls/213consumer,strict3Clippy,nativebuild,24GPU192frames,489source/locks unchanged;371MiBownedoutputs cleaned"
+    },
+    {
+      "issue": 32,
+      "title": "Stable item selected-axis Start aligned to actual visible content",
+      "status": "已实现待验收",
+      "owner": "root SDK;AgentKit independent consumer",
+      "evidence": "design/reviews/item-start-alignment-20261021/progress.json",
+      "remaining": [
+        "AgentKit exact588277 actual RunView/rail native integration and matched ClientKit page",
+        "separately authorized public pin/CI"
+      ],
+      "native_evidence": "design/reviews/item-start-alignment-20261021/native-acceptance.json",
+      "delivery_candidate": "design/reviews/item-start-portable-candidate-20261021/portable-acceptance.json",
+      "sender_replay": "588277:50text/388controls/224consumer,25item/11viewport,strict3Clippy,nativebuild,96GPU480frames;490source/locks unchanged;367.2MiBowned outputs cleaned"
+    },
+    {
+      "issue": 30,
+      "title": "Passive input decoration to retained editor focus",
+      "status": "已实现待验收",
+      "owner": "root SDK; Rust AgentKit actual consumer",
+      "evidence": "design/reviews/padding-focus-routing-20261021/progress.json",
+      "remaining": [
+        "Actual AgentKit Composer receiver acceptance for exact5677b80f",
+        "Matching public immutable pin/CI under scoped authorization"
+      ],
+      "verification": {
+        "public_API_tests": 13,
+        "controls_tests": 426,
+        "consumer_tests": 240,
+        "GPU_cases": 24,
+        "GPU_frames": 120,
+        "canonical_token_probes": 17,
+        "bounded_token_cases": 6432,
+        "complete": false,
+        "native_accepted_checkpoints": 16,
+        "VoiceOver": "off"
+      },
+      "native_identity": "d5dab70775631b1688640ce2ed9a4955941706213b12b06d97ef6756f812f12f",
+      "candidate": {
+        "identity": "5677b80f5462570525ea3d00f6256298baac7e018513844de5403364e9c097f0",
+        "archive": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/padding-focus-portable-candidate-20261021/padding-focus-5677b80f5462.tar.gz",
+        "sha256": "e365b9a6d54e77c6315273d7638caa802bf3e21f440de4d30641235edf9ba990",
+        "base_identity": "5882774a0e73dfcb423efb4260c150e03f50f5cc9a87bd2331c1e171963faacd",
+        "files": 493,
+        "delta_paths": 7,
+        "independent_tests": {
+          "text": 50,
+          "controls": 388,
+          "consumer": 237,
+          "targeted_padding_API": 13
+        },
+        "source_and_locks_unchanged": true,
+        "dependencies_inside_extract": true,
+        "sent_to": "Rust AgentKit 01a14920-0d6e-7652-9a60-c74ef1a1f70f",
+        "receiver_status": "pending"
+      }
+    },
+    {
+      "issue": 33,
+      "title": "Forward original compact action focus paint decoration through legitimate consumer wrapper",
+      "status": "已实现待消费者验收",
+      "owner": "root shared SDK; AgentKit actual rail wrapper consumer",
+      "dependency": [
+        29
+      ],
+      "remaining": [
+        "Actual AgentKit TurnRailAction forwarding and matched final consumer experience on95b140c2",
+        "Matching public immutable pin/CI under explicit scope"
+      ],
+      "evidence": "design/reviews/forwarded-focus-decoration-20261021/progress.json",
+      "candidate": {
+        "identity": "95b140c278a2257c11fb956eaf860313c38bc4829bae70e022cc3d8f33bb38ac",
+        "archive": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/forwarded-focus-portable-candidate-20261021/forwarded-focus-95b140c278a2.tar.gz",
+        "sha256": "fb1abf3524b5aa44c585a323402779cd6ac8adc7e5578b59dbc9889773dbf523",
+        "files": 496,
+        "delta_paths": 7,
+        "base": "5677b80f5462570525ea3d00f6256298baac7e018513844de5403364e9c097f0",
+        "sender_independent_tests": {
+          "portable-text": 50,
+          "portable-controls": 388,
+          "portable-consumer": 242
+        },
+        "sender_GPU": {
+          "cases": 72,
+          "frames": 288
+        },
+        "receiver": "pending; handoff now"
+      },
+      "verification": {
+        "API": 5,
+        "Root_controls": 426,
+        "Root_consumer": 245,
+        "GPU_cases": 72,
+        "GPU_frames": 288,
+        "active_native_checkpoints": 10,
+        "canonical_token_probes": 17,
+        "bounded_token_cases": 6432,
+        "complete": false
+      }
+    },
+    {
+      "issue": 34,
+      "title": "Public original padding focus intent for IME barrier",
+      "status": "已实现待验收",
+      "owner": "root shared SDK; Rust AgentKit actual Composer barrier",
+      "evidence": "design/reviews/padding-focus-intent-20261021/progress.json",
+      "remaining": [
+        "Actual Composer physical IME/candidate-window acceptance",
+        "Final matched page/ring/auxiliary experience as applicable",
+        "Public exact input/remoteCI/final review under scoped authorization"
+      ],
+      "candidate_identity": "a30b18db1a1df1f5a780c245080b22221a63cb20556f7274b76786d4d896584e",
+      "native_identity": "53c4be13e1ff838162be7d116edcf1f8a798796175fbfe615f861015e23305a7",
+      "receiver_evidence": "design/reviews/agentkit-padding-intent-receiver-20261021/receipt.json"
+    },
+    {
+      "issue": 35,
+      "title": "Original Content dynamic row help and retained Tooltip",
+      "status": "已实现待验收",
+      "owner": "root shared SDK; Rust AgentKit actual Sidebar receiver",
+      "evidence": "design/reviews/content-help-20261021/progress.json",
+      "remaining": [
+        "exact336 actual Sidebar consumer/experience acceptance",
+        "real native reactivation, physical hover and deferred hearing as applicable",
+        "matched ClientKit/Gold7 page, explicitly scoped public pin/CI"
+      ],
+      "verification": {
+        "targeted_API": 18,
+        "Root_consumer": 271,
+        "Root_controls": 426,
+        "tokens": 22,
+        "export": 25,
+        "GPU_cases": 16,
+        "GPU_frames": 192,
+        "active_native_checkpoints": 14,
+        "native_identity": "d6a6712aaa55cdf14fc09b17989f2eea15a7423f2443b8e036db9556b923ee77",
+        "physical_hover": false,
+        "VoiceOver": "off",
+        "Gold7": "mechanical gate and bounded tooltip GPU only; whole page pending"
+      },
+      "candidate": {
+        "identity": "3366559a1a524909f562fa2fdd1c8646d762b5ba0eb1294b5480c39d9e9c37ef",
+        "archive": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/content-help-portable-candidate-20261021-attempt2/content-help-3366559a1a52.tar.gz",
+        "sha256": "de2ee991aaa61912b8b6b03d183b244f6a7fd8884f8ed3b9448ce04e389c8ce2",
+        "files": 503,
+        "delta_paths": 13,
+        "base": "a30b18db1a1df1f5a780c245080b22221a63cb20556f7274b76786d4d896584e",
+        "sender_exact_replay": "all11checks passed; source/locks unchanged",
+        "receiver": "in progress in Rust AgentKit"
+      }
+    },
+    {
+      "issue": 36,
+      "title": "Original Menu immutable selection and nested declared items",
+      "status": "部分完成",
+      "owner": "root sole shared SDK; Rust AgentKit original Sidebar options consumer",
+      "evidence": "design/reviews/menu-selection-event-20261021/progress.json",
+      "identity": "183e3ace10e866c3d035a08ace509d3e9fc4d2716213f1e921545edb9605518d",
+      "verification": {
+        "public_menu_cases": 34,
+        "controls": 426,
+        "consumer": 305,
+        "strict_Clippy": "2pass at recorded inputs",
+        "token_probes": "17actual6480bounded complete=false at recorded inputs",
+        "GPU": "16source-bound cases; unchanged during run",
+        "native": "partial actual external keyboard; remaining active-native and fixed isolated version pending",
+        "current_global_freshness": "concurrent Scene3D lock/config changes invalidate current root token freshness; retain snapshots and isolate final Menu candidate"
+      },
+      "remaining": [
+        "True system reactivation after minimize not obtained by tools; recovery not passed",
+        "Physical IME and VoiceOver hearing not run; off/deferred",
+        "Actual AgentKit Sidebar and matched whole ClientKit/Gold7 experience",
+        "Final public immutable pin/remoteCI per separate authorization"
+      ],
+      "fixed_candidate": {
+        "identity": "b430dae10b89dfd9c0f30e74d81f499a2ddb6778994ffcffead8b79ad942b9aa",
+        "base_identity": "3366559a1a524909f562fa2fdd1c8646d762b5ba0eb1294b5480c39d9e9c37ef",
+        "archive": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/menu-portable-candidate-20261021-attempt2/menu-b430dae10b89.tar.gz",
+        "archive_sha256": "b68a98f63d120320d9ccd19b3559f60f13e8563c2fbbae5ea404a5b7486f8cb4",
+        "manifest": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/menu-portable-candidate-20261021-attempt2/portable-manifest.json",
+        "sender_exact_checks": {
+          "export": 25,
+          "tokens": 22,
+          "text": 50,
+          "controls": 395,
+          "consumer": 302
+        },
+        "token_cases": 288,
+        "GPU_cases": 16,
+        "native": "bounded external original pointer/key/AX and lifecycle passed; true reactivation pending",
+        "receiver": "HANDOFF sent to authorized Rust AgentKit; independent actual Sidebar review pending",
+        "public_pin": "not published; no automatic authorization inferred"
+      },
+      "acceptance_matrix": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/menu-portable-candidate-20261021-attempt2/issue36-acceptance-matrix.json"
+    }
+  ],
+  "latest_open_issue_snapshot": "design/reviews/content-item-reveal-20261021/github-open-latest.json",
+  "latest_receiver_progress": {
+    "input": "a30b18db1a1df1f5a780c245080b22221a63cb20556f7274b76786d4d896584e",
+    "evidence": "design/reviews/agentkit-padding-intent-receiver-20261021/receipt.json",
+    "bounded_actual_consumer_and_synthetic_native_passed": true,
+    "physical_IME_and_full_experience_not_passed": true,
+    "does_not_complete_batch2_or_whole_goal": true
+  },
+  "previous_current_step_before_process_component": "Issue36 fixed independent Menu candidate b430dae10b89 prepared from accepted336,515exactfiles/22paths. Exact clean-extract25export/22tokens/50text/395controls/302consumer,strict2Clippy,nativebuild,288Menu token and16GPU passed. Same signed binary externalU2790B pointer/key/AX,408pt clip,Tab/disabled/minimize and inactive-late isolation retained; true reactivation and AgentKit final Sidebar/ClientKit review pending. Sent HANDOFF; no default/pin promotion, no scoped Git or Issue changes. Current Root all-WIP gates remain a separate stale boundary due concurrent Scene3D changes.",
+  "process_component_followup": {
+    "evidence": "design/reviews/process-container-foundation-20261021/acceptance.json",
+    "design": "docs/design/process-container.md",
+    "scope": "Explicit new shared foundation requirement; no automatic broad component migration",
+    "status": "in_progress",
+    "delivery_targets": [
+      "01a15c56-b5a8-73d2-991b-5e5ce3fbc611",
+      "01a14920-0d6e-7652-9a60-c74ef1a1f70f"
+    ]
+  },
+  "process_component_services_followup": {
+    "status": "partial; headless bounded acceptance passed",
+    "evidence": "design/reviews/process-component-services-20261021/acceptance.json",
+    "next": "optional View adapter and frame/resource lifecycle; AppHost owns navigation prototype"
+  },
+  "process_view_rights_followup": {
+    "status": "partial; owned rights and cancellation bounded acceptance passed",
+    "evidence": "design/reviews/process-view-rights-20261021/acceptance.json",
+    "next": "shared View frame queues/backpressure/GPU completion and standard Component integration"
+  },
+  "process_view_queue_followup": {
+    "status": "partial; public queue/GPU bounded acceptance passed",
+    "evidence": "design/reviews/process-view-queue-20261021/acceptance.json",
+    "next": "AppHost queued consumer migration after current native phase; standard Content adapter with image lifetime contract"
+  },
+  "process_container_component_followup": {
+    "status": "partial; standard legacy Component bounded acceptance passed",
+    "evidence": "design/reviews/process-container-component-20261021/acceptance.json",
+    "next": "AppHost consumption, V2 optional View/event disposition and final native/Gold7"
+  },
+  "stage40_host_keyboard_remaining": {
+    "owner": "Rust AppHost",
+    "finding": "window KeyInput does not route Tab/ordinary keys to navigation and visibility toolbars; default route is current Panel toolbar. Shared ToolbarControl fix is not final window keyboard/AX acceptance.",
+    "evidence": "AppHost independent read-only source review of window.rs:1094-1129",
+    "public_api_fix": "crates/tekes-ui-controls/tests/toolbar_contract.rs",
+    "status": "not implemented at window integration layer; tracked in original Toolbar architecture scope, no duplicate issue"
+  }
+}

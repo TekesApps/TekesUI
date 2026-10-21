@@ -1,6 +1,7 @@
 //! Complete presentation adapters for the existing surface, field, overlay and
 //! feedback models. These views own geometry, clipping, hit targets and input
 //! state; hosts supply shaped text and forward elapsed fixture time.
+use crate::control_motion::OverlayPresence;
 use crate::extended::{
     Banner, EmptyState, NoticeTone, Popover, Progress, StatusBadge, Toast, Tooltip,
 };
@@ -26,6 +27,13 @@ fn clipped(frame: Rect, clip: Option<Rect>) -> Option<Rect> {
         return None;
     }
     ContainerLayout::new(frame, Insets::ZERO, Insets::ZERO, clip).visible_clip()
+}
+fn valid_logical_target(frame: Rect, clip: Option<Rect>) -> bool {
+    finite_rect(frame)
+        && frame.size.width > 0.0
+        && frame.size.height > 0.0
+        && clip
+            .is_none_or(|clip| finite_rect(clip) && clip.size.width > 0.0 && clip.size.height > 0.0)
 }
 fn paint_surface_background(
     scene: &mut Scene,
@@ -99,6 +107,30 @@ fn draw_text(
     let ink = palette.color("primary-text").expect("semantic text token");
     renderer.draw(scene, text, role, draw_rect, align, ink);
 }
+/// Align notice markers to the first shaped line, including wrapped messages
+/// and host text scaling. Keep multiline text top-aligned; the marker must not
+/// drift toward the paragraph center or use an unrelated fixed Y offset.
+fn notice_marker_frame(
+    text: &mut impl ButtonTextRenderer,
+    message: &str,
+    role: proposal::TextRole,
+    message_frame: Rect,
+    x: f32,
+    diameter: f32,
+) -> Rect {
+    let first_line = text
+        .first_line_height(message, role, message_frame.size.width.max(0.))
+        .max(0.)
+        .min(message_frame.size.height.max(0.));
+    let diameter = diameter.min(first_line);
+    Rect::new(
+        x,
+        message_frame.min_y() + (first_line - diameter) * 0.5,
+        diameter,
+        diameter,
+    )
+}
+
 #[allow(clippy::too_many_arguments)]
 fn draw_centered_text_with_ink(
     scene: &mut Scene,
@@ -264,7 +296,7 @@ impl ToolbarView {
                 },
                 ButtonSize::Body,
                 role,
-                ButtonTextAlign::Leading,
+                ButtonTextAlign::default(),
             );
             self.layout.push(l);
         }
@@ -332,6 +364,9 @@ pub struct FieldPresentation {
     pub label_to_slot_gap: f32,
     pub slot_to_message_gap: f32,
     pub slot_min_height: f32,
+    /// Exact viewport height for an explicitly constrained composed field.
+    /// None retains the existing intrinsic single-line/minimum-height behavior.
+    pub slot_height: Option<f32>,
     pub message_min_height: f32,
 }
 impl FieldPresentation {
@@ -344,6 +379,7 @@ impl FieldPresentation {
             label_to_slot_gap: 4.,
             slot_to_message_gap: 6.,
             slot_min_height: 36.,
+            slot_height: None,
             message_min_height: 36.,
         }
     }
@@ -357,6 +393,7 @@ impl Default for FieldPresentation {
             label_to_slot_gap: proposal::metric("spacing", "space-tight").unwrap_or(4.),
             slot_to_message_gap: proposal::metric("spacing", "space-tight").unwrap_or(4.),
             slot_min_height: 0.,
+            slot_height: None,
             message_min_height: 0.,
         }
     }
@@ -396,12 +433,20 @@ impl FieldView {
         role: proposal::TextRole,
         presentation: FieldPresentation,
     ) -> FieldLayout {
-        let label_h = text
-            .measure(
-                &model.label,
-                presentation.label_role,
-                frame.size.width.max(0.),
-            )
+        // Reserve the required indicator before shaping a wrapping label. Its
+        // width must not depend on whatever room the full-width label leaves.
+        let width = frame.size.width.max(0.);
+        let mark_w = if model.required {
+            text.measure("*", presentation.label_role, f32::MAX)
+                .width
+                .max(0.)
+                .min(width)
+        } else {
+            0.
+        };
+        let label_width = (width - mark_w).max(0.);
+        let label_size = text.measure(&model.label, presentation.label_role, label_width);
+        let label_h = label_size
             .height
             .max(presentation.label_role.style().line_height)
             .max(presentation.label_min_height.max(0.));
@@ -420,6 +465,10 @@ impl FieldView {
             .unwrap_or(36.)
             .max(measured_line + 2. * proposal::SCROLL_SINGLE_LINE_PADDING_Y)
             .max(presentation.slot_min_height.max(0.));
+        let input_h = presentation
+            .slot_height
+            .filter(|height| height.is_finite())
+            .map_or(input_h, |height| height.max(0.));
         let slot_y = frame.min_y() + label_h + presentation.label_to_slot_gap.max(0.);
         let slot = Rect::new(
             frame.min_x(),
@@ -430,27 +479,12 @@ impl FieldView {
         let msg_y = slot.max_y() + presentation.slot_to_message_gap.max(0.);
         let message_rect = Rect::new(frame.min_x(), msg_y, frame.size.width.max(0.), message_h);
         let visible = clipped(frame, clip);
-        let label_rect = Rect::new(
-            frame.min_x(),
-            frame.min_y(),
-            frame.size.width.max(0.),
-            label_h,
-        );
+        let label_rect = Rect::new(frame.min_x(), frame.min_y(), label_width, label_h);
         let required_mark = if model.required {
-            let label_w = text
-                .measure(
-                    &model.label,
-                    presentation.label_role,
-                    frame.size.width.max(0.),
-                )
-                .width;
-            let mark_w = text
-                .measure("*", presentation.label_role, frame.size.width.max(0.))
-                .width;
             Some(Rect::new(
-                (label_rect.min_x() + label_w).min(label_rect.max_x()),
+                label_rect.min_x() + label_size.width.max(0.).min(label_width),
                 label_rect.min_y(),
-                mark_w.min((label_rect.max_x() - label_rect.min_x() - label_w).max(0.)),
+                mark_w,
                 label_h,
             ))
         } else {
@@ -477,7 +511,15 @@ impl FieldView {
                 ButtonTextAlign::Leading,
             );
             if let Some(r) = required_mark {
-                draw_text(scene, text, "*", role, r, palette, ButtonTextAlign::Leading);
+                draw_text(
+                    scene,
+                    text,
+                    "*",
+                    presentation.label_role,
+                    r,
+                    palette,
+                    ButtonTextAlign::Leading,
+                );
             }
             if !message.is_empty() {
                 draw_centered_text_with_ink(
@@ -549,6 +591,14 @@ pub enum NumberFieldEvent {
     Changed,
 }
 impl NumberFieldView {
+    fn sync_model(&mut self, model: &NumberField) {
+        for (button, increment) in [(&mut self.minus, false), (&mut self.plus, true)] {
+            button.state.disabled = self.disabled || !model.can_increment(increment);
+            if button.state.disabled {
+                button.cancel();
+            }
+        }
+    }
     pub fn set_disabled(&mut self, d: bool) {
         self.disabled = d;
         if d {
@@ -557,6 +607,10 @@ impl NumberFieldView {
     }
     /// Focus one stepper child (`increment = false` selects decrement).
     pub fn focus(&mut self, increment: bool, visible: bool) {
+        if self.disabled {
+            self.blur();
+            return;
+        }
         self.focused = Some(increment);
         self.minus.state.focused = !increment;
         self.minus.state.focus_visible = !increment && visible;
@@ -613,8 +667,7 @@ impl NumberFieldView {
             button_w,
             frame.size.height.max(0.),
         );
-        self.minus.state.disabled = self.disabled || !model.can_increment(false);
-        self.plus.state.disabled = self.disabled || !model.can_increment(true);
+        self.sync_model(model);
         self.minus.state.focused = self.focused == Some(false);
         self.plus.state.focused = self.focused == Some(true);
         let d = self.minus.render(
@@ -644,14 +697,19 @@ impl NumberFieldView {
         let visible = clipped(frame, clip);
         if let Some(v) = visible {
             scene.push_clip(v);
-            draw_text(
+            draw_centered_text_with_ink(
                 scene,
                 &mut *text,
                 &model.value().to_string(),
                 proposal::TextRole::UiHeading,
                 value,
                 palette,
-                ButtonTextAlign::Leading,
+                ButtonTextAlign::Center,
+                if self.disabled {
+                    "disabled-text"
+                } else {
+                    "primary-text"
+                },
             );
             scene.pop_clip();
         }
@@ -678,26 +736,31 @@ impl NumberFieldView {
         }
     }
     pub fn pointer_up(&mut self, p: Point, model: &mut NumberField) -> NumberFieldEvent {
-        if self.minus.pointer_up_at(p) && !self.disabled && model.can_increment(false) {
-            return if model.increment(false) {
-                NumberFieldEvent::Changed
-            } else {
-                NumberFieldEvent::None
-            };
+        self.sync_model(model);
+        let increment = if self.minus.pointer_up_at(p) {
+            Some(false)
+        } else if self.plus.pointer_up_at(p) {
+            Some(true)
+        } else {
+            None
+        };
+        if let Some(increment) = increment
+            && !self.disabled
+            && model.can_increment(increment)
+            && model.increment(increment)
+        {
+            self.sync_model(model);
+            NumberFieldEvent::Changed
+        } else {
+            NumberFieldEvent::None
         }
-        if self.plus.pointer_up_at(p) {
-            return if !self.disabled && model.can_increment(true) && model.increment(true) {
-                NumberFieldEvent::Changed
-            } else {
-                NumberFieldEvent::None
-            };
-        }
-        NumberFieldEvent::None
     }
     pub fn key(&mut self, model: &mut NumberField, key: ControlKey) -> NumberFieldEvent {
+        self.sync_model(model);
         let up = matches!(key, ControlKey::Up | ControlKey::Right);
         let down = matches!(key, ControlKey::Down | ControlKey::Left);
         if !self.disabled && (up || down) && model.increment(up) {
+            self.sync_model(model);
             NumberFieldEvent::Changed
         } else {
             NumberFieldEvent::None
@@ -709,6 +772,7 @@ impl NumberFieldView {
         key: ControlKey,
         down: bool,
     ) -> NumberFieldEvent {
+        self.sync_model(model);
         if self.disabled {
             self.cancel();
             return NumberFieldEvent::None;
@@ -721,12 +785,9 @@ impl NumberFieldView {
         } else {
             &mut self.minus
         };
-        if button.key(key, down) {
-            if model.can_increment(increment) && model.increment(increment) {
-                NumberFieldEvent::Changed
-            } else {
-                NumberFieldEvent::None
-            }
+        if button.key(key, down) && model.can_increment(increment) && model.increment(increment) {
+            self.sync_model(model);
+            NumberFieldEvent::Changed
         } else {
             NumberFieldEvent::None
         }
@@ -773,24 +834,66 @@ pub enum TooltipEvent {
     Dismissed,
 }
 impl TooltipView {
+    // One inset definition for the original fixed-size and fitted help paths.
+    const INSET_X: f32 = 12.;
+    const INSET_Y: f32 = 8.;
+    pub(crate) fn fitted_size(
+        text: &mut dyn ButtonTextRenderer,
+        model: &Tooltip,
+        viewport: Rect,
+        role: proposal::TextRole,
+    ) -> Size {
+        let width = (viewport.size.width - 2. * Self::INSET_X).max(0.);
+        let measured = text.measure(&model.text, role, width);
+        Size::new(
+            (measured.width + 2. * Self::INSET_X).min(viewport.size.width),
+            (measured.height + 2. * Self::INSET_Y).min(viewport.size.height),
+        )
+    }
+    pub(crate) fn content_size(viewport: Rect) -> Size {
+        Size::new(
+            (viewport.size.width - 2. * Self::INSET_X).max(0.),
+            (viewport.size.height - 2. * Self::INSET_Y).max(0.),
+        )
+    }
+    pub(crate) fn fitting_lines(viewport: Rect, ends: impl Iterator<Item = f64>) -> usize {
+        let available = f64::from(Self::content_size(viewport).height);
+        ends.take_while(|end| end.is_finite() && *end <= available)
+            .count()
+    }
     pub fn pointer_move(&mut self, point: Point) {
+        if self.inactive {
+            return;
+        }
         let inside = self.anchor_visible.is_some_and(|r| r.contains(point))
             || self.layout.visible.is_some_and(|r| r.contains(point));
-        if self.hovered && !inside && !self.focused {
+        // A new active hover is a new request, even if an old focus owner
+        // remains. Repeated movement within the same region stays suppressed.
+        if (inside && !self.hovered) || (self.hovered && !inside && !self.focused) {
             self.dismissed_until_leave = false;
         }
         self.hovered = inside;
     }
     pub fn set_focus(&mut self, focused: bool, focus_visible: bool) {
-        if self.focused && !focused && !self.hovered {
+        if self.inactive {
+            return;
+        }
+        // A false-to-true focus transition is independent of retained hover;
+        // duplicate focus notifications must not undo an Escape dismissal.
+        if (focused && !self.focused) || (self.focused && !focused && !self.hovered) {
             self.dismissed_until_leave = false;
         }
         self.focused = focused;
         self.focus_visible = focused && focus_visible;
     }
     pub fn key(&mut self, key: ControlKey) -> TooltipEvent {
+        if self.inactive {
+            return TooltipEvent::None;
+        }
         if key == ControlKey::Escape && (self.hovered || self.focused || self.controlled_visible) {
-            self.dismissed_until_leave = true;
+            // A controlled-only request has no hover/focus owner to leave.
+            // Its existing suppression resets when the caller hides it.
+            self.dismissed_until_leave = self.hovered || self.focused;
             self.controlled_suppressed = self.controlled_visible;
             TooltipEvent::Dismissed
         } else {
@@ -810,6 +913,10 @@ impl TooltipView {
             self.blur();
             self.hovered = false;
             self.dismissed_until_leave = false;
+            // Availability ends at deactivation, before any later redraw or
+            // input. Old anchor/overlay geometry cannot re-arm after restore.
+            self.anchor_visible = None;
+            self.layout.visible = None;
         }
     }
     #[allow(clippy::too_many_arguments)]
@@ -825,6 +932,11 @@ impl TooltipView {
         palette: Palette,
         role: proposal::TextRole,
     ) -> OverlayLayout {
+        // Observed caller hide/show is a fresh request, independent of old
+        // hover/focus owners. Repeated visible=true remains suppressed.
+        if model.visible && !self.controlled_visible {
+            self.dismissed_until_leave = false;
+        }
         if !model.visible {
             self.controlled_suppressed = false;
         }
@@ -833,7 +945,7 @@ impl TooltipView {
             && ((model.visible && !self.controlled_suppressed) || self.hovered || self.focused);
         let viewport = effective_viewport(viewport, clip);
         let r = place_overlay(anchor, size, viewport, 8.);
-        let content = safe_inset(r, 12., 8.);
+        let content = safe_inset(r, Self::INSET_X, Self::INSET_Y);
         self.anchor_visible = clipped(anchor, clip);
         self.layout = OverlayLayout {
             frame: r,
@@ -878,20 +990,24 @@ impl TooltipView {
 /// Non-modal popover owns viewport-aware placement, outside dismissal and Escape.
 #[derive(Clone, Debug)]
 pub struct PopoverView {
+    presence: OverlayPresence,
     layout: OverlayLayout,
     disabled: bool,
     dismiss: Button,
     dismiss_layout: Option<crate::ButtonLayout>,
+    logical_dismiss_frame: Option<Rect>,
     outside_armed: bool,
     active: bool,
 }
 impl Default for PopoverView {
     fn default() -> Self {
         Self {
+            presence: OverlayPresence::default(),
             layout: OverlayLayout::default(),
             disabled: false,
             dismiss: Button::default(),
             dismiss_layout: None,
+            logical_dismiss_frame: None,
             outside_armed: false,
             active: true,
         }
@@ -925,13 +1041,25 @@ fn popover_spacing() -> PopoverSpacing {
     }
 }
 impl PopoverView {
+    /// Paint can outlive semantic open during dismissal.
+    pub fn is_presented(&self) -> bool {
+        self.presence.is_presented()
+    }
+    pub fn needs_animation(&self) -> bool {
+        self.presence.needs_animation()
+    }
+    /// Call on unmount or text/image resource replacement.
+    pub fn clear_presentation(&mut self) {
+        self.presence.clear();
+    }
+
     pub fn measure(
         text: &mut impl ButtonTextRenderer,
         content: Size,
         role: proposal::TextRole,
     ) -> Size {
-        let dismiss = Button::measure(text, "Dismiss", f32::MAX, ButtonSize::Md, role);
         let spacing = popover_spacing();
+        let dismiss = Button::measure(text, "Dismiss", spacing.action_width, ButtonSize::Md, role);
         Size::new(
             (content.width + spacing.content_inset_x * 2.)
                 .max(spacing.action_width + spacing.action_inset_x * 2.)
@@ -942,6 +1070,83 @@ impl PopoverView {
                 + dismiss.height,
         )
     }
+    /// Arrange the existing popup/content/dismiss geometry without drawing or
+    /// sampling its transition. Owned Component children can use these bounds
+    /// during their ordinary layout pass, then paint through the content callback.
+    #[allow(clippy::too_many_arguments)]
+    pub fn arrange(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        model: &Popover,
+        anchor: Rect,
+        size: Size,
+        viewport: Rect,
+        clip: Option<Rect>,
+        role: proposal::TextRole,
+    ) -> OverlayLayout {
+        self.arrange_geometry(text, model, anchor, size, viewport, clip, role)
+            .0
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn arrange_geometry(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        model: &Popover,
+        anchor: Rect,
+        size: Size,
+        viewport: Rect,
+        clip: Option<Rect>,
+        role: proposal::TextRole,
+    ) -> (OverlayLayout, Rect) {
+        let effective = effective_viewport(viewport, clip);
+        // Preserve document-space child geometry when a valid ancestor clip is
+        // temporarily disjoint (for example, while the open popover is scrolled
+        // away). Painting and pointer visibility still use the ancestor clip.
+        let viewport = if effective.size.width > 0.0 && effective.size.height > 0.0 {
+            effective
+        } else if finite_rect(viewport) && viewport.size.width > 0.0 && viewport.size.height > 0.0 {
+            viewport
+        } else {
+            effective
+        };
+        let frame = place_overlay(anchor, size, viewport, 6.);
+        let visible = clipped(frame, clip);
+        let spacing = popover_spacing();
+        let dismiss_w = spacing
+            .action_width
+            .min((frame.size.width - spacing.action_inset_x * 2.).max(0.));
+        let dismiss_h = Button::measure(text, "Dismiss", dismiss_w, ButtonSize::Md, role)
+            .height
+            .min((frame.size.height - spacing.content_inset_y).max(0.));
+        let dismiss_top = frame.max_y() - spacing.content_inset_y - dismiss_h;
+        let dismiss_frame = Rect::new(
+            frame.min_x() + spacing.action_inset_x,
+            dismiss_top.max(frame.min_y()),
+            dismiss_w,
+            dismiss_h,
+        );
+        self.logical_dismiss_frame = (model.open
+            && self.active
+            && !self.disabled
+            && valid_logical_target(dismiss_frame, clip))
+        .then_some(dismiss_frame);
+        let content = Rect::new(
+            frame.min_x() + spacing.content_inset_x,
+            frame.min_y() + spacing.content_inset_y,
+            (frame.size.width - spacing.content_inset_x * 2.).max(0.),
+            (dismiss_top - spacing.content_to_action_gap - frame.min_y() - spacing.content_inset_y)
+                .max(0.),
+        );
+        self.layout = OverlayLayout {
+            frame,
+            content,
+            visible,
+            anchor,
+            requested_size: size,
+        };
+        self.dismiss_layout = None;
+        (self.layout, dismiss_frame)
+    }
     pub fn show(&mut self, model: &mut Popover, invoker: usize) {
         if !self.disabled && self.active {
             model.show(invoker)
@@ -951,6 +1156,7 @@ impl PopoverView {
         self.dismiss.blur();
         self.outside_armed = false;
         self.dismiss_layout = None;
+        self.logical_dismiss_frame = None;
         self.layout.visible = None;
         if model.open {
             OverlayEvent::Dismissed {
@@ -979,11 +1185,13 @@ impl PopoverView {
         if active {
             OverlayEvent::None
         } else {
+            self.presence.clear();
             self.close(model)
         }
     }
     pub fn focus_dismiss(&mut self, focused: bool, focus_visible: bool) {
-        let enabled = focused && self.layout.visible.is_some() && self.active && !self.disabled;
+        let enabled =
+            focused && self.logical_dismiss_frame.is_some() && self.active && !self.disabled;
         self.dismiss.state.focused = enabled;
         self.dismiss.state.focus_visible = enabled && focus_visible;
         if !enabled {
@@ -1032,30 +1240,63 @@ impl PopoverView {
         role: proposal::TextRole,
         draw_content: impl FnOnce(&mut Scene, Rect),
     ) -> OverlayLayout {
-        let viewport = effective_viewport(viewport, clip);
-        let frame = place_overlay(anchor, size, viewport, 6.);
-        let visible = model.open.then(|| clipped(frame, Some(viewport))).flatten();
-        let spacing = popover_spacing();
-        let dismiss_h = Button::measure(text, "Dismiss", f32::MAX, ButtonSize::Md, role)
-            .height
-            .min(frame.size.height);
-        let dismiss_top = frame.max_y() - spacing.content_inset_y - dismiss_h;
-        let content = Rect::new(
-            frame.min_x() + spacing.content_inset_x,
-            frame.min_y() + spacing.content_inset_y,
-            (frame.size.width - spacing.content_inset_x * 2.).max(0.),
-            (dismiss_top - spacing.content_to_action_gap - frame.min_y() - spacing.content_inset_y)
-                .max(0.),
+        self.render_with_text_content(
+            scene,
+            text,
+            model,
+            anchor,
+            size,
+            viewport,
+            clip,
+            palette,
+            role,
+            "",
+            |scene, _, bounds| draw_content(scene, bounds),
+        )
+    }
+    /// Text-aware content slot included in retained enter/exit paint. Change
+    /// `content_identity` when caller-owned content or resource identities change.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_with_text_content<T: ButtonTextRenderer>(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut T,
+        model: &Popover,
+        anchor: Rect,
+        size: Size,
+        viewport: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+        content_identity: &str,
+        draw_content: impl FnOnce(&mut Scene, &mut T, Rect),
+    ) -> OverlayLayout {
+        let paint_context = format!(
+            "{anchor:?}{size:?}{viewport:?}{clip:?}{palette:?}{role:?}{content_identity}{}",
+            text.backing_scale()
         );
-        self.layout = OverlayLayout {
+        if !model.open && !self.presence.is_presented() {
+            self.dismiss.blur();
+            self.dismiss_layout = None;
+            self.logical_dismiss_frame = None;
+            self.layout.visible = None;
+            self.outside_armed = false;
+            self.presence.paint(scene, text, false, paint_context, None);
+            return self.layout;
+        }
+        let destination = scene;
+        let mut overlay_scene = Scene::new();
+        let scene = &mut overlay_scene;
+        let (layout, dismiss_frame) =
+            self.arrange_geometry(text, model, anchor, size, viewport, clip, role);
+        let OverlayLayout {
             frame,
             content,
             visible,
-            anchor,
-            requested_size: size,
-        };
-        self.dismiss_layout = None;
-        if model.open && self.active && !self.disabled {
+            ..
+        } = layout;
+        let viewport = effective_viewport(viewport, clip);
+        if (model.open || self.presence.is_presented()) && self.active && !self.disabled {
             if let Some(v) = visible {
                 paint_surface_background(
                     scene,
@@ -1067,16 +1308,7 @@ impl PopoverView {
                     text.backing_scale(),
                 );
                 scene.push_clip(v);
-                draw_content(scene, content);
-                let dismiss_w = spacing
-                    .action_width
-                    .min((frame.size.width - spacing.action_inset_x * 2.).max(0.));
-                let dismiss_frame = Rect::new(
-                    frame.min_x() + spacing.action_inset_x,
-                    dismiss_top.max(frame.min_y()),
-                    dismiss_w,
-                    dismiss_h,
-                );
+                draw_content(scene, text, content);
                 self.dismiss_layout = Some(self.dismiss.render(
                     scene,
                     text,
@@ -1087,7 +1319,7 @@ impl PopoverView {
                     paint::ButtonVariant::Quiet,
                     ButtonSize::Md,
                     role,
-                    ButtonTextAlign::Center,
+                    ButtonTextAlign::default(),
                 ));
                 scene.pop_clip();
             } else {
@@ -1097,6 +1329,18 @@ impl PopoverView {
         } else {
             self.dismiss.blur();
             self.outside_armed = false;
+        }
+        self.presence.paint(
+            destination,
+            text,
+            model.open,
+            paint_context,
+            Some(overlay_scene),
+        );
+        if !model.open {
+            self.layout.visible = None;
+            self.dismiss_layout = None;
+            self.dismiss.blur();
         }
         self.layout
     }
@@ -1119,6 +1363,10 @@ impl PopoverView {
         }
     }
     pub fn pointer_up(&mut self, model: &mut Popover, p: Point) -> OverlayEvent {
+        if !model.open || self.disabled || !self.active {
+            self.cancel();
+            return OverlayEvent::None;
+        }
         if self.dismiss.pointer_up_at(p) {
             self.close(model)
         } else if self.outside_armed && !self.layout.visible.is_some_and(|r| r.contains(p)) {
@@ -1133,7 +1381,7 @@ impl PopoverView {
         self.key_event(model, key, true)
     }
     pub fn key_event(&mut self, model: &mut Popover, key: ControlKey, down: bool) -> OverlayEvent {
-        if !self.active {
+        if !self.active || !model.open || self.disabled {
             return OverlayEvent::None;
         }
         if (key == ControlKey::Escape && down)
@@ -1157,8 +1405,14 @@ impl PopoverView {
             .then_some(self.dismiss_layout?)
             .and_then(|layout| layout.visible)
     }
+    /// Full mounted action geometry in document coordinates, independent of
+    /// ancestor clipping. Hosts use this for offscreen keyboard reveal; pointer
+    /// hit testing must continue to use `focus_target`/`layout.visible`.
+    pub fn logical_focus_target(&self) -> Option<Rect> {
+        (self.active && !self.disabled).then_some(self.logical_dismiss_frame?)
+    }
 }
-fn place_overlay(anchor: Rect, size: Size, viewport: Rect, gap: f32) -> Rect {
+pub(crate) fn place_overlay(anchor: Rect, size: Size, viewport: Rect, gap: f32) -> Rect {
     if !finite_rect(anchor)
         || !finite_rect(viewport)
         || !size.width.is_finite()
@@ -1189,6 +1443,10 @@ fn place_overlay(anchor: Rect, size: Size, viewport: Rect, gap: f32) -> Rect {
         viewport.min_x(),
         (viewport.max_x() - w).max(viewport.min_x()),
     );
+    let y = y.clamp(
+        viewport.min_y(),
+        (viewport.max_y() - h).max(viewport.min_y()),
+    );
     Rect::new(x, y, w, h)
 }
 
@@ -1198,9 +1456,13 @@ pub struct ToastView {
     layout: ViewLayout,
     dismiss: Button,
     dismiss_layout: Option<crate::ButtonLayout>,
+    logical_dismiss_frame: Option<Rect>,
     inactive: bool,
 }
 impl ToastView {
+    fn stacked(frame: Rect) -> bool {
+        frame.size.width < 280.0
+    }
     /// Measures the toast's content and dismiss action using the same text backend
     /// and width constraint used by `render`. Hosts can size the outer frame before
     /// drawing so large text does not clip the action or message.
@@ -1211,10 +1473,15 @@ impl ToastView {
         role: proposal::TextRole,
     ) -> Size {
         let width = width.max(0.0);
-        let right_inset = 50.0;
+        let stacked = width < 280.0;
+        let right_inset = if stacked { 12.0 } else { 50.0 };
         let leading_inset = 36.0;
-        let gap = 4.0;
-        let available_action_width = (width - leading_inset - gap - right_inset).max(0.0);
+        let gap = if stacked { 8.0 } else { 4.0 };
+        let available_action_width = if stacked {
+            (width - 24.0).max(0.0)
+        } else {
+            (width - leading_inset - gap - right_inset).max(0.0)
+        };
         let natural_action = Button::measure(
             text,
             "Dismiss",
@@ -1226,14 +1493,20 @@ impl ToastView {
         let action_height = Button::measure(text, "Dismiss", action_width, ButtonSize::Body, role)
             .height
             .max(34.0);
-        let content_width = (width - leading_inset - gap - action_width - right_inset).max(0.0);
+        let content_width = if stacked {
+            (width - leading_inset - 12.0).max(0.0)
+        } else {
+            (width - leading_inset - gap - action_width - right_inset).max(0.0)
+        };
         let content_height = text.measure(message, role, content_width).height.max(34.0);
-        Size::new(
-            width,
+        let height = if stacked {
+            12.0 + content_height + gap + action_height + 10.0
+        } else {
             62.0_f32
                 .max(12.0 + content_height + 16.0)
-                .max(10.0 + action_height + 10.0),
-        )
+                .max(10.0 + action_height + 10.0)
+        };
+        Size::new(width, height)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -1248,11 +1521,15 @@ impl ToastView {
         role: proposal::TextRole,
     ) -> ViewLayout {
         let visible = clipped(frame, clip);
-        let right_inset = 50.0;
+        let stacked = Self::stacked(frame);
+        let right_inset = if stacked { 12.0 } else { 50.0 };
         let leading_inset = 36.0;
-        let gap = 4.0;
-        let available_action_width =
-            (frame.size.width - leading_inset - gap - right_inset).max(0.0);
+        let gap = if stacked { 8.0 } else { 4.0 };
+        let available_action_width = if stacked {
+            (frame.size.width - 24.0).max(0.0)
+        } else {
+            (frame.size.width - leading_inset - gap - right_inset).max(0.0)
+        };
         let natural_action = Button::measure(
             text,
             "Dismiss",
@@ -1264,8 +1541,16 @@ impl ToastView {
         let dismiss_h = Button::measure(text, "Dismiss", dismiss_w, ButtonSize::Body, role)
             .height
             .max(34.0);
-        let dismiss_x = frame.min_x() + (frame.size.width - right_inset - dismiss_w).max(0.0);
-        let content_width = (dismiss_x - gap - (frame.min_x() + leading_inset)).max(0.0);
+        let dismiss_x = if stacked {
+            frame.min_x() + (frame.size.width - dismiss_w) * 0.5
+        } else {
+            frame.min_x() + (frame.size.width - right_inset - dismiss_w).max(0.0)
+        };
+        let content_width = if stacked {
+            (frame.size.width - leading_inset - 12.0).max(0.0)
+        } else {
+            (dismiss_x - gap - (frame.min_x() + leading_inset)).max(0.0)
+        };
         let content_height = text
             .measure(&model.message, role, content_width)
             .height
@@ -1281,6 +1566,20 @@ impl ToastView {
             visible: model.visible.then_some(visible).flatten(),
         };
         self.dismiss_layout = None;
+        let dismiss_y = if stacked {
+            self.layout.content.max_y() + gap
+        } else {
+            frame.min_y() + 10.0
+        };
+        let logical_dismiss_frame = Rect::new(
+            dismiss_x,
+            dismiss_y,
+            dismiss_w,
+            dismiss_h.min(frame.size.height.max(0.)),
+        );
+        self.logical_dismiss_frame =
+            (model.visible && !self.inactive && valid_logical_target(logical_dismiss_frame, clip))
+                .then_some(logical_dismiss_frame);
         if model.visible {
             if let Some(v) = visible {
                 paint_surface_background(
@@ -1300,7 +1599,14 @@ impl ToastView {
                 };
                 crate::extended::status_badge(
                     scene,
-                    Rect::new(frame.min_x() + 14., frame.min_y() + 18., 10., 10.),
+                    notice_marker_frame(
+                        text,
+                        &model.message,
+                        role,
+                        self.layout.content,
+                        frame.min_x() + 14.,
+                        10.,
+                    ),
                     palette,
                     status,
                 );
@@ -1319,7 +1625,7 @@ impl ToastView {
                     "Dismiss",
                     Rect::new(
                         dismiss_x,
-                        frame.min_y() + 10.,
+                        dismiss_y,
                         dismiss_w,
                         dismiss_h.min(frame.size.height.max(0.)),
                     ),
@@ -1328,7 +1634,7 @@ impl ToastView {
                     paint::ButtonVariant::Quiet,
                     ButtonSize::Body,
                     role,
-                    ButtonTextAlign::Leading,
+                    ButtonTextAlign::default(),
                 ));
                 scene.pop_clip();
             } else {
@@ -1340,7 +1646,7 @@ impl ToastView {
         self.layout
     }
     pub fn focus_dismiss(&mut self, focused: bool, focus_visible: bool) {
-        let enabled = focused && self.layout.visible.is_some() && !self.inactive;
+        let enabled = focused && self.logical_dismiss_frame.is_some() && !self.inactive;
         self.dismiss.state.focused = enabled;
         self.dismiss.state.focus_visible = enabled && focus_visible;
         if !enabled {
@@ -1407,6 +1713,11 @@ impl ToastView {
             .then_some(self.dismiss_layout?)
             .and_then(|layout| layout.visible)
     }
+    /// Full mounted Dismiss action frame, even when its ancestor clip is
+    /// currently disjoint. Pointer handling still uses the clipped target.
+    pub fn logical_focus_target(&self) -> Option<Rect> {
+        (!self.inactive).then_some(self.logical_dismiss_frame?)
+    }
 }
 /// Banner presentation owns its message and dismiss hit target.
 #[derive(Clone, Debug, Default)]
@@ -1414,11 +1725,47 @@ pub struct BannerView {
     layout: ViewLayout,
     dismiss_button: Button,
     dismiss_layout: Option<crate::ButtonLayout>,
+    logical_dismiss_frame: Option<Rect>,
     inactive: bool,
 }
 impl BannerView {
+    fn stacked(width: f32, dismissible: bool) -> bool {
+        dismissible && width < 280.0
+    }
+
+    /// Returns the banner's natural frame size for the supplied message and
+    /// width. Narrow dismissible banners place the action after the wrapped
+    /// message so the two never compete for the same horizontal slot.
+    pub fn measure(
+        text: &mut impl ButtonTextRenderer,
+        message: &str,
+        width: f32,
+        dismissible: bool,
+        role: proposal::TextRole,
+    ) -> Size {
+        let width = width.max(0.0);
+        if Self::stacked(width, dismissible) {
+            let message_width = (width - 46.0).max(0.0);
+            let message_height = text.measure(message, role, message_width).height.max(54.0);
+            let action_width = (width - 46.0).clamp(0.0, 180.0);
+            let action_height =
+                Button::measure(text, "Dismiss", action_width, ButtonSize::Body, role)
+                    .height
+                    .max(34.0);
+            Size::new(width, 6.0 + message_height + 8.0 + action_height + 10.0)
+        } else {
+            let message_width = if dismissible {
+                (width - 170.0 - 50.0).max(0.0)
+            } else {
+                (width - 40.0).max(0.0)
+            };
+            let message_height = text.measure(message, role, message_width).height.max(54.0);
+            Size::new(width, 74.0_f32.max(message_height + 12.0))
+        }
+    }
+
     pub fn focus_dismiss(&mut self, focused: bool, focus_visible: bool) {
-        let enabled = focused && self.layout.visible.is_some() && !self.inactive;
+        let enabled = focused && self.logical_dismiss_frame.is_some() && !self.inactive;
         self.dismiss_button.state.focused = enabled;
         self.dismiss_button.state.focus_visible = enabled && focus_visible;
         if !enabled {
@@ -1442,6 +1789,37 @@ impl BannerView {
             content: safe_inset(frame, 12., 8.),
             visible: model.visible.then_some(visible).flatten(),
         };
+        let stacked = Self::stacked(frame.size.width, model.dismissible);
+        let dismiss_x = if stacked {
+            frame.min_x() + 34.0
+        } else {
+            frame.min_x() + (frame.size.width - 170.).max(0.)
+        };
+        let dismiss_w = if stacked {
+            (frame.size.width - 46.0).clamp(0.0, 180.0)
+        } else {
+            frame.size.width.min(92.)
+        };
+        let dismiss_h = Button::measure(text, "Dismiss", dismiss_w, ButtonSize::Body, role)
+            .height
+            .max(34.)
+            .min((frame.size.height - 16.).max(0.));
+        let dismiss_y = if stacked {
+            let msg_width = (frame.size.width - 46.0).max(0.0);
+            let measured_message_height = text
+                .measure(&model.message, role, msg_width)
+                .height
+                .max(54.);
+            frame.min_y() + 6.0 + measured_message_height + 8.0
+        } else {
+            frame.min_y() + 16.0
+        };
+        let logical_dismiss_frame = Rect::new(dismiss_x, dismiss_y, dismiss_w, dismiss_h);
+        self.logical_dismiss_frame = (model.visible
+            && model.dismissible
+            && !self.inactive
+            && valid_logical_target(logical_dismiss_frame, clip))
+        .then_some(logical_dismiss_frame);
         self.dismiss_layout = None;
         if model.visible {
             if let Some(v) = visible {
@@ -1463,21 +1841,26 @@ impl BannerView {
                     NoticeTone::Warning => StatusBadge::Running,
                     NoticeTone::Error => StatusBadge::Failed,
                 };
-                crate::extended::status_badge(
-                    scene,
-                    Rect::new(frame.min_x() + 12., frame.min_y() + 12., 12., 12.),
-                    palette,
-                    status,
-                );
-                let dismiss_x = frame.min_x() + (frame.size.width - 170.).max(0.);
-                let msg_width = if model.dismissible {
+                let msg_width = if stacked {
+                    (frame.size.width - 46.0).max(0.0)
+                } else if model.dismissible {
                     (dismiss_x - frame.min_x() - 50.).max(0.)
                 } else {
                     (frame.size.width - 40.).max(0.)
                 };
                 let message_top = frame.min_y() + 6.;
-                let message_height = 54f32.min((frame.size.height - 12.).max(0.));
+                let measured_message_height = text
+                    .measure(&model.message, role, msg_width)
+                    .height
+                    .max(54.);
+                let message_height = measured_message_height.min((frame.size.height - 12.).max(0.));
                 let msg = Rect::new(frame.min_x() + 34., message_top, msg_width, message_height);
+                crate::extended::status_badge(
+                    scene,
+                    notice_marker_frame(text, &model.message, role, msg, frame.min_x() + 12., 12.),
+                    palette,
+                    status,
+                );
                 draw_text(
                     scene,
                     text,
@@ -1488,12 +1871,9 @@ impl BannerView {
                     ButtonTextAlign::Leading,
                 );
                 if model.dismissible {
-                    let dismiss = Rect::new(
-                        dismiss_x,
-                        frame.min_y() + 16.,
-                        frame.size.width.min(92.),
-                        34f32.min(frame.size.height.max(0.)),
-                    );
+                    // Passive painting is valid while the window is inactive;
+                    // actionable focus publication is deliberately withdrawn.
+                    let dismiss = logical_dismiss_frame;
                     self.dismiss_layout = Some(self.dismiss_button.render(
                         scene,
                         text,
@@ -1504,7 +1884,7 @@ impl BannerView {
                         paint::ButtonVariant::Primary,
                         ButtonSize::Body,
                         role,
-                        ButtonTextAlign::Leading,
+                        ButtonTextAlign::default(),
                     ));
                 } else {
                     self.dismiss_button.blur();
@@ -1570,6 +1950,11 @@ impl BannerView {
         (!self.inactive)
             .then_some(self.dismiss_layout?)
             .and_then(|layout| layout.visible)
+    }
+    /// Full mounted Dismiss action frame in document coordinates. This stays
+    /// available for keyboard reveal while pointer visibility remains clipped.
+    pub fn logical_focus_target(&self) -> Option<Rect> {
+        (!self.inactive).then_some(self.logical_dismiss_frame?)
     }
 }
 #[derive(Clone, Copy, Debug, Default)]
@@ -1646,10 +2031,59 @@ pub struct EmptyStateView {
     layout: ViewLayout,
     action: Button,
     action_layout: Option<crate::ButtonLayout>,
+    logical_action_frame: Option<Rect>,
     disabled: bool,
     inactive: bool,
 }
 impl EmptyStateView {
+    /// Natural content-slot size, including wrapped title, detail and action.
+    /// Parent surface padding is separate. Supply the same width and text
+    /// renderer to `render`; a deliberately smaller frame still clips content.
+    pub fn measure(
+        text: &mut impl ButtonTextRenderer,
+        model: &EmptyState,
+        width: f32,
+        role: proposal::TextRole,
+    ) -> Size {
+        let (title, detail, action) = Self::measured_content(text, model, width, role);
+        Size::new(
+            width.max(0.),
+            action
+                .map_or(detail.max_y(), |r| r.max_y())
+                .max(title.max_y()),
+        )
+    }
+
+    fn measured_content(
+        text: &mut impl ButtonTextRenderer,
+        model: &EmptyState,
+        width: f32,
+        role: proposal::TextRole,
+    ) -> (Rect, Rect, Option<Rect>) {
+        let content_width = (width - 8.).max(0.);
+        let title_width = content_width.min(420.);
+        let title_h = text
+            .measure(&model.title, proposal::TextRole::UiHeading, title_width)
+            .height
+            .max(34.);
+        let title = Rect::new(4., 6., title_width, title_h);
+        let detail_y = 44f32.max(title.max_y() + 4.);
+        let detail_width = content_width.min(460.);
+        let detail_h = text
+            .measure(&model.detail, role, detail_width)
+            .height
+            .max(54.);
+        let detail = Rect::new(4., detail_y, detail_width, detail_h);
+        let action = model.action.as_ref().map(|label| {
+            let width = content_width.min(150.);
+            let height = Button::measure(text, label, width, ButtonSize::Body, role)
+                .height
+                .max(34.);
+            Rect::new(4., detail.max_y().max(100.), width, height)
+        });
+        (title, detail, action)
+    }
+
     pub fn set_disabled(&mut self, disabled: bool) {
         self.disabled = disabled;
         if disabled {
@@ -1665,11 +2099,8 @@ impl EmptyStateView {
         }
     }
     pub fn focus_action(&mut self, focused: bool, focus_visible: bool) {
-        let enabled = focused
-            && !self.disabled
-            && !self.inactive
-            && self.layout.visible.is_some()
-            && self.action_layout.is_some();
+        let enabled =
+            focused && !self.disabled && !self.inactive && self.logical_action_frame.is_some();
         self.action.state.focused = enabled;
         self.action.state.focus_visible = enabled && focus_visible;
         if !enabled {
@@ -1693,35 +2124,24 @@ impl EmptyStateView {
         let x = frame.min_x() + 4.;
         let title_y = frame.min_y() + 6.;
         let content_width = (frame.size.width - 8.).max(0.);
-        let title_width = content_width.min(420.);
-        let title_h = text
-            .measure(&model.title, proposal::TextRole::UiHeading, title_width)
-            .height
-            .max(34.);
-        let detail_y = frame.min_y() + 44f32.max(title_y - frame.min_y() + title_h + 4.);
-        let detail_h = text
-            .measure(&model.detail, role, content_width.min(460.))
-            .height
-            .max(54.);
-        let action_w = content_width.min(150.);
-        let action_size = model
-            .action
-            .as_ref()
-            .map(|label| Button::measure(text, label, action_w, ButtonSize::Body, role));
-        let action_h = action_size.map_or(0., |size| size.height.max(34.));
-        let action_y = detail_y + detail_h;
-        let action_y = if action_size.is_some() {
-            let desired_y = action_y.max(frame.min_y() + 100.);
+        let (title, detail, action) = Self::measured_content(text, model, frame.size.width, role);
+        let title_width = title.size.width;
+        let title_h = title.size.height;
+        let detail_y = frame.min_y() + detail.min_y();
+        let detail_h = detail.size.height;
+        let action_w = action.map_or(0., |r| r.size.width);
+        let action_h = action.map_or(0., |r| r.size.height);
+        let action_y = if let Some(action) = action {
+            let desired_y = frame.min_y() + action.min_y();
             let last_fitting_y = frame.max_y() - action_h;
             if last_fitting_y >= detail_y + detail_h {
                 desired_y.min(last_fitting_y)
             } else {
-                // Preserve the text/action order in a constrained host. The
-                // parent clip may trim the action, but it must not cover text.
+                // Explicitly constrained hosts may clip, without overlapping text.
                 desired_y
             }
         } else {
-            action_y
+            detail_y + detail_h
         };
         let total_h = action_y + action_h - title_y;
         let content = Rect::new(x, title_y, content_width, total_h.max(0.));
@@ -1730,6 +2150,11 @@ impl EmptyStateView {
             content,
             visible,
         };
+        let logical_action_frame = Rect::new(x, action_y, action_w, action_h);
+        self.logical_action_frame = model.action.as_ref().and_then(|_| {
+            (!self.disabled && !self.inactive && valid_logical_target(logical_action_frame, clip))
+                .then_some(logical_action_frame)
+        });
         if let Some(v) = visible {
             scene.push_clip(v);
             draw_text(
@@ -1763,7 +2188,7 @@ impl EmptyStateView {
                     paint::ButtonVariant::Primary,
                     ButtonSize::Body,
                     role,
-                    ButtonTextAlign::Leading,
+                    ButtonTextAlign::default(),
                 ));
             } else {
                 self.action_layout = None;
@@ -1814,6 +2239,11 @@ impl EmptyStateView {
         (!self.disabled && !self.inactive)
             .then_some(self.action_layout?)
             .and_then(|layout| layout.visible)
+    }
+    /// Full mounted action frame for keyboard reveal; use `focus_target` for
+    /// pointer visibility after ancestor clipping.
+    pub fn logical_focus_target(&self) -> Option<Rect> {
+        (!self.disabled && !self.inactive).then_some(self.logical_action_frame?)
     }
 }
 #[derive(Clone, Copy, Debug, Default)]
@@ -2186,7 +2616,7 @@ mod tests {
         }));
     }
     #[test]
-    fn number_field_restores_leading_emphasized_value_presentation() {
+    fn number_field_centers_value_in_its_full_slot() {
         let mut view = NumberFieldView::default();
         let mut text = RecordingText::default();
         let mut scene = Scene::new();
@@ -2203,14 +2633,8 @@ mod tests {
         assert!(text.0.iter().any(|(drawn, text_role, rect, align)| {
             drawn == "8"
                 && *text_role == proposal::TextRole::UiHeading
-                && *rect
-                    == Rect::new(
-                        layout.value.min_x(),
-                        layout.value.min_y(),
-                        layout.value.size.width,
-                        proposal::TextRole::UiHeading.style().line_height,
-                    )
-                && *align == ButtonTextAlign::Leading
+                && *rect == layout.value
+                && *align == ButtonTextAlign::Center
         }));
         for stepper in ["−", "+"] {
             assert!(text.0.iter().any(|(drawn, _, _, align)| {
@@ -2290,6 +2714,86 @@ mod tests {
         assert_eq!(model.value(), 1.);
     }
     #[test]
+    fn overlays_keep_offscreen_anchor_geometry_inside_effective_viewport() {
+        let viewport = Rect::new(40., 30., 200., 160.);
+        let anchor = Rect::new(-80., -100., 20., 20.);
+        let mut scene = Scene::new();
+        let mut text = FixedText;
+        let mut tooltip = TooltipView::default();
+        let tip = tooltip.render(
+            &mut scene,
+            &mut text,
+            &Tooltip {
+                visible: true,
+                text: "detail".into(),
+            },
+            anchor,
+            Size::new(120., 42.),
+            viewport,
+            None,
+            palette(),
+            role(),
+        );
+        assert!(tip.frame.min_y() >= viewport.min_y());
+        assert!(tip.frame.min_x() >= viewport.min_x());
+        assert_eq!(tip.visible, Some(tip.frame));
+        let mut model = Popover::default();
+        let mut view = PopoverView::default();
+        view.show(&mut model, 9);
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            anchor,
+            Size::new(150., 100.),
+            viewport,
+            None,
+            palette(),
+            role(),
+        );
+        assert!(layout.frame.min_y() >= viewport.min_y());
+        assert_eq!(layout.visible, Some(layout.frame));
+    }
+
+    #[test]
+    fn popover_dismiss_wraps_at_its_rendered_width_and_keeps_content_separate() {
+        let mut scene = Scene::new();
+        let mut text = WrappingText::default();
+        let mut model = Popover::default();
+        let mut view = PopoverView::default();
+        view.show(&mut model, 9);
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            Rect::new(20., 20., 10., 10.),
+            Size::new(64., 180.),
+            Rect::new(0., 0., 300., 300.),
+            None,
+            palette(),
+            role(),
+        );
+        let dismiss = view.dismiss_layout.unwrap();
+        let drawn = text
+            .draws
+            .iter()
+            .find(|draw| draw.0 == "Dismiss")
+            .unwrap()
+            .2;
+        let natural = text.measure("Dismiss", role(), drawn.size.width);
+        assert!(drawn.size.height >= natural.height);
+        assert!(dismiss.frame.max_y() <= layout.frame.max_y());
+        assert!(layout.content.max_y() <= dismiss.frame.min_y());
+        view.focus_dismiss(true, true);
+        assert_eq!(
+            view.key_event(&mut model, ControlKey::Enter, true),
+            OverlayEvent::Dismissed {
+                restore_focus: Some(9)
+            }
+        );
+    }
+
+    #[test]
     fn tooltip_and_popover_clamp_to_viewport_and_outside_escape_restore_focus() {
         let viewport = Rect::new(0., 0., 240., 160.);
         let anchor = Rect::new(210., 135., 20., 20.);
@@ -2362,13 +2866,14 @@ mod tests {
         let mut view = ToastView::default();
         let mut text = FixedText;
         let mut scene = Scene::new();
-        let r = Rect::new(10., 10., 180., 48.);
+        let size = ToastView::measure(&mut text, &toast.message, 180.0, role());
+        let r = Rect::new(10., 10., size.width, size.height);
         view.render(
             &mut scene,
             &mut text,
             &toast,
             r,
-            Some(Rect::new(0., 0., 100., 60.)),
+            Some(Rect::new(0., 0., 180., 120.)),
             palette(),
             role(),
         );
@@ -2388,7 +2893,7 @@ mod tests {
             &mut text,
             &toast,
             r,
-            Some(Rect::new(0., 0., 100., 60.)),
+            Some(Rect::new(0., 0., 180., 120.)),
             palette(),
             role(),
         );
@@ -2441,7 +2946,346 @@ mod tests {
         );
     }
     #[test]
-    fn banner_restores_legacy_message_slot_and_primary_dismiss_button() {
+    fn banner_uses_available_height_for_wrapped_message_and_large_dismiss() {
+        let mut view = BannerView::default();
+        let model = Banner {
+            visible: true,
+            message:
+                "A long banner message that wraps across many narrow lines in the available area"
+                    .into(),
+            tone: NoticeTone::Info,
+            dismissible: true,
+        };
+        let mut scene = Scene::new();
+        let mut text = WrappingText::default();
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            Rect::new(0., 0., 300., 250.),
+            None,
+            palette(),
+            role(),
+        );
+        let message = text
+            .draws
+            .iter()
+            .find(|draw| draw.0 == model.message)
+            .unwrap()
+            .2;
+        let measured = text.measure(&model.message, role(), message.size.width);
+        assert!(measured.height > 54.);
+        assert!(message.size.height >= measured.height);
+        let mut tall_text = TallText;
+        view.render(
+            &mut scene,
+            &mut tall_text,
+            &model,
+            Rect::new(0., 0., 300., 250.),
+            None,
+            palette(),
+            role(),
+        );
+        let dismiss = view.dismiss_layout.unwrap();
+        assert!(dismiss.frame.size.height >= 48.);
+        assert!(dismiss.frame.max_y() <= 250.);
+    }
+
+    #[test]
+    fn narrow_banner_wraps_action_below_message_without_overlap() {
+        let mut view = BannerView::default();
+        let model = Banner {
+            visible: true,
+            message: "A long notice that needs several lines in a narrow window".into(),
+            tone: NoticeTone::Info,
+            dismissible: true,
+        };
+        let mut text = WrappingText::default();
+        let measured = BannerView::measure(&mut text, &model.message, 220.0, true, role());
+        assert!(measured.height > 74.0);
+        let frame = Rect::new(10.0, 20.0, measured.width, measured.height);
+        let mut scene = Scene::new();
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            frame,
+            None,
+            palette(),
+            role(),
+        );
+        let message = text
+            .draws
+            .iter()
+            .find(|draw| draw.0 == model.message)
+            .unwrap()
+            .2;
+        let dismiss = view.dismiss_layout.unwrap().frame;
+        assert!(message.max_x() <= frame.max_x());
+        assert!(message.max_y() <= dismiss.min_y());
+        assert!(dismiss.max_x() <= frame.max_x());
+        assert!(dismiss.max_y() <= frame.max_y());
+    }
+
+    #[test]
+    fn owned_feedback_buttons_use_the_shared_default_text_alignment() {
+        assert_eq!(ButtonTextAlign::default(), ButtonTextAlign::Center);
+        let mut violations = Vec::new();
+        for case in ["toolbar", "popover", "toast", "banner", "empty-state"] {
+            let mut text = RecordingText::default();
+            let mut scene = Scene::new();
+            let frame = Rect::new(20., 30., 640., 240.);
+            match case {
+                "toolbar" => {
+                    ToolbarView::default().render(
+                        &mut scene,
+                        &mut text,
+                        &["Save", "Cancel"],
+                        frame,
+                        None,
+                        palette(),
+                        role(),
+                    );
+                }
+                "popover" => {
+                    let mut model = Popover::default();
+                    let mut view = PopoverView::default();
+                    view.show(&mut model, 7);
+                    view.render(
+                        &mut scene,
+                        &mut text,
+                        &model,
+                        Rect::new(20., 20., 20., 20.),
+                        Size::new(260., 180.),
+                        Rect::new(0., 0., 1000., 600.),
+                        None,
+                        palette(),
+                        role(),
+                    );
+                }
+                "toast" => {
+                    ToastView::default().render(
+                        &mut scene,
+                        &mut text,
+                        &Toast::new("Notice message", NoticeTone::Success, 5000),
+                        frame,
+                        None,
+                        palette(),
+                        role(),
+                    );
+                }
+                "banner" => {
+                    BannerView::default().render(
+                        &mut scene,
+                        &mut text,
+                        &Banner {
+                            message: "Notice message".into(),
+                            tone: NoticeTone::Info,
+                            dismissible: true,
+                            visible: true,
+                        },
+                        frame,
+                        None,
+                        palette(),
+                        role(),
+                    );
+                }
+                "empty-state" => {
+                    EmptyStateView::default().render(
+                        &mut scene,
+                        &mut text,
+                        &EmptyState {
+                            title: "Empty".into(),
+                            detail: "Body".into(),
+                            action: Some("Create document".into()),
+                        },
+                        frame,
+                        None,
+                        palette(),
+                        role(),
+                    );
+                }
+                _ => unreachable!(),
+            }
+            let actions: Vec<_> = text
+                .0
+                .iter()
+                .filter(|(s, _, _, _)| {
+                    ["Save", "Cancel", "Dismiss", "Create document"].contains(&s.as_str())
+                })
+                .collect();
+            assert_eq!(actions.len(), if case == "toolbar" { 2 } else { 1 });
+            for (label, _, _, align) in actions {
+                if *align != ButtonTextAlign::default() {
+                    violations.push(format!("{case}: {label} => {align:?}"));
+                }
+            }
+            for (label, _, _, align) in &text.0 {
+                if ["Notice message", "Empty", "Body"].contains(&label.as_str()) {
+                    assert_eq!(
+                        *align,
+                        ButtonTextAlign::Leading,
+                        "body text retains its own semantic alignment"
+                    );
+                }
+            }
+        }
+        assert!(
+            violations.is_empty(),
+            "owned actions bypassed shared Button default: {violations:?}"
+        );
+    }
+
+    #[test]
+    fn inactive_banner_keeps_passive_paint_without_focus_or_activation() {
+        let mut view = BannerView::default();
+        let mut model = Banner {
+            message: "Your workspace has unsaved changes.".into(),
+            tone: NoticeTone::Info,
+            dismissible: true,
+            visible: true,
+        };
+        view.set_window_active(false);
+        let mut scene = Scene::new();
+        let frame = Rect::new(20., 30., 640., 74.);
+        view.render(
+            &mut scene,
+            &mut FixedText,
+            &model,
+            frame,
+            None,
+            palette(),
+            role(),
+        );
+        assert!(
+            !scene.is_empty(),
+            "inactive windows retain passive notice paint"
+        );
+        assert!(view.logical_focus_target().is_none());
+        assert!(view.focus_target().is_none());
+        assert!(!view.pointer_down(frame.center()));
+        view.focus_dismiss(true, true);
+        assert!(!view.key(&mut model, ControlKey::Enter, true));
+        assert!(model.visible);
+        view.set_window_active(true);
+        view.render(
+            &mut Scene::new(),
+            &mut FixedText,
+            &model,
+            frame,
+            None,
+            palette(),
+            role(),
+        );
+        view.focus_dismiss(true, true);
+        assert!(view.key(&mut model, ControlKey::Enter, true));
+        assert!(!model.visible);
+    }
+
+    #[test]
+    fn notices_align_status_marker_to_actual_first_line_at_each_text_scale() {
+        struct NoticeText {
+            first_line: f32,
+            rows: f32,
+            draws: Vec<(String, Rect)>,
+        }
+        impl ButtonTextRenderer for NoticeText {
+            fn measure(&mut self, text: &str, _: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (text.chars().count() as f32 * 8.).min(width.max(0.)),
+                    self.first_line * self.rows,
+                )
+            }
+            fn first_line_height(&mut self, _: &str, _: proposal::TextRole, _: f32) -> f32 {
+                self.first_line
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                text: &str,
+                _: proposal::TextRole,
+                rect: Rect,
+                _: ButtonTextAlign,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+                self.draws.push((text.to_owned(), rect));
+            }
+        }
+        for first_line in [18., 27., 36.] {
+            for (width, rows) in [(640., 1.), (220., 3.)] {
+                for banner in [false, true] {
+                    let mut text = NoticeText {
+                        first_line,
+                        rows,
+                        draws: Vec::new(),
+                    };
+                    let mut scene = Scene::new();
+                    let message = "Saved 文档 changes across wrapped lines";
+                    let size = if banner {
+                        BannerView::measure(&mut text, message, width, true, role())
+                    } else {
+                        ToastView::measure(&mut text, message, width, role())
+                    };
+                    let frame = Rect::new(20., 30., size.width, size.height);
+                    if banner {
+                        BannerView::default().render(
+                            &mut scene,
+                            &mut text,
+                            &Banner {
+                                message: message.into(),
+                                tone: NoticeTone::Info,
+                                dismissible: true,
+                                visible: true,
+                            },
+                            frame,
+                            None,
+                            palette(),
+                            role(),
+                        );
+                    } else {
+                        ToastView::default().render(
+                            &mut scene,
+                            &mut text,
+                            &Toast::new(message, NoticeTone::Success, 5000),
+                            frame,
+                            None,
+                            palette(),
+                            role(),
+                        );
+                    }
+                    let message_rect = text.draws.iter().find(|(s, _)| s == message).unwrap().1;
+                    let diameter = if banner { 12. } else { 10. };
+                    let marker = scene
+                        .primitives()
+                        .iter()
+                        .find_map(|p| match p {
+                            Primitive::Quad(q)
+                                if q.rect.size.width == diameter
+                                    && q.rect.size.height == diameter =>
+                            {
+                                Some(q.rect)
+                            }
+                            _ => None,
+                        })
+                        .expect("actual status marker");
+                    assert!(
+                        (marker.min_y() + marker.size.height / 2.
+                            - message_rect.min_y()
+                            - first_line / 2.)
+                            .abs()
+                            < 0.01,
+                        "banner={banner}, first line={first_line}, rows={rows}: marker={marker:?}, text={message_rect:?}"
+                    );
+                    assert!(marker.max_x() < message_rect.min_x());
+                    assert!(marker.min_y() >= frame.min_y());
+                    assert!(marker.max_y() <= frame.max_y());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn banner_retains_message_slot_and_primary_dismiss_with_first_line_marker() {
         let mut view = BannerView::default();
         let model = Banner {
             message: "Your workspace has unsaved changes.".into(),
@@ -2471,7 +3315,7 @@ mod tests {
         assert_eq!(message.2.min_y(), frame.min_y() + 6.);
         assert_eq!(message.2.size.height, role().style().line_height);
         assert!(scene.primitives().iter().any(|primitive| {
-            matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + 12., frame.min_y() + 12., 12., 12.))
+            matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + 12., frame.min_y() + 6. + (role().style().line_height - 12.) * 0.5, 12., 12.))
         }));
         let primary_fill = palette().color("action-primary-ground").unwrap();
         assert!(scene.primitives().iter().any(|primitive| {
@@ -2510,10 +3354,10 @@ mod tests {
             Rect::new(frame.min_x() + 380., frame.min_y() + 10., 90., 34.)
         );
         assert!(text.0.iter().any(|(drawn, _, _, align)| {
-            drawn == "Dismiss" && *align == ButtonTextAlign::Leading
+            drawn == "Dismiss" && *align == ButtonTextAlign::default()
         }));
         assert!(scene.primitives().iter().any(|primitive| {
-            matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + 14., frame.min_y() + 18., 10., 10.))
+            matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + 14., frame.min_y() + 12. + (role().style().line_height - 10.) * 0.5, 10., 10.))
         }));
     }
 
@@ -2545,7 +3389,41 @@ mod tests {
         assert!(dismiss.frame.max_y() <= frame.max_y());
         assert!(dismiss.frame.size.height >= 34.0);
         assert!(layout.content.max_y() <= frame.max_y());
-        assert!(layout.content.max_x() + 4.0 <= dismiss.frame.min_x());
+        if frame.size.width < 280.0 {
+            assert!(layout.content.max_y() + 8.0 <= dismiss.frame.min_y());
+        } else {
+            assert!(layout.content.max_x() + 4.0 <= dismiss.frame.min_x());
+        }
+    }
+
+    #[test]
+    fn narrow_toast_places_dismiss_after_wrapped_message() {
+        let mut view = ToastView::default();
+        let model = Toast::new(
+            "A long toast message wrapping in a narrow window",
+            NoticeTone::Info,
+            5000,
+        );
+        let mut text = WrappingText::default();
+        let measured = ToastView::measure(&mut text, &model.message, 220.0, role());
+        assert!(measured.height > 62.0);
+        let frame = Rect::new(12.0, 16.0, measured.width, measured.height);
+        let mut scene = Scene::new();
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            frame,
+            None,
+            palette(),
+            role(),
+        );
+        let dismiss = view.dismiss_layout.unwrap().frame;
+        assert_eq!(layout.frame.size, measured);
+        assert!(layout.content.max_x() <= frame.max_x());
+        assert!(layout.content.max_y() + 8.0 <= dismiss.min_y());
+        assert!(dismiss.max_x() <= frame.max_x());
+        assert!(dismiss.max_y() <= frame.max_y());
     }
 
     #[test]
@@ -2995,6 +3873,10 @@ mod tests {
             role(),
         );
         assert_eq!(layout.visible, None);
+        assert!(
+            view.logical_focus_target().is_some(),
+            "valid disjoint clip preserves the mounted dismiss frame"
+        );
         assert!(!layout.hit_test(Point::new(10., 10.)));
         assert!(!view.pointer_down(&mut model, Point::new(10., 10.)));
         assert_eq!(
@@ -3002,6 +3884,301 @@ mod tests {
             OverlayEvent::None
         );
         assert!(model.open);
+        view.focus_dismiss(true, true);
+        let mut visible_scene = Scene::new();
+        view.render(
+            &mut visible_scene,
+            &mut text,
+            &model,
+            Rect::new(10., 10., 20., 20.),
+            Size::new(120., 80.),
+            Rect::new(0., 0., 240., 160.),
+            Some(Rect::new(0., 0., 240., 160.)),
+            palette(),
+            role(),
+        );
+        assert!(
+            view.dismiss.state.focus_visible,
+            "focus ring survives scroll reveal render"
+        );
+        assert_eq!(
+            view.key(&mut model, ControlKey::Enter),
+            OverlayEvent::Dismissed {
+                restore_focus: Some(3)
+            }
+        );
+    }
+
+    #[test]
+    fn offscreen_feedback_actions_keep_logical_focus_until_scroll_reveals_them() {
+        let frame = Rect::new(180., 24., 320., 110.);
+        let offscreen = Rect::new(0., 0., 140., 180.);
+        let visible = Rect::new(0., 0., 600., 240.);
+        let mut text = FixedText;
+        let mut scene = Scene::new();
+
+        let mut toast = Toast::new("Saved", NoticeTone::Success, 5000);
+        let mut toast_view = ToastView::default();
+        let size = ToastView::measure(&mut text, &toast.message, frame.size.width, role());
+        let frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, size.height);
+        toast_view.render(
+            &mut scene,
+            &mut text,
+            &toast,
+            frame,
+            Some(offscreen),
+            palette(),
+            role(),
+        );
+        assert!(
+            toast_view.focus_target().is_none(),
+            "pointer target stays clipped"
+        );
+        let toast_target = toast_view
+            .logical_focus_target()
+            .expect("mounted offscreen action");
+        assert!(toast_target.min_x() >= frame.min_x());
+        toast_view.focus_dismiss(true, true);
+        assert!(toast_view.dismiss.state.focus_visible);
+        toast_view.render(
+            &mut scene,
+            &mut text,
+            &toast,
+            frame,
+            Some(visible),
+            palette(),
+            role(),
+        );
+        assert!(toast_view.focus_target().is_some());
+        assert!(
+            toast_view.dismiss.state.focus_visible,
+            "focus ring survives reveal render"
+        );
+        assert!(!toast_view.key(&mut toast, ControlKey::Space, true));
+        assert!(toast_view.key(&mut toast, ControlKey::Space, false));
+        assert!(
+            !toast.visible,
+            "focused dismiss action activates with Space"
+        );
+
+        let mut banner = Banner {
+            message: "Offline".into(),
+            tone: NoticeTone::Warning,
+            dismissible: true,
+            visible: true,
+        };
+        let mut banner_view = BannerView::default();
+        let size = BannerView::measure(&mut text, &banner.message, frame.size.width, true, role());
+        let banner_frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, size.height);
+        banner_view.render(
+            &mut scene,
+            &mut text,
+            &banner,
+            banner_frame,
+            Some(offscreen),
+            palette(),
+            role(),
+        );
+        let banner_target = banner_view
+            .logical_focus_target()
+            .expect("mounted banner dismiss action");
+        assert!(banner_view.focus_target().is_none());
+        banner_view.focus_dismiss(true, true);
+        banner_view.render(
+            &mut scene,
+            &mut text,
+            &banner,
+            banner_frame,
+            Some(visible),
+            palette(),
+            role(),
+        );
+        assert!(banner_view.dismiss_button.state.focus_visible);
+        assert!(!banner_view.key(&mut banner, ControlKey::Space, true));
+        assert!(banner_view.key(&mut banner, ControlKey::Space, false));
+        assert!(!banner.visible);
+        assert!(banner_target.size.width > 0.);
+
+        let mut empty_view = EmptyStateView::default();
+        let empty = EmptyState {
+            title: "No items".into(),
+            detail: "Try again".into(),
+            action: Some("Create".into()),
+        };
+        let empty_frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, 260.);
+        empty_view.render(
+            &mut scene,
+            &mut text,
+            &empty,
+            empty_frame,
+            Some(offscreen),
+            palette(),
+            role(),
+        );
+        assert!(empty_view.focus_target().is_none());
+        assert!(empty_view.logical_focus_target().is_some());
+        empty_view.focus_action(true, true);
+        assert!(
+            empty_view.action.state.focus_visible,
+            "offscreen focus must be accepted from mounted logical action"
+        );
+        empty_view.render(
+            &mut scene,
+            &mut text,
+            &empty,
+            empty_frame,
+            Some(visible),
+            palette(),
+            role(),
+        );
+        assert!(empty_view.action.state.focus_visible);
+        assert!(!empty_view.key(ControlKey::Space, true));
+        assert!(empty_view.key(ControlKey::Space, false));
+
+        let no_action = EmptyState {
+            action: None,
+            ..empty.clone()
+        };
+        empty_view.render(
+            &mut scene,
+            &mut text,
+            &no_action,
+            empty_frame,
+            Some(visible),
+            palette(),
+            role(),
+        );
+        assert!(
+            empty_view.logical_focus_target().is_none(),
+            "no action is not mounted"
+        );
+
+        let invalid_clips = [
+            Rect::new(0., 0., 0., 100.),
+            Rect::new(f32::NAN, 0., 100., 100.),
+        ];
+        for clip in invalid_clips {
+            let visible_toast = Toast::new("Still visible", NoticeTone::Info, 5000);
+            let mut toast_view = ToastView::default();
+            toast_view.render(
+                &mut scene,
+                &mut text,
+                &visible_toast,
+                empty_frame,
+                Some(clip),
+                palette(),
+                role(),
+            );
+            assert!(
+                toast_view.logical_focus_target().is_none(),
+                "invalid clip {clip:?}"
+            );
+            let mut banner_view = BannerView::default();
+            let visible_banner = Banner {
+                message: "Still visible".into(),
+                tone: NoticeTone::Info,
+                dismissible: true,
+                visible: true,
+            };
+            banner_view.render(
+                &mut scene,
+                &mut text,
+                &visible_banner,
+                banner_frame,
+                Some(clip),
+                palette(),
+                role(),
+            );
+            assert!(
+                banner_view.logical_focus_target().is_none(),
+                "invalid clip {clip:?}"
+            );
+        }
+        for invalid_frame in [
+            Rect::new(0., 0., 0., 100.),
+            Rect::new(f32::NAN, 0., 100., 100.),
+        ] {
+            let visible_toast = Toast::new("Still visible", NoticeTone::Info, 5000);
+            let mut toast_view = ToastView::default();
+            toast_view.render(
+                &mut scene,
+                &mut text,
+                &visible_toast,
+                invalid_frame,
+                Some(visible),
+                palette(),
+                role(),
+            );
+            assert!(
+                toast_view.logical_focus_target().is_none(),
+                "invalid toast frame {invalid_frame:?}"
+            );
+            let mut banner_view = BannerView::default();
+            let visible_banner = Banner {
+                message: "Still visible".into(),
+                tone: NoticeTone::Info,
+                dismissible: true,
+                visible: true,
+            };
+            banner_view.render(
+                &mut scene,
+                &mut text,
+                &visible_banner,
+                invalid_frame,
+                Some(visible),
+                palette(),
+                role(),
+            );
+            assert!(
+                banner_view.logical_focus_target().is_none(),
+                "invalid banner frame {invalid_frame:?}"
+            );
+            let mut empty_view = EmptyStateView::default();
+            empty_view.render(
+                &mut scene,
+                &mut text,
+                &empty,
+                invalid_frame,
+                Some(visible),
+                palette(),
+                role(),
+            );
+            assert!(
+                empty_view.logical_focus_target().is_none(),
+                "invalid empty-state frame {invalid_frame:?}"
+            );
+        }
+        let mut hidden_toast = Toast::new("Hidden", NoticeTone::Info, 5000);
+        hidden_toast.visible = false;
+        let mut hidden_view = ToastView::default();
+        hidden_view.render(
+            &mut scene,
+            &mut text,
+            &hidden_toast,
+            frame,
+            None,
+            palette(),
+            role(),
+        );
+        assert!(
+            hidden_view.logical_focus_target().is_none(),
+            "hidden toast is unmounted"
+        );
+        let mut disabled_empty = EmptyStateView::default();
+        disabled_empty.set_disabled(true);
+        disabled_empty.render(
+            &mut scene,
+            &mut text,
+            &empty,
+            frame,
+            Some(visible),
+            palette(),
+            role(),
+        );
+        assert!(
+            disabled_empty.logical_focus_target().is_none(),
+            "disabled action is ineligible"
+        );
     }
 
     #[test]

@@ -1,0 +1,33 @@
+{
+  "identity": "95b140c278a2257c11fb956eaf860313c38bc4829bae70e022cc3d8f33bb38ac",
+  "archive": "forwarded-focus-95b140c278a2.tar.gz",
+  "archive_sha256": "fb1abf3524b5aa44c585a323402779cd6ac8adc7e5578b59dbc9889773dbf523",
+  "base_identity": "5677b80f5462570525ea3d00f6256298baac7e018513844de5403364e9c097f0",
+  "files": 496,
+  "delta_paths": 7,
+  "root_native_identity": "0e8578af063e45a9d475b8bac7dc59048bb6cb15206875a69053079f570cf34a",
+  "status": "sender exact archive clean-extract passed; receiver/public pin/isolated native pending",
+  "all_source_and_locks_unchanged": true,
+  "local_dependencies_inside_extract": true,
+  "checks": "portable-checks.json",
+  "native_boundary": "native example builds on isolated source; root0e8578af forwarded focus actual native receipt remains a different identity, never relabelled as isolated native acceptance",
+  "cleanup": [
+    "     Removed 36 files, 87.6MiB total\n",
+    "     Removed 520 files, 101.5MiB total\n",
+    "     Removed 851 files, 210.7MiB total\n"
+  ],
+  "root_cache_lane_restored": true,
+  "cleanup_disk_bytes_released": 427978752,
+  "test_counts": {
+    "portable-text": 50,
+    "portable-controls": 388,
+    "portable-consumer": 242
+  },
+  "targeted_forwarded_API": 5,
+  "GPU": {
+    "cases": 72,
+    "frames": 288
+  },
+  "receiver": "pending actual AgentKit wrapper on exact archive",
+  "public_pin": "pending separate scope"
+}

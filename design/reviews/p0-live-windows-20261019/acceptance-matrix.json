@@ -1,0 +1,303 @@
+{
+  "issues": [
+    15,
+    16
+  ],
+  "rows": [
+    {
+      "issue": 15,
+      "criterion": 1,
+      "text": "禁用 `set_animating(true)`，窗口静止时，工作线程更新共享数据并 wake；无需鼠标/键盘输入，下一次事件循环处理即显示新状态。",
+      "status": "已完成",
+      "owner": "root:共享契约及本轮真实宿主验证",
+      "evidence": [
+        "public-api.log",
+        "public-consumer.log",
+        "delivery-tests.log",
+        "registry-probe.log",
+        "native-delivery/quiet-result.json",
+        "native-delivery-events.log"
+      ],
+      "remaining": "",
+      "current_evidence": "design/reviews/p0-live-windows-20261019; design/reviews/component-runs/agentkit-p0-final-20261019-124602",
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 15,
+      "criterion": 2,
+      "text": "多线程突发请求可合并，最终数据必可见；覆盖“UI 清除 pending 的同时后台再次请求”竞态，不能丢失最后通知。",
+      "status": "已完成",
+      "owner": "root:共享契约及本轮真实宿主验证",
+      "evidence": [
+        "public-api.log",
+        "public-consumer.log",
+        "delivery-tests.log",
+        "registry-probe.log",
+        "native-delivery/quiet-result.json",
+        "native-delivery-events.log"
+      ],
+      "remaining": "",
+      "current_evidence": "design/reviews/p0-live-windows-20261019; design/reviews/component-runs/agentkit-p0-final-20261019-124602",
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 15,
+      "criterion": 3,
+      "text": "窗口关闭后继续调用所有代理不会 panic、访问已释放对象或重新创建窗口；代理只唤醒目标窗口/宿主。",
+      "status": "已完成",
+      "owner": "root:共享契约及本轮真实宿主验证",
+      "evidence": [
+        "public-api.log",
+        "public-consumer.log",
+        "delivery-tests.log",
+        "registry-probe.log",
+        "native-delivery/quiet-result.json",
+        "native-delivery-events.log"
+      ],
+      "remaining": "",
+      "current_evidence": "design/reviews/p0-live-windows-20261019; design/reviews/component-runs/agentkit-p0-final-20261019-124602",
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 15,
+      "criterion": 4,
+      "text": "提供事件/帧计数证据：稳定无输入、无动画、无后台变更时，不存在用于轮询数据的周期性唤醒。正常系统重绘不算失败，不要求机器 CPU 绝对为零。",
+      "status": "已完成",
+      "owner": "root:共享契约及本轮真实宿主验证",
+      "evidence": [
+        "public-api.log",
+        "public-consumer.log",
+        "delivery-tests.log",
+        "registry-probe.log",
+        "native-delivery/quiet-result.json",
+        "native-delivery-events.log"
+      ],
+      "remaining": "",
+      "current_evidence": "design/reviews/p0-live-windows-20261019; design/reviews/component-runs/agentkit-p0-final-20261019-124602",
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 15,
+      "criterion": 5,
+      "text": "AgentKit demo 移除持续 frame pump 后，流式文本、取消结果、连接状态变化均能主动显示。",
+      "status": "已完成",
+      "owner": "root:共享契约及本轮真实宿主验证",
+      "evidence": [
+        "public-api.log",
+        "public-consumer.log",
+        "delivery-tests.log",
+        "registry-probe.log",
+        "native-delivery/quiet-result.json",
+        "native-delivery-events.log"
+      ],
+      "remaining": "",
+      "current_evidence": "design/reviews/p0-live-windows-20261019; design/reviews/component-runs/agentkit-p0-final-20261019-124602",
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 15,
+      "delivery_criterion": 1,
+      "text": "公开 Rust API、行为/迁移文档、确定性回归、独立公开 API consumer 和变更说明。",
+      "status": "已完成",
+      "owner": "本会话准备材料；AgentKit会话确认冻结候选切换与最终验收",
+      "remaining": "候选源码与补丁已备齐；不代表消费方已提升冻结版本",
+      "evidence": [
+        "candidate-diff.json",
+        "delivery-consumer-inputs.json"
+      ],
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 15,
+      "delivery_criterion": 2,
+      "text": "提供可公开获取的不可变 commit/tag，供 AgentKit 从开发快照切换至正式 pin。",
+      "status": "被依赖阻塞",
+      "owner": "后续明确授权指定负责人",
+      "remaining": "公开不可变pin；提交/推送/tag另按明确授权执行",
+      "evidence": [
+        "candidate-diff.json",
+        "delivery-consumer-inputs.json"
+      ],
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 15,
+      "delivery_criterion": 3,
+      "text": "与消费方完成相关 UI workspace、demo host、第二 consumer 回归，默认 headless 构建不受影响。",
+      "status": "已实现待验收",
+      "owner": "AgentKit会话:正式消费候选提升与接收验收",
+      "remaining": "最终候选隔离真实消费者已验证；主AgentKit冻结候选仍未提升，需消费方正式确认",
+      "evidence": [
+        "candidate-diff.json",
+        "delivery-consumer-inputs.json"
+      ],
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 15,
+      "delivery_criterion": 4,
+      "text": "自动测试、原生交互、物理中文 IME、VoiceOver、性能分别记录通过/未测，合成事件或离屏 PNG 不替代原生体验验收。",
+      "status": "已完成",
+      "owner": "本会话准备材料；AgentKit会话确认冻结候选切换与最终验收",
+      "remaining": "公共API、文档、自动化与各证据层分别记录；物理IME/VoiceOver未通过工具验证，性能按用户要求未测",
+      "evidence": [
+        "candidate-diff.json",
+        "delivery-consumer-inputs.json"
+      ],
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 16,
+      "criterion": 1,
+      "text": "在长文档中段向上阅读，前插一页后，同一 item 的同一文本位置仍在原视口位置；固定字体/宽度下误差不超过 1 个逻辑像素。",
+      "status": "已完成",
+      "owner": "root:共享契约及本轮真实宿主验证",
+      "evidence": [
+        "public-api.log",
+        "public-consumer.log",
+        "delivery-tests.log",
+        "native-delivery/prepend-result.json"
+      ],
+      "remaining": "",
+      "current_evidence": "design/reviews/p0-live-windows-20261019; design/reviews/component-runs/agentkit-p0-final-20261019-124602",
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 16,
+      "criterion": 2,
+      "text": "连续两次前插、前插与尾追加同批发生均保持阅读位置，不跳到底部；普通尾追加与显式“回到最新”的既有行为不回归。",
+      "status": "已完成",
+      "owner": "root:共享契约及本轮真实宿主验证",
+      "evidence": [
+        "public-api.log",
+        "public-consumer.log",
+        "delivery-tests.log",
+        "native-delivery/prepend-result.json"
+      ],
+      "remaining": "",
+      "current_evidence": "design/reviews/p0-live-windows-20261019; design/reviews/component-runs/agentkit-p0-final-20261019-124602",
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 16,
+      "criterion": 3,
+      "text": "前插同时改变宽度/文字缩放时保留逻辑文本位置；重排后维持该位置可见，遇边界允许合法 clamp。",
+      "status": "已完成",
+      "owner": "root:共享契约及本轮真实宿主验证",
+      "evidence": [
+        "public-api.log",
+        "public-consumer.log",
+        "delivery-tests.log",
+        "native-delivery/prepend-result.json"
+      ],
+      "remaining": "",
+      "current_evidence": "design/reviews/p0-live-windows-20261019; design/reviews/component-runs/agentkit-p0-final-20261019-124602",
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 16,
+      "criterion": 4,
+      "text": "A→B→A、锚点项被删除、旧文档版本回调均有测试；不能套用其他文档锚点或恢复到过期偏移。",
+      "status": "已完成",
+      "owner": "root:共享契约及本轮真实宿主验证",
+      "evidence": [
+        "public-api.log",
+        "public-consumer.log",
+        "delivery-tests.log",
+        "native-delivery/prepend-result.json"
+      ],
+      "remaining": "",
+      "current_evidence": "design/reviews/p0-live-windows-20261019; design/reviews/component-runs/agentkit-p0-final-20261019-124602",
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 16,
+      "criterion": 5,
+      "text": "不抢 Composer 焦点；已有选区按明确的文本映射策略保留或显式报告失效，不静默选择另一段文字。",
+      "status": "已完成",
+      "owner": "root:共享契约及本轮真实宿主验证",
+      "evidence": [
+        "public-api.log",
+        "public-consumer.log",
+        "delivery-tests.log",
+        "native-delivery/prepend-result.json"
+      ],
+      "remaining": "",
+      "current_evidence": "design/reviews/p0-live-windows-20261019; design/reviews/component-runs/agentkit-p0-final-20261019-124602",
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 16,
+      "criterion": 6,
+      "text": "用真实布局结果验收并提供原生窗口分页演示；数据页正确不等于锚点验收通过。",
+      "status": "已完成",
+      "owner": "root:共享契约及本轮真实宿主验证",
+      "evidence": [
+        "public-api.log",
+        "public-consumer.log",
+        "delivery-tests.log",
+        "native-delivery/prepend-result.json"
+      ],
+      "remaining": "",
+      "current_evidence": "design/reviews/p0-live-windows-20261019; design/reviews/component-runs/agentkit-p0-final-20261019-124602",
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 16,
+      "delivery_criterion": 1,
+      "text": "公开 Rust API、行为/迁移文档、确定性回归、独立公开 API consumer 和变更说明。",
+      "status": "已完成",
+      "owner": "本会话准备材料；AgentKit会话确认冻结候选切换与最终验收",
+      "remaining": "候选源码与补丁已备齐；不代表消费方已提升冻结版本",
+      "evidence": [
+        "candidate-diff.json",
+        "delivery-consumer-inputs.json"
+      ],
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 16,
+      "delivery_criterion": 2,
+      "text": "提供可公开获取的不可变 commit/tag，供 AgentKit 从开发快照切换至正式 pin。",
+      "status": "被依赖阻塞",
+      "owner": "后续明确授权指定负责人",
+      "remaining": "公开不可变pin；提交/推送/tag另按明确授权执行",
+      "evidence": [
+        "candidate-diff.json",
+        "delivery-consumer-inputs.json"
+      ],
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 16,
+      "delivery_criterion": 3,
+      "text": "与消费方完成相关 UI workspace、demo host、第二 consumer 回归，默认 headless 构建不受影响。",
+      "status": "已实现待验收",
+      "owner": "AgentKit会话:正式消费候选提升与接收验收",
+      "remaining": "最终候选隔离真实消费者已验证；主AgentKit冻结候选仍未提升，需消费方正式确认",
+      "evidence": [
+        "candidate-diff.json",
+        "delivery-consumer-inputs.json"
+      ],
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    },
+    {
+      "issue": 16,
+      "delivery_criterion": 4,
+      "text": "自动测试、原生交互、物理中文 IME、VoiceOver、性能分别记录通过/未测，合成事件或离屏 PNG 不替代原生体验验收。",
+      "status": "已完成",
+      "owner": "本会话准备材料；AgentKit会话确认冻结候选切换与最终验收",
+      "remaining": "公共API、文档、自动化与各证据层分别记录；物理IME/VoiceOver未通过工具验证，性能按用户要求未测",
+      "evidence": [
+        "candidate-diff.json",
+        "delivery-consumer-inputs.json"
+      ],
+      "prior_evidence_base": "design/reviews/agentkit-final-candidate-20261019"
+    }
+  ],
+  "candidate": "4a02d30bd65c1117f433a874a7c421492bf76ad101e92f7260ecd470323554a1",
+  "functional": "本轮相关技术验收完成；正式交付未完成",
+  "performance": "not run",
+  "VoiceOver": "off; text entry/line navigation remains unaccepted under #20",
+  "Gold7": "bounded G5/G6/G7; not full visual system acceptance"
+}

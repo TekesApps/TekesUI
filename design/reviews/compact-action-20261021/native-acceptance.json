@@ -1,0 +1,28 @@
+{
+  "identity": "0649408d14d6d17958630e165931bb3d4dcece3230ef30d86126e0f33b1632e8",
+  "binary_sha256": "5ca53ec5c35a8dbef0c0ba2934eb373dc3759be67c113fa55783193e2bc8e841",
+  "active_external_checkpoints": 7,
+  "raw_checkpoints": 8,
+  "excluded": {
+    "loading-entry": "window inactive after semantic entry; not accepted as active loading verification"
+  },
+  "exact_geometry_hit_AX": true,
+  "physical_pointer_hold_phase_recorded": true,
+  "keyboard_pointer_accessibility_sources_once_only": true,
+  "disabled_loading_and_recovery": true,
+  "focus_ring": "native full upper/lower outline visually checked; GPU now checks both ring edges,API checks sibling paint order",
+  "native_physical_cancel_dragout": "not claimed; deterministic original shared arm/cancel/mount API regression covers these boundaries",
+  "VoiceOver": "off; no listening claim",
+  "Gold7": "scoped original default centering,compact focus visibility and disabled/pressed rendering,not matched ClientKit product-page acceptance",
+  "history_frames": 73,
+  "performance": "not measured",
+  "images": {
+    "final-large-type-focus.jpg": "efaa8b7459eda5f291a410e7695c21636cbf4007d5dd7bc7e08b7b79f78d357c",
+    "final-complete-focus.jpg": "5e663032f3e33db9430d5e2ccbc7d1998af2179585c259246eb4648cc6abb247"
+  },
+  "remaining": [
+    "isolated candidate/independent AgentKit actual integration",
+    "matched ClientKit product-page acceptance",
+    "public source/CI separately authorized"
+  ]
+}

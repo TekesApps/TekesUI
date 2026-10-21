@@ -1,0 +1,30 @@
+[
+  {
+    "name": "action",
+    "exit_code": 0
+  },
+  {
+    "name": "combo-async",
+    "exit_code": 0
+  },
+  {
+    "name": "command-async",
+    "exit_code": 0
+  },
+  {
+    "name": "content-status",
+    "exit_code": 0
+  },
+  {
+    "name": "input",
+    "exit_code": 0
+  },
+  {
+    "name": "selection",
+    "exit_code": 0
+  },
+  {
+    "name": "slider-composition",
+    "exit_code": 0
+  }
+]

@@ -1,0 +1,46 @@
+{
+  "status": "source-audit accepted; batch2 still in progress",
+  "time": "2026-10-19T20:18:33.475861+00:00",
+  "root_matrix_sha256": "811ec5858118904eb0e43a277dc141f87325b8c0571bcde70f8709b1d4903a1e",
+  "reviewed_inputs": 11,
+  "components": 45,
+  "audit_regression_tests": 8,
+  "portable": {
+    "source_identity": "audit-07e55efcb24f9233d648ca5d23b7ea8e90dd93fb0a32a4d888c004364a0accfd",
+    "files": 339,
+    "checks": [
+      {
+        "check": "capability-check",
+        "exit_code": 0
+      },
+      {
+        "check": "composition-check",
+        "exit_code": 0
+      },
+      {
+        "check": "composition-tests",
+        "exit_code": 0
+      }
+    ],
+    "source_changed_during_replay": [],
+    "scope": "Source audit only; no Rust compilation, GPU, native or new component acceptance",
+    "old_packages": "unchanged",
+    "build_outputs": "none generated; Python bytecode only"
+  },
+  "design_gates": "design-gates.json: all four exit_code0",
+  "root_governance": "42 previously completed current-root governance tests; not rerun by portable source audit",
+  "evidence_layers": {
+    "public_api": "source declarations/bindings only, not fresh Rust compilation",
+    "consumer": "existing source-bound scoped receipts retained",
+    "GPU_native_Gold7_experience": "not rerun; source gate cannot promote acceptance",
+    "Gold7_mechanical": "passed this round"
+  },
+  "remaining": [
+    "same delivered version remoteCI for new batch2 gates",
+    "independent final audit review and original Issue synchronization",
+    "Toolbar registration and bounded subsequent family implementation"
+  ],
+  "publication": "none this round; public61dd remains separate;532 followup waits explicit cumulative20file permission",
+  "cleanup": "no Rust build/native host/VoiceOver launched; source/evidence retained",
+  "post_snapshot_documentation": "composition-audit-20261018.md current explanatory note appended after portable replay; frozen339-file snapshot retains its exact prior documentation and source identity"
+}

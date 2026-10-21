@@ -12,6 +12,32 @@ use tekes_ui_tokens::{CornerRadius, Rgba, Stroke, Theme, proposal};
 pub const HEIGHT: f32 = 942.0;
 const TARGETS: [f64; 3] = [0.15, 0.5, 0.85];
 
+pub(crate) fn focus_edge(state: &mut MotionPreview, reverse: bool) -> Option<Rect> {
+    let id = if reverse {
+        state.focus_order.last().copied()
+    } else {
+        state.focus_order.first().copied()
+    }?;
+    state.focused_button = Some(id);
+    for (button_id, button) in &mut state.button_models {
+        button.state.focused = *button_id == id;
+        button.state.focus_visible = *button_id == id;
+    }
+    state
+        .button_models
+        .get(&id)?
+        .layout()
+        .map(|layout| layout.frame)
+}
+
+pub(crate) fn focused_button_frame(state: &MotionPreview) -> Option<Rect> {
+    state
+        .focused_button
+        .and_then(|id| state.button_models.get(&id))
+        .and_then(|button| button.layout())
+        .map(|layout| layout.frame)
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Action {
     Catalog(PresetCatalog),
@@ -25,6 +51,10 @@ pub enum Action {
     Resume,
     ReadingUp,
     ReadingDown,
+    TickReplay,
+    TickDigits,
+    TickStrength,
+    TickDuration,
 }
 
 fn action_label(action: Action, state: &MotionPreview) -> &str {
@@ -33,6 +63,7 @@ fn action_label(action: Action, state: &MotionPreview) -> &str {
         Action::Catalog(PresetCatalog::DesignSystem) => "Design System",
         Action::Catalog(PresetCatalog::Recipes) => "Recipes / 配方",
         Action::Catalog(PresetCatalog::Symbols) => "Symbols / 图标",
+        Action::Catalog(PresetCatalog::TickingNumber) => "Ticking Number",
         Action::SymbolIcon(i) => tekes_ui_icons::Icon::ALL[i].label(),
         Action::Preset(i) => state.presets[i].label.as_str(),
         Action::Target(0) if state.is_recipe() => "目标 A / 反向",
@@ -41,6 +72,10 @@ fn action_label(action: Action, state: &MotionPreview) -> &str {
         Action::Target(0) => "A · 0.15",
         Action::Target(1) => "B · 0.50",
         Action::Target(_) => "C · 0.85",
+        Action::TickReplay => "计数 / 反向",
+        Action::TickDigits => "位数 2 / 3 / 6",
+        Action::TickStrength => "强度 0 / 0.5 / 1",
+        Action::TickDuration => "时长 1 / 2 / 4 秒",
         Action::Replay => "重播",
         Action::Resume => "继续当前",
         Action::Interrupt => "演示中途改目标",
@@ -60,6 +95,7 @@ pub struct Layout {
     pub inspector: Rect,
     text_scale: f32,
     footer_top: f32,
+    ticking_top: f32,
     button_frames: [Option<(Action, Rect)>; 64],
     button_count: usize,
     reading_inside_stage: bool,
@@ -106,10 +142,11 @@ impl Layout {
             PresetCatalog::DesignSystem,
             PresetCatalog::Recipes,
             PresetCatalog::Symbols,
+            PresetCatalog::TickingNumber,
         ];
-        let catalog_columns = if width >= scaled(720.0) { 4 } else { 2 };
-        let catalog_width = if catalog_columns == 4 {
-            scaled(148.0).min((width - 3.0 * catalog_gap) / 4.0)
+        let catalog_columns = if width >= scaled(720.0) { 5 } else { 2 };
+        let catalog_width = if catalog_columns == 5 {
+            scaled(148.0).min((width - 4.0 * catalog_gap) / 5.0)
         } else {
             (width - catalog_gap) / 2.0
         };
@@ -124,6 +161,59 @@ impl Layout {
             content,
             scaled(26.0),
         );
+        if state.catalog == PresetCatalog::TickingNumber {
+            let stage_top = catalog_height + scaled(24.0);
+            let ticking_top = stage_top + scaled(20.0);
+            let controls_top = stage_top + scaled(320.0);
+            let controls_height = Self::flow_buttons_with_widths(
+                &mut button_frames,
+                &mut y_cursor,
+                text,
+                state,
+                vec![
+                    Action::TickReplay,
+                    Action::TickDigits,
+                    Action::TickStrength,
+                    Action::TickDuration,
+                    Action::ReduceMotion,
+                ],
+                vec![scaled(160.0); 5],
+                scaled(8.0),
+                Rect::new(
+                    content.min_x() + scaled(16.0),
+                    content.min_y(),
+                    (width - scaled(32.0)).max(1.0),
+                    0.0,
+                ),
+                controls_top,
+                scaled(34.0),
+            );
+            let height = controls_top + controls_height + scaled(24.0);
+            let content = Rect::new(content.min_x(), content.min_y(), width, height);
+            let button_count = button_frames.len();
+            let mut stored = [None; 64];
+            for (slot, value) in stored.iter_mut().zip(button_frames) {
+                *slot = Some(value);
+            }
+            let empty = Rect::new(0.0, 0.0, 0.0, 0.0);
+            return Self {
+                content,
+                stage: Rect::new(
+                    content.min_x(),
+                    content.min_y() + stage_top,
+                    width,
+                    height - stage_top,
+                ),
+                graph: empty,
+                inspector: empty,
+                text_scale,
+                footer_top: 0.0,
+                ticking_top,
+                button_frames: stored,
+                button_count,
+                reading_inside_stage: false,
+            };
+        }
         y_cursor = catalog_height + scaled(6.0);
         let preset_columns = if width >= scaled(900.0) {
             5
@@ -466,6 +556,7 @@ impl Layout {
             .max(scaled(816.0))
             .max(controls_top + control_height + scaled(30.0));
         let footer_height = measured_footer_height(text, state, width, text_scale);
+        let ticking_top = 0.0;
         let height = footer_top + footer_height + scaled(16.0);
         let content = Rect::new(content.min_x(), content.min_y(), width, height);
         let button_count = button_frames.len().min(64);
@@ -499,6 +590,7 @@ impl Layout {
             ),
             text_scale,
             footer_top,
+            ticking_top,
             button_frames: stored,
             button_count,
             reading_inside_stage,
@@ -523,8 +615,13 @@ impl Layout {
                         PresetCatalog::DesignSystem => 1,
                         PresetCatalog::Recipes => 2,
                         PresetCatalog::Symbols => 3,
+                        PresetCatalog::TickingNumber => 4,
                     }
             }
+            Action::TickReplay => 0x5010,
+            Action::TickDigits => 0x5011,
+            Action::TickStrength => 0x5012,
+            Action::TickDuration => 0x5013,
             Action::Replay => 0x5000,
             Action::Resume => 0x5001,
             Action::Interrupt => 0x5002,
@@ -535,6 +632,9 @@ impl Layout {
         }
     }
     pub fn slider(self, p: Parameter) -> Rect {
+        if self.inspector.is_empty() {
+            return self.inspector;
+        }
         let i = Parameter::ALL.iter().position(|a| *a == p).unwrap();
         Rect::new(
             self.inspector.min_x() + 20.0,
@@ -663,6 +763,48 @@ fn apply_action(state: &mut MotionPreview, action: Action) {
             state.select(i);
         }
         Action::Target(i) => state.retarget(TARGETS[i]),
+        Action::TickReplay => {
+            let (a, b) = if state.ticking.digits() == 2 {
+                (37, 46)
+            } else {
+                (137, 546)
+            };
+            let _ = state
+                .ticking
+                .set_target(if state.ticking.target() == b { a } else { b });
+        }
+        Action::TickDigits => {
+            let digits = match state.ticking.digits() {
+                2 => 3,
+                3 => 6,
+                _ => 2,
+            };
+            let mut ticking =
+                tekes_ui_controls::TickingNumber::new(if digits == 2 { 37 } else { 137 }, digits)
+                    .unwrap();
+            ticking.set_duration(state.ticking.duration());
+            let _ = ticking.set_strength(state.ticking.strength());
+            ticking.set_reduced_motion(state.reduced_motion);
+            state.ticking = ticking;
+        }
+        Action::TickStrength => {
+            let next = if state.ticking.strength() >= 1.0 {
+                0.0
+            } else {
+                state.ticking.strength() + 0.5
+            };
+            let _ = state.ticking.set_strength(next);
+        }
+        Action::TickDuration => {
+            let seconds = match state.ticking.duration().as_secs() {
+                1 => 2,
+                2 => 4,
+                _ => 1,
+            };
+            state
+                .ticking
+                .set_duration(std::time::Duration::from_secs(seconds));
+        }
         Action::Replay => state.replay(),
         Action::Resume => {
             if state.is_recipe() {
@@ -768,6 +910,10 @@ pub fn handle_input_clipped(
         .map(Action::Preset)
         .chain((0..3).map(Action::Target))
         .chain([
+            Action::TickReplay,
+            Action::TickDigits,
+            Action::TickStrength,
+            Action::TickDuration,
             Action::Replay,
             Action::Resume,
             Action::Interrupt,
@@ -776,6 +922,7 @@ pub fn handle_input_clipped(
             Action::Catalog(PresetCatalog::DesignSystem),
             Action::Catalog(PresetCatalog::Recipes),
             Action::Catalog(PresetCatalog::Symbols),
+            Action::Catalog(PresetCatalog::TickingNumber),
         ])
         .chain(
             (state.is_recipe() && state.recipe.kind == RecipeKind::Press)
@@ -796,6 +943,7 @@ pub fn handle_input_clipped(
                 .into_iter()
                 .flatten(),
         )
+        .filter(|action| state.focus_order.contains(&Layout::action_id(*action)))
         .collect();
     let set_from_x = |state: &mut MotionPreview, p: Parameter, x: f32| {
         let r = placement.sliders[Parameter::ALL.iter().position(|a| *a == p).unwrap()];
@@ -872,7 +1020,9 @@ pub fn handle_input_clipped(
                         state.pressed = Some(usize::MAX);
                         return true;
                     }
-                    if placement.stage.contains(point) {
+                    if state.catalog != PresetCatalog::TickingNumber
+                        && placement.stage.contains(point)
+                    {
                         let track = placement.stage.inset(32.0);
                         state.retarget(f64::from((point.x - track.min_x()) / track.size.width));
                         return true;
@@ -965,9 +1115,10 @@ pub fn handle_input_clipped(
                     .focused_button
                     .and_then(|id| state.focus_order.iter().position(|v| *v == id));
                 let next = match (current, reverse) {
-                    (Some(0), true) => state.focus_order.len() - 1,
+                    (Some(0), true) => return false,
                     (Some(i), true) => i - 1,
-                    (Some(i), false) => (i + 1) % state.focus_order.len(),
+                    (Some(i), false) if i + 1 == state.focus_order.len() => return false,
+                    (Some(i), false) => i + 1,
                     (None, true) => state.focus_order.len() - 1,
                     (None, false) => 0,
                 };
@@ -1229,20 +1380,26 @@ pub fn build(
     let mut p = Painter { ctx, scene };
     let radius = CornerRadius::Panel.value();
     // Inspector background precedes its interactive Reduce Motion button.
-    p.panel(layout.inspector, "surface-panel", radius);
-    p.caption(
-        if content.size.width >= 760.0 {
-            Rect::new(x + 632.0, y, content.size.width - 632.0, 24.0)
-        } else {
-            Rect::new(
-                x,
-                y + layout.stage.origin.y - y - 24.0,
-                content.size.width,
-                24.0,
-            )
-        },
-        "MOTION LAB",
-    );
+    if state.catalog == PresetCatalog::TickingNumber {
+        p.panel(layout.stage, "surface-panel", radius);
+    } else {
+        p.panel(layout.inspector, "surface-panel", radius);
+    }
+    if state.catalog != PresetCatalog::TickingNumber {
+        p.caption(
+            if content.size.width >= 760.0 {
+                Rect::new(x + 632.0, y, content.size.width - 632.0, 24.0)
+            } else {
+                Rect::new(
+                    x,
+                    y + layout.stage.origin.y - y - 24.0,
+                    content.size.width,
+                    24.0,
+                )
+            },
+            "MOTION LAB",
+        );
+    }
     let actions = layout.state_actions(state);
     state.focus_order.clear();
     for (action, rect) in &actions {
@@ -1284,6 +1441,66 @@ pub fn build(
         stage: layout.stage,
         sliders: std::array::from_fn(|i| layout.slider(Parameter::ALL[i])),
     });
+
+    if state.catalog == PresetCatalog::TickingNumber {
+        let tick_y = y + layout.ticking_top;
+        p.caption(
+            Rect::new(
+                x + 16.0 * layout.text_scale,
+                tick_y,
+                (content.size.width - 32.0 * layout.text_scale).max(1.0),
+                28.0 * layout.text_scale,
+            ),
+            "Ticking Number / 等宽数字计数",
+        );
+        let preview = Rect::new(
+            layout.stage.min_x() + 16.0 * layout.text_scale,
+            layout.stage.min_y() + 64.0 * layout.text_scale,
+            (layout.stage.size.width - 32.0 * layout.text_scale).max(1.0),
+            192.0 * layout.text_scale,
+        );
+        let mut digits =
+            crate::gallery::text::TickingPreviewText(p.ctx.text, 64.0 * layout.text_scale);
+        let mut number_size = state
+            .ticking
+            .measure(&mut digits, proposal::TextRole::UiHeading);
+        if number_size.width > preview.size.width {
+            digits.1 *= preview.size.width / number_size.width;
+            number_size = state
+                .ticking
+                .measure(&mut digits, proposal::TextRole::UiHeading);
+        }
+        let tick_origin = Point::new(
+            preview.center().x - number_size.width / 2.0,
+            preview.center().y - number_size.height / 2.0,
+        );
+        state.ticking.draw(
+            p.scene,
+            &mut digits,
+            tick_origin,
+            proposal::TextRole::UiHeading,
+            color(p.ctx.theme, "primary-text"),
+        );
+        p.label(
+            Rect::new(
+                x + 16.0 * layout.text_scale,
+                layout.stage.min_y() + 272.0 * layout.text_scale,
+                (content.size.width - 32.0 * layout.text_scale).max(1.0),
+                40.0 * layout.text_scale,
+            ),
+            &format!(
+                "{} 位 · 强度 {:.1} · {:.1} 秒 · 目标 {}",
+                state.ticking.digits(),
+                state.ticking.strength(),
+                state.ticking.duration().as_secs_f64(),
+                state.ticking.target()
+            ),
+            proposal::TextRole::UiCaption,
+            "secondary-text",
+        );
+
+        return;
+    }
 
     let sample = if state.is_recipe() {
         tekes_ui_motion::Sample {
@@ -2661,6 +2878,96 @@ mod tests {
         })
     }
     #[test]
+    fn ticking_tab_follows_symbols_and_owns_only_its_counter_controls() {
+        let mut state = MotionPreview::default();
+        let mut text = crate::gallery::text::TextEngine::new();
+        let content = Rect::new(24.0, 24.0, 1104.0, HEIGHT);
+        let layout = Layout::for_state(content, &state, &mut text);
+        let catalogs: Vec<_> = layout
+            .state_actions(&state)
+            .into_iter()
+            .filter_map(|(action, _)| match action {
+                Action::Catalog(c) => Some(c),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            &catalogs[3..],
+            &[PresetCatalog::Symbols, PresetCatalog::TickingNumber]
+        );
+        assert!(layout.button(Action::TickReplay).is_empty());
+        apply_action(&mut state, Action::Catalog(PresetCatalog::TickingNumber));
+        let layout = Layout::for_state(content, &state, &mut text);
+        let actions = layout.state_actions(&state);
+        assert!(actions.iter().all(|(a, _)| matches!(
+            a,
+            Action::Catalog(_)
+                | Action::TickReplay
+                | Action::TickDigits
+                | Action::TickStrength
+                | Action::TickDuration
+                | Action::ReduceMotion
+        )));
+        assert_eq!(actions.len(), 10);
+        assert!(layout.button(Action::Target(0)).is_empty());
+        let point = layout.button(Action::TickReplay).center();
+        for kind in [
+            MouseEventKind::Down {
+                button: MouseButton::Left,
+                click_count: 1,
+            },
+            MouseEventKind::Up {
+                button: MouseButton::Left,
+                click_count: 1,
+            },
+        ] {
+            assert!(handle_input(
+                &mut state,
+                &mouse(kind, point),
+                layout.content
+            ));
+        }
+        assert_eq!(state.ticking.target(), 546);
+        assert!(state.needs_animation());
+        // Leaving this tab suspends its frame work without losing its current pose.
+        apply_action(&mut state, Action::Catalog(PresetCatalog::Apple));
+        let value = state.ticking.value();
+        state.animate(1.0);
+        assert_eq!(state.ticking.value(), value);
+    }
+
+    #[test]
+    fn ticking_demo_actions_drive_counter_and_system_reduction() {
+        let mut state = MotionPreview::default();
+        state.select_catalog(PresetCatalog::TickingNumber);
+        assert!(!state.needs_animation());
+        apply_action(&mut state, Action::TickReplay);
+        assert_eq!(state.ticking.target(), 546);
+        assert!(state.needs_animation());
+        assert!(state.animate(0.9));
+        assert!(state.ticking.value() > 137 && state.ticking.value() < 546);
+        assert!(state.animate(2.0)); // Includes the final frame.
+        assert_eq!(state.ticking.value(), 546);
+        assert!(!state.needs_animation());
+        apply_action(&mut state, Action::TickReplay);
+        assert_eq!(state.ticking.target(), 137);
+        state.set_system_reduced_motion(true);
+        assert_eq!(state.ticking.value(), 137);
+        assert!(!state.needs_animation());
+        apply_action(&mut state, Action::TickDigits);
+        assert_eq!(state.ticking.digits(), 6);
+        assert_eq!(state.ticking.text(), "000137");
+        apply_action(&mut state, Action::TickDigits);
+        assert_eq!(state.ticking.digits(), 2);
+        apply_action(&mut state, Action::TickReplay);
+        assert_eq!(state.ticking.text(), "46");
+        apply_action(&mut state, Action::TickStrength);
+        assert_eq!(state.ticking.strength(), 0.0);
+        apply_action(&mut state, Action::TickDuration);
+        assert_eq!(state.ticking.duration().as_secs(), 2);
+    }
+
+    #[test]
     fn existing_icon_selectors_use_native_motion_hit_routing() {
         let content = Rect::new(24.0, 24.0, 1104.0, HEIGHT);
         let mut state = MotionPreview::default();
@@ -2711,6 +3018,9 @@ mod tests {
                 continue;
             };
             assert!(rect.min_x() >= content.min_x() && rect.max_x() <= content.max_x());
+            // Actions can change footer height; reproduce the host's layout pass
+            // before routing the next event through retained button geometry.
+            install_button_placements(&mut state, layout, Theme::LIGHT);
             let at = rect.center();
             assert!(handle_input(
                 &mut state,
@@ -2721,7 +3031,7 @@ mod tests {
                     },
                     at
                 ),
-                content
+                layout.content
             ));
             assert!(handle_input(
                 &mut state,
@@ -2732,7 +3042,7 @@ mod tests {
                     },
                     at
                 ),
-                content
+                layout.content
             ));
             if let Action::Preset(i) = action {
                 assert_eq!(state.selected, i);

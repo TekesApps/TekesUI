@@ -1,0 +1,7 @@
+{
+  "design/reviews/draft-process-replay-20261019/consumer-source/src/store.rs": "96ea42ccb35412773898f78976988a0d254b565d00fd126221e930302af2ef14",
+  "design/reviews/draft-process-replay-20261019/consumer-source/src/main.rs": "83c85172d2a1c13ebbd00c6365e41eec599c5e6be894f6f1ca694b35eb8d6e90",
+  "design/reviews/draft-process-replay-20261019/consumer-source/Cargo.toml": "dc9b067c7efb4ca1301403c98a6e0f6ed95457f6a3fb82c048be8cca4315f4ea",
+  "examples/composition-consumer/tests/draft_persistence.rs": "40cbf879fdb8c36b4a3f1d0251e5cb32ba6f48a2ade5552612d0db40cce1748b",
+  "crates/tekes-ui-controls/src/draft.rs": "e1632400d3010211fd9718b92b02149c2ba115d587309367d424738117152994"
+}

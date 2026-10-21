@@ -1,0 +1,24 @@
+{
+  "scope": "reading_stream independent consumer; #10 native reading policy only",
+  "source_round": "design/reviews/component-runs/reading-stream-20261019/receipt.json",
+  "display": "U2790B external @2x",
+  "status": "passed",
+  "excluded": [
+    "whole Gallery acceptance",
+    "VoiceOver",
+    "performance",
+    "mixed-content #22 transactions",
+    "release/public pin acceptance"
+  ],
+  "checks": [
+    "active append follows tail",
+    "historical anchor stable on arrivals",
+    "stream arrivals preserve focused independent draft",
+    "same UTF16 anchor across text/width reflow",
+    "Shift+Tab and Return restores tail",
+    "native close exits owned process"
+  ],
+  "trace": "active-stream-trace.jsonl",
+  "closed_pid": 86844,
+  "process_after_close": "absent; ps exit 1; no claim of post-close AX node readback"
+}

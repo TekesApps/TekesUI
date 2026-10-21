@@ -1,0 +1,29 @@
+{
+  "identity": "43ea9e62734840927f121eb76d91bf8895bfa9169b3bc6705d6df6b236dac079",
+  "status": "scoped shared rendering/input regression passed; matched product-page experience pending",
+  "root_cause": "missing stable item navigation retaining original edit owner,not a component-local visual defect",
+  "shared_fix": "version/mount-safe ContentHost navigation,existing ScrollArea/ProgressTransition/reading policy,original same tree and backend",
+  "applicable": [
+    "declared original text,panel,button Content items",
+    "nested original ScrollContent ancestors",
+    "original sibling composer"
+  ],
+  "exceptions": [
+    "legacy focus reveal remains immediate",
+    "unclocked backend immediate",
+    "fully clipped/missing/stale target rejected",
+    "arbitrary application layout mutations retained as normalrender",
+    "missing backend retains existing render error/cancellation policy"
+  ],
+  "GPU": "four themes,three type scales,two width/backing contexts,two placements:48cases240frames. Animated/ReducedMotion endpoints equal immediate with same original preedit baseline. Final rootgutter uses existing native host inset; old no-gutter fixture diagnostics retained.",
+  "native": "22 valid active U2790B@2 checkpoints; original editor/focus/directedselection/undo; full focus outline seen; controls use original default centered button labels; corrected coordinate misses excluded",
+  "not_claimed": [
+    "matched ClientKit page",
+    "physical/systemIMEcandidate on new source",
+    "VoiceOverhearing",
+    "native exact mid-animation wheel race",
+    "isolated candidate native",
+    "whole-library maturity",
+    "performance"
+  ]
+}

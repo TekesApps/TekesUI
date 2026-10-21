@@ -1,0 +1,50 @@
+{
+  "production_changes": false,
+  "instrumentation": [
+    "probe/crates/tekes-ui-platform-macos/Cargo.toml adds audit binary",
+    "probe/crates/tekes-ui-platform-macos/src/wake_registry_audit.rs mirrors lib root and calls audit",
+    "probe/crates/tekes-ui-platform-macos/src/wake.rs adds only audit_registry access; original production logic unchanged"
+  ],
+  "native_registry": {
+    "checks": 32,
+    "hosts": 2,
+    "proxies": 19,
+    "windows": 0,
+    "dispatched_events": 0,
+    "verified": [
+      "registry resolves each proxy to its own real Shared",
+      "finish revokes only its own target and all clones",
+      "already queued delivery is discarded after finish",
+      "clones do not retain Shared",
+      "Shared Drop unregisters remaining target",
+      "post-Drop pending callback safely discarded"
+    ],
+    "limits": "No native windows or event delivery to a live Window; does not complete native multi-window acceptance"
+  },
+  "consumer_reading": {
+    "pages": 2,
+    "page1": [
+      600,
+      1,
+      0
+    ],
+    "page2": [
+      400,
+      1.5,
+      0
+    ],
+    "focus": "ComponentId(4) Composer unchanged",
+    "A_B_A": "passed",
+    "unit": "logical pixels; real CoreText"
+  },
+  "tests": {
+    "ui": 11,
+    "strict_clippy": "passed",
+    "default_headless": "unchanged from previous frozen76 tests"
+  },
+  "reproduce": "cargo run --offline --locked --manifest-path probe/Cargo.toml -p tekes-ui-platform-macos --bin wake-registry-audit",
+  "dependency_versions": "probe lock pruned offline; every retained package version/source equals current upstream lock",
+  "authorization": "no desktop operations; no AgentKit window launched",
+  "public_pin": "blocked by no commit/push/tag",
+  "goal": "active"
+}

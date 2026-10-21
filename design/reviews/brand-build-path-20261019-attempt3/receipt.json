@@ -1,0 +1,120 @@
+{
+  "scope": "Exact current token/compiler Rust source in bounded isolated two-package host; actual ordinary build path, not simulated verifier",
+  "cases": [
+    {
+      "name": "baseline",
+      "exit_code": 0,
+      "expected_rejection": false,
+      "passed": true,
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-j",
+        "2",
+        "-p",
+        "tekes-ui-tokens"
+      ],
+      "log": "baseline.log",
+      "diagnostic": "ordinary token build accepted"
+    },
+    {
+      "name": "generated-color-only",
+      "exit_code": 101,
+      "expected_rejection": true,
+      "passed": true,
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-j",
+        "2",
+        "-p",
+        "tekes-ui-tokens"
+      ],
+      "log": "generated-color-only.log",
+      "diagnostic": "stale/missing design input design/gallery/brands.json"
+    },
+    {
+      "name": "deleted-input-hash",
+      "exit_code": 101,
+      "expected_rejection": true,
+      "passed": true,
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-j",
+        "2",
+        "-p",
+        "tekes-ui-tokens"
+      ],
+      "log": "deleted-input-hash.log",
+      "diagnostic": "stale/missing design input design/gallery/brands.json"
+    },
+    {
+      "name": "missing-dark-theme",
+      "exit_code": 101,
+      "expected_rejection": true,
+      "passed": true,
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-j",
+        "2",
+        "-p",
+        "tekes-ui-tokens"
+      ],
+      "log": "missing-dark-theme.log",
+      "diagnostic": "stale/missing design input design/gallery/brands.json"
+    },
+    {
+      "name": "primary-foreground-equals-ground",
+      "exit_code": 101,
+      "expected_rejection": true,
+      "passed": true,
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-j",
+        "2",
+        "-p",
+        "tekes-ui-tokens"
+      ],
+      "log": "primary-foreground-equals-ground.log",
+      "diagnostic": "stale/missing design input design/gallery/brands.json"
+    },
+    {
+      "name": "restored",
+      "exit_code": 0,
+      "expected_rejection": false,
+      "passed": true,
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-j",
+        "2",
+        "-p",
+        "tekes-ui-tokens"
+      ],
+      "log": "restored.log",
+      "diagnostic": "ordinary token build accepted"
+    }
+  ],
+  "source_snapshot": "source/",
+  "inputs": "inputs.json",
+  "original_wip": "all selected hashes unchanged",
+  "cleanup": "compiled local token/compiler artifacts cleaned; registry dependency cache and all source/evidence retained",
+  "native": "not applicable; build integrity evidence only",
+  "performance": "not measured",
+  "delivery": "no commit/push/Issue close"
+}

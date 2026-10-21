@@ -1,0 +1,23 @@
+{
+  "identity": "153090aaef37af951cfe35f0cee2cfafd28471c51d0cdf2ae6736fff3b4b1f39",
+  "binary_sha256": "eb2d5efc8ac46f78d98d4507b988931c5f8c2cc45837136da222a49dbc4ef3ce",
+  "scope": "Issue27 original editable TextFieldContent in an application layout-driven Pane, actual external native publication/input/recovery; readonly reading separately covered in API/GPU",
+  "active_external_checkpoints": 14,
+  "native_Tab_entries": 3,
+  "failure_native_text_and_AX_cleared": true,
+  "failure_ordinary_input_isolated": true,
+  "original_editor_baseline_and_value_retained": true,
+  "recovery_does_not_steal_focus": true,
+  "host_attempt1": "failed: fenced finish acknowledgements; preserved separately. Final adapter drains existing public key chain and repeats complete sequence.",
+  "images": {
+    "restored-large-type.jpg": "e14cb8e594438a6ae3264bcfed6579aab50c2c57b1b64e0afdbba41d80e393b7",
+    "restored-focus.jpg": "893465d3570fb2bcc8d928d0135e51cc2675663943213f3f5fd0a2e3ca60b30f"
+  },
+  "VoiceOver": "off; no hearing claimed",
+  "performance": "not measured",
+  "remaining": [
+    "independent consumer receipt on a new immutable candidate",
+    "exact public source/CI under separate authorization",
+    "matched ClientKit product-page visual comparison remains separate"
+  ]
+}

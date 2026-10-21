@@ -1,0 +1,17 @@
+{
+  "scope": "Current complete WIP Toolbar registration source review and user requirement clarification; no runtime implementation",
+  "finding": "No per-Component toolbar contribution/registry or Root Window toolbar ownership implementation; current ToolbarView is content-only labels/Buttons",
+  "target": "Root Window or declaring Component local surface, independently from alignment/group ordering",
+  "root_window_interpretation": "the Window owning the component tree, including separate document/secondary windows; no automatic extra floating window",
+  "inputs_sha256": {
+    "crates/tekes-ui-controls/src/widgets.rs": "8c22a4bc965f66a1c5a1d2d7bb30d29698cbab6b16c92abbb4db0aa2cd7b5605",
+    "crates/tekes-ui-controls/src/feedback_view.rs": "9c6d09f904d2599b8d21aaf5793e5099a24c623e02a2778aa6343374dd65c5ef",
+    "crates/tekes-ui-controls/src/composition.rs": "f2b1128eaac3120464e1be365166a88b93bfa8f21221d6fbffc9b39db0ab9ab4",
+    "crates/tekes-ui-platform-macos/src/shared.rs": "5fdf7b84ab41efc254030455c773ee98fe571a7465bcc258a01bfbde7be62dde",
+    "crates/tekes-ui-platform-macos/src/menu.rs": "0532145b26b4006235ec4a26d52ce041b9b968089259e64681cdf16695e560e6"
+  },
+  "plan": "docs/design/composition-audit-20261018.md#2026-10-19-用户补充嵌套组件的-toolbar-注册与呈现位置",
+  "validation": "read-only source/API review; no native/build/experience pass claimed; no new build output",
+  "performance": "not measured",
+  "git_actions": "no commit/push/tag/Issue close"
+}

@@ -1,0 +1,28 @@
+{
+  "identity": "292f5fe65195af66624cb28413868eb46db6ab1a81ef1294ab19c8efbd45b0f4",
+  "archive": "layout-text-292f5fe65195.tar.gz",
+  "archive_sha256": "e9a816c5e34681f92d6632e1abe5995329f52a6d0757cf243df75aaf554fea76",
+  "base_identity": "545ef8d70d89404f11d916f05e417404277507b07dea808aac051339544431a1",
+  "files": 479,
+  "delta_paths": 8,
+  "root_native_identity": "153090aaef37af951cfe35f0cee2cfafd28471c51d0cdf2ae6736fff3b4b1f39",
+  "frozen_base_unchanged": true,
+  "status": "sender exact archive clean-extract passed; receiver/public pin/isolated native pending",
+  "all_source_and_locks_unchanged": true,
+  "local_dependencies_inside_extract": true,
+  "checks": "portable-checks.json",
+  "native_boundary": "native example builds on isolated source; root153090 actual native receipt remains a different identity, never relabelled as isolated native acceptance",
+  "cleanup": [
+    "     Removed 459 files, 128.5MiB total\n",
+    "     Removed 759 files, 178.7MiB total\n"
+  ],
+  "root_cache_lane_restored": true,
+  "test_counts": {
+    "text": 50,
+    "controls": 388,
+    "consumer": 181
+  },
+  "core_label_GPU_cases": 432,
+  "core_label_GPU_frames": 864,
+  "scope": "Eight-path Issue27 delta on immutable545; producer native153090 remains separate, isolated candidate native only built"
+}

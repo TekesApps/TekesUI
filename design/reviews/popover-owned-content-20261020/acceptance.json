@@ -1,0 +1,100 @@
+{
+  "format": "tekesui-scoped-acceptance/1",
+  "scope": "batch6 minimum consumer-owned Popover content using public composition; not full batch/issue maturity",
+  "status": "bounded public API, real consumer, GPU, tool-native and token evidence accepted",
+  "root_cause": "Content child painting was private/automatic, so existing PopoverView callback could not compose the same mounted owned subtree. Focus mount identity existed only in Dialog; View lacked a layout-only entry.",
+  "shared_fix": [
+    "Component.paints_children default false; public existing Content.paint/paint_overlays retain the same host/layout/lifecycle/input/semantics",
+    "capture_focus/restore_focus reuse current mount identity; Dialog shares this existing logic",
+    "PopoverView.arrange shares production geometry and never revives closed dismiss focus",
+    "retained owned text still requires a real text backend"
+  ],
+  "consumer_corrections": [
+    "Use actual ancestor popup clip rather than content rect; exact rejected native source/screenshot and Scene red/green kept",
+    "Dismiss owns Space down/up; normal reconciliation Cancel only cancels gesture, never acts as window deactivation",
+    "Explicit platform deactivation closes/clears and revokes return intent, including inactive input fence",
+    "Nonmodal close preserves newer outside focus; replacement/remount cannot inherit stale return focus"
+  ],
+  "applicable": "Consumer-defined Components that must paint their owned Content inside existing callbacks; all temporary presentations may use shared mount-validated focus intent. Popover is first minimum consumer, not upper bound.",
+  "exceptions": "Default automatic paint unchanged. No builtin PopoverContent, broad migration, Window Toolbar registration, another host/state machine, or new tokens. Source matrix keeps native/whole-component maturity unverified.",
+  "api": {
+    "controls": 367,
+    "new_core_tests": 4,
+    "strict_clippy": "verified-controls-clippy.log"
+  },
+  "real_consumer": {
+    "tests": 154,
+    "matrix_cases": 24,
+    "composition": "same ContentHost with actual TextField/Switch plus consumer-defined Caption",
+    "strict_clippy": "cancel-consumer-clippy.log"
+  },
+  "gpu": {
+    "cases": 48,
+    "frames": 192,
+    "themes": 4,
+    "brands": 3,
+    "width_scale": [
+      [
+        360,
+        1
+      ],
+      [
+        720,
+        2
+      ]
+    ],
+    "type_scales": [
+      1,
+      1.5
+    ],
+    "result": "gpu-result.json",
+    "images": "final-images",
+    "reference": "explicit wrong focus clip, not pre-fix GPU binary; exact old native images/source retained"
+  },
+  "native": {
+    "checkpoints": 28,
+    "evidence": "native/validated.json",
+    "verify": "verify-native.py (run before artifact cleanup)",
+    "display": "U2790B @2",
+    "normal_exit_retained": 27,
+    "reduced_exit_settled": 103,
+    "actual_minimize_inactive_active": [
+      108,
+      110,
+      113
+    ],
+    "method": "actual AppKit key/menu/AX and actual window lifecycle, no physical pinyin or VoiceOver claim"
+  },
+  "gold7": "Scoped menu/popup focus, normal versus Reduced Motion close, event isolation, edit/selection retention and fresh intent checked in actual GPU/native images and events; final page/whole-family acceptance remains separate.",
+  "tokens": {
+    "actual_files": 11,
+    "bounded_cases": 5040,
+    "popover_shell_cases": 192,
+    "popover_owned_tree_cases": 192,
+    "shell_lookup_ids": 18,
+    "owned_tree_lookup_ids": 25,
+    "complete": false,
+    "meaning": "owned-tree lookups include Caption/TextField/Switch; not attributed to primitive shell"
+  },
+  "gates": {
+    "composition_components": 45,
+    "composition_tests": 8,
+    "capability_governance_tests": 42,
+    "global_final_capabilities_exit": 0,
+    "global_final_log": "global-capabilities-final.log"
+  },
+  "rejected_attempts": [
+    "attempt1-consumer-focus-clip",
+    "attempt2-cancel-policy"
+  ],
+  "source": "source-manifest.json; new token test/script separately pinned in token-probes/popover-content.json",
+  "protected": "protected-final.json",
+  "cleanup": "cleanup.json",
+  "voiceover": "kept off/deferred",
+  "not_done": [
+    "remaining batch6 chosen consumer integration and same-final-candidate combined acceptance",
+    "deferred physical IME/VoiceOver where required",
+    "Window Toolbar stays separately planned architecture; other batches remain"
+  ],
+  "no_performance_commit_push_tag_issue_close": true
+}

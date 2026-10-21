@@ -1,0 +1,198 @@
+{
+  "format": "tekesui-gold7-alignment-pass/1",
+  "date": "2026-10-17",
+  "base_commit": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "source_recovery": "Overlay source-snapshot.tar.gz on base_commit; preserved earlier WIP included.",
+  "committed": false,
+  "pushed": false,
+  "tag_created": false,
+  "requirements_all_complete": false,
+  "checks": [
+    {
+      "check": "tests",
+      "command": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--release",
+        "--locked",
+        "--offline",
+        "--",
+        "--skip",
+        "gpu_time_agrees_with_wall_clock_on_a_heavy_frame",
+        "--skip",
+        "cpu_segments_are_consistent_and_frames_are_numbered"
+      ],
+      "exit": 0,
+      "seconds": 29.96
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--release",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 4.81
+    },
+    {
+      "check": "build",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "tekes-ui-gallery",
+        "--release",
+        "--locked",
+        "--offline"
+      ],
+      "exit": 0,
+      "seconds": 0.11
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.8
+    },
+    {
+      "check": "pure-rust",
+      "command": [
+        "python3",
+        "scripts/check-pure-rust.py"
+      ],
+      "exit": 0,
+      "seconds": 0.5
+    },
+    {
+      "check": "design-system",
+      "command": [
+        "target/design-check-venv/bin/python",
+        "scripts/check-design-system.py"
+      ],
+      "exit": 0,
+      "seconds": 0.34
+    },
+    {
+      "check": "gold7",
+      "command": [
+        "python3",
+        "scripts/check-gold7.py",
+        "--json"
+      ],
+      "exit": 0,
+      "seconds": 0.06
+    },
+    {
+      "check": "gold7-checker",
+      "command": [
+        "python3",
+        "scripts/test-check-gold7.py"
+      ],
+      "exit": 0,
+      "seconds": 0.67
+    },
+    {
+      "check": "diff",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.03
+    }
+  ],
+  "rust_tests": {
+    "passed": 857,
+    "failed": 0,
+    "ignored": 1
+  },
+  "explicitly_filtered": [
+    "gpu_time_agrees_with_wall_clock_on_a_heavy_frame",
+    "cpu_segments_are_consistent_and_frames_are_numbered"
+  ],
+  "coverage": {
+    "geometry_cases": 1864,
+    "implemented_canonical_slugs": 68,
+    "state_variant_routes": 46,
+    "state_variant_components": 38,
+    "state_variant_gpu_frames": 1104,
+    "all_generated_render_images": 1771,
+    "retained_manually_reviewed_images": [
+      "pages/number-field-144-pt-scale2-type150.png",
+      "pages/number-field-198-pt-scale2-type150.png",
+      "pages/feedback-tooltip-states-360pt-text150.png",
+      "pages/feedback-banner-states-360pt-text150.png",
+      "pages/navigation-breadcrumb-states-360x1300.png",
+      "native/settings-input.jpg",
+      "native/settings-native-input-tab.jpg",
+      "native/settings-save-revealed.jpg",
+      "native/dialog-tab-trap.jpg",
+      "native/dialog-escape-restored.jpg",
+      "native/motion-offscreen-tab.jpg",
+      "native/search-double-focus-initial.jpg",
+      "native/combo-tab-closed.jpg",
+      "native/settings-nav.jpg",
+      "native/final-combo-tab-to-search.jpg",
+      "native/final-search-single-focus.jpg",
+      "native/final-settings-nav-gutter.jpg",
+      "native/final-settings-offscreen-tab.jpg",
+      "native/final-text-editor-document-end.jpg",
+      "native/final-text-editor-fill.jpg",
+      "native/final-text-editor-ring-fixed.jpg"
+    ],
+    "native_observations": {
+      "scope": "Sampled real macOS input via CUA; per-control AX tree remains unavailable. No performance measurements.",
+      "window": {
+        "logical_width": 720,
+        "logical_outer_height": 512,
+        "text_scale": 1.5,
+        "backing_scale": 2
+      },
+      "confirmed": [
+        "Search click -> native Tab reveals current Sidebar row with a keyboard focus ring; final ring gutter corrected after initial clipping.",
+        "Tab enters real Story controls; repeated Tab reaches Settings input, native text editing commits Gold7 Final, next Tab reveals Notifications, then Save; Shift+Tab returns to input.",
+        "Pointer focus into Search clears former production input focus while preserving its edited value; final screenshot shows a single ring.",
+        "ComboBox pointer input filters Co to Compact/Comfortable; Down/Return selects Comfortable. Tab from a newly opened filter popup closes it and final version focuses shell Search rather than Docs.",
+        "Dialog pointer open, repeated Tab remains inside modal, Escape closes and restores trigger focus.",
+        "Motion Search -> Sidebar -> Apple defaults -> repeated native Tab reveals Linear; Space selects Linear, next Tab reveals A parameter.",
+        "Restored internal TextEditor preview shows both actual single-line and multiline editors; Tab enters multiline, Command+Down scrolls its document end while its frame stays inside remaining viewport.",
+        "Final signed package matches Cargo outside normalized code-signing metadata. Native 720pt/150 percent TextEditor focus ring now shows all four sides, document-end scroll and remaining viewport fill verified again."
+      ],
+      "initial_failures_repaired": [
+        "Sidebar last-row ring clipped at viewport edge",
+        "Pointer Search focus left prior component focused",
+        "Pointer ComboBox input was not synchronized to logical Tab owner"
+      ],
+      "pending_final_recheck": [],
+      "limitations": [
+        "Samples are not all-component native acceptance",
+        "No VoiceOver or physical IME composition acceptance",
+        "Earlier native samples precede final lint refactors and the text-only ring clip fix; the final ring sample and executable identity were rechecked after all changes."
+      ]
+    }
+  },
+  "limitations": [
+    "Only selected GPU/native samples manually inspected; not full all-component experience acceptance",
+    "Per-control macOS AX bridge, VoiceOver and physical IME acceptance remain pending",
+    "No CPU/drop-frame/120Hz performance measurement"
+  ],
+  "full_generated_captures": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/gold7-alignment-pass6",
+  "render_hashes": "render-artifact-hashes.json",
+  "artifact_manifest": "artifact-manifest.json"
+}

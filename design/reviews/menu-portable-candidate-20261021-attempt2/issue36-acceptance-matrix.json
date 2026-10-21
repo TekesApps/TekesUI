@@ -1,0 +1,68 @@
+{
+  "issue": 36,
+  "latest_issue_updated_at": "2026-10-21T03:13:39Z",
+  "identity": "b430dae10b89dfd9c0f30e74d81f499a2ddb6778994ffcffead8b79ad942b9aa",
+  "overall": "部分完成；implementation and sender fixed replay ready, remaining acceptance/delivery explicitly below",
+  "implementation_owner": "Root single owner of shared Menu; AgentKit owns business preference/Sort/Group mapping",
+  "conditions": [
+    {
+      "criterion": 1,
+      "status": "已完成（固定包公共API范围）",
+      "evidence": [
+        "portable-consumer.log: menu_action_records and menu_declarations delayed A/B path/model/paint/mount cases"
+      ],
+      "scope": "Owned immutable original queue captures once; real native mixed input choices same mount separately retained"
+    },
+    {
+      "criterion": 2,
+      "status": "已完成（API及本轮原生范围）",
+      "evidence": [
+        "portable-consumer.log: stale old popup/mount/model, opening and dismissal tests",
+        "native-acceptance.json: Escape/outside/Tab no choice"
+      ],
+      "scope": "Full final consumer handling still separately reviewed by receiver"
+    },
+    {
+      "criterion": 3,
+      "status": "已实现待验收",
+      "evidence": [
+        "portable-consumer.log: 34 menu API cases",
+        "portable-evidence/menu-token-binding.json",
+        "native-acceptance.json"
+      ],
+      "remaining": [
+        "Real AgentKit Sidebar actual business callbacks/preferences and applicable physical IME/VoiceOver hearing",
+        "Matched final ClientKit/Gold7 experience"
+      ]
+    },
+    {
+      "criterion": 4,
+      "status": "部分完成",
+      "evidence": [
+        "portable-consumer.log: long submenu capture and shared host-clock rebound, nested clip/narrow/edge cases",
+        "portable-evidence/gpu/receipt.json",
+        "native-acceptance.json: 408pt real narrow input + minimize/late isolation"
+      ],
+      "remaining": [
+        "True system reactivation after minimize not achieved by tools",
+        "Receiver final native/composer/placement experience"
+      ]
+    },
+    {
+      "criterion": 5,
+      "status": "部分完成",
+      "evidence": [
+        "portable-manifest.json:515 exact files,22 path delta/base336",
+        "portable-checks.json:10 exact clean-extract checks",
+        "native-acceptance.json",
+        "HANDOFF.md: already sent to authorized Rust AgentKit"
+      ],
+      "remaining": [
+        "Independent receiver actual Sidebar acceptance",
+        "Public pin/remote CI/default promotion as separately authorized"
+      ]
+    }
+  ],
+  "performance": "not measured",
+  "publication": "no commit/push/tag/close"
+}

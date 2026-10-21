@@ -1,0 +1,21 @@
+{
+  "status": "scoped native state/focus plus revised-host undo/redo/readonly accepted; required/optional VoiceOver pending",
+  "source": "existing host, same public ContentHost/TextFieldContent/TextSurface and existing native key/pointer adapters",
+  "changes": "explicit native Review menu Reset cases; actual first2required/thirdoptional model; input event/state history; no library/runtime or token changes",
+  "tests": "three existing consumer API tests plus actual native publisher96-combination test passed; strict all-target Clippy passed",
+  "native": "native/acceptance.json: three active external-screen delete/undo/redo chains and readonly deletion isolation passed. Original state/focus checks archived as native-attempt1; source identities distinct.",
+  "observed_required": [
+    true,
+    true,
+    false
+  ],
+  "required_visual": "initial screenshot shows TextField* / TextArea*, SearchField optional; this visible marker does not prove assistive required announcement",
+  "build_cleanup": "rebuilt single input-family host, copied and signed; own package build products cleaned; runtime retained pending final acceptance",
+  "prior_identity": "previous3b1a native source record retained; final latest round records separate host-source-manifest.json",
+  "scope": "no whole-family/whole-page promotion; prior GPU receipts keep their original fixture identity",
+  "publication": "none",
+  "performance": "not measured",
+  "VoiceOver": "deferred by user; not enabled",
+  "followup": "shortcut-adapter/delta.json",
+  "cleanup": "window closed, PID absent, copied runtime removed after identity/unused checks; source/images/logs retained"
+}

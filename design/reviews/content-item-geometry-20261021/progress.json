@@ -1,0 +1,22 @@
+{
+  "status": "producer layered verification passed; isolated candidate replay/integration pending",
+  "tests": {
+    "item-api-final": 17,
+    "controls-final": 426,
+    "full-consumer": 209
+  },
+  "GPU_cases": 48,
+  "GPU_frames": 240,
+  "token_probes": 17,
+  "bounded_cases": 6432,
+  "complete": false,
+  "red_before_fix": "../content-item-reveal-20261021/same-extent-before-fix.log",
+  "shared_fix": "ContentHost validates original scroll ancestor path and per-ancestor target document rect, projecting inner scrolls to planned endpoints so normal animation is not mistaken for reflow.",
+  "performance": "not measured",
+  "Git": "no commit/push/tag/closure",
+  "native_identity": "cebf06279bbe90cd0bf556d9680d9c8748fa77f726a19e7ffcf65cf60dd4663b",
+  "native": "native-acceptance.json",
+  "cleanup": "native-cleanup.json",
+  "gates": "closing-checks.json",
+  "candidate": "design/reviews/content-item-portable-candidate-20261021-attempt2/portable-acceptance.json"
+}

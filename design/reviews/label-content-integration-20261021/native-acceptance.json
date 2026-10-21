@@ -1,0 +1,62 @@
+{
+  "identity": "22caa4f3b5a3a52ac7d9c5e18db575abf70950ca05c28ea52f914293dc39ebf0",
+  "binary_sha256": "1f9dab4b464188fcf3c9d7e33802e5639472f7ef95a38d2025d2c118d94ead43",
+  "scope": "Original TextContent/ButtonContent/CompoundButton label policy on this exact native source; no whole-library or production-page promotion",
+  "active_external_checkpoints": 26,
+  "API_matched_node_frames": 104,
+  "width_scale_contexts": [
+    [
+      368,
+      1
+    ],
+    [
+      368,
+      1.5
+    ],
+    [
+      368,
+      2
+    ],
+    [
+      720,
+      1
+    ],
+    [
+      720,
+      1.5
+    ],
+    [
+      720,
+      2
+    ]
+  ],
+  "activation_path_differences": [
+    "keyboard Enter/Space",
+    "coordinate pointer",
+    "Accessibility Press"
+  ],
+  "counts_final": [
+    4,
+    4
+  ],
+  "disabled_loading_outside_input_isolated": true,
+  "full_AX_original_and_decorative_child_suppression": true,
+  "focus_ring": "native screenshot reviewed; continuous rounded outline retained at narrow width",
+  "images": {
+    "focus-original-button.jpg": "c0c5d9c7683807be3bb92e818ddd3ff305e84a7f8d41056e0e756b453c5003a7",
+    "wide-type-1_5.jpg": "2518aa34398fa3950e1c01922f3e057c1918bbe181b477186d7a46079d500359",
+    "wide-type-2.jpg": "1eb5a9999727670f3cd4ec2fc2b2a19f31a8b8237e0d891ff5a7f63959759baf",
+    "narrow-type-1.jpg": "346ee60b39c7356a201cf579377c025e0045056c3a2b10c7c05a8c7b804bad0b",
+    "narrow-type-1_5.jpg": "0a96ff4be63b3d8d67139f52a87e432cda99898c2ca9c45cf0aa5e08f6900f51",
+    "narrow-type-2.jpg": "723eb9689512d12e5f2e55e558b354f71edafccf0a128295800929c2007fe976",
+    "narrow-restored-focus.jpg": "a800d71f7273abda6c2836a86ba37666e00a645b50468031e66acbd8b9737477"
+  },
+  "test_expectation_correction": "1.5x native fallback row is25pt, not previous17pt multiplied by1.5. All104frames match actual public CoreText label API; no forced linear-height patch.",
+  "remaining": [
+    "matched ClientKit product-page visual review",
+    "continuous motion/Reduced Motion beyond the existing control contract",
+    "standalone candidate clean-extract and receiver/public-pin acceptance"
+  ],
+  "VoiceOver": "off; no hearing claimed",
+  "performance": "not measured"
+}

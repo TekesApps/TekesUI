@@ -1,0 +1,225 @@
+{
+  "format": "tekesui-tooltip-native-lifecycle/1",
+  "owner": "root: sole shared implementation owner",
+  "identity": "25a57bc8c201e445ffd8b50c25c16cc04a41a2408c1b6d385f0747bf620fe745",
+  "status": "known keyboard/controlled and native minimize paths verified; mixed-owner recovery policy and actual reactivation unaccepted",
+  "checks": [
+    {
+      "name": "keyboard-open",
+      "sequence": 11,
+      "visible": true,
+      "active": true
+    },
+    {
+      "name": "keyboard-escape",
+      "sequence": 13,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "keyboard-fresh-return",
+      "sequence": 19,
+      "visible": true,
+      "active": true
+    },
+    {
+      "name": "theme0-controlled-open",
+      "sequence": 25,
+      "visible": true,
+      "active": true
+    },
+    {
+      "name": "theme0-controlled-escape",
+      "sequence": 27,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "theme0-controlled-still-suppressed",
+      "sequence": 30,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "theme0-caller-hide",
+      "sequence": 33,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "theme0-caller-show",
+      "sequence": 36,
+      "visible": true,
+      "active": true
+    },
+    {
+      "name": "theme1-controlled-open",
+      "sequence": 42,
+      "visible": true,
+      "active": true
+    },
+    {
+      "name": "theme1-controlled-escape",
+      "sequence": 44,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "theme1-controlled-still-suppressed",
+      "sequence": 47,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "theme1-caller-hide",
+      "sequence": 50,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "theme1-caller-show",
+      "sequence": 53,
+      "visible": true,
+      "active": true
+    },
+    {
+      "name": "theme2-controlled-open",
+      "sequence": 59,
+      "visible": true,
+      "active": true
+    },
+    {
+      "name": "theme2-controlled-escape",
+      "sequence": 61,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "theme2-controlled-still-suppressed",
+      "sequence": 64,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "theme2-caller-hide",
+      "sequence": 67,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "theme2-caller-show",
+      "sequence": 70,
+      "visible": true,
+      "active": true
+    },
+    {
+      "name": "theme3-controlled-open",
+      "sequence": 76,
+      "visible": true,
+      "active": true
+    },
+    {
+      "name": "theme3-controlled-escape",
+      "sequence": 78,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "theme3-controlled-still-suppressed",
+      "sequence": 81,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "theme3-caller-hide",
+      "sequence": 84,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "theme3-caller-show",
+      "sequence": 87,
+      "visible": true,
+      "active": true
+    },
+    {
+      "name": "pointer-presence-after-blur",
+      "sequence": 95,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "coordinate-pointer-after-blur",
+      "sequence": 101,
+      "visible": true,
+      "active": true
+    },
+    {
+      "name": "hover-escape",
+      "sequence": 103,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "hover-still-suppressed",
+      "sequence": 105,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "pointer-left-owner",
+      "sequence": 107,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "pointer-fresh-return",
+      "sequence": 113,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "both-owners-left",
+      "sequence": 119,
+      "visible": false,
+      "active": true
+    },
+    {
+      "name": "fresh-pointer-after-both-left",
+      "sequence": 125,
+      "visible": true,
+      "active": true
+    },
+    {
+      "name": "visible-but-inactive",
+      "sequence": 127,
+      "visible": false,
+      "active": false
+    }
+  ],
+  "native_checkpoints": 32,
+  "native_checkpoints_meaning": "observations/assertions, not32experience approvals",
+  "observed_not_accepted_policy_checkpoints": [
+    "pointer-left-owner",
+    "pointer-fresh-return"
+  ],
+  "actual_minimize": "actual-minimized-late-input.json",
+  "real_pointer_provenance": "Native Mouse Down/Up actual position120,112; AX Press separately recorded, not counted as pointer",
+  "late_input": "Marked caller fault injection follows actual native Focus(false); not physical keyboard/hearing",
+  "source_fix": "existing shared TooltipView repair reused; no production source change this round",
+  "applicable": "public Tooltip consumers; native host reuses retained public ButtonContent, native pointer adapter and CoreText/Metal",
+  "exceptions": [
+    "Observed both-owner suppression is not a specified or approved recovery policy",
+    "controlled true stays suppressed until caller false-to-true reset",
+    "no builtin owned Tooltip content/AX adapter added"
+  ],
+  "external_AX": "Only visible Tooltip publishes StaticText; anchor description stays available. No VoiceOver hearing claim",
+  "screen": "U2790B@2",
+  "remaining": [
+    "mixed-owner Escape recovery: retained focus blocks fresh hover entry; requires policy review and possible shared fix",
+    "actual native reactivation plus no-old-owner then fresh-owner recovery",
+    "same combined final candidate/page/matched ClientKit-Gold7 experience",
+    "applicable hearing deferred; no performance"
+  ],
+  "closed": true
+}

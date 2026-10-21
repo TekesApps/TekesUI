@@ -1,0 +1,443 @@
+{
+  "status": "passed",
+  "human": "等4/4后空格；候选跟随正常、组字未中断、没有REMOTE替换",
+  "kind": "physical SCIM Pinyin; real U2790B native consumer",
+  "candidate": "03721866a362b1d31261ebbbc86140eb07e9e23320871c325234a5212591213d",
+  "binary": "cc4caa558311ed15b2e1bcf15305d749462bc8911aa5ab1760e7cb60c713d004",
+  "geometry": [
+    {
+      "backing_scale": 2.0,
+      "caret": "Rect { origin: Point { x: 468.00412, y: 560.0 }, size: Size { width: 1.0, height: 17.0 } }",
+      "caret_inside_visible": true,
+      "focused": 4,
+      "marked": {
+        "end": 2207,
+        "start": 2205
+      },
+      "native": {
+        "app_active": true,
+        "ax_frame": [
+          1988,
+          83,
+          968,
+          224
+        ],
+        "backing_scale": 2,
+        "candidate_query": [
+          2440.004116350704,
+          214,
+          0,
+          17
+        ],
+        "caret_expected": [
+          2440.004119873047,
+          214,
+          1,
+          17
+        ],
+        "coordinate_checks": true,
+        "key": true,
+        "viewport": [
+          1988,
+          83,
+          968,
+          224
+        ],
+        "window": [
+          1972,
+          31,
+          1000,
+          792
+        ]
+      },
+      "outer": "Rect { origin: Point { x: 16.0, y: 484.0 }, size: Size { width: 968.0, height: 224.0 } }",
+      "phase": 0,
+      "selection": {
+        "end": 2207,
+        "start": 2207
+      },
+      "size": [
+        1000.0,
+        760.0
+      ],
+      "text": "中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 123ni45 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 ",
+      "text_scale": 1.0,
+      "visible": "Rect { origin: Point { x: 16.0, y: 484.0 }, size: Size { width: 968.0, height: 224.0 } }"
+    },
+    {
+      "backing_scale": 2.0,
+      "caret": "Rect { origin: Point { x: 872.5278, y: 635.0 }, size: Size { width: 1.0, height: 25.0 } }",
+      "caret_inside_visible": true,
+      "focused": 4,
+      "marked": {
+        "end": 2207,
+        "start": 2205
+      },
+      "native": {
+        "app_active": true,
+        "ax_frame": [
+          1988,
+          90,
+          968,
+          224
+        ],
+        "backing_scale": 2,
+        "candidate_query": [
+          2844.5277630708224,
+          131,
+          0,
+          25
+        ],
+        "caret_expected": [
+          2844.5277709960938,
+          131,
+          1,
+          25
+        ],
+        "coordinate_checks": true,
+        "key": true,
+        "viewport": [
+          1988,
+          90,
+          968,
+          224
+        ],
+        "window": [
+          1972,
+          31,
+          1000,
+          792
+        ]
+      },
+      "outer": "Rect { origin: Point { x: 16.0, y: 477.0 }, size: Size { width: 968.0, height: 224.0 } }",
+      "phase": 1,
+      "selection": {
+        "end": 2207,
+        "start": 2207
+      },
+      "size": [
+        1000.0,
+        760.0
+      ],
+      "text": "中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 123ni45 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 ",
+      "text_scale": 1.5,
+      "visible": "Rect { origin: Point { x: 16.0, y: 477.0 }, size: Size { width: 968.0, height: 224.0 } }"
+    },
+    {
+      "backing_scale": 2.0,
+      "caret": "Rect { origin: Point { x: 752.19183, y: 648.0 }, size: Size { width: 1.0, height: 33.0 } }",
+      "caret_inside_visible": true,
+      "focused": 4,
+      "marked": {
+        "end": 2207,
+        "start": 2205
+      },
+      "native": {
+        "app_active": true,
+        "ax_frame": [
+          2004,
+          98,
+          872,
+          224
+        ],
+        "backing_scale": 2,
+        "candidate_query": [
+          2724.191826451408,
+          110,
+          0,
+          33
+        ],
+        "caret_expected": [
+          2724.1918334960938,
+          110,
+          1,
+          33
+        ],
+        "coordinate_checks": true,
+        "key": true,
+        "viewport": [
+          2004,
+          98,
+          872,
+          224
+        ],
+        "window": [
+          1972,
+          31,
+          1000,
+          792
+        ]
+      },
+      "outer": "Rect { origin: Point { x: 16.0, y: 469.0 }, size: Size { width: 968.0, height: 224.0 } }",
+      "phase": 2,
+      "selection": {
+        "end": 2207,
+        "start": 2207
+      },
+      "size": [
+        1000.0,
+        760.0
+      ],
+      "text": "中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 123ni45 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 ",
+      "text_scale": 2.0,
+      "visible": "Rect { origin: Point { x: 32.0, y: 469.0 }, size: Size { width: 872.0, height: 224.0 } }"
+    },
+    {
+      "backing_scale": 2.0,
+      "caret": "Rect { origin: Point { x: 99.265625, y: 488.0 }, size: Size { width: 1.0, height: 33.0 } }",
+      "caret_inside_visible": true,
+      "focused": 4,
+      "marked": {
+        "end": 2207,
+        "start": 2205
+      },
+      "native": {
+        "app_active": true,
+        "ax_frame": [
+          2004,
+          258,
+          592,
+          224
+        ],
+        "backing_scale": 2,
+        "candidate_query": [
+          2071.265625,
+          270,
+          0,
+          33
+        ],
+        "caret_expected": [
+          2071.265625,
+          270,
+          1,
+          33
+        ],
+        "coordinate_checks": true,
+        "key": true,
+        "viewport": [
+          2004,
+          258,
+          592,
+          224
+        ],
+        "window": [
+          1972,
+          191,
+          720,
+          632
+        ]
+      },
+      "outer": "Rect { origin: Point { x: 16.0, y: 309.0 }, size: Size { width: 688.0, height: 224.0 } }",
+      "phase": 3,
+      "selection": {
+        "end": 2207,
+        "start": 2207
+      },
+      "size": [
+        720.0,
+        600.0
+      ],
+      "text": "中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 123ni45 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 ",
+      "text_scale": 2.0,
+      "visible": "Rect { origin: Point { x: 32.0, y: 309.0 }, size: Size { width: 592.0, height: 224.0 } }"
+    },
+    {
+      "backing_scale": 2.0,
+      "caret": "Rect { origin: Point { x: 627.82697, y: 356.0 }, size: Size { width: 1.0, height: 17.0 } }",
+      "caret_inside_visible": true,
+      "focused": 4,
+      "marked": {
+        "end": 2207,
+        "start": 2205
+      },
+      "native": {
+        "app_active": true,
+        "ax_frame": [
+          1988,
+          243,
+          688,
+          224
+        ],
+        "backing_scale": 2,
+        "candidate_query": [
+          2599.826975307306,
+          418,
+          0,
+          17
+        ],
+        "caret_expected": [
+          2599.8269653320312,
+          418,
+          1,
+          17
+        ],
+        "coordinate_checks": true,
+        "key": true,
+        "viewport": [
+          1988,
+          243,
+          688,
+          224
+        ],
+        "window": [
+          1972,
+          191,
+          720,
+          632
+        ]
+      },
+      "outer": "Rect { origin: Point { x: 16.0, y: 324.0 }, size: Size { width: 688.0, height: 224.0 } }",
+      "phase": 4,
+      "selection": {
+        "end": 2207,
+        "start": 2207
+      },
+      "size": [
+        720.0,
+        600.0
+      ],
+      "text": "中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 123ni45 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 ",
+      "text_scale": 1.0,
+      "visible": "Rect { origin: Point { x: 16.0, y: 324.0 }, size: Size { width: 688.0, height: 224.0 } }"
+    },
+    {
+      "backing_scale": 2.0,
+      "caret": "Rect { origin: Point { x: 468.00412, y: 543.0 }, size: Size { width: 1.0, height: 17.0 } }",
+      "caret_inside_visible": true,
+      "focused": 4,
+      "marked": {
+        "end": 2207,
+        "start": 2205
+      },
+      "native": {
+        "app_active": true,
+        "ax_frame": [
+          1988,
+          83,
+          968,
+          224
+        ],
+        "backing_scale": 2,
+        "candidate_query": [
+          2440.004116350704,
+          231,
+          0,
+          17
+        ],
+        "caret_expected": [
+          2440.004119873047,
+          231,
+          1,
+          17
+        ],
+        "coordinate_checks": true,
+        "key": true,
+        "viewport": [
+          1988,
+          83,
+          968,
+          224
+        ],
+        "window": [
+          1972,
+          31,
+          1000,
+          792
+        ]
+      },
+      "outer": "Rect { origin: Point { x: 16.0, y: 484.0 }, size: Size { width: 968.0, height: 224.0 } }",
+      "phase": 4,
+      "selection": {
+        "end": 2207,
+        "start": 2207
+      },
+      "size": [
+        1000.0,
+        760.0
+      ],
+      "text": "中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 123ni45 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 ",
+      "text_scale": 1.0,
+      "visible": "Rect { origin: Point { x: 16.0, y: 484.0 }, size: Size { width: 968.0, height: 224.0 } }"
+    }
+  ],
+  "controlled_sync": [
+    {
+      "after": {
+        "binding": "Some(DraftRevision { identity: \"{\\\"kind\\\":\\\"run\\\",\\\"scope\\\":{\\\"endpointId\\\":\\\"fixture\\\",\\\"threadId\\\":\\\"a\\\",\\\"sessionId\\\":\\\"a\\\"}}\", version: 5, payload: \"中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 \" })",
+        "focus": 4,
+        "items": 20,
+        "marked": {
+          "end": 2207,
+          "start": 2205
+        },
+        "selection": {
+          "end": 2207,
+          "start": 2207
+        },
+        "text": "中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 123ni45 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 "
+      },
+      "baseline_preserved": true,
+      "before": {
+        "binding": "Some(DraftRevision { identity: \"{\\\"kind\\\":\\\"run\\\",\\\"scope\\\":{\\\"endpointId\\\":\\\"fixture\\\",\\\"threadId\\\":\\\"a\\\",\\\"sessionId\\\":\\\"a\\\"}}\", version: 5, payload: \"中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 \" })",
+        "focus": 4,
+        "items": 20,
+        "marked": {
+          "end": 2207,
+          "start": 2205
+        },
+        "selection": {
+          "end": 2207,
+          "start": 2207
+        },
+        "text": "中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 123ni45 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 "
+      },
+      "consumer_external": "Err(\"authoritative draft conflicts with unacknowledged local editing\")",
+      "public_external": "Conflict(Composition)",
+      "repeat": "Unchanged",
+      "stage": "composing"
+    },
+    {
+      "after": {
+        "binding": "Some(DraftRevision { identity: \"{\\\"kind\\\":\\\"run\\\",\\\"scope\\\":{\\\"endpointId\\\":\\\"fixture\\\",\\\"threadId\\\":\\\"a\\\",\\\"sessionId\\\":\\\"a\\\"}}\", version: 7, payload: \"中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 123你45 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 \" })",
+        "focus": 4,
+        "items": 20,
+        "marked": null,
+        "selection": {
+          "end": 2206,
+          "start": 2206
+        },
+        "text": "中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 123你45 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 "
+      },
+      "before": {
+        "binding": "Some(DraftRevision { identity: \"{\\\"kind\\\":\\\"run\\\",\\\"scope\\\":{\\\"endpointId\\\":\\\"fixture\\\",\\\"threadId\\\":\\\"a\\\",\\\"sessionId\\\":\\\"a\\\"}}\", version: 7, payload: \"中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 123你45 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 中文 English 😀 e\\u{301} 12345 \" })",
+        "focus": 4,
+        "items": 20,
+        "marked": null,
+        "selection": {
+          "end": 2206,
+          "start": 2206
+        },
+        "text": "中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 123你45 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 中文 English 😀 é 12345 "
+      },
+      "late_consumer": "Err(\"stale or unversioned presentation snapshot\")",
+      "late_public": "Conflict(Revision)",
+      "no_queue_or_overwrite": true,
+      "stage": "committed"
+    }
+  ],
+  "commit": {
+    "ms": 239097,
+    "event": "TextCommit { text: \"你\", replacement: None }",
+    "marked": null,
+    "selection": {
+      "end": 2206,
+      "start": 2206
+    },
+    "focused": 4,
+    "items": 20,
+    "native": "app_active=true key=true first_responder=true context=true current=true matches=true client=true source=Some(\"com.apple.inputmethod.SCIM.ITABC\")"
+  },
+  "key_chain_boundary": "id3 composing Space -> exactly one Commit你; separate id4 ordinary Space4.6s later -> one space; no duplicate dispatch",
+  "scope": "actual backing2; backing1 automatic; no full theme/Gallery expansion",
+  "performance": "not run"
+}

@@ -1,0 +1,135 @@
+{
+  "format": "tekesui-choice-trigger-review/1",
+  "date": "2026-10-18T01:15:27.213117+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues": [
+    3,
+    8,
+    12,
+    14
+  ],
+  "issues_open": 14,
+  "prs_all_states": 0,
+  "github_changed_since_ledger": false,
+  "root_fixes": [
+    "public CommandPaletteView forwards pointer movement and latest availability to original Button",
+    "precise blur_trigger clears trigger focus without dismissing query/candidates; whole blur still dismisses",
+    "Gallery unified focus cold Tab/query handoff/Escape restore",
+    "Gallery outside pointer release always reaches original trigger; no ghost press"
+  ],
+  "public_api": {
+    "new_tests": 3,
+    "choice_contract_tests": 9,
+    "trigger_state_tests": 1,
+    "trigger_cases": 84,
+    "exact_states": [
+      "rest",
+      "hover",
+      "pressed",
+      "focus",
+      "disabled"
+    ],
+    "part": "CommandPalette trigger only",
+    "public_hover_red_tests": 1,
+    "real_gallery_cold_focus_red_tests": 1,
+    "real_gallery_outside_release_red_tests": 1,
+    "controls_default_tests": 293,
+    "controls_audit_tests": 294,
+    "controls_tokens_export_audit_tests": 336,
+    "independent_consumer_tests": 31,
+    "gallery_command_tests": 7,
+    "gallery_states_tests": 2,
+    "strict_clippy": "controls/Gallery all-targets composition-review and independent consumer pass"
+  },
+  "governance": {
+    "components": 45,
+    "public_states": 100,
+    "fixture_unverified": 156,
+    "required_states": 269,
+    "remaining_choice_states": 25,
+    "capability_tests": 36,
+    "composition_tests": 6,
+    "reference": "pass",
+    "gold7_mechanical": "pass; experience incomplete",
+    "pure_rust": "pass",
+    "fmt": "pass"
+  },
+  "gpu": {
+    "final_whole_state_pages": 144,
+    "comparable_previous_pages": 144,
+    "changed": 144,
+    "reason": "three new closed trigger rows and corrected open query focus ownership change document composition",
+    "additional_navigation_tall_pngs": 3,
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "widths_and_type": [
+      "720x512 type150",
+      "1440x960 type100"
+    ],
+    "reduced_motion": true,
+    "visual_review": "representative frames; not full state experience acceptance"
+  },
+  "token_observations": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "choice-trigger-token-observations.json": 84,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "action-token-observations.json": 576
+  },
+  "token_limits": {
+    "complete": false,
+    "choice_trigger_scope": "84 exact cases in existing action_state path; part=trigger; query and candidate states excluded"
+  },
+  "native": {
+    "bundle_id": "com.tekesui.gallery.audit.choicestates20261018",
+    "hash_stage": "after codesign",
+    "observed": [
+      "cold Tab trigger focus before missing/after visible; old Space remains closed/new opens",
+      "query takes focus and Escape restores trigger",
+      "fresh Gallery Reduced Motion On confirmed focus then Enter open and Escape restore",
+      "drag includes release; before and after obtain hover on mouse-up; outside-release/return remain bounded observations"
+    ],
+    "not_tested": [
+      "isolated bare Moved event in native window",
+      "exact outside-up then bare Moved sequence in native window",
+      "all theme/state native combinations",
+      "physical IME",
+      "control-level AX",
+      "VoiceOver"
+    ],
+    "first_reduced_motion_attempt": "misfocused; excluded from acceptance; fresh confirmed retry accepted",
+    "AX": "window and menu only",
+    "exit_inventory": []
+  },
+  "limits": [
+    "five trigger states do not complete choice component or family",
+    "whole blur vs trigger focus transfer intentionally distinct",
+    "no new token/state layer/adapter or broad migration",
+    "no performance"
+  ],
+  "source_sha256": {
+    "docs/design/composition-audit-20261018.md": "9085f9d721ac2e4ce94b88b297e7f88e6a76ad89a5fb23611a7e531dbcb373bd",
+    "crates/tekes-ui-controls/src/layout_view.rs": "9e1a6a3cccc2b5e43aa5cafa32013351802f71955327f2224ad43b4a03ca030f",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "de1f8b54c46594afa0ffb6bd18d39ddc18e53d1dcc0a7a32e4e4428a40421f1c",
+    "design/gallery/component-coverage.json": "348fecf43514e68f6bd58d1e631cc9fc05b41794e20520d01c21718845f15b93",
+    "design/remediation/ledger.json": "1b155a0097902cda44c33f460b28aefb4fa896aadec4818d922222e77885d09e",
+    "docs/design/issue-remediation-current-20261017.md": "602d2978b28b9af434c17ab52f22410a79c38753e47bd45ea05a710eec475e25",
+    "design/gallery/capabilities.json": "02d2eb246163b07b8e4087a5c57587efc01050dd4aaed38ea8b26d8312989371",
+    "examples/composition-consumer/tests/scenarios.rs": "c075361b07b1a54f817859ada17cd6b0570cf0c18fe69cf68643716807064100",
+    "design/remediation/composition-audit.json": "d44aaac1f11734c603a2f419e4842d755e772cf55e884bfcb7cab534fbc5c9fa",
+    "crates/tekes-ui-controls/tests/choice_contract.rs": "ad99245b344c20010fb82262d93ccbfaea998b9d495f8b8d8a0c3ff9fed0e3ee",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "31085346ea815b094243c2a39775adb8b93bc4733a45433754cc6f220a2142e9",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs": "e5a0e5d3c4f965f33d16b482172fcb4f43682a8c00f3a32de3d4d6220eac7a5a",
+    "crates/tekes-ui-controls/tests/choice_trigger_states.rs": "39ee0437dae7b2af56247c91cc3de2db4f091ea0c9e82c1234b2efdafac88aa0",
+    "scripts/audit-choice-trigger-tokens.py": "b55f79bc2f53c7389cfc20284b28ec1be0ad6c4e68756d2e8f0f97439dafff2f",
+    "docs/design/choice-hover-20261018.md": "aee3ad539a361e8f19da665c103163bb98f127773bcb7485641283b4967fccb1"
+  },
+  "wip_protection": "wip-protection.json",
+  "goal_status": "active"
+}

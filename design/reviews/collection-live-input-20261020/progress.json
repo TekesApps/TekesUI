@@ -1,0 +1,113 @@
+{
+  "format": "tekesui-collection-live-input-progress/1",
+  "owner": "root:single shared implementation owner",
+  "status": "implemented; scoped API/independent CoreText-GPU/production key-adapter verification passed; current native/whole Gold7 incomplete",
+  "root_causes": [
+    "Cached pointer geometry was treated as source eligibility before repaint, unlike the existing keyboard availability guard.",
+    "Existing collection capture did not handle owned Escape before focus/source validation.",
+    "Gallery hidden-Tree focus validation blocked cancellation before it reached the shared View."
+  ],
+  "shared_fix": "crates/tekes-ui-controls/src/collections_view.rs:existing CollectionInteraction and ListView/TreeView/DataTableView",
+  "applicable_components": [
+    "ListView",
+    "TreeView",
+    "DataTableView",
+    "actual Gallery Tree key forwarding; all callers of these existing Views receive the shared fix"
+  ],
+  "reasonable_exceptions": [
+    "Does not roll back selection performed on pointer-down or immediate table-header sort.",
+    "Offscreen but mounted logical keyboard targets remain eligible; source membership is not paint visibility.",
+    "Legacy positional source ids do not become document-stable business keys.",
+    "Owned Content core cancellation, Chart input, virtualization and new adapters are not claimed modified.",
+    "Unowned Escape now returns Ignored so its parent can handle it; no new public API shape/token."
+  ],
+  "evidence": {
+    "public_api": {
+      "old_regressions_failed": 4,
+      "new_regressions_passed": 4,
+      "all_controls": 387,
+      "all_existing_consumer": 164,
+      "strict_controls_clippy": "passed:clippy.log"
+    },
+    "independent_real_consumer": {
+      "gpu_cases": 144,
+      "frames": 432,
+      "families": 3,
+      "CoreText_and_GPU": true,
+      "restored_pixels_identical": true,
+      "fresh_gestures_accepted": true,
+      "host_strict_clippy": "passed:host-clippy.log"
+    },
+    "Gallery_key_transfer": {
+      "red": "gallery-route-red.log:compiled production function returned stale Toggled(1)",
+      "green": "gallery-route-green.log:exact production function returns old releaseIgnored and fresh gesture works",
+      "compiled_generated_source": [
+        {
+          "path": "gallery-key-generated-0.rs",
+          "sha256": "3abd2d8f8dce9d0904224f6c6dc790e4828cff1592ca58a3cfe51da8473d906a"
+        },
+        {
+          "path": "gallery-key-generated-1.rs",
+          "sha256": "3abd2d8f8dce9d0904224f6c6dc790e4828cff1592ca58a3cfe51da8473d906a"
+        }
+      ],
+      "boundary": "Exact five production definitions compiled in required public-model/View context; not a full Gallery application build, native main loop or whole-host acceptance."
+    },
+    "tokens": {
+      "fresh_files": 11,
+      "bounded_cases": 5040,
+      "complete": false,
+      "path": "token-probes/",
+      "boundary": "Actual bounded lookups; no full runtime/state/branch coverage claim."
+    },
+    "source": {
+      "identity": "4cfc0793e08cde3e8925760d9265baa113eed271cb0a15e34f73d7476ff7881b",
+      "inputs": 194,
+      "stable": "input-stability.json"
+    },
+    "gates": {
+      "evidence": "gates.json",
+      "inventory": 45,
+      "governance_tests": 42,
+      "composition_tests": 8,
+      "public_binding_tests": 3,
+      "all_exit_zero": true
+    },
+    "Gold7": {
+      "G3": "bounded actualGPU before/cancelled state equality only",
+      "G4": "API and exact adapter cancellation/parent bubbling verified",
+      "pressed_selected_combination": "144 preselected-row pressed frames equal baseline; this test does not establish separate visual feedback or declare this a design violation",
+      "G1_G2_G5_G6_G7": "No whole-experience/native/ClientKit comparison promotion"
+    },
+    "native": "New physical held-pointer+Escape, activity/recovery and applicable AX/VoiceOver remain unverified. Separate #22 window uses older frozenbd3 and cannot certify this change."
+  },
+  "cleanup": {
+    "receipt": "cleanup.json",
+    "test_bytes": 285017249,
+    "own_package": "     Removed 100 files, 2.1MiB total\n",
+    "preserved": "source and evidence plus shared cache; #22 pending native app retained separately"
+  },
+  "WIP": {
+    "protected_rust_inputs": 113,
+    "changed_existing_protected": "collections_view.rs only; separate Gallery adapter before snapshot retained",
+    "frozen_bd3_files_unchanged": 449,
+    "scope": "No commit/push/tag/Issue mutation/performance; all other WIP preserved."
+  },
+  "remaining": [
+    {
+      "item": "new native held-pointer cancellation and focus/window lifecycle",
+      "owner": "root, physical chord when user available",
+      "pass_evidence": "active external-display small host exact candidate; old release no side effects and fresh press succeeds"
+    },
+    {
+      "item": "matching ClientKit/Gold7 and state coverage",
+      "owner": "root",
+      "pass_evidence": "same content/theme/width/scale and actual state/token observations; no page-local patch"
+    },
+    {
+      "item": "final combined delivery and independent review",
+      "owner": "root plus authorized consumer session",
+      "pass_evidence": "exact new candidate containing all accepted repairs, independent build/replay; retain older frozen identities separately"
+    }
+  ]
+}

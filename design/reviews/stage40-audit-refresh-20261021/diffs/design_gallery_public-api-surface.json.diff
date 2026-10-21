@@ -1,0 +1,33 @@
+--- design/reviews/menu-portable-candidate-20261021-attempt2/independent-extract/source/design/gallery/public-api-surface.json
++++ design/gallery/public-api-surface.json
+@@ -567,6 +567,30 @@
+         "tui.toolbar"
+       ],
+       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
++    },
++    {
++      "api": "tekes_ui_controls::ToolbarAction",
++      "category": "component-support",
++      "components": [
++        "tui.toolbar"
++      ],
++      "reason": "Labelled action descriptor for the existing Toolbar route; command identity and enabled state are shared with overflow."
++    },
++    {
++      "api": "tekes_ui_controls::ToolbarControl",
++      "category": "component",
++      "components": [
++        "tui.toolbar"
++      ],
++      "reason": "Original Component implementation of the existing Toolbar route: child-first action ownership, measured overflow, selection and focus. Not an additional Gallery component."
++    },
++    {
++      "api": "tekes_ui_controls::ToolbarIconAction",
++      "category": "component-support",
++      "components": [
++        "tui.toolbar"
++      ],
++      "reason": "Resolved icon action descriptor for the existing Toolbar route; accessible labels remain authoritative in overflow."
+     },
+     {
+       "api": "tekes_ui_controls::collections_view::ChartView",

@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "public_snapshot": "03721866a362b1d31261ebbbc86140eb07e9e23320871c325234a5212591213d",
+  "binary_sha256": "1f087127cecbdfa723bc4aa745f38ace547f268050f73a89ab1a440008061fbe",
+  "round": "agentkit-final-20261019-143057",
+  "screen": {
+    "builtin": false,
+    "name": "U2790B",
+    "scale": 2.0
+  },
+  "pages": [
+    {
+      "items": 45,
+      "same_visible_text": true,
+      "error_pt": 0.0
+    },
+    {
+      "items": 60,
+      "same_visible_text": true,
+      "error_pt": 0.0
+    }
+  ],
+  "A_B_A_error_pt": 0.0,
+  "return_latest_offset": 2495.0,
+  "scope": "actual Earlier click->controller pagination->public reading mapping->CoreText native layout; same first visible80 UTF16 units/Y; resize/font/delete/stale/selection in independently replayed real consumer tests; user click naturally moves keyboard focus to button, no claim it remains Composer"
+}

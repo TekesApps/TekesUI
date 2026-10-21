@@ -25,7 +25,7 @@ pub enum ButtonSize {
 }
 
 impl ButtonSize {
-    fn radius(self) -> f32 {
+    pub(crate) fn radius(self) -> f32 {
         let token = match self {
             Self::Xs => "c-button-xs-radius",
             Self::Sm => "c-button-sm-radius",
@@ -82,6 +82,11 @@ impl Default for ButtonTextAlign {
 /// remain owned by the production Button component.
 pub trait ButtonTextRenderer {
     fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size;
+    /// Optional text capability. Existing label-only hosts remain compatible;
+    /// composed text fields fail explicitly when the capability is absent.
+    fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
+        None
+    }
     /// Optional host clock and motion preference for animated production controls.
     fn motion_context(&self) -> Option<ControlMotionContext> {
         None
@@ -110,9 +115,53 @@ pub trait ButtonTextRenderer {
     );
 }
 
+/// A borrowed renderer can be passed to the existing sized production View
+/// APIs from a `Component` callback receiving `&mut dyn ButtonTextRenderer`.
+/// Forward every host capability, including text services and motion preferences.
+impl<T: ButtonTextRenderer + ?Sized> ButtonTextRenderer for &mut T {
+    fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+        (**self).measure(text, role, max_width)
+    }
+    fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
+        (**self).text_surface_host()
+    }
+    fn motion_context(&self) -> Option<ControlMotionContext> {
+        (**self).motion_context()
+    }
+    fn request_animation_frame(&mut self) {
+        (**self).request_animation_frame();
+    }
+    fn backing_scale(&self) -> f32 {
+        (**self).backing_scale()
+    }
+    fn first_line_height(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> f32 {
+        (**self).first_line_height(text, role, max_width)
+    }
+    fn draw(
+        &mut self,
+        scene: &mut Scene,
+        text: &str,
+        role: proposal::TextRole,
+        rect: Rect,
+        align: ButtonTextAlign,
+        ink: Rgba,
+    ) {
+        (**self).draw(scene, text, role, rect, align, ink);
+    }
+}
+
 /// Resolved geometry shared by button paint, text placement and hit testing.
 /// `content` is the constrained text slot; it is deliberately the same width
 /// used for shaping so the host cannot accidentally wrap at a second width.
+/// Exact is an explicit compact-action opt-in. Ordinary buttons retain their
+/// token minimum and insets. Exact uses the caller-arranged frame for chrome,
+/// decorative content and hit testing; focus still uses the shared ring.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ButtonFramePolicy {
+    #[default]
+    Minimum,
+    Exact,
+}
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ButtonLayout {
     pub frame: Rect,
@@ -124,7 +173,7 @@ pub struct ButtonLayout {
 }
 
 impl ButtonLayout {
-    fn resolve(
+    pub fn resolve(
         frame: Rect,
         clip: Option<Rect>,
         label_size: Size,
@@ -132,6 +181,38 @@ impl ButtonLayout {
         role: proposal::TextRole,
         align: ButtonTextAlign,
     ) -> Self {
+        Self::resolve_with_policy(
+            frame,
+            clip,
+            label_size,
+            size,
+            role,
+            align,
+            ButtonFramePolicy::Minimum,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn resolve_with_policy(
+        frame: Rect,
+        clip: Option<Rect>,
+        label_size: Size,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+        policy: ButtonFramePolicy,
+    ) -> Self {
+        if policy == ButtonFramePolicy::Exact {
+            return Self {
+                frame,
+                content: frame,
+                visible: clip.map_or(Some(frame), |clip| frame.intersection(&clip)),
+                label_size: Size::new(
+                    finite_nonnegative(label_size.width),
+                    finite_nonnegative(label_size.height),
+                ),
+            };
+        }
         let horizontal_inset = size.inset();
         let vertical_inset = size.vertical_inset(role);
         let label_size = Size::new(
@@ -257,6 +338,7 @@ pub struct ControlState {
 #[derive(Clone, Debug, Default)]
 pub struct Button {
     pub state: ControlState,
+    pub frame_policy: ButtonFramePolicy,
     arm: ButtonArm,
     placement: Option<ButtonLayout>,
     last_pointer: Option<Point>,
@@ -271,10 +353,11 @@ enum ButtonArm {
     #[default]
     None,
     Pointer,
+    PointerActivated,
     Space,
 }
 impl Button {
-    fn synchronize_activation(&mut self) {
+    pub(crate) fn synchronize_activation(&mut self) {
         if self.state.disabled
             || self.state.loading
             || (!self.state.focused && self.arm == ButtonArm::Space)
@@ -316,6 +399,38 @@ impl Button {
         )
     }
 
+    /// Paint the existing action chrome around content measured through the
+    /// public composition protocol. ContentHost owns child traversal; this
+    /// method retains Button's original press, motion, focus and hit geometry.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_content_frame(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        content_size: Size,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: impl Into<Palette>,
+        variant: crate::paint::ButtonVariant,
+    ) -> ButtonLayout {
+        let context = text.motion_context();
+        self.render_with_motion_context(
+            scene,
+            text,
+            "",
+            frame,
+            clip,
+            palette,
+            variant,
+            ButtonSize::Body,
+            proposal::TextRole::UiBody,
+            ButtonTextAlign::Leading,
+            context,
+            Some(content_size),
+            None,
+        )
+    }
+
     /// Lay out and paint the complete button, including its label. The host
     /// supplies text shaping and glyph output through `ButtonTextRenderer`.
     #[allow(clippy::too_many_arguments)]
@@ -332,9 +447,33 @@ impl Button {
         role: proposal::TextRole,
         align: ButtonTextAlign,
     ) -> ButtonLayout {
+        self.render_with_radius(
+            scene, text, label, frame, clip, palette, variant, size, role, align, None,
+        )
+    }
+
+    // Icon-only controls share Button's interaction/motion/clip machinery, but
+    // resolve their own semantic radius. This is internal geometry plumbing;
+    // public Button callers continue to use the size-specific Button token.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn render_with_radius(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: impl Into<Palette>,
+        variant: crate::paint::ButtonVariant,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+        radius: Option<f32>,
+    ) -> ButtonLayout {
         let context = text.motion_context();
         self.render_with_motion_context(
-            scene, text, label, frame, clip, palette, variant, size, role, align, context,
+            scene, text, label, frame, clip, palette, variant, size, role, align, context, None,
+            radius,
         )
     }
 
@@ -369,6 +508,8 @@ impl Button {
                 now,
                 reduced_motion,
             }),
+            None,
+            None,
         )
     }
 
@@ -386,6 +527,8 @@ impl Button {
         role: proposal::TextRole,
         align: ButtonTextAlign,
         context: Option<ControlMotionContext>,
+        measured_content: Option<Size>,
+        radius: Option<f32>,
     ) -> ButtonLayout {
         // Pointer capture survives focus changes; only a keyboard Space arm
         // is canceled when focus leaves between key-down and key-up.
@@ -396,14 +539,28 @@ impl Button {
             return ButtonLayout::empty();
         }
         let palette = palette.into();
-        let inset = size.inset();
-        let max_width = (frame.size.width - inset * 2.0).max(0.0);
-        let label_size = if label.is_empty() {
-            Size::default()
+        let inset = if self.frame_policy == ButtonFramePolicy::Exact {
+            0.
         } else {
-            text.measure(label, role, max_width)
+            size.inset()
         };
-        let layout = ButtonLayout::resolve(frame, clip, label_size, size, role, align);
+        let max_width = (frame.size.width - inset * 2.0).max(0.0);
+        let label_size = measured_content.unwrap_or_else(|| {
+            if label.is_empty() {
+                Size::default()
+            } else {
+                text.measure(label, role, max_width)
+            }
+        });
+        let layout = ButtonLayout::resolve_with_policy(
+            frame,
+            clip,
+            label_size,
+            size,
+            role,
+            align,
+            self.frame_policy,
+        );
         self.placement = Some(layout);
         if layout.visible.is_none() {
             self.blur();
@@ -490,7 +647,7 @@ impl Button {
                     palette,
                     self.state,
                     variant,
-                    size.radius(),
+                    radius.unwrap_or_else(|| size.radius()),
                     hover,
                     pressed,
                 )
@@ -501,7 +658,7 @@ impl Button {
                     palette,
                     self.state,
                     variant,
-                    size.radius(),
+                    radius.unwrap_or_else(|| size.radius()),
                 )
             };
             if background_clip.is_some() {
@@ -586,8 +743,9 @@ impl Button {
             return;
         };
         let inside = self.placement.is_some_and(|layout| layout.hit_test(point));
-        self.state.hovered = inside && !self.state.disabled && !self.state.loading;
-        if self.arm == ButtonArm::Pointer {
+        self.state.hovered =
+            inside && !self.motion_suspended && !self.state.disabled && !self.state.loading;
+        if matches!(self.arm, ButtonArm::Pointer | ButtonArm::PointerActivated) {
             self.state.pressed = self.state.hovered;
         }
     }
@@ -606,7 +764,8 @@ impl Button {
         self.last_pointer = Some(point);
         let inside = self.placement.is_some_and(|layout| layout.hit_test(point));
         let activated = self.pointer_up(inside);
-        self.state.hovered = inside && !self.state.disabled && !self.state.loading;
+        self.state.hovered =
+            inside && !self.motion_suspended && !self.state.disabled && !self.state.loading;
         activated
     }
 
@@ -614,7 +773,7 @@ impl Button {
         if self.arm != ButtonArm::None {
             return;
         }
-        let armed = !self.state.disabled && !self.state.loading;
+        let armed = !self.motion_suspended && !self.state.disabled && !self.state.loading;
         self.arm = if armed {
             ButtonArm::Pointer
         } else {
@@ -625,12 +784,26 @@ impl Button {
         self.state.focus_visible = false;
     }
     pub fn pointer_up(&mut self, inside: bool) -> bool {
-        if self.arm != ButtonArm::Pointer {
+        if !matches!(self.arm, ButtonArm::Pointer | ButtonArm::PointerActivated) {
             return false;
         }
-        let activated = inside && !self.state.disabled && !self.state.loading;
+        let activated =
+            self.arm == ButtonArm::Pointer && inside && !self.state.disabled && !self.state.loading;
         self.cancel();
         activated
+    }
+    // Shares the original pointer arm/cancel/motion state. Committing a press
+    // cannot produce a second activation on release or a repeated down.
+    pub(crate) fn activate_pointer_press(&mut self) -> bool {
+        if self.arm != ButtonArm::Pointer
+            || self.motion_suspended
+            || self.state.disabled
+            || self.state.loading
+        {
+            return false;
+        }
+        self.arm = ButtonArm::PointerActivated;
+        true
     }
     pub fn cancel(&mut self) {
         self.arm = ButtonArm::None;
@@ -639,7 +812,7 @@ impl Button {
 
     /// Cancel only an active pointer press, preserving a keyboard Space press.
     pub fn cancel_pointer(&mut self) {
-        if self.arm == ButtonArm::Pointer {
+        if matches!(self.arm, ButtonArm::Pointer | ButtonArm::PointerActivated) {
             self.cancel();
         }
     }
@@ -656,7 +829,7 @@ impl Button {
     }
 
     pub fn key(&mut self, key: ControlKey, down: bool) -> bool {
-        if self.state.disabled || self.state.loading {
+        if self.motion_suspended || self.state.disabled || self.state.loading {
             self.cancel();
             return false;
         }
@@ -889,7 +1062,10 @@ impl Checkbox {
     }
 
     pub fn key(&mut self, key: ControlKey, down: bool) -> bool {
-        if key == ControlKey::Space && self.button.key(key, down) {
+        // Every observed key must synchronize the shared activation owner,
+        // including keys this checkbox leaves to its parent.
+        let activated = self.button.key(key, down);
+        if key == ControlKey::Space && activated {
             self.toggle()
         } else {
             false
@@ -1979,6 +2155,62 @@ mod tests {
         button.cancel_pointer();
         assert!(!button.state.pressed);
         assert!(!button.pointer_up(true));
+    }
+
+    #[test]
+    fn inactive_window_rejects_new_button_and_checkbox_activation() {
+        let mut button = Button::default();
+        let mut text = FixedText {
+            measured: Size::new(40., 16.),
+            drawn: None,
+        };
+        let mut scene = Scene::new();
+        button.render(
+            &mut scene,
+            &mut text,
+            "Action",
+            Rect::new(0., 0., 120., 36.),
+            None,
+            Theme::LIGHT,
+            crate::paint::ButtonVariant::Quiet,
+            ButtonSize::Xs,
+            proposal::TextRole::ButtonXs,
+            ButtonTextAlign::Center,
+        );
+        button.set_window_active(false, Duration::ZERO);
+        let inside = Point::new(20., 20.);
+        button.pointer_move_at(inside);
+        assert!(!button.state.hovered);
+        assert!(!button.pointer_down_at(inside));
+        assert!(!button.pointer_up_at(inside));
+        button.state.focused = true;
+        assert!(!button.key(ControlKey::Enter, true));
+        assert!(!button.key(ControlKey::Space, true));
+        assert!(!button.key(ControlKey::Space, false));
+        button.set_window_active(true, Duration::ZERO);
+        assert!(button.pointer_down_at(inside));
+        assert!(button.pointer_up_at(inside));
+
+        let mut checkbox = Checkbox::default();
+        checkbox.render(
+            &mut scene,
+            &mut text,
+            "Option",
+            Rect::new(0., 0., 120., 36.),
+            None,
+            Theme::LIGHT,
+            proposal::TextRole::UiBody,
+        );
+        checkbox.button.set_window_active(false, Duration::ZERO);
+        checkbox.pointer_move_at(inside);
+        assert!(!checkbox.button.state.hovered);
+        assert!(!checkbox.pointer_down_at(inside));
+        assert!(!checkbox.pointer_up_at(inside));
+        assert_eq!(checkbox.checked, CheckState::Unchecked);
+        checkbox.button.set_window_active(true, Duration::ZERO);
+        assert!(checkbox.pointer_down_at(inside));
+        assert!(checkbox.pointer_up_at(inside));
+        assert_eq!(checkbox.checked, CheckState::Checked);
     }
 
     #[test]

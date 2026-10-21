@@ -1,0 +1,27 @@
+{
+  "result": "passed_scoped",
+  "source_identity": "98fe0a2e277cf22ab959f0d5d722cbd086c20ab4a6ca8f8bf9b3efd2c2be4c80",
+  "scope": "existing bounded NumberField stepper and independent caller-owned Content integration only",
+  "G1": "Four-theme/three-brand API cases use existing JSON semantic colors; no local brand or palette additions.",
+  "G2": "Ordinary surface2 and existing Button hover/pressed fills verified by actual primitives, distinct numeric value slot retained.",
+  "G3": "Stable original button/value geometry; actual glyph GPU images at two scales, narrow/large-type sampled; active native 360pt window remains readable.",
+  "G4": "Existing Button activation/cancel reused; stale boundary availability/Space arm regressions repaired. No new animation or Reduced Motion acceptance claim.",
+  "G5": "Model value stable under render, cancel and disabled interaction; external model updates observed at model-taking event boundaries. No numeric text editing added.",
+  "G6": "Active native Tab/ShiftTab, Space/Enter/arrows, pointer and AX Press verified. VoiceOver and physical IME not tested or applicable to this stepper fix.",
+  "G7": "5 public API tests/60 state cases, real ContentHost consumer and 160 CoreText/Metal frames separately retained; scoped native record source-bound.",
+  "visual_samples": [
+    "gpu/number-0-140@2x-type-1.5-focus.png",
+    "gpu/number-3-198@2x-type-1.5-disabled.png",
+    "native/initial.png",
+    "native/narrow.png"
+  ],
+  "limits": [
+    "Existing fixed stepper dimension contract is not claimed as fully tokenized.",
+    "Disabled button/value use existing separate ink roles; whole-library contrast review remains separate.",
+    "Not full Gold7 or Issue1/12 acceptance."
+  ],
+  "evidence_sha256": {
+    "gpu-acceptance.json": "eb4cac9bf84eede0a997ce5efe122b6cf2b31183e26156b2d2c03e7358ad0b07",
+    "native/acceptance.json": "df0ab1e9ee0001a4ee2309a2df64beaf3873f11d828bf3344ccc8c9c969ee411"
+  }
+}

@@ -35,6 +35,7 @@ pub struct Preset {
 pub enum PresetCatalog {
     Recipes,
     Symbols,
+    TickingNumber,
     Apple,
     DesignSystem,
 }
@@ -227,6 +228,7 @@ pub fn typing_fixture(locale: super::locale::Locale, target: bool) -> Vec<&'stat
 
 #[derive(Clone, Debug)]
 pub struct MotionPreview {
+    pub ticking: tekes_ui_controls::TickingNumber,
     pub locale: super::locale::Locale,
     pub symbol_icon: tekes_ui_icons::Icon,
     pub symbol_assets: symbol_assets::SymbolAssets,
@@ -275,6 +277,7 @@ impl Default for MotionPreview {
         let presets = apple_presets();
         let selected = presets.iter().position(|p| p.id == "apple.spring").unwrap();
         let mut state = Self {
+            ticking: tekes_ui_controls::TickingNumber::new(137, 3).unwrap(),
             locale: super::locale::Locale::default(),
             symbol_icon: tekes_ui_icons::Icon::NewGoal,
             symbol_assets: Default::default(),
@@ -364,6 +367,7 @@ impl MotionPreview {
         self.deactivate();
         self.catalog = catalog;
         self.presets = match catalog {
+            PresetCatalog::TickingNumber => Vec::new(),
             PresetCatalog::Symbols => {
                 let mut presets: Vec<Preset> = tekes_ui_motion::symbols::SymbolEffect::ALL
                     .into_iter()
@@ -397,6 +401,10 @@ impl MotionPreview {
                 })
                 .collect(),
         };
+        if catalog == PresetCatalog::TickingNumber {
+            self.selected = 0;
+            return true;
+        }
         let index = if catalog == PresetCatalog::Apple {
             1
         } else {
@@ -949,6 +957,7 @@ impl MotionPreview {
             return false;
         }
         self.reduced_motion = effective;
+        self.ticking.set_reduced_motion(effective);
         if let Err(e) = self.recipe.set_reduced_motion(effective) {
             self.error = Some(e.to_string());
         }
@@ -967,12 +976,18 @@ impl MotionPreview {
     /// Actual elapsed simulation time, supplied by the shared Gallery host.
     /// No thread, NSTimer, display link or wall clock exists in this module.
     pub fn animate(&mut self, dt: f32) -> bool {
-        if !self.needs_animation() || !dt.is_finite() || dt <= 0.0 {
+        if !dt.is_finite() || dt <= 0.0 {
             return false;
         }
         let Ok(delta) = Duration::try_from_secs_f64(f64::from(dt)) else {
             return false;
         };
+        if self.catalog == PresetCatalog::TickingNumber {
+            return self.ticking.advance(delta);
+        }
+        if !self.needs_animation() {
+            return false;
+        }
         let Some(end) = self.now.checked_add(delta) else {
             return false;
         };
@@ -1005,6 +1020,9 @@ impl MotionPreview {
         true
     }
     pub fn needs_animation(&self) -> bool {
+        if self.catalog == PresetCatalog::TickingNumber {
+            return self.ticking.needs_animation();
+        }
         self.error.is_none()
             && ((if self.is_recipe() {
                 self.recipe.needs_frame()

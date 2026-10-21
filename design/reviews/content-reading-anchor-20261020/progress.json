@@ -1,0 +1,144 @@
+{
+  "format": "tekesui-content-reading-progress/1",
+  "owner": "root: sole shared implementation owner",
+  "status": "implemented; scoped API/consumer/GPU verified; native/visual/delivery incomplete",
+  "source_identity": "efe1ae1011883b17376b5154281e177e542677e9a11a471a4a0d80f95d3c4f7a",
+  "basis": "current all-WIP Gallery checkout; accepted AgentKit frozen inputs untouched",
+  "root_causes": [
+    "ScrollContent had no opt-in item/document reading transaction; pixel-only offset drifted after structural mutation.",
+    "Auxiliary return-latest activation could take composer focus and unmark an existing composition.",
+    "Old native momentum tails could affect a newly attached document or override explicit latest."
+  ],
+  "reuse": [
+    "ScrollArea physical/input implementation",
+    "ReadingDocumentVersion attachment namespace and revision checks",
+    "ContentHost layout, stable keys and existing tree mutation methods",
+    "Content per-instance activation focus policy; actual ButtonContent and actions"
+  ],
+  "applicable": [
+    "all opt-in heterogeneous ScrollContent documents, not Agent-specific",
+    "reading_prepend, reading_stream and structured consumer auxiliary latest actions"
+  ],
+  "exceptions": [
+    "Ordinary ScrollContent remains opt-out.",
+    "Item-local point is not an arbitrary custom component word/UTF-16 anchor.",
+    "Callback validation precedes mutations; arbitrary application failure is not rolled back.",
+    "Actual physical momentum, final native IME/AX and ClientKit visual comparison not inferred from automation."
+  ],
+  "verification": {
+    "api": {
+      "controls_tests": 383,
+      "new_structured_contract_tests": 9,
+      "strict_clippy": "passed",
+      "logs": [
+        "guarded-controls.log",
+        "current-controls-clippy.log"
+      ]
+    },
+    "real_consumer": {
+      "tests": 164,
+      "scenarios": "mixed Text/Stack/Button/Switch/inline TextField plus separate composer; prepend, append, panel height, reflow, A-B-A, request rejection and actual editor state",
+      "strict_clippy": "passed: final-consumer-clippy.log"
+    },
+    "gpu": {
+      "cases": 48,
+      "frames": 192,
+      "fixed_layout_max_error_pt": 0.0,
+      "prepend_viewport_pixels_identical": true,
+      "evidence": "gpu-result.json",
+      "input_stability": "input-stability.json:223 local dependency files unchanged during guarded verification"
+    },
+    "tokens": {
+      "files": 11,
+      "bounded_cases": 5040,
+      "complete": false,
+      "path": "token-probes/",
+      "note": "Real bounded lookups; no claim of full state/branch dependency coverage or dynamic scroll-physics token reads."
+    },
+    "native": "native-active.json: active external-display structural updates/reflow/latest and editor retention passed on immutable bd3; physical momentum/IME/hearing and final combined WIP pending",
+    "Gold7": "functional API/consumer/GPU evidence only; G1-G3 and full experience remain unaccepted after user visual mismatch report"
+  },
+  "issue22_requirements": [
+    {
+      "item": "second public mixed Content consumer",
+      "status": "implemented and automated verified",
+      "evidence": "examples/composition-consumer/src/scroll_updates.rs; guarded-consumer.log; guarded-gpu.log"
+    },
+    {
+      "item": "fixed-width/font prepend same item/local point <=1pt",
+      "status": "API/consumer/GPU and active native bd3 passed; native delta0pt",
+      "evidence": "0pt and identical viewport pixels in48 GPU cases"
+    },
+    {
+      "item": "append, panel height, width/type reflow and explicit latest intent",
+      "status": "API/consumer/GPU and active native bd3 passed"
+    },
+    {
+      "item": "user scroll priority, momentum, focus/selection/IME",
+      "status": "API phases and real editor state passed; physical momentum/native IME on this candidate pending"
+    },
+    {
+      "item": "A-B-A, stale version rejection and deterministic removed/clipped fallback",
+      "status": "API and actual mixed consumer passed"
+    },
+    {
+      "item": "no consumer pixel compensation, complete public flow",
+      "status": "implemented/source reviewed",
+      "evidence": "docs/design/content-reading-anchor-20261020.md; actual consumer source"
+    }
+  ],
+  "next": [
+    {
+      "work": "final native physical input/IME/AX integration",
+      "owner": "root; hearing only when user available",
+      "pass_evidence": "external display small host with active-window events, phase-aware input, real editor state and exact source identity"
+    },
+    {
+      "work": "matched ClientKit visual comparison",
+      "owner": "root; reference scene clarification pending",
+      "pass_evidence": "same content/theme/width/backing/type scale; geometry and side-by-side visual evidence; fix shared sources on mismatch"
+    },
+    {
+      "work": "independent AgentKit consumer adaptation",
+      "owner": "authorized Rust AgentKit session after handoff",
+      "pass_evidence": "exact delivery input independent build and real transcript use; no freeze replacement by sender"
+    },
+    {
+      "work": "public source/CI delivery",
+      "owner": "root, within explicit publication authorization only",
+      "pass_evidence": "immutable exact public commit plus passing CI/independent final acceptance"
+    }
+  ],
+  "constraints": "no performance, commits, pushes, Issue closure, new framework or frozen package edits",
+  "gates": {
+    "evidence": "final-gates.json",
+    "all_exit_zero": true,
+    "public_binding_compile": "passed after generated test change",
+    "composition_rows": 45,
+    "governance_tests": 42,
+    "composition_tests": 8
+  },
+  "cleanup": "cleanup.json:260605017 bytes test executables plus own package artifacts removed; no app launched",
+  "wip_boundary": "wip-boundary.json",
+  "handoff": "HANDOFF.md; informational update sent to authorized Rust AgentKit session; no freeze or public source change",
+  "portable_delivery": {
+    "status": "local clean-extract replay passed; receiver/native/visual/public pin incomplete",
+    "receipt": "portable-acceptance.json",
+    "replay": "REPLAY.md",
+    "identity": "bd3ed1b0af81b044306af90d3594bb31110147b7194bda6053b1d2e185871c9a",
+    "files": 449,
+    "owns_current_scoped_source": "bd3 contains original structured-reading source; later root collection/Tooltip WIP excluded",
+    "registry_versions_and_checksums": "unchanged; root lock prunes unused packages only",
+    "cleanup": "Own host and isolated local-package lane cleaned; registry cache retained; export/archive/evidence retained."
+  },
+  "native_current": {
+    "status": "scoped active native functional checks passed on bd3",
+    "receipt": "native-active.json",
+    "runtime": "native-runtime.json",
+    "build": "native-build-checks.json",
+    "root_frozen_inputs": "portable-manifest all449 unchanged",
+    "remaining": "physical momentum/IME, applicable hearing, matched visual and final combined candidate remain separate",
+    "cleanup": "native-cleanup.json: app closed, unused runtime/package artifacts removed; sources/export/evidence retained"
+  },
+  "visual_reference_source_review": "visual-reference-source-review.json: shared radius values also differ; fixture content alone does not explain or excuse visual mismatch."
+}

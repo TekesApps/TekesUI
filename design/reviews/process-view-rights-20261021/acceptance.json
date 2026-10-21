@@ -1,0 +1,146 @@
+{
+  "status": "partial foundation; frame ownership and cancellation passed bounded acceptance",
+  "root_cause": [
+    "raw receiver-local Mach capability escaped as Frame.port and leaked on unimported/rejected frames",
+    "transport failure paths did not consistently destroy descriptors/source rights",
+    "View close lacked shared child cancellation and Mach receive could wait ten seconds"
+  ],
+  "shared_fix": [
+    "ReceivedFrame immutable metadata + RAII send-right ownership",
+    "owned descriptors destroyed on rejection; transferred source adopted before fallible endpoint lookup",
+    "ProcessControl single child ownership/cancel/reap reused by headless services and V1 View",
+    "cancellable kernel receive with correctness deadline; no UI-thread IO/waitpid"
+  ],
+  "applicable": [
+    "V1 native View modules including independent consumer and AppHost Single/Three",
+    "headless ProcessComponent lifecycle shares child owner"
+  ],
+  "reasonable_exceptions": [
+    "raw surface::import remains compatibility API; managed frames use import_frame",
+    "ModuleProcess::request is still worker-thread-only; standard Component adapter remains pending",
+    "V1 does not claim keyboard/IME/AX/scroll support"
+  ],
+  "public_api": {
+    "unit_tests": 13,
+    "strict_clippy_all_targets": "passed",
+    "native_mach_refs": "one reference released exactly once; valid transfer, unused frame, metadata-only, invalid endpoint/descriptor, failed import, duplicate import",
+    "kernel_receive_cancel": "verified after first actual kernel receive timeout"
+  },
+  "independent_consumer": {
+    "cancellation": {
+      "blocked_pipe_read": {
+        "pid": 80238,
+        "request_received": true,
+        "seq": 12345
+      },
+      "cancel_before_launch": true,
+      "cancel_unblocked_owner": true,
+      "reaped": true
+    },
+    "cases": [
+      {
+        "max_gpu_delta": 0,
+        "pid": 80241,
+        "revision": 0,
+        "right_consumed": true,
+        "scale": 1.0,
+        "seq": 1,
+        "slot": 0,
+        "viewport": 1
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 80241,
+        "revision": 1,
+        "right_consumed": true,
+        "scale": 1.0,
+        "seq": 2,
+        "slot": 0,
+        "viewport": 1
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 80241,
+        "revision": 1,
+        "right_consumed": true,
+        "scale": 2.0,
+        "seq": 3,
+        "slot": 0,
+        "viewport": 2
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 80242,
+        "revision": 0,
+        "right_consumed": true,
+        "scale": 1.0,
+        "seq": 1,
+        "slot": 1,
+        "viewport": 1
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 80242,
+        "revision": 0,
+        "right_consumed": true,
+        "scale": 1.0,
+        "seq": 2,
+        "slot": 1,
+        "viewport": 1
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 80242,
+        "revision": 0,
+        "right_consumed": true,
+        "scale": 2.0,
+        "seq": 3,
+        "slot": 1,
+        "viewport": 2
+      }
+    ],
+    "parent_factory_called": false,
+    "parent_pid": 80181,
+    "result": "INDEPENDENT_BACKEND_GPU_OK",
+    "scope": "public worker/transport/import extraction; no AppHost/Gallery dependency; not completed ProcessContainer lifecycle or UI acceptance",
+    "worker_pids": [
+      80241,
+      80242
+    ]
+  },
+  "headless_regression": {
+    "bounded_requests": true,
+    "drop_reaped": true,
+    "factory_in_parent": false,
+    "graceful_stop": true,
+    "headless": true,
+    "hung_close_reaped": true,
+    "invalid_session_rejected": true,
+    "other_worker_survived": true,
+    "output_overflow_rejected": true,
+    "oversized_output_rejected": true,
+    "performance_test": false,
+    "pids": [
+      80286,
+      80287,
+      80288
+    ],
+    "result": "passed",
+    "separate_state": true,
+    "toolbar_without_frame": true,
+    "unknown_response_rejected": true
+  },
+  "apphost_peer_evidence": "design/reviews/navigation-prototype-20261021/acceptance.json",
+  "apphost_scope": "peer-owned RAII/cancel integration, all-target clippy and three-View GPU passed; not five-process GUI",
+  "native_desktop": "not run this phase; no GUI/VoiceOver opened",
+  "gold7": "resource lifetime/identity/liveness bounded; final container experience pending",
+  "pending": [
+    "move existing Inbox/coalescing/two-frame backpressure/completion into shared View path",
+    "ProcessComponent optional View integration and standard Content Component adapter",
+    "GPU-completion retirement and abandoned consumer acceptance",
+    "five-process native assembly, supported-input/IME/AX negotiation, Gold7",
+    "final exact candidate and both authorized consumer handoffs"
+  ],
+  "performance_test": false,
+  "commit_push_close": false
+}

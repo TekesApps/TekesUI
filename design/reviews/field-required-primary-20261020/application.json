@@ -1,0 +1,22 @@
+{
+  "candidate": "7b744e2c5cc9f7590df933b90e5486ed3d0c0aba6373eab784a736f7ec163c1c",
+  "applied_files": [
+    "crates/tekes-ui-controls/src/composition.rs",
+    "crates/tekes-ui-controls/src/composition/adapters.rs",
+    "crates/tekes-ui-gallery/src/actions_acceptance.rs",
+    "crates/tekes-ui-gallery/src/gallery/accessibility.rs",
+    "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs",
+    "crates/tekes-ui-platform-macos/Cargo.toml",
+    "crates/tekes-ui-platform-macos/src/accessibility.rs",
+    "crates/tekes-ui-platform-macos/src/selftest.rs",
+    "crates/tekes-ui-platform-macos/src/view.rs",
+    "examples/composition-consumer/examples/native.rs",
+    "examples/composition-consumer/tests/scenarios.rs",
+    "crates/tekes-ui-controls/tests/field_required.rs",
+    "crates/tekes-ui-platform-macos/tests/required_native.rs"
+  ],
+  "review_host_migrated": "design/reviews/input-family-consumer-20261020/host/src/main.rs",
+  "old_running_binary": "retained unchanged; source identity remains its previous receipt",
+  "source_literal_migration": "required:false for unrelated publishers; actual Field required forwarded",
+  "publications": "61dd and532 candidate packages untouched"
+}

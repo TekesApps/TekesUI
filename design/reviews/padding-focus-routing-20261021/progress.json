@@ -1,0 +1,69 @@
+{
+  "issue": 30,
+  "status": "已实现待验收",
+  "owner": "root sole shared SDK implementation; Rust AgentKit receiver",
+  "root_cause": "Passive container missing atomic mount-bound editor focus; target layout-frame visibility exceeded actual semantic/text slot visibility.",
+  "shared_fix": "ContentHost set_padding_focus plus original mount, scope, active/editable/disabled, semantic-frame clip and real-control hit fences; reuse original focus epoch/key chain.",
+  "applies_to": [
+    "TextFieldContent retained editable surfaces",
+    "TextArea/SearchField existing TextSurface-based adapters",
+    "passive containers with real sibling actions"
+  ],
+  "exceptions": [
+    "read-only decoration does not redirect; direct readonly behavior remains",
+    "secondary pointer/clipped padding/active capture not redirected",
+    "real control bounds shield padding even disabled/unhandled",
+    "remount/replacement requires explicit new binding"
+  ],
+  "tests": {
+    "controls": 426,
+    "consumer": 240
+  },
+  "targeted_API_tests": 13,
+  "GPU_cases": 24,
+  "GPU_frames": 120,
+  "Clippy": "controls/consumer/GPU all targets -D warnings passed",
+  "red_regression": "clipped-text-before-fix.log",
+  "native": {
+    "identity": "d5dab70775631b1688640ce2ed9a4955941706213b12b06d97ef6756f812f12f",
+    "accepted_checkpoints": 16,
+    "display": "U2790B@2",
+    "status": "producer scoped native passed; process exited"
+  },
+  "Gold7": "scoped original control/selection/focus/retained ownership; no matched ClientKit product-page claim",
+  "VoiceOver": "off; no hearing claim",
+  "performance": "not measured",
+  "Git": "no commit/push/tag/closure",
+  "remaining": [
+    "Actual AgentKit Composer receiver acceptance for exact5677b80f",
+    "Matching public immutable pin/CI under scoped authorization"
+  ],
+  "actual_token_probes": 17,
+  "bounded_token_cases": 6432,
+  "complete": false,
+  "gates": "JSON DS/pure Rust/Gold7 contract/composition audit/capabilities passed",
+  "candidate": {
+    "identity": "5677b80f5462570525ea3d00f6256298baac7e018513844de5403364e9c097f0",
+    "archive": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/padding-focus-portable-candidate-20261021/padding-focus-5677b80f5462.tar.gz",
+    "sha256": "e365b9a6d54e77c6315273d7638caa802bf3e21f440de4d30641235edf9ba990",
+    "base_identity": "5882774a0e73dfcb423efb4260c150e03f50f5cc9a87bd2331c1e171963faacd",
+    "files": 493,
+    "delta_paths": 7,
+    "independent_tests": {
+      "text": 50,
+      "controls": 388,
+      "consumer": 237,
+      "targeted_padding_API": 13
+    },
+    "source_and_locks_unchanged": true,
+    "dependencies_inside_extract": true,
+    "sent_to": "Rust AgentKit 01a14920-0d6e-7652-9a60-c74ef1a1f70f",
+    "receiver_status": "pending"
+  },
+  "cleanup": {
+    "native_app": "closed/unused-checked/removed",
+    "isolated_build_outputs": "removed; root shared cache lane restored",
+    "common_dependencies": "retained",
+    "source_and_evidence": "retained"
+  }
+}

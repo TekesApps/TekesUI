@@ -1,0 +1,26 @@
+{
+  "commit": "8cf0840790334ba224afc0595897c74231c712e6",
+  "source_report": "/Users/frankqin/dev/TekesAgentKit/docs/tekesui-issue23-ci-review-20261020.json",
+  "report_sha256": "1eb7b64f0bdb5ba2c2311b68f40b0f8888f20b2684ee6ef4b61bcaaf19687f06",
+  "native_artifacts": {
+    "selection-copy": {
+      "sha256": "b788b66baff65782a96388b3246efb145afdcd41d6755f15caf8c478404dcbd0",
+      "verified": true
+    },
+    "after-append": {
+      "sha256": "19df26b8c9313ffd8e025e0be66bbd252c578dec2bf1af2ce5ff61b69288a22a",
+      "verified": true
+    },
+    "parent-scroll": {
+      "sha256": "d8c3415e919181a64e24484ae078785562f96a4f53196f98f58c213894cd4892",
+      "verified": true
+    },
+    "wide-layout": {
+      "sha256": "e3c2ff4c8d32e0a776166b01a15a1c6b7e747e10955aba5c9dcba1670615e4cc",
+      "verified": true
+    }
+  },
+  "technical_acceptance": "public read-only content API, source closure, registration fix, shared-history/transient probe and bounded native selection/copy/update/scroll verified; recommend a separate development frozen candidate, not automatic release promotion",
+  "formal_input_unchanged": "431093786de47b48cd566d0d9c0eafa088b10d68",
+  "boundary": "technical development candidate accepted; formal pin not promoted; physical IME and VoiceOver not tested in this peer round; no Issue close authorized by latest publication scope"
+}

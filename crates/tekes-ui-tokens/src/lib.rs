@@ -31,7 +31,8 @@ mod migration_tests {
             .iter()
             .map(|(path, bits)| format!("{path} {bits:08x}\n"))
             .collect::<String>();
-        let document = serde_json::from_str(include_str!("../../../design/tokens.json")).unwrap();
+        let document =
+            serde_json::from_str(include_str!(env!("TEKESUI_SELECTED_TOKEN_JSON"))).unwrap();
         let expected = tekes_ui_design_export::numeric_channels(&document)
             .unwrap()
             .into_iter()
@@ -44,7 +45,7 @@ mod migration_tests {
         use crate::{Rgba, Theme, proposal};
         use serde_json::Value;
         let document: Value =
-            serde_json::from_str(include_str!("../../../design/tokens.json")).unwrap();
+            serde_json::from_str(include_str!(env!("TEKESUI_SELECTED_TOKEN_JSON"))).unwrap();
         let tokens = &document["proposal"]["tokens"];
         fn resolve(tokens: &Value, family: &str, id: &str, theme: &str) -> Value {
             let item = tokens[family]["tokens"]
@@ -157,7 +158,7 @@ mod effect_binding_tests {
     #[test]
     fn component_motion_and_overlay_elevation_round_trip_json() {
         let document: serde_json::Value =
-            serde_json::from_str(include_str!("../../../design/tokens.json")).unwrap();
+            serde_json::from_str(include_str!(env!("TEKESUI_SELECTED_TOKEN_JSON"))).unwrap();
         let motion = &document["proposal"]["motion"];
         for role in [
             "button_hover",
@@ -215,3 +216,7 @@ mod effect_binding_tests {
         }
     }
 }
+
+/// Explicit development-only lookup observation; absent from normal builds.
+#[cfg(feature = "token-audit")]
+pub mod audit;

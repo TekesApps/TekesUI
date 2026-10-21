@@ -1,0 +1,31 @@
+{
+  "status": "actual review-host publisher contract passed",
+  "root_cause": "missing direct verification of actual native consumer semantic projection; no new shared runtime defect found",
+  "shared_implementation": "existing ContentHost semantics and AccessibilityNode fields unchanged; original host mapper factored into one private associated function used by real publish and tests",
+  "applicable_components": [
+    "existing TextFieldContent single-line TextField",
+    "existing TextArea multiline",
+    "existing SearchField alias"
+  ],
+  "combinations": 96,
+  "assertions": "per-input required/enabled/read_only/invalid/value/role/parent/focus, inactive focus suppression, unrelated-node isolation and live required updates",
+  "checks": [
+    "targeted actual publisher test passed",
+    "review-host strict all-target Clippy passed",
+    "owned rustfmt passed"
+  ],
+  "current_host_main_sha256": "33553dce6aeb45fbeee70a018588462c306b8bd957927c5804c3335f61933fec",
+  "protected_root_inputs": 562,
+  "unexpected_changes": [],
+  "native_boundary": "no App/window created by test; previous running app unchanged and remains old identity; active-window and VoiceOver acceptance pending",
+  "GPU_Gold7": "no rendering rules changed; prior GPU receipts retain original identity; no final native/Gold7 promotion",
+  "cleanup": [
+    {
+      "path": "target/review-cache/debug/deps/tekesui_input_family_review-240444a0af108208",
+      "sha256": "dcaff96a21fdccbd90fba4a108b4073c55443ac41299a4b36d71b7b7fa52fa50",
+      "bytes": 2309824
+    }
+  ],
+  "performance": "not measured",
+  "publication": "no commit/push/tag/merge/Issue writes"
+}

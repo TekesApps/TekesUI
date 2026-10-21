@@ -1,0 +1,14 @@
+--- design/reviews/content-item-portable-candidate-20261021-attempt2/portable-source/crates/tekes-ui-platform-macos/src/lib.rs
++++ crates/tekes-ui-platform-macos/src/lib.rs
+@@ -24,8 +24,9 @@
+ };
+ pub use config::{AppConfig, WindowConfig};
+ pub use event::{
+-    AnimationFrame, Event, KeyEvent, KeyEventKind, Modifiers, MouseButton, MouseEvent,
+-    MouseEventKind, Point, ScrollEvent, ScrollPhase, Size, TextInputState, Vec2,
++    AnimationFrame, CursorIcon, CursorRegion, Event, KeyEvent, KeyEventKind, Modifiers,
++    MouseButton, MouseEvent, MouseEventKind, Point, ScrollEvent, ScrollPhase, Size, TextInputState,
++    Vec2,
+ };
+ pub use menu::{CommandId, KeyEquivalent, Menu, MenuBar, MenuCommand, MenuError, MenuItem};
+ pub use placement::{Layout, PlacementReport, Rect, ScreenChoice, ScreenInfo, WindowPlacement};

@@ -710,6 +710,10 @@ impl Glyph {
             name: "tekes-zoom-out",
             svg: include_str!("../assets/tekes-zoom-out.svg"),
         },
+        Self {
+            name: "tekes-swap-horizontal",
+            svg: include_str!("../assets/tekes-swap-horizontal.svg"),
+        },
     ];
     pub fn named(name: &str) -> Option<Self> {
         Self::ALL.iter().copied().find(|icon| icon.name == name)
@@ -721,7 +725,7 @@ mod tests {
     #[test]
     fn full_catalog_is_unique_self_contained_and_tintable() {
         let mut names = std::collections::HashSet::new();
-        assert_eq!(Glyph::ALL.len(), 176);
+        assert_eq!(Glyph::ALL.len(), 177);
         for icon in Glyph::ALL {
             assert!(names.insert(icon.name));
             assert_eq!(Glyph::named(icon.name), Some(*icon));

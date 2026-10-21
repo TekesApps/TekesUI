@@ -1,0 +1,122 @@
+{
+  "render_target_pixels": [
+    2960,
+    1362
+  ],
+  "scene_units_metres": 4,
+  "glb_bounds": [
+    [
+      -9.5,
+      -0.675,
+      -9.0
+    ],
+    [
+      12.8,
+      7.847204892886079,
+      9.0
+    ]
+  ],
+  "framing_radius": 14.949230550736813,
+  "default_camera_zoom": 0.56,
+  "projection": "orthographic, yaw 0.55, pitch atan(0.35)+0.24, identity model rotation",
+  "samples": [
+    {
+      "view": "放大 2 倍",
+      "camera_zoom": 0.28,
+      "adult_vertical_pixels": 44.12173358710453,
+      "tree_vertical_pixels": 119.39465480282577,
+      "car_length_pixels_range": [
+        91.6758415842233,
+        117.81250580245352
+      ],
+      "window_glass_width_pixels_range": [
+        31.459264743522137,
+        40.428260554686275
+      ],
+      "window_glass_height_pixels": 56.38902918602159
+    },
+    {
+      "view": "默认",
+      "camera_zoom": 0.56,
+      "adult_vertical_pixels": 22.060866793552265,
+      "tree_vertical_pixels": 59.697327401412885,
+      "car_length_pixels_range": [
+        45.83792079211165,
+        58.90625290122676
+      ],
+      "window_glass_width_pixels_range": [
+        15.729632371761069,
+        20.214130277343138
+      ],
+      "window_glass_height_pixels": 28.194514593010794
+    },
+    {
+      "view": "缩小 2 倍",
+      "camera_zoom": 1.12,
+      "adult_vertical_pixels": 11.030433396776132,
+      "tree_vertical_pixels": 29.848663700706442,
+      "car_length_pixels_range": [
+        22.918960396055827,
+        29.45312645061338
+      ],
+      "window_glass_width_pixels_range": [
+        7.864816185880534,
+        10.107065138671569
+      ],
+      "window_glass_height_pixels": 14.097257296505397
+    },
+    {
+      "view": "缩小 4 倍",
+      "camera_zoom": 2.24,
+      "adult_vertical_pixels": 5.515216698388066,
+      "tree_vertical_pixels": 14.924331850353221,
+      "car_length_pixels_range": [
+        11.459480198027913,
+        14.72656322530669
+      ],
+      "window_glass_width_pixels_range": [
+        3.932408092940267,
+        5.053532569335784
+      ],
+      "window_glass_height_pixels": 7.0486286482526985
+    },
+    {
+      "view": "缩小 8 倍",
+      "camera_zoom": 4.48,
+      "adult_vertical_pixels": 2.757608349194033,
+      "tree_vertical_pixels": 7.462165925176611,
+      "car_length_pixels_range": [
+        5.729740099013957,
+        7.363281612653345
+      ],
+      "window_glass_width_pixels_range": [
+        1.9662040464701336,
+        2.526766284667892
+      ],
+      "window_glass_height_pixels": 3.5243143241263493
+    }
+  ],
+  "candidate_thresholds": {
+    "window_min_axis_pixels": {
+      "room_actor": 12,
+      "curtain_shape": 6,
+      "folds": 20
+    },
+    "pedestrian_vertical_pixels": {
+      "hide_below": 3,
+      "fade_interval": [
+        3,
+        6
+      ]
+    },
+    "vehicle_length_pixels": {
+      "hide_below": 4,
+      "simple_silhouette_below": 16
+    },
+    "tree_vertical_pixels": {
+      "hide_below": 4,
+      "static_silhouette_below": 12
+    }
+  },
+  "scope": "Calculated physical-pixel feature spans at the authored camera; excludes occlusion and submesh shape. Thresholds are proposals requiring native visual/GPU validation, not active LOD. Counts/visibility changes must use hysteresis or fades; transparent hiding alone does not remove vertex work."
+}

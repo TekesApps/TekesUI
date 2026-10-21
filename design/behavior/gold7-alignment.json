@@ -124,6 +124,142 @@
       "evidence": {
         "$ref": "../reviews/gold7-20261017/alignment-pass2/receipt.json"
       }
+    },
+    {
+      "id": "overlay-presence-lifecycle",
+      "state": "verified-code",
+      "description": "Production Menu/Dialog/Popover own JSON-driven enter/exit paint while semantic close immediately releases hit/focus; live glyphs rebuilt each frame; interruption, Reduced Motion, context invalidation and host unmount cleanup.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass3/receipt.json"
+      }
+    },
+    {
+      "id": "split-native-capture-and-reset",
+      "state": "verified-code",
+      "description": "Real Left Dragged delivery, captured drags/releases crossing sidebar, Moved lost-release rollback, double-click and Enter/Space balanced reset.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass3/receipt.json"
+      }
+    },
+    {
+      "id": "durable-form-draft-outbox",
+      "state": "verified-code",
+      "description": "Explicit consumer-owned single-writer local form fixture: atomic snapshot, immutable delivery revisions, interrupted reopen, controlled failure/retry and revision-specific acknowledgement; no network.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass3/receipt.json"
+      }
+    },
+    {
+      "id": "explicit-live-edge-reading",
+      "state": "verified-code",
+      "description": "Existing Text/ScrollArea uses logical UTF-16 reading anchors across append and reflow; upward intent stops follow; existing Button explicitly returns to latest; manually reaching bottom never repins.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass3/receipt.json"
+      }
+    },
+    {
+      "id": "existing-control-state-lifecycle",
+      "state": "verified-code",
+      "description": "Existing Button/Checkbox inactive guards, Slider/Radio invalid layout cleanup, exclusive Switch pointer/Space activation, disabled semantic labels and navigation state/capture fixes.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass4/receipt.json"
+      }
+    },
+    {
+      "id": "bounded-slider-domain",
+      "state": "verified-code",
+      "description": "Step rounding clamps to declared range; extreme finite ranges preserve finite normalized Slider geometry.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass4/receipt.json"
+      }
+    },
+    {
+      "id": "logical-collection-keyboard-reveal",
+      "state": "verified-code",
+      "description": "List/Tree/Table/Chart logical keyboard destinations are independent of ancestor pointer clipping; host reveals actual focused geometry and preserves generic header controls.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass4/receipt.json"
+      }
+    },
+    {
+      "id": "constrained-feedback-layout",
+      "state": "verified-code",
+      "description": "Screen-edge overlay placement, constrained Popover dismiss measurement and Banner wrapping follow actual available geometry without changing normal sizes.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass4/receipt.json"
+      }
+    },
+    {
+      "id": "measured-canonical-page-composition",
+      "state": "verified-code",
+      "description": "Property and edge actions wrap through measured rows; Settings gaps, master-detail strides and Separator variants adapt to narrow/large text; document extents derive from real layout with fixed preview viewport.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass4/receipt.json"
+      }
+    },
+    {
+      "id": "actual-component-state-stories",
+      "state": "verified-code",
+      "description": "Tabs/Menu/Dialog/Select comparisons use actual views; unsupported states/edge routes are not advertised; matrix presentation is static under a scoped renderer context and does not reset host clock.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass4/receipt.json"
+      }
+    },
+    {
+      "id": "measured-applicable-state-matrices",
+      "state": "verified-code",
+      "description": "Real Checkbox labels and mixed/checked combinations; real extended views including SegmentedControl; matrix captions and controls use matched text metrics, responsive widths and focus gutters.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass5/receipt.json"
+      }
+    },
+    {
+      "id": "responsive-feedback-and-reachable-document",
+      "state": "verified-code",
+      "description": "Banner/Toast use narrow stacked actions and measured content; feedback Gallery uses document bounds with actual ancestor clipping and measured natural bottom; real scrolling and pointer dismiss tested.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass5/receipt.json"
+      }
+    },
+    {
+      "id": "inset-aware-document-wrapping",
+      "state": "verified-code",
+      "description": "CodeBlock and DiffView measure the same inner width used to render; Gallery code height uses matching insets; narrow large-type code is rendered to actual GPU output.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass5/receipt.json"
+      }
+    },
+    {
+      "id": "logical-focus-and-native-tab-reveal",
+      "state": "verified-code",
+      "description": "Full production layout frames are registered independently of pointer clipping; eligibility and mounted state control Tab participation. Shell, story and leaf scopes hand off bidirectionally. AppKit command-only Tab enters the same path, rapid repeated keys reveal from the last layout origin, and actual pointer focus synchronizes the logical owner. Dialog containment and nonmodal popup exit remain separate contracts.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/receipt.json"
+      }
+    },
+    {
+      "id": "remaining-production-state-stories",
+      "state": "verified-code",
+      "description": "Toolbar/NumberField/navigation/collection/feedback state and variant comparisons render real production views with isolated fixtures. Full Gallery GPU captures include every implemented advertised state/variant route at top/mid/bottom across four themes and two window/text-size combinations.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/receipt.json"
+      }
+    },
+    {
+      "id": "number-field-centered-value-slot",
+      "state": "verified-code",
+      "description": "The production NumberField value is vertically and horizontally centered in its full slot, including compressed widths and 150 percent text. Actual CoreText glyph bounds and GPU output are checked.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/receipt.json"
+      }
+    },
+    {
+      "id": "remaining-preview-and-focus-owner",
+      "state": "verified-code",
+      "description": "TextArea uses measured remaining preview space and clipped rendering while keeping an offscreen logical frame. Selectable readonly text joins Tab. Sidebar focus reveal reserves the DS focus ring gutter; pointer focus in navigation search clears the old component focus without discarding input data.",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/receipt.json"
+      }
     }
   ],
   "requirements": [
@@ -150,9 +286,11 @@
       "requirement_ref": "./gold7.json#/items/0/requirements/2",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Long-form fixture exists, but complete page-by-page spacing/reading review is outstanding.",
-      "next_action": "Review every registered page at normal/narrow/150% text; track any layout defects as child tasks.",
-      "repairs": []
+      "observation": "Every implemented canonical page and advertised story is included in deterministic scene/action-geometry review at normal and narrow/150% text across four themes. Focused real GPU page frames supplement this; native sustained reading remains incomplete.",
+      "next_action": "Review remaining native whole-page typography/spacing and physical display matrix; geometry checks alone do not assess readability.",
+      "repairs": [
+        "measured-canonical-page-composition"
+      ]
     },
     {
       "id": "G2/four-semantic-surface-roles",
@@ -191,8 +329,8 @@
       "requirement_ref": "./gold7.json#/items/2/requirements/1",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Button size aliases are now consumed by production paint; row/column surface radius roles still need semantic audit.",
-      "next_action": "Bind Button size to its component radius aliases, then audit row/column surfaces by semantic role.",
+      "observation": "Button sizes consume component aliases; shared Canvas/Panel/Floating/Dialog/Code surfaces use semantic roles. Row and Column remain separate tokens; no confirmed misuse found. Historical Showcase is calibration, not a duplicate live component.",
+      "next_action": "Finish native semantic radius review; do not replace historical calibration fixtures or force Column onto unrelated surfaces.",
       "repairs": [
         "button-size-radius-roles"
       ]
@@ -214,7 +352,9 @@
       "observation": "Focus paint space and document-space reveal are wired for existing workbench controls; GPU focus/shadow evidence covers 1x/2x; physical display review remains.",
       "next_action": "Audit remaining offscreen roving focus and fractional/physical display edges, without promoting untested experience.",
       "repairs": [
-        "focus-paint-space-and-reveal"
+        "focus-paint-space-and-reveal",
+        "logical-collection-keyboard-reveal",
+        "constrained-feedback-layout"
       ]
     },
     {
@@ -227,7 +367,8 @@
       "repairs": [
         "production-control-state-transitions",
         "post-build-frame-scheduling",
-        "inactive-control-motion-cancellation"
+        "inactive-control-motion-cancellation",
+        "existing-control-state-lifecycle"
       ]
     },
     {
@@ -235,12 +376,14 @@
       "requirement_ref": "./gold7.json#/items/3/requirements/1",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Production Button/Switch/Disclosure own StateTransition progress and real GPU output; Gallery host collects frame requests after scene build.",
-      "next_action": "Continue per-component coverage including overlay enter/exit lifecycle; do not infer every component is animated.",
+      "observation": "Button/Switch/Disclosure production channels plus Menu/Dialog/Popover paint-only presence lifecycle and shared menu consumers are wired; remaining component state channels are not universally animated.",
+      "next_action": "Review real intermediate frames and complete remaining per-component applicable state coverage.",
       "repairs": [
         "production-control-state-transitions",
         "post-build-frame-scheduling",
-        "inactive-control-motion-cancellation"
+        "inactive-control-motion-cancellation",
+        "overlay-presence-lifecycle",
+        "existing-control-state-lifecycle"
       ]
     },
     {
@@ -248,13 +391,16 @@
       "requirement_ref": "./gold7.json#/items/3/requirements/2",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Direct tracking exists; SplitView view/adapter cancellation and capture ownership need regression coverage.",
-      "next_action": "Close Escape/invalid layout/focus loss cancellation chain; audit explicit lost capture delivery separately.",
+      "observation": "Split native drag/capture/reset chain and production control reversal/cancellation covered; append reading anchors preserve manual intent.",
+      "next_action": "Retain full native assistive-input and real capture-loss review; do not infer all gestures accepted.",
       "repairs": [
         "split-cancel-capture",
         "production-control-state-transitions",
         "post-build-frame-scheduling",
-        "inactive-control-motion-cancellation"
+        "inactive-control-motion-cancellation",
+        "split-native-capture-and-reset",
+        "overlay-presence-lifecycle",
+        "existing-control-state-lifecycle"
       ]
     },
     {
@@ -262,15 +408,17 @@
       "requirement_ref": "./gold7.json#/items/3/requirements/3",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Menu scroll and real Button/Switch/Disclosure paths receive system/manual Reduced Motion; finite transitions snap and do not replay on re-enable.",
-      "next_action": "Audit remaining component/overlay state channels and VoiceOver/system setting behavior in native sessions.",
+      "observation": "Existing control and overlay presence paths consume renderer/system Reduced Motion; transitions finish without replay; menu scroll remains independently adapted.",
+      "next_action": "Audit remaining applicable component motion channels and native system preference/VoiceOver paths.",
       "repairs": [
         "owned-popup-scroll-clock",
         "navigation-search-preference",
         "filtered-popup-wheel-routing",
         "production-control-state-transitions",
         "post-build-frame-scheduling",
-        "inactive-control-motion-cancellation"
+        "inactive-control-motion-cancellation",
+        "overlay-presence-lifecycle",
+        "existing-control-state-lifecycle"
       ]
     },
     {
@@ -278,8 +426,8 @@
       "requirement_ref": "./gold7.json#/items/4/requirements/0",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Pointer submission can blur/unmark preedit before submit guard observes composition.",
-      "next_action": "Capture composition before focus transfer and suppress the matching submit/confirm activation; verify next committed input can submit.",
+      "observation": "Pre-blur composition guard protects matching pointer submit; committed form draft persistence skips marked preedit.",
+      "next_action": "Perform physical IME composition/commit/cancel and suggestion priority checks; model guards are not physical IME acceptance.",
       "repairs": [
         "composition-pointer-submit-guard"
       ]
@@ -287,29 +435,35 @@
     {
       "id": "G5/durable-draft-recovery",
       "requirement_ref": "./gold7.json#/items/4/requirements/1",
-      "implementation": "missing",
+      "implementation": "implemented-unverified",
       "experience": "unverified",
-      "observation": "Only in-memory text and fixture phases exist; no durable draft/outbox/version-specific acknowledgment.",
-      "next_action": "Define consumer-owned storage contract and runnable interruption/retry/ack fixture using actual editor; do not mark missing persistence N/A.",
-      "repairs": []
+      "observation": "Existing real form has explicit opt-in single-writer Rust atomic snapshot/outbox fixture; retry retains immutable revision and stale acknowledgement cannot erase newer edits.",
+      "next_action": "Native process restart retained the fixture draft and acknowledged revision; continue physical IME and storage-boundary review without claiming real power-loss or real service acceptance.",
+      "repairs": [
+        "durable-form-draft-outbox"
+      ]
     },
     {
       "id": "G5/manual-scroll-reading-anchor",
       "requirement_ref": "./gold7.json#/items/4/requirements/2",
-      "implementation": "partial",
+      "implementation": "implemented-unverified",
       "experience": "unverified",
-      "observation": "Same-document reflow anchor exists; changed/streaming text has no following-vs-history controller.",
-      "next_action": "Preserve a stable content anchor on append while reading history; explicitly track user upward intent.",
-      "repairs": []
+      "observation": "Text/ScrollArea adapter captures UTF-16 plus within-line anchor for append/reflow; upward user intent immediately leaves following mode.",
+      "next_action": "Native check selection, append, resize and nested scrolling; arbitrary replacement/prepend is outside this append-only fixture.",
+      "repairs": [
+        "explicit-live-edge-reading"
+      ]
     },
     {
       "id": "G5/explicit-return-to-latest",
       "requirement_ref": "./gold7.json#/items/4/requirements/3",
-      "implementation": "missing",
+      "implementation": "implemented-unverified",
       "experience": "unverified",
-      "observation": "No live-edge state and explicit jump-to-latest workflow.",
-      "next_action": "Compose an existing Button with reading-state controller; incoming data/timers never repin the reader.",
-      "repairs": []
+      "observation": "Actual existing Button action explicitly enables following; appends/timers and manual arrival at bottom cannot repin.",
+      "next_action": "Native check click, keyboard and body focus transfer after latest action.",
+      "repairs": [
+        "explicit-live-edge-reading"
+      ]
     },
     {
       "id": "G6/zoom-preserves-reading-anchor",
@@ -326,7 +480,7 @@
       "implementation": "partial",
       "experience": "unverified",
       "observation": "Split minima and keyboard restore after constrained resize are implemented; media pan remains missing.",
-      "next_action": "Provide keyboard-accessible recovery to two panes; retain media pan gap separately.",
+      "next_action": "Review existing keyboard/double-click two-pane recovery on physical input; media pan remains separately missing.",
       "repairs": [
         "split-keyboard-restore"
       ]
@@ -336,19 +490,30 @@
       "requirement_ref": "./gold7.json#/items/5/requirements/2",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Focus loss cancels many gestures; explicit lost-capture delivery and Split double-click reset are not integrated. Media alternatives missing.",
-      "next_action": "Audit host capture lifecycle, wire reset/recovery alternatives for existing Split; media remains a separate missing capability.",
-      "repairs": []
+      "observation": "Existing Split consumes native Dragged across sidebar, cancels lost release/invalid layout/focus loss, resets through double-click and Enter/Space. Media alternatives remain missing.",
+      "next_action": "Complete native split reset/cancel checks and retain missing media scope separately.",
+      "repairs": [
+        "split-native-capture-and-reset"
+      ]
     },
     {
       "id": "G7/reusable-real-component-contract",
       "requirement_ref": "./gold7.json#/items/6/requirements/0",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Real components/registry exist, but explicit Leading overrides made standalone Button labels misaligned.",
-      "next_action": "Remove standalone action Leading overrides; retain semantic leading for navigation/menu/list; audit all Gallery content ownership.",
+      "observation": "Production views own state, layout and interaction; complete logical layout frames now support ordinary offscreen Tab/reveal with shell and leaf scope handoff. Native samples verify pointer/input ownership, modal restore and text viewport fill. Per-control AX projection and comprehensive native acceptance remain missing.",
+      "next_action": "Continue full per-component native keyboard/IME/assistive-technology acceptance; do not infer it from state matrices or sampled screenshots.",
       "repairs": [
-        "standalone-button-content-center"
+        "standalone-button-content-center",
+        "existing-control-state-lifecycle",
+        "bounded-slider-domain",
+        "constrained-feedback-layout",
+        "logical-collection-keyboard-reveal",
+        "responsive-feedback-and-reachable-document",
+        "inset-aware-document-wrapping",
+        "logical-focus-and-native-tab-reveal",
+        "remaining-preview-and-focus-owner",
+        "number-field-centered-value-slot"
       ]
     },
     {
@@ -356,20 +521,27 @@
       "requirement_ref": "./gold7.json#/items/6/requirements/1",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Canonical routes and real previews exist; applicable states/keyboard/large text coverage is not complete for every component.",
-      "next_action": "Track per-component contract/state coverage; use actual events and glyphs, never simulated focus as keyboard acceptance.",
-      "repairs": []
+      "observation": "Applicable production state and variant stories now cover remaining existing models with isolated fixtures. Every implemented advertised state/variant route is GPU captured at three actual scroll positions across four themes and two window/text-size combinations. Native samples are recorded separately; the AX bridge remains missing.",
+      "next_action": "Continue comprehensive native interaction, physical IME and AX bridge/VoiceOver acceptance. Revisit new or changed component contracts without treating passive models as interactive states.",
+      "repairs": [
+        "actual-component-state-stories",
+        "measured-canonical-page-composition",
+        "measured-applicable-state-matrices",
+        "remaining-production-state-stories",
+        "logical-focus-and-native-tab-reveal"
+      ]
     },
     {
       "id": "G7/business-combinations-are-real",
       "requirement_ref": "./gold7.json#/items/6/requirements/2",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Five patterns and Settings exist; search action row was manually positioned and IME submit flow was unsafe.",
-      "next_action": "Use shared measured layout for combinations; exercise form, filtering, master-detail, error retry and danger cancel end-to-end.",
+      "observation": "Five actual patterns and Settings remain interactive; measured action rows, form error/disabled/reset, master-detail row stride and explicit durable/retry fixture are exercised. Native complete combinations are not universally accepted.",
+      "next_action": "Complete representative native narrow/large-type combinations; keep deterministic local async/durable fixture boundary explicit.",
       "repairs": [
         "measured-search-action-row",
-        "composition-pointer-submit-guard"
+        "composition-pointer-submit-guard",
+        "measured-canonical-page-composition"
       ]
     }
   ],
@@ -379,12 +551,1024 @@
     "CPU/drop frames/continuous built-in 120Hz and 8.33ms"
   ],
   "next_implementation_order": [
-    "per-component focus paint outset/reveal and radius-role audit",
-    "shared elevation rendering",
-    "production Button/Switch/Disclosure motion with ReducedMotion/interruption",
-    "existing Split constrained-layout recovery and host capture",
-    "draft/outbox and live-edge reading fixture",
-    "remaining per-component/page state and composition audit",
+    "native component/page interaction and visual review against per-component records",
+    "extend applicable state comparisons where currently absent using real views",
+    "native per-control macOS accessibility bridge and physical IME/VoiceOver acceptance",
     "media capability after explicit no-new-component scope changes"
+  ],
+  "cross_component_gaps": [
+    {
+      "id": "macos-control-accessibility-bridge",
+      "implementation": "missing",
+      "observation": "The platform installs one TekesView implementing NSTextInputClient but no per-control NSAccessibility role/name/value/children/focus projection is present. System accessibility preferences are separate from exposing control semantics.",
+      "source_refs": [
+        "../../crates/tekes-ui-platform-macos/src/app.rs",
+        "../../crates/tekes-ui-platform-macos/src/view.rs"
+      ],
+      "experience": "unverified",
+      "next_action": "Implement consumer/control semantics to macOS AX tree, then run native VoiceOver checks; do not present keyboard or IME support as AX acceptance."
+    },
+    {
+      "id": "offscreen-general-tab-order",
+      "status": "implemented",
+      "description": "Current layout registers complete logical frames independently of visible pointer hits. Tab and Shift+Tab reveal ordinary offscreen actions, use one roving stop per group, and hand off between shell and real previews. Native narrow-window samples verify forward/backward Settings input/action traversal, popup exit and Motion reveal; complete all-page native acceptance remains unverified.",
+      "source_refs": [
+        "crates/tekes-ui-gallery/src/gallery/workbench.rs#Workbench::handle Tab traversal"
+      ],
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/receipt.json"
+      }
+    }
+  ],
+  "component_reviews": [
+    {
+      "slug": "component-stack",
+      "component": "tui.stack",
+      "renderer": "stack",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "variants"
+      ],
+      "geometry_cases": 24,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-grid",
+      "component": "tui.grid",
+      "renderer": "grid",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "variants"
+      ],
+      "geometry_cases": 24,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-separator",
+      "component": "tui.separator",
+      "renderer": "separator",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "variants"
+      ],
+      "geometry_cases": 24,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-split-view",
+      "component": "tui.split-view",
+      "renderer": "split-view",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "behaviors",
+        "variants"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-scroll-area",
+      "component": "tui.scroll-area",
+      "renderer": "scroll",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "behaviors"
+      ],
+      "geometry_cases": 24,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-disclosure",
+      "component": "tui.disclosure",
+      "renderer": "disclosure",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-surface",
+      "component": "tui.surface",
+      "renderer": "surface",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "behaviors",
+        "variants"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-toolbar",
+      "component": "tui.toolbar",
+      "renderer": "toolbar",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-text",
+      "component": "tui.text",
+      "renderer": "text",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "behaviors"
+      ],
+      "geometry_cases": 24,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-icon",
+      "component": "tui.icon",
+      "renderer": "icon",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "behaviors"
+      ],
+      "geometry_cases": 24,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-button",
+      "component": "tui.button",
+      "renderer": "button",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors",
+        "edge-cases",
+        "variants"
+      ],
+      "geometry_cases": 48,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-icon-button",
+      "component": "tui.icon-button",
+      "renderer": "icon-button",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-link",
+      "component": "tui.link",
+      "renderer": "link",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-text-field",
+      "component": "tui.text-field",
+      "renderer": "field",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors",
+        "edge-cases",
+        "variants"
+      ],
+      "geometry_cases": 48,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-text-area",
+      "component": "tui.text-area",
+      "renderer": "area",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors",
+        "edge-cases",
+        "variants"
+      ],
+      "geometry_cases": 48,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-search-field",
+      "component": "tui.search-field",
+      "renderer": "search",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors",
+        "edge-cases",
+        "variants"
+      ],
+      "geometry_cases": 48,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-combo-box",
+      "component": "tui.combo-box",
+      "renderer": "combo-box",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-slider",
+      "component": "tui.slider",
+      "renderer": "slider",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-checkbox",
+      "component": "tui.checkbox",
+      "renderer": "checkbox",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors",
+        "edge-cases"
+      ],
+      "geometry_cases": 40,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-radio-group",
+      "component": "tui.radio-group",
+      "renderer": "radio-group",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-switch",
+      "component": "tui.switch",
+      "renderer": "switch",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-segmented-control",
+      "component": "tui.segmented-control",
+      "renderer": "segmented-control",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-field",
+      "component": "tui.field",
+      "renderer": "field-meta",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-select",
+      "component": "tui.select",
+      "renderer": "select",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-number-field",
+      "component": "tui.number-field",
+      "renderer": "number-field",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors",
+        "variants"
+      ],
+      "geometry_cases": 40,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-tabs",
+      "component": "tui.tabs",
+      "renderer": "tabs",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-breadcrumb",
+      "component": "tui.breadcrumb",
+      "renderer": "breadcrumb",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-command-palette",
+      "component": "tui.command-palette",
+      "renderer": "command-palette",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-list",
+      "component": "tui.list",
+      "renderer": "list",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-tree",
+      "component": "tui.tree",
+      "renderer": "tree",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-data-table",
+      "component": "tui.data-table",
+      "renderer": "data-table",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-chart",
+      "component": "tui.chart",
+      "renderer": "chart",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-menu",
+      "component": "tui.menu",
+      "renderer": "menu",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-tooltip",
+      "component": "tui.tooltip",
+      "renderer": "tooltip",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-popover",
+      "component": "tui.popover",
+      "renderer": "popover",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-dialog",
+      "component": "tui.dialog",
+      "renderer": "dialog",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-toast",
+      "component": "tui.toast",
+      "renderer": "toast",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors",
+        "variants"
+      ],
+      "geometry_cases": 40,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-banner",
+      "component": "tui.banner",
+      "renderer": "banner",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "behaviors",
+        "variants"
+      ],
+      "geometry_cases": 40,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-status-badge",
+      "component": "tui.status-badge",
+      "renderer": "status-badge",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "variants"
+      ],
+      "geometry_cases": 24,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-progress",
+      "component": "tui.progress",
+      "renderer": "progress",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "behaviors",
+        "variants"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-empty-state",
+      "component": "tui.empty-state",
+      "renderer": "empty-state",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "states",
+        "variants"
+      ],
+      "geometry_cases": 32,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-skeleton",
+      "component": "tui.skeleton",
+      "renderer": "skeleton",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground",
+        "behaviors"
+      ],
+      "geometry_cases": 24,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-markdown",
+      "component": "tui.markdown",
+      "renderer": "markdown",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground"
+      ],
+      "geometry_cases": 16,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-code-block",
+      "component": "tui.code-block",
+      "renderer": "code-block",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground"
+      ],
+      "geometry_cases": 16,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    },
+    {
+      "slug": "component-diff-view",
+      "component": "tui.diff-view",
+      "renderer": "diff-view",
+      "status": "partial",
+      "advertised_stories": [
+        "docs",
+        "playground"
+      ],
+      "geometry_cases": 16,
+      "geometry_assertions": [
+        "scene_nonempty",
+        "distinct_action_hit_regions_disjoint"
+      ],
+      "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
+      "experience": "unverified",
+      "evidence": {
+        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+      }
+    }
   ]
 }

@@ -1,0 +1,118 @@
+{
+  "scope": "Bounded batch6: Select/ComboBox/CommandPalette existing public consumers and shared filtered-menu dismissal; not complete component/page maturity",
+  "owner": "root: single shared implementation owner",
+  "baseline": "All current WIP, including later uncommitted behavior; frozen AgentKit package untouched",
+  "root_causes": [
+    {
+      "class": "shared interaction primitive",
+      "defect": "FilteredMenu/ComboBox/CommandPalette ordinary activation/dismissal used cancel, discarding OverlayPresence; live filtered mapping could erase outgoing labels after selection changed query.",
+      "fix": "crates/tekes-ui-controls/src/layout_view.rs: reuse existing dismiss, source mapping and OverlayPresence; explicit cancellation still clears."
+    },
+    {
+      "class": "public component consumer contract",
+      "defect": "Existing consumers used needs_animation rather than presentation state, missing pending exit paint; filtered semantic parts and AX actions used visible positions rather than original source positions.",
+      "fix": "examples/composition-consumer/src/choice_status.rs, combo_status.rs, command_status.rs; SelectView::is_presented and Scenario forwarding reuse existing presence."
+    },
+    {
+      "class": "consumer composition",
+      "defect": "Select and ComboBox put failure feedback below the trigger, where the option overlay covered it.",
+      "fix": "Reuse existing Stack ordering, as CommandPalette already does: feedback before query/trigger."
+    }
+  ],
+  "applicable_components": [
+    "Select",
+    "ComboBox",
+    "CommandPalette",
+    "existing FilteredMenuView callers"
+  ],
+  "exceptions": [
+    "Original source-position indices are stable through filtering, not permanent business keys across arbitrary source replacement.",
+    "Changed source invalidates outgoing mapping; window unavailability and explicit cancel hard-clear retained paint.",
+    "Existing closed OverlayPresence invalidates resource/geometry changes; Select label changes may resize the trigger and cancel exit. Unchanged-geometry exits are separately proved.",
+    "ComboBox remains a valid editable text surface after popup close; closed CommandPalette revokes its hidden editor.",
+    "No new abstraction layer, token, state machine or UI framework. No migration of unrelated component families."
+  ],
+  "public_API": {
+    "regression_tests": 3,
+    "genuine_red": "red.log",
+    "green": "green.log",
+    "controls_tests": 370,
+    "strict_clippy": true
+  },
+  "real_consumer": {
+    "tests": 157,
+    "regression_tests": 3,
+    "red_logs": [
+      "consumer-index-red.log",
+      "consumer-exit-red.log",
+      "consumer-feedback-red.log"
+    ],
+    "final": "final-consumer.log",
+    "strict_clippy": true,
+    "native_binary_final_identity": "final-build-native-identity.json"
+  },
+  "GPU": {
+    "cases": 144,
+    "frames": 720,
+    "dimensions": "3 existing consumers x 4 themes x 3 brands x 2 width/scale pairs x 2 type scales",
+    "result": "gpu-result.json",
+    "images": "images/",
+    "reference": "Only old consumer composition with current shared primitives; not an old whole-library binary. Old exit paint appears in some reference cases; recorded rather than forced to fail.",
+    "current_failure_overlap_cases": 0,
+    "current_retained_exit_cases": 144
+  },
+  "native": {
+    "assertions": 36,
+    "receipt": "native-verified.json",
+    "verification": "verify-native.py",
+    "display": "U2790B@2",
+    "kind": "tool-driven real AppKit keyboard/AX, status/reorder commands, real minify/deactivation/reactivation",
+    "VoiceOver": false,
+    "physical_IME": false
+  },
+  "Gold7": {
+    "bounded_checks": [
+      "Failure remains readable while cached options stay open.",
+      "Query and applicable active/selection state survive Loading/Error.",
+      "Current original source row executes; obsolete filtered slots reject in API/consumer regression.",
+      "Logical close immediately removes option semantics, retains outgoing paint until settled when geometry is unchanged.",
+      "Window deactivation revokes overlay/focus; actual reactivation restores fresh interactions in exercised paths."
+    ],
+    "visual_reference_pair": [
+      "images/m0-t0-b0-w360-type1.5-old-consumer-current-primitives-open.png",
+      "images/m0-t0-b0-w360-type1.5-current-open.png"
+    ],
+    "boundary": "Bounded Gold7 experience checks, no full-page, hearing or physical IME promotion."
+  },
+  "actual_tokens": {
+    "receipts": 11,
+    "bounded_cases": 5040,
+    "complete": false,
+    "folder": "token-probes/",
+    "new_tokens": 0
+  },
+  "gates": {
+    "composition_components": 45,
+    "composition_tests": 8,
+    "governance_tests": 42,
+    "final_capabilities": true,
+    "logs": "final-checks.json"
+  },
+  "WIP": {
+    "protected_existing_files": 554,
+    "owned_changed_existing_files": 6,
+    "unchanged_other_files": 548,
+    "receipt": "protected-final.json"
+  },
+  "source_identity": "source-manifest.json",
+  "source_snapshot": "source-final/ (owned source only; not portable dependency closure)",
+  "cleanup": "cleanup.json",
+  "remaining": [
+    "Deferred VoiceOver hearing and applicable final-candidate physical IME verification.",
+    "Full combined overlay/content-slot and final page acceptance.",
+    "Window Toolbar registration architecture remains separate tracked work; not implemented by this scoped repair.",
+    "Batch7 collection/reading and batch8 final acceptance."
+  ],
+  "performance": "not measured",
+  "git": "no commit/push/tag/merge/issue-close"
+}

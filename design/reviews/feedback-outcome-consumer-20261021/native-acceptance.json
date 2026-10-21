@@ -1,0 +1,18 @@
+{
+  "status": "48active external native paint/AX projection configurations passed; no VoiceOver or matched ClientKit claim",
+  "consumer_identity": "ea70927e74f71dfbc427fc3f3a0ad94b4ec6fe959abf6d981ea31c908eae9092",
+  "native_identity": "24338ac2b195abc58a431e8f96a594ec7af390c3fddccece203eefb818dae30f",
+  "binary_sha256": "62265ac51fa13e6ddda1e366dafda72b60b86edff6eadbe16dfda8b53e052323",
+  "display": "U2790B@2",
+  "configurations": 48,
+  "matrix": "4themes6outcomes;600pt/normal type and260pt/type1.5",
+  "framework_semantics": "Published snapshot roleGroup/explicitoutcome+progress/invalid independent;focusfalse",
+  "external_AX": "CUA actual native Group values checked and saved for48configurations",
+  "actual_window_screenshots": 48,
+  "remaining": [
+    "VoiceOver hearing not performed or inferred",
+    "matched ClientKit/Gold7 whole experience",
+    "final combined delivery source"
+  ],
+  "closed_event": true
+}

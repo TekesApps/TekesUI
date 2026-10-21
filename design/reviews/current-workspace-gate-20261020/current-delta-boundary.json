@@ -1,0 +1,46 @@
+{
+  "format": "tekesui-current-regression-boundary/1",
+  "historical_workspace": "design/reviews/current-workspace-gate-20261020/acceptance.json",
+  "historical_inputs": 562,
+  "unchanged": 557,
+  "changed": [
+    {
+      "file": "crates/tekes-ui-controls/src/widgets.rs",
+      "historical": "8c22a4bc965f66a1c5a1d2d7bb30d29698cbab6b16c92abbb4db0aa2cd7b5605",
+      "current": "040f8130c4c035b084bf7533cddfa34b25bc1941801ef10b74ffab78bffbad43",
+      "current_evidence": "design/reviews/selection-key-availability-20261020/acceptance.json"
+    },
+    {
+      "file": "crates/tekes-ui-controls/src/selection.rs",
+      "historical": "de7ae03c17632624f1670506417856800f9665165a52d88bf3c7550e1d8f7333",
+      "current": "cb6f02b42cd93cd7ce79a086606fcbb5d8b3c6fee22a6ac211919a99479ddb08",
+      "current_evidence": "design/reviews/selection-key-availability-20261020/acceptance.json"
+    },
+    {
+      "file": "examples/composition-consumer/tests/scenarios.rs",
+      "historical": "ac000faf20b91427dc2aaaf18b2d1fa6e2f3df11dcd7af9dc545dd844a663b53",
+      "current": "b6b078c607931adc1dbe7a92665f0de3614e77695f9158a4932659716f2c2358",
+      "current_evidence": "design/reviews/selection-key-availability-20261020/acceptance.json"
+    },
+    {
+      "file": "crates/tekes-ui-controls/tests/action_contract.rs",
+      "historical": "1e37f31aa7c0f0213127a3e1ccaa66506260629ccf08a15af33e040350f6b66e",
+      "current": "f4d6b41fecbfb435cccfca7114d9db0bdb70cad9a825ad7f7cc8c0e7f15fdf00",
+      "current_evidence": "design/reviews/selection-key-availability-20261020/acceptance.json"
+    },
+    {
+      "file": "crates/tekes-ui-controls/tests/selection_availability.rs",
+      "historical": "6b7bd61cd844364ffbe5fd29d9b5b6cb32dc9ff07044194d54b484f59f392d78",
+      "current": "2e546e09c0e9533a72073a86a658a2bf86acc2fd4c3ae2a4d0d08df549740e25",
+      "current_evidence": "design/reviews/selection-key-availability-20261020/acceptance.json"
+    }
+  ],
+  "scoped_current_regression": {
+    "controls": 341,
+    "composition_scenarios": 33,
+    "evidence": "design/reviews/selection-key-availability-20261020/acceptance.json"
+  },
+  "boundary": "1094 historical workspace passes cannot be advertised as current whole-workspace pass. Current scoped regressions cover the five changed inputs; counts are not added together. Small-host shortcut adapter has separate source identity and native acceptance pending.",
+  "receipt_correction": "GPU_followup.native stale pending flag corrected only after verifying six native acceptance chains; no new experience claim",
+  "remaining": "final independent review/public CI, broader family and full-page native/Gold7 acceptance remain; no Issue or maturity closure"
+}

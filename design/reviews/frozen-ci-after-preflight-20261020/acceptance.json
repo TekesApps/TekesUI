@@ -1,0 +1,83 @@
+{
+  "format": "tekesui-frozen-current-ci/1",
+  "status": "complete local CI recipe passed on exact isolated snapshot; remote/public/independent reviewer and native experience separate",
+  "identity": "3a5ba330c8eca0591869d2afe9704287bf1ee3a559d1fc18dcc0e2d73458b0b5",
+  "files": 1110,
+  "all_snapshot_bytes_unchanged": true,
+  "live_wip_delta_before_ledger_reconciliation": {
+    "crates/tekes-ui-3d/assets/block_geometry.py": {
+      "before": "4bdd4927302e03bd288efd6fb5f170817979fa20218d6fa8e4189bb41e352bfc",
+      "after": "bb203e9d23414f9643f1d270b7ce2f7158b280a596366f148a376ba9eac20390"
+    },
+    "crates/tekes-ui-3d/assets/check_city_block.py": {
+      "before": "5977bd1b0ef3fab0f6ccdff26e13367251d521a851b94d3cc06ba69c9cccdf6b",
+      "after": "d266ddc075ce521a04384da127ed02210020a1f088e1e10b68abcb2b12c1bf03"
+    },
+    "crates/tekes-ui-3d/assets/city-block.glb": {
+      "before": "db9228f436d747682fae1650f45e85722e3667826f333a065694ffac75aee7f6",
+      "after": "18712a487a11d9b773852886e060251043a95e32b115cc2501a8f72d453d4294"
+    },
+    "crates/tekes-ui-3d/assets/generate_city_block.py": {
+      "before": "fa605cc0f407bd49a5fe50bd2325d84ade39e8769370947437ddb93d1147f477",
+      "after": "7b1bf872dc544cd161b3f3320e1dad563b773bdba356c86d9487f081d64a54cb"
+    }
+  },
+  "worktree": "HEAD b8999fe plus all WIP at capture; original #26 consumer2b16 and bd3 untouched",
+  "checks": "checks.json",
+  "workspace": {
+    "summaries": 78,
+    "totals": {
+      "passed": 1164,
+      "failed": 0,
+      "ignored": 16,
+      "measured": 0,
+      "filtered_out": 3
+    },
+    "ignored": [
+      "test gallery::pages::icons::catalogue_review::local_full_catalogue_pixels_and_scroll_culling ... ignored, requires explicit TEKESUI_ICON_DIR and TEKESUI_ICONS_REVIEW_OUT",
+      "test gallery::scene3d_preview::tests::scene3d_adapts_resolution_while_paused_without_geometry_reuploads ... ignored, requires a real wgpu GPU adapter",
+      "test gallery::scene3d_preview::tests::scene3d_gallery_composes_gpu_image_and_stops_off_page ... ignored, requires a real wgpu GPU adapter",
+      "test gallery::scene3d_preview::tests::scene3d_gallery_routes_clipped_input_and_reuses_gpu_geometry ... ignored, requires a real wgpu GPU adapter",
+      "test component_and_ui_passes_share_one_encoder_in_order ... ignored, requires a real wgpu GPU adapter",
+      "test foreign_context_and_wrong_image_kind_are_rejected_before_gpu_binding ... ignored, requires real wgpu GPU adapters",
+      "test gpu_storage_color_order_clipping_replacement_and_lifetime ... ignored, requires a real wgpu GPU adapter",
+      "test deform::tests::gpu_morph_and_skin_match_cpu_geometry_including_normals ... ignored, requires a real wgpu GPU adapter",
+      "test deform::tests::shared_indices_preserve_geometry_and_frame_uploads ... ignored, requires a real wgpu GPU adapter",
+      "test deform::tests::vertex_count_does_not_change_frame_uploads ... ignored, requires a real wgpu GPU adapter",
+      "test gpu::tests::camera_motion_reuses_deformation_and_seek_invalidates_it ... ignored, requires a real wgpu GPU adapter",
+      "test gpu::tests::distant_close_surfaces_do_not_z_fight ... ignored, requires a real wgpu GPU adapter",
+      "test gpu::tests::environment_normals_match_numerical_reference_and_reuse_buffers ... ignored, requires a real wgpu GPU adapter",
+      "test gpu::tests::glass_alpha_is_premultiplied_in_ui_space_and_skipped_meshes_are_safe ... ignored, requires a real wgpu GPU adapter",
+      "test gpu::tests::indexed_smooth_and_flat_normal_images_match_expanded_cpu_reference ... ignored, requires a real wgpu GPU adapter",
+      "test gpu_animation_changes_pixels_and_resizes ... ignored, requires a real wgpu GPU adapter: cargo test -p tekes-ui-scene3d -- --ignored"
+    ]
+  },
+  "consumer": {
+    "summaries": 35,
+    "totals": {
+      "passed": 168,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered_out": 0
+    },
+    "ignored": []
+  },
+  "performance": "not measured;3explicit CI timing skips, parser fixture tests do not measure app performance",
+  "explicit_skips": [
+    "timing_is_off_by_default_and_costs_nothing_to_drain",
+    "cpu_segments_are_consistent_and_frames_are_numbered",
+    "gpu_time_agrees_with_wall_clock_on_a_heavy_frame"
+  ],
+  "source_projection": "45components/5patterns/2examples,44governance and8composition regression checks plus actual generated3Rustbindings",
+  "brand": "unchanged isolated test-consumer-brand.py executed against snapshot;2external public consumers,4themes and own configs; CPU/scene assertions, no new native/visual acceptance",
+  "cache_adapter": "Only the brand test uses brand-cache-runner.py to bind existing prepare_cache(workspace_root=SOURCE) to central cache. Test/compiler sources unchanged; other Python and all Cargo commands run directly in snapshot. Local empty Git metadata provides non-vacuous source inventory; no commits/index/remote.",
+  "cleanup": "cleanup.json:208unused executable/dependency artifacts,468128667bytes removed after complete unused inventory; common registry/shared source/evidence kept. Managed lane switch returns to current root for draft replay.",
+  "initial_live_run": "../current-ci-after-preflight-20261020: all commands green but aggregate invalidated by3concurrent3Dasset/script changes; retained as rejected aggregate, not final acceptance",
+  "boundaries": [
+    "This is sender local isolated verification, not independent reviewer signoff or remote CI.",
+    "Whole Gallery state-page raster test checks visible output/scroll positions, not visual equality, native interaction or Gold7 approval.",
+    "16ignored tests remain ignored; new component/3D experience scope not expanded.",
+    "No performance/native window/VoiceOver run, Git publication or Issue write."
+  ]
+}

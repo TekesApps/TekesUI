@@ -1,0 +1,123 @@
+{
+  "format": "tekesui-command-async-review/1",
+  "date": "2026-10-18T03:32:08.526848+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues_open": 14,
+  "prs_all_states": 0,
+  "github_changed_since_ledger": false,
+  "root_cause": "Missing independent caller integration; existing shared CommandPaletteView trigger/results, TextFieldContent and ContentHost already provide required contracts. No new library abstraction/token.",
+  "implementation": [
+    "private caller component owns original CommandPaletteView and TextFieldContent plus existing Status/Feedback/Stack",
+    "status-only updates retain query/IME/selection/candidate; execute/dismiss restore original trigger focus",
+    "initial empty data remains editable and receives response without focus theft; stale pointer response canceled",
+    "last execution retained as caller history; unique example command labels reconcile live indices",
+    "feedback before lookup keeps failure visible with open menu; real menu measure reserves Gallery specimen spacing"
+  ],
+  "scope_exceptions": [
+    "one command semantic node has mutually exclusive trigger/query focus and role; full native AX role transition still unverified",
+    "no new async library protocol/token or framework",
+    "Gallery cases composition-review/test gated; default build excludes consumer fixtures",
+    "unique command labels are fixture domain policy; execution history is not current selection index",
+    "physical IME/native live async/full motion/VoiceOver not accepted"
+  ],
+  "validation": {
+    "independent_consumer_total": 42,
+    "new_consumer_tests": 3,
+    "new_consumer_token_cases": 48,
+    "combined_command_cases": 168,
+    "shared_packages_carried_forward": 347,
+    "shared_source_unchanged": "all library/token inputs still exact previous frozen Combo batch; no redundant full shared suite rerun",
+    "gallery_narrow_large_type_fixture": 1,
+    "strict_clippy": "root workspace all-targets composition-review and consumer all-targets pass",
+    "authoritative_logs": [
+      "logs/command-final.log",
+      "logs/consumer-full.log",
+      "logs/consumer-clippy-current.log",
+      "logs/root-clippy-current.log",
+      "logs/gallery-states-final.log",
+      "logs/default-build-current.log",
+      "logs/review-build-current.log"
+    ],
+    "capability_tests": 37,
+    "composition_audit_tests": 6,
+    "reference_gold7_mechanical_pure_rust_root_consumer_fmt": "pass",
+    "diagnostic_logs": "earlier log files retain corrected import/Clippy errors; authoritative current/final logs above"
+  },
+  "tokens": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "query-async-token-observations.json": 264,
+    "command-async-token-observations.json": 168,
+    "action-token-observations.json": 576
+  },
+  "reused_token_evidence": [
+    "input612",
+    "popup192",
+    "action576",
+    "selection2016"
+  ],
+  "reused_token_source": "combo-async-20261018; exact evidence bytes retained and every input hash revalidated; consumer source changes require fresh command/query/content probes only",
+  "gpu": {
+    "pages": 144,
+    "earlier_reference_pages": 144,
+    "changed_from_earlier": 144,
+    "earlier_reference": "command-results-20261018/gpu-brand*-*x; historical same-component reference, not immediate baseline rerun",
+    "reason": "three independent async caller specimens and measured menu space",
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "experience": "representative Light narrow150 and DarkIC brand2@2x inspected; full family acceptance incomplete"
+  },
+  "native": {
+    "observed": [
+      "signed composition-review Gallery renders independent retained Loading/Error and initial-empty Loading specimens",
+      "failure visible before original trigger/query/candidates",
+      "fill and application Preview420/type150; query, feedback and clipping readable"
+    ],
+    "not_accepted": [
+      "native live async transitions",
+      "complete motion",
+      "physical IME",
+      "controlsAX/VoiceOver"
+    ],
+    "identity": "native/build-identity.json",
+    "AX": "window/menu only",
+    "exit_inventory": [],
+    "scope": "Gallery only; no system settings"
+  },
+  "governance": {
+    "public_states": 125,
+    "fixture_gaps": 131,
+    "required": 269,
+    "remaining_choice_profile_public_fixture_requirements": 0,
+    "retained": "other component-family fixtures plus complete native async/motion/AX/unified acceptance"
+  },
+  "limits": [
+    "public tests CoreText/no-op glyph painter; GPU/native separate",
+    "complete state combinations/token dependencies not claimed",
+    "performance deferred",
+    "no expanded migration or new components"
+  ],
+  "source_sha256": {
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs": "f7538325dd125d60189213ca8b1923c8a8f56dcd8f3b9e9431efa3336e67be27",
+    "design/gallery/capabilities.json": "4abba405f9d56a6d7e6f390a606af983c3036fffba4b0924e6ad5c839955b660",
+    "design/gallery/component-coverage.json": "8d98f95fe794001b6f7e7c4386b8acb81de1d7eeda751ac1be74e0375bc4cd68",
+    "design/remediation/composition-audit.json": "9d6d2b8622677d9b7c85714e918de429bdae8aa8467188008360dbe07ffaf197",
+    "design/remediation/ledger.json": "535dc9f654baa495bf6c9eb42bb7481570badea524b72ca7c594276224c73352",
+    "docs/design/composition-audit-20261018.md": "8348e2ce539f22b78c188d0491509e651a6a8156464fa5bdb9789a3a8de1ca4b",
+    "docs/design/issue-remediation-current-20261017.md": "2478ac94b067084f52d1ebd252c2d97f24c17d0f2e71a132d5fb504de44c6b9c",
+    "examples/composition-consumer/src/lib.rs": "b8662a59ecd6aa495739f40917444d1950cd1f907e4d8cad5da020861836f3f0",
+    "examples/composition-consumer/src/command_status.rs": "ce58233447b8bc72d134931ca02b036fe42cd34ecffd28d1c2930e3661f8c237",
+    "examples/composition-consumer/tests/command_status.rs": "332ced1dcc1095afa01ff9cb2cd47871bdc5601225bfd37fb898272795a159ff",
+    "scripts/audit-command-async-tokens.py": "b9e7295e72318772ab8dc0a4cba15eba68a4a653a742a60cf2cb96b7d4a658b2",
+    "docs/design/command-async-20261018.md": "ab3cf13663a3e6fa4ce1fb66981bfb752fee36ce323412e2781459f0468631e0"
+  },
+  "goal_status": "active",
+  "wip_protection": "wip-protection.json"
+}

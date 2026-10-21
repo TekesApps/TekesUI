@@ -1,0 +1,100 @@
+{
+  "objective": "依次完成已确认的八个工作批次",
+  "classification": "verified wait; no implementation progress this goal turn",
+  "consecutive_blocker_observations": 3,
+  "basis": "previous goal turn packaged/started final native host and confirmed no activation during bounded observation; this turn revalidated both live signed processes and inactive native snapshots",
+  "native_processes": [
+    {
+      "pid": 87803,
+      "role": "retained text-family prior candidate",
+      "active": false
+    },
+    {
+      "pid": 8226,
+      "role": "current Checkbox/Switch availability review",
+      "active": false
+    }
+  ],
+  "signed_binaries_match": true,
+  "native_verifier": "six current selection chains remain missing; no inactive input accepted",
+  "publication": "14-file61dd authorization executed;20-file cumulative CI followup remains outside authorized scope and unpublished",
+  "remaining_input": [
+    "foreground activation of selection window; prior text round remains separate",
+    "explicit authorization for six additional file paths if publishing the verified20-file followup"
+  ],
+  "why_not_switch_shared_implementation": "current shared repair must finish layered verification before changing shared behavior again; pending native and final-version delivery may not be replaced by more tests or unrelated work",
+  "all_batches_complete": false,
+  "goal_action": "blocked audit threshold satisfied: pending required human foreground activation and explicit expanded publication scope; preserve unfinished eight-batch objective",
+  "retained": "all WIP, source/receipts, frozen packages and two copied app runtimes; cache executables already cleaned",
+  "publication_actions_this_turn": "none",
+  "observed_at": "2026-10-19T22:04:42.309877+00:00",
+  "latest_observations": [
+    {
+      "receipt": "design/reviews/input-family-consumer-20261020/native-runtime.json",
+      "pids": [
+        87803
+      ],
+      "active": false,
+      "binary_matches": true
+    },
+    {
+      "receipt": "design/reviews/selection-key-gpu-20261020/native-runtime.json",
+      "pids": [
+        8226
+      ],
+      "active": false,
+      "binary_matches": true
+    }
+  ],
+  "latest_resolution": {
+    "native": "Scoped Button alignment and direct Link disabled-observation native rounds completed, windows closed and runtimes cleaned. Text required/optional VO deferred by user; keep off.",
+    "blocked_audit": "Old inactive or physical-input wait observations resolved; never reuse their count for a later condition.",
+    "next_safe_work": "Link revised-role small host final consumer/GPU pass and signed; CUA launch unavailable with no live process. Await requested manual launch/foreground for actual native acceptance; no native pass inferred. VoiceOver deferred/off. Entire eight-batch objective remains unfinished.",
+    "publication": "User explicitly authorized8-file CI followup;8cf0840790334ba224afc0595897c74231c712e6 pushed to existing codex branch, handed off to AgentKit. RemoteCI39365340268 and independent verdict tracked in issue23-ci-publish-20261020/publication.json. No main/tag/Issue closure.",
+    "link_role_evidence": "design/reviews/link-role-20261020/acceptance.json",
+    "link_native_evidence": "design/reviews/link-role-native-20261020/acceptance.json",
+    "publication_evidence": "design/reviews/issue23-ci-publish-20261020/publication.json"
+  },
+  "latest_audit": {
+    "checked_at": "2026-10-19T23:01:00.760999+00:00",
+    "objective": "依次完成1到8; eight work batches, not Issues1–8",
+    "completed_batches": [
+      1
+    ],
+    "incomplete_batches": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "fresh_native_condition": "current revised host33109 live and signed identity matches, window remains inactive/event7; no relaunch or tool activation counted as acceptance",
+    "consecutive_observations": [
+      "First continuation after user-resumed native round:33109 live, inactive,event7; current regression source boundary reconciled",
+      "Second continuation:33109 live,inactive,event7; final required-profile128GPU frames passed, own build outputs cleaned",
+      "Third continuation:33109 live,inactive,event7; AgentKit cursor9 contains no new TekesUI pin/acceptance conclusion"
+    ],
+    "work_completed_while_waiting": [
+      "Original active native3-alias state/focus checks retained separately",
+      "Host shortcut routing omission repaired by existing consumer mapping, four API/publisher tests/strictClippy/build pass",
+      "Final required-profile128GPU frames/64 comparisons with unchanged optional search and documents",
+      "Historical full-workspace vs current five-file repair evidence accurately separated"
+    ],
+    "remaining_current_step": [
+      "Actual active-window native undo/redo verification on revised host",
+      "Required/optional VoiceOver announcement, only when human available; not enabled now"
+    ],
+    "public_delivery_condition": {
+      "prepared_identity": "53228e613cbd4c5da0d398a45c512c10fdab93a81419497aa2515eef11d6a53a",
+      "followup_files": 8,
+      "cumulative_files": 20,
+      "authorization": "Only exact original14files approved; no permission for20file followup found",
+      "blocked_work": "public CI repair delivery and independent final version acceptance"
+    },
+    "safe_action_audit": "Current required shared/native and host adaptation acceptance must finish before switching shared implementation per user. Available current-step automatic/API/GPU checks passed; repeating them does not replace foreground/VoiceOver. Publication cannot exceed explicit14-file scope. Later work batches remain required and not complete; no scope reduction.",
+    "preservation": "33109 runtime retained waiting user; copied native binary not changed by added GPU test; source/GPU/native evidence retained. Shared cache dependencies retained, own GPU package outputs cleaned. No performance/commit/push/tag/Issue writes.",
+    "coordination_cursor": "32e784f3-3ced-4c70-ae7e-c25c4bc2c265:9"
+  }
+}

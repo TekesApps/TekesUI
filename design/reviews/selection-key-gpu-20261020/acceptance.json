@@ -1,0 +1,33 @@
+{
+  "status": "real GPU and scoped native key-availability acceptance passed; round cleaned",
+  "scope": "existing Checkbox disabled/loading and Switch disabled; no new component/migration",
+  "frames": 1440,
+  "cases": 288,
+  "pixel_equality_checks": 288,
+  "visible_fresh_value_checks": 288,
+  "matrix": "four themes, three existing brands, @1x/@2x, paired280pt/1.5text and640pt/1.0text, Space/pointer arms, three availability cases",
+  "renderer": "actual Renderer::new_headless and render_to_rgba8, no software fallback acceptance",
+  "reference": "same armed fixture with explicit existing cancel vs unavailable-key observation plus late release; no paint between disable/key/reenable/release",
+  "text": "exact reused CoreText shape/raster/atlas backend; visible mixed Latin/CJK/emoji glyphs",
+  "reduced_motion": true,
+  "visual_inspection": [
+    "theme0-brand0-280@2x-false-checkbox-disabled-held.png",
+    "theme0-brand0-280@2x-false-checkbox-disabled-restored.png",
+    "theme3-brand0-280@2x-false-switch-disabled-restored.png",
+    "theme3-brand0-280@2x-false-switch-disabled-fresh.png"
+  ],
+  "visual_findings": "viewed bounded narrow/large profiles show readable wrapped text and stable label/control/focus geometry; fresh switch selected value visible; no full-library or whole-matrix human experience claim",
+  "png_count": 648,
+  "png_bytes": 24764347,
+  "strict_clippy": "passed",
+  "format": "passed",
+  "dependency_identity": "all registry versions/checksums equal current root lock; local paths explicit",
+  "protected_root_inputs": 562,
+  "unexpected_source_changes": [],
+  "source_boundary": "host-source-manifest and protected-before record exact current WIP; this is not a public pin or complete portable source archive",
+  "cleanup": "exact small-host package artifacts cleaned; shared deps/source/PNG evidence retained",
+  "native": "native/acceptance.json",
+  "Gold7": "scoped repair accepted; normal motion/full-family and full-page claims remain separate",
+  "performance": "not measured",
+  "publication": "none"
+}

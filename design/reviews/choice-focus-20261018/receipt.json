@@ -1,0 +1,95 @@
+{
+  "format": "tekesui-choice-focus-review/1",
+  "date": "2026-10-18T01:59:14.305399+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues_open": 14,
+  "prs_all_states": 0,
+  "github_changed_since_ledger": false,
+  "root_cause": [
+    "SelectView owned trigger retains pointer modality after keyboard close",
+    "Workbench direct Menu keyboard handling restores logical target but not caller Button modality"
+  ],
+  "fix": [
+    "SelectView.key reuses focus(true) on keyboard Activated/Dismissed",
+    "Workbench Menu keyboard-close caller updates existing Button focus fields"
+  ],
+  "reuse_exceptions": [
+    "CommandPalette already restores trigger modality",
+    "ComboBox keeps TextSurface input focus ownership",
+    "mouse reopen remains pointer modality",
+    "full Gallery Menu native before/after already has focus ring; no false native red claim"
+  ],
+  "validation": {
+    "public_choice_contract": 11,
+    "public_new_paths": 24,
+    "shared_packages": 339,
+    "independent_consumer": 32,
+    "full_gallery_confirm_36_76": true,
+    "workbench_menu_confirm_cancel": true,
+    "compiled_public_red": true,
+    "compiled_workbench_menu_enter_red": true,
+    "strict_clippy": "root all targets composition-review and consumer all targets pass",
+    "capability_tests": 37,
+    "composition_tests": 6,
+    "governance": "reference/Gold7 mechanical/pureRust/fmt pass"
+  },
+  "tokens": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "choice-trigger-token-observations.json": 84,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "choice-selection-token-observations.json": 180,
+    "action-token-observations.json": 576
+  },
+  "gpu": {
+    "pages": 288,
+    "baseline_pages": 288,
+    "byte_identical": 288,
+    "scope": "existing Select/ComboBox state fixtures; keyboard-close runtime path separately native observed",
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ]
+  },
+  "native": {
+    "accepted": [
+      "Select mouse open Down Enter Compact and trigger focus ring",
+      "Select mouse reopen has no keyboard ring; Escape preservesCompact and restores ring",
+      "Menu Enter/Escape focus ring before and after"
+    ],
+    "diagnostic": [
+      "before-select-enter.png captured after tightly batched actions; settled single-step screenshot is conclusion source"
+    ],
+    "baseline_identity": "native/before-build-identity.json",
+    "current_identity": "native/build-identity.json",
+    "AX": "window and menus only",
+    "exit_inventory": []
+  },
+  "limits": [
+    "115 exact public states/141 fixture gaps unchanged",
+    "remaining10 choice requirements retained",
+    "full Gold7 family experience/nativeAX/VoiceOver/physicalIME incomplete",
+    "performance deferred",
+    "no new runtime layer/token/type or broader migration"
+  ],
+  "source_sha256": {
+    "crates/tekes-ui-controls/src/layout_view.rs": "3bac84282ad59c057ad47c8cc6807f320aa86f21e5a072c801817de51e4cb60d",
+    "crates/tekes-ui-controls/tests/choice_contract.rs": "c03cc3046787aabd81680a789411847fa74bd0b8739590cfee4daf97e333b65e",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs": "4cbdfb4fff95999b5f12e495872ceb3dfc93aea058fd60c956fe0d7f03ade2ca",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "100e8f28702bad22584495b2c93a5c702825efe119189cc22ab0cc9af786e864",
+    "design/gallery/capabilities.json": "355611f6d75006d66fde2c2e5f237e33f0dd7c7dbf185215c4832655deda5c96",
+    "design/gallery/component-coverage.json": "824a0144dbebb1605c07478c694939fc21380d1abbcd3a567ebc6beea3aec779",
+    "design/remediation/composition-audit.json": "96c8fd460681742a45fd9852587cd22a46197db45c19f8e976affd2b0f4abec0",
+    "design/remediation/ledger.json": "a560331e62f03b3f2040166a20ed8dd49ef890fb89a7f472e113e4175eb50125",
+    "docs/design/composition-audit-20261018.md": "326859493b12a6ed7cacac5dfc5a2b44438d9afc85eda083a5e3bae6ab5b2274",
+    "docs/design/issue-remediation-current-20261017.md": "7d56133f82de9bad3dceb01f031299cc330aaa93d58536f29eb3c2424832457c",
+    "examples/composition-consumer/tests/scenarios.rs": "3890aabc82467128ef81928bdedd1c2d97142f56341c12a8b5aee62cf4af5316",
+    "docs/design/choice-focus-20261018.md": "0e57d62cd6bdd9cf1c189661cc7b4bbb893d24e9c795deec527e7298892c0f60"
+  },
+  "goal_status": "active",
+  "wip_protection": "wip-protection.json"
+}

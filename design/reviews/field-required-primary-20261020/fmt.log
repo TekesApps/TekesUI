@@ -1,0 +1,247 @@
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/mod.rs:32:
+ pub mod pages;
+ #[cfg(test)]
+ mod quality_effects;
+-pub mod snapshot;
+ mod scene3d_preview;
++pub mod snapshot;
+ pub mod static_text;
+ pub mod text;
+ pub mod text_demo;
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/mod.rs:494:
+             {
+                 self.scene3d.reset();
+             }
+-            self.scene3d.prepare(renderer, self.workbench.reduced, scale);
++            self.scene3d
++                .prepare(renderer, self.workbench.reduced, scale);
+         }
+         if self.content_page() == Page::Icons {
+             let icon_type_scale = if matches!(self.page, Page::Workbench(_)) {
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/mod.rs:672:
+                     &mut layer,
+                 );
+                 if workbench::entry(i).renderer() == "scene3d" && self.workbench.show_live(i) {
+-                    self.scene3d.paint(&mut layer, self.workbench.preview_rect(i), ctx.text, theme);
++                    self.scene3d
++                        .paint(&mut layer, self.workbench.preview_rect(i), ctx.text, theme);
+                 }
+                 let required_height = self.workbench.measured_document_extent(i);
+                 if required_height > self.viewport.document_height() + 0.01 {
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/mod.rs:816:
+             self.text
+                 .set_motion_context(self.motion_now, self.workbench.reduced);
+         }
+-        let scene3d_dirty = self.scene3d_visible() && self.scene3d.advance(dt, self.workbench.reduced);
++        let scene3d_dirty =
++            self.scene3d_visible() && self.scene3d.advance(dt, self.workbench.reduced);
+         let component_frame_pending = self.text.motion_frame_requested();
+         let mut dirty = self.viewport.tick(dt)
+             | self.sidebar.scroll.tick(dt)
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/pages/motion.rs:1459:
+             (layout.stage.size.width - 32.0 * layout.text_scale).max(1.0),
+             192.0 * layout.text_scale,
+         );
+-        let mut digits = crate::gallery::text::TickingPreviewText(p.ctx.text, 64.0 * layout.text_scale);
++        let mut digits =
++            crate::gallery::text::TickingPreviewText(p.ctx.text, 64.0 * layout.text_scale);
+         let mut number_size = state
+             .ticking
+             .measure(&mut digits, proposal::TextRole::UiHeading);
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/pages/motion.rs:1466:
+         if number_size.width > preview.size.width {
+             digits.1 *= preview.size.width / number_size.width;
+-            number_size = state.ticking.measure(&mut digits, proposal::TextRole::UiHeading);
++            number_size = state
++                .ticking
++                .measure(&mut digits, proposal::TextRole::UiHeading);
+         }
+         let tick_origin = Point::new(
+             preview.center().x - number_size.width / 2.0,
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/snapshot.rs:416:
+             gallery.animate(delta);
+             let mut scene = Scene::new();
+             gallery.build_scene(&mut scene);
+-            widths.push(gallery.motion.ticking.measure(&mut gallery.text,
+-                tekes_ui_tokens::proposal::TextRole::UiHeading).width);
++            widths.push(
++                gallery
++                    .motion
++                    .ticking
++                    .measure(
++                        &mut gallery.text,
++                        tekes_ui_tokens::proposal::TextRole::UiHeading,
++                    )
++                    .width,
++            );
+             let background = Gallery::background(gallery.theme.system);
+-            let rgba = renderer.render_to_rgba8(&scene, gallery.atlas_mut(),
+-                (1000, FRAME_H as u32), 1.0, background).unwrap();
++            let rgba = renderer
++                .render_to_rgba8(
++                    &scene,
++                    gallery.atlas_mut(),
++                    (1000, FRAME_H as u32),
++                    1.0,
++                    background,
++                )
++                .unwrap();
+             if let Ok(dir) = std::env::var("TEKESUI_TICKING_SNAPSHOT_OUT") {
+                 fs::create_dir_all(&dir).unwrap();
+-                fs::write(Path::new(&dir).join(format!("ticking-{index}.png")),
+-                    encode_png(&rgba, 1000, FRAME_H as u32).unwrap()).unwrap();
++                fs::write(
++                    Path::new(&dir).join(format!("ticking-{index}.png")),
++                    encode_png(&rgba, 1000, FRAME_H as u32).unwrap(),
++                )
++                .unwrap();
+             }
+             images.push(rgba);
+         }
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/text.rs:267:
+     /// Large counter glyphs are shaped at their final size and cached per digit.
+     fn ticking_preview_digit(&mut self, digit: &str, size: f32) -> Rc<Paragraph> {
+         let key = LabelKey {
+-            text: digit.to_owned(), role: LabelRole::TickingPreview(size.to_bits()),
+-            width_64: None, locale: self.locale, type_scale_bits: self.type_scale.to_bits(),
++            text: digit.to_owned(),
++            role: LabelRole::TickingPreview(size.to_bits()),
++            width_64: None,
++            locale: self.locale,
++            type_scale_bits: self.type_scale.to_bits(),
+         };
+-        if let Some(paragraph) = self.labels.get(&key) { return paragraph.clone(); }
++        if let Some(paragraph) = self.labels.get(&key) {
++            return paragraph.clone();
++        }
+         let style = TextStyle::system(size);
+         let paragraph = Rc::new(self.shape(digit, &style, &ShapeOptions::default()));
+         self.cache_label(key, paragraph.clone());
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/text.rs:609:
+         let paragraph = self.0.ticking_preview_digit(text, self.1);
+         Size::new(paragraph.width as f32, paragraph.height as f32)
+     }
+-    fn draw(&mut self, scene: &mut Scene, text: &str, _: proposal::TextRole,
+-        rect: Rect, _: ButtonTextAlign, ink: Rgba) {
++    fn draw(
++        &mut self,
++        scene: &mut Scene,
++        text: &str,
++        _: proposal::TextRole,
++        rect: Rect,
++        _: ButtonTextAlign,
++        ink: Rgba,
++    ) {
+         let paragraph = self.0.ticking_preview_digit(text, self.1);
+         let origin = label_origin(rect, &paragraph, HAlign::Center);
+         self.0.push(scene, &paragraph, origin, ink);
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/workbench.rs:10023:
+     use super::*;
+     #[test]
+     fn scene3d_reset_is_consumed_once_and_only_implemented_stories_are_exposed() {
+-        let i = entries().iter().position(|e| e.renderer() == "scene3d").unwrap();
++        let i = entries()
++            .iter()
++            .position(|e| e.renderer() == "scene3d")
++            .unwrap();
+         assert!(!entry(i).supports_story("behaviors"));
+         let mut workbench = Workbench::default();
+         assert!(!workbench.take_scene3d_reset(i));
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/gallery/workbench.rs:10030:
+-        workbench.state(i).activate(0,"scene3d");
++        workbench.state(i).activate(0, "scene3d");
+         assert!(workbench.take_scene3d_reset(i));
+         assert!(!workbench.take_scene3d_reset(i));
+     }
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/perf.rs:665:
+         }
+         if self.cfg.content == ContentKind::Scene3d {
+             assert!(self.gallery.open_route("component-scene3d/playground"));
+-            self.gallery.set_view_size(window.size().width as f32,window.size().height as f32);
++            self.gallery
++                .set_view_size(window.size().width as f32, window.size().height as f32);
+             // Layout chooses the physical viewport; settle it before timing.
+             for _ in 0..2 {
+-                self.gallery.prepare(renderer,self.scale);
++                self.gallery.prepare(renderer, self.scale);
+                 self.gallery.build_scene(&mut Scene::new());
+             }
+-            self.gallery.start_scene3d_rotation(std::env::var("TEKES_PERF_SCENE3D_ANIMATION").as_deref()==Ok("1"));
++            self.gallery.start_scene3d_rotation(
++                std::env::var("TEKES_PERF_SCENE3D_ANIMATION").as_deref() == Ok("1"),
++            );
+         }
+         self.prewarm_ms = t.elapsed().as_secs_f64() * 1e3;
+         self.window_info = match window.screen_info() {
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/perf.rs:741:
+         }
+     }
+     fn scroll_at(&self, elapsed: f64) -> f32 {
+-        if self.cfg.content==ContentKind::Scene3d {return 0.;}
++        if self.cfg.content == ContentKind::Scene3d {
++            return 0.;
++        }
+         let range = if matches!(
+             self.cfg.content,
+             ContentKind::Editor | ContentKind::ScrollArea
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/perf.rs:758:
+     /// 编这一帧的可见内容。
+     fn build(&mut self, ctx: &mut FrameCtx<'_>, scroll: f32) {
+         if self.cfg.content == ContentKind::Scene3d {
+-            self.gallery.prepare(ctx.renderer,self.scale);
++            self.gallery.prepare(ctx.renderer, self.scale);
+             self.gallery.build_scene(ctx.scene);
+             return;
+         }
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/perf.rs:857:
+             symbols.tick(elapsed, dt);
+         }
+         if self.cfg.content == ContentKind::Scene3d {
+-            let dt=self.animation_target.map_or(f.refresh_interval,|last|(f.target_timestamp-last).max(0.));
+-            self.animation_target=Some(f.target_timestamp);
++            let dt = self.animation_target.map_or(f.refresh_interval, |last| {
++                (f.target_timestamp - last).max(0.)
++            });
++            self.animation_target = Some(f.target_timestamp);
+             self.gallery.animate(dt as f32);
+         }
+         if self.cfg.content == ContentKind::Motion {
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/perf.rs:956:
+         }
+         if self.phase == Phase::WarmUp {
+             self.phase = Phase::Measure;
+-            if self.cfg.content==ContentKind::Scene3d {self.scene3d_start=self.gallery.scene3d_diagnostics();}
++            if self.cfg.content == ContentKind::Scene3d {
++                self.scene3d_start = self.gallery.scene3d_diagnostics();
++            }
+             self.measure_start_target = Some(f.target_timestamp);
+             self.measure_start_cpu = process_cpu_seconds();
+             self.measure_start = Some(Instant::now());
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/perf.rs:973:
+             ]);
+             self.cpu_rate_last = Some((now, current));
+         }
+-        if self.cfg.content==ContentKind::Scene3d {
+-            let (bytes,meshes)=self.gallery.scene3d_frame_work();
+-            self.scene3d_pose_bytes+=bytes; self.scene3d_deformed_meshes+=meshes as u64;
++        if self.cfg.content == ContentKind::Scene3d {
++            let (bytes, meshes) = self.gallery.scene3d_frame_work();
++            self.scene3d_pose_bytes += bytes;
++            self.scene3d_deformed_meshes += meshes as u64;
+         }
+         let c = ctx.renderer.last_frame_counts();
+         self.counts
+Diff in /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-gallery/src/perf.rs:1564:
+         assert_eq!(c.speed, 600.0);
+         assert_eq!(c.content, ContentKind::Text);
+         assert_eq!(c.out, Some(PathBuf::from("/tmp/x.json")));
+-        assert_eq!(PerfConfig::parse("scroll:60",None,Some("scene3d"),None).unwrap().content,ContentKind::Scene3d);
++        assert_eq!(
++            PerfConfig::parse("scroll:60", None, Some("scene3d"), None)
++                .unwrap()
++                .content,
++            ContentKind::Scene3d
++        );
+         assert!(PerfConfig::parse("zoom", None, None, None).is_err());
+         assert!(PerfConfig::parse("scroll:abc", None, None, None).is_err());
+         assert!(PerfConfig::parse("scroll:0", None, None, None).is_err());

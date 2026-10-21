@@ -1,0 +1,64 @@
+{
+  "issue": 33,
+  "status": "已实现待验收",
+  "owner": "root sole SDK implementation; Rust AgentKit actual forwarding consumer",
+  "root_cause": "Concrete type downcast hid retained exact action focus from ordinary sibling traversal; next row occluded lower ring.",
+  "shared_fix": "Default-false Component::focus_decoration_above_siblings; original ButtonContent predicate, CompoundButton and actual consumer wrapper delegate to same retained action; traversal queries trait with original active ancestry.",
+  "applies_to": [
+    "Direct exact actions",
+    "Legal wrapper delegating original CompoundButton, no copied predicates/state/input/paint"
+  ],
+  "exceptions": [
+    "Minimum defaults unchanged",
+    "inactive/disabled/loading/non-keyboard focus not raised",
+    "layout/half-open hit/AX/overlay order unchanged",
+    "paints_children owners retain own declared child paint order"
+  ],
+  "test_counts": {
+    "controls": 426,
+    "consumer": 245,
+    "forwarded-api-final": 5
+  },
+  "GPU_cases": 72,
+  "GPU_frames": 288,
+  "red_regression": "before-fix.log; wrapped15002 lower ring pixel y31 remained white",
+  "tokens": {
+    "actual_probes": 17,
+    "bounded_cases": 6432,
+    "complete": false
+  },
+  "native": {
+    "identity": "0e8578af063e45a9d475b8bac7dc59048bb6cb15206875a69053079f570cf34a",
+    "active_checkpoints": 10,
+    "display": "U2790B@2",
+    "status": "scoped sender native passed; process exited",
+    "executable_retained": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/forwarded-focus-decoration-20261021/runtime/TekesUI Forwarded Focus Review.app"
+  },
+  "Gold7": "contract gate and scoped original ring pixels; actual product page receiver remains separate",
+  "VoiceOver": "off",
+  "performance": "not measured",
+  "Git": "no commit/push/tag/close",
+  "remaining": [
+    "Actual AgentKit TurnRailAction forwarding and matched final consumer experience on95b140c2",
+    "Matching public immutable pin/CI under explicit scope"
+  ],
+  "candidate": {
+    "identity": "95b140c278a2257c11fb956eaf860313c38bc4829bae70e022cc3d8f33bb38ac",
+    "archive": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/forwarded-focus-portable-candidate-20261021/forwarded-focus-95b140c278a2.tar.gz",
+    "sha256": "fb1abf3524b5aa44c585a323402779cd6ac8adc7e5578b59dbc9889773dbf523",
+    "files": 496,
+    "delta_paths": 7,
+    "base": "5677b80f5462570525ea3d00f6256298baac7e018513844de5403364e9c097f0",
+    "sender_independent_tests": {
+      "portable-text": 50,
+      "portable-controls": 388,
+      "portable-consumer": 242
+    },
+    "sender_GPU": {
+      "cases": 72,
+      "frames": 288
+    },
+    "receiver": "sent to authorized Rust AgentKit session; actual acceptance pending"
+  },
+  "cleanup": "cleanup.json; stage1 247MiB,stage2 408MiB reclaimed; final native executable preserved"
+}

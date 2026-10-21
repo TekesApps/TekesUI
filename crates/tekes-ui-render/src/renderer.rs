@@ -58,6 +58,7 @@ pub struct Renderer {
     device: wgpu::Device,
     queue: wgpu::Queue,
     gpu: Pipelines,
+    retired_images: std::sync::Arc<std::sync::Mutex<Vec<ImageId>>>,
     /// 最近一帧各类图元的实例数，测试用。
     last_frame: FrameCounts,
     surface: Option<SurfaceState>,
@@ -173,6 +174,7 @@ impl Renderer {
             device,
             queue,
             gpu,
+            retired_images: Default::default(),
             last_frame: FrameCounts::default(),
             surface: Some(SurfaceState {
                 surface,
@@ -201,6 +203,7 @@ impl Renderer {
             device,
             queue,
             gpu,
+            retired_images: Default::default(),
             last_frame: FrameCounts::default(),
             surface: None,
             gpu_timestamps,
@@ -294,6 +297,7 @@ impl Renderer {
         clear: Rgba,
         before_ui: impl FnOnce(&mut wgpu::CommandEncoder) -> Result<(), RenderError>,
     ) -> Result<(), RenderError> {
+        self.collect_retired_images();
         let Some(s) = &self.surface else {
             return Err(RenderError::Surface("这个渲染器没有 surface".into()));
         };
@@ -445,6 +449,44 @@ impl Renderer {
     ///
     /// `size_px` 是像素尺寸，`scale` 是逻辑点到像素的比例：scene 里 10pt 的矩形在
     /// scale 2 下占 20 个像素。用的管线和着色器与 [`render`](Renderer::render) 完全相同。
+    /// Render into a caller-owned BGRA8 target on this renderer's device,
+    /// without CPU readback. Caller owns external synchronization and lifetime.
+    pub fn render_to_texture(
+        &mut self,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        texture: &wgpu::Texture,
+        scale: f32,
+        clear: Rgba,
+    ) -> Result<wgpu::SubmissionIndex, RenderError> {
+        self.collect_retired_images();
+        let size = (texture.width(), texture.height());
+        check_size(size, scale)?;
+        if texture.format() != COLOR_FORMAT
+            || texture.sample_count() != 1
+            || texture.dimension() != wgpu::TextureDimension::D2
+            || texture.depth_or_array_layers() != 1
+            || !texture
+                .usage()
+                .contains(wgpu::TextureUsages::RENDER_ATTACHMENT)
+        {
+            return Err(RenderError::InvalidArgument(
+                "invalid external render target",
+            ));
+        }
+        // Timing is disabled for this external-target API until its ownership
+        // and completion reporting are integrated with the external producer.
+        if self.timing.is_some() {
+            return Err(RenderError::InvalidArgument(
+                "external target timing is not supported",
+            ));
+        }
+        let view = texture.create_view(&Default::default());
+        let mut encoder = self.device.create_command_encoder(&Default::default());
+        self.encode_scene(&mut encoder, &view, size, scale, scene, atlas, clear);
+        Ok(self.queue.submit([encoder.finish()]))
+    }
+
     pub fn render_to_rgba8(
         &mut self,
         scene: &Scene,
@@ -467,6 +509,7 @@ impl Renderer {
         clear: Rgba,
         before_ui: impl FnOnce(&mut wgpu::CommandEncoder) -> Result<(), RenderError>,
     ) -> Result<Vec<u8>, RenderError> {
+        self.collect_retired_images();
         check_size(size_px, scale)?;
         let (w, h) = size_px;
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
@@ -691,6 +734,42 @@ impl Renderer {
     ) -> Result<ImageId, RenderError> {
         self.check_gpu_image(image)?;
         Ok(self.gpu.image.register_gpu(&self.device, image))
+    }
+
+    /// Register storage with a component-owned lifetime. No borrowed Renderer
+    /// is needed on component unmount/Drop; render entry points collect it.
+    pub fn register_owned_gpu_image(
+        &mut self,
+        image: &crate::gpu::GpuImage,
+    ) -> Result<crate::gpu::GpuImageRegistration, RenderError> {
+        self.collect_retired_images();
+        let id = self.register_gpu_image(image)?;
+        Ok(crate::gpu::GpuImageRegistration {
+            id,
+            owner: self.id,
+            retired: std::sync::Arc::downgrade(&self.retired_images),
+        })
+    }
+    pub fn replace_owned_gpu_image(
+        &mut self,
+        registration: &crate::gpu::GpuImageRegistration,
+        image: &crate::gpu::GpuImage,
+    ) -> Result<(), RenderError> {
+        if registration.owner != self.id {
+            return Err(RenderError::InvalidArgument(
+                "GPU registration belongs to a different renderer",
+            ));
+        }
+        self.replace_gpu_image(registration.id, image)
+    }
+    /// Collect component registrations retired since the last render. Also safe
+    /// to call when a host removes content while it does not submit a frame.
+    pub fn collect_retired_images(&mut self) -> usize {
+        let retired = std::mem::take(&mut *self.retired_images.lock().unwrap());
+        retired
+            .into_iter()
+            .filter(|id| self.gpu.image.unregister(*id))
+            .count()
     }
 
     /// Replace a GPU image's backing storage (e.g. after resize), retaining ImageId.

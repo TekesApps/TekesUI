@@ -1,0 +1,77 @@
+{
+  "goal": "active",
+  "issue": 19,
+  "root_causes": [
+    "loss of platform pointer metadata in composition",
+    "nearest caret used as previous-word selection target",
+    "triple-click selected document, hard break geometry recognized only LF"
+  ],
+  "new_components": 0,
+  "new_tokens": 0,
+  "public_data_types": 4,
+  "component_count": 45,
+  "validation": {
+    "shared-authoritative.log": 316,
+    "text-final.log": 43,
+    "consumer-complete-final.log": 57,
+    "agentkit-authoritative.log": 13,
+    "agentkit-headless.log": 76
+  },
+  "strict_clippy": "shared controls/text/Gallery review + independent consumer + AgentKit passed",
+  "gpu": {
+    "images": 16,
+    "themes": 4,
+    "scales": [
+      1,
+      2
+    ],
+    "stages": [
+      "before selection",
+      "after full-pointer Shift selection"
+    ],
+    "representatives": "Light1x and DarkIC2x visually inspected",
+    "legacy_prepend_gpu": "four-theme existing GPU test passed again; separate from pointer acceptance"
+  },
+  "tokens": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "query-async-token-observations.json": 264,
+    "slider-composition-token-observations.json": 264,
+    "command-async-token-observations.json": 168,
+    "action-token-observations.json": 576
+  },
+  "token_total": 4500,
+  "token_freshness": "all8 probes rerun after final TextInput/TextSurface/CoreText fix; complete=false; initial stale evidence correctly rejected",
+  "native": {
+    "scope": "Gallery only; no AgentKit or system settings",
+    "red": "native/emoji-before-fix.json selection17..18",
+    "green": "native-fixed/emoji-double-click.json selection18..20 at same screen point307,1432",
+    "shift": "native-fixed/shift-click.json selection3..14",
+    "secondary": "native-fixed/secondary.json unchanged selection/focus8604/pages0",
+    "triple": "native-fixed/triple-click.json click_count3, one paragraph0..20",
+    "drag": "native-fixed/drag-outside-field.json Primary/Drag, selection3..20",
+    "source_identity": "separate signed binary/source hashes; tested-source exact host recovered and hash verified; final host differs only by Clippy if collapse",
+    "exit": "exit-inventory.json empty",
+    "diagnostic": "querying AX after Quit reopened an empty app session; use saved step snapshots, not the overwritten final reading-events.json"
+  },
+  "consumer_snapshot": "dfdbcf7ede5549d25f44092c73d0e9c129b50c3a7479c82027463de084b7a4b8",
+  "gold7": "shared JSON paint unchanged; actual GPU/native selection before/after. Mechanical gates do not establish full experience acceptance.",
+  "not_verified": [
+    "native multi-paragraph triple-click and long-document autoscroll",
+    "native loss of window focus during held selection drag",
+    "AgentKit native final experience (Gallery-only authorization)",
+    "physical Chinese IME",
+    "VoiceOver",
+    "formal public immutable pin (no commit/push/tag authorized)"
+  ],
+  "performance": "explicitly deferred; no performance measurement",
+  "diagnostics": [
+    "selection-red compiled regression proves wrong emoji word and whole-document triple selection",
+    "selection-complete diagnosed Unicode trailing-line gap, fixed in shared CoreText shaper",
+    "intermediate missing viewport argument and Clippy diagnostics corrected; no suppressions or test weakening"
+  ],
+  "wip_protection": "wip-protection.json",
+  "next": "#17 shared text-service disposition and composition-safe navigation, then #18/#20; preserve #15/#16 native/pin blockers"
+}

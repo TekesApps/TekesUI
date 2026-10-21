@@ -1,0 +1,10 @@
+{
+  "status": "bounded GPU and native passed; runtime cleaned",
+  "parent": "design/reviews/button-content-alignment-20261020/acceptance.json",
+  "GPU": "images/cases.json",
+  "native": "native/result.json",
+  "cleanup": "runtime.json",
+  "source": "source-manifest.json",
+  "performance": "not measured",
+  "VoiceOver": "not enabled"
+}

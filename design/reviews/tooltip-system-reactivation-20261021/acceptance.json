@@ -1,0 +1,51 @@
+{
+  "identity": "a33e3e7dd203e845bb4e3d1de6ca561500127a260569f9d4ce04f679086d2840",
+  "owner": "root",
+  "scope": "existing public TooltipView real system reactivation on final current WIP; no production change",
+  "root_cause": "remaining evidence gap; existing shared mixed-owner lifecycle implementation already sufficient",
+  "shared_location": "crates/tekes-ui-controls/src/feedback_view.rs TooltipView",
+  "applicable": "TooltipView consumers using retained original ButtonContent anchor; Gallery and independent consumer remain on existing contract",
+  "exception": "explicit caller visible=true survives loss, passive hover/focus does not; Escape suppression persists until a new request",
+  "API": "7 tooltip_lifecycle/tooltip_reentry tests passed; strict all-target host Clippy and native build passed",
+  "native": {
+    "screen": "U2790B@2",
+    "checkpoints": 16,
+    "themes": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "source": "native/accepted-checkpoints.json",
+    "accepted": [
+      "real inactive immediate hidden and AX text removed",
+      "late caller injection ignored while inactive",
+      "actual active passive restore stays hidden",
+      "fresh Tab original focus opens",
+      "explicit controlled request restores",
+      "Escape suppression survives restore",
+      "fresh caller hide/show opens",
+      "fresh real pointer hover opens with original anchor unfocused"
+    ]
+  },
+  "gold7": "bounded keyboard/pointer ownership and Escape/window lifecycle experience; no claim of whole matched ClientKit/page appearance",
+  "tokens": {
+    "receipt": "design/reviews/forwarded-focus-decoration-20261021/token-probes/tooltip.json",
+    "changed_inputs": [],
+    "cases": 240,
+    "complete": false
+  },
+  "diagnostics": [
+    "first checkpoint used wrong state key visible, corrected to tooltip_visible without changing state",
+    "immediate inactive sample in LightIC observed already-restored true; emitted seq45 proves real inactive and seq46/47 restoration; preserved raw states",
+    "earlier delayed activation accepted only after actual Focus(true), not AX visibility"
+  ],
+  "remaining": [
+    "applicable VoiceOver hearing deferred",
+    "same final combined candidate overlays/pages/ClientKit-Gold7 acceptance",
+    "no broad matrix native maturity promotion"
+  ],
+  "cleanup": "cleanup.json",
+  "performance": "not measured",
+  "git": "no commit/push/tag/close"
+}

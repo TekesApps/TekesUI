@@ -1,0 +1,108 @@
+{
+  "format": "tekesui-select-availability-review/1",
+  "date": "2026-10-18T02:30:05.339462+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues_open": 14,
+  "prs_all_states": 0,
+  "github_changed_since_ledger": false,
+  "root_fixes": [
+    "empty Select cancels popup and capture; current count checked before pointer/key and wheel",
+    "additive SelectView.set_error projects existing shared error boundary; no new state/token/protocol",
+    "Gallery caller feedback paints as base before owned popup; native-found overlap red/green regression"
+  ],
+  "scope_exceptions": [
+    "generic Menu empty surface unchanged",
+    "ComboBox/CommandPalette keep editable empty TextSurface and existing validation projection",
+    "validation error does not imply caller async failure accepted",
+    "selected usize retained through empty data but not treated as a valid empty-set option"
+  ],
+  "validation": {
+    "public_choice_contract": 14,
+    "compiled_empty_red_regressions": 1,
+    "compiled_feedback_order_red_regressions": 1,
+    "exact_choice_cases": 204,
+    "shared_packages": 343,
+    "independent_consumer": 34,
+    "gallery_select": 4,
+    "gallery_full_select_36_76": 1,
+    "gallery_narrow_large_type_fixture": 1,
+    "strict_clippy": "root all-targets composition-review and consumer all-targets pass",
+    "capability_tests": 37,
+    "composition_tests": 6,
+    "reference_gold7_mechanical_pure_rust_fmt": "pass"
+  },
+  "tokens": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "choice-selection-token-observations.json": 204,
+    "command-results-token-observations.json": 120,
+    "action-token-observations.json": 576
+  },
+  "gpu": {
+    "final_pages": 144,
+    "earlier_reference_pages": 144,
+    "changed_from_earlier": 144,
+    "earlier_reference": "choice-focus-20261018/gpu-brand* frozen same-component pages; not immediate baseline re-execution",
+    "reason": "new empty/error specimens and caller properties; measured reflow",
+    "pre_paint_state_pages_identical": 144,
+    "scope": "state fixtures; Playground popup order separately Scene/native verified",
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "experience": "representative only; full family acceptance incomplete"
+  },
+  "native": {
+    "accepted": [
+      "validation boundary plus focus, value repair still possible",
+      "popup options occlude caller feedback after painter-order fix",
+      "empty options reject click/Enter with no popup",
+      "restored choices preserve Compact and fresh click opens"
+    ],
+    "intermediate_evidence": "native/intermediate and native/before-feedback-order are diagnostic earlier builds, including overlap; not accepted as final",
+    "final_identity": "native/build-identity.json",
+    "AX": "window/menu only; controls/VoiceOver/physicalIME not accepted",
+    "exit_inventory": []
+  },
+  "diagnostics": [
+    "consumer initial test omitted presented menu frame; corrected test follows actual frame lifecycle",
+    "old popup geometry assertion expected an empty Select popup; updated for explicit empty contract; generic Menu unchanged"
+  ],
+  "governance": {
+    "public_states": 120,
+    "fixture_gaps": 136,
+    "required": 269,
+    "remaining_choice_profile_requirements": 5,
+    "additional_retained": "caller async failure composition for Select; complete family/native acceptance"
+  },
+  "limits": [
+    "Select loading, ComboBox loading/error, CommandPalette loading/error retained",
+    "complete combinations/token dependencies/nativeAX/VoiceOver/physicalIME/full Gold7 incomplete",
+    "performance deferred",
+    "no new runtime abstraction or token/state type"
+  ],
+  "source_sha256": {
+    "crates/tekes-ui-controls/src/layout_view.rs": "d727190dbe75c7bec28f99e5630caf3d0dc8b68a1f2c80bcd550e269a15b5107",
+    "crates/tekes-ui-controls/tests/choice_contract.rs": "638805b3c29965913a2b3edb240bb1448f3461a64d923514e6a66e352c5b8b02",
+    "crates/tekes-ui-controls/tests/choice_selection_states.rs": "f3677639bcb21f1312db3a08d35a804884ba06fe04510ff128a1953fcd100649",
+    "crates/tekes-ui-controls/tests/popup_placement.rs": "ebdf7d43ac05605fd22b5a110c6e0fe6793198baf00b12ae421ea4a843ab98c0",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "409c1823278498e2d8234a91296cfc347ad71f23cada635c99b29a778bfc7d0c",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs": "2bc4df42b76c7d83d048f59abef6046bb9537342634a27ccfc8b245f9f2e1b81",
+    "design/gallery/capabilities.json": "2dba5be2db0145f03a6e58d024ad9d490f10c59094d66d4aca3799856afedfa4",
+    "design/gallery/component-coverage.json": "fb4c7b0be4a694177308242e58f205f434a909f3faf71b273a8573759347f4e2",
+    "design/remediation/composition-audit.json": "b3783083fe5536ace3b2c8a5bc97b79330207be3913d6e1f814d53f132e39ce8",
+    "design/remediation/ledger.json": "e914265f1f1549d3c685c36873651f7ec43c3554540d0b06b1f0319c296f4c36",
+    "docs/design/composition-audit-20261018.md": "ef3958d67189987dbdc796fb84df0ee510e51101ba1e7dda9bd5cf383793cfe4",
+    "docs/design/issue-remediation-current-20261017.md": "4e963b0cd9f40a7b16846227fde16de018d580bb514b8f2d5124263cde14d4ed",
+    "examples/composition-consumer/tests/scenarios.rs": "e33c7b151cb4aa5ef6be4ea63736afe52fda8890fead3f9e5bc181769b32aca5",
+    "scripts/audit-choice-selection-tokens.py": "d6eed2fc9763fad62b75c842244914b368d1027bfe717ea53b52aa7ae7f752c8",
+    "docs/design/select-availability-20261018.md": "4a16f71ecbff1055a750edbdc8d5ac0fbc4f9f181921529c857f4a1ea329d29f"
+  },
+  "goal_status": "active",
+  "wip_protection": "wip-protection.json"
+}

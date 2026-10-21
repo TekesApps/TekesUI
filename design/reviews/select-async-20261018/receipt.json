@@ -1,0 +1,111 @@
+{
+  "format": "tekesui-select-async-review/1",
+  "date": "2026-10-18T02:55:35.350949+00:00",
+  "source": "HEAD plus ALL WIP",
+  "head": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "issues_open": 14,
+  "prs_all_states": 0,
+  "github_changed_since_ledger": false,
+  "root_fixes": [
+    "SelectView additive render_trigger/render_options reuse original owned trigger/menu; render delegates same implementation",
+    "overlay boundary rejects late empty options without ghost surface",
+    "existing caller Feedback reused by independent Select with measured Banner/Loading geometry",
+    "private app adapter retains cached choice/focus/candidate on status-only updates; data replacement reconciles selected domain label and cancels old popup/capture; stale response missing choice or duplicate values rejected atomically"
+  ],
+  "scope_exceptions": [
+    "no built-in async Select protocol or new token/state/UI framework",
+    "Gallery consumer integration composition-review/test gated; default build has no experimental caller fixtures",
+    "validation error remains distinct from async content failure",
+    "initial empty data disabled; arriving data does not steal focus",
+    "example unique labels are domain values, not a new general stable-ID API",
+    "provider data replacement cancels candidate presentation; status-only changes retain it"
+  ],
+  "validation": {
+    "public_choice_contract": 16,
+    "split_combined_equivalence_paths": 24,
+    "compiled_late_empty_red_regressions": 1,
+    "independent_consumer_total": 36,
+    "new_consumer_tests": 2,
+    "new_consumer_async_cases": 24,
+    "combined_choice_async_cases": 228,
+    "shared_packages": 345,
+    "gallery_select": 4,
+    "gallery_full_select_36_76": 1,
+    "gallery_narrow_large_type_fixture": 1,
+    "strict_clippy": "root all-targets composition-review and consumer all-targets pass",
+    "default_build": "pass",
+    "review_build": "pass; cargo build -p tekes-ui-gallery --features composition-review --locked",
+    "capability_tests": 37,
+    "composition_tests": 6,
+    "reference_gold7_mechanical_pure_rust_root_consumer_fmt": "pass"
+  },
+  "tokens": {
+    "input-token-observations.json": 612,
+    "navigation-content-token-observations.json": 408,
+    "popup-token-observations.json": 192,
+    "selection-token-observations.json": 2016,
+    "command-results-token-observations.json": 120,
+    "select-async-token-observations.json": 228,
+    "action-token-observations.json": 576
+  },
+  "gpu": {
+    "pages": 144,
+    "earlier_reference_pages": 144,
+    "changed_from_earlier": 144,
+    "earlier_reference": "select-availability-20261018/gpu-accepted-brand* frozen same-component pages; not immediate baseline re-execution",
+    "reason": "two independent public caller specimens and measured reflow",
+    "themes": 4,
+    "brands": 3,
+    "scales": [
+      1,
+      2
+    ],
+    "experience": "representative Light narrow150 and DarkIC brand2@2x; full family acceptance incomplete"
+  },
+  "native": {
+    "observed": [
+      "composition-review Gallery renders independent loading/failure specimens",
+      "fill and application preview420/type150 observed; feedback/focus/clip readable"
+    ],
+    "not_accepted": [
+      "native live async event transitions",
+      "complete motion; deterministic consumer sets reduced motion",
+      "controlsAX/VoiceOver/physicalIME"
+    ],
+    "identity": "native/build-identity.json",
+    "AX": "window/menu only",
+    "exit_inventory": []
+  },
+  "governance": {
+    "public_states": 121,
+    "fixture_gaps": 135,
+    "required": 269,
+    "remaining_choice_profile_requirements": 4,
+    "retained": "ComboBox loading/error and CommandPalette loading/error plus full native async/motion/AX acceptance"
+  },
+  "limits": [
+    "public tests CoreText with no-op glyph painter; GPU/native separate",
+    "complete combinations/token dependencies not claimed",
+    "performance deferred",
+    "no full migration of other components"
+  ],
+  "source_sha256": {
+    "crates/tekes-ui-controls/src/layout_view.rs": "9e50a3f9595f5cb43a099028681cd964b7ef447e1b10ca3c88c5bf64f72d1d01",
+    "crates/tekes-ui-controls/tests/choice_contract.rs": "4ee09801a24dd52ffc229e45c7ed7adbb2e5ad25b61fea71fb233ec63787a564",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs": "ffb31a231cf5eed215e5ac9f5fec3cbebc8c3a1b062b2e39dcb8f625f7e960a8",
+    "design/gallery/capabilities.json": "171bf3af07d5ea85e5ea58e66babd1cba2e681f580e29e1afd5bb240760ef016",
+    "design/gallery/component-coverage.json": "dbd765edc8bc66ac5fb7d106724dfd8e22ab1995c6baf9cf07b12bded686f8c7",
+    "design/remediation/composition-audit.json": "7be3ab7f76ca24f3da6f981f12534909f1c4af204e94ae2f74da680936c9ff3c",
+    "design/remediation/ledger.json": "b4c9989a02a10bff7a63aebc85d38d47734780ec1fd17ca69d470208ca86c589",
+    "docs/design/composition-audit-20261018.md": "2076472bc35190bda08b354c7bd563d1cc71a1422fa6b507afea3e02ea21dba7",
+    "docs/design/issue-remediation-current-20261017.md": "faa2e3676beeba2e7faf35d3682da27a816ff050a0f331b7a531e50fdd2e7d23",
+    "examples/composition-consumer/src/content_status.rs": "b20c338dadb5a9ea3db09ec941270be1c76b538e551bd67aa1afba3e7819654d",
+    "examples/composition-consumer/src/lib.rs": "4a6142463efa83425547e5ef656c754d824525d37ab3e7a5b5ea6e04ba32e49a",
+    "examples/composition-consumer/src/choice_status.rs": "a28d3aee25440eb7db991e4347b6f6db9d1bf344975246211fa916d76e955d53",
+    "examples/composition-consumer/tests/choice_status.rs": "974f88e3442795daf781013922292b67a029c20265a01be4109487296c65cf1c",
+    "scripts/audit-select-async-tokens.py": "07139e47793c7949efbf46d5470fdaf807c05d426fc33a864b603b6e0fd03e6d",
+    "docs/design/select-async-20261018.md": "f102f4f7483fc890291c299b0f73dce21aca56feb0b7eede3dd2ee183d0090df"
+  },
+  "goal_status": "active",
+  "wip_protection": "wip-protection.json"
+}

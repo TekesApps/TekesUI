@@ -1,0 +1,74 @@
+{
+  "source_identity": "f07266652b0a55118d6e3377fb80de5037b7df0a59e67f0cc9bcd5fb47b3692f",
+  "owner": "root: sole shared implementation owner",
+  "status": "implemented; scoped API/Gallery/consumer/GPU/token-governance and four-theme external native rendering verified; physical-clarity/whole experience incomplete",
+  "root_cause_category": "public component contract / host scale adaptation",
+  "root_cause": "Separator had fixed1pt ink and no backing-scale input despite existing JSON decorative rule and paint::decorative_border",
+  "shared_fix": [
+    "extended::separator_at_scale delegates existing decorative_border; legacy separator defaults1x",
+    "SeparatorView::render_at_scale reuses same layout/clip path; legacy render defaults1x",
+    "Gallery ordinary draw and variants pass actual TextEngine backing scale for all standalone separators"
+  ],
+  "applicable": [
+    "all standalone SeparatorView/extended separator consumers that forward real host scale",
+    "current Gallery ordinary and variant separator stories, horizontal and vertical"
+  ],
+  "exceptions": [
+    "Legacy1x entry retained for compatibility; scale-aware hosts must forward existing backing scale, not manually override colors",
+    "IC continues existing stroke-rule;1x and IC144-matrix branches unchanged in108cases",
+    "Interactive SplitView divider has different input/geometry responsibility; unchanged, not automatically thinned",
+    "No new tokens, protocols, wrapper state or layout/hit changes"
+  ],
+  "verification": {
+    "controls": 416,
+    "consumer": 168,
+    "gallery-integration": 1,
+    "bindings": 3,
+    "new_public_api_tests": 4,
+    "real_gallery_matrix_cases": 16,
+    "strict_clippy": [
+      "controls",
+      "consumer",
+      "small host incl token feature",
+      "Gallery"
+    ],
+    "gpu_cases": 144,
+    "gpu_frames": 288,
+    "actual_before_after_changed_cases": 36,
+    "actual_before_after_equal_cases": 108,
+    "all_current_gpu_reference_equal": true,
+    "themes": 4,
+    "brands": 3,
+    "axes": 2,
+    "backing_scales": [
+      1,
+      2
+    ],
+    "token_files": 14,
+    "bounded_token_cases": 5832,
+    "token_complete": false,
+    "governance_tests": 44,
+    "composition_tests": 8,
+    "logical_phase_offsets": [
+      0,
+      0.25,
+      0.5
+    ]
+  },
+  "Gold7": {
+    "G3": "bounded width/color/phase images, existing-rule GPU reference and four-theme active external native rendering passed; subjective physical clarity, cross-display and whole-page unverified",
+    "G7": "public API, documented compatibility, real Gallery integration and runnable small host retained",
+    "whole_page_and_ClientKit": "unverified; no maturity promotion"
+  },
+  "native": {
+    "receipt": "native-acceptance.json",
+    "themes": 4,
+    "screen": "U2790B @2",
+    "actual_active": true,
+    "scope": "static rendering only; no independent interaction/VoiceOver claim",
+    "cleanup": "closed and own artifacts cleaned"
+  },
+  "protected_collection_candidate": "154exact source inputs preserved in collection-final-native-20261021/verified-source; native verifier binds preserved source and explicitly lists changed live inputs, no automatic acceptance of later WIP",
+  "cleanup": "cleanup.json",
+  "constraints": "No performance, submit/push/tag/merge or Issue closure; no frozen AgentKit package changes"
+}

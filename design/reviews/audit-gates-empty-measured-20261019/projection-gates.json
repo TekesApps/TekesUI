@@ -1,0 +1,37 @@
+[
+  {
+    "name": "capability-check",
+    "exit_code": 0
+  },
+  {
+    "name": "composition-check",
+    "exit_code": 0
+  },
+  {
+    "name": "capability-tests",
+    "exit_code": 0
+  },
+  {
+    "name": "composition-tests",
+    "exit_code": 0
+  },
+  {
+    "name": "gold7",
+    "exit_code": 0
+  },
+  {
+    "name": "reference",
+    "exit_code": 1
+  },
+  {
+    "name": "reference-with-correct-review-python",
+    "exit_code": 0,
+    "log": "reference-with-deps-final.log",
+    "recovery": "original reference.log preserves missing jsonschema failure with system interpreter; rerun uses configured review venv, no gate change"
+  },
+  {
+    "name": "pure-rust",
+    "exit_code": 0,
+    "log": "pure-rust-final.log"
+  }
+]

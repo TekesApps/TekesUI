@@ -1,9 +1,20 @@
 //! Registry-driven native workbench. Fixtures orchestrate production control models;
 //! no duplicate component implementation lives in a story.
+mod accessibility;
+mod basic_states;
 mod brand_preview;
+#[cfg(any(test, feature = "composition-review"))]
+pub(super) mod content_status;
+#[cfg(test)]
+mod draft_capture;
+mod durable_draft;
 mod extended;
+mod focus;
+#[cfg(test)]
+mod state_capture;
 use super::{Page, PageCtx, text_demo::TextDemo};
 use brand_preview::BrandPreview;
+use focus::FocusTarget;
 use std::{
     collections::{HashMap, VecDeque},
     sync::OnceLock,
@@ -54,7 +65,7 @@ impl Entry {
         match story {
             "docs" | "playground" => true,
             "states" => {
-                !self.planned()
+                (!self.planned()
                     && [
                         "button",
                         "checkbox",
@@ -67,7 +78,8 @@ impl Entry {
                         "select",
                         "field-meta",
                     ]
-                    .contains(&self.renderer())
+                    .contains(&self.renderer()))
+                    || (!self.planned() && basic_states::supports(self.renderer()))
                     || (!self.planned() && extended::supports_story(self.renderer(), story))
             }
             "variants" => {
@@ -83,7 +95,15 @@ impl Entry {
                     .contains(&self.renderer())
                     || (!self.planned() && extended::supports_story(self.renderer(), story))
             }
-            "behaviors" | "edge-cases" => {
+            "edge-cases" => {
+                !self.planned()
+                    && [
+                        "button", "checkbox", "field", "area", "search", "form", "settings",
+                        "async",
+                    ]
+                    .contains(&self.renderer())
+            }
+            "behaviors" => {
                 if self.renderer() == "scene3d" {
                     false
                 } else if extended::supports(self.renderer()) {
@@ -152,7 +172,6 @@ pub enum Phase {
 }
 #[derive(Debug)]
 pub struct StoryState {
-    scene3d_reset: bool,
     input: TextDemo,
     detail: TextDemo,
     pub checkbox: Checkbox,
@@ -170,6 +189,10 @@ pub struct StoryState {
     skeleton_view: SkeletonView,
     pub phase: Phase,
     attempts: usize,
+    scene3d_reset: bool,
+    draft_fixture: Option<durable_draft::DurableDraft>,
+    draft_error: Option<String>,
+    draft_attempt: Option<(u64, u64)>,
     focus: Option<usize>,
     pub section: usize,
     brand: usize,
@@ -177,7 +200,9 @@ pub struct StoryState {
     disabled: bool,
     loading: bool,
     error: bool,
+    select_empty: bool,
     hits: Vec<(usize, Rect)>,
+    logical_focus: Vec<FocusTarget>,
     button_hits: Vec<usize>,
     button_clip: Option<Rect>,
     tabs_layout: Option<TabsLayout>,
@@ -185,12 +210,16 @@ pub struct StoryState {
     select_menu_layout: Option<MenuLayout>,
     dialog_layout: Option<tekes_ui_controls::DialogLayout>,
     buttons: HashMap<usize, Button>,
+    button_labels: HashMap<usize, String>,
     log: VecDeque<String>,
     phase_frame: Option<Rect>,
     event_log_frame: Option<Rect>,
+    document_bottom: f32,
+    document_origin_y: f32,
     selected: usize,
     list_scroll: tekes_ui_controls::ScrollArea,
     list_bounds: Rect,
+    list_frame: Rect,
     focus_reveal: Option<usize>,
     preview: Rect,
     window_active: bool,
@@ -200,7 +229,6 @@ pub struct StoryState {
 impl Default for StoryState {
     fn default() -> Self {
         Self {
-            scene3d_reset: false,
             input: TextDemo::field("Studio", false, false),
             detail: TextDemo::field(
                 include_str!("../../../../fixtures/text/gallery-reading-en.txt"),
@@ -227,6 +255,10 @@ impl Default for StoryState {
             skeleton_view: SkeletonView::default(),
             phase: Phase::Ready,
             attempts: 0,
+            scene3d_reset: false,
+            draft_fixture: None,
+            draft_error: None,
+            draft_attempt: None,
             focus: None,
             section: 1,
             brand: 0,
@@ -234,7 +266,9 @@ impl Default for StoryState {
             disabled: false,
             loading: false,
             error: false,
+            select_empty: false,
             hits: Vec::new(),
+            logical_focus: Vec::new(),
             button_hits: Vec::new(),
             button_clip: None,
             tabs_layout: None,
@@ -242,12 +276,16 @@ impl Default for StoryState {
             select_menu_layout: None,
             dialog_layout: None,
             buttons: HashMap::new(),
+            button_labels: HashMap::new(),
             log: VecDeque::new(),
             phase_frame: None,
             event_log_frame: None,
+            document_bottom: 0.,
+            document_origin_y: 0.,
             selected: 0,
             list_scroll: tekes_ui_controls::ScrollArea::default(),
             list_bounds: Rect::default(),
+            list_frame: Rect::default(),
             focus_reveal: None,
             preview: Rect::default(),
             window_active: true,
@@ -257,6 +295,126 @@ impl Default for StoryState {
     }
 }
 impl StoryState {
+    fn set_window_active(&mut self, active: bool, now: Duration) {
+        self.window_active = active;
+        self.input.set_window_active(active);
+        self.detail.set_window_active(active);
+        self.tabs_view.set_window_active(active);
+        let menu_event = self.menu_view.set_window_active(active);
+        self.menu_event(menu_event, "menu", false);
+        self.select_view.set_window_active(active, &mut self.select);
+        self.dialog_view.set_window_active(active);
+        self.extended.set_window_active(active);
+        for button in self.buttons.values_mut() {
+            button.set_window_active(active, now);
+        }
+        if !active {
+            // A dismissed transient must not require an inactive redraw to
+            // discard retained exit paint. The persistent Dialog below keeps
+            // its logical scope and is intentionally not treated as a Menu.
+            self.menu_view.clear_presentation();
+            self.toolbar_view.focus(None, false);
+            self.number_view.blur();
+            self.dialog_view.deactivate();
+            self.extended.cancel_pointer();
+            self.list_scroll.cancel();
+            self.tabs_view.cancel();
+            for b in self.buttons.values_mut() {
+                b.cancel();
+            }
+        }
+    }
+    fn focus_frame(&self, renderer: &str, id: usize) -> Option<Rect> {
+        if renderer == "master" && (10000..10100).contains(&id) {
+            // Reveal the nested list viewport through the outer page first;
+            // its own ScrollArea then reveals the focused row.
+            return (self.list_frame.size.width > 0.0 && self.list_frame.size.height > 0.0)
+                .then_some(self.list_frame);
+        }
+        if let Some(target) = self
+            .logical_focus
+            .iter()
+            .find(|target| target.id == id && target.mounted && target.eligible)
+        {
+            return Some(target.frame);
+        }
+        let collection_item = match renderer {
+            "list" | "tree" => id >= 30,
+            "data-table" => (20..23).contains(&id) || id >= 30,
+            "chart" => id >= 30,
+            _ => false,
+        };
+        if collection_item {
+            return self.extended.collection_focus_frame(renderer, id);
+        }
+        let frame = match renderer {
+            "tabs" if (30..33).contains(&id) => {
+                self.tabs_layout.as_ref()?.items.get(id - 30)?.frame
+            }
+            "menu" if (50..53).contains(&id) => {
+                self.menu_layout.as_ref()?.items.get(id - 50)?.frame
+            }
+            "select" if id == 20 => self.select_view.layout().trigger.frame,
+            "select" if (60..63).contains(&id) => {
+                self.select_menu_layout.as_ref()?.items.get(id - 60)?.frame
+            }
+            "dialog" | "danger" if (70..72).contains(&id) => {
+                self.dialog_layout.as_ref()?.buttons.get(id - 70)?.frame
+            }
+            "checkbox" if id == 20 => self.checkbox.button.layout()?.frame,
+            "field" | "area" | "search" | "form" | "settings" | "async" | "filter"
+                if id == 1000 =>
+            {
+                self.input.frame_at(0)?
+            }
+            "slider" if id == 20 => self.extended.slider_view.layout().frame,
+            "switch" if id == 20 => self.extended.switch_view.layout().frame(),
+            "radio-group" if (30..33).contains(&id) => {
+                self.extended.radio_view.layout().rows.get(id - 30)?.frame()
+            }
+            "icon-button" if id == 20 => self.extended.icon_button_view.layout().frame,
+            "link" if id == 20 => self.extended.link_view.layout().frame,
+            "segmented-control" if (30..33).contains(&id) => {
+                self.extended
+                    .segmented_view
+                    .layout()
+                    .items
+                    .get(id - 30)?
+                    .frame
+            }
+            "breadcrumb" if (20..23).contains(&id) => self
+                .extended
+                .breadcrumb_view
+                .layout()
+                .items
+                .get(id - 20)?
+                .frame(),
+            "number-field" if id == 23 => self.number_view.layout().decrement.frame,
+            "number-field" if id == 24 => self.number_view.layout().increment.frame,
+            "combo-box" | "command-palette" if id == 1000 => self.input.frame_at(0)?,
+            "combo-box" if (40..43).contains(&id) => {
+                self.extended
+                    .combo_view
+                    .options
+                    .layout()?
+                    .items
+                    .get(id - 40)?
+                    .frame
+            }
+            "command-palette" if (40..43).contains(&id) => {
+                self.extended
+                    .command_view
+                    .options
+                    .layout()?
+                    .items
+                    .get(id - 40)?
+                    .frame
+            }
+            _ => self.buttons.get(&id).and_then(Button::layout)?.frame,
+        };
+        Some(frame)
+    }
+
     fn visible_for_id(&self, id: usize) -> Option<Rect> {
         if (30..33).contains(&id)
             && let Some(layout) = &self.tabs_layout
@@ -314,7 +472,119 @@ impl StoryState {
             }
             _ => s.input,
         };
+        if e.renderer() == "form" {
+            s.draft_fixture = Some(durable_draft::DurableDraft::memory());
+        }
+        // Unit tests inject temporary storage explicitly; never inherit a
+        // developer's runtime fixture file through the process environment.
+        if !cfg!(test)
+            && e.renderer() == "form"
+            && let Some(path) = std::env::var_os("TEKESUI_GALLERY_DRAFT_FIXTURE")
+        {
+            s.open_draft_fixture(path.into());
+        }
         s
+    }
+    fn open_draft_fixture(&mut self, path: std::path::PathBuf) {
+        match durable_draft::DurableDraft::open(path) {
+            Ok(store) => {
+                self.input.set_value(&store.draft().name);
+                self.checkbox.checked = if store.draft().notifications {
+                    CheckState::Checked
+                } else {
+                    CheckState::Unchecked
+                };
+                self.phase = if store.has_pending() {
+                    Phase::Failed
+                } else if store.is_acknowledged() {
+                    Phase::Saved
+                } else {
+                    Phase::Ready
+                };
+                self.draft_fixture = Some(store);
+                self.draft_error = None;
+                self.draft_attempt = None;
+                self.record("draft fixture: restored from explicit storage; no network");
+            }
+            Err(error) => self.draft_failed(error),
+        }
+    }
+    fn draft_failed(&mut self, error: std::io::Error) {
+        self.draft_error = Some(format!(
+            "Draft storage failed ({:?}); input retained. Retry save.",
+            error.kind()
+        ));
+        self.phase = Phase::Failed;
+        self.record("draft: storage failed; not acknowledged");
+    }
+    fn persist_draft(&mut self) -> bool {
+        if self.input.state().is_some_and(|s| s.marked.is_some()) {
+            return true;
+        }
+        // An explicitly requested file adapter must not silently fall back to
+        // the default in-memory journal after configuration/storage failure.
+        if self.draft_error.is_some()
+            && self.draft_fixture.as_ref().is_some_and(|s| !s.is_durable())
+        {
+            return false;
+        }
+        let name = self.input.query().to_owned();
+        let notifications = self.checkbox.checked == CheckState::Checked;
+        let Some(store) = self.draft_fixture.as_mut() else {
+            return self.draft_error.is_none();
+        };
+        match store.update(&name, notifications) {
+            Ok(changed) => {
+                if changed {
+                    self.draft_error = None;
+                }
+                if changed && self.phase != Phase::Pending {
+                    self.phase = Phase::Ready;
+                }
+                true
+            }
+            Err(error) => {
+                self.draft_failed(error);
+                false
+            }
+        }
+    }
+    fn interrupt_draft(&mut self) {
+        if !self.persist_draft() {
+            return;
+        }
+        let Some(store) = self.draft_fixture.as_ref() else {
+            return;
+        };
+        match store.reopen() {
+            Ok(restored) => {
+                self.input.set_value(&restored.draft().name);
+                self.checkbox.checked = if restored.draft().notifications {
+                    CheckState::Checked
+                } else {
+                    CheckState::Unchecked
+                };
+                self.phase = if restored.has_pending() {
+                    Phase::Failed
+                } else if restored.is_acknowledged() {
+                    Phase::Saved
+                } else {
+                    Phase::Ready
+                };
+                self.draft_fixture = Some(restored);
+                self.draft_attempt = None;
+                self.record("interruption: discarded session; recovered durable draft/outbox");
+            }
+            Err(error) => self.draft_failed(error),
+        }
+    }
+    fn input_changed(&mut self, renderer: &str) {
+        if renderer == "combo-box" {
+            self.extended.combo.set_query(self.input.query());
+        } else if renderer == "command-palette" {
+            self.extended.command.combo.set_query(self.input.query());
+        }
+        self.record("input: value changed");
     }
     fn record(&mut self, event: impl Into<String>) {
         if self.log.len() == 6 {
@@ -322,17 +592,106 @@ impl StoryState {
         }
         self.log.push_back(event.into());
     }
-    fn focusable_visible(&self, id: usize) -> bool {
-        self.hits.iter().any(|(hit_id, _)| *hit_id == id)
-            && !self
-                .buttons
-                .get(&id)
-                .is_some_and(|button| button.state.disabled)
+    fn focusable_mounted(&self, id: usize) -> bool {
+        self.logical_focus
+            .iter()
+            .any(|target| target.id == id && target.mounted && target.eligible)
     }
     fn restore_focus(&self, candidate: Option<usize>) -> Option<usize> {
-        candidate.filter(|id| self.focusable_visible(*id))
+        candidate.filter(|id| self.focusable_mounted(*id))
+    }
+    pub(super) fn register_logical_focus(
+        &mut self,
+        id: usize,
+        frame: Rect,
+        eligible: bool,
+        mounted: bool,
+        roving_group: Option<u8>,
+        roving_selected: bool,
+    ) {
+        if !mounted || frame.size.width <= 0.0 || frame.size.height <= 0.0 {
+            return;
+        }
+        if let Some(target) = self.logical_focus.iter_mut().find(|target| target.id == id) {
+            target.frame = frame;
+            target.eligible = eligible;
+            target.mounted = mounted;
+            target.roving_group = roving_group;
+            target.roving_selected = roving_selected;
+        } else {
+            self.logical_focus.push(FocusTarget {
+                id,
+                frame,
+                eligible,
+                mounted,
+                roving_group,
+                roving_selected,
+            });
+        }
+    }
+    fn logical_tab_ids(&self) -> Vec<usize> {
+        let mut targets = self.logical_focus.clone();
+        let mut selected_groups = HashMap::<u8, usize>::new();
+        for target in targets
+            .iter()
+            .filter(|target| target.mounted && target.eligible)
+        {
+            let Some(group) = target.roving_group else {
+                continue;
+            };
+            selected_groups.entry(group).or_insert_with(|| {
+                self.focus
+                    .filter(|focused| {
+                        targets.iter().any(|candidate| {
+                            candidate.id == *focused
+                                && candidate.roving_group == Some(group)
+                                && candidate.mounted
+                                && candidate.eligible
+                        })
+                    })
+                    .or_else(|| {
+                        targets
+                            .iter()
+                            .find(|candidate| {
+                                candidate.roving_group == Some(group)
+                                    && candidate.mounted
+                                    && candidate.eligible
+                                    && candidate.roving_selected
+                            })
+                            .map(|candidate| candidate.id)
+                    })
+                    .unwrap_or(target.id)
+            });
+        }
+        targets.retain(|target| {
+            target.mounted
+                && target.eligible
+                && target
+                    .roving_group
+                    .is_none_or(|group| selected_groups.get(&group).copied() == Some(target.id))
+        });
+        // Registration order is render/reading order. Preserve it explicitly;
+        // geometry sorting breaks when rows wrap or type scale changes.
+        targets.into_iter().map(|target| target.id).collect()
+    }
+    #[cfg(test)]
+    fn logical_tab_frames(&self) -> Vec<FocusTarget> {
+        self.logical_tab_ids()
+            .into_iter()
+            .filter_map(|id| {
+                self.logical_focus
+                    .iter()
+                    .find(|target| target.id == id)
+                    .copied()
+            })
+            .collect()
     }
     fn sync_owned_focus(&mut self, renderer: &str, target: Option<usize>, visible: bool) {
+        if renderer == "command-palette" && target == Some(20) {
+            self.extended.command_view.focus_trigger(visible);
+        } else {
+            self.extended.command_view.blur_trigger();
+        }
         if renderer == "toolbar" {
             self.toolbar_view.focus(
                 target.filter(|id| (20..23).contains(id)).map(|id| id - 20),
@@ -356,6 +715,67 @@ impl StoryState {
             self.select_view.blur(&mut self.select);
         }
     }
+    fn open_command_palette(&mut self, text: &mut super::text::TextEngine) {
+        if !self
+            .extended
+            .command_view
+            .open_from(&mut self.extended.command, 20)
+        {
+            return;
+        }
+        self.input.set_value("");
+        self.input.focus_field();
+        self.detail.blur();
+        self.input.refresh(text);
+        self.focus = Some(1000);
+        self.extended.focused = Some(1000);
+        self.extended.command_view.blur_trigger();
+    }
+
+    fn close_command_palette(&mut self) {
+        self.extended
+            .command_view
+            .cancel(&mut self.extended.command);
+        let caller = self
+            .extended
+            .command_view
+            .take_restore_focus(&self.extended.command);
+        self.input.blur();
+
+        // Focus targets use mounted document-space geometry. A clipped trigger
+        // remains a valid caller and the Gallery can reveal it after restore.
+        let mounted = self
+            .logical_focus
+            .iter()
+            .any(|target| target.id == 20 && target.mounted);
+        let trigger = self
+            .extended
+            .command_view
+            .trigger_layout()
+            .map(|layout| layout.frame)
+            .filter(|frame| {
+                frame.min_x().is_finite()
+                    && frame.min_y().is_finite()
+                    && frame.size.width.is_finite()
+                    && frame.size.height.is_finite()
+                    && frame.size.width > 0.0
+                    && frame.size.height > 0.0
+            });
+        if let Some(target) = self.logical_focus.iter_mut().find(|target| target.id == 20) {
+            if mounted && let Some(frame) = trigger {
+                target.frame = frame;
+                target.eligible = !self.extended.command.combo.disabled;
+                target.mounted = true;
+            } else {
+                target.mounted = false;
+                target.eligible = false;
+            }
+        }
+        self.focus = self.restore_focus(caller);
+        self.extended.focused = self.focus;
+        self.sync_owned_focus("command-palette", self.focus, true);
+    }
+
     fn menu_event(&mut self, event: MenuEvent, renderer: &str, select: bool) {
         match event {
             MenuEvent::Activated {
@@ -395,6 +815,13 @@ impl StoryState {
             MenuEvent::None => {}
         }
     }
+    fn dialog_title(renderer: &str) -> &'static str {
+        if renderer == "danger" {
+            "Delete this workspace? This fixture does not delete files."
+        } else {
+            "Confirm changes?"
+        }
+    }
     fn dialog_event(&mut self, event: DialogEvent, renderer: &str, composition_guarded: bool) {
         match event {
             DialogEvent::Confirmed { restore_focus } => {
@@ -416,13 +843,32 @@ impl StoryState {
         }
     }
     fn submit(&mut self) {
-        if self.phase == Phase::Pending {
+        if self.phase == Phase::Pending || self.input.state().is_some_and(|s| s.marked.is_some()) {
             return;
         }
         if self.input.query().trim().is_empty() {
             self.phase = Phase::Invalid;
             self.record("validation: name is required");
         } else {
+            if !self.persist_draft() {
+                return;
+            }
+            if let Some(store) = self.draft_fixture.as_mut() {
+                if store.is_acknowledged() {
+                    self.phase = Phase::Saved;
+                    return;
+                }
+                match store.begin_attempt() {
+                    Ok(attempt) => {
+                        self.draft_attempt = Some(attempt);
+                        self.draft_error = None;
+                    }
+                    Err(error) => {
+                        self.draft_failed(error);
+                        return;
+                    }
+                }
+            }
             self.phase = Phase::Pending;
             self.attempts += 1;
             self.record("submit: pending (Resolve fixture to complete)");
@@ -430,6 +876,32 @@ impl StoryState {
     }
     fn resolve(&mut self) {
         if self.phase != Phase::Pending {
+            return;
+        }
+        if let Some((revision, attempt)) = self.draft_attempt.take() {
+            if attempt == 1 {
+                self.phase = Phase::Failed;
+                self.record("delivery: simulated failure; durable revision remains retryable");
+            } else if let Some(store) = self.draft_fixture.as_mut() {
+                match store.acknowledge(revision) {
+                    Ok(true) => {
+                        self.draft_error = None;
+                        self.phase = if store.is_acknowledged() {
+                            Phase::Saved
+                        } else {
+                            Phase::Ready
+                        };
+                        self.record(format!(
+                            "delivery: acknowledged revision {revision}; newer edits retained"
+                        ));
+                    }
+                    Ok(false) => {
+                        self.phase = Phase::Failed;
+                        self.record("delivery: stale acknowledgement ignored");
+                    }
+                    Err(error) => self.draft_failed(error),
+                }
+            }
             return;
         }
         self.phase = if self.attempts == 1 {
@@ -444,6 +916,15 @@ impl StoryState {
         });
     }
     fn activate(&mut self, id: usize, renderer: &str) {
+        // Story tabs belong to the workbench host for every renderer.
+        // Dispatch them before the component-specific adapter.
+        if (1..=6).contains(&id) {
+            self.section = id - 1;
+            self.document_bottom = 0.;
+            self.event_log_frame = None;
+            self.input.blur();
+            return;
+        }
         if renderer == "tokens" && (400..=401).contains(&id) {
             self.selected = id - 400;
             return;
@@ -472,7 +953,9 @@ impl StoryState {
         if extended::supports(renderer) {
             if id == 0 {
                 let section = self.section;
+                let active = self.window_active;
                 *self = Self::for_entry_renderer(renderer);
+                self.set_window_active(active, Duration::ZERO);
                 self.section = section;
                 self.record("reset: initial fixture");
                 return;
@@ -507,14 +990,12 @@ impl StoryState {
         match id {
             0 => {
                 let section = self.section;
+                let active = self.window_active;
                 *self = Self::for_entry_renderer(renderer);
+                self.set_window_active(active, Duration::ZERO);
                 self.section = section;
                 self.scene3d_reset = renderer == "scene3d";
                 self.record("reset: initial fixture");
-            }
-            1..=6 => {
-                self.section = id - 1;
-                self.input.blur();
             }
             10 => {
                 self.disabled = !self.disabled;
@@ -536,7 +1017,11 @@ impl StoryState {
                 self.record("fixture: empty text");
             }
             13 => {
-                self.checkbox.checked = CheckState::Mixed;
+                if renderer == "select" {
+                    self.select_empty = !self.select_empty;
+                } else {
+                    self.checkbox.checked = CheckState::Mixed;
+                }
             }
             20 => match renderer {
                 "checkbox" => {
@@ -554,8 +1039,12 @@ impl StoryState {
                     self.record("dialog: open");
                 }
                 "select" => {
-                    self.select.menu.show();
+                    // Use the retained trigger path: opening from the model
+                    // alone resets active focus to zero instead of the current value.
                     self.select_view.focus(false);
+                    let _ = self
+                        .select_view
+                        .key(ControlKey::Enter, true, &mut self.select);
                     self.select_menu_layout = None;
                 }
                 "form" | "async" | "settings" => self.submit(),
@@ -578,6 +1067,7 @@ impl StoryState {
                 self.checkbox.toggle();
                 self.record(format!("preference: {:?}", self.checkbox.checked));
             }
+            26 if renderer == "form" => self.interrupt_draft(),
             30..=32 if self.tabs_view.select(id - 30) => {
                 self.record(format!("tab: {}", id - 30));
             }
@@ -653,7 +1143,7 @@ impl StoryState {
     }
 }
 use std::ops::Add;
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Workbench {
     states: HashMap<usize, StoryState>,
     brand_preview: BrandPreview,
@@ -664,6 +1154,35 @@ pub struct Workbench {
     pub text_scale: usize,
     snapshot: bool,
     motion_now: Duration,
+    window_active: bool,
+}
+impl Workbench {
+    pub fn resize_target(&self, i: usize) -> Option<(Rect, Axis)> {
+        if entries()[i].renderer() != "split-view" || !self.show_live(i) {
+            return None;
+        }
+        let state = self.states.get(&i)?;
+        state
+            .extended
+            .split_view
+            .resize_target(&state.extended.split)
+    }
+}
+impl Default for Workbench {
+    fn default() -> Self {
+        Self {
+            states: HashMap::new(),
+            brand_preview: BrandPreview::default(),
+            preview_width: 0,
+            reduced: false,
+            brand: 0,
+            density: 0,
+            text_scale: 0,
+            snapshot: false,
+            motion_now: Duration::ZERO,
+            window_active: true,
+        }
+    }
 }
 fn label(ctx: &mut PageCtx<'_>, scene: &mut Scene, r: Rect, s: &str, heading: bool) {
     ctx.text.proposal_wrapped_in(
@@ -688,6 +1207,62 @@ fn line(ctx: &mut PageCtx<'_>, scene: &mut Scene, r: Rect, s: &str) {
         proposal::TextRole::UiCaption,
         ColorRole::SecondaryText.resolve(ctx.theme),
     );
+}
+
+fn matrix_caption(ctx: &mut PageCtx<'_>, scene: &mut Scene, r: Rect, text: &str) {
+    ctx.text.proposal_wrapped_in(
+        scene,
+        ctx.theme,
+        r,
+        text,
+        proposal::TextRole::UiCaption,
+        ColorRole::SecondaryText.resolve(ctx.theme),
+    );
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct MatrixCellGeometry {
+    control: Rect,
+    caption: Rect,
+}
+
+fn matrix_cell_geometries(
+    bounds: Rect,
+    columns: usize,
+    explanation_height: f32,
+    measurements: &[(f32, f32)],
+) -> (Vec<MatrixCellGeometry>, f32) {
+    let columns = columns.max(1);
+    let cell_width = (bounds.size.width / columns as f32 - 16.0).max(0.0);
+    let mut row_heights = vec![92.0_f32; measurements.len().div_ceil(columns)];
+    for (index, (caption_height, control_height)) in measurements.iter().enumerate() {
+        row_heights[index / columns] =
+            row_heights[index / columns].max(control_height + 8.0 + caption_height + 12.0);
+    }
+    let matrix_top = bounds.min_y()
+        + explanation_height.max(proposal::TextRole::UiBody.style().line_height)
+        + 16.0;
+    let mut row_tops = Vec::with_capacity(row_heights.len());
+    let mut bottom = matrix_top;
+    for height in &row_heights {
+        row_tops.push(bottom);
+        bottom += *height;
+    }
+    let cell_stride = bounds.size.width / columns as f32;
+    let cells = measurements
+        .iter()
+        .enumerate()
+        .map(|(index, (caption_height, control_height))| {
+            let x = bounds.min_x() + (index % columns) as f32 * cell_stride;
+            let y = row_tops[index / columns];
+            let control = Rect::new(x, y, cell_width, *control_height);
+            MatrixCellGeometry {
+                control,
+                caption: Rect::new(x, control.max_y() + 8.0, cell_width, *caption_height),
+            }
+        })
+        .collect();
+    (cells, bottom + 8.0)
 }
 
 #[derive(Clone, Debug)]
@@ -736,6 +1311,165 @@ fn preview_header_metrics(
         info,
         info_height,
         docs_height,
+    }
+}
+
+fn api_reference(entry: &Entry) -> &str {
+    if !entry.get("api").is_empty() {
+        return entry.get("api");
+    }
+    if entry.get("kind") == "component" {
+        return "Missing public API registration; registry validation failed";
+    }
+    // Component API references come from the authoritative JSON registry and
+    // are compiled by the public integration test, never guessed per renderer.
+    match entry.renderer() {
+        "form" | "settings" | "async" => "Gallery pattern using TextInput, FieldView and Button",
+        "filter" => "Gallery pattern using TextInput and local file filtering",
+        "master" => "Gallery pattern using ScrollArea and TextSurface",
+        _ => "Gallery fixture; see the route renderer",
+    }
+}
+
+fn contract_summary(entry: &Entry) -> Vec<String> {
+    if entry.get("kind") != "component" {
+        return Vec::new();
+    }
+    static CAPABILITIES: OnceLock<serde_json::Value> = OnceLock::new();
+    let inventory = CAPABILITIES.get_or_init(|| {
+        serde_json::from_str(include_str!("../../../../design/gallery/capabilities.json"))
+            .expect("current component capabilities")
+    });
+    let Some(component) = inventory["components"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|component| component["id"] == entry.component())
+    else {
+        return vec![format!("Missing contract coverage: {}", entry.component())];
+    };
+    let states = component["state_coverage"]["required"].as_array().unwrap();
+    let pending = component["state_coverage"]["fixture_unverified"]
+        .as_array()
+        .unwrap()
+        .len();
+    let names = states
+        .iter()
+        .map(|state| state.as_str().unwrap())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let references = component["token_dependencies"]["contract_references"]
+        .as_array()
+        .unwrap();
+    let mut token_line = if references.is_empty() {
+        "No per-component token references in the existing JSON contract; runtime token dependencies remain unverified.".to_owned()
+    } else {
+        let names = references
+            .iter()
+            .map(|reference| {
+                format!(
+                    "{}:{}",
+                    reference["family"].as_str().unwrap(),
+                    reference["token"].as_str().unwrap()
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        let owner = component["token_dependencies"]["contract_owner"]
+            .as_str()
+            .unwrap();
+        let inherited = if owner == entry.component() {
+            String::new()
+        } else {
+            format!(" (shared with {owner})")
+        };
+        format!(
+            "JSON contract token references{inherited}: {names}. Runtime token dependencies remain unverified."
+        )
+    };
+    if let Some(observed) = component["token_dependencies"].get("runtime_observation") {
+        let count = observed["case_count"].as_u64().unwrap();
+        let tokens = observed["tokens"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|token| token.as_str().unwrap())
+            .collect::<Vec<_>>()
+            .join(", ");
+        token_line.push_str(&format!(
+            " Observed public-API lookup scope ({count} cases, incomplete): {tokens}."
+        ));
+    }
+    vec![
+        format!("Design-required states: {names}."),
+        format!(
+            "State coverage: {}/{} fixtures source-reviewed; runtime and native acceptance remain unverified.",
+            states.len() - pending,
+            states.len()
+        ),
+        token_line,
+    ]
+}
+
+fn behavior_copy(renderer: &str) -> &'static str {
+    match renderer {
+        "button" => {
+            "Tab focuses the action. Space activates on release; Enter activates on key down. Releasing the pointer outside cancels. Disabled and loading actions do not activate."
+        }
+        "checkbox" => {
+            "Tab focuses the checkbox. Space toggles on release; Enter does not toggle it. Pointer activation needs matching press and release. Disabled state blocks changes; Mixed is a fixture state."
+        }
+        "tabs" => {
+            "Tab enters the tab strip. Left/Right wrap selection. Home/End select endpoints. The panel follows the active tab."
+        }
+        "menu" | "select" => {
+            "Enter or Space opens. Up/Down move through options. Enter selects. Escape dismisses and restores focus."
+        }
+        "dialog" | "danger" => {
+            "Enter opens. Tab/Shift+Tab stay inside the modal scope. Escape cancels. Closing restores focus to the invoker. The destructive fixture changes local state only."
+        }
+        "field" | "search" => {
+            "Click or Tab to focus the single-line input. Native text services handle IME composition, selection, clipboard, undo and redo. Tab leaves the field. Disabled input rejects edits."
+        }
+        "area" => {
+            "Click or Tab to focus the multiline editor. Native text services handle IME composition, selection, clipboard and undo. The editor fills the remaining preview; its document scrolls inside that frame."
+        }
+        "text" => {
+            "This surface is read-only. Pointer and keyboard selection, Copy and scrolling remain available; editing commands do not change the text. Appending fixture text preserves a reading anchor; Return to latest follows the document end."
+        }
+        "scroll" => {
+            "Wheel and trackpad input scroll the read-only text document inside its viewport. Resize preserves the reading anchor and an existing bottom anchor. Append paragraph and Return to latest are separate fixture actions."
+        }
+        "icon" => {
+            "Search filters the local icon catalog; category and grid controls update the visible fixture. The preview renders canonical icon assets. Individual decorative glyphs do not activate button actions."
+        }
+        "surface" => {
+            "Surface/Panel provide a semantic container and border, with no container activation. The nested action is a real Button with its own focus and input handling."
+        }
+        "toolbar" => {
+            "Tab enters the toolbar. Left/Right and Home/End move its focused action. Enter or Space activates the focused Create, Rename or Remove fixture action; releasing outside cancels pointer activation."
+        }
+        "number-field" => {
+            "Tab focuses a stepper action. Arrow keys, Home/End and the decrement/increment actions change the bounded 1–32 value. Bound-disabled actions do not change it. Editable numeric text is not implemented."
+        }
+        "field-meta" => {
+            "FieldView presents a label, help and error message around the real text input. Error changes the message and input presentation; Disabled blocks edits and the associated fixture actions. This metadata specimen does not save settings."
+        }
+        "skeleton" => {
+            "Skeleton is a static loading placeholder with no selection, focus or activation behavior. Reset restores the initial Gallery fixture; no timer or network request resolves this specimen."
+        }
+        "form" | "settings" | "async" => {
+            "Edit the workspace name and notification preference, then Save. Empty names fail validation. Resolve fixture explicitly completes a pending local attempt: the first fails and Retry can succeed. Disabled blocks edits and save actions. Reset restores fixture data; no real network request runs."
+        }
+        "filter" => {
+            "Type in the real text input to filter three local file names. Clear filter empties the query; an empty query shows all files. No-match results are local and deterministic."
+        }
+        "master" => {
+            "The document list and detail text have separate scroll areas. Pointer selection and Up/Down/Home/End choose a document; keyboard focus reveals the selected row. The detail surface is read-only and supports selection and Copy."
+        }
+        _ => {
+            "This route has no component-specific input contract beyond its documented fixture controls. See Playground and the registered API for the implemented behavior."
+        }
     }
 }
 
@@ -836,6 +1570,7 @@ fn action(
     if state.density == 1 {
         r.size.height = (r.size.height - 4.).max(24.);
     }
+    state.button_labels.insert(id, title.to_owned());
     let b = state.buttons.entry(id).or_default();
     b.state.focused = state.window_active && state.focus == Some(id);
     b.state.selected = selected;
@@ -860,11 +1595,66 @@ fn action(
         proposal::TextRole::UiBody,
         ButtonTextAlign::default(),
     );
+    state.register_logical_focus(
+        id,
+        layout.frame,
+        !(disabled || state.loading && id == 20),
+        true,
+        None,
+        true,
+    );
     if let Some(visible) = layout.visible {
         state.hits.push((id, visible));
         state.button_hits.push(id);
     }
 }
+/// Draw a wrapping action group and return the first unobstructed body y.
+fn action_group(
+    state: &mut StoryState,
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    items: &[(usize, &str, bool)],
+) -> f32 {
+    if items.is_empty() {
+        return bounds.min_y();
+    }
+    let mut x = bounds.min_x();
+    let mut y = bounds.min_y();
+    let mut row_height: f32 = 0.;
+    for &(id, title, selected) in items {
+        let natural = ctx.text.measure_button(
+            title,
+            bounds.size.width,
+            ButtonSize::Body,
+            proposal::TextRole::UiBody,
+        );
+        let width = natural.width.max(112.).min(bounds.size.width.max(0.));
+        let measured =
+            ctx.text
+                .measure_button(title, width, ButtonSize::Body, proposal::TextRole::UiBody);
+        let height = measured.height.max(36.);
+        if x > bounds.min_x() && x + width > bounds.max_x() {
+            y += row_height + 8.;
+            x = bounds.min_x();
+            row_height = 0.;
+        }
+        let frame_height = height + if state.density == 1 { 4. } else { 0. };
+        action(
+            state,
+            ctx,
+            scene,
+            id,
+            Rect::new(x, y, width, frame_height),
+            title,
+            (selected, false),
+        );
+        row_height = row_height.max(height);
+        x += width + 8.;
+    }
+    y + row_height + 18.
+}
+
 fn quiet_action(
     state: &mut StoryState,
     ctx: &mut PageCtx<'_>,
@@ -879,6 +1669,7 @@ fn quiet_action(
     if state.density == 1 {
         rect.size.height = (rect.size.height - 4.).max(24.);
     }
+    state.button_labels.insert(id, title.to_owned());
     let button = state.buttons.entry(id).or_default();
     button.state.focused = state.window_active && state.focus == Some(id);
     button.state.selected = selected;
@@ -898,6 +1689,7 @@ fn quiet_action(
         proposal::TextRole::UiBody,
         ButtonTextAlign::default(),
     );
+    state.register_logical_focus(id, layout.frame, !disabled, true, None, true);
     if let Some(visible) = layout.visible {
         state.hits.push((id, visible));
         state.button_hits.push(id);
@@ -942,72 +1734,138 @@ fn event_log(
     Rect::new(x, y, width, 24. + visible_count as f32 * 22.)
 }
 impl Workbench {
-    pub(super) fn take_scene3d_reset(&mut self, i: usize) -> bool {
-        std::mem::take(&mut self.state(i).scene3d_reset)
-    }
-
     /// Current focused control frame in window coordinates. Hosts can reveal
     /// it through the outer page viewport without expanding it a second time;
     /// `Viewport::reveal_focus` adds the Design System focus-ring outset.
     pub fn focused_control_frame(&self, i: usize) -> Option<Rect> {
+        if entry(i).renderer() == "matrix" {
+            return self.brand_preview.focused_frame();
+        }
         let state = self.states.get(&i)?;
         let id = state.focus?;
-        if !state.hits.iter().any(|(hit_id, _)| *hit_id == id) {
+        let renderer = entry(i).renderer();
+        state.focus_frame(renderer, id)
+    }
+
+    /// Whether a modal dialog currently owns input inside this story.
+    pub fn modal_is_open(&self, i: usize) -> bool {
+        self.states
+            .get(&i)
+            .is_some_and(|state| state.dialog_view.dialog().open)
+    }
+
+    /// Move focus into the first or last enabled, mounted target in the current
+    /// story. The full layout frame lets the Gallery reveal it through the
+    /// actual viewport without making it a pointer hit target.
+    pub fn focus_edge(&mut self, i: usize, reverse: bool) -> Option<Rect> {
+        let renderer = entry(i).renderer();
+        if renderer == "matrix" {
+            return self.brand_preview.focus_edge(reverse);
+        }
+        let state = self.state(i);
+        let ids = state.logical_tab_ids();
+        let target = if reverse {
+            ids.last().copied()
+        } else {
+            ids.first().copied()
+        }?;
+        self.focus_control(i, target)
+    }
+
+    fn focus_control(&mut self, i: usize, target: usize) -> Option<Rect> {
+        let renderer = entry(i).renderer();
+        let state = self.state(i);
+        if !state.window_active || !state.focusable_mounted(target) {
             return None;
         }
+        state.input.blur();
+        state.detail.blur();
+        state.focus = Some(target);
+        state.sync_owned_focus(renderer, Some(target), true);
+        if renderer == "tabs" && (30..33).contains(&target) {
+            state.tabs_view.focus(target - 30, true);
+        } else if renderer == "tabs" {
+            state.tabs_view.clear_focus();
+        }
+        if extended::supports(renderer) {
+            state.extended.host_focus_changed(renderer, target, true);
+            if renderer == "icon-button" {
+                state.extended.icon_button.button.state.focused = true;
+            }
+            if renderer == "link" {
+                state.extended.link.button.state.focused = true;
+            }
+        }
+        if target == 1000 {
+            if renderer == "master" {
+                state.detail.focus_field();
+            } else {
+                state.input.focus_field();
+            }
+        }
+        if renderer == "master" && (10000..10100).contains(&target) {
+            state.focus_reveal = Some(target);
+        }
+        for button in state.buttons.values_mut() {
+            button.state.focused = false;
+            button.state.focus_visible = false;
+        }
+        let button = state.buttons.entry(target).or_default();
+        button.state.focused = true;
+        button.state.focus_visible = true;
+        state.focus_frame(renderer, target)
+    }
+
+    pub fn clear_focus(&mut self, i: usize) {
         let renderer = entry(i).renderer();
-        let frame = match renderer {
-            "tabs" if (30..33).contains(&id) => {
-                state.tabs_layout.as_ref()?.items.get(id - 30)?.frame
-            }
-            "menu" if (50..53).contains(&id) => {
-                state.menu_layout.as_ref()?.items.get(id - 50)?.frame
-            }
-            "select" if id == 20 => state.select_view.layout().trigger.frame,
-            "select" if (60..63).contains(&id) => {
-                state.select_menu_layout.as_ref()?.items.get(id - 60)?.frame
-            }
-            "dialog" | "danger" if (70..72).contains(&id) => {
-                state.dialog_layout.as_ref()?.buttons.get(id - 70)?.frame
-            }
-            "checkbox" if id == 20 => state.checkbox.button.layout()?.frame,
-            "field" | "area" | "search" | "form" | "settings" | "async" | "filter"
-                if id == 1000 =>
-            {
-                state.input.frame_at(0)?
-            }
-            "slider" if id == 20 => state.extended.slider_view.layout().frame,
-            "switch" if id == 20 => state.extended.switch_view.layout().frame(),
-            "radio-group" if (30..33).contains(&id) => state
-                .extended
-                .radio_view
-                .layout()
-                .rows
-                .get(id - 30)?
-                .frame(),
-            "icon-button" if id == 20 => state.extended.icon_button_view.layout().frame,
-            "link" if id == 20 => state.extended.link_view.layout().frame,
-            "segmented-control" if (30..33).contains(&id) => {
-                state
-                    .extended
-                    .segmented_view
-                    .layout()
-                    .items
-                    .get(id - 30)?
-                    .frame
-            }
-            "breadcrumb" if (20..23).contains(&id) => state
-                .extended
-                .breadcrumb_view
-                .layout()
-                .items
-                .get(id - 20)?
-                .frame(),
-            "number-field" if id == 23 => state.number_view.layout().decrement.frame,
-            "number-field" if id == 24 => state.number_view.layout().increment.frame,
-            _ => state.buttons.get(&id).and_then(Button::layout)?.frame,
-        };
-        Some(frame)
+        if renderer == "matrix" {
+            self.brand_preview.clear_focus();
+        }
+        let state = self.state(i);
+        // Leaving this scope dismisses its transient action menu without
+        // stealing focus back from the new owner. Dialog scope is unchanged.
+        let _ = state.menu_view.deactivate();
+        state.menu_layout = None;
+        state.extended.combo.open = false;
+        state.extended.combo_view.options.cancel();
+        state
+            .extended
+            .command_view
+            .blur(&mut state.extended.command);
+        state.input.blur();
+        state.detail.blur();
+        state.focus = None;
+        state.sync_owned_focus(renderer, None, false);
+        state.extended.blur_selection_controls();
+        for button in state.buttons.values_mut() {
+            button.state.focused = false;
+            button.state.focus_visible = false;
+        }
+    }
+
+    #[cfg(test)]
+    pub(super) fn focused_control_id(&self, i: usize) -> Option<usize> {
+        self.states.get(&i).and_then(|state| state.focus)
+    }
+
+    #[cfg(test)]
+    pub(super) fn combo_popup_open(&self, i: usize) -> bool {
+        self.states
+            .get(&i)
+            .is_some_and(|state| state.extended.combo.open)
+    }
+
+    #[cfg(test)]
+    pub(super) fn select_value_for_test(&self, i: usize) -> (bool, usize) {
+        let state = self.states.get(&i).expect("mounted Select story");
+        (state.select.menu.open, state.select.selected)
+    }
+
+    #[cfg(test)]
+    pub(super) fn tab_stop_ids(&self, i: usize) -> Vec<usize> {
+        self.states
+            .get(&i)
+            .map_or_else(Vec::new, StoryState::logical_tab_ids)
     }
 
     pub fn fixture_point(route: &str, id: usize) -> Point {
@@ -1042,33 +1900,16 @@ impl Workbench {
             ..Self::default()
         }
     }
+    pub(super) fn is_window_active(&self) -> bool {
+        self.window_active
+    }
+
     pub fn set_window_active(&mut self, active: bool) {
+        self.window_active = active;
         let now = self.motion_now;
         self.brand_preview.set_window_active(active);
-        for s in self.states.values_mut() {
-            s.window_active = active;
-            s.input.set_window_active(active);
-            s.detail.set_window_active(active);
-            s.tabs_view.set_window_active(active);
-            let menu_event = s.menu_view.set_window_active(active);
-            s.menu_event(menu_event, "menu", false);
-            s.select_view.set_window_active(active, &mut s.select);
-            s.dialog_view.set_window_active(active);
-            s.extended.set_window_active(active);
-            for button in s.buttons.values_mut() {
-                button.set_window_active(active, now);
-            }
-            if !active {
-                s.toolbar_view.focus(None, false);
-                s.number_view.blur();
-                s.dialog_view.deactivate();
-                s.extended.cancel_pointer();
-                s.list_scroll.cancel();
-                s.tabs_view.cancel();
-                for b in s.buttons.values_mut() {
-                    b.cancel();
-                }
-            }
+        for state in self.states.values_mut() {
+            state.set_window_active(active, now);
         }
     }
     pub fn set_window_active_with_time(&mut self, active: bool, now: Duration) {
@@ -1094,6 +1935,8 @@ impl Workbench {
                 || s.detail.needs_animation()
                 || s.list_scroll.needs_animation()
                 || s.menu_view.needs_animation()
+                || s.dialog_view.needs_animation()
+                || s.extended.overlay_needs_animation()
                 || s.select_view.needs_animation()
                 || s.extended.combo_view.options.needs_animation()
                 || s.extended.command_view.options.needs_animation()
@@ -1114,6 +1957,10 @@ impl Workbench {
             | s.extended.command_view.options.tick(dt)
             | brand_preview_animated
     }
+    pub(super) fn take_scene3d_reset(&mut self, i: usize) -> bool {
+        std::mem::take(&mut self.state(i).scene3d_reset)
+    }
+
     pub fn preview_rect(&self, i: usize) -> Rect {
         self.states.get(&i).map_or(Rect::default(), |s| s.preview)
     }
@@ -1153,6 +2000,20 @@ impl Workbench {
             header_height: preview_header_metrics(entry(i), text, width).height() + focus_gutter,
         }
     }
+    /// Extent reported by the last real render, expressed in document space.
+    /// Reading this never changes component state, text caches, or presence.
+    pub fn measured_document_extent(&self, i: usize) -> f32 {
+        self.states.get(&i).map_or(820., |state| {
+            let bottom = match (state.document_bottom != 0., state.event_log_frame) {
+                (true, Some(log)) => state.document_bottom.max(log.max_y()),
+                (true, None) => state.document_bottom,
+                (false, Some(log)) => log.max_y(),
+                (false, None) => return 820.,
+            };
+            (bottom - state.document_origin_y + 8.).max(820.)
+        })
+    }
+
     /// Full scroll-document extent for the interactive brand matrix. The tab
     /// strip and body use the same measured geometry as `build_clipped`.
     pub fn matrix_document_extent(
@@ -1247,13 +2108,18 @@ impl Workbench {
         };
         let state = self.state(i);
         if state.section != next_section {
+            state.document_bottom = 0.;
+            state.event_log_frame = None;
             state.extended.blur_selection_controls();
             state.focus = None;
+            state.logical_focus.clear();
         }
         self.state(i).section = next_section;
     }
     fn state(&mut self, i: usize) -> &mut StoryState {
         let reduced = self.reduced;
+        let active = self.window_active;
+        let now = self.motion_now;
         self.states.entry(i).or_insert_with(|| {
             let mut state = StoryState::for_entry(entry(i));
             state.input.set_reduced_motion(reduced);
@@ -1271,7 +2137,7 @@ impl Workbench {
                 .command_view
                 .options
                 .set_reduced_motion(reduced);
-            state.dialog_view.set_window_active(true);
+            state.set_window_active(active, now);
             state
         })
     }
@@ -1279,9 +2145,14 @@ impl Workbench {
         if entry(i).renderer() == "matrix" {
             return self.brand_preview.text_state();
         }
-        self.states
-            .get(&i)
-            .and_then(|s| s.input.state().or_else(|| s.detail.state()))
+        self.states.get(&i).and_then(|s| {
+            if entry(i).renderer() == "command-palette"
+                && (!s.extended.command.combo.open || s.focus != Some(1000))
+            {
+                return None;
+            }
+            s.input.state().or_else(|| s.detail.state())
+        })
     }
     pub fn text_command(
         &mut self,
@@ -1294,6 +2165,11 @@ impl Workbench {
             return self.brand_preview.text_command(command, clipboard, text);
         }
         let s = self.state(i);
+        if entry(i).renderer() == "command-palette"
+            && (!s.extended.command.combo.open || s.focus != Some(1000))
+        {
+            return (false, None);
+        }
         let input = if s.detail.state().is_some() {
             &mut s.detail
         } else {
@@ -1313,6 +2189,9 @@ impl Workbench {
             _ => input.command(command).unwrap_or(false),
         };
         input.refresh(text);
+        if entry(i).renderer() == "form" {
+            s.persist_draft();
+        }
         (changed, copied)
     }
     pub fn blur(&mut self) {
@@ -1326,9 +2205,13 @@ impl Workbench {
                 b.cancel();
             }
             s.focus = None;
+            s.logical_focus.clear();
             s.toolbar_view.focus(None, false);
             s.number_view.blur();
             let _ = s.menu_view.deactivate();
+            s.menu_view.clear_presentation();
+            s.dialog_view.clear_presentation();
+            s.extended.clear_overlay_presentation();
             s.select_view.cancel(&mut s.select);
             s.menu_layout = None;
             s.select_menu_layout = None;
@@ -1373,6 +2256,8 @@ impl Workbench {
         let snapshot = self.snapshot;
         let reduced = self.reduced;
         let e = entry(i);
+        let active = self.window_active;
+        let now = self.motion_now;
         let s = self.states.entry(i).or_insert_with(|| {
             let mut state = StoryState::for_entry(e);
             state.input.set_reduced_motion(reduced);
@@ -1390,7 +2275,7 @@ impl Workbench {
                 .command_view
                 .options
                 .set_reduced_motion(reduced);
-            state.dialog_view.set_window_active(true);
+            state.set_window_active(active, now);
             state
         });
         s.brand = brand;
@@ -1410,9 +2295,13 @@ impl Workbench {
             self.brand_preview.use_fixture_cache();
         }
         s.hits.clear();
+        s.logical_focus.clear();
         s.button_hits.clear();
+        s.button_labels.clear();
         s.phase_frame = None;
         s.event_log_frame = None;
+        s.document_bottom = 0.;
+        s.document_origin_y = content.min_y();
         s.tabs_layout = None;
         s.menu_layout = None;
         s.select_menu_layout = None;
@@ -1438,7 +2327,13 @@ impl Workbench {
             false,
         );
         let header_bottom = y + header.height();
-        s.preview = Rect::new(x, header_bottom, w, (c.max_y() - header_bottom).max(0.));
+        let visible_bottom = c.max_y().min(viewport_clip.max_y());
+        s.preview = Rect::new(
+            x,
+            header_bottom.min(visible_bottom),
+            w,
+            (visible_bottom - header_bottom).max(0.),
+        );
         if e.planned() {
             label(
                 ctx,
@@ -1538,16 +2433,28 @@ impl Workbench {
             }
             let body_y = tab_bottom + 24.;
             let body = Rect::new(x, body_y, w, (c.max_y() - body_y).max(400.));
-            s.preview = Rect::new(x, body_y, w, (c.max_y() - body_y).max(0.));
+            s.preview = Rect::new(
+                x,
+                body_y.min(visible_bottom),
+                w,
+                (visible_bottom - body_y).max(0.),
+            );
             if extended::supports(e.renderer()) {
-                let preview = s.preview;
+                let preview = body;
                 if s.section == 0 {
                     Self::docs(e, s, ctx, scene, preview);
                     return;
                 }
                 if s.section == 2 {
                     let mut ext = std::mem::take(&mut s.extended);
+                    let host_clock = ctx.text.motion_context();
+                    ctx.text
+                        .replace_fixture_motion_context(host_clock.map(|mut clock| {
+                            clock.reduced_motion = true;
+                            clock
+                        }));
                     ext.matrix(e, s, ctx, scene, preview);
+                    ctx.text.replace_fixture_motion_context(host_clock);
                     s.extended = ext;
                     return;
                 }
@@ -1564,7 +2471,39 @@ impl Workbench {
                     return;
                 }
                 let mut ext = std::mem::take(&mut s.extended);
-                ext.draw(e, s, ctx, scene, s.preview);
+                let component_bounds = if [
+                    "list",
+                    "tree",
+                    "data-table",
+                    "chart",
+                    "markdown",
+                    "code-block",
+                    "diff-view",
+                    "tooltip",
+                    "popover",
+                    "toast",
+                    "banner",
+                    "status-badge",
+                    "progress",
+                    "empty-state",
+                ]
+                .contains(&e.renderer())
+                {
+                    body
+                } else {
+                    s.preview
+                };
+                ext.draw(e, s, ctx, scene, component_bounds);
+                for target in ext.logical_focus_targets(e.renderer()) {
+                    s.register_logical_focus(
+                        target.id,
+                        target.frame,
+                        target.eligible,
+                        target.mounted,
+                        target.roving_group,
+                        target.roving_selected,
+                    );
+                }
                 s.extended = ext;
                 return;
             }
@@ -1573,7 +2512,14 @@ impl Workbench {
                 return;
             }
             if s.section == 2 {
+                let host_clock = ctx.text.motion_context();
+                ctx.text
+                    .replace_fixture_motion_context(host_clock.map(|mut clock| {
+                        clock.reduced_motion = true;
+                        clock
+                    }));
                 Self::matrix(e, s, ctx, scene, body);
+                ctx.text.replace_fixture_motion_context(host_clock);
                 return;
             }
             if s.section == 5 {
@@ -1581,51 +2527,42 @@ impl Workbench {
                 return;
             }
             if s.section == 3 {
-                label(
-                    ctx,
-                    scene,
-                    Rect::new(x, body_y, w, 160.),
-                    match e.renderer() {
-                        "tabs" => {
-                            "Tab enters the tab strip. Left/Right wrap selection. Home/End select endpoints. The panel follows the active tab."
-                        }
-                        "menu" | "select" => {
-                            "Enter or Space opens. Up/Down move through options. Enter selects. Escape dismisses and restores focus."
-                        }
-                        "dialog" | "danger" => {
-                            "Enter opens. Tab/Shift+Tab stay inside the modal scope. Escape cancels. Closing restores focus to the invoker."
-                        }
-                        "field" | "area" | "search" => {
-                            "Click or Tab to focus. Native text services handle IME composition, selection, clipboard, undo and redo. Tab leaves single-line input."
-                        }
-                        _ => {
-                            "Tab / Shift+Tab move focus. Space activates on release. Enter activates the focused action. Pointer release outside cancels. Disabled controls do not activate."
-                        }
-                    },
-                    false,
-                );
-                line(
-                    ctx,
-                    scene,
-                    Rect::new(x, body_y + 180., w, 100.),
-                    "The matrix simulates states for comparison only. Use Playground to exercise real focus and input. VoiceOver and physical IME checks are still manual.",
-                );
+                let copy = behavior_copy(e.renderer());
+                let height = ctx
+                    .text
+                    .proposal_label(copy, proposal::TextRole::UiBody, Some(w))
+                    .height as f32;
+                label(ctx, scene, Rect::new(x, body_y, w, height), copy, false);
+                let note_y = body_y + height + 24.;
+                let note = "State matrices are deterministic visual comparisons. Use Playground for real input. Native VoiceOver and physical IME checks remain manual.";
+                let note_h = ctx
+                    .text
+                    .proposal_label(note, proposal::TextRole::UiBody, Some(w))
+                    .height as f32;
+                label(ctx, scene, Rect::new(x, note_y, w, note_h), note, false);
+                s.document_bottom = note_y + note_h;
                 return;
             }
             if ["scroll", "text", "icon"].contains(&e.renderer()) {
                 return;
             }
-            Self::playground(e, s, ctx, scene, body);
+            Self::playground(e, s, ctx, scene, body, viewport_clip);
         } else {
             if e.renderer() == "matrix" {
-                self.brand_preview
-                    .build(ctx, scene, s.preview, s.button_clip, self.brand, density);
+                self.brand_preview.build(
+                    ctx,
+                    scene,
+                    Rect::new(x, header_bottom, w, (c.max_y() - header_bottom).max(0.)),
+                    s.button_clip,
+                    self.brand,
+                    density,
+                );
                 return;
             }
             Self::reference(e, s, ctx, scene, c);
         }
     }
-    fn docs(e: &Entry, _s: &mut StoryState, ctx: &mut PageCtx<'_>, scene: &mut Scene, c: Rect) {
+    fn docs(e: &Entry, s: &mut StoryState, ctx: &mut PageCtx<'_>, scene: &mut Scene, c: Rect) {
         if extended::supports(e.renderer()) {
             scene.push_clip(c);
             let routes = [
@@ -1648,6 +2585,7 @@ impl Workbench {
                 format!("Stories: {routes}"),
                 "Reset returns this deterministic fixture to its initial state. The event log reports local model transitions; no real network or user data is used.".to_owned(),
             ];
+            lines.extend(contract_summary(e));
             if e.renderer() == "combo-box" || e.renderer() == "command-palette" {
                 lines.push("IME composition is routed through the native text input before list navigation. Synthetic event fixtures do not replace physical input-method testing.".into());
             }
@@ -1666,10 +2604,12 @@ impl Workbench {
                 );
                 y += height + 16.;
             }
+            s.document_bottom = y;
             scene.pop_clip();
             return;
         }
-        let lines=[format!("Component: {}  |  maturity: experimental",e.component()),format!("Story routes: {}", ["docs", "playground", "states", "behaviors", "edge-cases", "variants"].into_iter().filter(|story| e.supports_story(story)).map(|story| format!("{}/{story}", e.slug())).collect::<Vec<_>>().join(" · ")),"State is local to this route. Reset restores deterministic initial data. No clock, random source or real network is used.".into(),"Tokens: surface-1/2, primary-text, secondary-text, border, border-focused, row-selection, button-hover/pressed.".into(),format!("Usage: tekes_ui_controls::{} — see widgets.rs / text_input.rs / scroll_view.rs",match e.renderer(){"field"|"area"|"search"=>"TextInput","scroll"=>"ScrollArea",_=>e.title()}),"State comparison is a visual aid, not a keyboard or accessibility test. Native input services are exercised through the real window.".into()];
+        let mut lines=vec![format!("Component: {}  |  maturity: experimental",e.component()),format!("Story routes: {}", ["docs", "playground", "states", "behaviors", "edge-cases", "variants"].into_iter().filter(|story| e.supports_story(story)).map(|story| format!("{}/{story}", e.slug())).collect::<Vec<_>>().join(" · ")),"State is local to this route. Reset restores deterministic fixture data. The host supplies the animation clock; no random source or real network request is used.".into(),format!("Usage: {}", api_reference(e)),"State comparison is a visual aid, not a keyboard or accessibility test. Native input services are exercised through the real window.".into()];
+        lines.extend(contract_summary(e));
         let mut y = c.min_y();
         for text in &lines {
             let height = ctx
@@ -1685,25 +2625,181 @@ impl Workbench {
             );
             y += height + 16.;
         }
+        s.document_bottom = y;
     }
     fn matrix(e: &Entry, s: &mut StoryState, ctx: &mut PageCtx<'_>, scene: &mut Scene, c: Rect) {
+        if basic_states::supports(e.renderer()) {
+            basic_states::matrix(e, s, ctx, scene, c);
+            return;
+        }
         if ["scroll", "text", "icon"].contains(&e.renderer()) {
+            let copy = "Use Playground to inspect the real viewport and selection. ScrollArea supports independent Enabled / Disabled / Auto axes. Text exposes read-only selection; it has no pressed or loading state.";
+            let measured = ctx.text.proposal_label(
+                copy,
+                proposal::TextRole::UiBody,
+                Some(c.size.width.max(0.)),
+            );
             label(
                 ctx,
                 scene,
-                c,
-                "Use Playground to inspect the real viewport and selection. ScrollArea supports independent Enabled / Disabled / Auto axes. Text exposes read-only selection; it has no pressed or loading state.",
+                Rect::new(c.min_x(), c.min_y(), c.size.width, measured.height as f32),
+                copy,
                 false,
             );
+            s.document_bottom = c.min_y() + measured.height as f32;
             return;
         }
-        line(
+        if ["tabs", "menu", "dialog", "select"].contains(&e.renderer()) {
+            Self::composite_matrix(e, s, ctx, scene, c);
+            return;
+        }
+        let focus_gutter = -ControlFrame::new(Rect::new(0.0, 0.0, 1.0, 1.0), None)
+            .focus_bounds(ctx.text.backing_scale())
+            .min_x();
+        // Keep the real ancestor clip and reserve the focus ring plus its
+        // antialiasing guard inside it, just as the extended state matrix does.
+        let layout_bounds = c.inset(focus_gutter);
+        let explanation = "Visual fixtures only — simulated focus is not a focus test. Real interaction: Playground.";
+        let explanation_height = ctx
+            .text
+            .proposal_label(
+                explanation,
+                proposal::TextRole::UiBody,
+                Some(layout_bounds.size.width.max(0.)),
+            )
+            .height as f32;
+        label(
             ctx,
             scene,
-            Rect::new(c.min_x(), c.min_y(), c.size.width, 34.),
-            "Visual fixtures only — simulated focus is not a focus test. Real interaction: Playground.",
+            Rect::new(
+                layout_bounds.min_x(),
+                layout_bounds.min_y(),
+                layout_bounds.size.width,
+                explanation_height,
+            ),
+            explanation,
+            false,
         );
-        let states = [
+        let checkbox_states = [
+            ("Unchecked", ControlState::default(), CheckState::Unchecked),
+            (
+                "Unchecked · hover",
+                ControlState {
+                    hovered: true,
+                    ..Default::default()
+                },
+                CheckState::Unchecked,
+            ),
+            (
+                "Unchecked · pressed",
+                ControlState {
+                    pressed: true,
+                    ..Default::default()
+                },
+                CheckState::Unchecked,
+            ),
+            (
+                "Unchecked · focus-visible",
+                ControlState {
+                    focused: true,
+                    focus_visible: true,
+                    ..Default::default()
+                },
+                CheckState::Unchecked,
+            ),
+            (
+                "Unchecked · disabled",
+                ControlState {
+                    disabled: true,
+                    ..Default::default()
+                },
+                CheckState::Unchecked,
+            ),
+            (
+                "Unchecked · error + focus-visible",
+                ControlState {
+                    error: true,
+                    focused: true,
+                    focus_visible: true,
+                    ..Default::default()
+                },
+                CheckState::Unchecked,
+            ),
+            (
+                "Checked · error",
+                ControlState {
+                    error: true,
+                    ..Default::default()
+                },
+                CheckState::Checked,
+            ),
+            (
+                "Indeterminate · error + disabled",
+                ControlState {
+                    error: true,
+                    disabled: true,
+                    ..Default::default()
+                },
+                CheckState::Mixed,
+            ),
+            ("Checked", ControlState::default(), CheckState::Checked),
+            (
+                "Checked · pressed",
+                ControlState {
+                    selected: true,
+                    pressed: true,
+                    ..Default::default()
+                },
+                CheckState::Checked,
+            ),
+            (
+                "Checked · hover",
+                ControlState {
+                    selected: true,
+                    hovered: true,
+                    ..Default::default()
+                },
+                CheckState::Checked,
+            ),
+            (
+                "Checked · focus-visible",
+                ControlState {
+                    selected: true,
+                    focused: true,
+                    focus_visible: true,
+                    ..Default::default()
+                },
+                CheckState::Checked,
+            ),
+            ("Indeterminate", ControlState::default(), CheckState::Mixed),
+            (
+                "Indeterminate · focus-visible",
+                ControlState {
+                    focused: true,
+                    focus_visible: true,
+                    ..Default::default()
+                },
+                CheckState::Mixed,
+            ),
+            (
+                "Checked · disabled",
+                ControlState {
+                    selected: true,
+                    disabled: true,
+                    ..Default::default()
+                },
+                CheckState::Checked,
+            ),
+            (
+                "Indeterminate · disabled",
+                ControlState {
+                    disabled: true,
+                    ..Default::default()
+                },
+                CheckState::Mixed,
+            ),
+        ];
+        let standard_states = [
             ("default", ControlState::default()),
             (
                 "hover",
@@ -1742,22 +2838,6 @@ impl Workbench {
                 },
             ),
             (
-                "selected + hover",
-                ControlState {
-                    selected: true,
-                    hovered: true,
-                    ..Default::default()
-                },
-            ),
-            (
-                "checked + disabled",
-                ControlState {
-                    selected: true,
-                    disabled: true,
-                    ..Default::default()
-                },
-            ),
-            (
                 "error + focus",
                 ControlState {
                     error: true,
@@ -1767,98 +2847,413 @@ impl Workbench {
                 },
             ),
         ];
-        let columns = if c.size.width < 600. { 2 } else { 3 };
-        let cw = c.size.width / columns as f32;
-        let states: Vec<_> = states
-            .into_iter()
-            .filter(|(name, _)| match *name {
-                "selected + hover" => ["tabs", "menu", "select"].contains(&e.renderer()),
-                "checked + disabled" => e.renderer() == "checkbox",
-                "error + focus" => {
-                    ["field", "area", "search", "field-meta"].contains(&e.renderer())
-                }
-                "loading" => e.renderer() == "button",
-                _ => true,
-            })
-            .collect();
-        for (n, (name, state)) in states.into_iter().enumerate() {
-            let r = Rect::new(
-                c.min_x() + (n % columns) as f32 * cw,
-                c.min_y() + 42. + (n / columns) as f32 * 92.,
-                cw - 16.,
-                36.,
-            );
-            if ["field", "area", "search", "field-meta"].contains(&e.renderer()) {
-                let mut input = TextDemo::field(
-                    if name == "default" {
-                        "Studio"
-                    } else {
-                        "Sample text"
+        let checkbox = e.renderer() == "checkbox";
+        let mut states: Vec<(&str, ControlState, Option<CheckState>)> = if checkbox {
+            checkbox_states
+                .iter()
+                .map(|(name, state, checked)| (*name, *state, Some(*checked)))
+                .collect()
+        } else {
+            standard_states
+                .iter()
+                .filter(|(name, _)| match *name {
+                    "error + focus" => {
+                        ["field", "area", "search", "field-meta"].contains(&e.renderer())
+                    }
+                    "loading" => e.renderer() == "button",
+                    "hover" | "pressed" => e.renderer() != "field-meta",
+                    _ => true,
+                })
+                .map(|(name, state)| (*name, *state, None))
+                .collect()
+        };
+        if ["field", "area", "search"].contains(&e.renderer()) {
+            for name in ["read-only", "composing", "selection"] {
+                states.push((
+                    name,
+                    ControlState {
+                        focused: true,
+                        ..Default::default()
                     },
-                    e.renderer() == "area",
-                    state.disabled,
-                );
-                input.use_fixture_cache();
-                if state.focused {
-                    input.focus_field();
-                }
-                input.set_error(state.error);
-                input.build_search_clipped(ctx, r, Some(c), scene);
-            } else if e.renderer() == "checkbox" {
-                let mut button = Button::default();
-                button.state = state;
-                let mut checkbox = Checkbox {
-                    button,
-                    checked: if name == "checked + disabled" {
-                        CheckState::Checked
-                    } else if name == "selected + hover" {
-                        CheckState::Mixed
-                    } else {
-                        CheckState::Unchecked
-                    },
-                };
-                checkbox.render(
-                    scene,
+                    None,
+                ));
+            }
+        }
+        let columns = if layout_bounds.size.width < 600. {
+            2
+        } else {
+            3
+        };
+        let cell_width = (layout_bounds.size.width / columns as f32 - 16.).max(0.);
+        let multiline = e.renderer() == "area";
+        let field_meta = e.renderer() == "field-meta";
+        let mut measurements = Vec::with_capacity(states.len());
+        for (name, _, _) in &states {
+            let title_height = ctx
+                .text
+                .proposal_label(name, proposal::TextRole::UiCaption, Some(cell_width))
+                .height as f32;
+            let control_height = if checkbox {
+                Checkbox::measure(
                     ctx.text,
-                    "",
-                    Rect::new(r.min_x(), r.min_y(), 24., 24.),
-                    Some(c),
+                    "Notifications",
+                    cell_width,
+                    proposal::TextRole::UiBody,
+                )
+                .height
+            } else if multiline {
+                let value = "A first complete sentence for the editor.\nA second line keeps the text layout visible.\nA third line gives the multiline control room to breathe.";
+                let mut input = TextDemo::field(value, true, false);
+                input.use_fixture_cache();
+                let minimum = input.measure_search_height(ctx.text);
+                let document_height = ctx
+                    .text
+                    .proposal_label(
+                        value,
+                        proposal::TextRole::UiBody,
+                        Some((cell_width - 24.0).max(0.0)),
+                    )
+                    .height as f32
+                    + 2.0 * proposal::SCROLL_SINGLE_LINE_PADDING_Y;
+                minimum.max(document_height)
+            } else if field_meta {
+                let is_error = *name == "error + focus";
+                let mut field = s.field.clone();
+                field.label = "Workspace name".into();
+                field.help = "Use a clear name for your workspace.".into();
+                field.error = is_error.then(|| "A name is required.".into());
+                let mut view = FieldView::default();
+                let mut probe = Scene::new();
+                let layout = view.render_with_presentation(
+                    &mut probe,
+                    ctx.text,
+                    &field,
+                    Rect::new(0.0, 0.0, cell_width, 4096.0),
+                    None,
                     tekes_ui_tokens::Palette {
                         theme: ctx.theme,
                         brand: s.brand,
                     },
                     proposal::TextRole::UiBody,
+                    FieldPresentation::emphasized_form(),
+                );
+                layout.message.max_y().max(layout.slot.max_y())
+            } else if ["field", "search"].contains(&e.renderer()) {
+                let value = if *name == "default" {
+                    "Studio"
+                } else {
+                    "Sample text"
+                };
+                let mut input = TextDemo::field(value, false, false);
+                input.use_fixture_cache();
+                input.measure_search_height(ctx.text)
+            } else {
+                let title = if *name == "loading" {
+                    "Loading…"
+                } else {
+                    "Sample"
+                };
+                ctx.text
+                    .measure_button(
+                        title,
+                        cell_width,
+                        ButtonSize::Body,
+                        proposal::TextRole::UiBody,
+                    )
+                    .height
+            };
+            measurements.push((title_height, control_height));
+        }
+        let (cells, document_bottom) =
+            matrix_cell_geometries(layout_bounds, columns, explanation_height, &measurements);
+        let palette = tekes_ui_tokens::Palette {
+            theme: ctx.theme,
+            brand: s.brand,
+        };
+        for (n, (name, state, check_state)) in states.into_iter().enumerate() {
+            let cell = cells[n];
+            let r = cell.control;
+            if field_meta {
+                let mut field = s.field.clone();
+                let is_error = name == "error + focus";
+                field.label = "Workspace name".into();
+                field.help = "Use a clear name for your workspace.".into();
+                field.error = is_error.then(|| "A name is required.".into());
+                let layout = s.field_view.render_with_presentation(
+                    scene,
+                    ctx.text,
+                    &field,
+                    r,
+                    Some(c),
+                    palette,
+                    proposal::TextRole::UiBody,
+                    FieldPresentation::emphasized_form(),
+                );
+                let mut input = TextDemo::field("Studio", false, false);
+                input.use_fixture_cache();
+                input.set_disabled(state.disabled);
+                input.set_error(is_error);
+                if state.focused {
+                    input.focus_field();
+                }
+                input.build_search_clipped(ctx, layout.slot, Some(c), scene);
+            } else if ["field", "area", "search"].contains(&e.renderer()) {
+                let multiline_value = "A first complete sentence for the editor.\nA second line keeps the text layout visible.\nA third line gives the multiline control room to breathe.";
+                let mut input = TextDemo::field(
+                    if multiline {
+                        multiline_value
+                    } else if name == "default" {
+                        "Studio"
+                    } else {
+                        "Sample text"
+                    },
+                    multiline,
+                    name == "read-only",
+                );
+                input.use_fixture_cache();
+                input.set_disabled(state.disabled);
+                input.set_error(state.error);
+                input.prepare_input_state_fixture(name);
+                input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);
+                if state.focused {
+                    input.focus_field();
+                }
+                input.build_search_clipped(ctx, r, Some(c), scene);
+            } else if checkbox {
+                let mut button = Button::default();
+                button.state = state;
+                let mut control = Checkbox {
+                    button,
+                    checked: check_state.expect("checkbox state"),
+                };
+                control.render(
+                    scene,
+                    ctx.text,
+                    "Notifications",
+                    r,
+                    Some(c),
+                    palette,
+                    proposal::TextRole::UiBody,
                 );
             } else {
                 let mut fixture = Button::default();
                 fixture.state = state;
+                let title = if state.loading {
+                    "Loading…"
+                } else {
+                    "Sample"
+                };
                 ctx.text.render_button(
                     scene,
                     &mut fixture,
-                    if state.loading {
-                        "Loading…"
-                    } else {
-                        "Sample"
-                    },
+                    title,
                     r,
                     Some(c),
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    palette,
                     paint::ButtonVariant::Quiet,
                     ButtonSize::Body,
                     proposal::TextRole::UiBody,
                     ButtonTextAlign::default(),
                 );
             }
-            line(ctx, scene, r.offset(0., 40.), name);
+            matrix_caption(ctx, scene, cell.caption, name);
         }
-        s.hits.retain(|(id, _)| *id <= 5);
-        s.button_hits.retain(|id| *id <= 5);
+        s.hits.retain(|(id, _)| *id <= 6);
+        s.button_hits.retain(|id| *id <= 6);
+        s.document_bottom = document_bottom;
     }
+    fn composite_matrix(
+        e: &Entry,
+        s: &mut StoryState,
+        ctx: &mut PageCtx<'_>,
+        scene: &mut Scene,
+        c: Rect,
+    ) {
+        if e.renderer() == "select" {
+            extended::navigation_states::matrix(e, s, ctx, scene, c);
+            return;
+        }
+        let palette = tekes_ui_tokens::Palette {
+            theme: ctx.theme,
+            brand: s.brand,
+        };
+        let role = proposal::TextRole::UiBody;
+        let mut y = c.min_y();
+        let titles: &[&str] = match e.renderer() {
+            "tabs" => &[
+                "Selected first",
+                "Selected second · focus-visible",
+                "Pressed selected tab",
+                "Disabled tabs",
+                "Selected tab · hover",
+            ],
+            "menu" => &[
+                "Open menu",
+                "Keyboard next item",
+                "Pressed first item",
+                "Disabled menu items",
+            ],
+            _ => &[
+                "Open dialog",
+                "Keyboard focus",
+                "Pressed confirm",
+                "Disabled dialog actions",
+            ],
+        };
+        for (n, title) in titles.iter().enumerate() {
+            let h = ctx
+                .text
+                .proposal_label(title, role, Some(c.size.width))
+                .height as f32;
+            label(
+                ctx,
+                scene,
+                Rect::new(c.min_x(), y, c.size.width, h),
+                title,
+                false,
+            );
+            let body = Rect::new(
+                c.min_x(),
+                y + h + 8.,
+                c.size.width,
+                if e.renderer() == "tabs" { 100. } else { 230. },
+            );
+            let mut probe = Scene::new();
+            match e.renderer() {
+                "tabs" => {
+                    let mut view = TabsView::new(3);
+                    if n == 1 {
+                        view.focus(1, true);
+                    }
+                    view.set_disabled(n == 3);
+                    let layout = view.render(
+                        &mut probe,
+                        ctx.text,
+                        &["General", "Security", "Advanced"],
+                        Rect::new(body.min_x(), body.min_y(), body.size.width, 36.),
+                        Some(body),
+                        palette,
+                        role,
+                        false,
+                    );
+                    if n == 4 {
+                        view.pointer_move_at(layout.items[0].frame.center());
+                    }
+                    if n == 2 {
+                        view.pointer_down_at(layout.items[0].frame.center());
+                    }
+                    let layout = view.render(
+                        scene,
+                        ctx.text,
+                        &["General", "Security", "Advanced"],
+                        Rect::new(body.min_x(), body.min_y(), body.size.width, 36.),
+                        Some(body),
+                        palette,
+                        role,
+                        false,
+                    );
+                    label(
+                        ctx,
+                        scene,
+                        Rect::new(
+                            body.min_x(),
+                            layout.frame.max_y() + 8.,
+                            body.size.width,
+                            48.,
+                        ),
+                        ["General panel", "Security panel", "Advanced panel"][view.selected()],
+                        false,
+                    );
+                }
+                "menu" => {
+                    let mut view = MenuView::new(3);
+                    view.set_reduced_motion(true);
+                    view.show(0);
+                    if n == 1 {
+                        view.key(ControlKey::Down, true);
+                    }
+                    view.set_disabled(n == 3);
+                    let anchor =
+                        Rect::new(body.min_x(), body.min_y(), body.size.width.min(230.), 1.);
+                    if let Some(layout) = view.render(
+                        &mut probe,
+                        ctx.text,
+                        &["Open", "Duplicate", "Archive"],
+                        anchor,
+                        body,
+                        Some(body),
+                        palette,
+                        role,
+                        false,
+                    ) && n == 2
+                    {
+                        view.pointer_down_at(layout.items[0].frame.center());
+                    }
+                    view.render(
+                        scene,
+                        ctx.text,
+                        &["Open", "Duplicate", "Archive"],
+                        anchor,
+                        body,
+                        Some(body),
+                        palette,
+                        role,
+                        false,
+                    );
+                }
+                _ => {
+                    let mut view = DialogView::default();
+                    view.show(0);
+                    if n == 1 {
+                        view.key(ControlKey::Tab { reverse: false }, true);
+                    }
+                    view.set_disabled(n == 3);
+                    if let Some(layout) = view.render(
+                        &mut probe,
+                        ctx.text,
+                        "Confirm changes?",
+                        body,
+                        Some(body),
+                        palette,
+                        role,
+                        false,
+                    ) && n == 2
+                    {
+                        view.pointer_down_at(layout.buttons[1].frame.center());
+                    }
+                    view.render(
+                        scene,
+                        ctx.text,
+                        "Confirm changes?",
+                        body,
+                        Some(body),
+                        palette,
+                        role,
+                        false,
+                    );
+                }
+            }
+            y = body.max_y() + 24.;
+        }
+        #[cfg(any(test, feature = "composition-review"))]
+        if e.renderer() == "tabs" {
+            y = content_status::matrix(
+                tekes_ui_composition_consumer::content_status::Kind::Tabs,
+                s,
+                ctx,
+                scene,
+                c,
+                y + 24.,
+            );
+        }
+        s.document_bottom = y;
+        s.hits.retain(|(id, _)| *id <= 6);
+        s.button_hits.retain(|id| *id <= 6);
+    }
+
     fn variants(e: &Entry, s: &mut StoryState, ctx: &mut PageCtx<'_>, scene: &mut Scene, c: Rect) {
         if e.renderer() == "button" {
+            let mut row_y = c.min_y();
             for (n, (title, height)) in [
                 ("Small", proposal::metric("size", "size-button-sm").unwrap()),
                 (
@@ -1870,12 +3265,7 @@ impl Workbench {
             .into_iter()
             .enumerate()
             {
-                let r = Rect::new(
-                    c.min_x(),
-                    c.min_y() + n as f32 * 78.,
-                    c.size.width.min(200.),
-                    height,
-                );
+                let r = Rect::new(c.min_x(), row_y, c.size.width.min(200.), height);
                 let mut button = Button::default();
                 ctx.text.render_button(
                     scene,
@@ -1892,7 +3282,16 @@ impl Workbench {
                     proposal::TextRole::UiBody,
                     ButtonTextAlign::default(),
                 );
-                let quiet = r.offset(c.size.width.min(240.), 0.);
+                let primary_bottom = button
+                    .layout()
+                    .expect("variant button laid out")
+                    .frame
+                    .max_y();
+                let quiet = if c.size.width >= 440. {
+                    r.offset(240., 0.)
+                } else {
+                    Rect::new(r.min_x(), primary_bottom + 12., r.size.width, r.size.height)
+                };
                 let mut quiet_button = Button::default();
                 ctx.text.render_button(
                     scene,
@@ -1906,7 +3305,15 @@ impl Workbench {
                     proposal::TextRole::UiBody,
                     ButtonTextAlign::default(),
                 );
+                row_y = primary_bottom.max(
+                    quiet_button
+                        .layout()
+                        .expect("quiet variant laid out")
+                        .frame
+                        .max_y(),
+                ) + 24.;
             }
+            s.document_bottom = row_y;
         } else {
             label(
                 ctx,
@@ -1939,74 +3346,75 @@ impl Workbench {
         ctx: &mut PageCtx<'_>,
         scene: &mut Scene,
         c: Rect,
+        viewport_clip: Rect,
     ) {
         let x = c.min_x();
         let y = c.min_y();
         let w = c.size.width;
-        let mut property_x = x;
+        // All controls in a group share measured rows. Text scale and narrow
+        // previews may wrap both a button's label and the group itself.
+        let mut properties = Vec::new();
         for (n, title) in ["Disabled", "Loading", "Error", "Mixed"].iter().enumerate() {
-            if n == 3 && e.renderer() != "checkbox" {
-                continue;
-            }
-            if n == 1 && e.renderer() != "button" {
-                continue;
-            }
-            if n == 2
-                && !["field", "area", "search", "field-meta", "form", "settings"]
-                    .contains(&e.renderer())
-            {
-                continue;
-            }
-            if n == 0
-                && ![
-                    "button", "checkbox", "field", "area", "search", "menu", "select", "dialog",
+            let supported = match n {
+                0 => [
+                    "button",
+                    "checkbox",
+                    "field",
+                    "area",
+                    "search",
+                    "menu",
+                    "select",
+                    "dialog",
                     "danger",
+                    "form",
+                    "settings",
+                    "async",
+                    "field-meta",
                 ]
-                .contains(&e.renderer())
-            {
-                continue;
-            }
-            let selected = match n {
-                0 => s.disabled,
-                1 => s.loading,
-                2 => s.error,
-                _ => s.checkbox.checked == CheckState::Mixed,
+                .contains(&e.renderer()),
+                1 => e.renderer() == "button",
+                2 => [
+                    "field",
+                    "area",
+                    "search",
+                    "field-meta",
+                    "form",
+                    "settings",
+                    "select",
+                ]
+                .contains(&e.renderer()),
+                _ => ["checkbox", "select"].contains(&e.renderer()),
             };
-            action(
-                s,
-                ctx,
-                scene,
-                10 + n,
-                Rect::new(property_x, y, 112., 36.),
-                title,
-                (selected, false),
-            );
-            property_x += 120.;
+            if supported {
+                let selected = match n {
+                    0 => s.disabled,
+                    1 => s.loading,
+                    2 => s.error,
+                    _ if e.renderer() == "select" => s.select_empty,
+                    _ => s.checkbox.checked == CheckState::Mixed,
+                };
+                let title = if n == 3 && e.renderer() == "select" {
+                    "Empty options"
+                } else {
+                    title
+                };
+                properties.push((10 + n, title, selected));
+            }
         }
-        let r = Rect::new(x, y + 54., w.min(600.), 36.);
-        let body_y = y + 54.;
+        let mut body_y = action_group(s, ctx, scene, Rect::new(x, y, w, 0.), &properties);
         let edge = s.section == 4;
-        let mut content_bottom = None;
-        if edge && ["field", "area", "search", "form", "settings"].contains(&e.renderer()) {
-            action(
+        if edge && ["field", "area", "search", "form", "settings", "async"].contains(&e.renderer())
+        {
+            body_y = action_group(
                 s,
                 ctx,
                 scene,
-                14,
-                Rect::new(x, y, 156., 30.),
-                "Long mixed text",
-                (false, false),
-            );
-            action(
-                s,
-                ctx,
-                scene,
-                15,
-                Rect::new(x + 164., y, 120., 30.),
-                "Empty text",
-                (false, false),
+                Rect::new(x, body_y, w, 0.),
+                &[(14, "Long mixed text", false), (15, "Empty text", false)],
             );
         }
+        let r = Rect::new(x, body_y, w.min(600.), 36.);
+        let mut content_bottom = None;
         match e.renderer() {
             "field" | "area" | "search" => {
                 let field_min_height = if e.renderer() == "area" {
@@ -2017,9 +3425,16 @@ impl Workbench {
                 line(ctx, scene, r, "Project name — native text input");
                 let input_y = body_y + 32.;
                 let input_height = if e.renderer() == "area" {
-                    (c.size.height - 200.)
-                        .clamp(100., 270.)
-                        .min((s.preview.max_y() - input_y).max(0.))
+                    let remaining_preview = (s.preview.max_y() - input_y).max(0.);
+                    let remaining_document = (c.max_y() - input_y).max(0.);
+                    if remaining_preview > 0. {
+                        remaining_preview.clamp(100., 270.)
+                    } else {
+                        // The field is still mounted in the document when the
+                        // preview is fully clipped. Keep its real logical
+                        // frame so Tab can reveal it on the next viewport.
+                        remaining_document.clamp(100., 270.)
+                    }
                 } else {
                     (proposal::TextRole::UiBody.style().line_height * ctx.text.type_scale() + 16.)
                         .max(36.)
@@ -2028,10 +3443,24 @@ impl Workbench {
                 let input = Rect::new(x, input_y, w.min(650.), input_height);
                 s.input.set_disabled(s.disabled);
                 s.input.set_error(s.error || s.phase == Phase::Invalid);
-                s.input
-                    .build_search_clipped(ctx, input, s.button_clip, scene);
+                let input_clip = if e.renderer() == "area" {
+                    // Clip visible content to the remaining preview, while
+                    // retaining a valid disjoint viewport clip for a fully
+                    // offscreen but still mounted editor.
+                    Some(if s.preview.size.height > 0.0 {
+                        s.preview
+                    } else {
+                        viewport_clip
+                    })
+                } else {
+                    s.button_clip
+                };
+                s.input.build_search_clipped(ctx, input, input_clip, scene);
                 if let Some(visible) = s.input.visible_frame() {
                     s.hits.push((1000, visible));
+                }
+                if let Some(frame) = s.input.frame_at(0) {
+                    s.register_logical_focus(1000, frame, !s.disabled, true, None, true);
                 }
                 if e.renderer() == "search" {
                     action(
@@ -2076,10 +3505,16 @@ impl Workbench {
                 button.state.focused = s.window_active && s.focus == Some(20);
                 s.checkbox.button = button;
                 let row = Rect::new(x, body_y, w.min(400.), 36.);
+                let title = if edge {
+                    "Receive project notifications 项目通知設定 日本語 — a long setting label wraps inside the available row"
+                } else {
+                    "Receive project notifications"
+                };
+                s.button_labels.insert(20, title.to_owned());
                 let layout = s.checkbox.render(
                     scene,
                     ctx.text,
-                    "Receive project notifications",
+                    title,
                     row,
                     s.button_clip,
                     tekes_ui_tokens::Palette {
@@ -2093,6 +3528,14 @@ impl Workbench {
                     s.hits.push((20, visible));
                     s.button_hits.push(20);
                 }
+                s.register_logical_focus(
+                    20,
+                    layout.frame,
+                    !s.checkbox.button.state.disabled,
+                    true,
+                    None,
+                    true,
+                );
             }
             "tabs" => {
                 s.tabs_view.set_window_active(s.window_active);
@@ -2117,6 +3560,16 @@ impl Workbench {
                 {
                     s.hits.push((30 + s.tabs_view.selected(), visible));
                 }
+                for (index, item) in layout.items.iter().enumerate() {
+                    s.register_logical_focus(
+                        30 + index,
+                        item.frame,
+                        !s.disabled,
+                        true,
+                        Some(1),
+                        index == s.tabs_view.selected(),
+                    );
+                }
                 let panel_y = layout.frame.max_y() + 20.0;
                 s.tabs_layout = Some(layout);
                 label(
@@ -2133,12 +3586,52 @@ impl Workbench {
             }
             "select" => {
                 s.select_view.set_disabled(s.disabled, &mut s.select);
+                s.select_view.set_error(s.error);
+                let labels: &[&str] = if s.select_empty {
+                    &[]
+                } else {
+                    &["Automatic", "Compact", "Comfortable"]
+                };
+                s.button_labels.insert(
+                    20,
+                    labels
+                        .get(s.select.selected.min(labels.len().saturating_sub(1)))
+                        .copied()
+                        .unwrap_or("")
+                        .to_owned(),
+                );
+                for (index, label) in labels.iter().enumerate() {
+                    s.button_labels.insert(60 + index, (*label).to_owned());
+                }
+                let trigger_frame = Rect::new(x, body_y, w.min(230.), 36.);
+                // Caller feedback is base content. Paint it before the owned
+                // popup so it cannot cover options in the overlay.
+                let message = if s.select_empty {
+                    Some("No options available.")
+                } else if s.error {
+                    Some("This choice is unavailable. Choose another option.")
+                } else {
+                    None
+                };
+                if let Some(message) = message {
+                    let height = ctx
+                        .text
+                        .proposal_label(message, proposal::TextRole::UiBody, Some(w))
+                        .height as f32;
+                    label(
+                        ctx,
+                        scene,
+                        Rect::new(x, trigger_frame.max_y() + 8., w, height),
+                        message,
+                        false,
+                    );
+                }
                 let layout = s.select_view.render(
                     scene,
                     ctx.text,
                     &mut s.select,
-                    &["Automatic", "Compact", "Comfortable"],
-                    Rect::new(x, body_y, w.min(230.), 36.),
+                    labels,
+                    trigger_frame,
                     s.preview,
                     s.button_clip,
                     tekes_ui_tokens::Palette {
@@ -2151,7 +3644,9 @@ impl Workbench {
                 if let Some(visible) = layout.trigger.visible {
                     s.hits.push((20, visible));
                 }
-                s.buttons.entry(20).or_default().state.disabled = s.disabled;
+                let available = !s.disabled && !s.select_empty;
+                s.register_logical_focus(20, layout.trigger.frame, available, true, None, true);
+                s.buttons.entry(20).or_default().state.disabled = !available;
                 s.select_menu_layout = layout.popup;
             }
             "menu" | "dialog" | "danger" => {
@@ -2199,6 +3694,9 @@ impl Workbench {
                 if let Some(visible) = s.input.visible_frame() {
                     s.hits.push((1000, visible));
                 }
+                if let Some(frame) = s.input.frame_at(0) {
+                    s.register_logical_focus(1000, frame, !s.disabled, true, None, true);
+                }
                 let action_y = field_layout.message.max_y() + 2.;
                 action(
                     s,
@@ -2211,24 +3709,80 @@ impl Workbench {
                     } else {
                         "Enable notifications"
                     },
-                    (s.checkbox.checked == CheckState::Checked, false),
+                    (s.checkbox.checked == CheckState::Checked, s.disabled),
                 );
+                let save_y = s.buttons[&25]
+                    .layout()
+                    .expect("notification action laid out")
+                    .frame
+                    .max_y()
+                    + 12.;
                 action(
                     s,
                     ctx,
                     scene,
                     20,
-                    Rect::new(x, action_y + 48., 150., 36.),
+                    Rect::new(x, save_y, w.min(150.), 36.),
                     if s.phase == Phase::Failed {
                         "Retry save"
                     } else {
                         "Save settings"
                     },
-                    (false, s.phase == Phase::Pending),
+                    (false, s.disabled || s.phase == Phase::Pending),
                 );
-                let phase_frame = Self::phase(s, ctx, scene, Rect::new(x, action_y + 96., w, 80.));
+                let phase_y = s.buttons[&20]
+                    .layout()
+                    .expect("save action laid out")
+                    .frame
+                    .max_y()
+                    + 12.;
+                let phase_frame = Self::phase(s, ctx, scene, Rect::new(x, phase_y, w, 80.));
                 s.phase_frame = Some(phase_frame);
                 content_bottom = Some(phase_frame.max_y());
+                if e.renderer() == "form"
+                    && (s
+                        .draft_fixture
+                        .as_ref()
+                        .is_some_and(|store| store.is_durable())
+                        || s.draft_error.is_some())
+                {
+                    let y = phase_frame.max_y() + 16.;
+                    action(
+                        s,
+                        ctx,
+                        scene,
+                        26,
+                        Rect::new(x, y, 210., 36.),
+                        "Interrupt & recover",
+                        (
+                            false,
+                            !s.draft_fixture
+                                .as_ref()
+                                .is_some_and(|store| store.is_durable()),
+                        ),
+                    );
+                    let status = s.draft_error.clone().unwrap_or_else(|| {
+                        let store = s.draft_fixture.as_ref().expect("enabled fixture");
+                        format!(
+                            "Durable fixture · revision {} · {} · no network",
+                            store.draft().revision,
+                            if store.has_pending() {
+                                "outbox awaiting acknowledgement"
+                            } else if store.is_acknowledged() {
+                                "revision acknowledged"
+                            } else {
+                                "draft stored locally"
+                            }
+                        )
+                    });
+                    let status_y = y + 44.;
+                    let h = ctx
+                        .text
+                        .proposal_label(&status, proposal::TextRole::UiBody, Some(w))
+                        .height as f32;
+                    label(ctx, scene, Rect::new(x, status_y, w, h), &status, false);
+                    content_bottom = Some(status_y + h);
+                }
             }
             "filter" => {
                 let input_height = s.input.measure_search_height(ctx.text);
@@ -2239,6 +3793,9 @@ impl Workbench {
                     .build_search_clipped(ctx, row.input, s.button_clip, scene);
                 if let Some(visible) = s.input.visible_frame() {
                     s.hits.push((1000, visible));
+                }
+                if let Some(frame) = s.input.frame_at(0) {
+                    s.register_logical_focus(1000, frame, !s.disabled, true, None, true);
                 }
                 action(s, ctx, scene, 22, row.clear, "Clear filter", (false, false));
                 let q = s.input.query().to_lowercase();
@@ -2268,10 +3825,9 @@ impl Workbench {
             }
             "master" => {
                 let lw = (w * 0.32).min(240.);
-                let h = (c.size.height - 190.)
-                    .max(100.)
-                    .min((s.preview.max_y() - body_y).max(0.));
+                let h = (c.size.height - 190.).clamp(100., 600.);
                 let list = Rect::new(x, body_y, lw - 12., h);
+                s.list_frame = list;
                 s.list_scroll.set_scroll_policy(
                     tekes_ui_controls::ScrollPolicy::Disabled,
                     tekes_ui_controls::ScrollPolicy::Auto,
@@ -2279,9 +3835,26 @@ impl Workbench {
                 let focus_padding = -ControlFrame::new(Rect::new(0.0, 0.0, 1.0, 1.0), None)
                     .focus_bounds(1.0)
                     .min_x();
+                let row_width = (lw - 20.0 - focus_padding * 2.0).max(0.0);
+                let row_height = (0..80)
+                    .map(|n| {
+                        ctx.text
+                            .measure_button(
+                                &format!("Document {:02}", n + 1),
+                                row_width,
+                                ButtonSize::Body,
+                                proposal::TextRole::UiBody,
+                            )
+                            .height
+                    })
+                    .fold(36.0, f32::max);
+                let row_stride = row_height + 6.;
                 s.list_scroll.layout(
                     list.size,
-                    tekes_ui_scene::Size::new(list.size.width, 80. * 42. + focus_padding * 2.0),
+                    tekes_ui_scene::Size::new(
+                        list.size.width,
+                        80. * row_stride + focus_padding * 2.0,
+                    ),
                 );
                 if let Some(index) = s
                     .focus_reveal
@@ -2291,9 +3864,9 @@ impl Workbench {
                 {
                     let row = Rect::new(
                         focus_padding,
-                        focus_padding + index as f32 * 42.0,
-                        (lw - 20.0 - focus_padding * 2.0).max(0.0),
-                        36.0,
+                        focus_padding + index as f32 * row_stride,
+                        row_width,
+                        row_height,
                     );
                     s.list_scroll.reveal_focus(row, ctx.text.backing_scale());
                 }
@@ -2310,12 +3883,16 @@ impl Workbench {
                 for n in 0..80 {
                     let document_row = Rect::new(
                         focus_padding,
-                        focus_padding + n as f32 * 42.0,
-                        (lw - 20.0 - focus_padding * 2.0).max(0.0),
-                        36.0,
+                        focus_padding + n as f32 * row_stride,
+                        row_width,
+                        row_height,
                     );
+                    let row = document_row.offset(origin.x, origin.y);
+                    // All rows are mounted by this deterministic fixture. Keep
+                    // their real layout frames in the keyboard sequence even
+                    // while the nested ScrollArea clips their paint and hits.
+                    s.register_logical_focus(10000 + n, row, true, true, Some(1), s.selected == n);
                     if geometry.document_to_viewport(document_row).is_some() {
-                        let row = document_row.offset(origin.x, origin.y);
                         action(
                             s,
                             ctx,
@@ -2349,6 +3926,9 @@ impl Workbench {
                 let detail = Rect::new(x + lw, body_y, (w - lw).max(1.), h);
                 s.detail
                     .build_search_clipped(ctx, detail, s.button_clip, scene);
+                if let Some(frame) = s.detail.frame_at(0) {
+                    s.register_logical_focus(1000, frame, true, true, None, true);
+                }
             }
             "surface" => {
                 let backing_scale = ctx.text.scale();
@@ -2414,7 +3994,7 @@ impl Workbench {
                     ctx.text,
                     &["Create", "Rename", "Remove"],
                     surface.frame,
-                    surface.visible,
+                    s.button_clip,
                     tekes_ui_tokens::Palette {
                         theme: ctx.theme,
                         brand: s.brand,
@@ -2426,6 +4006,14 @@ impl Workbench {
                     if let Some(visible) = layout.visible {
                         s.hits.push((20 + index, visible));
                     }
+                    s.register_logical_focus(
+                        20 + index,
+                        layout.frame,
+                        !s.disabled,
+                        true,
+                        None,
+                        true,
+                    );
                 }
             }
             "number-field" => {
@@ -2449,9 +4037,25 @@ impl Workbench {
                 if let Some(visible) = layout.decrement.visible {
                     s.hits.push((23, visible));
                 }
+                s.register_logical_focus(
+                    23,
+                    layout.decrement.frame,
+                    !s.disabled && s.number.can_increment(false),
+                    true,
+                    None,
+                    true,
+                );
                 if let Some(visible) = layout.increment.visible {
                     s.hits.push((24, visible));
                 }
+                s.register_logical_focus(
+                    24,
+                    layout.increment.frame,
+                    !s.disabled && s.number.can_increment(true),
+                    true,
+                    None,
+                    true,
+                );
                 extended::wrapped_caption(
                     ctx,
                     scene,
@@ -2495,14 +4099,18 @@ impl Workbench {
             .get(&20)
             .and_then(Button::layout)
             .map(|layout| layout.frame);
-        if s.menu_view.is_open()
+        if (s.menu_view.is_open() || s.menu_view.is_presented())
             && let Some(trigger) = trigger
         {
             s.menu_view.set_disabled(s.disabled);
+            let labels = ["Open document", "Duplicate document", "Archive document"];
+            for (index, label) in labels.iter().enumerate() {
+                s.button_labels.insert(50 + index, (*label).to_owned());
+            }
             s.menu_layout = s.menu_view.render(
                 scene,
                 ctx.text,
-                &["Open document", "Duplicate document", "Archive document"],
+                &labels,
                 trigger,
                 s.preview,
                 s.button_clip,
@@ -2511,16 +4119,12 @@ impl Workbench {
                 s.density == 1,
             );
         }
-        if s.dialog_view.dialog().open {
+        if s.dialog_view.dialog().open || s.dialog_view.is_presented() {
             s.dialog_view.set_disabled(s.disabled);
             s.dialog_layout = s.dialog_view.render(
                 scene,
                 ctx.text,
-                if e.renderer() == "danger" {
-                    "Delete this workspace? This fixture does not delete files."
-                } else {
-                    "Confirm changes?"
-                },
+                StoryState::dialog_title(e.renderer()),
                 s.preview,
                 s.button_clip,
                 palette,
@@ -2533,12 +4137,29 @@ impl Workbench {
         }
     }
     fn phase(s: &mut StoryState, ctx: &mut PageCtx<'_>, scene: &mut Scene, r: Rect) -> Rect {
-        let text = match s.phase {
-            Phase::Ready => "Ready. First submission fails; retry succeeds.",
-            Phase::Invalid => "Validation error: enter a workspace name.",
-            Phase::Pending => "Submitting… use Resolve to complete the controlled fixture.",
-            Phase::Failed => "Save failed. Your input is preserved. Retry is available.",
-            Phase::Saved => "Saved successfully. Preferences remain in this story only.",
+        let text = match (
+            s.draft_fixture
+                .as_ref()
+                .is_some_and(|store| store.is_durable()),
+            s.phase,
+        ) {
+            (true, Phase::Ready) => {
+                "Draft stored locally. Save queues this revision for the controlled fixture."
+            }
+            (true, Phase::Pending) => {
+                "Revision queued durably. Resolve or interrupt to test recovery."
+            }
+            (true, Phase::Failed) => {
+                "Delivery interrupted or failed. Draft retained; retry the queued revision."
+            }
+            (true, Phase::Saved) => {
+                "Current revision acknowledged by the local fixture. No network was used."
+            }
+            (_, Phase::Ready) => "Ready. First submission fails; retry succeeds.",
+            (_, Phase::Invalid) => "Validation error: enter a workspace name.",
+            (_, Phase::Pending) => "Submitting… use Resolve to complete the controlled fixture.",
+            (_, Phase::Failed) => "Save failed. Your input is preserved. Retry is available.",
+            (_, Phase::Saved) => "Saved successfully. Preferences remain in this story only.",
         };
         let measured_height = ctx
             .text
@@ -2887,8 +4508,35 @@ impl Workbench {
             }
         }
     }
+    pub fn has_pointer_capture(&self, i: usize) -> bool {
+        entry(i).renderer() == "split-view"
+            && self
+                .states
+                .get(&i)
+                .is_some_and(|s| s.extended.pointer_dragging == Some(90))
+    }
     pub fn handle(&mut self, i: usize, event: &Event, text: &mut super::text::TextEngine) -> bool {
+        let handled = self.handle_inner(i, event, text);
+        if entry(i).renderer() == "form" {
+            self.state(i).persist_draft();
+        }
+        handled
+    }
+    fn handle_inner(
+        &mut self,
+        i: usize,
+        event: &Event,
+        text: &mut super::text::TextEngine,
+    ) -> bool {
         let renderer = entry(i).renderer();
+        if renderer == "matrix"
+            && let Event::Key(key) = event
+            && key.kind == KeyEventKind::Down
+            && key.key_code == 48
+            && self.brand_preview.focused_frame().is_none()
+        {
+            return self.brand_preview.focus_edge(key.modifiers.shift).is_some();
+        }
         if renderer == "matrix"
             && let Some(applied) = self.brand_preview.handle(event, text)
         {
@@ -2898,6 +4546,18 @@ impl Workbench {
             return true;
         }
         let s = self.state(i);
+        if renderer == "command-palette"
+            && !s.extended.command.combo.open
+            && matches!(
+                event,
+                Event::TextCommit { .. }
+                    | Event::TextPreedit { .. }
+                    | Event::TextUnmark
+                    | Event::TextCommand(_)
+            )
+        {
+            return false;
+        }
         if let Event::Scroll(e) = event {
             let p = Point::new(e.position.x as f32, e.position.y as f32);
             if s.dialog_view.dialog().open {
@@ -2998,6 +4658,10 @@ impl Workbench {
                     s.record(event);
                 }
                 if handled {
+                    if renderer == "command-palette" && key == ControlKey::Escape {
+                        s.close_command_palette();
+                        return true;
+                    }
                     if key == ControlKey::Enter {
                         let (selected, items) = if renderer == "combo-box" {
                             (s.extended.combo.selected, &s.extended.combo.items)
@@ -3009,6 +4673,9 @@ impl Workbench {
                         };
                         if let Some(value) = selected.and_then(|index| items.get(index)) {
                             s.input.set_value(value);
+                        }
+                        if renderer == "command-palette" {
+                            s.close_command_palette();
                         }
                     }
                     return true;
@@ -3053,6 +4720,7 @@ impl Workbench {
                     && (!matches!(renderer, "combo-box" | "command-palette")
                         || k.modifiers == tekes_ui_platform_macos::Modifiers::NONE)
                 {
+                    let was_open = renderer == "command-palette" && s.extended.command.combo.open;
                     let mut events = Vec::new();
                     let handled = s
                         .extended
@@ -3061,6 +4729,12 @@ impl Workbench {
                         s.record(event);
                     }
                     if handled {
+                        if renderer == "command-palette"
+                            && !was_open
+                            && s.extended.command.combo.open
+                        {
+                            s.open_command_palette(text);
+                        }
                         if matches!(
                             renderer,
                             "radio-group"
@@ -3073,8 +4747,9 @@ impl Workbench {
                         {
                             s.focus = Some(focused);
                         }
-                        if renderer == "popover" && key == ControlKey::Escape && down {
-                            s.focus = s.extended.focused;
+                        if renderer == "popover" && !s.extended.popover.open {
+                            s.focus = s.restore_focus(s.extended.focused);
+                            s.sync_owned_focus(renderer, s.focus, true);
                         }
                         if renderer == "combo-box"
                             && down
@@ -3091,11 +4766,20 @@ impl Workbench {
                             && let Some(value) = s.extended.command.combo.items.get(index)
                         {
                             s.input.set_value(value);
+                            s.close_command_palette();
+                        }
+                        if renderer == "command-palette" && down && key == ControlKey::Escape {
+                            s.close_command_palette();
                         }
                         return true;
                     }
                 }
-                if renderer == "link" && key == ControlKey::Space && s.focus == Some(20) {
+                // Production navigation links leave Space for page handling;
+                // do not reinterpret an unconsumed key as generic Button input.
+                if matches!(renderer, "link" | "breadcrumb")
+                    && key == ControlKey::Space
+                    && extended::handles_key(renderer, key, s.focus, &s.extended)
+                {
                     return false;
                 }
                 if s.dialog_view.dialog().open {
@@ -3105,6 +4789,31 @@ impl Workbench {
                         s.focus = Some(70 + s.dialog_view.dialog().focus);
                     }
                     return true;
+                }
+                if down && matches!(key, ControlKey::Tab { .. }) {
+                    if renderer == "combo-box" && s.extended.combo.open {
+                        s.extended.combo_view.key_event(
+                            ControlKey::Escape,
+                            true,
+                            &mut s.extended.combo,
+                        );
+                    } else if renderer == "command-palette" && s.extended.command.combo.open {
+                        s.extended.command_view.key_event(
+                            ControlKey::Escape,
+                            true,
+                            &mut s.extended.command,
+                        );
+                    }
+                }
+                if down && matches!(key, ControlKey::Tab { .. }) {
+                    if s.menu_view.is_open() {
+                        let event = s.menu_view.key(ControlKey::Escape, true);
+                        s.menu_event(event, renderer, false);
+                    }
+                    if s.select.menu.open {
+                        let event = s.select_view.key(ControlKey::Escape, true, &mut s.select);
+                        s.menu_event(event, renderer, true);
+                    }
                 }
                 if renderer == "select" && (s.select.menu.open || s.focus == Some(20)) {
                     if s.disabled {
@@ -3136,7 +4845,19 @@ impl Workbench {
                     } else {
                         s.menu_view.key(key, down)
                     };
+                    let keyboard_closed = down
+                        && matches!(
+                            event,
+                            MenuEvent::Activated { .. } | MenuEvent::Dismissed { .. }
+                        );
                     s.menu_event(event, renderer, select);
+                    // Menu exposes the caller target; its caller owns the
+                    // trigger Button and therefore its input-modality paint.
+                    if keyboard_closed && let Some(id) = s.focus {
+                        let trigger = s.buttons.entry(id).or_default();
+                        trigger.state.focused = true;
+                        trigger.state.focus_visible = true;
+                    }
                     if !select {
                         return true;
                     }
@@ -3202,82 +4923,69 @@ impl Workbench {
                 }
                 if let ControlKey::Tab { reverse } = key {
                     if down {
-                        let mut ids: Vec<_> = s
-                            .hits
-                            .iter()
-                            .map(|h| h.0)
-                            .filter(|id| !s.buttons.get(id).is_some_and(|b| b.state.disabled))
-                            .collect();
-                        if s.extended.disabled {
-                            match renderer {
-                                "slider" | "switch" => ids.retain(|id| *id != 20),
-                                "radio-group" => {
-                                    ids.retain(|id| !(30..30 + s.extended.radio.len()).contains(id))
-                                }
-                                _ => {}
-                            }
-                        } else if renderer == "radio-group" {
-                            let radio_stop = s
-                                .extended
-                                .radio_view
-                                .focused()
-                                .or(s.extended.radio.selected)
-                                .map(|index| 30 + index);
-                            ids.retain(|id| {
-                                !(30..30 + s.extended.radio.len()).contains(id)
-                                    || Some(*id) == radio_stop
-                            });
+                        let ids = s.logical_tab_ids();
+                        if ids.is_empty() {
+                            return false;
                         }
-                        if !ids.is_empty() {
-                            let current = s.focus.and_then(|id| ids.iter().position(|n| *n == id));
-                            let n = match current {
-                                None => {
-                                    if reverse {
-                                        ids.len() - 1
-                                    } else {
-                                        0
-                                    }
-                                }
-                                Some(n) => {
-                                    if reverse {
-                                        (n + ids.len() - 1) % ids.len()
-                                    } else {
-                                        (n + 1) % ids.len()
-                                    }
-                                }
-                            };
+                        let current = s.focus.and_then(|id| ids.iter().position(|n| *n == id));
+                        let next = match current {
+                            None => Some(if reverse { ids.len() - 1 } else { 0 }),
+                            Some(0) if reverse => None,
+                            Some(n) if reverse => Some(n - 1),
+                            Some(n) if n + 1 == ids.len() => None,
+                            Some(n) => Some(n + 1),
+                        };
+                        let Some(n) = next else {
+                            // A scope edge bubbles to the Gallery, but the
+                            // production owner must release its focus/press
+                            // state before the next key-up is routed elsewhere.
                             s.input.blur();
                             s.detail.blur();
-                            s.focus = Some(ids[n]);
-                            if renderer == "master" && (10000..10100).contains(&ids[n]) {
-                                s.focus_reveal = Some(ids[n]);
+                            s.focus = None;
+                            s.sync_owned_focus(renderer, None, false);
+                            s.extended.blur_selection_controls();
+                            s.tabs_view.clear_focus();
+                            for button in s.buttons.values_mut() {
+                                button.state.focused = false;
+                                button.state.focus_visible = false;
                             }
-                            s.sync_owned_focus(renderer, s.focus, true);
-                            if renderer == "tabs" && (30..33).contains(&ids[n]) {
-                                s.tabs_view.focus(ids[n] - 30, true);
-                            } else if renderer == "tabs" {
-                                s.tabs_view.clear_focus();
+                            return false;
+                        };
+                        s.input.blur();
+                        s.detail.blur();
+                        s.focus = Some(ids[n]);
+                        if renderer == "master" && (10000..10100).contains(&ids[n]) {
+                            s.focus_reveal = Some(ids[n]);
+                        }
+                        s.sync_owned_focus(renderer, s.focus, true);
+                        if renderer == "tabs" && (30..33).contains(&ids[n]) {
+                            s.tabs_view.focus(ids[n] - 30, true);
+                        } else if renderer == "tabs" {
+                            s.tabs_view.clear_focus();
+                        }
+                        if extended::supports(renderer) {
+                            s.extended.host_focus_changed(renderer, ids[n], true);
+                            if renderer == "icon-button" {
+                                s.extended.icon_button.button.state.focused = true;
                             }
-                            if extended::supports(renderer) {
-                                s.extended.host_focus_changed(renderer, ids[n], true);
-                                if renderer == "icon-button" {
-                                    s.extended.icon_button.button.state.focused = true;
-                                }
-                                if renderer == "link" {
-                                    s.extended.link.button.state.focused = true;
-                                }
+                            if renderer == "link" {
+                                s.extended.link.button.state.focused = true;
                             }
-                            if ids[n] == 1000 {
+                        }
+                        if ids[n] == 1000 {
+                            if renderer == "master" {
+                                s.detail.focus_field();
+                            } else {
                                 s.input.focus_field();
                             }
-                            for b in s.buttons.values_mut() {
-                                b.state.focused = false;
-                                b.state.focus_visible = true;
-                            }
-                            let button = s.buttons.entry(ids[n]).or_default();
-                            button.state.focused = true;
-                            button.state.focus_visible = true;
                         }
+                        for b in s.buttons.values_mut() {
+                            b.state.focused = false;
+                            b.state.focus_visible = true;
+                        }
+                        let button = s.buttons.entry(ids[n]).or_default();
+                        button.state.focused = true;
+                        button.state.focus_visible = true;
                     }
                     return true;
                 }
@@ -3318,6 +5026,56 @@ impl Workbench {
         }
         if let Event::Mouse(m) = event {
             let p = Point::new(m.position.x as f32, m.position.y as f32);
+            // AppKit delivers Dragged while the button is held, including
+            // outside the window. A subsequent buttonless Moved means the
+            // release was missed: roll back instead of keeping stale capture.
+            if renderer == "split-view" && s.extended.pointer_dragging == Some(90) {
+                match m.kind {
+                    MouseEventKind::Dragged {
+                        button: MouseButton::Left,
+                    } => {
+                        return s
+                            .extended
+                            .pointer_move(renderer, p, s.hit_at(p), &mut |_| {});
+                    }
+                    MouseEventKind::Moved => return s.extended.cancel_pointer(),
+                    MouseEventKind::Down {
+                        button: MouseButton::Left,
+                        ..
+                    } => {
+                        s.extended.cancel_pointer();
+                    }
+                    _ => {}
+                }
+            }
+            if renderer == "split-view"
+                && matches!(
+                    m.kind,
+                    MouseEventKind::Down {
+                        button: MouseButton::Left,
+                        click_count: 2
+                    }
+                )
+                && s.extended.split_view.double_click(p, &mut s.extended.split)
+            {
+                s.extended.pointer_dragging = None;
+                s.focus = Some(90);
+                s.extended.host_focus_changed(renderer, 90, false);
+                return true;
+            }
+            if renderer == "command-palette"
+                && s.extended.command.combo.open
+                && matches!(
+                    m.kind,
+                    MouseEventKind::Down {
+                        button: MouseButton::Left,
+                        ..
+                    }
+                )
+                && !matches!(s.hit_at(p), Some(20 | 1000 | 40..=42))
+            {
+                s.close_command_palette();
+            }
             let composition_guarded = match m.kind {
                 MouseEventKind::Down {
                     button: MouseButton::Left,
@@ -3335,7 +5093,11 @@ impl Workbench {
             };
             if s.dialog_view.dialog().open {
                 match m.kind {
-                    MouseEventKind::Moved | MouseEventKind::Entered => {
+                    MouseEventKind::Moved
+                    | MouseEventKind::Entered
+                    | MouseEventKind::Dragged {
+                        button: MouseButton::Left,
+                    } => {
                         s.dialog_view.pointer_move_at(p);
                     }
                     MouseEventKind::Down {
@@ -3365,7 +5127,11 @@ impl Workbench {
 
             if renderer == "tabs" {
                 match m.kind {
-                    MouseEventKind::Moved | MouseEventKind::Entered => {
+                    MouseEventKind::Moved
+                    | MouseEventKind::Entered
+                    | MouseEventKind::Dragged {
+                        button: MouseButton::Left,
+                    } => {
                         s.tabs_view.pointer_move_at(p);
                     }
                     MouseEventKind::Down {
@@ -3399,7 +5165,11 @@ impl Workbench {
             if s.menu_view.is_open() {
                 let layout = s.menu_layout.clone();
                 match m.kind {
-                    MouseEventKind::Moved | MouseEventKind::Entered => {
+                    MouseEventKind::Moved
+                    | MouseEventKind::Entered
+                    | MouseEventKind::Dragged {
+                        button: MouseButton::Left,
+                    } => {
                         s.menu_view.pointer_move_at(p);
                         if layout.as_ref().is_some_and(|layout| {
                             layout.visible.is_some_and(|visible| visible.contains(p))
@@ -3446,7 +5216,11 @@ impl Workbench {
             } else if s.select.menu.open {
                 let layout = s.select_menu_layout.clone();
                 match m.kind {
-                    MouseEventKind::Moved | MouseEventKind::Entered => {
+                    MouseEventKind::Moved
+                    | MouseEventKind::Entered
+                    | MouseEventKind::Dragged {
+                        button: MouseButton::Left,
+                    } => {
                         s.select_view.pointer_move(p, &mut s.select);
                         if layout.as_ref().is_some_and(|layout| {
                             layout.visible.is_some_and(|visible| visible.contains(p))
@@ -3464,7 +5238,11 @@ impl Workbench {
                             layout.popup.contains(p)
                                 && layout.visible.is_some_and(|visible| visible.contains(p))
                         });
-                        if was_open && !s.select.menu.open && s.hit_at(p).is_some() && !inside_popup
+                        if was_open
+                            && !s.select.menu.open
+                            && s.hit_at(p).is_some()
+                            && s.hit_at(p) != Some(20)
+                            && !inside_popup
                         {
                             s.select_view.blur(&mut s.select);
                         }
@@ -3494,7 +5272,11 @@ impl Workbench {
             }
             let hit = s.hit_at(p);
             match m.kind {
-                MouseEventKind::Moved | MouseEventKind::Entered => {
+                MouseEventKind::Moved
+                | MouseEventKind::Entered
+                | MouseEventKind::Dragged {
+                    button: MouseButton::Left,
+                } => {
                     if renderer == "toolbar" {
                         s.toolbar_view.pointer_move(p);
                         if hit.is_some_and(|id| (20..23).contains(&id)) {
@@ -3691,6 +5473,19 @@ impl Workbench {
                     button: MouseButton::Left,
                     ..
                 } => {
+                    // Modal/pop-up scopes were handled above. Release the
+                    // host's own story buttons before body adapters that may
+                    // consume an otherwise unrelated pointer-up.
+                    let mut header = None;
+                    for id in s.button_hits.iter().copied().filter(|id| *id <= 6) {
+                        if s.buttons.get_mut(&id).is_some_and(|b| b.pointer_up_at(p)) {
+                            header = Some(id);
+                        }
+                    }
+                    if let Some(id) = header {
+                        s.activate_from_pointer(id, renderer, composition_guarded);
+                        return true;
+                    }
                     if renderer == "toolbar" {
                         if let Some(index) = s.toolbar_view.pointer_up(p) {
                             s.activate(20 + index, renderer);
@@ -3719,9 +5514,23 @@ impl Workbench {
                     }
                     if extended::supports(renderer) {
                         let mut events = Vec::new();
+                        let was_open =
+                            renderer == "command-palette" && s.extended.command.combo.open;
                         let handled = s
                             .extended
                             .pointer_up(renderer, p, hit, &mut |event| events.push(event));
+                        if renderer == "command-palette"
+                            && !was_open
+                            && s.extended.command.combo.open
+                        {
+                            s.open_command_palette(text);
+                        }
+                        if renderer == "command-palette"
+                            && was_open
+                            && !s.extended.command.combo.open
+                        {
+                            s.close_command_palette();
+                        }
                         if renderer == "popover" && !s.extended.popover.open {
                             s.focus = s.extended.focused;
                         }
@@ -3779,12 +5588,7 @@ impl Workbench {
         s.input.refresh(text);
         s.detail.refresh(text);
         if before != s.input.query() {
-            if renderer == "combo-box" {
-                s.extended.combo.set_query(s.input.query());
-            } else if renderer == "command-palette" {
-                s.extended.command.combo.set_query(s.input.query());
-            }
-            s.record("input: value changed");
+            s.input_changed(renderer);
         }
         input || detail
     }
@@ -3994,6 +5798,109 @@ mod tests {
         assert!(route("component-button/invalid").is_none());
     }
     #[test]
+    fn component_usage_uses_the_compiled_registry_api_without_renderer_fallbacks() {
+        for entry in entries().iter().filter(|e| e.get("kind") == "component") {
+            assert!(
+                entry.get("api").starts_with("tekes_ui_controls::"),
+                "{}",
+                entry.slug()
+            );
+            assert_eq!(api_reference(entry), entry.get("api"));
+            assert_eq!(entry.0["api_bindings"][0], entry.get("api"));
+            let summary = contract_summary(entry);
+            assert_eq!(summary.len(), 3, "{}", entry.slug());
+            assert!(summary[0].starts_with("Design-required states: rest"));
+            assert!(summary[1].contains("runtime and native acceptance remain unverified"));
+            assert!(
+                summary[2].contains("runtime token dependencies remain unverified")
+                    || summary[2].contains("Runtime token dependencies remain unverified")
+            );
+        }
+        use super::super::Gallery;
+        use tekes_ui_render::Renderer;
+        use tekes_ui_tokens::Theme;
+        let mut renderer = Renderer::new_headless().expect("actual GPU for registry usage pages");
+        let output = std::env::var_os("TEKESUI_REGISTRY_DOC_OUT").map(std::path::PathBuf::from);
+        if let Some(path) = &output {
+            std::fs::create_dir_all(path).unwrap();
+        }
+        let mut manifest = Vec::new();
+        for entry in entries().iter().filter(|e| e.get("kind") == "component") {
+            for theme in Theme::ALL {
+                for (width, height, scale, type_scale) in
+                    [(1440_u32, 960_u32, 1_f32, 0), (720, 480, 2., 2)]
+                {
+                    let mut gallery = Gallery::new();
+                    gallery.set_system_theme(theme);
+                    gallery.set_reduced_motion(true);
+                    gallery.text.set_scale(scale);
+                    gallery.workbench.text_scale = type_scale;
+                    let route = format!("{}/docs", entry.slug());
+                    assert!(gallery.open_route(&route));
+                    gallery.set_view_size(width as f32, height as f32);
+                    state_capture::stabilize_document(&mut gallery);
+                    let target = gallery.page_scroll_range().max(0.);
+                    let (offset, range) = state_capture::settle_scroll(&mut gallery, 1.0, target);
+                    assert!(
+                        (offset - range).abs() < 0.5,
+                        "docs bottom must be reached: {route}"
+                    );
+                    let mut scene = Scene::new();
+                    gallery.build_scene(&mut scene);
+                    let pixels = (
+                        (width as f32 * scale) as u32,
+                        (height as f32 * scale) as u32,
+                    );
+                    let rgba = renderer
+                        .render_to_rgba8(
+                            &scene,
+                            gallery.atlas_mut(),
+                            pixels,
+                            scale,
+                            Gallery::background(theme),
+                        )
+                        .unwrap();
+                    assert!(
+                        rgba.chunks_exact(4).any(|p| p != &rgba[0..4]),
+                        "blank {route}"
+                    );
+                    let file = format!(
+                        "{}-{}-{}-{width}x{height}@{scale}x.png",
+                        entry.slug(),
+                        if theme.is_dark() { "dark" } else { "light" },
+                        if theme.is_increased() {
+                            "increased"
+                        } else {
+                            "standard"
+                        }
+                    );
+                    if let Some(output) = &output {
+                        let mut encoder = png::Encoder::new(
+                            std::fs::File::create(output.join(&file)).unwrap(),
+                            pixels.0,
+                            pixels.1,
+                        );
+                        encoder.set_color(png::ColorType::Rgba);
+                        encoder.set_depth(png::BitDepth::Eight);
+                        encoder
+                            .write_header()
+                            .unwrap()
+                            .write_image_data(&rgba)
+                            .unwrap();
+                    }
+                    manifest.push(serde_json::json!({"route":route, "api":entry.get("api"), "theme":format!("{theme:?}"), "points":[width,height], "pixels":[pixels.0,pixels.1], "scale":scale, "text_scale_index":type_scale, "file":file, "checks":["registry API binding", "actual Gallery docs route", "stable document extent", "actual bottom scroll", "real GPU render"], "experience":"requires visual review; nonblank is not acceptance"}));
+                }
+            }
+        }
+        if let Some(output) = &output {
+            std::fs::write(
+                output.join("manifest.json"),
+                serde_json::to_vec_pretty(&manifest).unwrap(),
+            )
+            .unwrap();
+        }
+    }
+    #[test]
     fn form_validation_failure_retry_and_reset() {
         let mut s = StoryState::default();
         s.input.set_value("");
@@ -4025,6 +5932,39 @@ mod tests {
 mod interaction_tests {
     use super::*;
     use tekes_ui_platform_macos::{KeyEvent, Modifiers, MouseEvent, Point as NativePoint};
+
+    fn reveal_registered_collection_row(
+        gallery: &mut super::super::Gallery,
+        i: usize,
+        row_id: usize,
+    ) {
+        let row = gallery
+            .workbench
+            .state(i)
+            .logical_focus
+            .iter()
+            .find(|target| target.id == row_id && target.mounted && target.eligible)
+            .copied()
+            .unwrap_or_else(|| panic!("{row_id} has a mounted production layout frame"));
+        let visible = gallery
+            .viewport
+            .geometry()
+            .visible_viewport_rect()
+            .expect("Gallery viewport is visible");
+        let desired_offset = gallery.viewport.offset.y + row.frame.min_y() - visible.min_y() - 8.0;
+        gallery.scroll_page_to(desired_offset.max(0.0));
+        gallery.build_scene(&mut Scene::new());
+        assert!(
+            gallery
+                .workbench
+                .state(i)
+                .hits
+                .iter()
+                .any(|(id, _)| *id == row_id),
+            "scrolling the measured row frame brings its production hit into view"
+        );
+    }
+
     fn index(renderer: &str) -> usize {
         entries()
             .iter()
@@ -4059,6 +5999,925 @@ mod interaction_tests {
         let mut scene = Scene::new();
         w.build_clipped(i, &mut ctx, content, viewport_clip, &mut scene);
         scene
+    }
+
+    #[test]
+    fn narrow_large_text_state_matrix_allocates_wrapped_caption_and_real_control_extent() {
+        use tekes_ui_scene::Primitive;
+
+        let mut text = super::super::text::TextEngine::new();
+        text.set_type_scale(1.5);
+        let bounds = Rect::new(12.0, 24.0, 360.0, 1800.0);
+        let columns = 2;
+        let focus_gutter = -super::ControlFrame::new(Rect::new(0.0, 0.0, 1.0, 1.0), None)
+            .focus_bounds(text.backing_scale())
+            .min_x();
+        let layout_bounds = bounds.inset(focus_gutter);
+        let cell_width = layout_bounds.size.width / columns as f32 - 16.0;
+        let caption = text.proposal_label(
+            "Checked · focus-visible",
+            proposal::TextRole::UiCaption,
+            Some(cell_width),
+        );
+        assert!(
+            caption.lines.len() > 1,
+            "fixture must exercise wrapped state labels"
+        );
+        let checkbox_height = Checkbox::measure(
+            &mut text,
+            "Notifications",
+            cell_width,
+            proposal::TextRole::UiBody,
+        )
+        .height;
+        let fields = [
+            (caption.height as f32, checkbox_height),
+            (caption.height as f32, checkbox_height),
+            (caption.height as f32, checkbox_height),
+        ];
+        let (cells, bottom) = matrix_cell_geometries(layout_bounds, columns, 82.0, &fields);
+        for cell in &cells {
+            assert!(cell.control.max_y() + 8.0 <= cell.caption.min_y());
+            assert!(cell.caption.max_y() <= bottom);
+            assert!(cell.control.min_x() >= layout_bounds.min_x());
+            assert!(cell.control.max_x() <= layout_bounds.max_x());
+            assert!(cell.caption.max_x() <= layout_bounds.max_x());
+            let focus_bounds = super::ControlFrame::new(cell.control, Some(bounds))
+                .focus_bounds(text.backing_scale());
+            assert!(focus_bounds.min_x() >= bounds.min_x());
+            assert!(focus_bounds.max_x() <= bounds.max_x());
+            assert!(focus_bounds.min_y() >= bounds.min_y());
+            assert!(focus_bounds.max_y() <= bounds.max_y());
+        }
+        assert!(cells[0].caption.max_y() <= cells[2].control.min_y());
+        assert!(cells[0].caption.size.height >= caption.height as f32);
+
+        let mut scene = Scene::new();
+        let mut checkbox = Checkbox::default();
+        let palette = tekes_ui_tokens::Palette {
+            theme: tekes_ui_tokens::Theme::LIGHT,
+            brand: 0,
+        };
+        let layout = checkbox.render(
+            &mut scene,
+            &mut text,
+            "Notifications",
+            cells[0].control,
+            Some(bounds),
+            palette,
+            proposal::TextRole::UiBody,
+        );
+        let first_line = text.first_line_height(
+            "Notifications",
+            proposal::TextRole::UiBody,
+            layout.label.size.width,
+        );
+        assert!(layout.label.size.width > 0.0);
+        assert!(layout.label.size.height >= first_line);
+        assert!(scene.primitives().iter().any(|primitive| matches!(
+            primitive,
+            Primitive::Glyphs(run) if !run.glyphs.is_empty()
+        )));
+        let text_center_y = layout.label.min_y() + first_line * 0.5;
+        assert!(
+            (layout.control.center().y - text_center_y).abs() < 0.1,
+            "checkbox mark and first label line share a vertical center"
+        );
+    }
+
+    #[test]
+    fn canonical_supported_stories_keep_distinct_actions_disjoint_at_large_text() {
+        let mut failures = Vec::new();
+        let mut cases = Vec::new();
+        for theme in tekes_ui_tokens::Theme::ALL {
+            for (width, type_scale) in [(360., 1.5), (1000., 1.)] {
+                for (i, entry) in entries().iter().enumerate().filter(|(_, e)| !e.planned()) {
+                    let supported = [
+                        "docs",
+                        "playground",
+                        "states",
+                        "behaviors",
+                        "edge-cases",
+                        "variants",
+                    ]
+                    .into_iter()
+                    .filter(|story| entry.supports_story(story))
+                    .collect::<Vec<_>>();
+                    for story in &supported {
+                        let mut w = Workbench::default();
+                        w.select_route(i, &format!("{}/{story}", entry.slug()));
+                        let mut text = super::super::text::TextEngine::new();
+                        text.set_scale(1.);
+                        text.set_type_scale(type_scale);
+                        text.begin_frame();
+                        let mut static_text = super::super::static_text::StaticText::new(None);
+                        let mut ctx = PageCtx {
+                            theme,
+                            text: &mut text,
+                            static_text: &mut static_text,
+                        };
+                        let mut scene = Scene::new();
+                        w.build(i, &mut ctx, Rect::new(0., 0., width, 1800.), &mut scene);
+                        assert!(!scene.is_empty(), "{}/{story} is blank", entry.slug());
+                        let state = w.state(i);
+                        let hits = state
+                            .hits
+                            .iter()
+                            .filter(|(id, _)| *id >= 10)
+                            .collect::<Vec<_>>();
+                        for (n, (id, rect)) in hits.iter().enumerate() {
+                            for (other_id, other) in hits.iter().skip(n + 1) {
+                                if id != other_id
+                                    && rect
+                                        .intersection(other)
+                                        .is_some_and(|r| r.size.width > 0.1 && r.size.height > 0.1)
+                                {
+                                    failures.push(format!("{}/{story}/{width}/{type_scale}: {id} {rect:?} overlaps {other_id} {other:?}", entry.slug()));
+                                }
+                            }
+                        }
+                        cases.push(serde_json::json!({"slug":entry.slug(), "renderer":entry.renderer(), "story":story, "theme":format!("{theme:?}"), "preview_width":width, "text_scale":type_scale, "supported_stories":supported, "invariants":["scene_nonempty", "distinct_action_hit_regions_disjoint"], "evidence":"deterministic scene geometry", "matrix_is_simulated":*story == "states", "event_assertions":false}));
+                    }
+                }
+            }
+        }
+        if let Some(output) =
+            std::env::var_os("TEKESUI_GOLD7_PAGE_OUT").map(std::path::PathBuf::from)
+        {
+            std::fs::create_dir_all(&output).unwrap();
+            std::fs::write(
+                output.join("canonical-story-geometry.json"),
+                serde_json::to_vec_pretty(&cases).unwrap(),
+            )
+            .unwrap();
+        }
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
+    }
+
+    #[test]
+    fn settings_disabled_error_and_reset_controls_drive_real_models() {
+        let i = index("settings");
+        let mut workbench = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        text.set_type_scale(1.5);
+        let content = Rect::new(0., 0., 360., 1400.);
+        build_in(&mut workbench, i, &mut text, content);
+        let activate = |w: &mut Workbench, text: &mut super::super::text::TextEngine, id| {
+            let center = w
+                .state(i)
+                .hits
+                .iter()
+                .find(|(candidate, _)| *candidate == id)
+                .unwrap()
+                .1
+                .center();
+            w.handle(i, &mouse(center, true), text);
+            w.handle(i, &mouse(center, false), text);
+            build_in(w, i, text, content);
+        };
+        activate(&mut workbench, &mut text, 12);
+        assert!(workbench.state(i).error);
+        activate(&mut workbench, &mut text, 10);
+        assert!(workbench.state(i).disabled);
+        let notifications = workbench.state(i).checkbox.checked;
+        activate(&mut workbench, &mut text, 25);
+        activate(&mut workbench, &mut text, 20);
+        assert_eq!(workbench.state(i).checkbox.checked, notifications);
+        assert_eq!(workbench.state(i).phase, Phase::Ready);
+        assert!(workbench.state(i).buttons[&20].state.disabled);
+        assert!(workbench.state(i).buttons[&25].state.disabled);
+        activate(&mut workbench, &mut text, 0);
+        assert!(!workbench.state(i).disabled);
+        assert!(!workbench.state(i).error);
+        assert_eq!(workbench.state(i).phase, Phase::Ready);
+        let state = workbench.state(i);
+        let notifications = state.buttons[&25].layout().unwrap().frame;
+        let save = state.buttons[&20].layout().unwrap().frame;
+        assert!(notifications.max_y() + 11.9 <= save.min_y());
+        assert!(save.max_y() + 11.9 <= state.phase_frame.unwrap().min_y());
+    }
+
+    #[test]
+    fn canonical_pattern_pages_render_real_gpu_frames_in_four_themes() {
+        use super::super::Gallery;
+        use tekes_ui_render::Renderer;
+        use tekes_ui_tokens::Theme;
+        let mut renderer =
+            Renderer::new_headless().expect("actual GPU required for canonical page checks");
+        let output = std::env::var_os("TEKESUI_GOLD7_PAGE_OUT").map(std::path::PathBuf::from);
+        if let Some(output) = &output {
+            std::fs::create_dir_all(output).unwrap();
+        }
+        for theme in Theme::ALL {
+            for (width, height, type_scale) in [(1440_u32, 960_u32, 0), (720, 480, 2)] {
+                for kind in [
+                    "settings",
+                    "form",
+                    "master",
+                    "filter",
+                    "async",
+                    "button",
+                    "checkbox",
+                    "field",
+                    "area",
+                    "search",
+                    "field-meta",
+                    "tabs",
+                    "menu",
+                    "dialog",
+                    "select",
+                    "disclosure",
+                    "icon-button",
+                    "link",
+                    "slider",
+                    "radio-group",
+                    "switch",
+                    "segmented-control",
+                    "tooltip",
+                    "popover",
+                    "toast",
+                    "banner",
+                    "status-badge",
+                    "progress",
+                    "empty-state",
+                    "markdown",
+                    "code-block",
+                    "diff-view",
+                ] {
+                    let i = index(kind);
+                    let mut gallery = Gallery::new();
+                    gallery.set_system_theme(theme);
+                    gallery.text.set_scale(1.);
+                    gallery.set_reduced_motion(true);
+                    gallery.workbench.text_scale = type_scale;
+                    let has_matrix = [
+                        "button",
+                        "checkbox",
+                        "field",
+                        "area",
+                        "search",
+                        "field-meta",
+                        "tabs",
+                        "menu",
+                        "dialog",
+                        "select",
+                        "disclosure",
+                        "icon-button",
+                        "link",
+                        "slider",
+                        "radio-group",
+                        "switch",
+                        "segmented-control",
+                    ]
+                    .contains(&kind);
+                    let story = if has_matrix { "states" } else { "playground" };
+                    assert!(gallery.open_route(&format!("{}/{story}", entry(i).slug())));
+                    gallery.set_view_size(width as f32, height as f32);
+                    gallery.build_scene(&mut Scene::new());
+                    let positions: &[&str] = if kind == "banner" {
+                        &["top", "component", "bottom"]
+                    } else {
+                        &["top", "bottom"]
+                    };
+                    for position in positions {
+                        if *position == "component" {
+                            let range = gallery.page_scroll_range();
+                            let step = (gallery.viewport.bounds().size.height * 0.5).max(40.0);
+                            let mut revealed = None;
+                            for n in 0..=(range / step).ceil() as usize {
+                                let offset = (n as f32 * step).min(range);
+                                gallery.scroll_page_to(offset);
+                                gallery.build_scene(&mut Scene::new());
+                                let viewport = gallery.viewport.bounds();
+                                let dismiss = gallery
+                                    .workbench
+                                    .states
+                                    .get(&i)
+                                    .and_then(|state| state.hits.iter().find(|(id, _)| *id == 20))
+                                    .map(|(_, frame)| *frame)
+                                    .filter(|frame| viewport.intersection(frame).is_some());
+                                if dismiss.is_some() {
+                                    revealed = Some(offset);
+                                    break;
+                                }
+                            }
+                            gallery.scroll_page_to(revealed.expect(
+                                "Banner dismiss target must scroll into the actual viewport",
+                            ));
+                        } else if *position == "top" {
+                            gallery.scroll_page_to(0.0);
+                        }
+                        if *position == "bottom" {
+                            gallery.scroll_page_to(f32::MAX);
+                        }
+                        let mut scene = Scene::new();
+                        gallery.build_scene(&mut scene);
+                        let rgba = renderer
+                            .render_to_rgba8(
+                                &scene,
+                                gallery.atlas_mut(),
+                                (width, height),
+                                1.,
+                                Gallery::background(theme),
+                            )
+                            .unwrap();
+                        assert!(
+                            rgba.chunks_exact(4).any(|pixel| pixel != &rgba[0..4]),
+                            "blank {kind}/{theme:?}/{width}/{position}"
+                        );
+                        if let Some(output) = &output {
+                            let path = output.join(format!(
+                                "pattern-{kind}-{}-{}-{width}x{height}-{position}.png",
+                                if theme.is_dark() { "dark" } else { "light" },
+                                if theme.is_increased() {
+                                    "increased"
+                                } else {
+                                    "standard"
+                                }
+                            ));
+                            let file = std::fs::File::create(path).unwrap();
+                            let mut encoder = png::Encoder::new(file, width, height);
+                            encoder.set_color(png::ColorType::Rgba);
+                            encoder.set_depth(png::BitDepth::Eight);
+                            encoder
+                                .write_header()
+                                .unwrap()
+                                .write_image_data(&rgba)
+                                .unwrap();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn measured_story_feedback_extends_real_scroll_document_without_probe_render() {
+        use super::super::Gallery;
+        for renderer in [
+            "settings", "tabs", "menu", "dialog", "select", "toast", "banner",
+        ] {
+            let i = index(renderer);
+            let mut gallery = Gallery::new();
+            gallery.text.set_scale(1.);
+            gallery.workbench.text_scale = 2;
+            let story = if ["settings", "toast", "banner"].contains(&renderer) {
+                "playground"
+            } else {
+                "states"
+            };
+            assert!(gallery.open_route(&format!("{}/{story}", entry(i).slug())));
+            gallery.set_view_size(720., 480.);
+            gallery.build_scene(&mut Scene::new());
+            let extent = gallery.page_document_height();
+            assert!(extent >= gallery.workbench.measured_document_extent(i));
+            gallery.scroll_page_to(f32::MAX);
+            gallery.build_scene(&mut Scene::new());
+            assert!(gallery.page_scroll_range() > 0.);
+            assert!(
+                (extent - gallery.page_document_height()).abs() < 0.1,
+                "{renderer} extent must stabilize"
+            );
+            assert!(gallery.viewport.offset.y > 0.);
+            if ["toast", "banner"].contains(&renderer) {
+                let range = gallery.page_scroll_range();
+                let step = (gallery.viewport.bounds().size.height * 0.5).max(40.0);
+                let mut target = None;
+                for n in 0..=(range / step).ceil() as usize {
+                    let offset = (n as f32 * step).min(range);
+                    gallery.scroll_page_to(offset);
+                    gallery.build_scene(&mut Scene::new());
+                    let viewport = gallery.viewport.bounds();
+                    let dismiss = gallery
+                        .workbench
+                        .states
+                        .get(&i)
+                        .and_then(|state| state.hits.iter().find(|(id, _)| *id == 20))
+                        .map(|(_, frame)| *frame)
+                        .filter(|frame| viewport.intersection(frame).is_some());
+                    if let Some(frame) = dismiss {
+                        target = Some((offset, frame));
+                        break;
+                    }
+                }
+                let (offset, dismiss) = target.unwrap_or_else(|| {
+                    panic!("{renderer} dismiss must be reachable by scrolling within the actual document")
+                });
+                gallery.scroll_page_to(offset);
+                gallery.build_scene(&mut Scene::new());
+                let viewport = gallery.viewport.bounds();
+                assert!(viewport.intersection(&dismiss).is_some());
+                let point = dismiss.center();
+                assert!(gallery.handle_input(&mouse(point, true)).redraw);
+                assert!(gallery.handle_input(&mouse(point, false)).redraw);
+                gallery.build_scene(&mut Scene::new());
+                let state = gallery.workbench.states.get(&i).unwrap();
+                match renderer {
+                    "toast" => assert!(!state.extended.toast.visible),
+                    "banner" => assert!(!state.extended.banner.visible),
+                    _ => unreachable!(),
+                }
+                assert!(
+                    state
+                        .log
+                        .back()
+                        .is_some_and(|line| line.contains("dismissed"))
+                );
+                let after_dismiss = gallery.page_document_height();
+                gallery.build_scene(&mut Scene::new());
+                assert!((after_dismiss - gallery.page_document_height()).abs() < 0.1);
+            }
+            gallery
+                .workbench
+                .select_route(i, &format!("{}/playground", entry(i).slug()));
+            if story != "playground" {
+                assert_eq!(gallery.workbench.measured_document_extent(i), 820.);
+            }
+        }
+    }
+
+    #[test]
+    fn static_state_matrices_restore_the_live_clock_without_overlay_frame_loops() {
+        use tekes_ui_controls::ControlMotionContext;
+        use tekes_ui_scene::Primitive;
+        for renderer in [
+            "tabs",
+            "menu",
+            "dialog",
+            "select",
+            "button",
+            "switch",
+            "radio-group",
+        ] {
+            let i = index(renderer);
+            let mut w = Workbench::default();
+            w.select_route(i, &format!("{}/states", entry(i).slug()));
+            let mut text = super::super::text::TextEngine::new();
+            text.set_scale(1.);
+            text.set_motion_enabled(true);
+            text.set_motion_context(Duration::from_secs(3), false);
+            build(&mut w, i, &mut text);
+            for second in 5..8 {
+                let clock = ControlMotionContext {
+                    now: Duration::from_secs(second),
+                    reduced_motion: false,
+                };
+                text.set_motion_context(clock.now, clock.reduced_motion);
+                let scene = build(&mut w, i, &mut text);
+                assert_eq!(
+                    text.motion_context(),
+                    Some(clock),
+                    "{renderer} must restore exact host clock"
+                );
+                assert!(
+                    !text.motion_frame_requested(),
+                    "{renderer} static matrix must not schedule animation forever"
+                );
+                if ["menu", "dialog", "select"].contains(&renderer) {
+                    assert!(
+                        scene
+                            .primitives()
+                            .iter()
+                            .any(|p| matches!(p, Primitive::Shadow(_))),
+                        "{renderer} native-motion context must paint actual overlay surface"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn extended_natural_extent_stabilizes_for_twenty_builds_and_can_shrink_after_reflow() {
+        use super::super::Gallery;
+        let mut observed_shrink = false;
+        for renderer in [
+            "list",
+            "tree",
+            "data-table",
+            "chart",
+            "markdown",
+            "code-block",
+            "diff-view",
+        ] {
+            let i = index(renderer);
+            let mut gallery = Gallery::new();
+            gallery.workbench.text_scale = 2;
+            assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+            if renderer == "markdown" {
+                gallery.workbench.state(i).extended.markdown = tekes_ui_controls::extended::Markdown::parse(&"A long mixed-script paragraph verifies natural reflow geometry 项目通知設定 日本語 and keeps meaningful text visible across constrained widths. Repeated content should grow the document, then shrink when the available width expands.\n\n".repeat(8));
+            }
+            gallery.set_view_size(720., 480.);
+            gallery.build_scene(&mut Scene::new());
+            gallery.build_scene(&mut Scene::new());
+            let narrow = gallery.page_document_height();
+            assert!(
+                gallery.workbench.state(i).event_log_frame.is_some(),
+                "{renderer} retains actual log geometry"
+            );
+            for _ in 0..20 {
+                gallery.build_scene(&mut Scene::new());
+                assert!(
+                    (narrow - gallery.page_document_height()).abs() < 0.01,
+                    "{renderer} extent feeds back into itself"
+                );
+            }
+            gallery.set_view_size(1440., 480.);
+            for _ in 0..3 {
+                gallery.build_scene(&mut Scene::new());
+            }
+            let wide = gallery.page_document_height();
+            assert!(
+                wide <= narrow + 0.01,
+                "{renderer} wider reflow may shrink but cannot grow: {narrow} to {wide}"
+            );
+            observed_shrink |= wide + 1. < narrow;
+        }
+        assert!(
+            observed_shrink,
+            "at least one long document genuinely shrinks after wide reflow"
+        );
+    }
+
+    #[test]
+    fn collection_story_headers_and_reset_keep_generic_focus_reveal_geometry() {
+        use super::super::Gallery;
+        for renderer in ["list", "tree", "data-table", "chart"] {
+            let i = index(renderer);
+            let mut gallery = Gallery::new();
+            assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+            gallery.set_view_size(1440., 960.);
+            gallery.build_scene(&mut Scene::new());
+            let mut visited_reset = false;
+            for _ in 0..20 {
+                gallery.handle_input(&key(48, true));
+                gallery.build_scene(&mut Scene::new());
+                let Some(id) = gallery.workbench.state(i).focus else {
+                    continue;
+                };
+                if id > 10 {
+                    continue;
+                }
+                let expected = gallery.workbench.state(i).buttons[&id]
+                    .layout()
+                    .unwrap()
+                    .frame;
+                assert_eq!(
+                    gallery.workbench.focused_control_frame(i),
+                    Some(expected),
+                    "{renderer} actual Tab header/reset id{id} uses Button reveal geometry"
+                );
+                if id == 0 {
+                    gallery.handle_input(&key(36, true));
+                    assert!(
+                        gallery
+                            .workbench
+                            .state(i)
+                            .log
+                            .iter()
+                            .any(|line| line.contains("reset: initial fixture")),
+                        "{renderer} Enter activates Reset"
+                    );
+                    visited_reset = true;
+                    break;
+                }
+            }
+            assert!(visited_reset, "{renderer} Reset remains keyboard reachable");
+        }
+    }
+
+    #[test]
+    fn logical_tab_targets_keep_full_frames_when_the_preview_clip_hides_them() {
+        let mut gallery = super::super::Gallery::new();
+        let i = index("settings");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.workbench.text_scale = 2;
+        gallery.set_view_size(720., 240.);
+        gallery.build_scene(&mut Scene::new());
+
+        let state = gallery.workbench.state(i);
+        let targets = state.logical_tab_frames();
+        assert!(targets.iter().any(|target| target.id == 1000));
+        let input = targets.iter().find(|target| target.id == 1000).unwrap();
+        assert!(input.frame.max_y() > state.button_clip.unwrap().max_y());
+        assert!(!state.hits.iter().any(|(id, _)| *id == 1000));
+        assert!(
+            targets
+                .windows(2)
+                .all(|pair| pair[0].id != 1000 || pair[1].id == 20 || pair[1].id == 25)
+        );
+    }
+
+    #[test]
+    fn roving_group_keeps_one_focus_target_and_falls_back_when_selection_is_empty() {
+        let mut state = StoryState::for_entry(entry(index("tabs")));
+        let frame = Rect::new(0., 0., 40., 30.);
+        state.register_logical_focus(30, frame, true, true, Some(1), false);
+        state.register_logical_focus(31, frame.offset(48., 0.), true, true, Some(1), false);
+        state.register_logical_focus(32, frame.offset(96., 0.), true, true, Some(1), false);
+        assert_eq!(state.logical_tab_ids(), vec![30]);
+
+        state.register_logical_focus(31, frame.offset(48., 0.), true, true, Some(1), true);
+        state.register_logical_focus(32, frame.offset(96., 0.), true, true, Some(1), true);
+        assert_eq!(state.logical_tab_ids(), vec![31]);
+
+        state.focus = Some(32);
+        assert_eq!(state.logical_tab_ids(), vec![32]);
+    }
+
+    #[test]
+    fn tab_reveals_full_offscreen_text_input_and_shift_tab_reveals_previous_control() {
+        use super::super::Gallery;
+        let mut gallery = Gallery::new();
+        let i = index("settings");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.workbench.text_scale = 2;
+        gallery.set_view_size(720., 240.);
+        gallery.build_scene(&mut Scene::new());
+
+        let ids = gallery.workbench.state(i).logical_tab_ids();
+        let input_index = ids.iter().position(|id| *id == 1000).unwrap();
+        let state = gallery.workbench.state(i);
+        let clip_bottom = state.button_clip.unwrap().max_y();
+        assert!(
+            state
+                .logical_focus
+                .iter()
+                .any(|target| target.id == 1000 && target.frame.max_y() > clip_bottom)
+        );
+        for _ in 0..=input_index {
+            gallery.handle_input(&key(48, true));
+            gallery.build_scene(&mut Scene::new());
+        }
+        assert_eq!(gallery.workbench.state(i).focus, Some(1000));
+        assert!(
+            gallery
+                .workbench
+                .state(i)
+                .hits
+                .iter()
+                .any(|(id, _)| *id == 1000),
+            "the offscreen input is brought into the real pointer-visible viewport"
+        );
+
+        gallery.handle_input(&key_with_modifiers(
+            48,
+            true,
+            Modifiers {
+                shift: true,
+                ..Modifiers::NONE
+            },
+        ));
+        gallery.build_scene(&mut Scene::new());
+        let previous = gallery.workbench.state(i).focus.unwrap();
+        assert_ne!(previous, 1000);
+        assert!(
+            gallery
+                .workbench
+                .state(i)
+                .hits
+                .iter()
+                .any(|(id, _)| *id == previous),
+            "Shift+Tab reveals the preceding production control"
+        );
+    }
+
+    #[test]
+    fn narrow_large_type_text_area_keeps_a_real_focus_frame_and_tabs_into_view() {
+        use super::super::Gallery;
+        let mut gallery = Gallery::new();
+        let i = index("area");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.workbench.text_scale = 2;
+        gallery.set_view_size(720., 240.);
+        gallery.build_scene(&mut Scene::new());
+
+        let area = gallery
+            .workbench
+            .state(i)
+            .logical_tab_frames()
+            .into_iter()
+            .find(|target| target.id == 1000)
+            .expect("TextArea is mounted with a real unclipped frame");
+        assert!(
+            area.frame.size.height >= 100.0,
+            "minimum usable TextArea frame: {:?}",
+            area.frame
+        );
+        assert!(
+            !gallery
+                .workbench
+                .state(i)
+                .hits
+                .iter()
+                .any(|(id, _)| *id == 1000),
+            "a clipped TextArea is keyboard mounted without a pointer hit"
+        );
+
+        gallery.navigation_search.focus_field();
+        gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+        gallery.handle_input(&key(48, true));
+        for _ in 0..gallery.workbench.tab_stop_ids(i).len() + 1 {
+            if gallery.workbench.focused_control_id(i) == Some(1000) {
+                break;
+            }
+            gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+            gallery.build_scene(&mut Scene::new());
+        }
+        assert_eq!(gallery.workbench.focused_control_id(i), Some(1000));
+        gallery.build_scene(&mut Scene::new());
+        assert!(
+            gallery
+                .workbench
+                .state(i)
+                .hits
+                .iter()
+                .any(|(id, _)| *id == 1000),
+            "Tab scrolls the real TextArea fully into the preview"
+        );
+    }
+
+    #[test]
+    fn disabled_logical_target_is_skipped() {
+        let mut state = StoryState::for_entry(entry(index("button")));
+        state.register_logical_focus(20, Rect::new(0., 0., 80., 36.), false, true, None, true);
+        state.register_logical_focus(21, Rect::new(0., 48., 80., 36.), true, true, None, true);
+        assert_eq!(state.logical_tab_ids(), vec![21]);
+    }
+
+    #[test]
+    fn rendered_disabled_button_is_removed_from_the_tab_sequence() {
+        use super::super::Gallery;
+        let mut gallery = Gallery::new();
+        let i = index("button");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.workbench.state(i).disabled = true;
+        gallery.build_scene(&mut Scene::new());
+        assert!(
+            gallery
+                .workbench
+                .state(i)
+                .hits
+                .iter()
+                .any(|(id, _)| *id == 20)
+        );
+        assert!(!gallery.workbench.state(i).logical_tab_ids().contains(&20));
+        for _ in 0..gallery.workbench.state(i).logical_tab_ids().len() {
+            gallery.handle_input(&key(48, true));
+            assert_ne!(gallery.workbench.state(i).focus, Some(20));
+            gallery.build_scene(&mut Scene::new());
+        }
+    }
+
+    #[test]
+    fn gallery_wholly_offscreen_collections_reveal_home_and_end_without_pointer_hits() {
+        use super::super::Gallery;
+        for renderer in ["list", "tree", "data-table", "chart"] {
+            let i = index(renderer);
+            let mut gallery = Gallery::new();
+            gallery.text.set_scale(1.);
+            assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+            gallery.set_view_size(720., 240.);
+            gallery.build_scene(&mut Scene::new());
+            let first_row_id = if renderer == "tree" { 31 } else { 30 };
+            reveal_registered_collection_row(&mut gallery, i, first_row_id);
+            let (_, frame) = gallery
+                .workbench
+                .state(i)
+                .hits
+                .iter()
+                .find(|(id, _)| {
+                    if renderer == "tree" {
+                        *id == 31
+                    } else {
+                        (30..40).contains(id)
+                    }
+                })
+                .copied()
+                .expect("initial pointer-visible logical item");
+            gallery.handle_input(&mouse(frame.center(), true));
+            gallery.handle_input(&mouse(frame.center(), false));
+            for key_code in [119, 115] {
+                gallery.scroll_page_to(f32::MAX);
+                gallery.build_scene(&mut Scene::new());
+                assert!(
+                    !gallery
+                        .workbench
+                        .state(i)
+                        .hits
+                        .iter()
+                        .any(|(id, _)| (30..40).contains(id)),
+                    "{renderer} entire collection is outside pointer viewport"
+                );
+                let before = gallery.viewport.offset.y;
+                assert!(
+                    gallery.workbench.focused_control_frame(i).is_some(),
+                    "{renderer} keeps valid logical focus geometry when clipped"
+                );
+                gallery.handle_input(&key(key_code, true));
+                assert!(
+                    gallery.viewport.offset.y < before,
+                    "{renderer} logical Home/End must reveal whole offscreen control"
+                );
+                let focused = gallery
+                    .workbench
+                    .state(i)
+                    .focus
+                    .expect("logical focus retained");
+                gallery.build_scene(&mut Scene::new());
+                assert!(
+                    gallery
+                        .workbench
+                        .state(i)
+                        .hits
+                        .iter()
+                        .any(|(id, _)| *id == focused),
+                    "{renderer} revealed logical focus is pointer-visible"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn gallery_collection_end_reveals_logical_rows_beyond_pointer_clip() {
+        use super::super::Gallery;
+        for renderer in ["list", "tree", "data-table"] {
+            let i = index(renderer);
+            let mut gallery = Gallery::new();
+            gallery.text.set_scale(1.);
+            assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+            gallery.set_view_size(720., 240.);
+            gallery.build_scene(&mut Scene::new());
+            let first_row_id = if renderer == "tree" { 31 } else { 30 };
+            reveal_registered_collection_row(&mut gallery, i, first_row_id);
+            let (first_id, first) = gallery
+                .workbench
+                .state(i)
+                .hits
+                .iter()
+                .find(|(id, _)| {
+                    if renderer == "tree" {
+                        *id == 31
+                    } else {
+                        (30..40).contains(id)
+                    }
+                })
+                .copied()
+                .expect("one row is pointer-visible");
+            let point = first.center();
+            gallery.handle_input(&mouse(point, true));
+            gallery.handle_input(&mouse(point, false));
+            assert_eq!(gallery.workbench.state(i).focus, Some(first_id));
+            let end_target = gallery
+                .workbench
+                .state(i)
+                .logical_focus
+                .iter()
+                .filter(|target| target.mounted && target.eligible)
+                .max_by_key(|target| target.id)
+                .copied()
+                .expect("the production layout registers the collection's final row");
+            let visible = gallery
+                .viewport
+                .geometry()
+                .visible_viewport_rect()
+                .expect("Gallery viewport is visible");
+            let end_was_offscreen = end_target.frame.max_y() <= visible.min_y()
+                || end_target.frame.min_y() >= visible.max_y();
+            let before = gallery.viewport.offset.y;
+            gallery.handle_input(&key(119, true));
+            let focus = gallery
+                .workbench
+                .state(i)
+                .focus
+                .expect("logical focused row");
+            assert!(focus >= first_id, "{renderer} End reaches logical end");
+            let frame = gallery
+                .workbench
+                .focused_control_frame(i)
+                .expect("offscreen logical focus has reveal geometry");
+            if end_was_offscreen {
+                assert!(
+                    gallery.viewport.offset.y > before,
+                    "{renderer} host must scroll to offscreen logical row: before={before}, after={}, first={first_id}, focus={focus}, frame={frame:?}",
+                    gallery.viewport.offset.y
+                );
+            } else {
+                assert!(
+                    frame.min_y() >= visible.min_y() && frame.max_y() <= visible.max_y(),
+                    "{renderer} does not scroll when End's row is already visible: {frame:?} vs {visible:?}"
+                );
+            }
+            gallery.build_scene(&mut Scene::new());
+            assert!(
+                gallery
+                    .workbench
+                    .state(i)
+                    .hits
+                    .iter()
+                    .any(|(id, _)| *id == focus),
+                "{renderer} focused row becomes pointer-visible after reveal: {frame:?}"
+            );
+        }
     }
 
     #[test]
@@ -4293,6 +7152,25 @@ mod interaction_tests {
         build(w, i, t);
     }
     #[test]
+    fn extended_story_headers_switch_through_real_pointer_dispatch() {
+        let mut text = super::super::text::TextEngine::new();
+        for e in entries()
+            .iter()
+            .filter(|e| extended::supports(e.renderer()))
+        {
+            let i = index(e.renderer());
+            let mut w = Workbench::default();
+            for (story, id, section) in [("states", 3, 2), ("docs", 1, 0), ("playground", 2, 1)] {
+                if !e.supports_story(story) {
+                    continue;
+                }
+                click(&mut w, i, id, &mut text);
+                assert_eq!(w.state(i).section, section, "{} {story}", e.renderer());
+            }
+        }
+    }
+
+    #[test]
     fn marked_composition_defers_pointer_submit_but_not_other_actions_or_later_commit() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
@@ -4513,8 +7391,11 @@ mod interaction_tests {
             assert_eq!(w.brand_preview.focus_for_test(), Some(expected));
             build(&mut w, i, &mut t);
         }
-        assert!(w.handle(i, &key(48, true), &mut t));
-        assert_eq!(w.brand_preview.focus_for_test(), Some(700));
+        assert!(
+            !w.handle(i, &key(48, true), &mut t),
+            "the last matrix control yields to the Gallery shell instead of wrapping"
+        );
+        assert_eq!(w.brand_preview.focus_for_test(), Some(723));
         assert!(w.handle(
             i,
             &key_with_modifiers(
@@ -4527,7 +7408,7 @@ mod interaction_tests {
             ),
             &mut t
         ));
-        assert_eq!(w.brand_preview.focus_for_test(), Some(723));
+        assert_eq!(w.brand_preview.focus_for_test(), Some(722));
 
         let original = w.brand;
         let mut keyboard = Workbench::default();
@@ -4547,6 +7428,72 @@ mod interaction_tests {
                     .palette_index
             )
         );
+    }
+
+    #[test]
+    fn brand_preview_joins_the_workbench_focus_scope_and_yields_at_its_edges() {
+        let mut workbench = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("matrix");
+        workbench.state(i).section = 1;
+        build(&mut workbench, i, &mut text);
+
+        let first = workbench
+            .focus_edge(i, false)
+            .expect("entering the matrix scope focuses its first real control");
+        assert!(first.size.width > 0. && first.size.height > 0.);
+        assert_eq!(workbench.brand_preview.focus_for_test(), Some(700));
+        assert_eq!(workbench.focused_control_frame(i), Some(first));
+        assert!(
+            !workbench.brand_preview.tab_would_leave(false),
+            "the first live control is not the final target"
+        );
+
+        let mut visited = vec![700];
+        while workbench.handle(i, &key(48, true), &mut text) {
+            let focused = workbench.brand_preview.focus_for_test().unwrap();
+            assert!(
+                !visited.contains(&focused),
+                "matrix Tab order must not wrap at {focused}"
+            );
+            visited.push(focused);
+        }
+        assert!(
+            visited.len() > 2,
+            "the real matrix scope has multiple targets"
+        );
+        let last_id = *visited.last().unwrap();
+        assert!(
+            !workbench.handle(i, &key(48, true), &mut text),
+            "the final matrix target keeps yielding forward Tab to the Gallery shell"
+        );
+        assert_eq!(workbench.brand_preview.focus_for_test(), Some(last_id));
+
+        let last = workbench
+            .focus_edge(i, true)
+            .expect("reverse entry uses the real last matrix control");
+        assert_eq!(workbench.brand_preview.focus_for_test(), Some(last_id));
+        assert_eq!(workbench.focused_control_frame(i), Some(last));
+        assert!(workbench.focus_edge(i, false).is_some());
+        assert_eq!(workbench.brand_preview.focus_for_test(), Some(700));
+        assert!(
+            !workbench.handle(
+                i,
+                &key_with_modifiers(
+                    48,
+                    true,
+                    Modifiers {
+                        shift: true,
+                        ..Modifiers::NONE
+                    }
+                ),
+                &mut text,
+            ),
+            "the first reverse matrix target yields Shift+Tab to the shell"
+        );
+        workbench.clear_focus(i);
+        assert_eq!(workbench.brand_preview.focus_for_test(), None);
+        assert_eq!(workbench.focused_control_frame(i), None);
     }
 
     #[test]
@@ -4970,10 +7917,23 @@ mod interaction_tests {
         w.handle(i, &key(36, false), &mut t);
         assert_eq!(w.state(i).menu_view.menu().last_action, Some(1));
         assert_eq!(w.state(i).focus, Some(20));
+        click(&mut w, i, 20, &mut t);
+        assert!(w.state(i).menu_view.is_open());
+        w.handle(i, &key(48, true), &mut t);
+        assert!(
+            !w.state(i).menu_view.is_open(),
+            "Tab dismisses a non-modal Menu before leaving its scope"
+        );
         let i = index("dialog");
         click(&mut w, i, 20, &mut t);
         w.handle(i, &key(48, true), &mut t);
         assert_eq!(w.state(i).dialog_view.dialog().focus, 1);
+        w.handle(i, &key(48, true), &mut t);
+        assert_eq!(
+            w.state(i).dialog_view.dialog().focus,
+            0,
+            "modal Tab continues to wrap within the Dialog"
+        );
         w.handle(i, &key(53, true), &mut t);
         assert!(!w.state(i).dialog_view.dialog().open);
         assert_eq!(w.state(i).focus, Some(20));
@@ -5230,6 +8190,117 @@ mod interaction_tests {
             &mut t,
         );
         assert_eq!(w.state(i).input.query(), "Studio");
+    }
+    #[test]
+    fn requested_file_failure_cannot_fall_back_to_memory_submission() {
+        let mut w = Workbench::default();
+        let i = index("form");
+        w.state(i).input.set_value("unsaved but retained");
+        w.state(i)
+            .open_draft_fixture(std::path::PathBuf::from("relative-invalid-fixture.json"));
+        w.state(i).submit();
+        assert_eq!(w.state(i).phase, Phase::Failed);
+        assert!(w.state(i).draft_attempt.is_none());
+        assert_eq!(w.state(i).input.query(), "unsaved but retained");
+        assert!(!w.state(i).draft_fixture.as_ref().unwrap().has_pending());
+    }
+
+    #[test]
+    fn memory_form_uses_public_journal_and_keeps_newer_editor_on_late_ack() {
+        let mut w = Workbench::default();
+        let i = index("form");
+        assert!(!w.state(i).draft_fixture.as_ref().unwrap().is_durable());
+        w.state(i).input.set_value("first");
+        w.state(i).persist_draft();
+        w.state(i).submit();
+        let first = w.state(i).draft_attempt.unwrap().0;
+        w.state(i).input.set_value("newer");
+        w.state(i).persist_draft();
+        w.state(i).resolve();
+        assert_eq!(w.state(i).phase, Phase::Failed);
+        w.state(i).submit();
+        assert_eq!(w.state(i).draft_attempt, Some((first, 2)));
+        w.state(i).resolve();
+        assert_eq!(w.state(i).phase, Phase::Ready);
+        assert_eq!(w.state(i).input.query(), "newer");
+        w.state(i).input.focus_field();
+        w.state(i).input.handle(
+            &Event::TextPreedit {
+                text: "输入".into(),
+                selection: 2..2,
+                clauses: vec![],
+                replacement: None,
+            },
+            None,
+        );
+        assert!(w.state(i).input.state().unwrap().marked.is_some());
+        w.state(i).submit();
+        assert_eq!(w.state(i).phase, Phase::Ready);
+        assert!(w.state(i).draft_attempt.is_none());
+        assert_eq!(
+            w.state(i).draft_fixture.as_ref().unwrap().draft().name,
+            "newer"
+        );
+    }
+
+    #[test]
+    fn durable_form_fixture_recovers_committed_input_and_retries_immutable_revision() {
+        let directory =
+            std::env::temp_dir().join(format!("tekesui-form-workflow-{}", std::process::id()));
+        std::fs::create_dir(&directory).unwrap();
+        let path = directory.join("form.json");
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("form");
+        w.state(i).open_draft_fixture(path.clone());
+        click(&mut w, i, 1000, &mut text);
+        w.text_command(i, "selectAll:", None, &mut text);
+        w.handle(
+            i,
+            &Event::TextCommit {
+                text: "项目 Draft".into(),
+                replacement: None,
+            },
+            &mut text,
+        );
+        click(&mut w, i, 25, &mut text);
+        let persisted = durable_draft::DurableDraft::open(path.clone()).unwrap();
+        assert_eq!(persisted.draft().name, "项目 Draft");
+        assert!(persisted.draft().notifications);
+        click(&mut w, i, 20, &mut text);
+        let revision = w.state(i).draft_attempt.unwrap().0;
+        click(&mut w, i, 21, &mut text);
+        assert_eq!(w.state(i).phase, Phase::Failed);
+        drop(w);
+        let mut w = Workbench::default();
+        w.state(i).open_draft_fixture(path.clone());
+        assert_eq!(w.state(i).input.query(), "项目 Draft");
+        assert_eq!(w.state(i).phase, Phase::Failed);
+        click(&mut w, i, 20, &mut text);
+        assert_eq!(w.state(i).draft_attempt, Some((revision, 2)));
+        // Edit while the older revision is in flight: its ack must not claim
+        // the newer input was saved or clear that durable draft.
+        click(&mut w, i, 1000, &mut text);
+        w.text_command(i, "selectAll:", None, &mut text);
+        w.text_command(i, "paste:", Some("Newer draft"), &mut text);
+        click(&mut w, i, 21, &mut text);
+        assert_eq!(w.state(i).phase, Phase::Ready);
+        assert_eq!(w.state(i).input.query(), "Newer draft");
+        assert!(!w.state(i).draft_fixture.as_ref().unwrap().is_acknowledged());
+        click(&mut w, i, 20, &mut text);
+        assert_eq!(w.state(i).draft_attempt.unwrap().1, 1);
+        click(&mut w, i, 26, &mut text);
+        assert_eq!(w.state(i).phase, Phase::Failed);
+        assert!(w.state(i).draft_attempt.is_none());
+        click(&mut w, i, 20, &mut text);
+        click(&mut w, i, 21, &mut text);
+        assert_eq!(w.state(i).phase, Phase::Saved);
+        assert!(
+            durable_draft::DurableDraft::open(path)
+                .unwrap()
+                .is_acknowledged()
+        );
+        std::fs::remove_dir_all(directory).unwrap();
     }
     #[test]
     fn settings_full_failure_retry_and_danger_cancel_recovery() {
@@ -5494,14 +8565,19 @@ mod interaction_tests {
         build(&mut w, radio, &mut text);
         let radio_ids: Vec<_> = w.state(radio).hits.iter().map(|(id, _)| *id).collect();
         let tab_count = radio_ids.len() + 1;
+        let mut exited_scope = false;
         for _ in 0..tab_count {
             w.handle(radio, &key(48, true), &mut text);
-            let focus = w.state(radio).focus.unwrap();
+            let Some(focus) = w.state(radio).focus else {
+                exited_scope = true;
+                break;
+            };
             assert!(
                 radio_ids.contains(&focus),
                 "Tab focused non-entry id {focus}"
             );
         }
+        assert!(exited_scope, "Tab at the scope edge yields to the Gallery");
         assert!(
             radio_ids.iter().any(|id| *id < 30),
             "header actions remain tabbable"
@@ -5588,6 +8664,163 @@ mod interaction_tests {
         w.handle(i, &key(53, true), &mut text);
         assert!(!w.state(i).select.menu.open);
         assert_eq!(w.state(i).focus, Some(20));
+    }
+
+    #[test]
+    fn menu_keyboard_close_restores_caller_button_focus_modality() {
+        for close in [36, 53] {
+            let mut w = Workbench::default();
+            let mut text = super::super::text::TextEngine::new();
+            let i = index("menu");
+            click(&mut w, i, 20, &mut text);
+            assert!(w.state(i).menu_view.is_open());
+            w.handle(i, &key(125, true), &mut text);
+            w.handle(i, &key(close, true), &mut text);
+            build(&mut w, i, &mut text);
+            assert!(!w.state(i).menu_view.is_open());
+            assert_eq!(w.state(i).focus, Some(20));
+            assert!(
+                w.state(i).buttons[&20].state.focus_visible,
+                "caller-owned Menu trigger restores keyboard modality after {close}"
+            );
+        }
+    }
+
+    #[test]
+    fn select_real_feedback_paints_before_its_popup_surface() {
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("select");
+        click(&mut w, i, 12, &mut text);
+        click(&mut w, i, 20, &mut text);
+        let scene = build(&mut w, i, &mut text);
+        let trigger = w.state(i).select_view.layout().trigger.frame;
+        let popup = w.state(i).select_menu_layout.as_ref().unwrap().popup;
+        let popup_index = scene
+            .primitives()
+            .iter()
+            .position(|p| matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==popup))
+            .unwrap();
+        let feedback: Vec<_> = scene
+            .primitives()
+            .iter()
+            .enumerate()
+            .filter_map(|(index, p)| match p {
+                tekes_ui_scene::Primitive::Glyphs(run)
+                    if run.glyphs.first().is_some_and(|g| {
+                        g.origin.x >= trigger.min_x()
+                            && g.origin.x < trigger.min_x() + 8.
+                            && g.origin.y > trigger.max_y()
+                            && g.origin.y < popup.max_y()
+                    }) =>
+                {
+                    Some(index)
+                }
+                _ => None,
+            })
+            .collect();
+        assert!(
+            !feedback.is_empty(),
+            "actual caller feedback must be rendered"
+        );
+        assert!(
+            feedback.into_iter().all(|i| i < popup_index),
+            "popup must occlude caller feedback, never vice versa"
+        );
+    }
+
+    #[test]
+    fn select_real_empty_options_toggle_cancels_menu_and_retains_value_until_choices_return() {
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("select");
+        build(&mut w, i, &mut text);
+        w.state(i).select.choose(2);
+        click(&mut w, i, 13, &mut text);
+        assert!(w.state(i).select_empty);
+        assert_eq!(w.state(i).select.menu.items.count, 0);
+        assert_eq!(w.state(i).select.selected, 2);
+        click(&mut w, i, 20, &mut text);
+        assert!(!w.state(i).select.menu.open);
+        assert!(!w.state(i).logical_tab_ids().contains(&20));
+        click(&mut w, i, 13, &mut text);
+        assert_eq!(w.state(i).select.menu.items.count, 3);
+        assert_eq!(w.state(i).select.selected, 2);
+        click(&mut w, i, 20, &mut text);
+        assert!(w.state(i).select.menu.open);
+    }
+
+    #[test]
+    fn select_real_validation_toggle_keeps_value_and_repairs_through_existing_view() {
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("select");
+        build(&mut w, i, &mut text);
+        w.state(i).select.choose(1);
+        click(&mut w, i, 12, &mut text);
+        assert!(w.state(i).error);
+        let scene = build(&mut w, i, &mut text);
+        let frame = w.state(i).select_view.layout().trigger.frame;
+        let role = proposal::control_boundary("error", tekes_ui_tokens::Theme::LIGHT).unwrap();
+        assert!(scene.primitives().iter().any(|p| matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==frame && q.border_color==proposal::render_color(role,tekes_ui_tokens::Theme::LIGHT).unwrap())));
+        assert_eq!(w.state(i).select.selected, 1);
+        click(&mut w, i, 20, &mut text);
+        w.handle(i, &key(125, true), &mut text);
+        w.handle(i, &key(36, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).select.selected, 2);
+        assert!(w.state(i).error, "caller still owns validation outcome");
+        click(&mut w, i, 12, &mut text);
+        assert!(!w.state(i).error);
+        assert_eq!(w.state(i).select.selected, 2);
+    }
+
+    #[test]
+    fn select_real_trigger_open_close_and_fresh_keyboard_selection_use_public_view() {
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("select");
+        for open in [true, false, true] {
+            click(&mut w, i, 20, &mut text);
+            assert_eq!(w.state(i).select.menu.open, open);
+            assert_eq!(w.state(i).select.selected, 0);
+        }
+        w.handle(i, &key(125, true), &mut text);
+        w.handle(i, &key(36, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).select.selected, 1);
+        assert!(!w.state(i).select.menu.open);
+    }
+
+    #[test]
+    fn combo_real_pointer_states_keep_the_text_surface_skin_and_draft() {
+        for scale in [1., 1.5] {
+            let mut w = Workbench::default();
+            let mut text = super::super::text::TextEngine::new();
+            text.set_type_scale(scale);
+            let i = index("combo-box");
+            let rest = build(&mut w, i, &mut text);
+            let frame = w.state(i).input.frame_at(0).unwrap();
+            let fill = |scene: &Scene| {
+                scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        tekes_ui_scene::Primitive::Quad(q) if q.rect == frame => Some(q.fill),
+                        _ => None,
+                    })
+                    .unwrap()
+            };
+            let draft = w.state(i).input.query().to_owned();
+            w.handle(i, &move_pointer(frame.center()), &mut text);
+            assert_eq!(fill(&rest), fill(&build(&mut w, i, &mut text)));
+            w.handle(i, &mouse(frame.center(), true), &mut text);
+            assert_eq!(fill(&rest), fill(&build(&mut w, i, &mut text)));
+            assert_eq!(w.state(i).focus, Some(1000));
+            assert_eq!(w.state(i).input.query(), draft);
+            w.handle(i, &mouse(frame.center(), false), &mut text);
+            assert_eq!(w.state(i).input.query(), draft);
+        }
     }
 
     #[test]
@@ -5869,6 +9102,50 @@ mod interaction_tests {
     }
 
     #[test]
+    fn transient_overlays_do_not_resume_old_paint_after_unpainted_window_deactivation() {
+        let mut resumed = Vec::new();
+        for renderer in ["menu", "popover", "select"] {
+            let mut w = Workbench::default();
+            let mut text = super::super::text::TextEngine::new();
+            text.set_motion_enabled(true);
+            text.set_motion_context(Duration::ZERO, false);
+            let i = index(renderer);
+            click(&mut w, i, 20, &mut text);
+            text.set_motion_context(Duration::from_millis(200), false);
+            build(&mut w, i, &mut text);
+            // A hidden/minimized window need not paint between losing and
+            // regaining activation. Do not depend on that missing frame to
+            // clear retained presentation belonging to a dismissed transient.
+            w.set_window_active(false);
+            w.set_window_active(true);
+            build(&mut w, i, &mut text);
+            let state = w.state(i);
+            let open = match renderer {
+                "menu" => state.menu_view.is_open(),
+                "popover" => state.extended.popover.open,
+                "select" => state.select.menu.open,
+                _ => unreachable!(),
+            };
+            assert!(!open, "{renderer}: transient model reopened");
+            // Button focus feedback may legitimately request a new frame on
+            // activation; inspect only the dismissed overlay's own runtime.
+            let retained_overlay = match renderer {
+                "menu" => state.menu_view.is_presented(),
+                "popover" => state.extended.overlay_needs_animation(),
+                "select" => state.select_view.needs_animation(),
+                _ => unreachable!(),
+            };
+            if retained_overlay {
+                resumed.push(renderer);
+            }
+        }
+        assert!(
+            resumed.is_empty(),
+            "dismissed transient paint resumed: {resumed:?}"
+        );
+    }
+
+    #[test]
     fn extended_overlay_timer_and_reset_follow_deterministic_fixtures() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
@@ -6057,6 +9334,55 @@ mod interaction_tests {
     }
 
     #[test]
+    fn combobox_preedit_filter_navigation_and_selector_submit_preserve_text_state() {
+        let mut workbench = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("combo-box");
+        click(&mut workbench, i, 1000, &mut text);
+        assert_eq!(workbench.state(i).focus, Some(1000));
+        assert!(workbench.text_state(i).is_some());
+
+        workbench.handle(
+            i,
+            &Event::TextPreedit {
+                text: "C".into(),
+                clauses: vec![],
+                selection: 0..0,
+                replacement: None,
+            },
+            &mut text,
+        );
+        build(&mut workbench, i, &mut text);
+        assert!(workbench.text_state(i).unwrap().marked.is_some());
+        workbench.handle(
+            i,
+            &Event::TextCommit {
+                text: "Com".into(),
+                replacement: None,
+            },
+            &mut text,
+        );
+        build(&mut workbench, i, &mut text);
+        assert_eq!(workbench.state(i).extended.combo.query, "Com");
+        assert_eq!(workbench.text_state(i).unwrap().text, "Com");
+        assert!(workbench.text_state(i).unwrap().marked.is_none());
+
+        assert!(workbench.handle(i, &Event::TextCommand("moveDown:".into()), &mut text));
+        build(&mut workbench, i, &mut text);
+        assert_eq!(workbench.state(i).focus, Some(1000));
+        assert_eq!(workbench.text_state(i).unwrap().text, "Com");
+        assert_eq!(workbench.state(i).extended.combo.active, Some(2));
+
+        assert!(workbench.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text));
+        assert!(!workbench.state(i).extended.combo.open);
+        assert_eq!(workbench.state(i).focus, Some(1000));
+        assert_eq!(workbench.text_state(i).unwrap().text, "Comfortable");
+        build(&mut workbench, i, &mut text);
+        assert_eq!(workbench.state(i).focus, Some(1000));
+        assert_eq!(workbench.text_state(i).unwrap().text, "Comfortable");
+    }
+
+    #[test]
     fn combobox_closed_state_hides_option_hits_and_input_reopens_candidates() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
@@ -6094,6 +9420,208 @@ mod interaction_tests {
     }
 
     #[test]
+    fn command_palette_measured_trigger_leaves_search_and_popup_regions_separate() {
+        for width in [240., 360., 800.] {
+            let mut w = Workbench::default();
+            let mut text = super::super::text::TextEngine::new();
+            text.set_type_scale(1.5);
+            let i = index("command-palette");
+            let viewport = Rect::new(0., 0., width, 1600.);
+            build_in(&mut w, i, &mut text, viewport);
+            let trigger = w.state(i).extended.command_view.trigger_layout().unwrap();
+            let expected = Button::measure(
+                &mut text,
+                "Open command palette",
+                trigger.frame.size.width,
+                ButtonSize::Body,
+                proposal::TextRole::UiBody,
+            );
+            assert!(trigger.frame.size.height >= expected.height);
+            w.state(i).extended.command.open();
+            build_in(&mut w, i, &mut text, viewport);
+            let search = w.state(i).input.frame_at(0).unwrap();
+            let popup = w.state(i).extended.command_view.options.layout().unwrap();
+            assert!(search.min_y() >= trigger.frame.max_y());
+            assert!(popup.popup.min_y() >= search.max_y());
+            w.state(i).input.set_value("no matching command");
+            build_in(&mut w, i, &mut text, viewport);
+            assert!(w.state(i).extended.command.combo.open);
+            assert!(w.state(i).extended.command_view.options.layout().is_none());
+            assert!(w.state(i).hits.iter().all(|(id, _)| !(40..43).contains(id)));
+        }
+    }
+
+    #[test]
+    fn command_palette_cold_keyboard_focus_is_visible_and_opens_without_prior_click() {
+        for code in [36, 49] {
+            let mut w = Workbench::default();
+            let mut text = super::super::text::TextEngine::new();
+            text.set_motion_enabled(false);
+            let i = index("command-palette");
+            build(&mut w, i, &mut text);
+            for _ in 0..16 {
+                if w.state(i).focus == Some(20) {
+                    break;
+                }
+                w.handle(i, &key(48, true), &mut text);
+                build(&mut w, i, &mut text);
+            }
+            assert_eq!(w.state(i).focus, Some(20));
+            let scene = build(&mut w, i, &mut text);
+            let trigger = w
+                .state(i)
+                .extended
+                .command_view
+                .trigger_layout()
+                .unwrap()
+                .frame;
+            let has_ring = |scene: &Scene| {
+                scene.primitives().iter().any(|p| {
+                    matches!(p,
+                tekes_ui_scene::Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0.
+                && q.rect.center() == trigger.center() && q.rect.size.width > trigger.size.width)
+                })
+            };
+            assert!(
+                has_ring(&scene),
+                "cold keyboard focus must reach the production trigger"
+            );
+            w.handle(i, &key(code, true), &mut text);
+            w.handle(i, &key(code, false), &mut text);
+            let scene = build(&mut w, i, &mut text);
+            assert!(w.state(i).extended.command.combo.open);
+            assert_eq!(w.state(i).focus, Some(1000));
+            assert!(
+                !has_ring(&scene),
+                "focus belongs to query while palette is open"
+            );
+            w.handle(i, &key(53, true), &mut text);
+            let scene = build(&mut w, i, &mut text);
+            assert!(!w.state(i).extended.command.combo.open);
+            assert_eq!(w.state(i).focus, Some(20));
+            assert!(has_ring(&scene), "Escape restores the trigger focus ring");
+        }
+    }
+
+    #[test]
+    fn command_palette_real_pointer_hover_and_drag_outside_release_do_not_leave_a_press() {
+        for scale in [1.0, 1.5] {
+            let mut w = Workbench::default();
+            let mut text = super::super::text::TextEngine::new();
+            text.set_type_scale(scale);
+            text.set_motion_enabled(false);
+            let i = index("command-palette");
+            let rest = build(&mut w, i, &mut text);
+            let frame = w
+                .state(i)
+                .extended
+                .command_view
+                .trigger_layout()
+                .unwrap()
+                .frame;
+            let fill = |scene: &Scene| {
+                scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        tekes_ui_scene::Primitive::Quad(q) if q.rect == frame => Some(q.fill),
+                        _ => None,
+                    })
+                    .unwrap()
+            };
+            let outside = Point::new(frame.max_x() + 120., frame.max_y() + 80.);
+            w.handle(i, &move_pointer(frame.center()), &mut text);
+            let hover = build(&mut w, i, &mut text);
+            assert_ne!(fill(&rest), fill(&hover));
+            w.handle(i, &mouse(frame.center(), true), &mut text);
+            let pressed = build(&mut w, i, &mut text);
+            assert_ne!(fill(&hover), fill(&pressed));
+            w.handle(i, &move_pointer(outside), &mut text);
+            assert_eq!(fill(&rest), fill(&build(&mut w, i, &mut text)));
+            w.handle(i, &mouse(outside, false), &mut text);
+            assert!(!w.state(i).extended.command.combo.open);
+            w.handle(i, &move_pointer(frame.center()), &mut text);
+            assert_eq!(
+                fill(&hover),
+                fill(&build(&mut w, i, &mut text)),
+                "outside release must clear the production trigger arm"
+            );
+            w.handle(i, &mouse(frame.center(), true), &mut text);
+            w.handle(i, &mouse(frame.center(), false), &mut text);
+            build(&mut w, i, &mut text);
+            assert!(w.state(i).extended.command.combo.open);
+            assert_eq!(w.state(i).focus, Some(1000));
+        }
+    }
+
+    #[test]
+    fn choice_escape_closes_without_recording_a_candidate_activation() {
+        for renderer in ["combo-box", "command-palette"] {
+            let mut w = Workbench::default();
+            let mut text = super::super::text::TextEngine::new();
+            let i = index(renderer);
+            click(
+                &mut w,
+                i,
+                if renderer == "combo-box" { 1000 } else { 20 },
+                &mut text,
+            );
+            w.state(i).log.clear();
+            assert!(w.handle(i, &key(53, true), &mut text));
+            assert!(
+                !w.state(i)
+                    .log
+                    .iter()
+                    .any(|event| event.starts_with("command:")
+                        || event.starts_with("combo selection:")),
+                "{} cancellation log: {:?}",
+                renderer,
+                w.state(i).log
+            );
+        }
+    }
+
+    #[test]
+    fn choice_popup_old_release_cannot_replace_a_new_native_text_query() {
+        for renderer in ["combo-box", "command-palette"] {
+            let mut w = Workbench::default();
+            let mut text = super::super::text::TextEngine::new();
+            let i = index(renderer);
+            click(
+                &mut w,
+                i,
+                if renderer == "combo-box" { 1000 } else { 20 },
+                &mut text,
+            );
+            let point = w.state(i).visible_for_id(40).unwrap().center();
+            w.handle(i, &mouse(point, true), &mut text);
+            assert!(w.handle(
+                i,
+                &Event::TextCommit {
+                    text: "no-matching-choice".into(),
+                    replacement: None
+                },
+                &mut text
+            ));
+            let query = w.state(i).input.query().to_owned();
+            assert!(query.contains("no-matching-choice"));
+            // A native text command can precede the next paint. Geometry and
+            // pointer capture still refer to the old list at this boundary.
+            w.handle(i, &mouse(point, false), &mut text);
+            assert_eq!(w.state(i).input.query(), query);
+            let model = if renderer == "combo-box" {
+                &w.state(i).extended.combo
+            } else {
+                &w.state(i).extended.command.combo
+            };
+            assert_eq!(model.query, query);
+            assert_eq!(model.selected, None);
+            build(&mut w, i, &mut text);
+            assert!(w.state(i).hits.iter().all(|(id, _)| !(40..43).contains(id)));
+        }
+    }
+
+    #[test]
     fn combobox_pointer_selection_closes_list_and_keeps_input_focused() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
@@ -6116,6 +9644,193 @@ mod interaction_tests {
         assert_eq!(w.state(i).focus, Some(1000));
         assert_eq!(w.text_state(i).unwrap().text, "Comfortable");
         assert!(w.state(i).hits.iter().all(|(id, _)| !(40..43).contains(id)));
+    }
+
+    #[test]
+    fn command_palette_repeats_the_same_command_and_keeps_empty_query_live() {
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("command-palette");
+        for count in 1..=2 {
+            click(&mut w, i, 20, &mut text);
+            assert!(w.state(i).extended.command.combo.open);
+            assert_eq!(w.state(i).focus, Some(1000));
+            w.handle(i, &key(36, true), &mut text);
+            build(&mut w, i, &mut text);
+            assert!(!w.state(i).extended.command.combo.open);
+            assert_eq!(w.state(i).focus, Some(20));
+            assert_eq!(w.state(i).extended.command.combo.selected, Some(0));
+            assert_eq!(
+                w.state(i)
+                    .log
+                    .iter()
+                    .filter(|e| e.as_str() == "command: 0")
+                    .count(),
+                count
+            );
+        }
+        click(&mut w, i, 20, &mut text);
+        w.handle(
+            i,
+            &Event::TextCommit {
+                text: "no command matches".into(),
+                replacement: None,
+            },
+            &mut text,
+        );
+        build(&mut w, i, &mut text);
+        let log_before_enter = w.state(i).log.clone();
+        w.handle(i, &key(36, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert!(w.state(i).extended.command.combo.open);
+        assert_eq!(w.state(i).focus, Some(1000));
+        assert_eq!(w.state(i).input.query(), "no command matches");
+        assert_eq!(
+            w.state(i).extended.command.combo.query,
+            "no command matches"
+        );
+        assert!(w.state(i).extended.command.combo.filtered().is_empty());
+        assert!(!w.state(i).extended.command_view.options.is_visible());
+        assert_eq!(
+            w.state(i).log,
+            log_before_enter,
+            "empty confirmation never executes an old command"
+        );
+    }
+
+    #[test]
+    fn command_palette_escape_releases_search_focus_and_ignores_late_input() {
+        let mut workbench = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("command-palette");
+        click(&mut workbench, i, 20, &mut text);
+        assert!(workbench.state(i).extended.command.combo.open);
+        assert_eq!(workbench.state(i).focus, Some(1000));
+        assert!(workbench.text_state(i).is_some());
+        workbench.handle(
+            i,
+            &Event::TextCommit {
+                text: "Open".into(),
+                replacement: None,
+            },
+            &mut text,
+        );
+        assert_eq!(workbench.state(i).extended.command.combo.query, "Open");
+        assert!(workbench.handle(i, &Event::TextCommand("cancelOperation:".into()), &mut text));
+        assert!(!workbench.state(i).extended.command.combo.open);
+        assert_eq!(workbench.state(i).focus, Some(20));
+        assert!(workbench.text_state(i).is_none());
+        assert!(!workbench.handle(
+            i,
+            &Event::TextCommit {
+                text: "!".into(),
+                replacement: None
+            },
+            &mut text
+        ));
+        assert!(!workbench.handle(i, &Event::TextCommand("paste:".into()), &mut text));
+        let (changed, _) = workbench.text_command(i, "paste:", Some("stale"), &mut text);
+        assert!(!changed);
+        assert!(!workbench.state(i).extended.command.combo.open);
+        assert_eq!(workbench.state(i).extended.command.combo.query, "Open");
+    }
+
+    #[test]
+    fn command_palette_does_not_restore_disabled_or_unmounted_invoker() {
+        let mut workbench = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("command-palette");
+        click(&mut workbench, i, 20, &mut text);
+        workbench.state(i).extended.command.combo.disabled = true;
+        workbench.state(i).close_command_palette();
+        assert_eq!(
+            workbench.state(i).focus,
+            None,
+            "disabled trigger is not a valid restore target"
+        );
+
+        let state = workbench.state(i);
+        state.extended.command.combo.disabled = false;
+        state.logical_focus.retain(|target| target.id != 20);
+        state.extended.command.combo.open = true;
+        state.close_command_palette();
+        assert_eq!(
+            workbench.state(i).focus,
+            None,
+            "unmounted trigger is not a valid restore target"
+        );
+    }
+
+    #[test]
+    fn command_palette_restores_mounted_invoker_when_its_frame_is_clipped() {
+        let mut workbench = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("command-palette");
+        click(&mut workbench, i, 20, &mut text);
+        let viewport = Rect::new(312., 70., 1000., 820.);
+        let narrow_clip = Rect::new(312., 70., 1., 1.);
+        build_in_clipped(&mut workbench, i, &mut text, viewport, narrow_clip);
+        assert!(!workbench.state(i).hits.iter().any(|(id, _)| *id == 20));
+        assert!(
+            workbench
+                .state(i)
+                .logical_focus
+                .iter()
+                .any(|target| target.id == 20 && target.mounted && !target.eligible)
+        );
+
+        workbench.state(i).close_command_palette();
+        assert_eq!(workbench.state(i).focus, Some(20));
+        assert!(
+            workbench
+                .state(i)
+                .logical_focus
+                .iter()
+                .any(|target| target.id == 20 && target.mounted && target.eligible)
+        );
+    }
+
+    #[test]
+    fn command_palette_ime_cancel_composes_first_and_enter_and_outside_dismiss_restore_focus() {
+        let mut workbench = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("command-palette");
+        click(&mut workbench, i, 20, &mut text);
+        workbench.handle(
+            i,
+            &Event::TextPreedit {
+                text: "開".into(),
+                clauses: vec![],
+                selection: 0..0,
+                replacement: None,
+            },
+            &mut text,
+        );
+        workbench.handle(i, &Event::TextCommand("cancelOperation:".into()), &mut text);
+        assert!(
+            workbench.state(i).extended.command.combo.open,
+            "IME cancel must not dismiss the palette"
+        );
+        assert!(workbench.text_state(i).is_some());
+        workbench.handle(i, &Event::TextUnmark, &mut text);
+        workbench.handle(
+            i,
+            &Event::TextCommit {
+                text: "Open".into(),
+                replacement: None,
+            },
+            &mut text,
+        );
+        assert!(workbench.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text));
+        assert!(!workbench.state(i).extended.command.combo.open);
+        assert_eq!(workbench.state(i).focus, Some(20));
+        assert!(workbench.text_state(i).is_none());
+        click(&mut workbench, i, 20, &mut text);
+        assert!(workbench.state(i).extended.command.combo.open);
+        workbench.handle(i, &mouse(Point::new(1500., 900.), true), &mut text);
+        assert!(!workbench.state(i).extended.command.combo.open);
+        assert_eq!(workbench.state(i).focus, Some(20));
+        assert!(workbench.text_state(i).is_none());
     }
 
     #[test]

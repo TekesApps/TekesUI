@@ -1,0 +1,58 @@
+{
+  "result": "passed",
+  "source_identity": "122ae31df7e506ff85b492608550dc0bc0d9fa8cb803382b5d66e2e276511cd4",
+  "round": "issue23-final-native-20261020",
+  "display": {
+    "name": "U2790B",
+    "builtin": false,
+    "scale": 2
+  },
+  "active_checkpoints": [
+    "selected-copied.json",
+    "appended-selection.json",
+    "readonly-input.json",
+    "narrow.json",
+    "scrolled.json",
+    "document-end.json",
+    "narrow-end.json",
+    "document-start.json"
+  ],
+  "checks": [
+    "native pointer and AX selection8..12 yields Chinese+emoji; native copy private pasteboard exact",
+    "Tab/Return activates real Append version2; ShiftTab restores preserved8..12 selection",
+    "focused readonly native x preserves text/selection and marked=None",
+    "real360pt resize reflows width303/body928; original Field unchanged",
+    "parent scroll512 and nested0; wrap/height/selection preserved",
+    "active narrow native CommandDown1790,parent553; CommandUp0,parent16, first line fully visible"
+  ],
+  "exceptions": [
+    "first narrow navigation capture lost application activation; inconclusive, retried and passed in active state",
+    "document-start offset16 exposes caret and full line while excluding decorative parent padding; zero offset not required"
+  ],
+  "excluded": [
+    "physical hardware mouse/keyboard",
+    "physical IME",
+    "VoiceOver",
+    "performance",
+    "full library/pages"
+  ],
+  "closed": true,
+  "evidence_sha256": {
+    "selected-copied.json": "a65b7ab17e4f5077f8d8adc440b4f838cf20710cdef65f779df64bbb6545398f",
+    "appended-selection.json": "b788b66baff65782a96388b3246efb145afdcd41d6755f15caf8c478404dcbd0",
+    "readonly-input.json": "b788b66baff65782a96388b3246efb145afdcd41d6755f15caf8c478404dcbd0",
+    "narrow.json": "bcc515c1af758f8aa86cfc6b7f06101a4d04ff928297ea25c9a7167fe84c0800",
+    "scrolled.json": "6328d04f14f728fa1396bf31b0dd7caf7c85aaa3d4707a2dab779cfe4d0a5c32",
+    "document-end.json": "8d750b81daee652a133f1f981738fc062ea5452cc338731a0ff9d687d0c64afb",
+    "narrow-end.json": "63b6606125a9db8ac75930635c337c21fd816e535dfb7e3a4764785ae09d042b",
+    "document-start.json": "342f2eb225c085cb63d0b289413bcdbe04d2c9e5aba67efb58a2bb055ed57c00",
+    "selected.png": "1d2ef9a0de489dbc6dbf5fd080be17f32f2271e08d38a6c26b1225fa1d3f2fd4",
+    "narrow.png": "1c98faf86f4fb22ac142474907d9d3fcbab060ebebe76e466585b7c4558bfd96",
+    "scrolled.png": "af0038a782d28541446a2b21d805ce1333b71c8198ae9f54b99726da2d69a0bc",
+    "document-start.png": "1e75a6b1b6da3fb1231b82fde724bd33ed5fadcd7149ee5858b6b3f5e7ec79c2",
+    "final-ax.txt": "22d80297d147f4ed4669dd73fd9a0381d522dfc778b50fc74e5ea69c79da3b65"
+  },
+  "inconclusive_artifacts": [
+    "document-end.png (initial narrow pass before active-state retry)"
+  ]
+}

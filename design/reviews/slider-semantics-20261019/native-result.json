@@ -1,0 +1,68 @@
+{
+  "scope": "existing Slider only; shared View / public SliderContent / existing standalone native host; Gallery integration separately tested",
+  "source_identity": "design/reviews/slider-semantics-20261019/native-source-identity.json",
+  "display": {
+    "name": "U2790B",
+    "builtin": false,
+    "scale": 2
+  },
+  "artifacts_sha256": {
+    "design/reviews/component-runs/slider-semantics-20261019/native/sibling-ax.txt": "55208369ed65535dc8b37ad9eaae7518c817e14b44024dc6e081d0be1fa25bff",
+    "design/reviews/component-runs/slider-semantics-20261019/native/minimized.json": "211e749f5d82cccb7c78979001f334c3566339c4ef50981a97ca91aea5ee637d",
+    "design/reviews/component-runs/slider-semantics-20261019/native/end.json": "731766948f708d34be2ae95ccabbd5ff4e4fa2af4246f535cb498b669543e8c3",
+    "design/reviews/component-runs/slider-semantics-20261019/native/focus.png": "c00b5ff9a0d397c0c55594d98a8a2f4581a99edb374cf46b7a92b3282428b121",
+    "design/reviews/component-runs/slider-semantics-20261019/native/reverse-focus-ax.txt": "523ba16954e0f208a2bc58550b6d1404a9e1c0dbdeb4dfb08c497a4b485ed4f7",
+    "design/reviews/component-runs/slider-semantics-20261019/native/minimized-ax.txt": "b09b704fa02f85790927a108ad2a44630fb6b11283adf17352e12c60f3e8f4ce",
+    "design/reviews/component-runs/slider-semantics-20261019/native/inactive-set-value.json": "211e749f5d82cccb7c78979001f334c3566339c4ef50981a97ca91aea5ee637d",
+    "design/reviews/component-runs/slider-semantics-20261019/native/sibling.json": "0d443c11a819ac2a71d9eecc94e1a39bc4b16529e3c37ab345dada1b2718e4b9",
+    "design/reviews/component-runs/slider-semantics-20261019/native/tab-slider-ax.txt": "dbb881ab8fa6163bdfc2a6a4e13d8cf58d4f7671425945f47820b7aee48b36b8",
+    "design/reviews/component-runs/slider-semantics-20261019/native/apps-after-close.json": "547a88f96534c79b4ad047aa384b7682fea323d3fb2b6f4c53d4a5d9ee11fce2",
+    "design/reviews/component-runs/slider-semantics-20261019/native/keyboard-focus.png": "ab3e2e7a479ba68b786136f9cf56e9234cd8cbed1546e6f5b230fc5707feffbd",
+    "design/reviews/component-runs/slider-semantics-20261019/native/key-right.json": "1a2be383ef5b07cb09317c09d1b618d97878637af440e656e08d98f81a618cd7",
+    "design/reviews/component-runs/slider-semantics-20261019/native/home-ax.txt": "ecee3f0cf58853380c34b0341375e666db317773a1fc27d2aad21ab72b2ad873",
+    "design/reviews/component-runs/slider-semantics-20261019/native/drag-ax.txt": "46923eeedb9b986855c2f53a268a15c06995287dc57046ed1178aeea985418b6",
+    "design/reviews/component-runs/slider-semantics-20261019/native/initial.png": "42b203a91163396ba78176524170030ae7c48cdeb1395cdb4b77ec14763625b6",
+    "design/reviews/component-runs/slider-semantics-20261019/native/down-ax.txt": "aaca52d7489bc3faf359d8ec60497a6e66397059500c59680ea0ef51c0cc7b58",
+    "design/reviews/component-runs/slider-semantics-20261019/native/editor-right-ax.txt": "55208369ed65535dc8b37ad9eaae7518c817e14b44024dc6e081d0be1fa25bff",
+    "design/reviews/component-runs/slider-semantics-20261019/native/apps-exited.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "design/reviews/component-runs/slider-semantics-20261019/native/inactive-set-value-ax.txt": "b09b704fa02f85790927a108ad2a44630fb6b11283adf17352e12c60f3e8f4ce",
+    "design/reviews/component-runs/slider-semantics-20261019/native/initial-ax.txt": "b1befea87dd5f08f8640f89a5b5f5ffc525ec763edcfaba37bd4d56a47cecb60",
+    "design/reviews/component-runs/slider-semantics-20261019/native/current.json": "211e749f5d82cccb7c78979001f334c3566339c4ef50981a97ca91aea5ee637d",
+    "design/reviews/component-runs/slider-semantics-20261019/native/set-value-ax.txt": "68fa5a9f1781d9b14675b149ef97aa9b93dc450f777a73c67d53c9fd792f0a2f",
+    "design/reviews/component-runs/slider-semantics-20261019/native/editor-right.json": "0d443c11a819ac2a71d9eecc94e1a39bc4b16529e3c37ab345dada1b2718e4b9",
+    "design/reviews/component-runs/slider-semantics-20261019/native/key-right-ax.txt": "d67d6008f768bf71531d89711f672d66b0791a1586c3ef706e561e85217b8ab7",
+    "design/reviews/component-runs/slider-semantics-20261019/native/end-ax.txt": "0d2552a8d9390bfb6e165514b3dc4395b28bb0e71b58f36ac6e4f11556a9512a",
+    "design/reviews/component-runs/slider-semantics-20261019/native/set-value.json": "79e7651ff683d6e2659b21c0d071ee160781700dbf3a2a35fd5b5c7fb63c1593",
+    "design/reviews/component-runs/slider-semantics-20261019/native/home.json": "121aa980ccdfc5cfa38558e95e4801b5cf9ff343c2622a09201de8ee86c0ec12",
+    "design/reviews/component-runs/slider-semantics-20261019/native/action-focus-ax.txt": "3cf0ebc1756b603f4efc656178c05131c9cea0cdca50f49285d0e08e9a8c2515",
+    "design/reviews/component-runs/slider-semantics-20261019/native/drag.json": "ddd980f5c04a59d21064357805b5e2588919278811c920ce1624beaaee76f6ea"
+  },
+  "performance": "not run",
+  "result": "passed",
+  "observed_values": {
+    "key-right": 55,
+    "set-value": 65,
+    "drag": 85,
+    "home": 0,
+    "end": 100,
+    "editor-right": 95,
+    "minimized": 95,
+    "inactive-set-value": 95
+  },
+  "observed": [
+    "native range role/name/value",
+    "real Tab/Shift+Tab and Home/End/step keys",
+    "real mouse drag",
+    "native AX SetValue quantization",
+    "sibling editor key ownership and draft preservation",
+    "minimize clears semantic focus immediately; inactive native SetValue rejected",
+    "app fully exited"
+  ],
+  "unverified": [
+    "full VoiceOver navigation and native Increment/Decrement actions",
+    "native minimized restore/cross-app transition",
+    "physical IME",
+    "native disabled/hidden-state matrix",
+    "full theme/brand/scale/window matrix"
+  ]
+}

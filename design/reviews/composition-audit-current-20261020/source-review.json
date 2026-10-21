@@ -1,0 +1,91 @@
+{
+  "source_baseline": "80d6b05649234f953ea452d42e1cbed369fdddbb",
+  "actual_baseline": "all current WIP; exact current file hashes",
+  "reviewed_changed_inputs": [
+    {
+      "path": "crates/tekes-ui-controls/src/feedback_view.rs",
+      "previous_sha256": "9c6d09f904d2599b8d21aaf5793e5099a24c623e02a2778aa6343374dd65c5ef",
+      "current_sha256": "7b8050d03b3989067bbe1904051f6816593eb67ca8f2b14277b2e647247d8a86",
+      "matches_accepted_Field203": true,
+      "reviewed_conclusion": "Byte-identical to scoped Field203 source already API/consumer/GPU/native verified; reviewed capability dimensions unchanged."
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/lib.rs",
+      "previous_sha256": "5a1d4a9dfdc2106cea8b3bbfb4952327e79f476f4dbe21faa8453379f1df5ba2",
+      "current_sha256": "63c09708035828abb5273e97a8887ff386557d08e67bd3cbc04eaa748670a595",
+      "matches_accepted_Field203": false,
+      "reviewed_conclusion": "Only TickingNumber/TickingNumberError exports appended; no existing Component protocol altered; helper acceptance not inferred."
+    },
+    {
+      "path": "crates/tekes-ui-gallery/src/gallery/composition_acceptance.rs",
+      "previous_sha256": "2e9958225c370436ed7a59d48eaf5eefea21dabf41d1194ebc36b294c1080c4f",
+      "current_sha256": "5e8cc675092692b1d520c715e9c425e74b3a8a0ba1ffe394325fa80b3688554c",
+      "matches_accepted_Field203": true,
+      "reviewed_conclusion": "Byte-identical to scoped Field203 source already API/consumer/GPU/native verified; reviewed capability dimensions unchanged."
+    },
+    {
+      "path": "design/gallery/public-api-surface.json",
+      "previous_sha256": "54327d75f4560c6af2f5d17e94413f6c776b6c80976e8efa659274fb34e1460f",
+      "current_sha256": "88f3c20e118b23b5bd1d39a75bfa19b05c09fd657ae019fba1d1818d99a90aca",
+      "matches_accepted_Field203": false,
+      "reviewed_conclusion": "Adds declared Motion numeric helper support classification only; no named component acceptance or slot contract added."
+    },
+    {
+      "path": "examples/composition-consumer/examples/native.rs",
+      "previous_sha256": "b24936deef1719f4168af80ae9e4872657a85461cc59b21aa5f265f6229e5f8d",
+      "current_sha256": "de4239caef5532570a84e5ba811176f970a69121cf60319924007b6864dd7035",
+      "matches_accepted_Field203": true,
+      "reviewed_conclusion": "Byte-identical to scoped Field203 source already API/consumer/GPU/native verified; reviewed capability dimensions unchanged."
+    },
+    {
+      "path": "examples/composition-consumer/src/lib.rs",
+      "previous_sha256": "0fa595a83214763646be2204659b2b77fae656847869a2f0b98ac9b58c308506",
+      "current_sha256": "95818125b81990919ed3486d3c4cea5666101492909e01ee877c136b44d84cd1",
+      "matches_accepted_Field203": true,
+      "reviewed_conclusion": "Byte-identical to scoped Field203 source already API/consumer/GPU/native verified; reviewed capability dimensions unchanged."
+    },
+    {
+      "path": "examples/composition-consumer/tests/scenarios.rs",
+      "previous_sha256": "e33c7b151cb4aa5ef6be4ea63736afe52fda8890fead3f9e5bc181769b32aca5",
+      "current_sha256": "180628c2bbeda7e226e6ba4d77d33774fdfb74be24d3fbf18da851c2281277d9",
+      "matches_accepted_Field203": true,
+      "reviewed_conclusion": "Byte-identical to scoped Field203 source already API/consumer/GPU/native verified; reviewed capability dimensions unchanged."
+    },
+    {
+      "path": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+      "previous_sha256": "ba6fd5101068cb5d95b9e14d6857919d2b2d320de594bc1a88c487dbd43eba55",
+      "current_sha256": "8d7d1586ee183429e54d5bc30bfd28feafa6cf3596afe63c177baa8089f018ee",
+      "matches_accepted_Field203": false,
+      "reviewed_conclusion": "Scene3D-only reset/renderer branches and one-shot reset test; guarded unrelated example integration, not component composition migration."
+    },
+    {
+      "path": "crates/tekes-ui-gallery/Cargo.toml",
+      "previous_sha256": "bf4f6c2908266bcd0ab9d3bd9f2e3af512fbfd565c73b1631371b236698d56c2",
+      "current_sha256": "1e9d34258361fef3658daa88234c499709c001ab14a0ab53da62aea4bef24c9d",
+      "matches_accepted_Field203": false,
+      "reviewed_conclusion": "Adds existing pure Rust scene3d crate dependency; no public control composition API change."
+    },
+    {
+      "path": "crates/tekes-ui-gallery/src/gallery/mod.rs",
+      "previous_sha256": "7bc2c5cdc11e66a6f57e2fa2215bec0c6b91ac3dc10070ceb173e31d78096df8",
+      "current_sha256": "6a3c99e91065f914d8853e480af51fc64f8e822caa93765924dd1b36a611b8d2",
+      "matches_accepted_Field203": false,
+      "reviewed_conclusion": "Scene3D preview state, prepare/paint/advance and blur are conditional on the scene3d renderer; no existing Content protocol changed. Not accepting Scene3D experience."
+    },
+    {
+      "path": "crates/tekes-ui-controls/tests/component_registry_api.rs",
+      "previous_sha256": "83f28086aa1a065a5b95405548e5f509012e04663f39d6515c99b2fc0a8962c9",
+      "current_sha256": "a0a4a00c6e5319b565151142223c86841357b9e23027e96fa9efe43becd3a16d",
+      "matches_accepted_Field203": false,
+      "reviewed_conclusion": "Generated compile bindings add two numeric helper types and renumber trait helper identifiers; existing component mapping retained."
+    }
+  ],
+  "corrected_conclusions": [
+    "Surface consumer-owned heterogeneous composition now demonstrated, built-in protocol still missing",
+    "unadorned selectable text mode now public",
+    "Gallery AX export plumbing exists; per-family native acceptance separate",
+    "NumberField current availability/cancel fixed, builtin numeric adapter still absent"
+  ],
+  "new_component_scope": "not expanded; source helper/example additions do not promote maturity",
+  "native_acceptance_column": "all source-audit rows remain unverified; scoped existing receipts referenced separately"
+}

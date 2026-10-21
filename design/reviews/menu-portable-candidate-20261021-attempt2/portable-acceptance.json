@@ -1,0 +1,48 @@
+{
+  "identity": "b430dae10b89dfd9c0f30e74d81f499a2ddb6778994ffcffead8b79ad942b9aa",
+  "archive": "menu-b430dae10b89.tar.gz",
+  "archive_sha256": "b68a98f63d120320d9ccd19b3559f60f13e8563c2fbbae5ea404a5b7486f8cb4",
+  "base_identity": "3366559a1a524909f562fa2fdd1c8646d762b5ba0eb1294b5480c39d9e9c37ef",
+  "source_files": 515,
+  "delta_paths": 22,
+  "status": "exact archive sender replay passed; receiver/final native/Gold7 pending",
+  "Git": "No commit/push/tag/close",
+  "native_app": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/menu-portable-candidate-20261021-attempt2/runtime/TekesUI Menu Final Review.app",
+  "native_binary_sha256": "bf2ce1104ff89390820bd45c5850341221daec8ccc8566eb564e6249f064db6f",
+  "all_source_and_locks_unchanged": true,
+  "all_local_dependencies_inside_extract": true,
+  "checks": "portable-checks.json",
+  "cleanup": {
+    "method": "Exact replay local compiler-artifact files + changed local fingerprints only; no cargo clean or new target",
+    "artifact_files": 263,
+    "local_fingerprint_dirs": 238,
+    "allocated_bytes_released": 422432768,
+    "retained": "Shared registry dependencies, generated source, exact source/locks/archive/logs/GPU and signed native app; Root cache owner unchanged"
+  },
+  "tests": {
+    "export": 25,
+    "tokens": 22,
+    "text": 50,
+    "controls": 395,
+    "consumer": 302
+  },
+  "GPU": {
+    "cases": 16,
+    "receipt": "portable-evidence/gpu/receipt.json"
+  },
+  "tokens": {
+    "cases": 288,
+    "complete": false,
+    "receipt": "portable-evidence/menu-token-binding.json"
+  },
+  "bounded_native": "native-acceptance.json",
+  "native_remaining": [
+    "True system reactivation after minimize not obtained by tools; recovery not passed",
+    "Physical IME and VoiceOver hearing not run; off/deferred",
+    "Actual AgentKit Sidebar and matched whole ClientKit/Gold7 experience",
+    "Final public immutable pin/remoteCI per separate authorization"
+  ],
+  "native_window_closed": true,
+  "native_executable_retained": true,
+  "final_package_protection": "515source hashes/archive and retained native binary revalidated after native run"
+}

@@ -1,0 +1,166 @@
+{
+  "format": "tekesui-gold7-alignment-pass/1",
+  "date": "2026-10-17",
+  "base_commit": "bc3de79466834e99062a1b4ef0872323e2860001",
+  "source_recovery": "Apply source-snapshot.tar.gz over base commit; includes preserved earlier uncommitted WIP. Manifest covers modified/untracked source files, not unchanged base files.",
+  "committed": false,
+  "pushed": false,
+  "tag_created": false,
+  "requirements_all_complete": false,
+  "verified_code_repairs": [
+    "existing-control-state-lifecycle",
+    "bounded-slider-domain",
+    "logical-collection-keyboard-reveal",
+    "constrained-feedback-layout",
+    "measured-canonical-page-composition",
+    "actual-component-state-stories"
+  ],
+  "checks": [
+    {
+      "check": "tests",
+      "command": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--release",
+        "--locked",
+        "--offline",
+        "--",
+        "--skip",
+        "gpu_time_agrees_with_wall_clock_on_a_heavy_frame",
+        "--skip",
+        "cpu_segments_are_consistent_and_frames_are_numbered"
+      ],
+      "exit": 0,
+      "seconds": 23.87
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--release",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 2.95
+    },
+    {
+      "check": "build",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "tekes-ui-gallery",
+        "--release",
+        "--locked",
+        "--offline"
+      ],
+      "exit": 0,
+      "seconds": 11.21
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 2.53
+    },
+    {
+      "check": "pure-rust",
+      "command": [
+        "python3",
+        "scripts/check-pure-rust.py"
+      ],
+      "exit": 0,
+      "seconds": 2.06
+    },
+    {
+      "check": "design-system",
+      "command": [
+        "target/design-check-venv/bin/python",
+        "scripts/check-design-system.py"
+      ],
+      "exit": 0,
+      "seconds": 1.37
+    },
+    {
+      "check": "gold7",
+      "command": [
+        "python3",
+        "scripts/check-gold7.py",
+        "--json"
+      ],
+      "exit": 0,
+      "seconds": 0.24
+    },
+    {
+      "check": "gold7-checker",
+      "command": [
+        "python3",
+        "scripts/test-check-gold7.py"
+      ],
+      "exit": 0,
+      "seconds": 2.7
+    },
+    {
+      "check": "diff",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.06
+    }
+  ],
+  "rust_tests": {
+    "passed": 819,
+    "failed": 0,
+    "ignored": 1,
+    "explicitly_filtered": [
+      "gpu_time_agrees_with_wall_clock_on_a_heavy_frame",
+      "cpu_segments_are_consistent_and_frames_are_numbered"
+    ]
+  },
+  "coverage": {
+    "canonical_geometry_cases": 1704,
+    "implemented_canonical_slugs": 68,
+    "component_review_records": 45,
+    "focused_gpu_page_images": 144,
+    "geometry_assertions": [
+      "scene_nonempty",
+      "distinct_action_hit_regions_disjoint"
+    ],
+    "geometry_is_interaction_acceptance": false,
+    "actual_event_regressions": "workspace test logs include keyboard reveal, state lifecycle, matrix context restoration and document extent stability",
+    "native_samples": {
+      "native_window_samples": [
+        "Tabs state matrix labels and state visibility",
+        "Menu state matrix actual open/focused/pressed menu visibility and shadow"
+      ],
+      "full_component_native_acceptance": false,
+      "voiceover_tested": false,
+      "macos_component_ax_bridge": "missing implementation; observed tree exposes window/menu only",
+      "performance_measured": false
+    }
+  },
+  "limitations": [
+    "No CPU, frame pacing or 120Hz performance measurement",
+    "Per-control macOS Accessibility bridge missing; VoiceOver not tested",
+    "Physical IME and comprehensive native/display-scale acceptance pending",
+    "Not every existing component has every applicable dedicated state story; records remain partial"
+  ],
+  "artifacts": "artifact-manifest.json"
+}

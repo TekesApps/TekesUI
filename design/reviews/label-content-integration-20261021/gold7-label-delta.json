@@ -1,0 +1,59 @@
+{
+  "identity": "22caa4f3b5a3a52ac7d9c5e18db575abf70950ca05c28ea52f914293dc39ebf0",
+  "reference": "docs/design/gold7.md",
+  "scope": "Label policy delta only. Not whole Gold7 acceptance or matched ClientKit product-page visual parity.",
+  "rows": [
+    {
+      "id": "G1",
+      "design_contract": "通过",
+      "code_integration": "通过",
+      "actual_experience": "未测",
+      "evidence_boundary": "Existing color/type tokens unchanged; actual long-title dark sample inspected, whole-page balance/readability not accepted."
+    },
+    {
+      "id": "G2",
+      "design_contract": "通过",
+      "code_integration": "不适用",
+      "actual_experience": "不适用",
+      "evidence_boundary": "This readonly-label delta adds no surfaces/elevation. Existing Button chrome is reused; not an exemption for whole-page surface hierarchy."
+    },
+    {
+      "id": "G3",
+      "design_contract": "通过",
+      "code_integration": "通过",
+      "actual_experience": "通过",
+      "evidence_boundary": "Scoped label geometry: full rounded focus outline in narrow native2x; glyph bearings/clip and inherited control chrome checked. Other components/screens are outside this receipt."
+    },
+    {
+      "id": "G4",
+      "design_contract": "通过",
+      "code_integration": "通过",
+      "actual_experience": "未测",
+      "evidence_boundary": "Original Button motion context/frame requests forwarded. Action/cancellation availability paths verified; continuous animation/Reduced Motion experience was not tested in this unit."
+    },
+    {
+      "id": "G5",
+      "design_contract": "通过",
+      "code_integration": "通过",
+      "actual_experience": "不适用",
+      "evidence_boundary": "Readonly source/AX are preserved and editable geometry rejected. This unit contains no IME/composer/reading scroll owner and cannot promote those acceptance items."
+    },
+    {
+      "id": "G6",
+      "design_contract": "通过",
+      "code_integration": "通过",
+      "actual_experience": "通过",
+      "evidence_boundary": "Scoped native keyboard, coordinate pointer, AX alternatives, resize/type-scale and original focus/action ownership verified in26active checkpoints."
+    },
+    {
+      "id": "G7",
+      "design_contract": "通过",
+      "code_integration": "通过",
+      "actual_experience": "未测",
+      "evidence_boundary": "Public docs, actual minimal consumer, native/GPU/API evidence exist; standalone immutable public candidate and receiver validation remain pending."
+    }
+  ],
+  "native_receipt": "native-acceptance.json",
+  "ClientKit_source": "reference-comparison.json",
+  "full_page_and_receiver": "pending"
+}

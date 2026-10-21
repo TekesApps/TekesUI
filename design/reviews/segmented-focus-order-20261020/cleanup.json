@@ -1,0 +1,45 @@
+{
+  "status": "passed",
+  "native_pid": 82441,
+  "process_absent": true,
+  "signed_identity_matches": true,
+  "source_inputs_unchanged": 102,
+  "close_event": {
+    "event": "CloseRequested",
+    "state": {
+      "active": true,
+      "disabled": false,
+      "enabled": [
+        true,
+        true,
+        false
+      ],
+      "focused": 1,
+      "screen": {
+        "builtin": false,
+        "name": "U2790B",
+        "scale": 2.0
+      },
+      "selected": 1,
+      "sequence": 61
+    }
+  },
+  "runtime_removed": true,
+  "freed_bytes": 20995473,
+  "files": {
+    "TekesUI Segmented Focus Input Review.app/Contents/Info.plist": {
+      "bytes": 953,
+      "sha256": "498d40cc2ae9ecb5334aca0a27a9e2d34d7c7d98ea9a3848604d221d5641d491"
+    },
+    "TekesUI Segmented Focus Input Review.app/Contents/_CodeSignature/CodeResources": {
+      "bytes": 2200,
+      "sha256": "6686de10a28a2fe11b36cbb86dcbacc827cfc4ea116b4dabf1845e5aee629e9b"
+    },
+    "TekesUI Segmented Focus Input Review.app/Contents/MacOS/ComponentCore": {
+      "bytes": 20992320,
+      "sha256": "ba9def97e85893e1964959258d57c66f6a9e43173000c80f600891c123bd9235"
+    }
+  },
+  "own_package": "already cleaned after signed copy; package-cleanup-input-fixed.log",
+  "source_images_logs_retained": true
+}

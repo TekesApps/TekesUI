@@ -1,0 +1,142 @@
+{
+  "status": "partial foundation; headless services bounded acceptance passed, optional View UI adapter incomplete",
+  "root_cause": "V1 tied toolbar and services to blocking frame requests; no headless or caller-safe managed lifecycle",
+  "shared_fix": [
+    "existing app-protocol additive V2",
+    "existing module-runtime shared spawn/framing and headless service lifecycle"
+  ],
+  "applicability": [
+    "independent no-View services",
+    "window-scoped toolbar contributions",
+    "navigation prototype consumer"
+  ],
+  "exceptions": [
+    "one window Toolbar slot per service instance in this phase",
+    "V1 View remains compatibility backend; no remote editing/IME/AX claims",
+    "navigation durability belongs to module consumer, not Host"
+  ],
+  "public_api": {
+    "unit_tests": 7,
+    "strict_clippy_all_targets": "passed",
+    "request_bound": 64,
+    "output_bound": 64,
+    "max_packet": 1048576,
+    "identity": [
+      "module",
+      "instance",
+      "host_epoch",
+      "serial",
+      "request",
+      "window",
+      "registration"
+    ]
+  },
+  "real_consumer": {
+    "bounded_requests": true,
+    "drop_reaped": true,
+    "factory_in_parent": false,
+    "graceful_stop": true,
+    "headless": true,
+    "hung_close_reaped": true,
+    "invalid_session_rejected": true,
+    "other_worker_survived": true,
+    "output_overflow_rejected": true,
+    "oversized_output_rejected": true,
+    "performance_test": false,
+    "pids": [
+      69939,
+      69938,
+      69940
+    ],
+    "result": "passed",
+    "separate_state": true,
+    "toolbar_without_frame": true,
+    "unknown_response_rejected": true
+  },
+  "view_regression": {
+    "cases": [
+      {
+        "max_gpu_delta": 0,
+        "pid": 67183,
+        "revision": 0,
+        "right_consumed": true,
+        "scale": 1.0,
+        "seq": 1,
+        "slot": 0,
+        "viewport": 1
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 67183,
+        "revision": 1,
+        "right_consumed": true,
+        "scale": 1.0,
+        "seq": 2,
+        "slot": 0,
+        "viewport": 1
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 67183,
+        "revision": 1,
+        "right_consumed": true,
+        "scale": 2.0,
+        "seq": 3,
+        "slot": 0,
+        "viewport": 2
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 67184,
+        "revision": 0,
+        "right_consumed": true,
+        "scale": 1.0,
+        "seq": 1,
+        "slot": 1,
+        "viewport": 1
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 67184,
+        "revision": 0,
+        "right_consumed": true,
+        "scale": 1.0,
+        "seq": 2,
+        "slot": 1,
+        "viewport": 1
+      },
+      {
+        "max_gpu_delta": 0,
+        "pid": 67184,
+        "revision": 0,
+        "right_consumed": true,
+        "scale": 2.0,
+        "seq": 3,
+        "slot": 1,
+        "viewport": 2
+      }
+    ],
+    "parent_factory_called": false,
+    "parent_pid": 67173,
+    "result": "INDEPENDENT_BACKEND_GPU_OK",
+    "scope": "public worker/transport/import extraction; no AppHost/Gallery dependency; not completed ProcessContainer lifecycle or UI acceptance",
+    "worker_pids": [
+      67183,
+      67184
+    ]
+  },
+  "apphost_check": "passed with peer-owned navigation unused import warning",
+  "native": "not run this phase; no new window or VoiceOver started",
+  "gold7": "headless lifecycle/identity bounded contracts verified; final View experience not accepted",
+  "pending": [
+    "View optional adapter and standard Component integration",
+    "RAII frame rights and GPU completion retirement",
+    "native input/geometry/AX/IME capability negotiation and acceptance",
+    "AppHost navigation durability/recovery fault injection and five-process consumer",
+    "final reproducible source identity and authorized session handoff"
+  ],
+  "no_performance": true,
+  "git_mutations": false,
+  "cleanup": "cleanup.json",
+  "close_invalidation": "close/fail clear queued events and toolbar; worker-side generation validation rejects delayed actions"
+}

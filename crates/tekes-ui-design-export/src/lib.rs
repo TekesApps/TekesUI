@@ -7,9 +7,11 @@ use serde_json::{Map, Value, json};
 use std::{collections::BTreeSet, fmt::Write};
 mod effects;
 mod freshness;
+mod gallery_brands;
 mod proposal;
 mod validator;
-pub use freshness::verify_inputs;
+pub use freshness::{verify_consumer_inputs, verify_inputs};
+pub use gallery_brands::validate_gallery_brands;
 pub use validator::canonical_json;
 
 pub const FORMAT: &str = "tekesui.tokens/1";

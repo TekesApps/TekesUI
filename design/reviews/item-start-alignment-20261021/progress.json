@@ -1,0 +1,37 @@
+{
+  "status": "producer layered verification passed;isolated final delivery and actual receiver page pending",
+  "issues": [
+    28,
+    32
+  ],
+  "tests": {
+    "item-api-final": 25,
+    "controls-final": 426,
+    "full-consumer": 227
+  },
+  "viewport_API_tests": 11,
+  "GPU_cases": 96,
+  "GPU_frames": 480,
+  "actual_token_probes": 17,
+  "bounded_cases": 6432,
+  "complete": false,
+  "tokens_sets_api_values_unchanged": true,
+  "shared_fix": "Reuse existing Axis,ScrollArea target/clamp/motion,ScrollGeometry actual visible rect and SAME-tree scroll/reading metadata preflight; refine only Start up to ancestor_count+2 and require usable final clips; original frame/clip change interrupts navigation only; reuse existing0.001 anchor clamp tolerance with f64 displacement.",
+  "red_regressions": [
+    "before-tiny-clip/start-clip-before-fix.log",
+    "before-tiny-clip/start-motion-precision-before-fix.log",
+    "before-tiny-clip/clip-change-before-fix.log",
+    "partial-clip-margin-before-fix.log"
+  ],
+  "remaining": [
+    "AgentKit exact588277 actual native/page integration",
+    "public pin and CI under separate authorization"
+  ],
+  "performance": "not measured",
+  "Git": "no commit/push/tag/closure",
+  "native": "native-acceptance.json",
+  "native_identity": "f7ec0ff10948d4b28bee9c33e7e60efbaa2a626cd7166807854e5cbdd35dfcb6",
+  "cleanup": "native-cleanup.json",
+  "gates": "closing-checks.json",
+  "candidate": "design/reviews/item-start-portable-candidate-20261021/portable-acceptance.json"
+}

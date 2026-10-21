@@ -2,13 +2,33 @@ use std::{env, fs, path::PathBuf};
 
 fn main() {
     let root = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("../..");
-    let json = root.join("design/tokens.json");
+    println!("cargo:rerun-if-env-changed=TEKESUI_DESIGN_ARTIFACT");
+    let artifact = env::var_os("TEKESUI_DESIGN_ARTIFACT").map(PathBuf::from);
+    let json = artifact
+        .as_ref()
+        .unwrap_or(&root)
+        .join("design/tokens.json");
     println!("cargo:rerun-if-changed={}", json.display());
+    // Unit migration checks compare against the selected author projection,
+    // including an explicit consumer artifact, rather than the default brand.
+    println!(
+        "cargo:rustc-env=TEKESUI_SELECTED_TOKEN_JSON={}",
+        json.display()
+    );
     let text = fs::read_to_string(&json)
         .expect("design/tokens.json must be available when building tokens");
     let document = tekes_ui_design_export::parse_json(&text).expect("parse merged token JSON");
-    let watched = tekes_ui_design_export::verify_inputs(&root, &document)
-        .unwrap_or_else(|e| panic!("{}", e.join("\n")));
+    let watched = match &artifact {
+        Some(artifact) => {
+            println!(
+                "cargo:rerun-if-changed={}",
+                root.join("design/tokens.json").display()
+            );
+            tekes_ui_design_export::verify_consumer_inputs(&root, artifact, &document)
+        }
+        None => tekes_ui_design_export::verify_inputs(&root, &document),
+    }
+    .unwrap_or_else(|e| panic!("{}", e.join("\n")));
     for path in watched {
         println!("cargo:rerun-if-changed={}", path.display());
     }
@@ -53,6 +73,9 @@ fn main() {
     println!("cargo:rerun-if-changed={}", path.display());
     let gallery: serde_json::Value =
         serde_json::from_slice(&fs::read(path).unwrap()).expect("Gallery brand projection");
+    tekes_ui_design_export::validate_gallery_brands(&gallery).unwrap_or_else(|errors| {
+        panic!("invalid Gallery brand projection:\n{}", errors.join("\n"))
+    });
     use sha2::{Digest, Sha256};
     for (path, expected) in gallery["inputs_sha256"].as_object().unwrap() {
         let path = root.join(path);

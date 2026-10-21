@@ -19,6 +19,7 @@
 
 use std::time::Duration;
 
+mod accessibility;
 pub mod catalog;
 pub mod chrome;
 pub mod commands;
@@ -100,11 +101,13 @@ pub struct Gallery {
     static_text: StaticText,
     showcase: catalog::ShowcaseState,
     viewport: viewport::Viewport,
+    last_layout_origin: Point,
     page_offsets: [Point; Page::ALL.len()],
     editor: text_demo::TextDemo,
     text_view: text_demo::TextDemo,
     scroll_demo: text_demo::TextDemo,
     sidebar: navigation::Navigation,
+    navigation_focus: Option<Page>,
     motion: motion_preview::MotionPreview,
     scroll_owner: Option<ScrollOwner>,
     icon_search: text_demo::TextDemo,
@@ -122,6 +125,34 @@ impl Default for Gallery {
 }
 
 impl Gallery {
+    pub fn cursor_regions(&self) -> Vec<tekes_ui_platform_macos::CursorRegion> {
+        let Page::Workbench(i) = self.page else {
+            return Vec::new();
+        };
+        self.workbench
+            .resize_target(i)
+            .map(|(r, axis)| tekes_ui_platform_macos::CursorRegion {
+                origin: tekes_ui_platform_macos::Point {
+                    x: r.origin.x as f64,
+                    y: r.origin.y as f64,
+                },
+                size: tekes_ui_platform_macos::Size {
+                    width: r.size.width as f64,
+                    height: r.size.height as f64,
+                },
+                icon: match axis {
+                    tekes_ui_controls::extended::Axis::Horizontal => {
+                        tekes_ui_platform_macos::CursorIcon::ResizeHorizontal
+                    }
+                    tekes_ui_controls::extended::Axis::Vertical => {
+                        tekes_ui_platform_macos::CursorIcon::ResizeVertical
+                    }
+                },
+            })
+            .into_iter()
+            .collect()
+    }
+
     /// 参照目录取自环境变量 `TEKESUI_REFERENCE_DIR`。
     pub fn new() -> Gallery {
         let mut gallery = Gallery::with_static_text(StaticText::from_env());
@@ -147,11 +178,13 @@ impl Gallery {
             static_text,
             showcase: catalog::ShowcaseState::default(),
             viewport: viewport::Viewport::default(),
+            last_layout_origin: Point::default(),
             page_offsets: [Point::default(); Page::ALL.len()],
             editor: text_demo::TextDemo::editors_only(),
             text_view: text_demo::TextDemo::text_only(),
             scroll_demo: text_demo::TextDemo::scroll_only(),
             sidebar: navigation::Navigation::default(),
+            navigation_focus: None,
             motion: motion_preview::MotionPreview::default(),
             scroll_owner: None,
             icon_search: text_demo::TextDemo::search(),
@@ -164,20 +197,24 @@ impl Gallery {
     }
 
     fn content_page(&self) -> Page {
-        if let Page::Workbench(i) = self.page {
+        self.content_page_for(self.page)
+    }
+
+    fn content_page_for(&self, page: Page) -> Page {
+        if let Page::Workbench(i) = page {
             if !self.workbench.show_live(i) {
-                return self.page;
+                return page;
             }
             match workbench::entry(i).renderer() {
                 "scroll" => Page::ScrollArea,
                 "text" => Page::Text,
+                "internal-text" => Page::TextEditing,
                 "icon" => Page::Icons,
                 "motion" => Page::Motion,
-                "internal-text" => Page::TextEditing,
-                _ => self.page,
+                _ => page,
             }
         } else {
-            self.page
+            page
         }
     }
     /// Bounds shared by the live page renderer and its pointer hit routing.
@@ -189,6 +226,156 @@ impl Gallery {
         } else {
             self.viewport.content()
         }
+    }
+    fn reveal_focused_frame(&mut self, frame: Rect) -> bool {
+        // Focus frames belong to the most recently built document origin.
+        // Reusing the current origin after a prior reveal applies that scroll
+        // delta twice when key events arrive before another render.
+        self.viewport.reveal_focus(
+            frame.offset(-self.last_layout_origin.x, -self.last_layout_origin.y),
+            self.text.scale(),
+        )
+    }
+    fn leaf_demo_mut(&mut self, page: Page) -> Option<&mut text_demo::TextDemo> {
+        match page {
+            Page::Text => Some(&mut self.text_view),
+            Page::TextEditing => Some(&mut self.editor),
+            Page::ScrollArea => Some(&mut self.scroll_demo),
+            Page::Icons => Some(&mut self.icon_search),
+            _ => None,
+        }
+    }
+    fn leaf_focus_edge(&mut self, page: Page, reverse: bool) -> Option<Rect> {
+        self.leaf_demo_mut(page)?.focus_edge(reverse)
+    }
+    fn leaf_focused_frame(&self, page: Page) -> Option<Rect> {
+        match page {
+            Page::Text => self.text_view.focused_frame(),
+            Page::TextEditing => self.editor.focused_frame(),
+            Page::ScrollArea => self.scroll_demo.focused_frame(),
+            Page::Icons => self.icon_search.focused_frame(),
+            _ => None,
+        }
+    }
+    fn leaf_clear_focus(&mut self, page: Page) {
+        if let Some(demo) = self.leaf_demo_mut(page) {
+            demo.clear_focus();
+        }
+    }
+    fn leaf_tab_would_leave(&self, page: Page, reverse: bool) -> bool {
+        match page {
+            Page::Text => self.text_view.tab_would_leave(reverse),
+            Page::TextEditing => self.editor.tab_would_leave(reverse),
+            Page::ScrollArea => self.scroll_demo.tab_would_leave(reverse),
+            Page::Icons => self.icon_search.tab_would_leave(reverse),
+            _ => true,
+        }
+    }
+    fn handle_leaf_tab(&mut self, event: &Event) -> Option<Change> {
+        let Event::Key(key) = event else {
+            return None;
+        };
+        if key.kind != KeyEventKind::Down || key.key_code != 48 {
+            return None;
+        }
+        let page = self.content_page();
+        if !matches!(
+            page,
+            Page::Text | Page::TextEditing | Page::ScrollArea | Page::Icons
+        ) {
+            return None;
+        }
+        let reverse = key.modifiers.shift;
+
+        // In workbench leaf stories, the story navigation/reset controls come
+        // before the actual text surface in forward order and after it in
+        // reverse order. Let that real Workbench registry advance first.
+        if let Page::Workbench(i) = self.page
+            && self.workbench.focused_control_frame(i).is_some()
+        {
+            if self.workbench.handle(i, event, &mut self.text) {
+                if let Some(frame) = self.workbench.focused_control_frame(i) {
+                    self.reveal_focused_frame(frame);
+                }
+                return Some(Change::REDRAW);
+            }
+            self.workbench.clear_focus(i);
+            if reverse {
+                self.navigation_search.blur();
+                self.navigation_focus = Some(self.page);
+                self.sidebar.reveal(self.page);
+                return Some(Change::REDRAW);
+            }
+            if let Some(frame) = self.leaf_focus_edge(page, false) {
+                self.reveal_focused_frame(frame);
+                return Some(Change::REDRAW);
+            }
+        }
+
+        if self.leaf_focused_frame(page).is_none() {
+            if let Some(frame) = self.leaf_focus_edge(page, reverse) {
+                self.reveal_focused_frame(frame);
+                return Some(Change::REDRAW);
+            }
+            return Some(Change::NONE);
+        }
+
+        if self.leaf_tab_would_leave(page, reverse) {
+            self.leaf_clear_focus(page);
+            if reverse {
+                if let Page::Workbench(i) = self.page
+                    && let Some(frame) = self.workbench.focus_edge(i, true)
+                {
+                    self.reveal_focused_frame(frame);
+                } else {
+                    self.navigation_search.blur();
+                    self.navigation_focus = Some(self.page);
+                    self.sidebar.reveal(self.page);
+                }
+            } else {
+                if let Page::Workbench(i) = self.page {
+                    self.workbench.clear_focus(i);
+                }
+                self.navigation_focus = None;
+                self.navigation_search.focus_field();
+            }
+            return Some(Change::REDRAW);
+        }
+
+        let command = if reverse {
+            "insertBacktab:"
+        } else {
+            "insertTab:"
+        };
+        let (changed, frame) = match page {
+            Page::Text => {
+                let demo = &mut self.text_view;
+                let changed = demo.command(command).unwrap_or(false);
+                demo.refresh(&mut self.text);
+                (changed, demo.focused_frame())
+            }
+            Page::TextEditing => {
+                let demo = &mut self.editor;
+                let changed = demo.command(command).unwrap_or(false);
+                demo.refresh(&mut self.text);
+                (changed, demo.focused_frame())
+            }
+            Page::ScrollArea => {
+                let demo = &mut self.scroll_demo;
+                let changed = demo.command(command).unwrap_or(false);
+                demo.refresh(&mut self.text);
+                (changed, demo.focused_frame())
+            }
+            Page::Icons => {
+                let demo = &mut self.icon_search;
+                let changed = demo.command(command).unwrap_or(false);
+                demo.refresh(&mut self.text);
+                (changed, demo.focused_frame())
+            }
+            _ => return None,
+        };
+        let revealed = frame.is_some_and(|frame| self.reveal_focused_frame(frame));
+        Some(redraw_if(changed || revealed))
     }
     #[cfg(target_os = "macos")]
     pub(crate) fn motion_action_center_for_selftest(
@@ -457,6 +644,7 @@ impl Gallery {
         self.layout_page_extent();
         let viewport_bounds = self.viewport.bounds();
         let viewport_geometry = self.viewport.geometry_with_ancestor_clip(viewport_bounds);
+        self.last_layout_origin = viewport_geometry.content_origin();
         let viewport_clip = viewport_geometry
             .visible_viewport_rect()
             .unwrap_or(Rect::new(
@@ -466,11 +654,9 @@ impl Gallery {
                 0.0,
             ));
         let mut viewport_content = self.viewport.content_with_geometry(&viewport_geometry);
-        if let Page::Workbench(i) = self.page
-            && workbench::entry(i).renderer() == "matrix"
-        {
-            // The brand comparison is a measured scrolling document. Other
-            // component previews retain their available viewport height.
+        if let Page::Workbench(_) = self.page {
+            // Canonical stories lay out in their scroll document; the fixed
+            // viewport remains the ancestor clip for drawing and input.
             viewport_content.size.height = viewport_content
                 .size
                 .height
@@ -489,12 +675,13 @@ impl Gallery {
                 text: &mut self.text,
                 static_text: &mut self.static_text,
             };
-            chrome::draw_with_navigation(
+            chrome::draw_with_navigation_focus(
                 scene,
                 ctx.theme,
                 ctx.text,
                 self.page,
                 self.hover,
+                self.navigation_focus,
                 &self.sidebar,
             );
             self.navigation_search.build_search_clipped(
@@ -516,6 +703,13 @@ impl Gallery {
                 if workbench::entry(i).renderer() == "scene3d" && self.workbench.show_live(i) {
                     self.scene3d
                         .paint(&mut layer, self.workbench.preview_rect(i), ctx.text, theme);
+                }
+                let required_height = self.workbench.measured_document_extent(i);
+                if required_height > self.viewport.document_height() + 0.01 {
+                    self.viewport.set_document_extent(Size::new(
+                        viewport_bounds.size.width,
+                        required_height,
+                    ));
                 }
                 if !self.workbench.show_live(i) {
                     self.viewport.append_visible_with_geometry(
@@ -543,11 +737,9 @@ impl Gallery {
             ctx.text
                 .set_type_scale([1., 1.25, 1.5][self.workbench.text_scale]);
         }
-        let text_ancestor_clip = if matches!(self.page, Page::Workbench(_)) {
-            live_bounds.intersection(&viewport_clip)
-        } else {
-            Some(viewport_clip)
-        };
+        // The text demo owns its focus-ring outset. Keep the actual viewport
+        // as the ancestor clip; its content frame still constrains layout.
+        let text_ancestor_clip = Some(viewport_clip);
         if content_page == Page::Icons {
             self.icon_search.build_search_clipped(
                 &mut ctx,
@@ -780,7 +972,7 @@ impl Gallery {
                 size.width = size.width.max(layout::PAGE_CONTENT.size.width);
                 size.height = size.height.max(1100.);
             }
-            size.height = size.height.max(820.);
+            size.height = size.height.max(self.workbench.measured_document_extent(i));
             size
         } else if matches!(
             self.content_page(),
@@ -823,9 +1015,15 @@ impl Gallery {
         let mut dirty = self.motion.set_system_reduced_motion(reduced);
         dirty |= self.viewport.set_reduced_motion(reduced);
         dirty |= self.sidebar.scroll.set_reduced_motion(reduced);
-        dirty |= self.editor.set_reduced_motion(reduced);
-        dirty |= self.text_view.set_reduced_motion(reduced);
-        dirty |= self.scroll_demo.set_reduced_motion(reduced);
+        dirty |= self
+            .editor
+            .set_reduced_motion_with_time(reduced, self.motion_now);
+        dirty |= self
+            .text_view
+            .set_reduced_motion_with_time(reduced, self.motion_now);
+        dirty |= self
+            .scroll_demo
+            .set_reduced_motion_with_time(reduced, self.motion_now);
         dirty |= self.icon_search.set_reduced_motion(reduced);
         dirty |= self.navigation_search.set_reduced_motion(reduced);
         redraw_if(dirty)
@@ -1003,6 +1201,7 @@ impl Gallery {
                 self.page_offsets[self.page.index()] = self.viewport.offset;
                 self.viewport.cancel();
                 self.page = p;
+                self.navigation_focus = None;
                 self.sidebar.reveal(p);
                 self.layout_page_extent();
                 self.viewport.offset = self.page_offsets[p.index()];
@@ -1150,16 +1349,56 @@ impl Gallery {
 
     /// 处理输入事件。
     pub fn handle_input(&mut self, event: &Event) -> Change {
+        // Preserve the platform's raw event contract, but give every Gallery
+        // control the same semantic Enter path for Return and keypad Enter.
+        // The independent native consumer already maps both hardware codes.
+        if let Event::Key(key) = event
+            && key.key_code == 76
+        {
+            let mut key = key.clone();
+            key.key_code = 36;
+            return self.handle_input(&Event::Key(key));
+        }
+        if let Event::TextCommand(command) = event
+            && matches!(command.as_str(), "insertTab:" | "insertBacktab:")
+        {
+            // AppKit sends Tab through NSTextInputClient as a command while an
+            // editor owns key interpretation. Normalize it here so the same
+            // Gallery scope transitions run whether the host emitted KeyDown
+            // or only insertTab:/insertBacktab:. Composition remains owned by
+            // the active text service.
+            if self
+                .text_input_state()
+                .is_none_or(|state| state.marked.is_none())
+            {
+                let reverse = command == "insertBacktab:";
+                return self.handle_input(&Event::Key(tekes_ui_platform_macos::KeyEvent {
+                    kind: KeyEventKind::Down,
+                    key_code: 48,
+                    characters: String::new(),
+                    characters_ignoring_modifiers: String::new(),
+                    modifiers: tekes_ui_platform_macos::Modifiers {
+                        shift: reverse,
+                        ..tekes_ui_platform_macos::Modifiers::NONE
+                    },
+                    is_repeat: false,
+                }));
+            }
+        }
         if let Event::Focus(active) = event {
             self.workbench
                 .set_window_active_with_time(*active, self.motion_now);
-            self.editor.set_window_active(*active);
-            self.text_view.set_window_active(*active);
-            self.scroll_demo.set_window_active(*active);
+            self.editor
+                .set_window_active_with_time(*active, self.motion_now);
+            self.text_view
+                .set_window_active_with_time(*active, self.motion_now);
+            self.scroll_demo
+                .set_window_active_with_time(*active, self.motion_now);
             self.icon_search.set_window_active(*active);
             self.navigation_search.set_window_active(*active);
             if !active {
                 self.scene3d.blur();
+                self.navigation_focus = None;
                 self.end_scroll_gestures();
                 self.motion.deactivate();
                 self.static_text.blur();
@@ -1176,11 +1415,193 @@ impl Gallery {
         let search_hit = point.is_some_and(|p| {
             self.sidebar.bounds().contains(p) && navigation::search_rect().contains(p)
         });
+        let search_pointer_down = search_hit
+            && matches!(event, Event::Mouse(m) if matches!(
+                m.kind,
+                MouseEventKind::Down {
+                    button: MouseButton::Left,
+                    ..
+                }
+            ));
+        let modal_blocks_search = search_pointer_down
+            && matches!(self.page, Page::Workbench(i) if self.workbench.modal_is_open(i));
+        if modal_blocks_search {
+            return Change::NONE;
+        }
+        if search_pointer_down {
+            if let Page::Workbench(i) = self.page {
+                self.workbench.clear_focus(i);
+            }
+            self.leaf_clear_focus(self.content_page());
+            if self.content_page() == Page::Motion {
+                self.motion.focused_button = None;
+                for button in self.motion.button_models.values_mut() {
+                    button.state.focused = false;
+                    button.state.focus_visible = false;
+                }
+            }
+            self.navigation_focus = None;
+        }
         if let Event::Mouse(m) = event
             && matches!(m.kind, MouseEventKind::Down { .. })
             && !search_hit
         {
             self.navigation_search.blur();
+            self.navigation_focus = None;
+        }
+        if let Event::Key(key) = event
+            && key.kind == KeyEventKind::Down
+            && key.key_code == 48
+            && self
+                .navigation_search
+                .state()
+                .is_some_and(|state| state.marked.is_none())
+        {
+            if !key.modifiers.shift {
+                let visible_pages: Vec<_> = self
+                    .sidebar
+                    .sections()
+                    .iter()
+                    .flat_map(|section| section.items.iter().map(|(page, _)| *page))
+                    .collect();
+                let current = visible_pages.contains(&self.page).then_some(self.page);
+                let target = current.or_else(|| visible_pages.first().copied());
+                if let Some(target) = target {
+                    self.navigation_search.blur();
+                    self.navigation_focus = Some(target);
+                    self.sidebar.reveal(target);
+                    return Change::REDRAW;
+                }
+                if let Page::Workbench(i) = self.page
+                    && let Some(frame) = self.workbench.focus_edge(i, false)
+                {
+                    self.navigation_search.blur();
+                    self.reveal_focused_frame(frame);
+                    return Change::REDRAW;
+                }
+            } else if self.content_page() == Page::Motion
+                && let Some(frame) = pages::motion::focus_edge(&mut self.motion, true)
+            {
+                self.navigation_search.blur();
+                self.reveal_focused_frame(frame);
+                return Change::REDRAW;
+            } else if matches!(
+                self.content_page(),
+                Page::Text | Page::TextEditing | Page::ScrollArea | Page::Icons
+            ) && let Some(frame) = self.leaf_focus_edge(self.content_page(), true)
+            {
+                self.navigation_search.blur();
+                self.reveal_focused_frame(frame);
+                return Change::REDRAW;
+            } else if let Page::Workbench(i) = self.page
+                && let Some(frame) = self.workbench.focus_edge(i, true)
+            {
+                self.navigation_search.blur();
+                self.navigation_focus = None;
+                self.reveal_focused_frame(frame);
+                return Change::REDRAW;
+            } else {
+                self.navigation_search.blur();
+                return Change::REDRAW;
+            }
+        }
+        if let Some(focused_page) = self.navigation_focus
+            && let Event::Key(key) = event
+            && key.kind == KeyEventKind::Down
+        {
+            if key.key_code == 48 {
+                if key.modifiers.shift {
+                    self.navigation_focus = None;
+                    self.navigation_search.focus_field();
+                    return Change::REDRAW;
+                }
+                if self.content_page_for(focused_page) == Page::Motion {
+                    if self.page != focused_page {
+                        self.apply(Command::Page(focused_page));
+                    }
+                    if let Some(frame) = pages::motion::focus_edge(&mut self.motion, false) {
+                        self.navigation_focus = None;
+                        self.reveal_focused_frame(frame);
+                        return Change::REDRAW;
+                    }
+                }
+                if let Page::Workbench(i) = focused_page {
+                    if self.page != focused_page {
+                        self.apply(Command::Page(focused_page));
+                    }
+                    if self.content_page() == Page::Motion
+                        && let Some(frame) = pages::motion::focus_edge(&mut self.motion, false)
+                    {
+                        self.navigation_focus = None;
+                        self.reveal_focused_frame(frame);
+                        return Change::REDRAW;
+                    }
+                    if let Some(frame) = self.workbench.focus_edge(i, false) {
+                        self.navigation_focus = None;
+                        self.reveal_focused_frame(frame);
+                        return Change::REDRAW;
+                    }
+                }
+                let leaf_page = self.content_page_for(focused_page);
+                if matches!(
+                    leaf_page,
+                    Page::Text | Page::TextEditing | Page::ScrollArea | Page::Icons
+                ) && let Some(frame) = self.leaf_focus_edge(leaf_page, false)
+                {
+                    self.navigation_focus = None;
+                    self.reveal_focused_frame(frame);
+                    return Change::REDRAW;
+                }
+                // Pages with no mounted keyboard targets are skipped cleanly
+                // instead of trapping Tab on the sidebar item.
+                self.navigation_focus = None;
+                self.navigation_search.focus_field();
+                return Change::REDRAW;
+            } else if matches!(key.key_code, 125 | 126) {
+                let pages: Vec<_> = self
+                    .sidebar
+                    .sections()
+                    .iter()
+                    .flat_map(|section| section.items.iter().map(|(page, _)| *page))
+                    .collect();
+                if let Some(current) = pages.iter().position(|page| *page == focused_page) {
+                    let next = if key.key_code == 126 {
+                        current.checked_sub(1)
+                    } else {
+                        (current + 1 < pages.len()).then_some(current + 1)
+                    };
+                    if let Some(next_page) = next.and_then(|index| pages.get(index)).copied() {
+                        self.apply(Command::Page(next_page));
+                        self.navigation_focus = Some(next_page);
+                        self.sidebar.reveal(next_page);
+                        return Change::REDRAW;
+                    }
+                }
+                return Change::NONE;
+            } else if matches!(key.key_code, 36 | 49) {
+                if self.page != focused_page {
+                    self.apply(Command::Page(focused_page));
+                    self.navigation_focus = Some(focused_page);
+                    return Change::REDRAW;
+                }
+                if let Page::Workbench(i) = focused_page
+                    && let Some(frame) = self.workbench.focus_edge(i, false)
+                {
+                    self.navigation_focus = None;
+                    self.reveal_focused_frame(frame);
+                    return Change::REDRAW;
+                }
+                if self.content_page_for(focused_page) == Page::Motion
+                    && let Some(frame) = pages::motion::focus_edge(&mut self.motion, false)
+                {
+                    self.navigation_focus = None;
+                    self.reveal_focused_frame(frame);
+                    return Change::REDRAW;
+                }
+                return Change::NONE;
+            } else {
+                return Change::NONE;
+            }
         }
         if (search_hit || self.navigation_search.state().is_some())
             && let Some(changed) = self.navigation_search.handle(event, point)
@@ -1188,6 +1609,9 @@ impl Gallery {
             self.navigation_search.refresh(&mut self.text);
             self.sidebar.set_query(self.navigation_search.query());
             return redraw_if(changed);
+        }
+        if let Some(change) = self.handle_leaf_tab(event) {
+            return change;
         }
         if self.static_text_visible() {
             if let Event::Key(key) = event {
@@ -1225,7 +1649,14 @@ impl Gallery {
             return Change::REDRAW;
         }
         if let Page::Workbench(i) = self.page {
-            let in_preview = point.is_none_or(|p| p.x >= layout::CATALOG_W);
+            let motion_key = self.content_page() == Page::Motion
+                && matches!(
+                    event,
+                    Event::Key(key) if matches!(key.key_code, 36 | 48 | 49)
+                );
+            let in_preview = !motion_key
+                && (point.is_none_or(|p| p.x >= layout::CATALOG_W)
+                    || (matches!(event, Event::Mouse(_)) && self.workbench.has_pointer_capture(i)));
             if in_preview {
                 if let Some(p) = point
                     && matches!(event,Event::Mouse(m) if matches!(m.kind,MouseEventKind::Down{..}))
@@ -1237,9 +1668,21 @@ impl Gallery {
                     if matches!(event, Event::Key(key) if key.kind == KeyEventKind::Down)
                         && let Some(frame) = self.workbench.focused_control_frame(i)
                     {
-                        let origin = self.viewport.geometry().content_origin();
-                        self.viewport
-                            .reveal_focus(frame.offset(-origin.x, -origin.y), self.text.scale());
+                        self.reveal_focused_frame(frame);
+                    }
+                    return Change::REDRAW;
+                }
+                if matches!(event, Event::Key(key) if key.kind == KeyEventKind::Down && key.key_code == 48)
+                {
+                    self.workbench.clear_focus(i);
+                    let reverse = matches!(event, Event::Key(key) if key.modifiers.shift);
+                    if reverse {
+                        self.navigation_search.blur();
+                        self.navigation_focus = Some(Page::Workbench(i));
+                        self.sidebar.reveal(Page::Workbench(i));
+                    } else {
+                        self.navigation_focus = None;
+                        self.navigation_search.focus_field();
                     }
                     return Change::REDRAW;
                 }
@@ -1330,20 +1773,6 @@ impl Gallery {
                 Page::ScrollArea => &mut self.scroll_demo,
                 _ => &mut self.editor,
             };
-            if let Event::Key(k) = event
-                && k.kind == KeyEventKind::Down
-                && k.key_code == 48
-            {
-                let command = if k.modifiers.shift {
-                    "insertBacktab:"
-                } else {
-                    "insertTab:"
-                };
-                let changed = editor.command(command).unwrap_or(false);
-                editor.refresh(&mut self.text);
-                let revealed = changed && self.reveal_text_caret();
-                return redraw_if(changed || revealed);
-            }
             let point = match event {
                 Event::Mouse(m) => Some(to_point(m.position)),
                 Event::Scroll(e) => Some(to_point(e.position)),
@@ -1384,6 +1813,7 @@ impl Gallery {
                             || self.motion.pressed.is_some()
                     }
                 },
+                Event::Key(key) => matches!(key.key_code, 36 | 48 | 49),
                 _ => false,
             };
             let live_bounds = self.live_content_bounds();
@@ -1395,6 +1825,29 @@ impl Gallery {
                     self.viewport.bounds(),
                 )
             {
+                if matches!(event, Event::Key(key) if key.kind == KeyEventKind::Down)
+                    && let Some(frame) = pages::motion::focused_button_frame(&self.motion)
+                {
+                    self.reveal_focused_frame(frame);
+                }
+                return Change::REDRAW;
+            }
+            if matches!(event, Event::Key(key) if key.kind == KeyEventKind::Down && key.key_code == 48)
+            {
+                self.motion.focused_button = None;
+                for button in self.motion.button_models.values_mut() {
+                    button.state.focused = false;
+                    button.state.focus_visible = false;
+                }
+                let reverse = matches!(event, Event::Key(key) if key.modifiers.shift);
+                if reverse {
+                    self.navigation_search.blur();
+                    self.navigation_focus = Some(self.page);
+                    self.sidebar.reveal(self.page);
+                } else {
+                    self.navigation_focus = None;
+                    self.navigation_search.focus_field();
+                }
                 return Change::REDRAW;
             }
         }
@@ -1741,6 +2194,392 @@ mod tests {
         assert_eq!(border(&mut g), (normal, Some(focused)));
         g.handle_input(&click(600., 300.));
         assert_eq!(border(&mut g), (normal, None));
+    }
+
+    #[test]
+    fn clicking_navigation_search_releases_the_focused_settings_field() {
+        let mut g = Gallery::new();
+        let i = workbench::entries()
+            .iter()
+            .position(|entry| entry.renderer() == "settings")
+            .unwrap();
+        let route = format!("{}/playground", workbench::entry(i).slug());
+        assert!(g.open_route(&route));
+        g.set_view_size(CONTENT_WIDTH, CONTENT_HEIGHT);
+        g.build_scene(&mut Scene::new());
+
+        let field = workbench::Workbench::fixture_point(&route, 1000);
+        g.handle_input(&click(field.x.into(), field.y.into()));
+        g.handle_input(&release(field.x.into(), field.y.into()));
+        assert_eq!(g.workbench.focused_control_id(i), Some(1000));
+        assert!(g.text_input_state().is_some());
+
+        let search = navigation::search_rect().center();
+        g.handle_input(&click(search.x.into(), search.y.into()));
+        assert!(g.navigation_search.state().is_some());
+        assert_eq!(g.workbench.focused_control_id(i), None);
+        assert!(g.workbench.text_state(i).is_none());
+    }
+
+    #[test]
+    fn native_tab_from_open_combobox_returns_to_gallery_search() {
+        let mut g = Gallery::new();
+        assert!(g.open_route("component-combo-box"));
+        g.set_view_size(CONTENT_WIDTH, CONTENT_HEIGHT);
+        g.build_scene(&mut Scene::new());
+
+        let input = workbench::Workbench::fixture_point("component-combo-box", 1000);
+        g.handle_input(&click(input.x.into(), input.y.into()));
+        g.handle_input(&release(input.x.into(), input.y.into()));
+        assert!(g.text_input_state().is_some_and(|state| !state.read_only));
+        g.handle_input(&Event::TextCommit {
+            text: "Com".into(),
+            replacement: None,
+        });
+        g.handle_input(&Event::TextCommand("moveDown:".into()));
+        g.handle_input(&Event::TextCommand("insertNewline:".into()));
+        assert_eq!(g.text_input_state().unwrap().text, "Comfortable");
+
+        // Reopen through the actual input hit, then let AppKit's text-input
+        // command path deliver Tab while the ComboBox owns the native client.
+        g.handle_input(&click(input.x.into(), input.y.into()));
+        g.handle_input(&release(input.x.into(), input.y.into()));
+        let i = match g.page {
+            Page::Workbench(i) => i,
+            _ => unreachable!(),
+        };
+        assert!(g.workbench.combo_popup_open(i));
+        g.handle_input(&Event::TextCommand("insertTab:".into()));
+
+        assert!(!g.workbench.combo_popup_open(i));
+        assert!(g.navigation_search.state().is_some());
+        assert_eq!(g.workbench.focused_control_id(i), None);
+    }
+
+    #[test]
+    fn full_gallery_select_confirms_the_keyboard_candidate_after_a_real_frame() {
+        for code in [36, 76] {
+            let mut g = Gallery::new();
+            assert!(g.open_route("component-select"));
+            g.set_view_size(CONTENT_WIDTH, CONTENT_HEIGHT);
+            g.build_scene(&mut Scene::new());
+            let i = match g.page {
+                Page::Workbench(i) => i,
+                _ => unreachable!(),
+            };
+            let p = workbench::Workbench::fixture_point("component-select", 20);
+            g.handle_input(&click(p.x.into(), p.y.into()));
+            g.handle_input(&release(p.x.into(), p.y.into()));
+            g.build_scene(&mut Scene::new());
+            assert_eq!(g.workbench.select_value_for_test(i), (true, 0));
+            g.handle_input(&key(125, Modifiers::NONE));
+            g.build_scene(&mut Scene::new());
+            g.handle_input(&key(code, Modifiers::NONE));
+            g.build_scene(&mut Scene::new());
+            assert_eq!(
+                g.workbench.select_value_for_test(i),
+                (false, 1),
+                "native confirm key code {code}"
+            );
+            let mut scene = Scene::new();
+            g.build_scene(&mut scene);
+            let trigger = g.workbench.focused_control_frame(i).unwrap();
+            let outset = tekes_ui_tokens::proposal::metric("stroke", "c-focus-width").unwrap()
+                + tekes_ui_tokens::proposal::metric("spacing", "c-focus-offset").unwrap();
+            assert!(scene.primitives().iter().any(|p| matches!(p,
+                tekes_ui_scene::Primitive::Quad(q) if q.rect == trigger.inset(-outset)
+                    && q.fill.a == 0.
+                    && q.border_color == tekes_ui_tokens::proposal::render_color("border-focused", g.theme()).unwrap()
+            )), "real Gallery restores the Select keyboard focus ring for key {code}");
+        }
+    }
+
+    #[test]
+    fn shell_tab_moves_search_to_roving_sidebar_item_then_into_and_back_from_story() {
+        let mut g = Gallery::new();
+        let i = workbench::entries()
+            .iter()
+            .position(|entry| entry.renderer() == "settings")
+            .unwrap();
+        let page = Page::Workbench(i);
+        assert!(g.open_route(&format!("{}/playground", workbench::entry(i).slug())));
+        g.set_view_size(720., 240.);
+        g.build_scene(&mut Scene::new());
+
+        g.navigation_search.focus_field();
+        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        assert_eq!(g.navigation_focus, Some(page));
+        assert!(g.navigation_search.state().is_none());
+        assert_eq!(g.workbench.focused_control_id(i), None);
+
+        let mut scene = Scene::new();
+        g.build_scene(&mut scene);
+        let row = navigation::row(page).offset(
+            g.sidebar.geometry().content_origin().x,
+            g.sidebar.geometry().content_origin().y,
+        );
+        let focus_outset = tekes_ui_tokens::proposal::metric("stroke", "c-focus-width").unwrap()
+            + tekes_ui_tokens::proposal::metric("spacing", "c-focus-offset").unwrap();
+        assert!(scene.primitives().iter().any(|primitive| matches!(
+            primitive,
+            tekes_ui_scene::Primitive::Quad(quad)
+                if quad.rect == row.inset(-focus_outset)
+                    && quad.fill.a == 0.
+                    && quad.border_color == tekes_ui_tokens::proposal::render_color("border-focused", g.theme()).unwrap()
+        )), "keyboard focus gets the semantic focus ring, separately from hover");
+        let expected_first = g.workbench.tab_stop_ids(i)[0];
+        g.handle_input(&key(48, Modifiers::NONE));
+        assert_eq!(g.workbench.focused_control_id(i), Some(expected_first));
+        assert_eq!(
+            g.navigation_focus, None,
+            "entering the page leaves the Nav focus scope"
+        );
+        let first = g.workbench.focused_control_id(i);
+        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        let second = g.workbench.focused_control_id(i);
+        assert_ne!(
+            first, second,
+            "native insertTab advances the story sequence"
+        );
+        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        assert_ne!(
+            second,
+            g.workbench.focused_control_id(i),
+            "each command-only Tab advances once, including consecutive commands"
+        );
+        g.build_scene(&mut Scene::new());
+
+        for _ in 0..32 {
+            g.handle_input(&key(48, Modifiers::NONE));
+            g.build_scene(&mut Scene::new());
+            if g.navigation_search.state().is_some() {
+                break;
+            }
+        }
+        assert_eq!(
+            g.navigation_focus, None,
+            "forward traversal from the final story stop returns to shell search"
+        );
+        assert_eq!(g.workbench.focused_control_id(i), None);
+        assert!(g.navigation_search.state().is_some());
+        g.handle_input(&Event::TextCommand("insertBacktab:".into()));
+        assert!(g.workbench.focused_control_id(i).is_some());
+        for _ in 0..32 {
+            g.handle_input(&Event::TextCommand("insertBacktab:".into()));
+            g.build_scene(&mut Scene::new());
+            if g.navigation_focus.is_some() {
+                break;
+            }
+        }
+        assert_eq!(g.navigation_focus, Some(page));
+        assert_eq!(g.workbench.focused_control_id(i), None);
+        g.handle_input(&key(
+            48,
+            Modifiers {
+                shift: true,
+                ..Modifiers::NONE
+            },
+        ));
+        assert!(g.navigation_focus.is_none());
+        assert!(
+            g.navigation_search.state().is_some(),
+            "reverse Tab from navigation returns to search"
+        );
+    }
+
+    #[test]
+    fn rapid_tabs_reveal_from_the_last_layout_origin_without_drift() {
+        let mut gallery = Gallery::new();
+        let i = workbench::entries()
+            .iter()
+            .position(|entry| entry.renderer() == "settings")
+            .unwrap();
+        assert!(gallery.open_route(&format!("{}/playground", workbench::entry(i).slug())));
+        gallery.set_view_size(720., 240.);
+        gallery.build_scene(&mut Scene::new());
+
+        gallery.navigation_search.focus_field();
+        gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+        gallery.handle_input(&key(48, Modifiers::NONE));
+        let stops = gallery.workbench.tab_stop_ids(i);
+        assert!(
+            stops.len() > 2,
+            "fixture has enough controls for a reveal pass"
+        );
+
+        // Deliberately do not rebuild between key events. Each reveal must
+        // translate frames with the origin captured by the last actual layout,
+        // even after earlier events changed the viewport offset.
+        for _ in 1..stops.len() {
+            gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+        }
+        assert_eq!(
+            gallery.workbench.focused_control_id(i),
+            stops.last().copied()
+        );
+        gallery.build_scene(&mut Scene::new());
+        let last_frame = gallery.workbench.focused_control_frame(i).unwrap();
+        let visible = gallery.viewport.geometry().visible_viewport_rect().unwrap();
+        assert!(
+            last_frame.min_y() >= visible.min_y() - 1.0
+                && last_frame.max_y() <= visible.max_y() + 1.0,
+            "forward Tab leaves focused bounds in the viewport: {last_frame:?} vs {visible:?}"
+        );
+
+        let stops = gallery.workbench.tab_stop_ids(i);
+        for _ in 1..stops.len() {
+            gallery.handle_input(&Event::TextCommand("insertBacktab:".into()));
+        }
+        assert_eq!(
+            gallery.workbench.focused_control_id(i),
+            stops.first().copied()
+        );
+        gallery.build_scene(&mut Scene::new());
+        let first_frame = gallery.workbench.focused_control_frame(i).unwrap();
+        let visible = gallery.viewport.geometry().visible_viewport_rect().unwrap();
+        assert!(
+            first_frame.min_y() >= visible.min_y() - 1.0
+                && first_frame.max_y() <= visible.max_y() + 1.0,
+            "reverse Tab returns without accumulated offset drift: {first_frame:?} vs {visible:?}"
+        );
+    }
+
+    #[test]
+    fn text_scroll_and_icon_search_leaf_scopes_join_the_gallery_tab_order() {
+        for renderer in ["text", "scroll", "icon"] {
+            let mut gallery = Gallery::new();
+            let i = workbench::entries()
+                .iter()
+                .position(|entry| entry.renderer() == renderer)
+                .unwrap();
+            let page = Page::Workbench(i);
+            assert!(gallery.open_route(&format!("{}/playground", workbench::entry(i).slug())));
+            gallery.workbench.text_scale = 2;
+            gallery.set_view_size(720., 512.);
+            gallery.build_scene(&mut Scene::new());
+
+            gallery.navigation_search.focus_field();
+            gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+            assert_eq!(gallery.navigation_focus, Some(page));
+            gallery.handle_input(&key(48, Modifiers::NONE));
+            let has_story_chrome = gallery.workbench.focused_control_id(i).is_some();
+
+            for _ in 0..24 {
+                gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+                if gallery.workbench.focused_control_id(i).is_none()
+                    && gallery.leaf_focused_frame(gallery.content_page()).is_some()
+                {
+                    break;
+                }
+            }
+            let leaf = gallery.content_page();
+            let first_leaf = gallery.leaf_focused_frame(leaf).unwrap_or_else(|| {
+                panic!("Tab from the active {renderer} page scope enters its real leaf controls")
+            });
+            gallery.build_scene(&mut Scene::new());
+            let first_leaf = gallery.leaf_focused_frame(leaf).unwrap_or(first_leaf);
+            let visible = gallery.viewport.geometry().visible_viewport_rect().unwrap();
+            assert!(
+                first_leaf.min_y() >= visible.min_y() - 1.0
+                    && first_leaf.max_y() <= visible.max_y() + 1.0,
+                "{renderer} leaf focus is revealed: {first_leaf:?} vs {visible:?}"
+            );
+
+            gallery.handle_input(&Event::TextCommand("insertBacktab:".into()));
+            assert!(gallery.leaf_focused_frame(leaf).is_none());
+            assert_eq!(
+                gallery.workbench.focused_control_id(i).is_some(),
+                has_story_chrome,
+                "Shift+Tab returns to the previous mounted scope"
+            );
+            gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+            if !has_story_chrome {
+                assert_eq!(gallery.navigation_focus, Some(page));
+                gallery.handle_input(&key(48, Modifiers::NONE));
+            }
+            assert!(gallery.leaf_focused_frame(leaf).is_some());
+
+            for _ in 0..24 {
+                gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+                if gallery.navigation_search.state().is_some() {
+                    break;
+                }
+            }
+            assert!(
+                gallery.navigation_search.state().is_some(),
+                "forward Tab exits {renderer} leaf controls to the Gallery search scope"
+            );
+            assert!(gallery.leaf_focused_frame(leaf).is_none());
+            assert!(gallery.workbench.focused_control_id(i).is_none());
+        }
+
+        // The internal-text route hosts the same real TextEditing demo used by
+        // the standalone page. Tab must traverse its story chrome, enter the
+        // actual text surfaces, then leave through the Gallery shell.
+        let mut gallery = Gallery::new();
+        let i = workbench::entries()
+            .iter()
+            .position(|entry| entry.renderer() == "internal-text")
+            .unwrap();
+        let page = Page::Workbench(i);
+        assert!(gallery.open_route(&format!("{}/playground", workbench::entry(i).slug())));
+        gallery.set_view_size(720., 512.);
+        gallery.build_scene(&mut Scene::new());
+        gallery.navigation_search.focus_field();
+        gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+        assert_eq!(gallery.navigation_focus, Some(page));
+        gallery.handle_input(&key(48, Modifiers::NONE));
+        assert!(gallery.navigation_focus.is_none());
+        assert!(gallery.leaf_focused_frame(Page::TextEditing).is_some());
+        assert!(gallery.text_input_state().is_some());
+        for _ in 0..24 {
+            gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+            if gallery.navigation_search.state().is_some() {
+                break;
+            }
+        }
+        assert!(gallery.navigation_search.state().is_some());
+        assert!(gallery.leaf_focused_frame(Page::TextEditing).is_none());
+    }
+
+    #[test]
+    fn motion_controls_are_real_tab_targets_and_their_end_yields_to_search() {
+        let mut g = Gallery::new();
+        let motion = workbench::entries()
+            .iter()
+            .position(|entry| entry.renderer() == "motion")
+            .unwrap();
+        assert!(g.open_route(&format!("{}/playground", workbench::entry(motion).slug())));
+        g.set_view_size(720., 240.);
+        g.build_scene(&mut Scene::new());
+        g.navigation_search.focus_field();
+        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        assert_eq!(g.navigation_focus, Some(Page::Workbench(motion)));
+        g.handle_input(&key(48, Modifiers::NONE));
+        assert_eq!(
+            g.motion.focused_button,
+            g.motion.focus_order.first().copied(),
+            "Motion's first production Button receives keyboard focus"
+        );
+        for _ in 1..g.motion.focus_order.len() {
+            g.handle_input(&key(48, Modifiers::NONE));
+        }
+        let frame = pages::motion::focused_button_frame(&g.motion).unwrap();
+        assert!(frame.size.width > 0. && frame.size.height > 0.);
+        g.build_scene(&mut Scene::new());
+        let frame = pages::motion::focused_button_frame(&g.motion).unwrap();
+        let visible = g.viewport.geometry().visible_viewport_rect().unwrap();
+        assert!(
+            frame.min_y() >= visible.min_y() - 1. && frame.max_y() <= visible.max_y() + 1.0,
+            "the last focused production Button is fully revealed; frame={frame:?}, visible={visible:?}"
+        );
+
+        g.handle_input(&key(48, Modifiers::NONE));
+        assert!(
+            g.navigation_search.state().is_some(),
+            "Motion's final Button exits to Gallery search rather than wrapping"
+        );
+        assert!(g.motion.focused_button.is_none());
     }
 
     #[test]
@@ -2490,10 +3329,14 @@ mod tests {
         let state = g.text_input_state().expect("focused read-only TextSurface");
         assert_eq!(state.caret_index, state.text.len());
         let frame = g.scroll_demo.visible_frame_at(0).unwrap();
-        assert!(frame.contains(Point::new(
-            state.caret_origin.x as f32,
-            state.caret_origin.y as f32
-        )));
+        assert!(
+            frame.contains(Point::new(
+                state.caret_origin.x as f32,
+                state.caret_origin.y as f32
+            )),
+            "caret {:?}, frame {frame:?}",
+            state.caret_origin
+        );
     }
     #[test]
     fn scroll_area_demo_has_only_one_document_scroll_owner_at_every_window_size() {
@@ -3073,3 +3916,6 @@ mod tests {
         assert_ne!(c, build(&mut text, &mut st, 1.0));
     }
 }
+
+#[cfg(test)]
+mod composition_acceptance;

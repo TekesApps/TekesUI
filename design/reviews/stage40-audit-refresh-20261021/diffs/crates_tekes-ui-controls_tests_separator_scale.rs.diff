@@ -1,0 +1,70 @@
+--- design/reviews/padding-focus-routing-20261021/native-verified-source/crates/tekes-ui-controls/tests/separator_scale.rs
++++ crates/tekes-ui-controls/tests/separator_scale.rs
+@@ -138,3 +138,67 @@
+     assert_eq!(ink(&scene).len(), 1);
+     assert_eq!(ink(&scene)[0].0.size.width, 1.);
+ }
++
++#[test]
++fn real_split_view_uses_hairline_ink_but_retains_divider_hit_and_drag_contract() {
++    for axis in [Axis::Horizontal, Axis::Vertical] {
++        for theme in Theme::ALL {
++            for scale in [1., 1.5, 2., 0., f32::NAN] {
++                let bounds = Rect::new(10., 20., 300., 300.);
++                let mut model = SplitView::new(0.5);
++                let mut view = SplitViewView::new(axis);
++                let expected = model.layout(bounds, axis);
++                let mut scene = Scene::new();
++                let layout = view.render_at_scale(
++                    &mut scene,
++                    &mut model,
++                    bounds,
++                    Some(bounds),
++                    theme.into(),
++                    scale,
++                );
++                assert_eq!(layout.leading.frame(), expected.0);
++                assert_eq!(layout.divider.frame(), expected.1);
++                assert_eq!(layout.trailing.frame(), expected.2);
++                let line = ink(&scene)[0].0;
++                let width = if axis == Axis::Horizontal {
++                    line.size.width
++                } else {
++                    line.size.height
++                };
++                let effective = if scale.is_finite() && scale > 0. {
++                    scale
++                } else {
++                    1.
++                };
++                assert_eq!(
++                    width,
++                    if theme.contrast == Contrast::Increased {
++                        proposal_rule()
++                    } else {
++                        1. / effective
++                    }
++                );
++                assert_eq!(
++                    layout.divider_hit,
++                    Some(expected.1.inset(-4.).intersection(&bounds).unwrap())
++                );
++                let start = layout.divider.frame().center();
++                assert!(view.pointer_down(start, &mut model));
++                let mut next = start;
++                if axis == Axis::Horizontal {
++                    next.x += 30.;
++                } else {
++                    next.y += 30.;
++                }
++                view.pointer_move(next, &mut model);
++                assert!(model.ratio() > 0.5);
++                view.cancel(&mut model);
++                assert_eq!(model.ratio(), 0.5);
++            }
++        }
++    }
++}
++fn proposal_rule() -> f32 {
++    tekes_ui_tokens::proposal::metric("stroke", "stroke-rule").unwrap()
++}

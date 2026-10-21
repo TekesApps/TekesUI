@@ -1,0 +1,49 @@
+{
+  "commit": "8cf0840790334ba224afc0595897c74231c712e6",
+  "url": "https://github.com/TekesApps/TekesUI/commit/8cf0840790334ba224afc0595897c74231c712e6",
+  "branch": "codex/agentkit-public-pin-issue23-20261020",
+  "parent": "61ddf7c68fccd819e20a01ba3104a8a0f8d7e64f",
+  "source_identity": "53228e613cbd4c5da0d398a45c512c10fdab93a81419497aa2515eef11d6a53a",
+  "files": [
+    ".github/workflows/ci.yml",
+    "Cargo.lock",
+    "crates/tekes-ui-controls/tests/component_registry_api.rs",
+    "crates/tekes-ui-gallery/Cargo.toml",
+    "crates/tekes-ui-gallery/src/gallery/snapshot.rs",
+    "crates/tekes-ui-text/tests/shape.rs",
+    "design/reviews/proposal1/reference-language-profile-20261019.json",
+    "docs/agentkit/public-source-issue23.json"
+  ],
+  "source_files_verified": 1825,
+  "remote_head_matches": true,
+  "checkout_clean": true,
+  "public_input_verifier": "201 declared inputs match ae0b1055118d50d4d6e28a3d47e5e40bab254c7c6721d0c483e2a49f78114a4e",
+  "scope": "exact authorized8files only;20cumulative vs431",
+  "excluded": [
+    "current Link/required/Button WIP",
+    "main merge",
+    "tags",
+    "Issue closure"
+  ],
+  "CI": {
+    "run": 39365340268,
+    "commit": "8cf0840790334ba224afc0595897c74231c712e6",
+    "status": "completed",
+    "conclusion": "success",
+    "url": "https://github.com/TekesApps/TekesUI/actions/runs/39365340268",
+    "evidence": "CI.json"
+  },
+  "AgentKit": {
+    "handoff_sent": true,
+    "thread": "01a14920-0d6e-7652-9a60-c74ef1a1f70f",
+    "receipt": "handoff.json",
+    "independent_verdict": "pending",
+    "acknowledgment": "received new public#23candidate; will preserve current work then isolate verification; formal dependency unchanged",
+    "last_cursor": "32e784f3-3ced-4c70-ae7e-c25c4bc2c265:28",
+    "CI_success_followup_sent": true,
+    "consumer_progress": "Receiver reports exact8cf isolated AgentKit workspace tests with plain text probe, strictClippy and upstream public consumer passed. Actual native plain selection/copy/parent-scroll verification in progress; final technical verdict/freeze recommendation pending.",
+    "manifest_scope": "consumer-manifest-scope.json",
+    "desktop_coordination": "Sender stopped desktop operations; notified receiver of stale deleted input-host AX lookup and requested actual process/title/log provenance."
+  },
+  "handoff": "HANDOFF.md"
+}

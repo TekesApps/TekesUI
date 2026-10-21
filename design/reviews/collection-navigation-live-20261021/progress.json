@@ -1,0 +1,69 @@
+{
+  "source_identity": "1acda690e29381f3a75fc314c6fcb9f664c827c00f2b071e9c3a88d609c1115a",
+  "owner": "root: sole shared implementation owner",
+  "status": "shared fix and scoped API/consumer/exact Gallery/CoreText-GPU/token governance verified; final native/whole experience pending",
+  "root_cause": "Public component contract: keyboard candidates trusted stale geometry rather than current-source plus mounted membership. Source shrink could poison row focus; source growth could focus an unmounted header.",
+  "shared_fix": [
+    "DataTableView::key row candidate filter matches existing ListView live-bound check",
+    "DataTableView::key header candidates intersect mounted headers with live columns, using existing row_key_target"
+  ],
+  "applicable": [
+    "All DataTableView keyboard navigation, including sorted source row order and source changes before relayout"
+  ],
+  "exceptions": [
+    "ListView already filters current count; TreeView consults current visible enabled nodes; no new shared layer or migration required",
+    "New columns become navigable after real layout publication; no fabricated geometry",
+    "This does not supply stable business identities or detect unobserved ABA changes; caller-owned model/content identity remains authoritative"
+  ],
+  "compatibility": "No public signature, model, token, geometry, pointer target or state-machine changes",
+  "verification": {
+    "old_source_api_failures": 2,
+    "new_api_tests": 3,
+    "controls": 412,
+    "consumer": 168,
+    "gallery-regression": 13,
+    "bindings": 3,
+    "controls_strict_clippy": true,
+    "consumer_strict_clippy": true,
+    "host_strict_clippy": true,
+    "gpu_cases": 192,
+    "gpu_frames": 384,
+    "themes": 4,
+    "brands": 3,
+    "widths": [
+      300,
+      520
+    ],
+    "scales": [
+      1,
+      2
+    ],
+    "type_scales": [
+      1,
+      1.5
+    ],
+    "reference": "independently mounted valid focus target; exact same actual component models and CoreText/Metal path",
+    "fresh_token_files": 13,
+    "bounded_token_cases": 5688,
+    "token_complete": false,
+    "governance_tests": 44,
+    "composition_tests": 8
+  },
+  "native": {
+    "current_final_source": "pending",
+    "previous_partial": "../collection-focus-native-20261021/native-verification.json",
+    "boundary": "Original running binary is bound to pre-navigation-fix source; not final current acceptance",
+    "window": "kept running pending actual system activation; VoiceOver off"
+  },
+  "Gold7": {
+    "G1": "not accepted: matched ClientKit/whole page comparison pending",
+    "G2": "not accepted: whole page hierarchy pending",
+    "G3": "scoped final GPU focus matches independent reference; native current pending",
+    "G4": "no motion change; full interaction experience unverified",
+    "G5": "API/exact focus adapter/GPU protect valid keyboard focus; native current pending",
+    "G6": "scoped keyboard route tested; full desktop paths pending",
+    "G7": "public APIs, independent small host, exact-source evidence and docs retained"
+  },
+  "cleanup": "cleanup.json; running prior native runtime retained separately",
+  "constraints": "No performance, commit/push/tag/merge/Issue closure; no frozen consumer changes"
+}
