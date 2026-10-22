@@ -218,6 +218,22 @@ impl ContentHost {
                     "insertNewline:" | "insertLineBreak:" => {
                         frame.key.key == Some(ControlKey::Enter)
                     }
+                    // Numeric wrappers and text editors share this once-only
+                    // boundary. A candidate-confirming arrow must not step a
+                    // number after insertText has just cleared marked text.
+                    "moveUp:" | "moveDown:" => {
+                        let m = frame.key.modifiers;
+                        !m.command
+                            && !m.alt
+                            && !m.control
+                            && !m.shift
+                            && frame.key.key
+                                == Some(if command == "moveUp:" {
+                                    ControlKey::Up
+                                } else {
+                                    ControlKey::Down
+                                })
+                    }
                     "insertTab:" => frame.key.key == Some(ControlKey::Tab { reverse: false }),
                     "insertBacktab:" => frame.key.key == Some(ControlKey::Tab { reverse: true }),
                     "cancelOperation:" => {

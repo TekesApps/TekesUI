@@ -257,3 +257,5 @@ pub mod toolbar_semantics;
 pub mod toolbar_groups;
 
 pub mod split_toolbar;
+
+pub mod editable_number;

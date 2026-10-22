@@ -342,7 +342,9 @@ fn main() {
                     node.focused && !node.parts.iter().any(|part| part.focused),
                     &node.semantics,
                 );
-                if let Some(domain) = self.tree.value_range(node.id) {
+                if node.semantics.role == R::Slider
+                    && let Some(domain) = self.tree.value_range(node.id)
+                {
                     let range = tekes_ui_platform_macos::AccessibilityRange::new(
                         *domain.start(),
                         *domain.end(),
@@ -386,6 +388,17 @@ fn main() {
                         "frame":{"x":n.frame.origin.x,"y":n.frame.origin.y,"width":n.frame.size.width,"height":n.frame.size.height}
                     })).collect::<Vec<_>>()
                 });
+                if self.mode == "editable-number" {
+                    use tekes_ui_composition_consumer::editable_number::PERCENT;
+                    let field = self
+                        .tree
+                        .get(PERCENT)
+                        .unwrap()
+                        .component::<tekes_ui_controls::composition::NumberFieldContent>()
+                        .unwrap();
+                    let state = field.edit_state();
+                    snapshot["number"] = serde_json::json!({"committed":state.committed_value,"draft":state.text,"composing":state.composing,"dirty":state.dirty,"validation":format!("{:?}",state.validation)});
+                }
                 if self.mode == "toolbar" {
                     snapshot["toolbar_typography"] = serde_json::json!({"title_size":proposal::TextRole::UiBody.style().size*self.text.type_scale,"toolbar_frame":self.tree.get(tekes_ui_composition_consumer::toolbar_semantics::TOOLBAR).unwrap().frame().size.height,"native_center":w.titlebar_control_center_y(),"safe_area":w.titlebar_safe_area(),"native_overlap":w.titlebar_content_height()});
                     snapshot["toolbar_commands"] = serde_json::json!(self.toolbar_commands);
@@ -939,6 +952,45 @@ fn main() {
                 }
             }
         }
+        // Host clipboard access stays outside the reusable editor. Actual edits
+        // go through the same ContentHost/TextInput transactions as typed text.
+        fn clipboard_command(&mut self, w: &Window, command: &str) {
+            if !w.is_active() {
+                return;
+            }
+            let Some(surface) = self.tree.focused_text() else {
+                return;
+            };
+            if surface.input.disabled || surface.input.marked.is_some() {
+                return;
+            }
+            if command == "copy:" {
+                self.copy_selection(w);
+                return;
+            }
+            if surface.input.read_only {
+                return;
+            }
+            let replacement = surface.input.selection();
+            match command {
+                "cut:" if !replacement.is_empty() => {
+                    self.copy_selection(w);
+                    self.dispatch(Event::TextCommit {
+                        text: String::new(),
+                        replacement: Some(replacement),
+                    });
+                }
+                "paste:" => {
+                    if let Some(text) = w.clipboard_text() {
+                        self.dispatch(Event::TextCommit {
+                            text,
+                            replacement: None,
+                        });
+                    }
+                }
+                _ => {}
+            }
+        }
         fn dispatch(&mut self, e: Event) -> bool {
             use tekes_ui_controls::composition::ContentEvent as C;
             let ev = match e {
@@ -1222,14 +1274,21 @@ fn main() {
                 Event::Key(key)
                     if key.kind == KeyEventKind::Down
                         && key.modifiers.command
-                        && key.key_code == 8 =>
+                        && matches!(key.key_code, 7..=9) =>
                 {
-                    self.copy_selection(w);
-                    self.publish(w, false);
+                    let command = match key.key_code {
+                        7 => "cut:",
+                        8 => "copy:",
+                        _ => "paste:",
+                    };
+                    self.clipboard_command(w, command);
+                    self.redraw(w);
                 }
-                Event::TextCommand(command) if command == "copy:" => {
-                    self.copy_selection(w);
-                    self.publish(w, false);
+                Event::TextCommand(command)
+                    if matches!(command.as_str(), "copy:" | "cut:" | "paste:") =>
+                {
+                    self.clipboard_command(w, &command);
+                    self.redraw(w);
                 }
                 Event::Accessibility { target, action } => {
                     if !w.is_active() {
@@ -1396,6 +1455,7 @@ fn main() {
                 | "reading"
                 | "plain"
                 | "number"
+                | "editable-number"
                 | "field"
                 | "label"
                 | "layout"
@@ -1459,6 +1519,12 @@ fn main() {
         (
             tekes_ui_composition_consumer::field_metadata::build().unwrap(),
             tekes_ui_composition_consumer::field_metadata::NORMAL,
+            None,
+        )
+    } else if mode == "editable-number" {
+        (
+            tekes_ui_composition_consumer::editable_number::build().unwrap(),
+            tekes_ui_composition_consumer::editable_number::PERCENT,
             None,
         )
     } else if mode == "number" {

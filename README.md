@@ -10,6 +10,8 @@
 
 [design/system.json](design/system.json) 是机器入口，[DESIGN.md](DESIGN.md) 说明权威与边界。基础 token、显式消费者品牌配置与统一 policy 生成四主题，再生成 Rust 兼容 API；原生 Gallery 仍为纯 Rust。Gallery 已改为 Overview、Foundations、Components、Patterns、Examples 和 Quality lab 的原生工作台；组件注册、搜索、Story 路由与成熟度集中在 `design/gallery/workbench.json`。关键控件使用真实 Rust 状态模型，Settings 和组合场景可操作；缺失组件保留明确的 planned 坑位。历史状态插图只作为 Quality lab 的比较夹具，不计为真实组件实现。详见 [Gallery 使用与扩展约定](docs/gallery.md)。
 
+公共组件接口：[可编辑数值控件](docs/components/number-field.md)、[Ticking Number](docs/components/ticking-number.md)。
+
 使用、品牌定制与检查命令见 [design/README.md](design/README.md)。原版 24 张 golden 与历史性能结果保留，新提案画面另行审查，不覆盖历史证据。
 
 查询当前公开 API、Gallery route、适用状态与证据边界：

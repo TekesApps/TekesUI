@@ -256,7 +256,13 @@ impl ContentHost {
                 let r = if event.is_primary_pointer() && self.help_available() {
                     self.scope()
                         .help_at(*p)
-                        .filter(|n| n.help_frame().is_some_and(|frame| frame.contains(*p)))
+                        .filter(|n| {
+                            n.help_frame().is_some_and(|frame| frame.contains(*p))
+                                || n.component.semantic_parts().iter().any(|part| {
+                                    n.help_details(Some(part.index))
+                                        .is_some_and(|(_, _, frame)| frame.contains(*p))
+                                })
+                        })
                         .and_then(|n| self.help_request(n.id, false, Some(*p)))
                 } else {
                     None

@@ -13,7 +13,7 @@
           "note": "Actual public Stack geometry scope has asserted zero lookups; SurfaceView paint is captured separately,4themes/3brands/real scales/Canvas,Panel/ancestor clip. Caller scale forwarding has216real Gallery GPU cases and independent consumer tests; page/native maturity remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/layout-surface.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/layout-surface.json"
     },
     {
       "id": "tui.grid",
@@ -32,7 +32,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/grid-layout.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/grid-layout.json"
     },
     {
       "id": "tui.separator",
@@ -51,7 +51,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/separator.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/separator.json"
     },
     {
       "id": "tui.split-view",
@@ -282,7 +282,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/content-status.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json"
     },
     {
       "id": "tui.surface",
@@ -298,7 +298,7 @@
           "note": "Actual public Stack geometry scope has asserted zero lookups; SurfaceView paint is captured separately,4themes/3brands/real scales/Canvas,Panel/ancestor clip. Caller scale forwarding has216real Gallery GPU cases and independent consumer tests; page/native maturity remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/layout-surface.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/layout-surface.json"
     },
     {
       "id": "tui.toolbar",
@@ -369,7 +369,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/toolbar.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/toolbar.json"
     },
     {
       "id": "tui.text",
@@ -477,7 +477,7 @@
           "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/action.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json"
     },
     {
       "id": "tui.icon-button",
@@ -561,7 +561,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/action.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json"
     },
     {
       "id": "tui.link",
@@ -632,7 +632,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/action.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json"
     },
     {
       "id": "tui.text-field",
@@ -746,7 +746,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/input.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/input.json"
     },
     {
       "id": "tui.text-area",
@@ -864,7 +864,7 @@
         "owner": "tui.text-field",
         "reason": "These input variants already share the public TextSurface editor and input boundary roles. Reuse the existing text-field JSON contract as a partial family reference; this does not assert complete per-variant runtime dependencies."
       },
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/input.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/input.json"
     },
     {
       "id": "tui.search-field",
@@ -982,7 +982,7 @@
         "owner": "tui.text-field",
         "reason": "These input variants already share the public TextSurface editor and input boundary roles. Reuse the existing text-field JSON contract as a partial family reference; this does not assert complete per-variant runtime dependencies."
       },
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/input.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/input.json"
     },
     {
       "id": "tui.combo-box",
@@ -1118,7 +1118,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/combo-async.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/combo-async.json"
     },
     {
       "id": "tui.slider",
@@ -1202,7 +1202,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/slider-composition.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/slider-composition.json"
     },
     {
       "id": "tui.checkbox",
@@ -1304,7 +1304,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/selection.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/selection.json"
     },
     {
       "id": "tui.radio-group",
@@ -1394,7 +1394,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/selection.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/selection.json"
     },
     {
       "id": "tui.switch",
@@ -1484,7 +1484,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/selection.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/selection.json"
     },
     {
       "id": "tui.segmented-control",
@@ -1568,7 +1568,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/action.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json"
     },
     {
       "id": "tui.field",
@@ -1609,7 +1609,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/field.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/field.json"
     },
     {
       "id": "tui.select",
@@ -1748,7 +1748,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/combo-async.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/combo-async.json"
     },
     {
       "id": "tui.number-field",
@@ -1819,7 +1819,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/number.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/number.json"
     },
     {
       "id": "tui.tabs",
@@ -1942,7 +1942,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/content-status.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json"
     },
     {
       "id": "tui.breadcrumb",
@@ -2013,7 +2013,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/content-status.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json"
     },
     {
       "id": "tui.command-palette",
@@ -2149,7 +2149,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/command-async.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/command-async.json"
     },
     {
       "id": "tui.list",
@@ -2218,7 +2218,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/collection-focus.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json"
     },
     {
       "id": "tui.tree",
@@ -2294,7 +2294,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/collection-focus.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json"
     },
     {
       "id": "tui.data-table",
@@ -2363,7 +2363,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/collection-focus.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json"
     },
     {
       "id": "tui.chart",
@@ -2425,7 +2425,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/collection-focus.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json"
     },
     {
       "id": "tui.menu",
@@ -2501,7 +2501,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/menu-content.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/menu-content.json"
     },
     {
       "id": "tui.tooltip",
@@ -2521,7 +2521,7 @@
           "note": "Public TooltipView actual render,12asserted lifecycle scenarios across4themes/3brands; closed rest explicitly has zero dynamic reads. Fixture/native/Gold7 visual acceptance remain unverified."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/tooltip.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/tooltip.json"
     },
     {
       "id": "tui.popover",
@@ -2548,7 +2548,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/popover-content.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/popover-content.json"
     },
     {
       "id": "tui.dialog",
@@ -2702,7 +2702,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/passive-feedback.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json"
     },
     {
       "id": "tui.progress",
@@ -2743,7 +2743,7 @@
           "note": "Actual public passive paint API, asserted geometry and runtime token reads across4themes/3brands/ancestor clip. Existing Progress loading consumer and StatusBadge shaped-label Gallery checks verified separately. Host composition, native, VoiceOver and matched ClientKit/Gold7 remain unverified; no maturity promotion."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/passive-feedback.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json"
     },
     {
       "id": "tui.empty-state",
@@ -2799,7 +2799,7 @@
           "note": "Actual public passive paint API, asserted geometry and runtime token reads across4themes/3brands/ancestor clip. Existing Progress loading consumer and StatusBadge shaped-label Gallery checks verified separately. Host composition, native, VoiceOver and matched ClientKit/Gold7 remain unverified; no maturity promotion."
         }
       ],
-      "runtime_token_observation": "design/reviews/toolbar-split-public-20261022/probes-final/passive-feedback.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json"
     },
     {
       "id": "tui.markdown",

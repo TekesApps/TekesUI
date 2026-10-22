@@ -516,6 +516,12 @@
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
     },
     {
+      "api": "tekes_ui_controls::TextSurfaceAlignment",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Single-line placement in the shared TextSurface origin, reused by painting, caret, selection and hit testing."
+    },
+    {
       "api": "tekes_ui_controls::TextSurfaceHost",
       "category": "component-support",
       "components": [
@@ -865,6 +871,14 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::DecimalNumberFormat",
+      "category": "component-support",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle."
+    },
+    {
       "api": "tekes_ui_controls::composition::DialogContent",
       "category": "component-adapter",
       "components": [
@@ -939,6 +953,70 @@
         "tui.menu"
       ],
       "reason": "Atomic validation result for original MenuContent stable-value declaration, no new component or runtime."
+    },
+    {
+      "api": "tekes_ui_controls::composition::NumberCommitReason",
+      "category": "component-support",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::composition::NumberEditState",
+      "category": "component-support",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::composition::NumberFieldContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Editable numeric Content adapter over the existing number, text and button controls."
+    },
+    {
+      "api": "tekes_ui_controls::composition::NumberFormat",
+      "category": "component-support",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::composition::NumberParseError",
+      "category": "component-support",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::composition::NumberValidation",
+      "category": "component-support",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::composition::NumberValueChange",
+      "category": "component-support",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::composition::NumberValueError",
+      "category": "component-support",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle."
     },
     {
       "api": "tekes_ui_controls::composition::PointerButton",

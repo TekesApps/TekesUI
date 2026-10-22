@@ -80,7 +80,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/layout-surface.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/layout-surface.json",
           "case_count": 96,
           "complete": false,
           "excluded": [
@@ -179,7 +179,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/grid-layout.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/grid-layout.json",
           "case_count": 96,
           "complete": false,
           "excluded": [
@@ -278,7 +278,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/separator.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/separator.json",
           "case_count": 144,
           "complete": false,
           "excluded": [
@@ -775,7 +775,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/content-status.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
           "case_count": 144,
           "complete": false,
           "excluded": [
@@ -887,7 +887,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/layout-surface.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/layout-surface.json",
           "case_count": 96,
           "complete": false,
           "excluded": [
@@ -1062,7 +1062,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/toolbar.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/toolbar.json",
           "case_count": 144,
           "complete": false,
           "excluded": [
@@ -1121,7 +1121,7 @@
         ],
         "resolved_sources": {
           "tekes_ui_controls::TextSurface": {
-            "line": 103,
+            "line": 113,
             "source": "crates/tekes-ui-controls/src/text_surface.rs",
             "symbol": "TextSurface"
           }
@@ -1132,7 +1132,7 @@
       "route": "component-text",
       "source": "crates/tekes-ui-controls/src/text_surface.rs",
       "source_symbol": {
-        "line": 103,
+        "line": 113,
         "public_name": "TextSurface",
         "status": "declaration-present",
         "symbol": "TextSurface"
@@ -1612,7 +1612,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/action.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/action.json",
           "case_count": 108,
           "complete": false,
           "excluded": [
@@ -1840,7 +1840,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/action.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/action.json",
           "case_count": 108,
           "complete": false,
           "excluded": [
@@ -2056,7 +2056,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/action.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/action.json",
           "case_count": 84,
           "complete": false,
           "excluded": [
@@ -2101,7 +2101,7 @@
         ],
         "resolved_sources": {
           "tekes_ui_controls::TextSurface": {
-            "line": 103,
+            "line": 113,
             "source": "crates/tekes-ui-controls/src/text_surface.rs",
             "symbol": "TextSurface"
           }
@@ -2112,7 +2112,7 @@
       "route": "component-text-field",
       "source": "crates/tekes-ui-controls/src/text_surface.rs",
       "source_symbol": {
-        "line": 103,
+        "line": 113,
         "public_name": "TextSurface",
         "status": "declaration-present",
         "symbol": "TextSurface"
@@ -2302,7 +2302,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/input.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/input.json",
           "case_count": 204,
           "complete": false,
           "excluded": [
@@ -2351,7 +2351,7 @@
         ],
         "resolved_sources": {
           "tekes_ui_controls::TextSurface": {
-            "line": 103,
+            "line": 113,
             "source": "crates/tekes-ui-controls/src/text_surface.rs",
             "symbol": "TextSurface"
           }
@@ -2362,7 +2362,7 @@
       "route": "component-text-area",
       "source": "crates/tekes-ui-controls/src/text_surface.rs",
       "source_symbol": {
-        "line": 103,
+        "line": 113,
         "public_name": "TextSurface",
         "status": "declaration-present",
         "symbol": "TextSurface"
@@ -2552,7 +2552,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/input.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/input.json",
           "case_count": 204,
           "complete": false,
           "excluded": [
@@ -2601,7 +2601,7 @@
         ],
         "resolved_sources": {
           "tekes_ui_controls::TextSurface": {
-            "line": 103,
+            "line": 113,
             "source": "crates/tekes-ui-controls/src/text_surface.rs",
             "symbol": "TextSurface"
           }
@@ -2612,7 +2612,7 @@
       "route": "component-search-field",
       "source": "crates/tekes-ui-controls/src/text_surface.rs",
       "source_symbol": {
-        "line": 103,
+        "line": 113,
         "public_name": "TextSurface",
         "status": "declaration-present",
         "symbol": "TextSurface"
@@ -2802,7 +2802,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/input.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/input.json",
           "case_count": 204,
           "complete": false,
           "excluded": [
@@ -3051,7 +3051,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/combo-async.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/combo-async.json",
           "case_count": 132,
           "complete": false,
           "excluded": [
@@ -3255,7 +3255,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/slider-composition.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/slider-composition.json",
           "case_count": 264,
           "complete": false,
           "excluded": [
@@ -3522,7 +3522,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/selection.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/selection.json",
           "case_count": 864,
           "complete": false,
           "excluded": "constants, baked alias expansion, motion/layout accessors, host font backend, and unexecuted branches are not complete dependency coverage",
@@ -3774,7 +3774,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/selection.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/selection.json",
           "case_count": 576,
           "complete": false,
           "excluded": "constants, baked alias expansion, motion/layout accessors, host font backend, and unexecuted branches are not complete dependency coverage",
@@ -4023,7 +4023,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/selection.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/selection.json",
           "case_count": 576,
           "complete": false,
           "excluded": "constants, baked alias expansion, motion/layout accessors, host font backend, and unexecuted branches are not complete dependency coverage",
@@ -4251,7 +4251,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/action.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/action.json",
           "case_count": 108,
           "complete": false,
           "excluded": [
@@ -4389,7 +4389,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/field.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/field.json",
           "case_count": 48,
           "complete": false,
           "excluded": [
@@ -4631,7 +4631,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/combo-async.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/combo-async.json",
           "case_count": 132,
           "complete": false,
           "excluded": [
@@ -4817,7 +4817,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/number.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/number.json",
           "case_count": 60,
           "complete": false,
           "excluded": [
@@ -5116,7 +5116,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/content-status.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
           "case_count": 180,
           "complete": false,
           "excluded": [
@@ -5300,7 +5300,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/content-status.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
           "case_count": 84,
           "complete": false,
           "excluded": [
@@ -5548,7 +5548,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/command-async.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/command-async.json",
           "case_count": 168,
           "complete": false,
           "excluded": [
@@ -5819,7 +5819,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/collection-focus.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
           "case_count": 108,
           "complete": false,
           "excluded": [
@@ -6085,7 +6085,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/collection-focus.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
           "case_count": 108,
           "complete": false,
           "excluded": [
@@ -6274,7 +6274,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/collection-focus.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
           "case_count": 216,
           "complete": false,
           "excluded": [
@@ -6452,7 +6452,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/collection-focus.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
           "case_count": 72,
           "complete": false,
           "excluded": [
@@ -6639,7 +6639,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/menu-content.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/menu-content.json",
           "case_count": 288,
           "complete": false,
           "excluded": [
@@ -6770,7 +6770,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/tooltip.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/tooltip.json",
           "case_count": 240,
           "complete": false,
           "excluded": [
@@ -6917,7 +6917,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/popover-content.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/popover-content.json",
           "case_count": 192,
           "complete": false,
           "excluded": [
@@ -7445,7 +7445,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/passive-feedback.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
           "case_count": 96,
           "complete": false,
           "excluded": [
@@ -7597,7 +7597,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/passive-feedback.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
           "case_count": 96,
           "complete": false,
           "excluded": [
@@ -7807,7 +7807,7 @@
         "contract_scope": "exact canonical IDs present in the existing component JSON only; not a complete effective runtime dependency map",
         "contract_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json",
         "runtime_observation": {
-          "artifact": "design/reviews/toolbar-split-public-20261022/probes-final/passive-feedback.json",
+          "artifact": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
           "case_count": 24,
           "complete": false,
           "excluded": [
@@ -8752,15 +8752,16 @@
     "crates/tekes-ui-controls/src/chart.rs": "f30cda0a769e0007ca6c7336d72584ed3da8c31870d845a8208b912ca489e120",
     "crates/tekes-ui-controls/src/collections_view.rs": "6e41766fab863f68d0bfb7a9d32b541f85fdc3bb249e5c70af99dbc1abbf6cc7",
     "crates/tekes-ui-controls/src/composite.rs": "33e941dd625f1df06c27be3b952cc9e2d51ec9bf46b7c9972da8f4c2b78088c1",
-    "crates/tekes-ui-controls/src/composition.rs": "00060cd59941833dd451a1402c9e253dfaa9514e62a1c6998a2f8c7a3f3cdc45",
+    "crates/tekes-ui-controls/src/composition.rs": "a07e6d96a0fab49ab5e6d2543bdc71b337b19aad55e8bd14cf061e6a056c00c2",
     "crates/tekes-ui-controls/src/composition/actions.rs": "f1a015320d9df08628d952a56adbc9f0d2626fc0bd90d4f0d3a40d28ac686d0a",
-    "crates/tekes-ui-controls/src/composition/adapters.rs": "2bc27d38499f22101e0ac35b6da9ce86383c12d6efe38bc64230ca66a8d12b59",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "1e82fc8edcce1823c4a101c4e0521ca44c26c679f0f44cd3c029fbb4289d8260",
     "crates/tekes-ui-controls/src/composition/content_reading.rs": "043eb142fc958925024b1cca1d4c473f4be2c73c792df0de9f803ebee2c46b7e",
     "crates/tekes-ui-controls/src/composition/content_reveal.rs": "be8033d7ef4db46dc4de526214dfc261d70a8c1ce4e685e814d8198a75941450",
-    "crates/tekes-ui-controls/src/composition/help.rs": "11d0e268dbca513c4c95e8cb8ce37a8b29d8104b267c10fbc85a82f72006e6b8",
-    "crates/tekes-ui-controls/src/composition/key.rs": "9c78585d2d39165f07c74c416165b130ba95d324e7c651b0b0f1c8057844524e",
+    "crates/tekes-ui-controls/src/composition/help.rs": "64e6529b9a211558f096242c42eaeb471f4c1da19fe66f5a2671384811ae8262",
+    "crates/tekes-ui-controls/src/composition/key.rs": "399f50e3ee6b0702fb32a21806dfc9ed02cb41deca341633e3ba7b6f80e80e10",
     "crates/tekes-ui-controls/src/composition/label.rs": "200d25061d994d3233f8c15b03ae2b7d60b7d90d229a4934d01eaf6caf52ea70",
     "crates/tekes-ui-controls/src/composition/menu.rs": "b08b552f504085ab448b5be6c97593aa27a2498846ab69096e01e24ddbd25248",
+    "crates/tekes-ui-controls/src/composition/number.rs": "2f50ba08ab93b3b341a1416459c409f7a456e9a53943dd9d8b58711b6f39f964",
     "crates/tekes-ui-controls/src/composition/pointer.rs": "bab363a222d7c6195349569a4a317ca4586070463964a3503212c3c7aa3927d6",
     "crates/tekes-ui-controls/src/composition/toolbar_content.rs": "ced81a9520e90bfb59141fd716e987cd9c9095f657e27dd98e27dc4c19b77fe7",
     "crates/tekes-ui-controls/src/control_motion.rs": "cd67d5e00d63126a5c14b1c096be060cdf8615e23555a37788ec122a84a6fac8",
@@ -8769,7 +8770,7 @@
     "crates/tekes-ui-controls/src/feedback_view.rs": "780c1ab4b34603046d93511fa654e84b3e7d75e0d734b5247b7e35e96c60d4b2",
     "crates/tekes-ui-controls/src/layout.rs": "1fb04f0f3061b0439dded808949aa7dd89d03e6fef6084c53bfb9707062d6e35",
     "crates/tekes-ui-controls/src/layout_view.rs": "7597232df0847d4bca85b2d1d5c3051b5461950d6266af592e012235a5085069",
-    "crates/tekes-ui-controls/src/lib.rs": "63df40ae30da29555f0b74f226f265bb9543e60e2230b9977d224cc770cceddc",
+    "crates/tekes-ui-controls/src/lib.rs": "f58799f120aad7faf675e8eaeb7796a56271b70a0aeeae44686d5a47c38af7c9",
     "crates/tekes-ui-controls/src/paint.rs": "f586b50e5d9e1e65226b7b13d9e34d1cbf985557acec13fa256dc5c8ba10ad55",
     "crates/tekes-ui-controls/src/reading.rs": "2bcd3f8445f10e523ff907bb8e4f9267b338acaa3bfc306ebabf23ee4b4a969d",
     "crates/tekes-ui-controls/src/scroll_view.rs": "ed31b11d668ef1c40ceed5e4312ab1df55171444f0ef9f93d0b2515263fedcb1",
@@ -8777,10 +8778,10 @@
     "crates/tekes-ui-controls/src/selection.rs": "0c089ab889da7bb1117039ffb22daca572a9e3526c9a04967b1266473d7a6dd8",
     "crates/tekes-ui-controls/src/text_input.rs": "fd25003400dbf9ed92c94e354d8fed4aa12e737e14eb2ade26c34e1002801b4a",
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
-    "crates/tekes-ui-controls/src/text_surface.rs": "44afcd0bd4d7ed886887eefc3e5f80036c2cba60f417a34ec6e991b2750593f7",
+    "crates/tekes-ui-controls/src/text_surface.rs": "791439dcf9f778811e60af719458d8b871c82d4303a6727b28733bd840469825",
     "crates/tekes-ui-controls/src/ticking_number.rs": "a3801f24c525cd31de4807260b6b53a28b49e344b02c991d7c93631972f37b3b",
     "crates/tekes-ui-controls/src/toolbar.rs": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
-    "crates/tekes-ui-controls/src/widgets.rs": "05eb4c71beea5db402d04f0b7af4efce044b03904d6e68851a07242874ae94d1",
+    "crates/tekes-ui-controls/src/widgets.rs": "a9340440b2eb63fbf4b6f54c5fabdf54f4951f15c2c8253453dedbba1c007563",
     "crates/tekes-ui-controls/tests/action_contract.rs": "6947bd4e8ae3fee2e8fe5c254a1e36cad8dbb8beb2a18abc840ba61aa1c50bcf",
     "crates/tekes-ui-controls/tests/choice_contract.rs": "4ee09801a24dd52ffc229e45c7ed7adbb2e5ad25b61fea71fb233ec63787a564",
     "crates/tekes-ui-controls/tests/choice_selection_states.rs": "f3677639bcb21f1312db3a08d35a804884ba06fe04510ff128a1953fcd100649",
@@ -8790,7 +8791,7 @@
     "crates/tekes-ui-controls/tests/collection_live_input.rs": "57f318912758da06f666641f865c63e95afeba24e7390105cc5e3c6b11325937",
     "crates/tekes-ui-controls/tests/collection_navigation_live.rs": "dd358b0475fe719e1e5cecd95b936c1df66930298fb33872f9ddd4562db83e43",
     "crates/tekes-ui-controls/tests/command_result_states.rs": "edb45a43138cd0ea757ea6905455d318ab15deabf15433e8a78311f61638087d",
-    "crates/tekes-ui-controls/tests/component_registry_api.rs": "7a7f20ce829bd8b095799ed113e1d8c9c0c2e6a93f07c3315788bcedcec359c8",
+    "crates/tekes-ui-controls/tests/component_registry_api.rs": "aac35c509a62a1c1ba2f0448285677d1c8c197d98000a631131e4adc36850151",
     "crates/tekes-ui-controls/tests/composition.rs": "d7f454c61b0e1d174c2d88826d5b3b69d03f45fdaac7f62b7035317b9b7fdc88",
     "crates/tekes-ui-controls/tests/composition_adapters.rs": "da1d59d102a34b16a268e2325ad3beaa3880300daaa20d29e0780ca0299f84a6",
     "crates/tekes-ui-controls/tests/composition_button_alignment.rs": "6a0709cda24c1f039c13b09dcf6249a4b2689e758f4deb487b557d3a3839d8bd",
@@ -9022,33 +9023,33 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "a900d8d182161fdfbe15942cab0b4c2e7c76286273e8870268e89f7a15c3a429",
+    "design/gallery/component-coverage.json": "8af5440817350c2ab085c0416d9a328df3cb655afec3721ed142c81339fbfde8",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
-    "design/gallery/public-api-surface.json": "dbef472f94715c7c0b0befe64d936b7b862caa4dfed603b613af23dee503e06e",
+    "design/gallery/public-api-surface.json": "dd9ba7a97b7bebcc3d87543215ad6836a7ca1b6496c92e63e0e5f672e796683f",
     "design/gallery/workbench.json": "c33a17c34ca4816119400f90550c7b399cc020d77f717ecc28feb1bd233ac84c",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json": "2798ec7769747d0ceeef73efa7527ab79da5fc7cdfbe1818bb4bb53041b74f2c",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json": "07e807d924ea0109023be25224b48763b59eb81f98ac3552bac9750b0f3059cd",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json": "b50872467c94d2a6d626d95f787070a33bd9325a338c9284d7659f390337a8fd",
     "design/integration.json": "9addde2be2860ecf53ee957a2cd1800a2ae311f29c15c1255eb79b846bdd5f79",
-    "design/reviews/toolbar-split-public-20261022/probes-final/action.json": "fdf388b200418c5f231246d13dde436a9e7ffdb56dd392efd844d70c62d57b2f",
-    "design/reviews/toolbar-split-public-20261022/probes-final/collection-focus.json": "3eccf5321ca1094aba57f3ff85ccd08dc39d4d6915b5201413a3c6b7d4d623c4",
-    "design/reviews/toolbar-split-public-20261022/probes-final/combo-async.json": "706d238ba38672cc7917fcb2236b7a2db4aa951d3f4ce1ab92ace9619fc2e8ca",
-    "design/reviews/toolbar-split-public-20261022/probes-final/command-async.json": "20501840c19293b24211f30b66ab113aeacc997a32486507f5444f47c94e6ee2",
-    "design/reviews/toolbar-split-public-20261022/probes-final/content-status.json": "a3909fe16a429d3e603bfc322f44c0485001e38ca42395dc160c2ad95d2da847",
-    "design/reviews/toolbar-split-public-20261022/probes-final/field.json": "4612aacb166df168ebc71919afccf5e6d3dc3bdd5961b4cb5a7609ca58398fea",
-    "design/reviews/toolbar-split-public-20261022/probes-final/grid-layout.json": "0c5959fccb8c9888b871645600b9446336175859c8031cc6addf719613cef7a3",
-    "design/reviews/toolbar-split-public-20261022/probes-final/input.json": "eccb3f6ead49d7a97bec2fc9b5a5fc7f60c1a2ddc532d5201e08e4d58e21ab7c",
-    "design/reviews/toolbar-split-public-20261022/probes-final/layout-surface.json": "feb69fc0c3f86c5ebaed1268cbdbad99b454660d2a51a57ced4e96dedba308be",
-    "design/reviews/toolbar-split-public-20261022/probes-final/menu-content.json": "f4c539601cafcc313200fc4b8a339b4c6335fe9b9fbede0749bbee2ce8dc48db",
-    "design/reviews/toolbar-split-public-20261022/probes-final/number.json": "6020bf57febdcb82621554c63da431b09fd37af0674741e33a3e3367541a0c56",
-    "design/reviews/toolbar-split-public-20261022/probes-final/passive-feedback.json": "e60755a6e853569b44b03b41566eb78d019ada5b6bf90044d4c7d17ff795a20b",
-    "design/reviews/toolbar-split-public-20261022/probes-final/popover-content.json": "76f271a643963a9c17e19d7b5c19b086f3bd7aadc2b70594f3ca4f7ca13d8f5f",
-    "design/reviews/toolbar-split-public-20261022/probes-final/selection.json": "293af361310bae6438b08443de80ed00a7bf8fdcc3d2499a3e4c5b31a428b5c9",
-    "design/reviews/toolbar-split-public-20261022/probes-final/separator.json": "cd8d3cdab0509d0626c922111d7886bd503372e9f4eee35a07bc38ba3e699930",
-    "design/reviews/toolbar-split-public-20261022/probes-final/slider-composition.json": "d70b352cabd81d8f9db2f73276b89f97259dac2ba8efcb1232f43f38578aceee",
-    "design/reviews/toolbar-split-public-20261022/probes-final/toolbar.json": "edd0ad527f320c2c658d97fa5aa2b4627b922f5eeacf2f253c1177abac7dc226",
-    "design/reviews/toolbar-split-public-20261022/probes-final/tooltip.json": "a851c7271da970769e0b44cf698a2c072683bd2d2df1eef6bbb7456ce8be2612",
+    "design/reviews/number-field-release-20261022/probes-final/action.json": "8fe029c61d41ef2bc6164b8b5be19a8657c4d6cb9a68992e36421965d14a2fc3",
+    "design/reviews/number-field-release-20261022/probes-final/collection-focus.json": "2d778e06b8497f49abf347aeb833f00c42b22ddff3585d2f80a9b1580d40f6b5",
+    "design/reviews/number-field-release-20261022/probes-final/combo-async.json": "80c9eb3e66eb2c16bc7e20aca1386cdf18cb989ed2442d1a34e4f19c74ad9c8a",
+    "design/reviews/number-field-release-20261022/probes-final/command-async.json": "12ff249c2cd7565ad38aa033cd5a3e818fe3c6556b4b27a92fe20aa0fc538506",
+    "design/reviews/number-field-release-20261022/probes-final/content-status.json": "d8f46a13ebc5b3b5c9c9a219607f1cb69e912558f368ef8b88c8d9cd83024bc7",
+    "design/reviews/number-field-release-20261022/probes-final/field.json": "c08ec2a7cc309e1f84d85d3e6b562d55f8c602fac69a5a4694871e762539f398",
+    "design/reviews/number-field-release-20261022/probes-final/grid-layout.json": "206dafebf63ac32c546e7c19c7d2311c1865b1cd37d09e80ebec0d8e1f43b404",
+    "design/reviews/number-field-release-20261022/probes-final/input.json": "cdf80db4646199cb14aba3182912d1a50444edf5d7a7e93d8150eaa4bdc8e928",
+    "design/reviews/number-field-release-20261022/probes-final/layout-surface.json": "78e0c6330193e6d91017034d1ef3b84e4417470127f63eebd8d00b8fc4a5f8c7",
+    "design/reviews/number-field-release-20261022/probes-final/menu-content.json": "7ff462ba78e50e7c3e313ff900c830f05e9af8ff61de86ccf0546e3f5b37fb5b",
+    "design/reviews/number-field-release-20261022/probes-final/number.json": "1d74aea0ea6d404f08e3362f03d68dfb307fdee21ec10ad99da651b3f54c316b",
+    "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json": "ab4b146f755f9d11883b637a6b5c4ecfd49065d8c60997d538e63b342fb45ff4",
+    "design/reviews/number-field-release-20261022/probes-final/popover-content.json": "8e18facd553ca61188287174d27a655a3bc634f8bc07279db3adf966be20d83d",
+    "design/reviews/number-field-release-20261022/probes-final/selection.json": "531b23ab545324607ea82adbf7ad08c1e3b419678ea777f7ed948abf0c0f4fbb",
+    "design/reviews/number-field-release-20261022/probes-final/separator.json": "86306585c21fd88683712d2ac912951f877c1ba29521869b179c835207ecae03",
+    "design/reviews/number-field-release-20261022/probes-final/slider-composition.json": "116718a50b749ab03659e794698297991c35dd51a2494d869ad9b80d32e413c8",
+    "design/reviews/number-field-release-20261022/probes-final/toolbar.json": "db79c58d569dc82c7715999713a6dce62c4716bb55d9eb5239b354c2cbe6f043",
+    "design/reviews/number-field-release-20261022/probes-final/tooltip.json": "3dfec5cdc4a4d49815c84eaf933de25dd9b263ef238b5b0f71ee24d2c466ae59",
     "design/tokens.json": "6aabbcdad574a0fac10fcde2841063f74438048ca2f086aaebcb387d391d64ac",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",
     "scripts/generate-component-capabilities.py": "d348de240e96dc516459cb7c91403de5640f47a00e71f504554e46f0d07d7c31"
@@ -9084,13 +9085,13 @@
     "counts": {
       "categories": {
         "component": 80,
-        "component-adapter": 12,
+        "component-adapter": 13,
         "component-alias": 1,
-        "component-support": 70,
+        "component-support": 78,
         "composition": 33,
-        "shared-support": 40
+        "shared-support": 41
       },
-      "paths": 236
+      "paths": 246
     },
     "scope": "tekes_ui_controls public type paths, including aliases; functions/constants and other crates are outside this type audit",
     "source": "design/gallery/public-api-surface.json",
@@ -9989,6 +9990,16 @@
         "symbol": "TextSurface"
       },
       {
+        "api": "tekes_ui_controls::TextSurfaceAlignment",
+        "category": "shared-support",
+        "components": [],
+        "kind": "enum",
+        "reason": "Single-line placement in the shared TextSurface origin, reused by painting, caret, selection and hit testing.",
+        "routes": [],
+        "source": "crates/tekes-ui-controls/src/text_surface.rs",
+        "symbol": "TextSurfaceAlignment"
+      },
+      {
         "api": "tekes_ui_controls::TextSurfaceHost",
         "category": "component-support",
         "components": [
@@ -10589,6 +10600,20 @@
         "symbol": "ContentTheme"
       },
       {
+        "api": "tekes_ui_controls::composition::DecimalNumberFormat",
+        "category": "component-support",
+        "components": [
+          "tui.number-field"
+        ],
+        "kind": "struct",
+        "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle.",
+        "routes": [
+          "component-number-field"
+        ],
+        "source": "crates/tekes-ui-controls/src/composition/number.rs",
+        "symbol": "DecimalNumberFormat"
+      },
+      {
         "api": "tekes_ui_controls::composition::DialogContent",
         "category": "component-adapter",
         "components": [
@@ -10719,6 +10744,118 @@
         ],
         "source": "crates/tekes-ui-controls/src/composition/menu.rs",
         "symbol": "MenuValuesError"
+      },
+      {
+        "api": "tekes_ui_controls::composition::NumberCommitReason",
+        "category": "component-support",
+        "components": [
+          "tui.number-field"
+        ],
+        "kind": "enum",
+        "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle.",
+        "routes": [
+          "component-number-field"
+        ],
+        "source": "crates/tekes-ui-controls/src/composition/number.rs",
+        "symbol": "NumberCommitReason"
+      },
+      {
+        "api": "tekes_ui_controls::composition::NumberEditState",
+        "category": "component-support",
+        "components": [
+          "tui.number-field"
+        ],
+        "kind": "struct",
+        "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle.",
+        "routes": [
+          "component-number-field"
+        ],
+        "source": "crates/tekes-ui-controls/src/composition/number.rs",
+        "symbol": "NumberEditState"
+      },
+      {
+        "api": "tekes_ui_controls::composition::NumberFieldContent",
+        "category": "component-adapter",
+        "components": [
+          "tui.number-field"
+        ],
+        "kind": "struct",
+        "reason": "Editable numeric Content adapter over the existing number, text and button controls.",
+        "routes": [
+          "component-number-field"
+        ],
+        "source": "crates/tekes-ui-controls/src/composition/number.rs",
+        "symbol": "NumberFieldContent"
+      },
+      {
+        "api": "tekes_ui_controls::composition::NumberFormat",
+        "category": "component-support",
+        "components": [
+          "tui.number-field"
+        ],
+        "kind": "trait",
+        "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle.",
+        "routes": [
+          "component-number-field"
+        ],
+        "source": "crates/tekes-ui-controls/src/composition/number.rs",
+        "symbol": "NumberFormat"
+      },
+      {
+        "api": "tekes_ui_controls::composition::NumberParseError",
+        "category": "component-support",
+        "components": [
+          "tui.number-field"
+        ],
+        "kind": "enum",
+        "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle.",
+        "routes": [
+          "component-number-field"
+        ],
+        "source": "crates/tekes-ui-controls/src/composition/number.rs",
+        "symbol": "NumberParseError"
+      },
+      {
+        "api": "tekes_ui_controls::composition::NumberValidation",
+        "category": "component-support",
+        "components": [
+          "tui.number-field"
+        ],
+        "kind": "enum",
+        "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle.",
+        "routes": [
+          "component-number-field"
+        ],
+        "source": "crates/tekes-ui-controls/src/composition/number.rs",
+        "symbol": "NumberValidation"
+      },
+      {
+        "api": "tekes_ui_controls::composition::NumberValueChange",
+        "category": "component-support",
+        "components": [
+          "tui.number-field"
+        ],
+        "kind": "struct",
+        "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle.",
+        "routes": [
+          "component-number-field"
+        ],
+        "source": "crates/tekes-ui-controls/src/composition/number.rs",
+        "symbol": "NumberValueChange"
+      },
+      {
+        "api": "tekes_ui_controls::composition::NumberValueError",
+        "category": "component-support",
+        "components": [
+          "tui.number-field"
+        ],
+        "kind": "enum",
+        "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle.",
+        "routes": [
+          "component-number-field"
+        ],
+        "source": "crates/tekes-ui-controls/src/composition/number.rs",
+        "symbol": "NumberValueError"
       },
       {
         "api": "tekes_ui_controls::composition::PointerButton",
