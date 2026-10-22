@@ -6,7 +6,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tekes_ui_module_runtime::component::ToolbarAction;
-use tekes_ui_platform_macos::{Point, Size, TextInputState, WindowWake};
+use tekes_ui_platform_macos::{TextInputState, WindowWake};
 use tekes_ui_settings::{
     Draft, FileProvider, FormIntent, Schema, SettingsForm, SettingsSidebar, Snapshot, Submission,
 };
@@ -401,41 +401,7 @@ impl SettingsSurface {
         );
     }
     pub fn text_state(&self) -> Option<TextInputState> {
-        let surface = self.form.host.focused_text()?;
-        let caret = surface.caret();
-        let len = surface.input.len();
-        Some(TextInputState {
-            caret_index: surface.input.caret,
-            text: surface.input.text.clone(),
-            selection: surface.input.selection(),
-            marked: surface.input.marked.clone(),
-            read_only: surface.input.read_only,
-            caret_origin: Point {
-                x: f64::from(caret.min_x()),
-                y: f64::from(caret.min_y()),
-            },
-            caret_size: Size {
-                width: f64::from(caret.size.width),
-                height: f64::from(caret.size.height),
-            },
-            carets: (0..=len)
-                .map(|i| {
-                    let r = surface.caret_doc(i);
-                    let o = surface.origin();
-                    (
-                        i,
-                        Point {
-                            x: f64::from(o.x + r.min_x()),
-                            y: f64::from(o.y + r.min_y()),
-                        },
-                        Size {
-                            width: f64::from(r.size.width),
-                            height: f64::from(r.size.height),
-                        },
-                    )
-                })
-                .collect(),
-        })
+        crate::columns::text_state(&self.form.host)
     }
 }
 

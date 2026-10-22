@@ -1,0 +1,129 @@
+Scope: tests run in separate local development workspace with unpublished unified Button, not PR base.
+cargo +1.95.0 test --locked -p tekes-ui-app-host -p tekes-ui-settings
+   Compiling tekes-ui-text v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-text)
+   Compiling tekes-ui-render v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-render)
+   Compiling tekes-ui-controls v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-controls)
+   Compiling tekes-ui-settings v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-settings)
+   Compiling tekes-ui-module-runtime v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-module-runtime)
+   Compiling tekes-ui-app-host v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-app-host)
+    Finished `test` profile [unoptimized] target(s) in 4.13s
+     Running unittests src/lib.rs (target/review-cache/debug/deps/tekes_ui_app_host-de4ad92aee2dde0c)
+
+running 44 tests
+test navigation_window::tests::document_navigation_has_no_layout_parameters ... ok
+test columns::tests::local_toolbar_command_runs_once_and_rejects_missing_binding ... ok
+test columns::tests::fixed_column_assembly_validates_count_ids_and_process_registry ... ok
+test navigation_window::tests::navbar_commands_and_center_title_are_separate_standard_navigation_contributions ... ok
+test navigation_window::tests::editing_commands_keep_independent_group_and_original_action_owner ... ok
+test window::native_toolbar_alignment_tests::row_and_divider_remain_aligned_at_fractional_font_scales ... ok
+test sidebar_motion::tests::reverses_from_current_geometry_without_moving_other_side ... ok
+test sidebar_motion::tests::reduced_motion_finishes_and_inactive_time_does_not_advance ... ok
+test window::native_toolbar_alignment_tests::shared_row_uses_native_center_and_content_keeps_native_floor ... ok
+test window::toolbar_geometry_tests::animated_side_geometry_keeps_opposite_fixed_and_closes_without_gap ... ok
+test window::toolbar_geometry_tests::side_visibility_expands_center_and_keeps_unrelated_column_fixed ... ok
+test window::toolbar_geometry_tests::unified_height_changes_content_viewport_and_all_pointer_coordinates_together ... ok
+test window::two_column_settings_tests::leading_center_has_two_real_slots_and_visibility_keeps_right_edge_fixed ... ok
+test window::toolbar_geometry_tests::dormant_panel_has_no_process_and_drops_pre_mount_input ... ok
+test window::two_column_settings_tests::settings_layout_reuses_only_leading_visibility_toolbar_and_can_block_quit ... ok
+test window::window_columns::tests::mixed_columns_mount_without_launching_local_workers ... ok
+test window::settings_guard_tests::dirty_settings_blocks_app_quit_until_explicit_cancel_and_modes_are_window_policy ... ok
+test window::window_focus_tests::arrow_roving_and_same_ids_remain_with_original_module_owner ... ok
+test window::window_focus_tests::empty_module_toolbar_group_cannot_invalidate_other_native_owners ... ok
+test window::window_focus_tests::awaiting_current_geometry_preserves_owner_without_replaying_old_space ... ok
+test settings_undo::lossless_snapshot_tests::unknown_toml_datetime_and_nested_values_survive_history_transport ... ok
+test window::window_focus_tests::escape_cancels_original_pointer_arm_and_empty_window_tab_is_safe ... ok
+test navigation_window::tests::constrained_registered_commands_keep_shared_overflow_open_across_prepare ... ok
+test accessibility::numeric_projection_tests::formatted_numeric_editor_keeps_text_field_role_instead_of_becoming_slider ... ok
+test columns::tests::local_original_text_host_accepts_input_and_resize_cancel_without_ipc ... ok
+test window::window_focus_tests::height_only_viewport_change_revokes_arm_even_when_toolbar_frame_does_not_move ... ok
+test window::window_focus_tests::modified_system_tab_does_not_enter_or_restyle_a_toolbar_focus_scope ... ok
+test window::window_focus_tests::hidden_disabled_and_reordered_groups_reconcile_existing_focus ... ok
+test window::window_focus_tests::native_ax_focus_and_press_use_original_owner_and_single_command_drain ... ok
+test settings::autosave_restore_tests::undo_does_not_resurrect_retired_typing_but_keeps_later_edits ... ok
+test window::window_focus_tests::overlay_owns_tab_and_outside_pointer_before_visibility_controls ... ok
+test window::window_focus_tests::native_ax_toggle_is_once_and_hidden_inactive_or_old_mount_is_rejected ... ok
+test window::window_focus_tests::unavailable_toolbar_rejects_action_but_leaves_native_chrome_drag_available ... ok
+test window::window_focus_tests::tab_escape_and_deactivation_cancel_late_space_without_losing_next_activation ... ok
+test window::window_focus_tests::pointer_help_survives_unchanged_window_focus_and_stops_when_inactive ... ok
+test window::window_focus_tests::temporary_input_barrier_restores_logical_owner_but_never_old_arm_or_stolen_focus ... ok
+test window::window_focus_tests::typography_shortcuts_scale_real_text_and_toolbar_cancel_old_arms_and_restore ... ok
+test window::window_focus_tests::whole_window_tabs_traverse_original_hosts_and_reverse_without_preclick ... ok
+test window::window_settings::back_button_tests::back_keeps_dirty_save_barrier_and_hidden_button_cannot_activate ... ok
+test settings_undo::tests::unrelated_config_and_mismatched_receipts_fail_closed ... ok
+test window::window_settings::back_button_tests::exclusive_back_is_a_button_closes_settings_and_is_absent_in_independent ... ok
+test settings_undo::tests::saved_history_recovery_and_branching ... ok
+test window_toolbar::tests::original_toolbar_icons_keep_pixels_and_registration_during_panel_image_replacement ... ok
+test window_toolbar::tests::moving_original_toolbar_icon_keeps_same_pixels_at_fractional_split_positions ... ok
+
+test result: ok. 44 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.43s
+
+     Running tests/content_accessibility.rs (target/review-cache/debug/deps/content_accessibility-f61ff8632c617490)
+
+running 4 tests
+test inactive_ancestor_removes_original_mount_from_projection_and_dispatch ... ok
+test exact_original_mount_blocks_foreign_and_replaced_same_id_owners ... ok
+test native_toolbar_parts_share_original_mount_and_more_hierarchy ... ok
+test reorder_preserves_keys_original_focus_and_one_action_source ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/review-cache/debug/deps/tekes_ui_settings-e356bac6f67659e9)
+
+running 1 test
+test form::form_row::tests::shared_columns_do_not_overlap_and_multiline_labels_keep_controls_centered ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/number_field.rs (target/review-cache/debug/deps/number_field-6c6dc12c271fc055)
+
+running 2 tests
+test three_digit_percent_editor_has_intrinsic_stable_width ... ok
+test only_committed_numbers_reach_save_and_cancel_keeps_saved_value ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/settings.rs (target/review-cache/debug/deps/settings-93ec2fb165705604)
+
+running 15 tests
+test apphost_general_defaults_only_include_appearance_and_text_zoom ... ok
+test discard_before_late_receipt_never_resurrects_cancelled_editor ... ok
+test range_validation_preserves_invalid_draft_and_cancel_is_local ... ok
+test autosave_form_has_no_footer_and_preserves_original_text_mount_during_errors ... ok
+test descriptions_use_original_help_and_accessibility_without_extra_label_rows ... ok
+test group_item_field_identity_and_item_filter_do_not_depend_on_labels ... ok
+test shared_form_uses_real_controls_and_keeps_mounts_across_value_updates ... ok
+test successful_batch_cannot_erase_newer_typing_even_when_reverted_to_original ... ok
+test sidebar_uses_standard_list_paint_and_selection_routes_without_button_styles ... ok
+test resetting_a_menu_clears_prior_selection_semantics ... ok
+test schema_reports_unsupported_and_duplicate_or_overlapping_definitions ... ok
+test known_write_failure_is_not_unknown_and_does_not_replace_original ... ok
+test provider_rejects_second_writer_stale_commit_and_corruption_without_overwrite ... ok
+test lost_receipt_duplicate_precedes_revision_check_and_survives_provider_restart ... ok
+test nested_typed_round_trip_reset_unsets_and_preserves_unknown_values ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+   Doc-tests tekes_ui_app_host
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests tekes_ui_settings
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+cargo +1.95.0 clippy --locked --manifest-path examples/app-host-demo/Cargo.toml --all-features --all-targets -- -D warnings
+   Compiling tekes-ui-tokens v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-tokens)
+    Checking tekes-ui-scene v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-scene)
+    Checking tekes-ui-text v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-text)
+    Checking tekes-ui-render v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-render)
+    Checking tekes-ui-controls v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-controls)
+    Checking tekes-ui-module-runtime v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-module-runtime)
+    Checking tekes-ui-settings v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-settings)
+    Checking tekes-ui-app-host v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/crates/tekes-ui-app-host)
+    Checking tekes-ui-panel-module-demo v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/examples/panel-module-demo)
+    Checking tekes-ui-app-host-demo v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/examples/app-host-demo)
+    Finished `dev` profile [unoptimized] target(s) in 2.93s

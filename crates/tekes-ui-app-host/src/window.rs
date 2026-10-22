@@ -31,6 +31,8 @@ use tekes_ui_tokens::{Palette, Rgba, Theme};
 const MIN_COLUMN: f32 = 120.;
 #[path = "window_accessibility.rs"]
 mod window_accessibility;
+#[path = "window_columns.rs"]
+mod window_columns;
 #[path = "window_settings.rs"]
 mod window_settings;
 /// Same allocation used by the accepted public toolbar-split consumer:
@@ -182,6 +184,7 @@ struct Pending {
 }
 struct Panel {
     id: u32,
+    local: Option<crate::Container>,
     inbox: Arc<Inbox>,
     process: tekes_ui_module_runtime::ProcessControl,
     rx: Receiver<Result<Pending, String>>,
@@ -213,6 +216,7 @@ impl Panel {
         let (tx, rx) = mpsc::sync_channel(1);
         Self {
             id,
+            local: None,
             module_id,
             launch_tx: Some(tx),
             inbox,
@@ -242,6 +246,9 @@ impl Panel {
         }
     }
     fn start(&mut self, wake: WindowWake) {
+        if self.local.is_some() {
+            return;
+        }
         let Some(tx) = self.launch_tx.take() else {
             return;
         };
@@ -374,6 +381,16 @@ impl Panel {
         self.enqueue(InputKind::Command, 0., 0., Some(id))
     }
     fn enqueue(&mut self, kind: InputKind, x: f32, y: f32, command: Option<u64>) -> Result<()> {
+        if let Some(local) = &mut self.local {
+            if let Some(command) = command {
+                local.command(command)?;
+            }
+            if kind == InputKind::Cancel {
+                local.cancel();
+            }
+            self.seq += 1;
+            return Ok(());
+        }
         self.seq += 1;
         let r = Request {
             version: VERSION,
@@ -452,7 +469,8 @@ enum ToolbarTarget {
 }
 
 pub struct Host {
-    settings: Option<crate::settings::SettingsSurface>,
+    settings: Option<std::rc::Rc<std::cell::RefCell<crate::settings::SettingsSurface>>>,
+    settings_back: Option<ContentHost>,
     settings_options: Option<crate::settings::SettingsOptions>,
     settings_child: Option<tekes_ui_platform_macos::WindowHandle>,
     is_settings_window: bool,
@@ -475,6 +493,7 @@ pub struct Host {
     navigation_noticed: bool,
     navigation_title: Option<String>,
     module_ids: Vec<String>,
+    column_definitions: Option<Vec<crate::Column>>,
     panels: Vec<Panel>,
     renderer: Option<Renderer>,
     text: Text,
@@ -495,7 +514,7 @@ pub struct Host {
     step: u32,
 }
 impl Host {
-    fn new(
+    pub(crate) fn new(
         module_ids: Vec<String>,
         acceptance: bool,
         navigation_options: Option<NavigationOptions>,
@@ -503,6 +522,7 @@ impl Host {
         let n = module_ids.len();
         Self {
             settings: None,
+            settings_back: None,
             settings_options: None,
             settings_child: None,
             is_settings_window: false,
@@ -536,6 +556,7 @@ impl Host {
             navigation_noticed: false,
             navigation_title: None,
             module_ids,
+            column_definitions: None,
             panels: Vec::new(),
             renderer: None,
             text: Text::new(),
@@ -555,6 +576,35 @@ impl Host {
             acceptance,
             step: 0,
         }
+    }
+    pub(crate) fn from_columns(
+        columns: Vec<crate::Column>,
+        acceptance: bool,
+        navigation: Option<NavigationOptions>,
+    ) -> Self {
+        let ids = columns.iter().map(|c| c.id().to_owned()).collect();
+        let mut host = Self::new(ids, acceptance, navigation);
+        host.column_definitions = Some(columns);
+        host
+    }
+    pub(super) fn mount_columns(&mut self) -> bool {
+        if let Some(columns) = self.column_definitions.take() {
+            self.panels = columns
+                .into_iter()
+                .enumerate()
+                .map(|(i, c)| {
+                    let mut panel = Panel::new(i as u32, c.id().to_owned());
+                    if let crate::Column::Container(container) = c {
+                        panel.toolbar = container.toolbar.clone();
+                        panel.local = Some(container);
+                        panel.launch_tx = None;
+                    }
+                    panel
+                })
+                .collect();
+            return true;
+        }
+        false
     }
     fn init(&mut self, w: &Window) -> Result<()> {
         if self.renderer.is_some() {
@@ -581,6 +631,9 @@ impl Host {
         self.renderer = Some(renderer);
         if let Some(options) = self.navigation_options.take() {
             self.navigation = Some(WindowNavigation::new(options, w.wake_proxy())?);
+        }
+        if self.mount_columns() {
+            return Ok(());
         }
         self.panels = self
             .module_ids
@@ -860,6 +913,12 @@ impl Host {
             );
             let content = content_geometry(*bounds, p.toolbar_height);
             scene.push_quad(Quad::new(content, palette.color("surface-panel").unwrap()));
+            if let Some(local) = &mut p.local {
+                local.render(&mut scene, &mut self.text, content, content, palette)?;
+                p.frame_seq = p.seq;
+                p.frame_viewport = p.viewport;
+                p.frame_size = (content.size.width as u32, content.size.height as u32);
+            }
             if let Some(id) = p.image {
                 scene.push_clip(content);
                 scene.push_image(ImageQuad {
@@ -1081,20 +1140,22 @@ impl Host {
         renderer.resize(w.drawable_size(), w.scale() as f32);
         renderer.render(&scene, &mut self.text.atlas, Rgba::gray(1.))?;
         if let Some(settings) = &self.settings
-            && settings.open
+            && settings.borrow().open
         {
             w.set_accessibility_nodes(crate::accessibility::content_nodes(
-                &settings.form.host,
+                &settings.borrow().form.host,
                 w.is_active(),
             ));
             w.set_text_input_state(if w.is_active() {
-                settings.text_state()
+                settings.borrow().text_state()
             } else {
                 None
             });
         } else {
-            w.set_accessibility_nodes(self.toolbar_accessibility_nodes(w.is_active()));
-            w.set_text_input_state(None);
+            w.set_accessibility_nodes(
+                self.content_accessibility_nodes(w.is_active() && panel_input_open),
+            );
+            w.set_text_input_state(self.local_text_state(w.is_active() && panel_input_open));
         }
         if cfg!(debug_assertions)
             && (transitioning || w.is_animating())
@@ -1114,7 +1175,7 @@ impl Host {
                 .is_none_or(|(index, seq)| self.panels[index].frame_seq >= seq)
             && self.panels.iter().all(|p| {
                 p.bounds.size.width <= 0.
-                    || (p.image.is_some()
+                    || ((p.local.is_some() || p.image.is_some())
                         && p.frame_viewport == p.viewport
                         && p.frame_size
                             == (
@@ -1162,8 +1223,19 @@ impl Host {
             }
         }
         self.accept(w)?;
-        let animate =
-            (self.sidebar_motion.needs_frame() || self.text.animation_requested()) && w.is_active();
+        let local_needs_frame = self.panels.iter_mut().any(|p| {
+            let mut needs = false;
+            if p.bounds.size.width > 0.
+                && let Some(local) = &mut p.local
+            {
+                local.with_host(&mut |h| needs = h.needs_render());
+            }
+            needs
+        });
+        let animate = (local_needs_frame
+            || self.sidebar_motion.needs_frame()
+            || self.text.animation_requested())
+            && w.is_active();
         if !w.set_animating(animate) && animate {
             w.request_redraw();
         }
@@ -1176,9 +1248,7 @@ impl Host {
             ToolbarTarget::Visibility(i) => self.visibility_bars.get(i).map(|b| &b.host),
             ToolbarTarget::Navigation => self.navigation.as_ref().map(|n| &n.toolbar),
             ToolbarTarget::Editing => self.navigation.as_ref().map(|n| &n.external_toolbar),
-            ToolbarTarget::SettingsBack => {
-                self.settings.as_ref().and_then(|s| s.back_button.as_ref())
-            }
+            ToolbarTarget::SettingsBack => self.settings_back.as_ref(),
             ToolbarTarget::Panel(i) => self.panels.get(i).map(|p| &p.toolbar_host),
         }
     }
@@ -1187,9 +1257,7 @@ impl Host {
             ToolbarTarget::Visibility(i) => self.visibility_bars.get_mut(i).map(|b| &mut b.host),
             ToolbarTarget::Navigation => self.navigation.as_mut().map(|n| &mut n.toolbar),
             ToolbarTarget::Editing => self.navigation.as_mut().map(|n| &mut n.external_toolbar),
-            ToolbarTarget::SettingsBack => {
-                self.settings.as_mut().and_then(|s| s.back_button.as_mut())
-            }
+            ToolbarTarget::SettingsBack => self.settings_back.as_mut(),
             ToolbarTarget::Panel(i) => self.panels.get_mut(i).map(|p| &mut p.toolbar_host),
         }
     }
@@ -1204,11 +1272,7 @@ impl Host {
                 groups.push(ToolbarTarget::Editing);
             }
         }
-        if self
-            .settings
-            .as_ref()
-            .is_some_and(|s| s.back_button.is_some())
-        {
+        if self.settings_back.is_some() {
             groups.push(ToolbarTarget::SettingsBack);
         }
         groups.extend(
@@ -1227,10 +1291,7 @@ impl Host {
             ToolbarTarget::SettingsBack => {
                 self.leading_visible
                     && !self.sidebar_motion.needs_frame()
-                    && self
-                        .settings
-                        .as_ref()
-                        .is_some_and(|s| s.back_button.is_some())
+                    && self.settings_back.is_some()
             }
             ToolbarTarget::Visibility(i) => {
                 self.panels.len() == 3
@@ -1300,6 +1361,13 @@ impl Host {
     }
     fn set_toolbar_focus(&mut self, target: Option<ToolbarTarget>, visible: bool) {
         let target = target.filter(|target| self.toolbar_focus_targets().contains(target));
+        if target.is_some() {
+            for p in &mut self.panels {
+                if let Some(local) = &mut p.local {
+                    local.cancel();
+                }
+            }
+        }
         for group in self.toolbar_groups() {
             if let Some(host) = self.toolbar_host_mut(group) {
                 if Some(group) != target {
@@ -1363,13 +1431,7 @@ impl Host {
             ToolbarTarget::Navigation => self.navigation.as_mut().unwrap().event(event),
             ToolbarTarget::Editing => self.navigation.as_mut().unwrap().external_event(event),
             ToolbarTarget::SettingsBack => {
-                let back = self
-                    .settings
-                    .as_mut()
-                    .unwrap()
-                    .back_button
-                    .as_mut()
-                    .unwrap();
+                let back = self.settings_back.as_mut().unwrap();
                 back.event(event);
                 let bubbles = back.event_bubbled();
                 self.drain_settings_back();
@@ -1525,6 +1587,7 @@ impl Host {
             && side == 0
             && let Some(settings) = &mut self.settings
         {
+            let mut settings = settings.borrow_mut();
             settings.sidebar.host.cancel();
             settings.sidebar.host.focus(None, false);
         }
@@ -1576,11 +1639,10 @@ impl Host {
         if !self.acceptance {
             return Ok(());
         }
-        if self
-            .panels
-            .iter()
-            .any(|p| p.bounds.size.width > 0. && (p.pid.is_none() || p.image.is_none()))
-        {
+        if self.panels.iter().any(|p| {
+            p.bounds.size.width > 0.
+                && (p.local.is_none() && (p.pid.is_none() || p.image.is_none()))
+        }) {
             return Ok(());
         }
         // This exercises the same Host dispatch/render path but is deliberately
@@ -1633,7 +1695,13 @@ impl Host {
             w.request_redraw();
             return Ok(());
         }
-        if self.settings.as_ref().is_some_and(|s| s.open) && self.settings_event(&event, w)? {
+        if self.settings.as_ref().is_some_and(|s| s.borrow().open)
+            && self.settings_event(&event, w)?
+        {
+            return Ok(());
+        }
+        if !self.is_settings_window && self.local_content_event(&event, w)? {
+            w.request_redraw();
             return Ok(());
         }
         if let Event::Mouse(m) = &event
@@ -1700,9 +1768,18 @@ impl Host {
                         } else if let Some(i) = self.panels.iter().enumerate().position(|(i, v)| {
                             !self.sidebar_motion.needs_frame()
                                 && (self.leading_visible || i != self.order[0])
-                                && (self.trailing_visible || i != self.order[2])
+                                && (self.panels.len() < 3
+                                    || self.trailing_visible
+                                    || i != self.order[2])
                                 && content_geometry(v.bounds, v.toolbar_height).contains(p)
                         }) {
+                            for (other, panel) in self.panels.iter_mut().enumerate() {
+                                if other != i
+                                    && let Some(local) = &mut panel.local
+                                {
+                                    local.cancel();
+                                }
+                            }
                             self.focused = i;
                             self.set_toolbar_focus(None, false);
                             if self
@@ -1719,6 +1796,9 @@ impl Host {
                                     )
                             {
                                 self.pressed = Some(i);
+                                if let Some(local) = &mut self.panels[i].local {
+                                    local.event(&content_event, &mut self.text)?;
+                                }
                                 let b = self.panels[i].bounds;
                                 let toolbar_height = self.panels[i].toolbar_height;
                                 self.panels[i].request(
@@ -1751,6 +1831,9 @@ impl Host {
                             self.dispatch_toolbar(target, &content_event)?;
                         }
                         if let Some(i) = self.pressed.take() {
+                            if let Some(local) = &mut self.panels[i].local {
+                                local.event(&content_event, &mut self.text)?;
+                            }
                             let b = self.panels[i].bounds;
                             let toolbar_height = self.panels[i].toolbar_height;
                             self.panels[i].request(
@@ -1793,6 +1876,9 @@ impl Host {
                                     );
                                 }
                             } else if let Some(i) = self.pressed {
+                                if let Some(local) = &mut self.panels[i].local {
+                                    local.event(&content_event, &mut self.text)?;
+                                }
                                 let b = self.panels[i].bounds;
                                 let toolbar_height = self.panels[i].toolbar_height;
                                 self.panels[i].request(
@@ -1810,8 +1896,20 @@ impl Host {
                         if let Some(nav) = &mut self.navigation {
                             nav.event(&content_event)?;
                         }
+                        let local_input_open = !self.sidebar_motion.needs_frame()
+                            && self.open_toolbar().is_none()
+                            && self
+                                .navigation
+                                .as_ref()
+                                .is_none_or(|n| n.host.input_open && !n.busy);
                         for panel in &mut self.panels {
                             panel.toolbar_event(&content_event)?;
+                            if panel.bounds.size.width > 0.
+                                && local_input_open
+                                && let Some(local) = &mut panel.local
+                            {
+                                local.event(&content_event, &mut self.text)?;
+                            }
                         }
                     }
                     _ => {}
@@ -1857,6 +1955,9 @@ impl Host {
                 }
                 self.toolbar_pressed = None;
                 for panel in &mut self.panels {
+                    if let Some(local) = &mut panel.local {
+                        local.cancel();
+                    }
                     panel.toolbar_event(&ContentEvent::Cancel)?;
                 }
                 self.outer_view.set_window_active(false, &mut self.outer);
@@ -1868,7 +1969,7 @@ impl Host {
                 if self.is_settings_window {
                     w.set_accessibility_nodes(self.settings_accessibility_nodes(false));
                 } else {
-                    w.set_accessibility_nodes(self.toolbar_accessibility_nodes(false));
+                    w.set_accessibility_nodes(self.content_accessibility_nodes(false));
                 }
             }
             Event::CloseRequested => w.close(),
@@ -1879,9 +1980,10 @@ impl Host {
 }
 impl WindowHandler for Host {
     fn allows_app_quit(&self) -> bool {
-        self.settings
-            .as_ref()
-            .is_none_or(|s| !s.draft.dirty() && !s.blocked())
+        self.settings.as_ref().is_none_or(|s| {
+            let s = s.borrow();
+            !s.draft.dirty() && !s.blocked()
+        })
     }
     fn handle(&mut self, event: Event, w: &mut Window) {
         if let Err(e) = self.event(event, w) {
@@ -1892,15 +1994,20 @@ impl WindowHandler for Host {
 }
 pub fn run(
     module_ids: Vec<String>,
+    columns: Option<Vec<crate::Column>>,
     acceptance: bool,
     navigation: Option<NavigationOptions>,
     settings: Option<crate::settings::SettingsOptions>,
 ) -> Result<()> {
     ensure!(
-        (1..=3).contains(&module_ids.len()),
+        (1..=3).contains(&columns.as_ref().map_or(module_ids.len(), Vec::len)),
         "expected one, two or three preselected modules"
     );
-    let mut host = Host::new(module_ids, acceptance, navigation);
+    let mut host = if let Some(columns) = columns {
+        Host::from_columns(columns, acceptance, navigation)
+    } else {
+        Host::new(module_ids, acceptance, navigation)
+    };
     let has_settings = settings.is_some();
     host.settings_provider = settings
         .as_ref()
@@ -2824,21 +2931,23 @@ mod settings_guard_tests {
             SettingsDisplayMode::Independent
         );
         let provider = FileProvider::open(path.clone(), options.schema.namespace.clone()).unwrap();
-        let surface = SettingsSurface::new(options, provider, Snapshot::default()).unwrap();
+        let mut surface = SettingsSurface::new(options, provider, Snapshot::default()).unwrap();
         let first = surface.entry("workspace/general").unwrap();
         let repeat = surface.entry("workspace/general").unwrap();
         assert_ne!(first.id, repeat.id);
         assert_eq!(first.params, repeat.params);
         let mut host = Host::new(vec![], false, None);
         host.is_settings_window = true;
-        host.settings = Some(surface);
+        host.settings_back = surface.back_button.take();
+        host.settings = Some(std::rc::Rc::new(std::cell::RefCell::new(surface)));
         assert!(host.allows_app_quit());
         {
-            let s = host.settings.as_mut().unwrap();
+            let mut state = host.settings.as_ref().unwrap().borrow_mut();
+            let s = &mut *state;
             s.draft.edit(&s.schema.settings[0], "Changed".into());
         }
         assert!(!host.allows_app_quit());
-        host.settings.as_mut().unwrap().draft.cancel();
+        host.settings.as_ref().unwrap().borrow_mut().draft.cancel();
         assert!(host.allows_app_quit());
         drop(host);
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();

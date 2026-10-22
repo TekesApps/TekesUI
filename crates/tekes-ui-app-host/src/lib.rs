@@ -25,6 +25,11 @@ mod window_toolbar;
 pub use navigation_window::NavigationOptions;
 pub use tekes_ui_module_runtime::ModuleDefinition;
 
+#[cfg(target_os = "macos")]
+mod columns;
+#[cfg(target_os = "macos")]
+pub use columns::{Column, Container, ContainerContent, ProcessContainer};
+
 /// Fixed build-time assembly, not a dynamic plugin registry.
 pub struct AppProfile {
     pub modules: Vec<ModuleDefinition>,
@@ -54,6 +59,7 @@ fn validate(profile: &AppProfile) -> anyhow::Result<()> {
 #[cfg(target_os = "macos")]
 pub struct AppWindow {
     profile: AppProfile,
+    columns: Option<Vec<Column>>,
     navigation: Option<NavigationOptions>,
     settings: Option<SettingsWindow>,
 }
@@ -62,8 +68,39 @@ impl AppWindow {
     pub fn new(profile: AppProfile) -> Self {
         Self {
             profile,
+            columns: None,
             navigation: None,
             settings: None,
+        }
+    }
+    pub fn from_columns(columns: Vec<Column>) -> anyhow::Result<Self> {
+        columns::validate(&columns)?;
+        let modules = columns
+            .iter()
+            .filter_map(|c| match c {
+                Column::ProcessContainer(p) => Some(p.definition),
+                _ => None,
+            })
+            .collect();
+        Ok(Self {
+            profile: AppProfile { modules },
+            columns: Some(columns),
+            navigation: None,
+            settings: None,
+        })
+    }
+    pub(crate) fn into_host(self, acceptance: bool) -> window::Host {
+        match self.columns {
+            Some(columns) => window::Host::from_columns(columns, acceptance, self.navigation),
+            None => window::Host::new(
+                self.profile
+                    .modules
+                    .iter()
+                    .map(|m| m.id.to_owned())
+                    .collect(),
+                acceptance,
+                self.navigation,
+            ),
         }
     }
     pub fn navigation(mut self, navigation: NavigationOptions) -> Self {
@@ -75,7 +112,7 @@ impl AppWindow {
         self
     }
     pub fn run(self) -> anyhow::Result<()> {
-        run_internal(self.profile, self.navigation, self.settings)
+        run_columns(self.profile, self.columns, self.navigation, self.settings)
     }
 }
 
@@ -107,7 +144,20 @@ fn run_internal(
     navigation: Option<NavigationOptions>,
     settings: Option<SettingsOptions>,
 ) -> anyhow::Result<()> {
-    validate(&profile)?;
+    run_columns(profile, None, navigation, settings)
+}
+#[cfg(target_os = "macos")]
+fn run_columns(
+    profile: AppProfile,
+    columns: Option<Vec<Column>>,
+    navigation: Option<NavigationOptions>,
+    settings: Option<SettingsOptions>,
+) -> anyhow::Result<()> {
+    if let Some(columns) = &columns {
+        columns::validate(columns)?;
+    } else {
+        validate(&profile)?;
+    }
     let args: Vec<String> = std::env::args().collect();
     if tekes_ui_module_runtime::run_component_worker_from_args(
         &[
@@ -133,9 +183,9 @@ fn run_internal(
         .map(|m| m.id.to_owned())
         .collect::<Vec<_>>();
     match args.get(1).map(String::as_str) {
-        None => window::run(ids, false, navigation, settings),
+        None => window::run(ids, columns, false, navigation, settings),
         Some("--window-acceptance") if args.len() == 2 => {
-            window::run(ids, true, navigation, settings)
+            window::run(ids, columns, true, navigation, settings)
         }
         _ => anyhow::bail!("fixed-profile app accepts no runtime module discovery or selection"),
     }

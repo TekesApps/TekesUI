@@ -946,6 +946,7 @@ dependencies = [
  "serde_json",
  "tekes-ui-app-host",
  "tekes-ui-app-protocol",
+ "tekes-ui-controls",
  "tekes-ui-panel-module-demo",
  "tekes-ui-render",
  "tekes-ui-scene",

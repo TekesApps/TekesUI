@@ -74,3 +74,10 @@ Back 呈现为 TekesUI 统一 `Button::new((image, "Back"))`：工具库 `tekes-
 Current consumers follow docs/unified-button.md: Back is an ordinary image/text Button and form/retry actions use the same Button. ToolbarControl retains input/overflow ownership. Consumer-specific BackIcon and Stack arrangement are removed.
 
 The new shared Button API is unpublished and is not present in this PR's base controls implementation or the old controls-number-field-20261022 tag. Explicit local path dependencies select the developing API when available; they are not a published pin. Consumer adaptation is reviewable here, but this PR must wait for the shared UI API before it can build independently and be merged. The UI implementation and other WIP are deliberately outside this consumer update. No merge or tag is requested.
+
+
+### Shared column assembly (PR #52)
+
+`AppWindow::from_columns(Vec<Column>)` is the shared one-/two-/three-column entry point. Ordinary Container retains original ContentHost ownership in the window process; ProcessContainer retains the fixed compiled module factory and existing IPC/shared-texture path. IDs are validated before mounting, and only process columns enter the worker registry. Settings mounts its original sidebar and form hosts as two ordinary Containers through this same API. Its save/navigation/Undo business bindings retain their existing owners.
+
+All macOS sample profiles explicitly use this entry point. The mixed sample demonstrates two process columns plus a local editable trailing column; the original all-process three-column profile remains available. Native input, focus/cancel, text input state and accessibility routing are included for local content. These additions do not publish the underlying unified Button WIP or resolve that separately recorded upstream dependency.

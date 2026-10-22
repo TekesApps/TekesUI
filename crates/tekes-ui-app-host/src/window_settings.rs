@@ -1,15 +1,51 @@
 use super::*;
 use tekes_ui_settings::FormIntent;
+struct SettingsColumn {
+    state: std::rc::Rc<std::cell::RefCell<crate::settings::SettingsSurface>>,
+    sidebar: bool,
+}
+impl crate::ContainerContent for SettingsColumn {
+    fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
+        let mut state = self.state.borrow_mut();
+        visit(if self.sidebar {
+            &mut state.sidebar.host
+        } else {
+            &mut state.form.host
+        });
+    }
+}
+fn settings_columns(
+    surface: &std::rc::Rc<std::cell::RefCell<crate::settings::SettingsSurface>>,
+) -> Vec<crate::Column> {
+    vec![
+        crate::Column::from(crate::Container::from_source(
+            "settings-leading",
+            SettingsColumn {
+                state: surface.clone(),
+                sidebar: true,
+            },
+        )),
+        crate::Column::from(crate::Container::from_source(
+            "settings-center",
+            SettingsColumn {
+                state: surface.clone(),
+                sidebar: false,
+            },
+        )),
+    ]
+}
 impl Host {
     pub(super) fn drain_settings_back(&mut self) {
-        let settings = self.settings.as_mut().unwrap();
-        let activated = settings
-            .back_button
+        if self
+            .settings_back
             .as_mut()
-            .is_some_and(|back| !back.drain_actions().is_empty());
-        if activated {
-            // Same autosave/validation/persistence barrier as window Close.
-            settings.close_requested();
+            .is_some_and(|h| !h.drain_actions().is_empty())
+        {
+            self.settings
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
+                .close_requested();
         }
     }
 
@@ -66,13 +102,18 @@ impl Host {
             snapshot,
         )?;
         surface.show();
-        let navigation = surface.navigation_options();
-        let mut host = Host::new(vec![], false, Some(navigation));
+        let back = surface.back_button.take();
+        let surface = std::rc::Rc::new(std::cell::RefCell::new(surface));
+        let columns = settings_columns(&surface);
+        let app = crate::AppWindow::from_columns(columns)?
+            .navigation(surface.borrow().navigation_options());
+        let mut host = app.into_host(false);
         host.is_settings_window = true;
         host.leading_visible = true;
         host.trailing_visible = false;
         host.sidebar_motion = crate::sidebar_motion::SidebarMotion::new(true, false);
         host.outer.set_ratio(0.25);
+        host.settings_back = back;
         host.settings = Some(surface);
         let config = WindowConfig {
             title: "Settings".into(),
@@ -100,33 +141,22 @@ impl Host {
         Ok(())
     }
     pub(super) fn settings_accessibility_nodes(
-        &self,
+        &mut self,
         active: bool,
     ) -> Vec<tekes_ui_platform_macos::AccessibilityNode> {
         let mut nodes = self.toolbar_accessibility_nodes(active);
-        let toolbar_nodes = nodes.len();
-        let settings = self.settings.as_ref().unwrap();
-        let content_active = active && self.open_toolbar().is_none();
-        if self.leading_visible && !self.sidebar_motion.needs_frame() {
-            nodes.extend(crate::accessibility::content_nodes(
-                &settings.sidebar.host,
-                content_active,
-            ));
-        }
-        nodes.extend(crate::accessibility::content_nodes(
-            &settings.form.host,
-            content_active,
-        ));
-        for node in nodes.iter_mut().skip(toolbar_nodes) {
-            node.enabled &= content_active;
+        let active = active && self.open_toolbar().is_none();
+        for (i, panel) in self.panels.iter_mut().enumerate() {
+            if i == 0 && (!self.leading_visible || self.sidebar_motion.needs_frame()) {
+                continue;
+            }
+            if let Some(local) = &mut panel.local {
+                local.with_host(&mut |h| {
+                    nodes.extend(crate::accessibility::content_nodes(h, active))
+                });
+            }
         }
         nodes
-            .into_iter()
-            .map(|mut n| {
-                n.enabled &= active;
-                n
-            })
-            .collect()
     }
     pub(super) fn draw_settings(&mut self, w: &Window) -> Result<()> {
         let progress = self.sidebar_motion.sample(
@@ -135,7 +165,9 @@ impl Host {
             w.is_active(),
         )?;
         let transitioning = self.sidebar_motion.needs_frame();
-        let settings = self.settings.as_mut().unwrap();
+        let shared_settings = self.settings.as_ref().unwrap().clone();
+        let mut state = shared_settings.borrow_mut();
+        let settings = &mut *state;
         settings.poll(w.wake_proxy())?;
         if !settings.open {
             w.close();
@@ -279,13 +311,20 @@ impl Host {
             width,
             (form_content.size.height - top_gap - pad).max(80.),
         );
-        settings
-            .form
-            .render(&mut scene, &mut self.text, form_frame, palette)?;
+        let _ = settings;
+        drop(state);
+        self.panels[1].bounds = frames[1];
+        self.panels[1].local.as_mut().unwrap().render(
+            &mut scene,
+            &mut self.text,
+            form_frame,
+            form_frame,
+            palette,
+        )?;
         if frames[0].size.width > 32. {
             let left = content_geometry(frames[0], top);
             let mut list_top = left.min_y() + top_gap;
-            if let Some(back) = &mut settings.back_button {
+            if let Some(back) = &mut self.settings_back {
                 crate::settings::settings_back::prepare(
                     back,
                     renderer,
@@ -314,9 +353,14 @@ impl Host {
                 (left.size.width - 32.).max(1.),
                 (left.max_y() - 24. - list_top).max(1.),
             );
-            settings
-                .sidebar
-                .render(&mut scene, &mut self.text, rect, palette)?;
+            self.panels[0].bounds = frames[0];
+            self.panels[0].local.as_mut().unwrap().render(
+                &mut scene,
+                &mut self.text,
+                rect,
+                rect,
+                palette,
+            )?;
         }
         let row = Rect::new(whole.min_x(), row_y, whole.size.width, paint);
         let mut toolbar_controls = navigation.toolbar.pointer_regions();
@@ -354,12 +398,13 @@ impl Host {
                 .map_err(|_| anyhow::anyhow!("Settings GPU completion queue full"))?;
             self.navigation_ack = Some(rx);
         }
-        let input_open = navigation.host.input_open && !navigation.busy && !settings.restoring();
+        let input_open =
+            navigation.host.input_open && !navigation.busy && !shared_settings.borrow().restoring();
         let _ = navigation;
         let active = w.is_active();
         w.set_accessibility_nodes(self.settings_accessibility_nodes(active && input_open));
         w.set_text_input_state(if active && input_open {
-            self.settings.as_ref().unwrap().text_state()
+            self.settings.as_ref().unwrap().borrow().text_state()
         } else {
             None
         });
@@ -386,7 +431,7 @@ impl Host {
         );
         let animate = (self.sidebar_motion.needs_frame()
             || self.text.animation_requested()
-            || self.settings.as_ref().unwrap().needs_frame())
+            || self.settings.as_ref().unwrap().borrow().needs_frame())
             && active;
         if !w.set_animating(animate) && animate {
             w.request_redraw();
@@ -403,7 +448,9 @@ impl Host {
                 tekes_ui_platform_macos::AccessibilityAction::Focus
                     | tekes_ui_platform_macos::AccessibilityAction::Press
             ) {
-                let settings = self.settings.as_mut().unwrap();
+                let shared_settings = self.settings.as_ref().unwrap().clone();
+                let mut state = shared_settings.borrow_mut();
+                let settings = &mut *state;
                 settings.form.host.focus(None, false);
                 settings.sidebar.host.focus(None, false);
             }
@@ -454,9 +501,12 @@ impl Host {
                 if let Some(target) = self.toolbar_target_at(p) {
                     self.toolbar_pressed = Some(target);
                     self.set_toolbar_focus(Some(target), false);
-                    let settings = self.settings.as_mut().unwrap();
+                    let shared_settings = self.settings.as_ref().unwrap().clone();
+                    let mut state = shared_settings.borrow_mut();
+                    let settings = &mut *state;
                     settings.form.host.focus(None, false);
                     settings.sidebar.host.focus(None, false);
+                    drop(state);
                     if self.dispatch_toolbar(target, &input)? {
                         self.cancel_toolbar_input();
                         if click_count == 2 {
@@ -525,7 +575,10 @@ impl Host {
         Ok(handled)
     }
     pub(super) fn settings_event(&mut self, event: &Event, w: &mut Window) -> Result<bool> {
-        if self.settings.as_ref().is_some_and(|s| s.restoring())
+        if self
+            .settings
+            .as_ref()
+            .is_some_and(|s| s.borrow().restoring())
             && matches!(
                 event,
                 Event::Mouse(_)
@@ -567,7 +620,9 @@ impl Host {
         ) {
             self.set_toolbar_focus(None, false);
         }
-        let settings = self.settings.as_mut().unwrap();
+        let shared_settings = self.settings.as_ref().unwrap().clone();
+        let mut state = shared_settings.borrow_mut();
+        let settings = &mut *state;
         if let Event::Accessibility { target, action } = event
             && matches!(
                 action,
@@ -596,6 +651,7 @@ impl Host {
         }
         let mut intents = vec![];
         let mut routed = None;
+        let mut sidebar_routed = None;
         match event {
             Event::Mouse(m) if w.is_active() => {
                 let p = Point::new(m.position.x as f32, m.position.y as f32);
@@ -610,14 +666,7 @@ impl Host {
                     }
                 }
                 if self.settings_pointer == Some(true) {
-                    if let Some(item) = settings.sidebar.event(&toolbar_pointer(*m)) {
-                        let entry = settings.entry(&item)?;
-                        self.navigation.as_mut().unwrap().send(
-                            crate::navigation::Command::Navigate(crate::navigation::Action::Push(
-                                entry,
-                            )),
-                        )?;
-                    }
+                    sidebar_routed = Some(toolbar_pointer(*m));
                 } else {
                     routed = Some(toolbar_pointer(*m));
                 }
@@ -640,7 +689,7 @@ impl Host {
                         r.contains(Point::new(s.position.x as f32, s.position.y as f32))
                     })
                 {
-                    settings.sidebar.event(&scroll);
+                    sidebar_routed = Some(scroll);
                 } else {
                     routed = Some(scroll);
                 }
@@ -651,17 +700,7 @@ impl Host {
                     && !key.modifiers.command
                     && key.key_code != 53 =>
             {
-                if let Some(item) = settings
-                    .sidebar
-                    .event(&ContentEvent::KeyInput(toolbar_key(key.clone())))
-                {
-                    let entry = settings.entry(&item)?;
-                    self.navigation.as_mut().unwrap().send(
-                        crate::navigation::Command::Navigate(crate::navigation::Action::Push(
-                            entry,
-                        )),
-                    )?;
-                }
+                sidebar_routed = Some(ContentEvent::KeyInput(toolbar_key(key.clone())));
             }
             Event::Key(key) if w.is_active() => {
                 let composing = settings
@@ -854,17 +893,45 @@ impl Host {
             // No input or toolbar AX action may leak behind the Settings surface.
             _ => return Ok(true),
         }
+        if let Some(event) = sidebar_routed {
+            let _ = settings;
+            drop(state);
+            self.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .event(&event, &mut self.text)?;
+            state = shared_settings.borrow_mut();
+            let settings = &mut *state;
+            if let Some(item) = settings.sidebar.take_selection() {
+                let entry = settings.entry(&item)?;
+                self.navigation
+                    .as_mut()
+                    .unwrap()
+                    .send(crate::navigation::Command::Navigate(
+                        crate::navigation::Action::Push(entry),
+                    ))?;
+            }
+        }
         if let Some(event) = routed {
-            intents.extend(settings.form.event(
-                &event,
-                &mut self.text,
-                &settings.view_schema,
-                &mut settings.draft,
-            )?);
+            drop(state);
+            self.panels[1]
+                .local
+                .as_mut()
+                .unwrap()
+                .event(&event, &mut self.text)?;
+            state = shared_settings.borrow_mut();
+            let settings = &mut *state;
+            intents.extend(
+                settings
+                    .form
+                    .collect(&settings.view_schema, &mut settings.draft),
+            );
             if settings.form.host.focused().is_some() {
                 settings.sidebar.host.focus(None, false);
             }
         }
+        let settings = &mut *state;
         settings.edited();
         settings.intents(intents, w.wake_proxy())?;
         if !settings.open {
@@ -911,8 +978,28 @@ mod back_button_tests {
         host.is_settings_window = true;
         host.leading_visible = true;
         host.sidebar_motion = crate::sidebar_motion::SidebarMotion::new(true, false);
+        host.settings_back = surface.back_button.take();
+        let surface = std::rc::Rc::new(std::cell::RefCell::new(surface));
+        let columns = settings_columns(&surface);
+        assert!(
+            columns
+                .iter()
+                .all(|c| matches!(c, crate::Column::Container(_)))
+        );
+        let mut common = crate::AppWindow::from_columns(columns)
+            .unwrap()
+            .into_host(false);
+        assert!(common.mount_columns());
+        assert_eq!(common.panels.len(), 2);
+        assert!(
+            common
+                .panels
+                .iter()
+                .all(|p| p.local.is_some() && p.launch_tx.is_none())
+        );
+        host.panels = std::mem::take(&mut common.panels);
         host.settings = Some(surface);
-        if let Some(back) = host.settings.as_mut().unwrap().back_button.as_mut() {
+        if let Some(back) = host.settings_back.as_mut() {
             back.render(
                 &mut Scene::new(),
                 &mut host.text,
@@ -946,9 +1033,9 @@ mod back_button_tests {
             host.toolbar_accessibility_action(true, node.key, AccessibilityAction::Press)
                 .unwrap()
         );
-        assert!(!host.settings.as_ref().unwrap().open);
+        assert!(!host.settings.as_ref().unwrap().borrow().open);
         let independent = settings_host(SettingsDisplayMode::Independent);
-        assert!(independent.settings.as_ref().unwrap().back_button.is_none());
+        assert!(independent.settings_back.is_none());
         assert!(
             !independent
                 .toolbar_groups()
@@ -971,17 +1058,19 @@ mod back_button_tests {
                 .toolbar_accessibility_action(true, node.key, AccessibilityAction::Press)
                 .unwrap()
         );
-        assert!(host.settings.as_ref().unwrap().open);
+        assert!(host.settings.as_ref().unwrap().borrow().open);
         host.leading_visible = true;
-        let settings = host.settings.as_mut().unwrap();
+        let mut state = host.settings.as_ref().unwrap().borrow_mut();
+        let settings = &mut *state;
         settings
             .draft
             .edit(&settings.schema.settings[0], "changed".into());
+        drop(state);
         assert!(
             host.toolbar_accessibility_action(true, node.key, AccessibilityAction::Press)
                 .unwrap()
         );
-        assert!(host.settings.as_ref().unwrap().open);
-        assert!(host.settings.as_ref().unwrap().draft.dirty());
+        assert!(host.settings.as_ref().unwrap().borrow().open);
+        assert!(host.settings.as_ref().unwrap().borrow().draft.dirty());
     }
 }

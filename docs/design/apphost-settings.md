@@ -34,7 +34,7 @@ Agent Settings 和其业务呈现状态仍由 ClientKit 所有，Host 不复制�
 
 ### 1.1 AppWindow 与 SettingsWindow
 
-AppHost 对外提供共享 `AppWindow` 装配入口（两列 leading/center 或三列 leading/center/trailing；单列保留为技术验证 profile）。`SettingsWindow` 是基于同一窗口 shell 的两列消费者：不装配 trailing，复用 toolbar、导航 ProcessComponent、leading 显隐/动画及 splitter。Settings 的表单与目录使用 Host 内本地 TekesUI 内容，首版不为每个设置页启动 View 子进程；业务 Provider 仍可按 §7 的服务契约扩展。
+AppHost 对外提供共享 `AppWindow` 装配入口（两列 leading/center 或三列 leading/center/trailing；单列保留为技术验证 profile）。`SettingsWindow` 使用公共 `AppWindow::from_columns` 的两个普通 `Container`（原始目录与表单 ContentHost）装配，是同一 AppWindow 的两列消费者：不装配 trailing，复用 toolbar、导航 ProcessComponent、leading 显隐/动画及 splitter。Settings 的表单与目录使用 Host 内本地 TekesUI 内容，首版不为每个设置页启动 View 子进程；业务 Provider 仍可按 §7 的服务契约扩展。
 
 消费者以 AppWindow 装配 Main，以 SettingsWindow 提供 TOML、Provider/action 绑定及展示策略；AppHost 不包含产品页面或业务动作分支。展示策略不是 TOML 字段类型：
 

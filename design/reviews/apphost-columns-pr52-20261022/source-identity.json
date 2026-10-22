@@ -1,0 +1,38 @@
+{
+  "crates/tekes-ui-app-host/src/lib.rs": {
+    "sha256": "6632e8c8a4fae88bb3aa7b5cd5efd0b7f0aa9a63899af719988b57a20a562516",
+    "matches_development_source": true
+  },
+  "crates/tekes-ui-app-host/src/window.rs": {
+    "sha256": "f0e912d332f9a8e6d5b753eae0ef4647bfdfd0780524566ff48baf9815f4583f",
+    "matches_development_source": true
+  },
+  "crates/tekes-ui-app-host/src/settings.rs": {
+    "sha256": "708483676579b4ec9aede28b32bf682e08ea503a652624d36fa770aa0e1e2824",
+    "matches_development_source": true
+  },
+  "crates/tekes-ui-app-host/src/window_settings.rs": {
+    "sha256": "5f48fcd0721d544cec9a9bb630293e89ec68227f3f028614f66af65ce2081c1c",
+    "matches_development_source": true
+  },
+  "crates/tekes-ui-app-host/src/columns.rs": {
+    "sha256": "1c3ecd3aeafd0841ff1655f9d345c2f873300989f2aacec6e7f41e8ed7060d06",
+    "matches_development_source": true
+  },
+  "crates/tekes-ui-app-host/src/window_columns.rs": {
+    "sha256": "7c2fdf9517a87e2ff9219a66309bfc133e632a8af645443caba3a67b434453b0",
+    "matches_development_source": true
+  },
+  "crates/tekes-ui-app-host/src/settings_back.rs": {
+    "sha256": "c5a0e45ce82207525d5d96c2b0e2af012597fed82b821551ae675cab7a1d6978",
+    "matches_development_source": true
+  },
+  "crates/tekes-ui-settings/src/form.rs": {
+    "sha256": "78ac1a5d90332ce54679696339c8c064981961cee0469caea1c0ede81d38f3aa",
+    "matches_development_source": true
+  },
+  "examples/app-host-demo/src/main.rs": {
+    "sha256": "c92d7fd0109f0c6ebc040e1c23c925a83c5663e84f1b4beef598b7d64825bf35",
+    "matches_development_source": true
+  }
+}

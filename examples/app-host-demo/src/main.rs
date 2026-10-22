@@ -21,6 +21,11 @@ fn main() -> anyhow::Result<()> {
         return verify::run(&modules.iter().map(|m| m.id.to_owned()).collect::<Vec<_>>());
     }
     #[cfg(target_os = "macos")]
+    let mut columns: Vec<tekes_ui_app_host::Column> = modules
+        .into_iter()
+        .map(|module| tekes_ui_app_host::ProcessContainer::new(module).into())
+        .collect();
+    #[cfg(target_os = "macos")]
     if cfg!(feature = "three-panels") {
         let entries = (0..3)
             .map(|i| {
@@ -35,7 +40,21 @@ fn main() -> anyhow::Result<()> {
         // Keep the older panel-layout demonstration history untouched.
         let directory = std::path::PathBuf::from(std::env::var("HOME")?)
             .join("Library/Application Support/TekesUI AppHost Prototype/navigation-documents");
-        return tekes_ui_app_host::AppWindow::new(tekes_ui_app_host::AppProfile { modules })
+        if cfg!(feature = "mixed-columns") {
+            use tekes_ui_controls::composition::{ComponentId, Content, TextFieldContent};
+            columns[2] = tekes_ui_app_host::Container::new(
+                "local-notes",
+                Content::new(
+                    ComponentId(1),
+                    TextFieldContent::new(
+                        "本地备注",
+                        "普通 Container：在这里输入文字，验证本地输入。",
+                    ),
+                ),
+            )?
+            .into();
+        }
+        return tekes_ui_app_host::AppWindow::from_columns(columns)?
             .navigation(tekes_ui_app_host::NavigationOptions {
                 directory,
                 history_id: "three-panel-documents".into(),
@@ -54,13 +73,13 @@ fn main() -> anyhow::Result<()> {
     }
     #[cfg(target_os = "macos")]
     {
-        tekes_ui_app_host::AppWindow::new(tekes_ui_app_host::AppProfile { modules })
+        tekes_ui_app_host::AppWindow::from_columns(columns)?
             .settings(settings()?)
             .run()
     }
     #[cfg(not(target_os = "macos"))]
     {
-        tekes_ui_app_host::run(tekes_ui_app_host::AppProfile { modules })
+        anyhow::bail!("AppHost sample currently requires macOS")
     }
 }
 

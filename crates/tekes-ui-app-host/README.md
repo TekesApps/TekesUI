@@ -1,6 +1,6 @@
 # TekesUI native AppHost prototype
 
-共享 Host library，负责 AppKit 统一标题栏、TekesUI toolbar/Panel/splitter、每列独立模块进程、输入路由和共享纹理合成。Host 不依赖业务模块，不创建业务 View。
+共享 Host library，负责 AppKit 统一标题栏、TekesUI toolbar/Panel/splitter、普通列与进程列混用、输入路由和共享纹理合成。进程列的业务工厂仅在 worker 中运行，普通列保留窗口进程中的原始 TekesUI ContentHost。
 
 - `tekes-ui-app-protocol`：纯数据 IPC 消息与 toolbar 描述。
 - `tekes-ui-module-runtime`：原生 `PanelModule` trait、固定模块工厂、子进程渲染及 transport。
@@ -15,6 +15,24 @@
 let modules = vec![ModuleDefinition { id: "my-view", create: my_view_factory }];
 tekes_ui_app_host::run(AppProfile { modules })?;
 ```
+
+## 公共列接口
+
+```rust,ignore
+use tekes_ui_app_host::{AppWindow, Container, ProcessContainer};
+
+AppWindow::from_columns(vec![
+    Container::new("sidebar", sidebar_content)?.into(),
+    ProcessContainer::new(document_module).into(),
+    Container::new("inspector", inspector_content)?.into(),
+])?
+.settings(settings)
+.run()?;
+```
+
+按 leading / center / trailing 顺序装配一至三列，每列可独立选择运行模式；ID 必须唯一。`Container::from_source` 可借用已有 ContentHost，`on_action` 处理原始动作，`toolbar` / `on_command` 声明 toolbar 与命令绑定。`ProcessContainer` 保留固定工厂、进程、IPC 和共享纹理通路。旧 `AppWindow::new(AppProfile { modules })` 兼容全进程列。
+
+Settings 也是 `AppWindow::from_columns` 的消费者，装配两个普通 Container，目录/表单保留原始 ContentHost；保存、导航及独立 Undo/Redo 服务保持原职责。Main 仅为 sample。`examples/app-host-demo` 的 `mixed-columns` feature 演示两进程列加一本地可编辑备注列，不改变默认 `three-panels` 的全进程配置。
 
 ## 开发验证
 
