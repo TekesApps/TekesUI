@@ -3825,8 +3825,15 @@ impl Workbench {
             }
             "master" => {
                 let lw = (w * 0.32).min(240.);
-                let h = (c.size.height - 190.).clamp(100., 600.);
-                let list = Rect::new(x, body_y, lw - 12., h);
+                let bottom = c.max_y().min(s.preview.max_y());
+                let bottom = s
+                    .button_clip
+                    .map_or(bottom, |clip| bottom.min(clip.max_y()));
+                let list_y = body_y.min(bottom);
+                let h = (c.size.height - 190.)
+                    .clamp(100., 600.)
+                    .min((bottom - list_y).max(0.));
+                let list = Rect::new(x, list_y, lw - 12., h);
                 s.list_frame = list;
                 s.list_scroll.set_scroll_policy(
                     tekes_ui_controls::ScrollPolicy::Disabled,

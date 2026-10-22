@@ -47,6 +47,24 @@ impl Content {
             .semantic_frame(self.frame)
             .intersection(&self.clip)
     }
+    fn help_details(&self, part: Option<usize>) -> Option<(&str, u64, Rect)> {
+        if let Some(part) = part {
+            let (text, revision) = self.component.semantic_part_help(part)?;
+            let frame = self
+                .component
+                .semantic_parts()
+                .into_iter()
+                .find(|p| p.index == part)?
+                .frame
+                .intersection(&self.clip)?;
+            if text.trim().is_empty() || frame.is_empty() {
+                return None;
+            }
+            Some((text, revision, frame))
+        } else {
+            Some((self.help_text()?, self.help_revision, self.help_frame()?))
+        }
+    }
     fn help_at(&self, p: Point) -> Option<&Content> {
         if !self.component.active() {
             return None;
@@ -60,6 +78,10 @@ impl Content {
         }
         (self.visible().is_some_and(|f| f.contains(p))
             && (self.help.is_some()
+                || self.component.semantic_parts().iter().any(|part| {
+                    part.frame.contains(p)
+                        && self.component.semantic_part_help(part.index).is_some()
+                })
                 || self.component.interactive()
                 || self.component.semantics().disabled))
             .then_some(self)
@@ -69,6 +91,7 @@ impl Content {
 struct Request {
     id: ComponentId,
     mount: u64,
+    part: Option<usize>,
     revision: u64,
     keyboard: bool,
     anchor: Option<Rect>,
@@ -77,6 +100,7 @@ impl Request {
     fn same_owner(self, other: Self) -> bool {
         self.id == other.id
             && self.mount == other.mount
+            && self.part == other.part
             && self.revision == other.revision
             && self.keyboard == other.keyboard
     }
@@ -130,19 +154,43 @@ impl HelpState {
     }
 }
 impl ContentHost {
-    fn help_request(&self, id: ComponentId, keyboard: bool) -> Option<Request> {
+    fn help_request(
+        &self,
+        id: ComponentId,
+        keyboard: bool,
+        point: Option<Point>,
+    ) -> Option<Request> {
         let n = self.scope().find_active(id)?;
-        n.help_text()?;
+        let part = n
+            .component
+            .semantic_parts()
+            .into_iter()
+            .rev()
+            .find(|part| {
+                (if keyboard {
+                    part.focused
+                } else {
+                    point.is_some_and(|p| part.frame.contains(p))
+                }) && n.component.semantic_part_help(part.index).is_some()
+            })
+            .map(|p| p.index);
+        self.help_request_for(id, part, keyboard)
+    }
+    fn help_request_for(
+        &self,
+        id: ComponentId,
+        part: Option<usize>,
+        keyboard: bool,
+    ) -> Option<Request> {
+        let n = self.scope().find_active(id)?;
+        let (_, revision, frame) = n.help_details(part)?;
         Some(Request {
             id,
             mount: n.mount,
-            revision: n.help_revision,
+            part,
+            revision,
             keyboard,
-            anchor: if keyboard {
-                None
-            } else {
-                Some(n.help_frame()?)
-            },
+            anchor: if keyboard { None } else { Some(frame) },
         })
     }
     fn help_available(&self) -> bool {
@@ -152,7 +200,7 @@ impl ContentHost {
     }
     pub(super) fn help_focus(&mut self, id: Option<ComponentId>, visible: bool) {
         if visible && self.help_available() {
-            let r = id.and_then(|id| self.help_request(id, true));
+            let r = id.and_then(|id| self.help_request(id, true, None));
             self.help.arm(r);
         } else {
             self.help.suppress();
@@ -164,11 +212,17 @@ impl ContentHost {
         }
         let r = self.help.request?;
         let n = self.scope().find_active(r.id)?;
+        let (_, revision, _) = n.help_details(r.part)?;
         (n.mount == r.mount
-            && n.help_revision == r.revision
-            && n.help.is_some()
-            && n.help_frame().is_some()
-            && (!r.keyboard || self.focused == Some(r.id)))
+            && revision == r.revision
+            && (!r.keyboard
+                || (self.focused == Some(r.id)
+                    && r.part.is_none_or(|key| {
+                        n.component
+                            .semantic_parts()
+                            .iter()
+                            .any(|p| p.index == key && p.focused)
+                    }))))
         .then_some(n)
     }
     /// Currently painted help from the same original owner; full source text,
@@ -179,12 +233,13 @@ impl ContentHost {
             return None;
         }
         let n = self.help_owner()?;
-        if self.help.request?.anchor != n.help_frame() {
+        let (text, _, frame) = n.help_details(self.help.request?.part)?;
+        if self.help.request?.anchor != Some(frame) {
             return None;
         }
         let layout = self.help.view.layout();
         layout.visible?;
-        Some((n.id, n.help_text()?, layout))
+        Some((n.id, text, layout))
     }
     pub(super) fn help_event(&mut self, event: &ContentEvent) -> bool {
         let routing = event.routing_event();
@@ -202,7 +257,7 @@ impl ContentHost {
                     self.scope()
                         .help_at(*p)
                         .filter(|n| n.help_frame().is_some_and(|frame| frame.contains(*p)))
-                        .and_then(|n| self.help_request(n.id, false))
+                        .and_then(|n| self.help_request(n.id, false, Some(*p)))
                 } else {
                     None
                 };
@@ -239,7 +294,7 @@ impl ContentHost {
         &mut self,
         scene: &mut Scene,
         text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
+        _frame: Rect,
         clip: Rect,
         palette: Palette,
     ) {
@@ -249,15 +304,15 @@ impl ContentHost {
         // A new declaration starts a new dwell; rendering alone cannot rearm
         // cancelled owners or changed geometry.
         let n = self.scope().find_active(r.id);
-        let Some(n) = n.filter(|n| n.mount == r.mount && n.help.is_some()) else {
+        let Some(n) = n.filter(|n| n.mount == r.mount && n.help_details(r.part).is_some()) else {
             self.help.clear();
             return;
         };
-        if n.help_revision != r.revision {
+        if n.help_details(r.part).unwrap().1 != r.revision {
             // Updating explanation is not a new hover/focus request. Keep an
             // explicit click/Escape/geometry dismissal across metadata changes.
             let blocked = self.help.blocked;
-            let new = self.help_request(r.id, r.keyboard);
+            let new = self.help_request_for(r.id, r.part, r.keyboard);
             self.help.arm(new);
             if blocked {
                 self.help.suppress();
@@ -267,10 +322,10 @@ impl ContentHost {
             self.help.suppress();
             return;
         };
-        let anchor = n.help_frame().unwrap();
+        let (help, _, anchor) = n.help_details(r.part).unwrap();
         let model = Tooltip {
             visible: true,
-            text: n.help_text().unwrap().to_owned(),
+            text: help.to_owned(),
         };
         if self
             .help
@@ -303,10 +358,13 @@ impl ContentHost {
             text.request_animation_frame();
             return;
         }
-        let Some(viewport) = frame.intersection(&clip) else {
+        // The caller's clip is the overlay viewport, not the anchor's layout
+        // row. A toolbar may be one row inside a whole-window clip.
+        let viewport = clip;
+        if viewport.is_empty() {
             self.help.suppress();
             return;
-        };
+        }
         let role = proposal::TextRole::UiCaption;
         self.help.label.reset();
         let mut painted = false;

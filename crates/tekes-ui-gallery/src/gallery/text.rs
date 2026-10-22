@@ -1181,7 +1181,7 @@ mod gold7_focus_raster {
                     button.state.error = true;
                     button.state.focused = focused;
                     button.state.focus_visible = focused;
-                    text.render_button(
+                    let actual = text.render_button(
                         &mut scene,
                         &mut button,
                         "Clear filter",
@@ -1193,7 +1193,7 @@ mod gold7_focus_raster {
                         proposal::TextRole::UiBody,
                         ButtonTextAlign::default(),
                     );
-                    renderer
+                    let pixels = renderer
                         .render_to_rgba8(
                             &scene,
                             text.atlas_mut(),
@@ -1201,10 +1201,12 @@ mod gold7_focus_raster {
                             scale as f32,
                             background,
                         )
-                        .unwrap()
+                        .unwrap();
+                    (pixels, actual.frame)
                 };
-                let normal = render(false, &mut text, &mut renderer);
-                let focused = render(true, &mut text, &mut renderer);
+                let (normal, actual) = render(false, &mut text, &mut renderer);
+                let (focused, focused_frame) = render(true, &mut text, &mut renderer);
+                assert_eq!(actual, focused_frame, "focus must not change layout");
                 let pixel = |image: &[u8], x: u32, y: u32| {
                     let index = ((y * scale * 180 * scale + x * scale) * 4) as usize;
                     image[index..index + 4].to_vec()
@@ -1222,13 +1224,20 @@ mod gold7_focus_raster {
                 // The outer rounded ring may enter the bounding-box corners
                 // outside the Button's actual rounded shape. Compare only the
                 // base shape and its one-pixel antialias fringe, not that cutout.
-                let radius = proposal::metric("radius", "c-button-md-radius").unwrap();
-                for y in 20 * scale..60 * scale {
-                    for x in 20 * scale..160 * scale {
+                let radius =
+                    proposal::metric("radius", "c-button-md-radius").unwrap() * text.type_scale();
+                for y in
+                    (actual.min_y() * scale as f32) as u32..(actual.max_y() * scale as f32) as u32
+                {
+                    for x in (actual.min_x() * scale as f32) as u32
+                        ..(actual.max_x() * scale as f32) as u32
+                    {
                         let px = (x as f32 + 0.5) / scale as f32;
                         let py = (y as f32 + 0.5) / scale as f32;
-                        let qx = (px - 90.).abs() - (70. - radius);
-                        let qy = (py - 40.).abs() - (20. - radius);
+                        let qx =
+                            (px - actual.center().x).abs() - (actual.size.width * 0.5 - radius);
+                        let qy =
+                            (py - actual.center().y).abs() - (actual.size.height * 0.5 - radius);
                         let distance = qx.max(0.).hypot(qy.max(0.)) + qx.max(qy).min(0.) - radius;
                         if distance <= 0.5 / scale as f32 {
                             let start = ((y * 180 * scale + x) * 4) as usize;

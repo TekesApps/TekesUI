@@ -17,6 +17,7 @@ fn main() {
 fn main() {
     use std::{cell::Cell, rc::Rc};
     use tekes_ui_composition_consumer::scenarios::{self, ids};
+    use tekes_ui_controls::composition::Component;
     use tekes_ui_controls::{
         ButtonTextAlign, ButtonTextRenderer, ControlMotionContext, TextSurfaceHost,
         TextSurfaceTextRenderer, composition::ContentHost,
@@ -168,6 +169,9 @@ fn main() {
             let y = rect.min_y() + (rect.size.height - p.height as f32) * 0.5;
             self.push(s, &p, Point::new(x.round(), y.round()), color, rect)
         }
+        fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+            role.style().size * self.type_scale
+        }
         fn backing_scale(&self) -> f32 {
             self.scale
         }
@@ -201,6 +205,7 @@ fn main() {
         layout_error: Option<String>,
         layout_baseline: Option<tekes_ui_controls::TextEditBaseline>,
         plain_value: Option<tekes_ui_controls::DraftRevision>,
+        split_icon: Option<(u32, tekes_ui_tokens::Rgba, tekes_ui_scene::ImageId)>,
         gpu: Option<Renderer>,
         text: TextBackend,
         scene: Scene,
@@ -208,6 +213,7 @@ fn main() {
         mode: String,
         invoker: tekes_ui_controls::composition::ComponentId,
         dialog: tekes_ui_controls::composition::ComponentId,
+        toolbar_commands: Vec<u64>,
         invoker_activations: usize,
         cancel_activations: usize,
         save_activations: usize,
@@ -266,7 +272,7 @@ fn main() {
                     .unwrap_or_default(),
             }
         }
-        fn publish(&self, w: &Window) {
+        fn publish(&self, w: &Window, rendered: bool) {
             // A failed frame must not publish its partially arranged text/AX tree.
             let valid = self.layout_error.is_none();
             let state = valid
@@ -370,8 +376,9 @@ fn main() {
                 std::fs::create_dir_all(&directory).expect("component evidence directory");
                 let screen = w.screen_info();
                 let mut snapshot = serde_json::json!({
-                    "mode": self.mode, "window_active": w.is_active(),
-                    "screen": screen.map(|s| serde_json::json!({"name":s.name,"builtin":s.builtin,"scale":s.scale})),
+                    "pid": std::process::id(), "mode": self.mode, "window_active": w.is_active(),
+                    "window_size": {"width":w.size().width,"height":w.size().height},
+                    "screen": screen.map(|s| serde_json::json!({"name":s.name,"builtin":s.builtin,"scale":s.scale,"visible_frame":{"x":s.visible_frame.origin.x,"y":s.visible_frame.origin.y,"width":s.visible_frame.size.width,"height":s.visible_frame.size.height}})),
                     "nodes": nodes.iter().map(|n| serde_json::json!({
                         "component":n.key.component,"part":n.key.part,"role":format!("{:?}",n.role),
                         "label":n.label,"value":n.value,"required":n.required,"enabled":n.enabled,"focused":n.focused,"selected":n.selected,"expanded":n.expanded,
@@ -379,11 +386,88 @@ fn main() {
                         "frame":{"x":n.frame.origin.x,"y":n.frame.origin.y,"width":n.frame.size.width,"height":n.frame.size.height}
                     })).collect::<Vec<_>>()
                 });
-                if self.mode == "menu-tree" {
+                if self.mode == "toolbar" {
+                    snapshot["toolbar_typography"] = serde_json::json!({"title_size":proposal::TextRole::UiBody.style().size*self.text.type_scale,"toolbar_frame":self.tree.get(tekes_ui_composition_consumer::toolbar_semantics::TOOLBAR).unwrap().frame().size.height,"native_center":w.titlebar_control_center_y(),"safe_area":w.titlebar_safe_area(),"native_overlap":w.titlebar_content_height()});
+                    snapshot["toolbar_commands"] = serde_json::json!(self.toolbar_commands);
+                    snapshot["toolbar_action_count"] = serde_json::json!(self.menu_actions.len());
+                    snapshot["draft"] = serde_json::json!(
+                        self.tree
+                            .get(tekes_ui_composition_consumer::toolbar_semantics::EDITOR)
+                            .unwrap()
+                            .component::<tekes_ui_controls::composition::TextFieldContent>()
+                            .unwrap()
+                            .surface
+                            .input
+                            .text
+                    );
+                }
+                if matches!(
+                    self.mode.as_str(),
+                    "menu-tree" | "toolbar" | "toolbar-groups" | "toolbar-split"
+                ) {
                     snapshot["menu_actions"]=serde_json::json!(self.menu_actions.iter().map(|record|{
                         let selection=record.payload.as_ref().map(|tekes_ui_controls::composition::ContentActionPayload::MenuSelection(value)|serde_json::json!({"index":value.index(),"label":value.label(),"model_revision":value.model_revision(),"value_path":value.value_path()}));
                         serde_json::json!({"target":record.action.target.0,"source":format!("{:?}",record.action.source),"kind":format!("{:?}",record.action.kind),"mount":record.mount,"selection":selection})
                     }).collect::<Vec<_>>());
+                }
+                if self.mode == "toolbar-groups" {
+                    use tekes_ui_composition_consumer::toolbar_groups::{
+                        ACTION_GROUP, BAR, NAV, STATUS_GROUP,
+                    };
+                    snapshot["toolbar_typography"] = serde_json::json!({
+                        "title_size": proposal::TextRole::UiBody.style().size * self.text.type_scale,
+                        "toolbar_frame": self.tree.get(BAR).unwrap().frame().size.height,
+                        "native_center": w.titlebar_control_center_y(),
+                        "safe_area": w.titlebar_safe_area(),
+                        "native_overlap": w.titlebar_content_height(),
+                        "groups": ([NAV, STATUS_GROUP, ACTION_GROUP].map(|id| {
+                            let frame = self.tree.get(id).unwrap().frame();
+                            serde_json::json!({"id": id.0, "x":frame.min_x(), "y":frame.min_y(), "width":frame.size.width, "height":frame.size.height})
+                        }))
+                    });
+                }
+                if self.mode == "toolbar-split" {
+                    use tekes_ui_composition_consumer::split_toolbar::{
+                        LEFT_BAR, NAV, RIGHT_BAR, ROOT, SplitToolbar,
+                    };
+                    let f = self
+                        .tree
+                        .get(ROOT)
+                        .unwrap()
+                        .component::<SplitToolbar>()
+                        .unwrap();
+                    let rect = |r: Rect| [r.min_x(), r.min_y(), r.size.width, r.size.height];
+                    snapshot["split_toolbar"] = serde_json::json!({
+                        "title_size": proposal::TextRole::UiBody.style().size * self.text.type_scale,
+                        "row":rect(f.row), "native_center": w.titlebar_control_center_y(),
+                        "divider":rect(f.view.layout().divider.frame()), "ratio": f.model.ratio(),
+                        "held": f.held, "minimum":f.model.min_pane,
+                        "marker": self.scene.primitives().iter().find_map(|p| {
+                            if let tekes_ui_scene::Primitive::Quad(q) = p
+                                && q.rect.size.width <= 1. && q.corner_radii.top_left > 0.
+                                && q.rect.min_y() >= f.row.min_y() && q.rect.max_y() <= f.row.max_y()
+                            { return Some(rect(q.rect)); }
+                            None
+                        }),
+                        "image": self.scene.primitives().iter().find_map(|p| {
+                            if let tekes_ui_scene::Primitive::Image(i) = p { Some(rect(i.rect)) } else { None }
+                        }),
+                        "image_identity": self.split_icon.map(|(_, _, id)| format!("{id:?}")),
+                        "left_bar":rect(self.tree.get(LEFT_BAR).unwrap().frame()),
+                        "right_bar":rect(self.tree.get(RIGHT_BAR).unwrap().frame()),
+                        "navigation": self.tree.get(NAV).unwrap().component::<tekes_ui_controls::ToolbarControl>().unwrap()
+                            .pointer_regions(self.tree.get(NAV).unwrap().frame(), self.tree.get(NAV).unwrap().visible().unwrap_or_default()).into_iter().map(rect).collect::<Vec<_>>()
+                    });
+                    snapshot["rendered"] = serde_json::json!(rendered);
+                    if rendered {
+                        use std::io::Write;
+                        let mut journal = std::fs::OpenOptions::new()
+                            .create(true)
+                            .append(true)
+                            .open(directory.join("split-journal.jsonl"))
+                            .unwrap();
+                        writeln!(journal, "{}", snapshot).unwrap();
+                    }
                 }
                 snapshot["text_input"] = valid.then(|| self.tree.focused_text()).flatten().map_or(
                     serde_json::Value::Null,
@@ -521,6 +605,19 @@ fn main() {
             w.set_accessibility_nodes(nodes);
         }
         fn redraw(&mut self, w: &Window) {
+            if self.mode == "toolbar" {
+                self.tree
+                    .get_mut(tekes_ui_composition_consumer::toolbar_semantics::TOOLBAR)
+                    .unwrap()
+                    .component_mut::<tekes_ui_controls::ToolbarControl>()
+                    .unwrap()
+                    .set_viewport(Rect::new(
+                        0.,
+                        0.,
+                        w.size().width as f32,
+                        w.size().height as f32,
+                    ));
+            }
             if let Some(reading) = &self.reading {
                 let width = if reading.narrow { 480. } else { 720. };
                 if reading.narrow != self.reading_width {
@@ -534,8 +631,107 @@ fn main() {
             let stream_pending = self.reading.as_mut().is_some_and(|reading| {
                 reading.tick(&mut self.tree, self.text.started.elapsed(), w.is_active())
             });
+            if self.mode == "toolbar-split" {
+                use tekes_ui_composition_consumer::split_toolbar::{NAV, ROOT, SplitToolbar};
+                let row = tekes_ui_controls::ToolbarControl::window().row_height(&mut self.text);
+                let center = w.set_toolbar_row_height(f64::from(row));
+                let leading = w.titlebar_safe_area().1;
+                let fixture = self
+                    .tree
+                    .get_mut(ROOT)
+                    .unwrap()
+                    .component_mut::<SplitToolbar>()
+                    .unwrap();
+                fixture.native_center = center.map(|y| y as f32);
+                fixture.native_leading = leading as f32;
+                fixture
+                    .view
+                    .set_window_active(w.is_active(), &mut fixture.model);
+                let side = (proposal::metric("size", "size-icon-standard").unwrap()
+                    * self.text.type_scale
+                    * w.scale() as f32)
+                    .ceil()
+                    .max(1.) as u32;
+                let ink = self.palette.color("primary-text").unwrap();
+                if self
+                    .split_icon
+                    .is_none_or(|(cached, color, _)| cached != side || color != ink)
+                {
+                    let glyph = tekes_ui_icons::Glyph::ALL
+                        .iter()
+                        .find(|g| g.name == "tekes-back")
+                        .unwrap();
+                    let channel = |v: f32| (v.clamp(0., 1.) * 255.).round() as u8;
+                    let options = resvg::usvg::Options {
+                        style_sheet: Some(format!(
+                            "svg {{ color: rgb({}, {}, {}); }}",
+                            channel(ink.r),
+                            channel(ink.g),
+                            channel(ink.b)
+                        )),
+                        ..Default::default()
+                    };
+                    let tree = resvg::usvg::Tree::from_str(glyph.svg, &options).unwrap();
+                    let mut pixels = resvg::tiny_skia::Pixmap::new(side, side).unwrap();
+                    let scale = side as f32 / tree.size().width();
+                    resvg::render(
+                        &tree,
+                        resvg::tiny_skia::Transform::from_scale(scale, scale),
+                        &mut pixels.as_mut(),
+                    );
+                    let renderer = self.gpu.as_mut().unwrap();
+                    let image = renderer.register_image(pixels.data(), side, side).unwrap();
+                    self.tree
+                        .get_mut(NAV)
+                        .unwrap()
+                        .component_mut::<tekes_ui_controls::ToolbarControl>()
+                        .unwrap()
+                        .set_icon_actions(vec![tekes_ui_controls::ToolbarIconAction {
+                            id: 1,
+                            image,
+                            label: "Right container navigation".into(),
+                            enabled: true,
+                        }]);
+                    if let Some((_, _, old)) = self.split_icon.replace((side, ink, image)) {
+                        renderer.unregister_image(old);
+                    }
+                }
+            }
             let clip = Rect::new(0., 0., w.size().width as f32, w.size().height as f32);
             let mut frame = clip.inset(tekes_ui_tokens::Spacing::Regular.value());
+            if matches!(
+                self.mode.as_str(),
+                "toolbar" | "toolbar-groups" | "toolbar-split"
+            ) {
+                let leading = w.titlebar_safe_area().1 as f32;
+                frame = Rect::new(
+                    leading,
+                    0.,
+                    (clip.size.width - leading).max(0.),
+                    clip.size.height,
+                );
+            }
+            if self.mode == "toolbar-groups" {
+                frame.size.height = self
+                    .tree
+                    .get_mut(tekes_ui_composition_consumer::toolbar_groups::BAR)
+                    .unwrap()
+                    .measure(&mut self.text, frame.size)
+                    .size
+                    .height;
+            }
+            if matches!(
+                self.mode.as_str(),
+                "toolbar" | "toolbar-groups" | "toolbar-split"
+            ) {
+                let row = tekes_ui_controls::ToolbarControl::window().row_height(&mut self.text);
+                if let Some(center) = w.set_toolbar_row_height(f64::from(row)) {
+                    frame.origin.y = center as f32 - row * 0.5;
+                }
+            }
+            if self.mode == "toolbar-split" {
+                frame = clip;
+            }
             if self.mode == "layout" && self.layout_collapsed {
                 frame.size.width = 0.;
             }
@@ -555,7 +751,33 @@ fn main() {
             } else {
                 result.expect("valid consumer scene");
             }
-            self.publish(w);
+            if self.mode == "toolbar-split" {
+                use tekes_ui_composition_consumer::split_toolbar::{ROOT, SplitToolbar};
+                let fixture = self
+                    .tree
+                    .get(ROOT)
+                    .unwrap()
+                    .component::<SplitToolbar>()
+                    .unwrap();
+                w.set_cursor_regions(
+                    fixture
+                        .view
+                        .resize_regions(&fixture.model)
+                        .into_iter()
+                        .map(|(rect, _)| tekes_ui_platform_macos::CursorRegion {
+                            origin: tekes_ui_platform_macos::Point {
+                                x: rect.min_x() as f64,
+                                y: rect.min_y() as f64,
+                            },
+                            size: Size {
+                                width: rect.size.width as f64,
+                                height: rect.size.height as f64,
+                            },
+                            icon: tekes_ui_platform_macos::CursorIcon::ResizeHorizontal,
+                        })
+                        .collect(),
+                );
+            }
             if std::env::var_os("TEKES_COMPOSITION_TRACE_PRESENCE").is_some()
                 && self.mode == "dialog"
             {
@@ -582,6 +804,7 @@ fn main() {
                 )
                 .expect("native render");
             }
+            self.publish(w, true);
             w.set_animating(self.text.frame_requested || stream_pending);
         }
         fn dialog_is_open(&self) -> bool {
@@ -613,7 +836,23 @@ fn main() {
             self.item_error = result.err().map(|e| format!("{e:?}"));
         }
         fn update_dialog_actions(&mut self) {
-            if self.mode == "menu-tree" {
+            if self.mode == "toolbar" {
+                self.menu_actions.extend(self.tree.drain_action_records());
+                if let Some(command) = self
+                    .tree
+                    .get_mut(tekes_ui_composition_consumer::toolbar_semantics::TOOLBAR)
+                    .unwrap()
+                    .component_mut::<tekes_ui_controls::ToolbarControl>()
+                    .unwrap()
+                    .take_action()
+                {
+                    self.toolbar_commands.push(command);
+                }
+            }
+            if matches!(
+                self.mode.as_str(),
+                "menu-tree" | "toolbar-groups" | "toolbar-split"
+            ) {
                 self.menu_actions.extend(self.tree.drain_action_records());
             }
             if self.mode == "item" {
@@ -817,7 +1056,7 @@ fn main() {
                 self.tree
                     .event(&tekes_ui_controls::composition::ContentEvent::Cancel);
                 self.tree.focus(None, false);
-                self.publish(w);
+                self.publish(w, false);
                 return;
             }
             if self.mode == "item"
@@ -927,11 +1166,29 @@ fn main() {
                             | Event::Command(_)
                     )
                 {
-                    self.publish(w);
+                    self.publish(w, false);
                     return;
                 }
             }
             match e {
+                Event::Key(key)
+                    if matches!(
+                        self.mode.as_str(),
+                        "toolbar" | "toolbar-groups" | "toolbar-split"
+                    ) && key.kind == KeyEventKind::Down
+                        && key.modifiers.command
+                        && matches!(key.key_code, 18 | 19 | 24 | 27 | 29) =>
+                {
+                    let baseline = proposal::TextRole::UiBody.style().size;
+                    let size = baseline * self.text.type_scale;
+                    self.text.type_scale = match key.key_code {
+                        18 | 29 => 1.,
+                        19 => 20. / baseline,
+                        24 => (size + 1.) / baseline,
+                        _ => (size - 1.).max(1.) / baseline,
+                    };
+                    self.redraw(w);
+                }
                 Event::Key(key)
                     if self.mode == "label"
                         && key.kind == KeyEventKind::Down
@@ -968,11 +1225,11 @@ fn main() {
                         && key.key_code == 8 =>
                 {
                     self.copy_selection(w);
-                    self.publish(w);
+                    self.publish(w, false);
                 }
                 Event::TextCommand(command) if command == "copy:" => {
                     self.copy_selection(w);
-                    self.publish(w);
+                    self.publish(w, false);
                 }
                 Event::Accessibility { target, action } => {
                     if !w.is_active() {
@@ -1020,7 +1277,7 @@ fn main() {
                             .event(&tekes_ui_controls::composition::ContentEvent::Cancel);
                         self.tree.focus(None, false);
                     }
-                    self.publish(w);
+                    self.publish(w, false);
                     w.request_redraw();
                 }
                 Event::Created => {
@@ -1080,6 +1337,39 @@ fn main() {
                     self.text.caret_on = !self.text.caret_on;
                     self.redraw(w);
                 }
+                Event::Mouse(m)
+                    if matches!(
+                        self.mode.as_str(),
+                        "toolbar" | "toolbar-groups" | "toolbar-split"
+                    ) =>
+                {
+                    let eligible = matches!(
+                        m.kind,
+                        tekes_ui_platform_macos::MouseEventKind::Down {
+                            button: tekes_ui_platform_macos::MouseButton::Left,
+                            ..
+                        } | tekes_ui_platform_macos::MouseEventKind::Dragged {
+                            button: tekes_ui_platform_macos::MouseButton::Left
+                        }
+                    ) && m.position.y >= 0.
+                        && m.position.y
+                            < tekes_ui_controls::ToolbarControl::window().row_height(&mut self.text)
+                                as f64;
+                    self.dispatch(Event::Mouse(m));
+                    if eligible && self.tree.event_bubbled() {
+                        self.tree
+                            .event(&tekes_ui_controls::composition::ContentEvent::Cancel);
+                        if matches!(
+                            m.kind,
+                            tekes_ui_platform_macos::MouseEventKind::Down { click_count: 2, .. }
+                        ) {
+                            w.try_titlebar_double_click();
+                        } else {
+                            w.try_begin_titlebar_drag();
+                        }
+                    }
+                    self.redraw(w);
+                }
                 Event::AnimationFrame(_) => self.redraw(w),
                 Event::Redraw => self.redraw(w),
                 Event::CloseRequested => w.close(),
@@ -1111,13 +1401,34 @@ fn main() {
                 | "layout"
                 | "item"
                 | "menu-tree"
+                | "toolbar"
+                | "toolbar-groups"
+                | "toolbar-split"
         ),
-        "usage: native [list|dialog|slider|command|reading|plain|number|field|label|layout|item|menu-tree]"
+        "usage: native [list|dialog|slider|command|reading|plain|number|field|label|layout|item|menu-tree|toolbar|toolbar-groups]"
     );
     let mut reading = None;
     let mut plain_value = None;
     let mut item_version = None;
-    let (tree, invoker, row_activations) = if mode == "menu-tree" {
+    let (tree, invoker, row_activations) = if mode == "toolbar" {
+        (
+            tekes_ui_composition_consumer::toolbar_semantics::build().unwrap(),
+            tekes_ui_composition_consumer::toolbar_semantics::EDITOR,
+            None,
+        )
+    } else if mode == "toolbar-split" {
+        (
+            tekes_ui_composition_consumer::split_toolbar::build().unwrap(),
+            tekes_ui_composition_consumer::split_toolbar::NAV,
+            None,
+        )
+    } else if mode == "toolbar-groups" {
+        (
+            tekes_ui_composition_consumer::toolbar_groups::build().unwrap(),
+            tekes_ui_composition_consumer::toolbar_groups::SAVE,
+            None,
+        )
+    } else if mode == "menu-tree" {
         (
             tekes_ui_composition_consumer::declared_menu::build().unwrap(),
             tekes_ui_composition_consumer::declared_menu::OPTIONS,
@@ -1238,6 +1549,7 @@ fn main() {
         layout_error: None,
         layout_baseline,
         plain_value,
+        split_icon: None,
         gpu: None,
         text: backend,
         scene: Scene::new(),
@@ -1245,6 +1557,7 @@ fn main() {
         mode: mode.clone(),
         invoker,
         dialog: ids::DIALOG,
+        toolbar_commands: Vec::new(),
         invoker_activations: 0,
         cancel_activations: 0,
         save_activations: 0,
@@ -1531,18 +1844,32 @@ fn main() {
     }
     app.run(
         WindowConfig {
-            title: format!("TekesUI Composition Consumer · {mode}"),
+            title: if mode == "toolbar-split" {
+                "TekesUI Toolbar + Splitter Review".into()
+            } else {
+                format!("TekesUI Composition Consumer · {mode}")
+            },
+            unified_titlebar: matches!(
+                mode.as_str(),
+                "toolbar" | "toolbar-groups" | "toolbar-split"
+            ),
             size: Size {
-                width: 720.,
-                height: 640.,
+                width: if mode == "toolbar-split" { 960. } else { 720. },
+                height: if mode == "toolbar-split" { 560. } else { 640. },
             },
             min_size: Some(Size {
                 width: 360.,
                 height: 480.,
             }),
-            placement: tekes_ui_platform_macos::WindowPlacement::Auto {
-                need_120hz: false,
-                size_check: false,
+            placement: if mode == "toolbar-split" {
+                tekes_ui_platform_macos::WindowPlacement::Screen(
+                    tekes_ui_platform_macos::ScreenChoice::Builtin,
+                )
+            } else {
+                tekes_ui_platform_macos::WindowPlacement::Auto {
+                    need_120hz: false,
+                    size_check: false,
+                }
             },
             ..Default::default()
         },

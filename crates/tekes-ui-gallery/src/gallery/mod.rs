@@ -963,7 +963,10 @@ impl Gallery {
             size
         } else if let Some(size) = calibration_extent {
             size
-        } else if let Page::Workbench(i) = self.content_page() {
+        } else if let Page::Workbench(i) = self.page {
+            // A story wrapper owns its measured header/document even when its
+            // renderer delegates to a native text/reading page. Standalone text
+            // pages still retain their single internal scroll owner below.
             let mut size = self.viewport.bounds().size;
             if ["tokens", "geometry", "shape", "accessibility"]
                 .contains(&workbench::entry(i).renderer())
@@ -3315,6 +3318,23 @@ mod tests {
         g.workbench.text_scale = 2;
         g.set_view_size(720.0, 480.0);
         g.build_scene(&mut Scene::new());
+        // Large typography may require outer-page scrolling before reading.
+        for _ in 0..3 {
+            if g.scroll_demo.visible_frame_at(0).is_some() {
+                break;
+            }
+            let limit = g.viewport.limit().y;
+            g.viewport.scroll_by(0., limit);
+            g.build_scene(&mut Scene::new());
+        }
+        assert!(
+            g.scroll_demo.visible_frame_at(0).is_some(),
+            "reading={:?} live={:?} viewport={:?} offset={:?}",
+            g.scroll_demo.frame_at(0),
+            g.live_content_bounds(),
+            g.viewport.bounds(),
+            g.viewport.offset
+        );
         let frame = g.scroll_demo.visible_frame_at(0).unwrap();
         let target = frame.center();
         assert!(g.viewport.bounds().contains(target));

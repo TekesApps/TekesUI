@@ -361,6 +361,9 @@ pub struct SplitViewView {
     axis: Axis,
     dragging: bool,
     window_active: bool,
+    toolbar: Option<Rect>,
+    toolbar_metrics: Option<crate::toolbar::ToolbarMetrics>,
+    toolbar_controls: Vec<Rect>,
 }
 impl SplitViewView {
     pub fn new(axis: Axis) -> Self {
@@ -369,6 +372,9 @@ impl SplitViewView {
             axis,
             dragging: false,
             window_active: true,
+            toolbar: None,
+            toolbar_metrics: None,
+            toolbar_controls: Vec::new(),
         }
     }
     pub fn render(
@@ -393,6 +399,18 @@ impl SplitViewView {
         palette: Palette,
         backing_scale: f32,
     ) -> SplitViewLayout {
+        let layout = self.arrange(model, bounds, clip);
+        self.paint(scene, model, palette, backing_scale);
+        layout
+    }
+    /// Resolve the same pane/divider/capture geometry without painting. A
+    /// composition owner can then lay out toolbars and publish their real hits.
+    pub fn arrange(
+        &mut self,
+        model: &mut SplitView,
+        bounds: Rect,
+        clip: Option<Rect>,
+    ) -> SplitViewLayout {
         if !valid(bounds, clip) {
             self.cancel(model);
             self.layout = SplitViewLayout::default();
@@ -410,25 +428,130 @@ impl SplitViewView {
             trailing: ControlFrame::new(trailing, clip),
             divider_hit: ControlFrame::new(divider.inset(-4.), clip).visible_frame(),
         };
-        if !model.is_constrained(f.frame(), self.axis)
+        self.layout
+    }
+    /// Replace the current toolbar band and original control hit regions after
+    /// layout/overflow. An empty band removes the chrome policy. Existing drag
+    /// capture is never cancelled merely because a control moves beneath it.
+    pub fn set_toolbar_region(
+        &mut self,
+        toolbar: Option<Rect>,
+        controls: &[Rect],
+        text: &mut dyn ButtonTextRenderer,
+    ) {
+        self.toolbar = toolbar.filter(|r| valid(*r, None) && has_area(*r));
+        self.toolbar_metrics = self
+            .toolbar
+            .map(|_| crate::toolbar::metrics(text, proposal::TextRole::UiBody));
+        self.toolbar_controls = controls
+            .iter()
+            .copied()
+            .filter(|r| valid(*r, None) && has_area(*r))
+            .collect();
+    }
+    pub fn paint(
+        &self,
+        scene: &mut Scene,
+        model: &SplitView,
+        palette: Palette,
+        backing_scale: f32,
+    ) {
+        self.paint_presented_divider(
+            scene,
+            model,
+            self.layout.divider.frame(),
+            palette,
+            backing_scale,
+        );
+    }
+    /// For a shared-layout presentation (such as sidebar visibility motion).
+    /// Hosts disable new input during that transition and pass its actual gap;
+    /// separator/toolbar masking and the marker still belong to this component.
+    pub fn paint_presented_divider(
+        &self,
+        scene: &mut Scene,
+        model: &SplitView,
+        divider: Rect,
+        palette: Palette,
+        backing_scale: f32,
+    ) {
+        if !model.is_constrained(self.layout.frame.frame(), self.axis)
             && self.layout.divider.visible_frame().is_some_and(has_area)
+            && valid(divider, None)
+            && has_area(divider)
         {
-            let clipped = safe_clip(scene, clip);
-            super::extended::separator_at_scale(
-                scene,
-                divider,
-                palette,
-                match self.axis {
-                    Axis::Horizontal => Axis::Vertical,
-                    Axis::Vertical => Axis::Horizontal,
-                },
-                backing_scale,
-            );
+            let clipped = safe_clip(scene, self.layout.frame.visible_frame());
+            let paint_line = |scene: &mut Scene, rect| {
+                super::extended::separator_at_scale(
+                    scene,
+                    rect,
+                    palette,
+                    match self.axis {
+                        Axis::Horizontal => Axis::Vertical,
+                        Axis::Vertical => Axis::Horizontal,
+                    },
+                    backing_scale,
+                )
+            };
+            if let Some((band, metrics)) =
+                self.toolbar.zip(self.toolbar_metrics).filter(|(r, _)| {
+                    self.axis == Axis::Horizontal && r.intersection(&divider).is_some_and(has_area)
+                })
+            {
+                let top = band.min_y().clamp(divider.min_y(), divider.max_y());
+                let bottom = band.max_y().clamp(divider.min_y(), divider.max_y());
+                if top > divider.min_y() {
+                    paint_line(
+                        scene,
+                        Rect::new(
+                            divider.min_x(),
+                            divider.min_y(),
+                            divider.size.width,
+                            top - divider.min_y(),
+                        ),
+                    );
+                }
+                if bottom < divider.max_y() {
+                    paint_line(
+                        scene,
+                        Rect::new(
+                            divider.min_x(),
+                            bottom,
+                            divider.size.width,
+                            divider.max_y() - bottom,
+                        ),
+                    );
+                }
+                {
+                    let height = metrics.box_size.min(bottom - top);
+                    let row = metrics.row.min(bottom - top);
+                    let (width, color) = crate::paint::decorative_border(palette, backing_scale);
+                    let marker = Rect::new(
+                        divider.center().x - width * 0.5,
+                        top + (row - height) * 0.5,
+                        width,
+                        height,
+                    );
+                    if !self
+                        .toolbar_controls
+                        .iter()
+                        .any(|r| r.intersection(&marker).is_some_and(has_area))
+                    {
+                        scene.push_quad(
+                            tekes_ui_scene::Quad::new(marker, color).with_corner_radius(
+                                proposal::metric("radius", "radius-pill")
+                                    .expect("pill radius token"),
+                            ),
+                        );
+                    }
+                }
+            } else {
+                paint_line(scene, divider);
+            }
             if clipped {
                 scene.pop_clip();
             }
         }
-        self.layout
     }
     pub fn layout(&self) -> SplitViewLayout {
         self.layout
@@ -436,20 +559,80 @@ impl SplitViewView {
     /// Clipped resize target and movement axis for a host's native hover cursor.
     /// Constrained, hidden, and inactive splitters do not advertise resizing.
     pub fn resize_target(&self, model: &SplitView) -> Option<(Rect, Axis)> {
+        self.resize_regions(model)
+            .into_iter()
+            .max_by(|(a, _), (b, _)| {
+                (a.size.width * a.size.height).total_cmp(&(b.size.width * b.size.height))
+            })
+    }
+    /// Disjoint resize cursor/hit regions from the same divider geometry and
+    /// original toolbar controls used by paint. Disabled controls also shield
+    /// their full hover/hit box; blank toolbar padding remains draggable.
+    pub fn resize_regions(&self, model: &SplitView) -> Vec<(Rect, Axis)> {
         if !self.window_active
             || !self.layout.frame.visible_frame().is_some_and(has_area)
             || !self.layout.divider.visible_frame().is_some_and(has_area)
             || model.is_constrained(self.layout.frame.frame(), self.axis)
         {
-            return None;
+            return Vec::new();
         }
-        self.layout
+        let mut regions: Vec<_> = self
+            .layout
             .divider_hit
             .filter(|r| has_area(*r))
-            .map(|r| (r, self.axis))
+            .into_iter()
+            .collect();
+        if let Some(band) = self.toolbar {
+            for control in &self.toolbar_controls {
+                if let Some(cut) = control.intersection(&band) {
+                    regions = regions
+                        .into_iter()
+                        .flat_map(|r| {
+                            let Some(c) = r.intersection(&cut).filter(|r| has_area(*r)) else {
+                                return vec![r];
+                            };
+                            [
+                                Rect::new(
+                                    r.min_x(),
+                                    r.min_y(),
+                                    r.size.width,
+                                    c.min_y() - r.min_y(),
+                                ),
+                                Rect::new(
+                                    r.min_x(),
+                                    c.max_y(),
+                                    r.size.width,
+                                    r.max_y() - c.max_y(),
+                                ),
+                                Rect::new(
+                                    r.min_x(),
+                                    c.min_y(),
+                                    c.min_x() - r.min_x(),
+                                    c.size.height,
+                                ),
+                                Rect::new(
+                                    c.max_x(),
+                                    c.min_y(),
+                                    r.max_x() - c.max_x(),
+                                    c.size.height,
+                                ),
+                            ]
+                            .into_iter()
+                            .filter(|r| has_area(*r))
+                            .collect()
+                        })
+                        .collect();
+                }
+            }
+        }
+        regions.into_iter().map(|r| (r, self.axis)).collect()
     }
     pub fn pointer_down(&mut self, p: Point, model: &mut SplitView) -> bool {
-        if !self.window_active || !self.layout.divider_hit.is_some_and(|r| r.contains(p)) {
+        if !self
+            .resize_regions(model)
+            .iter()
+            .any(|(r, _)| r.contains(p))
+        {
             return false;
         }
         let axis = match self.axis {
@@ -461,8 +644,10 @@ impl SplitViewView {
     }
     /// A double click resets without starting another captured gesture.
     pub fn double_click(&mut self, p: Point, model: &mut SplitView) -> bool {
-        if !self.window_active
-            || !self.layout.divider_hit.is_some_and(|r| r.contains(p))
+        if !self
+            .resize_regions(model)
+            .iter()
+            .any(|(r, _)| r.contains(p))
             || model.is_constrained(self.layout.frame.frame(), self.axis)
         {
             return false;

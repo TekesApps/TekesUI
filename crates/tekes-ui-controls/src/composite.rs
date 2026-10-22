@@ -495,6 +495,9 @@ struct MenuRowText<'a, T> {
     style: MenuRowStyle,
 }
 impl<T: ButtonTextRenderer> ButtonTextRenderer for MenuRowText<'_, T> {
+    fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+        self.text.resolved_font_size(role)
+    }
     fn measure(&mut self, label: &str, role: proposal::TextRole, width: f32) -> Size {
         if self.leading == 0.0 && self.trailing == 0.0 {
             return self.text.measure(label, role, width);

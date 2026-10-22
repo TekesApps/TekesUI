@@ -18,7 +18,7 @@ use objc2_app_kit::{
 use objc2_core_graphics::{CGColorSpace, kCGColorSpaceSRGB};
 use objc2_foundation::{
     MainThreadMarker, NSArray, NSObjectNSDelayedPerforming, NSObjectNSThreadPerformAdditions,
-    NSObjectProtocol, NSRect, NSRunLoop, NSRunLoopCommonModes, NSSize,
+    NSObjectProtocol, NSPoint, NSRect, NSRunLoop, NSRunLoopCommonModes, NSSize,
 };
 use objc2_quartz_core::{
     CACurrentMediaTime, CADisplayLink, CAFrameRateRange, CALayer, CAMetalDisplayLink,
@@ -38,6 +38,7 @@ pub(crate) struct ViewIvars {
     layer: RefCell<Option<Retained<CAMetalLayer>>>,
     tracking_area: RefCell<Option<Retained<NSTrackingArea>>>,
     cursor_regions: RefCell<Vec<crate::CursorRegion>>,
+    cursor_tracking_areas: RefCell<Vec<Retained<NSTrackingArea>>>,
     /// 按需创建的显示链接。创建后一直存在，不跑的时候是暂停状态（`isPaused`），
     /// 窗口关闭或应用结束时 invalidate（它强引用 target，也就是这个视图）。
     link: RefCell<Option<Retained<CADisplayLink>>>,
@@ -147,6 +148,7 @@ define_class!(
     }
 
     impl TekesView {
+
         #[unsafe(method_id(accessibilityChildren))]
         fn accessibility_children(&self) -> Retained<objc2_foundation::NSArray> {
             self.accessibility_children_snapshot()
@@ -196,6 +198,21 @@ define_class!(
         #[unsafe(method(isFlipped))]
         fn is_flipped(&self) -> bool {
             true
+        }
+
+        #[unsafe(method(layout))]
+        fn layout(&self) {
+            // SAFETY: exact NSView override; native layout runs first.
+            let () = unsafe { msg_send![super(self), layout] };
+            self.ivars().shared.align_toolbar_controls();
+        }
+
+        #[unsafe(method_id(hitTest:))]
+        fn hit_test(&self, point: NSPoint) -> Option<Retained<NSView>> {
+            self.toolbar_hit_target(point).or_else(|| {
+                // SAFETY: unchanged native hit testing for every other point.
+                unsafe { msg_send![super(self), hitTest: point] }
+            })
         }
 
         /// 整个视图不透明，让窗口服务器不必混合下层。
@@ -367,7 +384,8 @@ define_class!(
             let options = NSTrackingAreaOptions::MouseEnteredAndExited
                 | NSTrackingAreaOptions::MouseMoved
                 | NSTrackingAreaOptions::ActiveInActiveApp
-                | NSTrackingAreaOptions::InVisibleRect;
+                | NSTrackingAreaOptions::InVisibleRect
+                | NSTrackingAreaOptions::CursorUpdate;
             // SAFETY: owner 是 self，options 合法，userInfo 为 None。
             let area = unsafe {
                 NSTrackingArea::initWithRect_options_owner_userInfo(
@@ -380,20 +398,40 @@ define_class!(
             };
             self.addTrackingArea(&area);
             *ivars.tracking_area.borrow_mut() = Some(area);
+            // Cursor boundaries use the same published hit regions. Register
+            // tracking areas so AppKit sends cursorUpdate at interior edges,
+            // not only when the pointer enters the whole GPU view.
+            let old_areas = std::mem::take(&mut *ivars.cursor_tracking_areas.borrow_mut());
+            for old in old_areas { self.removeTrackingArea(&old); }
+            let regions = ivars.cursor_regions.borrow().clone();
+            let mut areas = Vec::new();
+            for region in regions {
+                let rect = NSRect::new(NSPoint::new(region.origin.x, region.origin.y),
+                    NSSize::new(region.size.width, region.size.height));
+                let options = NSTrackingAreaOptions::CursorUpdate
+                    | NSTrackingAreaOptions::ActiveInActiveApp
+                    | NSTrackingAreaOptions::EnabledDuringMouseDrag;
+                // SAFETY: original view owner and public, valid region geometry.
+                let area = unsafe { NSTrackingArea::initWithRect_options_owner_userInfo(
+                    NSTrackingArea::alloc(), rect, options, Some(self), None) };
+                self.addTrackingArea(&area);
+                areas.push(area);
+            }
+            *ivars.cursor_tracking_areas.borrow_mut() = areas;
         }
 
-        #[unsafe(method(resetCursorRects))]
-        fn reset_cursor_rects(&self) {
-            let regions = self.ivars().cursor_regions.borrow().clone();
-            for region in regions {
-                let cursor = match region.icon {
-                    crate::CursorIcon::ResizeHorizontal => resize_cursor(true),
-                    crate::CursorIcon::ResizeVertical => resize_cursor(false),
-                };
-                self.addCursorRect_cursor(NSRect::new(
-                    objc2_foundation::NSPoint::new(region.origin.x, region.origin.y),
-                    NSSize::new(region.size.width, region.size.height),
-                ), &cursor);
+        #[unsafe(method(cursorUpdate:))]
+        fn cursor_update(&self, event: &NSEvent) {
+            let point = self.view_point(event);
+            let (kind, cursor) = self.cursor_for_point(point);
+            cursor.set();
+            if cfg!(debug_assertions) && let Some(path) = std::env::var_os("TEKESUI_CURSOR_REVIEW") {
+                use std::io::Write;
+                if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+                    let current = objc2_app_kit::NSCursor::currentCursor();
+                    let _ = writeln!(file,"CURSOR_UPDATE x={} y={} selected={kind:?} native_current_matches={}",
+                        point.x, point.y, std::ptr::eq(&*current, &*cursor));
+                }
             }
         }
 
@@ -563,14 +601,79 @@ fn modifiers_of(e: &NSEvent) -> Modifiers {
 }
 
 impl TekesView {
+    pub(crate) fn cursor_for_point(
+        &self,
+        point: Point,
+    ) -> (Option<crate::CursorIcon>, Retained<objc2_app_kit::NSCursor>) {
+        let icon = self
+            .ivars()
+            .cursor_regions
+            .borrow()
+            .iter()
+            .rev()
+            .find(|r| {
+                point.x >= r.origin.x
+                    && point.x < r.origin.x + r.size.width
+                    && point.y >= r.origin.y
+                    && point.y < r.origin.y + r.size.height
+            })
+            .map(|r| r.icon);
+        let cursor = match icon {
+            Some(crate::CursorIcon::ResizeHorizontal) => resize_cursor(true),
+            Some(crate::CursorIcon::ResizeVertical) => resize_cursor(false),
+            None => objc2_app_kit::NSCursor::arrowCursor(),
+        };
+        (icon, cursor)
+    }
+
+    fn toolbar_hit_target(&self, point: NSPoint) -> Option<Retained<NSView>> {
+        let shared = &self.ivars().shared;
+        if shared.toolbar_row_height.get().is_some()
+            && let Some(objects) = shared.objects.get()
+            && objects
+                .window
+                .styleMask()
+                .contains(objc2_app_kit::NSWindowStyleMask::FullSizeContentView)
+            && !objects
+                .window
+                .styleMask()
+                .contains(objc2_app_kit::NSWindowStyleMask::FullScreen)
+        {
+            // SAFETY: this NSView is retained by its original native window.
+            let parent = unsafe { self.superview() };
+            let local = self.convertPoint_fromView(point, parent.as_deref());
+            for kind in [
+                objc2_app_kit::NSWindowButton::CloseButton,
+                objc2_app_kit::NSWindowButton::MiniaturizeButton,
+                objc2_app_kit::NSWindowButton::ZoomButton,
+            ] {
+                if let Some(button) = objects.window.standardWindowButton(kind) {
+                    let rect = self.convertRect_fromView(button.bounds(), Some(&button));
+                    if !button.isHiddenOrHasHiddenAncestor()
+                        && button.isEnabled()
+                        && local.x >= rect.origin.x
+                        && local.x < rect.origin.x + rect.size.width
+                        && local.y >= rect.origin.y
+                        && local.y < rect.origin.y + rect.size.height
+                    {
+                        // A large row can put the original button below its
+                        // native parent's bounds. Return that exact native
+                        // control, rather than synthesize an action or proxy.
+                        return Some(button.into_super().into_super());
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
     pub(crate) fn set_cursor_regions(&self, regions: Vec<crate::CursorRegion>) {
         if *self.ivars().cursor_regions.borrow() == regions {
             return;
         }
         *self.ivars().cursor_regions.borrow_mut() = regions;
-        if let Some(window) = self.window() {
-            window.invalidateCursorRectsForView(self);
-        }
+        self.updateTrackingAreas();
     }
 
     pub(crate) fn accessibility_children_snapshot(&self) -> Retained<objc2_foundation::NSArray> {
@@ -676,6 +779,7 @@ impl TekesView {
             layer: RefCell::new(None),
             tracking_area: RefCell::new(None),
             cursor_regions: RefCell::new(Vec::new()),
+            cursor_tracking_areas: RefCell::new(Vec::new()),
             link: RefCell::new(None),
             metal_link: RefCell::new(None),
             metal_start_pending: Cell::new(false),
@@ -973,6 +1077,7 @@ impl TekesView {
     /// 层的更新总是做，投递才需要 `ready`：`Created` 之前 AppKit 的初始回调只更新层。
     pub(crate) fn sync_geometry(&self, force: bool) {
         let shared = &self.ivars().shared;
+        shared.align_toolbar_controls();
         let scale = self.scale_factor();
         let size = self.size_points();
         let drawable = size.to_drawable(scale);

@@ -951,6 +951,32 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
                     self.1.set(window.titlebar_control_center_y());
                 }
             }
+            if event == Event::Command(crate::CommandId(1000)) {
+                window.set_cursor_regions(vec![
+                    crate::CursorRegion {
+                        origin: crate::Point { x: 180., y: 100. },
+                        size: crate::Size {
+                            width: 9.,
+                            height: 100.,
+                        },
+                        icon: crate::CursorIcon::ResizeHorizontal,
+                    },
+                    crate::CursorRegion {
+                        origin: crate::Point { x: 300., y: 200. },
+                        size: crate::Size {
+                            width: 100.,
+                            height: 9.,
+                        },
+                        icon: crate::CursorIcon::ResizeVertical,
+                    },
+                ]);
+            } else if let Event::Command(crate::CommandId(height)) = event {
+                let center = window.set_toolbar_row_height(f64::from(height));
+                self.1.set(center);
+                for invalid in [f64::NAN, f64::INFINITY, -1., 0.] {
+                    assert_eq!(window.set_toolbar_row_height(invalid), center);
+                }
+            }
             // A synthetic object callback is not a live native gesture.
             assert!(!window.try_begin_titlebar_drag());
         }
@@ -1024,6 +1050,103 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
         );
         assert!(!window.isVisible());
         rows.push((extended, height.get(), expected));
+        // Public alignment API on original native objects. No windows shown.
+        let originals: Vec<_> = [
+            objc2_app_kit::NSWindowButton::CloseButton,
+            objc2_app_kit::NSWindowButton::MiniaturizeButton,
+            objc2_app_kit::NSWindowButton::ZoomButton,
+        ]
+        .into_iter()
+        .filter_map(|kind| {
+            window.standardWindowButton(kind).map(|button| {
+                let frame = button.frame();
+                (kind, button, frame)
+            })
+        })
+        .collect();
+        for row in [10, 42, 65, 84, 126] {
+            shared.dispatch(Event::Command(crate::CommandId(row)));
+            view.layoutSubtreeIfNeeded();
+            window.setContentSize(NSSize::new(720. + f64::from(row), 480.));
+            view.layoutSubtreeIfNeeded();
+            for (kind, original, before) in &originals {
+                let button = window.standardWindowButton(*kind).unwrap();
+                assert!(std::ptr::eq(&*button, &**original));
+                let after = button.frame();
+                assert_eq!(after.origin.x, before.origin.x);
+                assert_eq!(after.size, before.size);
+                if extended {
+                    let rect = view.convertRect_fromView(button.bounds(), Some(&button));
+                    let expected = f64::from(row).max(before.size.height) * 0.5;
+                    assert!((rect.origin.y + rect.size.height * 0.5 - expected).abs() < 0.001);
+                    assert!(
+                        button.visibleRect().size.height >= before.size.height - 0.001,
+                        "native traffic light must remain visible at row {row}"
+                    );
+                    // NSView hitTest takes parent coordinates. The returned
+                    // target must be the real original native NSButton.
+                    let local = NSPoint::new(rect.origin.x + rect.size.width * 0.5, expected);
+                    // SAFETY: the retained original view remains attached to its native window.
+                    let parent = unsafe { view.superview() };
+                    let point = view.convertPoint_toView(local, parent.as_deref());
+                    let hit = view.hitTest(point).expect("native button hit");
+                    let expected: &objc2_app_kit::NSView = &button;
+                    assert!(std::ptr::eq(&*hit, expected));
+                } else {
+                    assert_eq!(after, *before);
+                }
+            }
+        }
+        println!(
+            "TITLEBAR_ROW_ALIGNMENT extended={extended} rows=5 original_size_x_identity=true resized=true original_native_hit_targets=true"
+        );
+        shared.dispatch(Event::Command(crate::CommandId(1000)));
+        for _ in 0..3 {
+            view.updateTrackingAreas();
+        }
+        let areas = view.trackingAreas();
+        assert_eq!(
+            areas
+                .iter()
+                .filter(|area| area
+                    .options()
+                    .contains(objc2_app_kit::NSTrackingAreaOptions::CursorUpdate))
+                .count(),
+            3
+        );
+        for (x, y, expected) in [
+            (184., 150., Some(crate::CursorIcon::ResizeHorizontal)),
+            (350., 204., Some(crate::CursorIcon::ResizeVertical)),
+            (250., 150., None),
+        ] {
+            let (icon, cursor) = view.cursor_for_point(crate::Point { x, y });
+            assert_eq!(icon, expected);
+            let event = mouse_event(&window, NSEventType::MouseMoved, x, y, 0).unwrap();
+            view.cursorUpdate(&event);
+            assert!(
+                std::ptr::eq(&*objc2_app_kit::NSCursor::currentCursor(), &*cursor),
+                "actual native cursor target"
+            );
+        }
+        view.set_cursor_regions(Vec::new());
+        assert_eq!(
+            view.trackingAreas()
+                .iter()
+                .filter(|area| area
+                    .options()
+                    .contains(objc2_app_kit::NSTrackingAreaOptions::CursorUpdate))
+                .count(),
+            1
+        );
+        let event = mouse_event(&window, NSEventType::MouseMoved, 184., 150., 0).unwrap();
+        view.cursorUpdate(&event);
+        assert!(std::ptr::eq(
+            &*objc2_app_kit::NSCursor::currentCursor(),
+            &*objc2_app_kit::NSCursor::arrowCursor()
+        ));
+        println!(
+            "NATIVE_CURSOR_CONTRACT extended={extended} interior_boundary_areas=2 rebuilds=3 native_horizontal_vertical_and_arrow=true removed_region_restores_arrow=true"
+        );
         let down = mouse_event(&window, NSEventType::LeftMouseDown, 100., 20., 1).unwrap();
         view.mouseDown(&down);
         assert!(shared.titlebar_drag_origin.borrow().is_some());

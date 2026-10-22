@@ -1,0 +1,22 @@
+{
+  "source_identity": "acf65b4a395458332317843373f5b9e03c2393047d7f1e4fbfc83033d7800c7c",
+  "binary_sha256": "085e737bfd68a146f47f537d16bf458eddd8d28dda07956fa6a3fed4bd3e3ac7",
+  "public_consumer_tests": 342,
+  "controls_lib_tests": 258,
+  "targeted_public_tests": 25,
+  "strict_clippy_passed": true,
+  "hidden_native_cursor_contract_passed": true,
+  "hidden_contract_is_not_physical_hover": true,
+  "actual_hover_acceptance": "passed by user physical review; native callback evidence confirmed horizontal and arrow restoration",
+  "toolbar_single_line_policy": "shared ToolbarContent recursively applies existing LabelOptions to TextContent/ButtonContent, excluding editors",
+  "legacy_renderer_policy": "single unwrapped clipped line; advertised label service failure remains explicit",
+  "human_geometry_review": "user approved prior combined host; final cursor build not yet physically reviewed",
+  "apphost_modified_by_this_round": false,
+  "performance_tested": false,
+  "old_evidence": "native-before-cursor retains raw mixed input/render journals; native journals only successful rendered frames",
+  "human_final_review": "User confirmed all normal: physical hover enter/leave, typography zoom and narrowed Toolbar single-line presentation",
+  "native_cursor_log_checks": {
+    "horizontal_seen": true,
+    "arrow_seen": true
+  }
+}

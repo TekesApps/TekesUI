@@ -8,6 +8,7 @@ pub(super) struct LabelState {
     options: LabelOptions,
     cached: Option<(String, proposal::TextRole, f32, Rc<LabelLayout>)>,
     pub failed: bool,
+    pub toolbar: bool,
 }
 impl LabelState {
     pub fn new(options: LabelOptions) -> Self {
@@ -15,7 +16,12 @@ impl LabelState {
             options,
             cached: None,
             failed: false,
+            toolbar: false,
         }
+    }
+    pub fn toolbar(&mut self) {
+        self.options.max_lines = std::num::NonZeroUsize::new(1);
+        self.toolbar = true;
     }
     pub fn reset(&mut self) {
         // A new measure pass may use a new host, font registry or type scale.
@@ -66,7 +72,18 @@ impl<'a> LabelRenderer<'a> {
     }
 }
 impl ButtonTextRenderer for LabelRenderer<'_> {
+    fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+        self.host.resolved_font_size(role)
+    }
     fn measure(&mut self, text: &str, role: proposal::TextRole, width: f32) -> Size {
+        // Label-only legacy hosts retain clipped, unwrapped text. Hosts with
+        // label shaping use the existing ellipsis service below; an advertised
+        // but failed service still fails explicitly.
+        if self.state.toolbar && self.host.text_surface_host().is_none() {
+            let source = text.replace(['\r', '\n'], " ");
+            let size = self.host.measure(&source, role, f32::MAX);
+            return Size::new(size.width.min(width), size.height);
+        }
         self.layout(text, role, width)
             .map(|layout| {
                 // Reuse the existing label service's 1/64pt fit precision.
@@ -97,6 +114,27 @@ impl ButtonTextRenderer for LabelRenderer<'_> {
         align: ButtonTextAlign,
         ink: Rgba,
     ) {
+        if self.state.toolbar && self.host.text_surface_host().is_none() {
+            let source = text.replace(['\r', '\n'], " ");
+            let size = self.host.measure(&source, role, f32::MAX);
+            let x = match align {
+                ButtonTextAlign::Leading => rect.min_x(),
+                ButtonTextAlign::Center => {
+                    rect.min_x() + (rect.size.width - size.width).max(0.) * 0.5
+                }
+            };
+            scene.push_clip(self.clip.intersection(&rect).unwrap_or_default());
+            self.host.draw(
+                scene,
+                &source,
+                role,
+                Rect::new(x, rect.min_y(), size.width, rect.size.height),
+                ButtonTextAlign::Leading,
+                ink,
+            );
+            scene.pop_clip();
+            return;
+        }
         // Use the final measurement object, rather than reshaping at the glyph
         // width (which may be smaller than its original constraint).
         let measured = self

@@ -30,6 +30,9 @@ impl Text {
     }
 }
 impl ButtonTextRenderer for Text {
+    fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+        role.style().size * self.scale
+    }
     fn text_surface_host(&mut self) -> Option<&mut dyn TextSurfaceHost> {
         Some(self)
     }
@@ -305,4 +308,70 @@ fn dialog_slot_recovers_label_capability_before_its_arrange_only_measurement() {
     )
     .expect("a previous failed slot must be remeasured with the new available host");
     assert!(!text.painted.is_empty());
+}
+
+#[test]
+fn toolbar_defaults_to_single_line_for_original_text_and_button_at_narrow_widths() {
+    for scale in [1., 1.5, 2.] {
+        for width in [80., 160., 480.] {
+            let mut text = Text::new(scale);
+            let root = Content::new(
+                ComponentId(600),
+                ToolbarContent::new(vec![
+                    Content::new(
+                        ComponentId(601),
+                        ToolbarGroup::new(
+                            ToolbarPlacement::Navigation,
+                            vec![Content::new(ComponentId(602), TextContent::new(ORIGINAL))],
+                        ),
+                    ),
+                    Content::new(
+                        ComponentId(603),
+                        ToolbarGroup::new(
+                            ToolbarPlacement::PrimaryAction,
+                            vec![Content::new(ComponentId(604), ButtonContent::new(ORIGINAL))],
+                        ),
+                    ),
+                ]),
+            );
+            let mut host = ContentHost::new(root).unwrap();
+            let frame = Rect::new(0., 0., width, 100. * scale);
+            host.render(
+                &mut Scene::new(),
+                &mut text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+            // A fully squeezed slot may have no visible glyphs, but never wraps.
+            if width > 80. {
+                assert!(!text.painted.is_empty());
+            }
+            assert!(text.shaped.iter().all(|l| l.paragraph().lines.len() <= 1));
+            assert!(text.shaped.iter().any(|l| l.is_truncated()));
+            for id in [ComponentId(602), ComponentId(604)] {
+                let node = host.get(id).unwrap();
+                assert_eq!(
+                    node.component::<TextContent>()
+                        .map(|c| c.text.as_str())
+                        .or_else(|| node.component::<ButtonContent>().map(|c| c.label.as_str()))
+                        .unwrap(),
+                    ORIGINAL
+                );
+            }
+            // Reflow the same mounted controls; do not reconstruct labels/actions.
+            let mount = host.semantic_mount(ComponentId(604)).unwrap();
+            let larger = Rect::new(0., 0., width + 100., frame.size.height);
+            host.render(
+                &mut Scene::new(),
+                &mut text,
+                larger,
+                larger,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+            assert_eq!(host.semantic_mount(ComponentId(604)).unwrap(), mount);
+        }
+    }
 }

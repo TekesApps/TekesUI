@@ -1,0 +1,25 @@
+# Toolbar and SplitView accepted checkpoint
+
+The default Toolbar follows Design System body typography and the canonical Regular icon visible-height ratio. Its icon box, row, insets and short SplitView marker scale together; the marker remains two thirds of the row and persists during dragging. Original native traffic lights retain size and horizontal position and follow the row center vertically. Native double-click zoom runs after returning the Rust handler, allowing resize redraws during the native zoom operation. Native cursorUpdate areas reuse the original disjoint resize-hit geometry, including arrow restoration when leaving. SplitView minimum pane width is consumer policy, with a zero default and no hidden percentage floor.
+
+ToolbarContent and stable ToolbarGroup accept original Content in semantic regions. Readonly text/button labels use the existing single-line label service with tail ellipsis; legacy string-only hosts clip an unwrapped line. Full source, accessibility names, control state, focus and mounted identity remain original. The right pane in the independent toolbar-split consumer registers its own Navigation icon. Text zoom and divider changes reflow both original pane/toolbars from the same geometry. No AppHost source, window/process lifecycle WIP, or unrelated 3D changes are part of this checkpoint.
+
+## Review and evidence
+
+The source was isolated from main09b4bab without changing the active Gallery WIP. Minimal shared dependencies include typography forwarding through original Button/Menu adapters and valid semantic-part Focus transfer for Toolbar actions; this does not claim complete accessibility hearing acceptance. Remaining custom-content overflow and general window/process registration are separate, not implied by the new Content slots.
+
+Fresh public probes under design/reviews/toolbar-split-public-20261022/probes-final/ are actual reruns on the isolated source, not historical digest refreshes. Toolbar observes144 cases (two profiles, six states, four themes and three brands); all observations remain complete=false. Grid observation has an explicit current-only mode to assert geometry and real GPU blank output without depending on unpublished pre-fix PNGs or claiming historical pixel equivalence. Other composition rows retain their bounded statuses; native_acceptance stays unverified in the source audit.
+
+The WIP physical user review confirmed the combined host, default/zoom alignment and marker ratio, single-line labels, divider movement and native hover enter/leave. Compact exact WIP source/binary receipts are preserved in wip-native-evidence/. Those receipts identify the larger WIP executable, not this isolated publication. Independent public tests and hidden native object contracts are rerun for the isolated candidate; they are distinct evidence layers. Full public VoiceOver and every component/page remain outside this bounded review.
+
+Builds use the existing shared review-cache. The user-reviewed app is closed; signed WIP executable, code snapshots, logs, receipts and screenshots remain local. No performance measurement is included and no Issue is closed by this checkpoint.
+
+## Reproduction
+
+Use Rust1.95.0, the checked-in lockfiles, and an existing CARGO_TARGET_DIR. Run the independent composition consumer tests, workspace tests (the three existing timing/CPU/GPU measurement cases are deferred), strict workspace/all-target Clippy, Python design/brand/generation gates, component capability validation and composition audit. The public native example selects toolbar-split through TEKESUI_COMPONENT_CASE; its default review placement is the builtin display. Physical native interaction and hearing require separate verification; headless or hidden-object passes are not substitutes.
+
+To regenerate bounded observations, acquire the shared build-cache lock and run design/reviews/toolbar-split-public-20261022/replay.py with CARGO_TARGET_DIR set. Resuming validates existing receipt hashes before skipping them; a changed source requires a fresh output directory. Registry generation then validates exact authored public identities rather than fixing a count.
+
+## Required real integration corrections
+
+Full Gallery regression exposed four dependencies of the shared typography change. NumberField now gives its original +/- Buttons the already allocated Exact slots, avoiding a second minimum/inset expansion that erased glyph space. The Master fixture limits its original list viewport to actual remaining preview/ancestor bounds. Gallery uses the actual Workbench wrapper identity to compute measured story extent even when its renderer delegates to a text/reading page; standalone reading pages retain their one internal scroll owner. The reading regression uses the real outer story scroll before clicking a visible surface. Gold7 focus pixel comparison derives its base-shape mask from the original Button's actual layout and scaled radius, preserving the invariant that focus cannot repaint existing Button ink. Four focused regressions passed before the final full rerun; native hearing and whole-page maturity are still separate.

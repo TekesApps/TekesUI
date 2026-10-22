@@ -103,6 +103,18 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-toolbar",
         "tekes_ui_controls::ToolbarControl",
     );
+    bind::<tekes_ui_controls::composition::ToolbarContent>(
+        &mut actual,
+        "tui.toolbar",
+        "component-toolbar",
+        "tekes_ui_controls::composition::ToolbarContent",
+    );
+    bind::<tekes_ui_controls::composition::ToolbarGroup>(
+        &mut actual,
+        "tui.toolbar",
+        "component-toolbar",
+        "tekes_ui_controls::composition::ToolbarGroup",
+    );
     bind::<tekes_ui_controls::TextSurface>(
         &mut actual,
         "tui.text",
@@ -987,6 +999,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::TextViewport",
     );
+    public_type::<tekes_ui_controls::composition::ToolbarContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarContent",
+    );
+    public_type::<tekes_ui_controls::composition::ToolbarGroup>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarGroup",
+    );
+    public_type::<tekes_ui_controls::composition::ToolbarPlacement>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarPlacement",
+    );
     public_type::<tekes_ui_controls::extended::Axis>(
         &mut actual,
         "tekes_ui_controls::extended::Axis",
@@ -1292,7 +1316,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_218<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_221<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,
