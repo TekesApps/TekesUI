@@ -33,6 +33,23 @@ use crate::menu::CommandId;
 use crate::placement::{PlacementReport, ScreenInfo};
 use crate::view::TekesView;
 
+// Opt-in finite geometry receipts; no timings, display-rate sampling or timers.
+fn resize_review(message: std::fmt::Arguments<'_>) {
+    #[cfg(debug_assertions)]
+    if let Some(path) = std::env::var_os("TEKESUI_RESIZE_REVIEW") {
+        use std::io::Write;
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+        {
+            let _ = writeln!(file, "{message}");
+        }
+    }
+    #[cfg(not(debug_assertions))]
+    let _ = message;
+}
+
 /// 引擎实现的处理器。平台层在主线程上同步调用，一次只有一个调用在运行。
 pub trait WindowHandler: 'static {
     fn handle(&mut self, event: Event, window: &mut Window);
@@ -86,6 +103,9 @@ pub(crate) struct Shared {
     // AppKit requires the original native down, even when a component first
     // offers its unhandled drag later. Never retain a RefCell borrow over AppKit.
     pub(crate) titlebar_drag_origin: RefCell<Option<Retained<NSEvent>>>,
+    // Native zoom may run a nested resize loop. Release the Rust handler first.
+    pending_titlebar_zoom: Cell<bool>,
+    pub(crate) toolbar_row_height: Cell<Option<f64>>,
     pub redraw_pending: Cell<bool>,
     pub last_geometry: Cell<Option<GeometryState>>,
     pub last_motion: Cell<Option<bool>>,
@@ -137,6 +157,8 @@ impl Shared {
             queue: RefCell::new(VecDeque::new()),
             dispatching: Cell::new(false),
             titlebar_drag_origin: RefCell::new(None),
+            pending_titlebar_zoom: Cell::new(false),
+            toolbar_row_height: Cell::new(None),
             redraw_pending: Cell::new(false),
             last_geometry: Cell::new(None),
             last_motion: Cell::new(None),
@@ -194,6 +216,7 @@ impl Shared {
     pub fn dispatch(self: &Rc<Self>, event: Event) {
         if matches!(event, Event::Focus(false) | Event::CloseRequested) {
             self.titlebar_drag_origin.borrow_mut().take();
+            self.pending_titlebar_zoom.set(false);
         }
         self.enqueue(QueuedEvent {
             event,
@@ -202,6 +225,14 @@ impl Shared {
     }
 
     fn enqueue(self: &Rc<Self>, queued: QueuedEvent) {
+        if let Event::Resized { size, .. } = &queued.event {
+            resize_review(format_args!(
+                "WINDOW_GEOMETRY width={} height={} handler_busy={}",
+                size.width,
+                size.height,
+                self.dispatching.get()
+            ));
+        }
         if self.closed.get() && queued.event != Event::CloseRequested {
             return;
         }
@@ -236,6 +267,13 @@ impl Shared {
             let Some(mut handler) = taken else { break };
             if event == Event::Redraw {
                 self.redraw_count.set(self.redraw_count.get() + 1);
+                if let Some(objects) = self.objects.get() {
+                    let size = objects.view.size_points();
+                    resize_review(format_args!(
+                        "WINDOW_REDRAW width={} height={}",
+                        size.width, size.height
+                    ));
+                }
             }
             let mut window = Window::new(self.clone());
             if let Some(frame) = drawable {
@@ -245,9 +283,96 @@ impl Shared {
             } else {
                 handler.handle(event, &mut window);
             }
-            *self.handler.borrow_mut() = Some(handler);
+            // Closing an auxiliary window does not end NSApp.run. Retire its
+            // handler only after the current callback returns, outside borrows.
+            if self.closed.get() {
+                drop(handler);
+            } else {
+                *self.handler.borrow_mut() = Some(handler);
+            }
         }
         self.dispatching.set(false);
+        // AppKit can synchronously resize through its whole zoom animation.
+        // Starting it inside handle would queue every Resized/Redraw until the
+        // animation returned. The handler is now restored, so each geometry
+        // callback can draw without aliasing the original mutable handler.
+        if self.pending_titlebar_zoom.replace(false)
+            && !self.closed.get()
+            && let Some(objects) = self.objects.get()
+        {
+            debug_assert!(self.handler.borrow().is_some());
+            let before = self.redraw_count.get();
+            objects.window.performZoom(None);
+            resize_review(format_args!(
+                "TITLEBAR_ZOOM handler_released=true redraws_during_zoom={}",
+                self.redraw_count.get() - before
+            ));
+        }
+    }
+
+    pub(crate) fn align_toolbar_controls(&self) {
+        if self.closed.get() {
+            return;
+        }
+        use objc2_app_kit::NSWindowStyleMask;
+        let Some(height) = self.toolbar_row_height.get() else {
+            return;
+        };
+        let Some(objects) = self.objects.get() else {
+            return;
+        };
+        if !objects
+            .window
+            .styleMask()
+            .contains(NSWindowStyleMask::FullSizeContentView)
+            || objects
+                .window
+                .styleMask()
+                .contains(NSWindowStyleMask::FullScreen)
+        {
+            return;
+        }
+        let controls = [
+            NSWindowButton::CloseButton,
+            NSWindowButton::MiniaturizeButton,
+            NSWindowButton::ZoomButton,
+        ];
+        let minimum = controls
+            .iter()
+            .filter_map(|kind| objects.window.standardWindowButton(*kind))
+            .filter(|button| !button.isHiddenOrHasHiddenAncestor())
+            .map(|button| button.frame().size.height)
+            .fold(0., f64::max);
+        let center = height.max(minimum) * 0.5;
+        for kind in controls {
+            let Some(button) = objects.window.standardWindowButton(kind) else {
+                continue;
+            };
+            if button.isHiddenOrHasHiddenAncestor() {
+                continue;
+            }
+            // SAFETY: original AppKit button remains in its native view hierarchy.
+            let Some(parent) = (unsafe { button.superview() }) else {
+                continue;
+            };
+            let rect = objects
+                .view
+                .convertRect_fromView(button.bounds(), Some(&button));
+            let target = objc2_foundation::NSRect::new(
+                objc2_foundation::NSPoint::new(rect.origin.x, center - rect.size.height * 0.5),
+                rect.size,
+            );
+            let native = parent.convertRect_fromView(target, Some(&objects.view));
+            let old = button.frame();
+            if (old.origin.y - native.origin.y).abs() > f64::EPSILON {
+                // Only the vertical origin changes. Keep original native button,
+                // parent, dimensions, horizontal position, actions and AX owner.
+                button.setFrameOrigin(objc2_foundation::NSPoint::new(
+                    old.origin.x,
+                    native.origin.y,
+                ));
+            }
+        }
     }
 
     /// 重新读取系统外观，变化了（或 `force`）就投递 `SystemAppearanceChanged`。
@@ -559,7 +684,7 @@ impl Window {
             NSWindowButton::ZoomButton,
         ] {
             if let Some(button) = self.window.standardWindowButton(kind) {
-                if button.isHidden() {
+                if button.isHiddenOrHasHiddenAncestor() {
                     continue;
                 }
                 let rect = self
@@ -615,6 +740,32 @@ impl Window {
             .map(|r| r.origin.y + r.size.height * 0.5)
     }
 
+    /// Align genuine native traffic lights vertically with a measured Toolbar
+    /// row. Supply the shared Toolbar measurement, never a separately tuned
+    /// button size. Horizontal positions, size, hierarchy and actions stay native.
+    /// Reapplied after native layout/resize. Ordinary or fullscreen chrome is left
+    /// to AppKit. At very small text sizes, native button height is the floor;
+    /// use the returned center to position the natural Toolbar row.
+    pub fn set_toolbar_row_height(&self, height: f64) -> Option<f64> {
+        if !height.is_finite() || height <= 0. {
+            return self.titlebar_control_center_y();
+        }
+        self.shared.toolbar_row_height.set(Some(height));
+        if !self
+            .window
+            .styleMask()
+            .contains(objc2_app_kit::NSWindowStyleMask::FullSizeContentView)
+            || self
+                .window
+                .styleMask()
+                .contains(objc2_app_kit::NSWindowStyleMask::FullScreen)
+        {
+            return None;
+        }
+        self.shared.align_toolbar_controls();
+        self.titlebar_control_center_y()
+    }
+
     /// `backingScaleFactor`。
     pub fn scale(&self) -> f64 {
         self.view.scale_factor()
@@ -656,8 +807,35 @@ impl Window {
         let _ = self.try_begin_titlebar_drag();
     }
 
+    /// Consume an offered native double-down as standard Zoom/restore.
+    /// Unlike dragging, this discrete action does not require the physical
+    /// button to remain held. The original current-window double-down must
+    /// still be live (mouse-up, focus loss and close clear it), and is consumed
+    /// once. Call synchronously only after component propagation and cancel.
+    /// The accepted zoom starts after the current handler is returned, allowing
+    /// native resize callbacks to redraw throughout the animation.
+    pub fn try_titlebar_double_click(&self) -> bool {
+        if !self.is_active() {
+            return false;
+        }
+        let Some(origin) = self.shared.titlebar_drag_origin.borrow().clone() else {
+            return false;
+        };
+        if origin.r#type() != NSEventType::LeftMouseDown
+            || origin.windowNumber() != self.window.windowNumber()
+            || origin.clickCount() != 2
+        {
+            return false;
+        }
+        self.shared.titlebar_drag_origin.borrow_mut().take();
+        self.shared.pending_titlebar_zoom.set(true);
+        true
+    }
+
     /// Same handoff with an explicit result. Uses the retained original native
     /// down, never the dragged event, and consumes that origin at most once.
+    /// An offered native double-down invokes AppKit zoom/restore instead of
+    /// dragging. Call only after the component's bubbling decision and cancel.
     pub fn try_begin_titlebar_drag(&self) -> bool {
         let Some(current) = self.window.currentEvent() else {
             return false;
@@ -680,7 +858,13 @@ impl Window {
         {
             return false;
         }
-        self.window.performWindowDragWithEvent(&origin);
+        if current.r#type() == NSEventType::LeftMouseDown && origin.clickCount() == 2 {
+            // Same native standard-frame action as the window Zoom control;
+            // AppKit keeps the pre-zoom frame and current-screen constraints.
+            self.shared.pending_titlebar_zoom.set(true);
+        } else {
+            self.window.performWindowDragWithEvent(&origin);
+        }
         true
     }
 

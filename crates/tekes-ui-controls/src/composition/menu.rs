@@ -1223,7 +1223,7 @@ impl Component for MenuContent {
         if let Some(state) = &mut self.menu.content_state
             && let Some(content) = state.trigger_content.first_mut()
         {
-            let layout = resolve_action_slot(&self.trigger, state.trigger_measured, frame, clip);
+            let layout = resolve_action_slot(&self.trigger, state.trigger_measured, frame, clip, t);
             content.arrange(
                 t,
                 layout.content,

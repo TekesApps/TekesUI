@@ -7,6 +7,7 @@ use tekes_ui_tokens::{Palette, Theme};
 fn main() {
     let out = PathBuf::from(std::env::var_os("TEKESUI_GRID_REVIEW_OUT").expect("explicit output"));
     std::fs::create_dir_all(&out).unwrap();
+    let current_only = std::env::var_os("TEKESUI_GRID_REVIEW_CURRENT_ONLY").is_some();
     let before = std::env::var("TEKESUI_GRID_REVIEW_PHASE").as_deref() == Ok("before");
     let mut gpu = tekes_ui_render::Renderer::new_headless().unwrap();
     let mut cases = Vec::new();
@@ -79,7 +80,16 @@ fn main() {
                             .write_image_data(&pixels)
                             .unwrap();
                         let mut changed = 0;
-                        if !before {
+                        if current_only && empty {
+                            let blank = gpu
+                                .render_to_rgba8(&Scene::new(), &mut text.atlas, size, scale, clear)
+                                .unwrap();
+                            assert_eq!(
+                                pixels, blank,
+                                "current empty Grid must not leak child paint"
+                            );
+                        }
+                        if !before && !current_only {
                             let mut reader = png::Decoder::new(
                                 std::fs::File::open(
                                     out.parent().unwrap().join("before-gpu").join(&file),
@@ -127,6 +137,6 @@ fn main() {
     assert_eq!(cases.len(), 96);
     std::fs::write(out.parent().unwrap().join(if before {"before-gpu-result.json"}else{"gpu-result.json"}),serde_json::to_vec_pretty(&serde_json::json!({"cases":cases,"frames":frames,"phase":if before {"before"}else{"after"},"scope":"actual GridView and real Button/CoreText/Metal consumer; empty availability vs preserved positive overflow"})).unwrap()).unwrap();
     if !before {
-        std::fs::write(out.parent().unwrap().join("grid-token-raw.json"),serde_json::to_vec_pretty(&serde_json::json!({"format":"tekesui-runtime-token-observation/1","scope":"GridView geometry-only capture with actual four-theme Button consumers outside the scope; zero-lookups do not describe child paint dependencies.","complete":false,"excluded":["child Button paint dependencies","all caller geometry/identity combinations","native and whole-page/ClientKit experience"],"cases":observations})).unwrap()).unwrap();
+        std::fs::write(out.parent().unwrap().join("grid-token-raw.json"),serde_json::to_vec_pretty(&serde_json::json!({"format":"tekesui-runtime-token-observation/1","scope":"GridView geometry-only capture with actual four-theme Button consumers outside the scope; zero-lookups do not describe child paint dependencies.","complete":false,"historical_pixel_comparison":!current_only,"excluded":["child Button paint dependencies","all caller geometry/identity combinations","native and whole-page/ClientKit experience"],"cases":observations})).unwrap()).unwrap();
     }
 }

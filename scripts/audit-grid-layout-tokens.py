@@ -28,12 +28,16 @@ def inputs():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--current-only', action='store_true', help='assert current geometry and GPU output without requiring unpublished historical PNGs')
     args = parser.parse_args()
     if args.output.exists():
         parser.error('use a fresh evidence file')
     before = inputs()
     command = ['cargo', 'run', '--manifest-path', str(HOST / 'Cargo.toml'), '--features', 'token-audit', '--locked']
-    subprocess.run(command, cwd=ROOT, env=dict(os.environ, TEKESUI_GRID_REVIEW_OUT=str(OUT / 'token-gpu'), TEKESUI_GRID_REVIEW_PHASE='after'), check=True)
+    env = dict(os.environ, TEKESUI_GRID_REVIEW_OUT=str(OUT / 'token-gpu'), TEKESUI_GRID_REVIEW_PHASE='after')
+    if args.current_only:
+        env['TEKESUI_GRID_REVIEW_CURRENT_ONLY'] = '1'
+    subprocess.run(command, cwd=ROOT, env=env, check=True)
     data = json.loads((OUT / 'grid-token-raw.json').read_text())
     assert inputs() == before, 'source drift during actual probe'
     assert data['complete'] is False and len(data['cases']) == 96

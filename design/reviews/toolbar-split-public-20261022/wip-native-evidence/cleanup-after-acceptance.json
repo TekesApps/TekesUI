@@ -1,0 +1,16 @@
+{
+  "closed_pid": 34755,
+  "deleted_paths": [
+    "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/component-review/toolbar-split-combined-20261022",
+    "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/deps/label_content-61bb37fc65a5a95f",
+    "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/deps/toolbar_groups-c13e1368d2314201",
+    "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/deps/toolbar_semantics-2705989f733850b5",
+    "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/deps/toolbar_splitter-54ed0f27056f015f",
+    "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/deps/titlebar_native-b188d722025175c2"
+  ],
+  "allocated_bytes_removed": 42594304,
+  "volume_available_delta_bytes": 42491904,
+  "signed_binary_retained": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/toolbar-split-combined-20261022/retained/SplitAlignmentReview.signed",
+  "evidence_retained": true,
+  "shared_dependency_cache_retained": true
+}

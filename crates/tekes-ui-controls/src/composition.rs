@@ -14,6 +14,7 @@ mod key;
 mod label;
 mod menu;
 mod pointer;
+mod toolbar_content;
 use crate::extended::{Axis, Grid, Stack};
 use crate::layout::{AlignmentOverride, MeasuredChild, layout_measured_children};
 use crate::paint::ButtonVariant;
@@ -39,6 +40,7 @@ pub use pointer::{InputModifiers, PointerButton, PointerEvent, PointerModifiers,
 use std::{any::Any, collections::BTreeSet, fmt::Debug, ops::Range};
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Rgba, proposal};
+pub use toolbar_content::{ToolbarContent, ToolbarGroup, ToolbarPlacement};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ComponentId(pub u64);
@@ -377,11 +379,31 @@ pub trait Component: Debug + Any {
             ContentResponse::default()
         }
     }
+    /// Pointer/hover ownership for composition with sibling chrome. Default
+    /// uses the same clipped allocation as ordinary Content routing. Compound
+    /// controls with internal gaps override using their original hit geometry.
+    fn pointer_regions(&self, frame: Rect, clip: Rect) -> Vec<Rect> {
+        if self.interactive() {
+            frame
+                .intersection(&clip)
+                .filter(|r| !r.is_empty())
+                .into_iter()
+                .collect()
+        } else {
+            Vec::new()
+        }
+    }
     /// Continue propagation after this component handled an ordinary routed event.
     /// Unhandled events always bubble. Defaults to false; this does not surrender
     /// pointer capture or override IME, focus-traversal, overlay or modal barriers.
     fn bubble_handled_event(&self, _event: &ContentEvent) -> bool {
         false
+    }
+    /// Optional help for a currently published semantic part. The revision
+    /// changes when its explanation changes; part identity and frame continue
+    /// to come from semantic_parts(). No new action/focus owner is introduced.
+    fn semantic_part_help(&self, _part: usize) -> Option<(&str, u64)> {
+        None
     }
     fn overlay_pointer_event(&mut self, pointer: &PointerEvent) -> ContentResponse {
         if pointer.is_primary() {
@@ -461,6 +483,24 @@ impl Content {
         }
         self.label = Some(label::LabelState::new(options));
         Ok(self)
+    }
+    // Toolbar owns a single-line presentation policy, while every descendant
+    // retains its source, semantics, mount identity and interaction state.
+    fn toolbar_label_layouts(&mut self) {
+        if self.component::<TextContent>().is_some() || self.component::<ButtonContent>().is_some()
+        {
+            let state = self.label.get_or_insert_with(|| {
+                label::LabelState::new(tekes_ui_text::LabelOptions::single_line(
+                    tekes_ui_text::LabelOverflow::TailEllipsis,
+                ))
+            });
+            state.toolbar();
+        }
+        if let Some(children) = self.component.children_mut() {
+            for child in children {
+                child.toolbar_label_layouts();
+            }
+        }
     }
     fn reset_label_layouts(&mut self) {
         // Slot containers may only measure descendants during arrange. A new
@@ -1084,6 +1124,22 @@ impl ContentHost {
         ids.into_iter()
             .filter_map(|id| self.root.find(id).map(|c| (id, c.frame)))
             .collect()
+    }
+    /// Visible original pointer/hover regions, including disabled controls.
+    /// No semantic-frame approximation or second control layout is computed.
+    pub fn pointer_regions(&self) -> Vec<Rect> {
+        fn collect(node: &Content, regions: &mut Vec<Rect>) {
+            if !node.component.active() {
+                return;
+            }
+            regions.extend(node.component.pointer_regions(node.frame, node.clip));
+            for child in node.component.children() {
+                collect(child, regions);
+            }
+        }
+        let mut regions = Vec::new();
+        collect(self.scope(), &mut regions);
+        regions
     }
     pub fn focused(&self) -> Option<ComponentId> {
         self.focused
@@ -1711,6 +1767,12 @@ impl ContentHost {
             .find_active(id)
             .and_then(|c| c.component.text_surface())
     }
+    /// Current active owner's process-local mount identity for native bridges.
+    /// Reorder retains it; replacement/remount changes it even for the same ID.
+    /// This is not a persistent identifier and does not acquire focus or input.
+    pub fn semantic_mount(&self, id: ComponentId) -> Option<u64> {
+        self.scope().find_active(id).map(|node| node.mount)
+    }
     /// Read the existing original owner's part hierarchy; no focus or input.
     pub fn semantic_part_parent(&self, id: ComponentId, part: usize) -> Option<usize> {
         self.scope()
@@ -1761,7 +1823,7 @@ impl ContentHost {
             .root
             .find_mut(id)
             .expect("validated active semantic owner");
-        let result = owner.component.accessibility_action(part, &action);
+        let mut result = owner.component.accessibility_action(part, &action);
         owner.record_actions(
             &result,
             ContentActionSource::Accessibility,
@@ -1773,8 +1835,14 @@ impl ContentHost {
             // an activation, not a fresh request for delayed keyboard help.
             self.help.suppress();
         }
-        if result.consumed && matches!(action, AccessibilityAction::SetSelection(_)) {
-            self.focus(Some(id), true);
+        if result.consumed
+            && matches!(
+                action,
+                AccessibilityAction::Focus | AccessibilityAction::SetSelection(_)
+            )
+        {
+            // Original semantic part validation must precede keyboard ownership.
+            result.changed |= self.focus(Some(id), true);
         }
         self.reconcile_active_inputs();
         self.dirty |= result.changed;
@@ -2292,6 +2360,9 @@ impl Component for ScrollContent {
 /// The forwarding value keeps existing sized renderer APIs source-compatible.
 struct TextAdapter<'a>(&'a mut dyn ButtonTextRenderer);
 impl ButtonTextRenderer for TextAdapter<'_> {
+    fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+        self.0.resolved_font_size(role)
+    }
     fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
         self.0.text_surface_host()
     }
@@ -2543,8 +2614,13 @@ impl CompoundButton {
             measured: Size::default(),
         })
     }
-    fn resolve(&self, frame: Rect, clip: Rect) -> crate::ButtonLayout {
-        resolve_action_slot(&self.action, self.measured, frame, clip)
+    fn resolve(
+        &self,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+    ) -> crate::ButtonLayout {
+        resolve_action_slot(&self.action, self.measured, frame, clip, text)
     }
 }
 impl Component for CompoundButton {
@@ -2593,7 +2669,7 @@ impl Component for CompoundButton {
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         self.measure(text, frame.size);
-        let layout = self.resolve(frame, clip);
+        let layout = self.resolve(text, frame, clip);
         let child_clip = layout.content.intersection(&clip).unwrap_or_default();
         self.content[0].arrange(text, layout.content, child_clip);
     }
@@ -2634,8 +2710,10 @@ fn resolve_action_slot(
     measured: Size,
     frame: Rect,
     clip: Rect,
+    text: &mut dyn ButtonTextRenderer,
 ) -> crate::ButtonLayout {
-    crate::ButtonLayout::resolve_with_policy(
+    crate::ButtonLayout::resolve_with_text(
+        text,
         frame,
         Some(clip),
         measured,
@@ -2657,13 +2735,15 @@ fn measure_action_slot(
         return MeasuredChild::new(*measured);
     }
     let frame = Rect::from_origin_size(Point::default(), available);
-    let empty = crate::ButtonLayout::resolve(
+    let empty = crate::ButtonLayout::resolve_with_text(
+        text,
         frame,
         None,
         Size::default(),
         ButtonSize::Body,
         proposal::TextRole::UiBody,
         ButtonTextAlign::Leading,
+        crate::ButtonFramePolicy::Minimum,
     );
     *measured = content
         .measure(text, Size::new(empty.content.size.width, available.height))
@@ -2673,6 +2753,7 @@ fn measure_action_slot(
         *measured,
         Rect::new(0., 0., available.width, 0.),
         frame,
+        text,
     );
     MeasuredChild::new(Size::new(
         (measured.width + available.width - empty.content.size.width).min(available.width),

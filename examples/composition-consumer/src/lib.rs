@@ -251,3 +251,9 @@ pub mod forwarded_actions;
 pub mod help_list;
 
 pub mod declared_menu;
+
+pub mod toolbar_semantics;
+
+pub mod toolbar_groups;
+
+pub mod split_toolbar;

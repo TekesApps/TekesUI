@@ -2,12 +2,60 @@
 //! belong to this control; window hosts only provide its allocated frame.
 use crate::composite::MenuRowStyle;
 use crate::{
-    Button, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, MenuEvent, MenuView,
+    ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, MenuEvent, MenuView,
     paint::ButtonVariant,
 };
 use tekes_ui_scene::{ImageId, ImageQuad, Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
 
+/// One internal geometry calculation for both original Toolbar entry points.
+/// JSON visible-ink proportions scaled only by effective title size.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ToolbarMetrics {
+    pub row: f32,
+    pub box_size: f32,
+    pub icon: f32,
+    pub inset: f32,
+}
+pub(crate) fn metrics(
+    text: &mut (impl ButtonTextRenderer + ?Sized),
+    role: proposal::TextRole,
+) -> ToolbarMetrics {
+    let size = text.resolved_font_size(role);
+    let ratio = if size.is_finite() && size > 0. {
+        size / proposal::TOOLBAR_REFERENCE_TITLE_SIZE
+    } else {
+        1.
+    };
+    let metric =
+        |group, name| proposal::metric(group, name).expect("toolbar JSON geometry") * ratio;
+    let icon = metric("size", "size-icon-standard");
+    let ink = icon * proposal::REGULAR_ICON_VISIBLE_HEIGHT_RATIO;
+    ToolbarMetrics {
+        row: ink * proposal::TOOLBAR_ROW_TO_VISIBLE_ICON,
+        box_size: ink * proposal::TOOLBAR_BOX_TO_VISIBLE_ICON,
+        // Keep the SVG artboard and its visible artwork distinct.
+        icon,
+        inset: ink * proposal::TOOLBAR_INSET_TO_VISIBLE_ICON,
+    }
+}
+// Rasterized artwork must retain its sampling phase as a segment translates.
+// Only paint origin is aligned; typography-derived extent and original action
+// layout/hit/hover geometry stay unchanged, including fractional font scales.
+fn icon_frame(frame: Rect, side: f32, backing_scale: f32) -> Rect {
+    let scale = if backing_scale.is_finite() && backing_scale > 0. {
+        backing_scale
+    } else {
+        1.
+    };
+    let snap = |value: f32| (value * scale).round() / scale;
+    Rect::new(
+        snap(frame.center().x - side * 0.5),
+        snap(frame.center().y - side * 0.5),
+        side,
+        side,
+    )
+}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ToolbarAction {
     pub id: u64,
@@ -25,9 +73,14 @@ pub struct ToolbarIconAction {
 #[derive(Debug)]
 pub struct ToolbarControl {
     actions: Vec<ToolbarAction>,
+    semantic_ids: std::collections::HashMap<u64, usize>,
+    next_semantic_id: usize,
+    popup: Option<crate::MenuLayout>,
     text_role: proposal::TextRole,
     icons: std::collections::HashMap<u64, ImageId>,
     selected: std::collections::HashSet<u64>,
+    action_help: std::collections::HashMap<u64, (String, u64)>,
+    help_revision: u64,
     buttons: Vec<crate::composition::ButtonContent>,
     visible: Vec<usize>,
     hidden: Vec<usize>,
@@ -48,9 +101,14 @@ impl Default for ToolbarControl {
     fn default() -> Self {
         Self {
             actions: Vec::new(),
+            semantic_ids: Default::default(),
+            next_semantic_id: 1,
+            popup: None,
             text_role: proposal::TextRole::UiBody,
             icons: Default::default(),
             selected: Default::default(),
+            action_help: Default::default(),
+            help_revision: 0,
             buttons: Vec::new(),
             visible: Vec::new(),
             hidden: Vec::new(),
@@ -74,7 +132,7 @@ impl ToolbarControl {
     /// JSON Design System. Inline toolbar defaults remain unchanged.
     pub fn window() -> Self {
         Self {
-            text_role: proposal::TextRole::ToolbarLabel,
+            text_role: proposal::TextRole::UiBody,
             ..Self::default()
         }
     }
@@ -87,29 +145,42 @@ impl ToolbarControl {
         }
     }
     fn overflow_size(&self, text: &mut impl ButtonTextRenderer) -> Size {
-        if self.overflow_icon.is_some() {
-            crate::layout_view::IconButtonView::measure(false)
-        } else {
-            Button::measure(text, "…", f32::MAX, ButtonSize::Body, self.text_role)
-        }
+        let m = metrics(text, self.text_role);
+        Size::new(m.box_size, m.box_size)
     }
     fn item_size(&self, text: &mut impl ButtonTextRenderer, action: &ToolbarAction) -> Size {
-        let icon = crate::layout_view::IconButtonView::measure(false);
-        if self.icons.contains_key(&action.id) {
-            icon
+        let m = metrics(text, self.text_role);
+        let width = if self.icons.contains_key(&action.id) {
+            m.box_size
         } else {
-            let label = Button::measure(
-                text,
-                &action.title,
-                f32::MAX,
-                ButtonSize::Body,
-                self.text_role,
-            );
-            Size::new(label.width, label.height.max(icon.height))
-        }
+            text.measure(&action.title, self.text_role, f32::MAX).width + m.inset * 2.
+        };
+        Size::new(width, m.box_size)
     }
-    fn padding() -> f32 {
-        proposal::metric("spacing", "space-regular").expect("toolbar spacing")
+    /// Explain an existing action through the original ContentHost tooltip.
+    /// Empty/None revokes help; this never changes command, focus or selection.
+    /// Returns false for unknown/ambiguous IDs or an unchanged declaration.
+    pub fn set_action_help(&mut self, id: u64, text: Option<String>) -> bool {
+        if self.actions.iter().filter(|a| a.id == id).count() != 1 {
+            return false;
+        }
+        let text = text.filter(|s| !s.trim().is_empty());
+        if self.action_help.get(&id).map(|(text, _)| text) == text.as_ref() {
+            return false;
+        }
+        self.help_revision = self
+            .help_revision
+            .checked_add(1)
+            .expect("toolbar help revision exhausted");
+        match text {
+            Some(text) => {
+                self.action_help.insert(id, (text, self.help_revision));
+            }
+            None => {
+                self.action_help.remove(&id);
+            }
+        }
+        true
     }
     pub fn set_selected_ids(&mut self, ids: &[u64]) {
         self.selected = ids.iter().copied().collect();
@@ -169,6 +240,21 @@ impl ToolbarControl {
             self.cancel();
             self.buttons
                 .resize_with(actions.len(), || crate::composition::ButtonContent::new(""));
+            // Keep logical action identity across reorder/label updates. A
+            // removed and later reintroduced action receives a fresh part key.
+            self.semantic_ids
+                .retain(|id, _| actions.iter().any(|a| a.id == *id));
+            self.action_help
+                .retain(|id, _| actions.iter().any(|a| a.id == *id));
+            for action in &actions {
+                if !self.semantic_ids.contains_key(&action.id) {
+                    let part = self.next_semantic_id;
+                    self.next_semantic_id = part
+                        .checked_add(1)
+                        .expect("toolbar semantic identity exhausted");
+                    self.semantic_ids.insert(action.id, part);
+                }
+            }
             self.actions = actions;
             self.focused = focused_id
                 .and_then(|id| self.actions.iter().position(|a| a.id == id))
@@ -190,11 +276,17 @@ impl ToolbarControl {
             }
         }
     }
+    /// Typography-derived chrome height, including an empty window toolbar.
+    /// Window adapters use this same value for native controls and content.
+    pub fn row_height(&self, text: &mut impl ButtonTextRenderer) -> f32 {
+        metrics(text, self.text_role).row
+    }
     pub fn measure(&self, text: &mut impl ButtonTextRenderer) -> Size {
         if self.actions.is_empty() {
             return Size::default();
         }
-        let pad = Self::padding();
+        let m = metrics(text, self.text_role);
+        let pad = m.inset;
         let mut size = self.overflow_size(text);
         size.width = 0.;
         for action in &self.actions {
@@ -202,10 +294,7 @@ impl ToolbarControl {
             size.width += item.width;
             size.height = size.height.max(item.height);
         }
-        Size::new(
-            size.width + pad * (self.actions.len() + 1) as f32,
-            size.height + pad * 2.,
-        )
+        Size::new(size.width + pad * (self.actions.len() + 1) as f32, m.row)
     }
     pub fn render(
         &mut self,
@@ -226,7 +315,11 @@ impl ToolbarControl {
         palette: Palette,
         clip: Option<Rect>,
     ) {
+        let m = metrics(text, self.text_role);
+        let allocated = frame;
+        let frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, m.row);
         let clip = clip
+            .or(Some(allocated))
             .and_then(|clip| frame.intersection(&clip))
             .unwrap_or_else(|| {
                 if clip.is_some() {
@@ -235,7 +328,7 @@ impl ToolbarControl {
                     frame
                 }
             });
-        let pad = Self::padding();
+        let pad = m.inset;
         let inner = Rect::new(
             frame.min_x() + pad,
             frame.min_y(),
@@ -247,8 +340,12 @@ impl ToolbarControl {
             .iter()
             .map(|a| self.item_size(text, a))
             .collect();
-        let total = sizes.iter().map(|s| s.width).sum::<f32>()
-            + pad * self.actions.len().saturating_sub(1) as f32;
+        // Match measure() in outer-frame space. Subtracting the insets first
+        // loses low bits under typography zoom and can invent overflow even
+        // at the exact natural width returned to a host.
+        let natural_width =
+            sizes.iter().map(|s| s.width).sum::<f32>() + pad * (sizes.len() + 1) as f32;
+        let needs_overflow = natural_width > frame.size.width;
         let mut overflow = self.overflow_size(text);
         overflow.height = overflow
             .height
@@ -256,8 +353,9 @@ impl ToolbarControl {
         let mut visible = Vec::new();
         let mut used = 0.;
         for (i, s) in sizes.iter().enumerate() {
-            let next = used + if visible.is_empty() { 0. } else { pad } + s.width;
-            if total > inner.size.width && next + pad + overflow.width > inner.size.width {
+            let next = used + s.width;
+            let with_overflow = next + overflow.width + pad * (visible.len() + 3) as f32;
+            if needs_overflow && with_overflow > frame.size.width {
                 break;
             }
             visible.push(i);
@@ -298,10 +396,8 @@ impl ToolbarControl {
                 size.width,
                 size.height,
             );
-            self.buttons[i].button.chrome_height =
-                (self.text_role == proposal::TextRole::ToolbarLabel).then(|| {
-                    proposal::metric("size", "size-toolbar-chrome").expect("window toolbar chrome")
-                });
+            self.buttons[i].button.frame_policy = crate::ButtonFramePolicy::Exact;
+            self.buttons[i].button.chrome_height = None;
             self.buttons[i].button.state.disabled = !self.actions[i].enabled;
             self.buttons[i].button.state.selected = self.selected.contains(&self.actions[i].id);
             self.buttons[i].button.render(
@@ -321,18 +417,10 @@ impl ToolbarControl {
                 ButtonTextAlign::Center,
             );
             if let Some(&image) = self.icons.get(&self.actions[i].id) {
-                let side = proposal::metric("size", "size-icon-standard")
-                    .expect("toolbar icon token")
-                    .min(rect.size.width)
-                    .min(rect.size.height);
+                let side = m.icon.min(rect.size.width).min(rect.size.height);
                 scene.push_clip(clip);
                 scene.push_image(ImageQuad {
-                    rect: Rect::new(
-                        rect.center().x - side / 2.,
-                        rect.center().y - side / 2.,
-                        side,
-                        side,
-                    ),
+                    rect: icon_frame(rect, side, text.backing_scale()),
                     image,
                     opacity: if self.actions[i].enabled { 1. } else { 0.35 },
                 });
@@ -348,10 +436,8 @@ impl ToolbarControl {
                 overflow.width.min(inner.size.width),
                 overflow.height,
             );
-            self.trigger.button.chrome_height =
-                (self.text_role == proposal::TextRole::ToolbarLabel).then(|| {
-                    proposal::metric("size", "size-toolbar-chrome").expect("window toolbar chrome")
-                });
+            self.trigger.button.frame_policy = crate::ButtonFramePolicy::Exact;
+            self.trigger.button.chrome_height = None;
             self.trigger.button.render(
                 scene,
                 text,
@@ -369,18 +455,13 @@ impl ToolbarControl {
                 ButtonTextAlign::Center,
             );
             if let Some(image) = self.overflow_icon {
-                let side = proposal::metric("size", "size-icon-standard")
-                    .expect("toolbar icon slot")
+                let side = m
+                    .icon
                     .min(self.trigger_rect.size.width)
                     .min(self.trigger_rect.size.height);
                 scene.push_clip(clip);
                 scene.push_image(ImageQuad {
-                    rect: Rect::new(
-                        self.trigger_rect.center().x - side / 2.,
-                        self.trigger_rect.center().y - side / 2.,
-                        side,
-                        side,
-                    ),
+                    rect: icon_frame(self.trigger_rect, side, text.backing_scale()),
                     image,
                     opacity: 1.,
                 });
@@ -401,7 +482,7 @@ impl ToolbarControl {
             .iter()
             .map(|&i| self.actions[i].title.as_str())
             .collect();
-        self.menu.render(
+        self.popup = self.menu.render(
             scene,
             text,
             &labels,
@@ -423,7 +504,7 @@ impl ToolbarControl {
             .copied()
             .filter(|&i| self.actions.get(i).is_some_and(|action| action.enabled))
             .collect();
-        if !self.hidden.is_empty() && self.frame.size.width > Self::padding() * 2. {
+        if !self.hidden.is_empty() && !self.trigger_rect.is_empty() {
             stops.push(self.actions.len());
         }
         stops
@@ -484,6 +565,7 @@ impl ToolbarControl {
         self.action_for(event)
     }
     pub fn cancel(&mut self) {
+        self.popup = None;
         for b in &mut self.buttons {
             b.button.cancel();
         }
@@ -501,22 +583,45 @@ impl ToolbarControl {
 // The composition wrapper keeps the real ButtonContent input contract,
 // including explicit drag propagation, modifiers and primary-button ownership.
 impl crate::composition::Component for ToolbarControl {
+    fn pointer_regions(&self, _: Rect, clip: Rect) -> Vec<Rect> {
+        self.visible
+            .iter()
+            .filter_map(|&i| self.buttons[i].button.layout())
+            .chain(
+                (!self.hidden.is_empty())
+                    .then(|| self.trigger.button.layout())
+                    .flatten(),
+            )
+            .filter_map(|l| l.visible.and_then(|r| r.intersection(&clip)))
+            .filter(|r| !r.is_empty())
+            .collect()
+    }
     fn measure(
         &mut self,
         text: &mut dyn ButtonTextRenderer,
-        _: Size,
+        available: Size,
     ) -> crate::layout::MeasuredChild {
-        crate::layout::MeasuredChild::new(ToolbarControl::measure(self, &mut ToolbarText(text)))
+        let mut size = ToolbarControl::measure(self, &mut ToolbarText(text));
+        // A toolbar owns overflow within its allocation; it must not ask a
+        // measured parent to preserve the width of all hidden commands.
+        size.width = size.width.min(available.width.max(0.));
+        crate::layout::MeasuredChild::new(size)
     }
     fn paint(
         &mut self,
         scene: &mut Scene,
         text: &mut dyn ButtonTextRenderer,
         frame: Rect,
-        _: Rect,
+        clip: Rect,
         theme: crate::composition::ContentTheme,
     ) {
-        self.render(scene, &mut ToolbarText(text), frame, theme.palette);
+        self.render_clipped(
+            scene,
+            &mut ToolbarText(text),
+            frame,
+            theme.palette,
+            Some(clip),
+        );
     }
     fn paint_overlay(
         &mut self,
@@ -537,8 +642,24 @@ impl crate::composition::Component for ToolbarControl {
     ) -> crate::composition::ContentResponse {
         self.event(event)
     }
+    fn lifecycle(&mut self, event: crate::composition::Lifecycle) {
+        if event == crate::composition::Lifecycle::Unmounted {
+            self.action_help.clear();
+            self.help_revision = self
+                .help_revision
+                .checked_add(1)
+                .expect("toolbar help revision exhausted");
+            self.cancel();
+        }
+    }
     fn focusable(&self) -> bool {
         self.actions.iter().any(|a| a.enabled)
+            || !self.hidden.is_empty()
+                && self
+                    .trigger
+                    .button
+                    .layout()
+                    .is_some_and(|layout| layout.visible.is_some())
     }
     fn set_focus(&mut self, focused: bool, visible: bool) {
         let stops = self.focus_stops();
@@ -580,7 +701,10 @@ impl crate::composition::Component for ToolbarControl {
             return ContentResponse::default();
         }
         if key.down
-            && key.modifiers == Default::default()
+            && !key.modifiers.shift
+            && !key.modifiers.control
+            && !key.modifiers.alt
+            && !key.modifiers.command
             && matches!(
                 key.key,
                 Some(ControlKey::Left | ControlKey::Right | ControlKey::Home | ControlKey::End)
@@ -636,6 +760,177 @@ impl crate::composition::Component for ToolbarControl {
     }
     fn semantics(&self) -> crate::composition::ContentSemantics {
         crate::composition::ContentSemantics::new(crate::composition::ContentRole::Group, "Toolbar")
+    }
+    fn semantic_part_help(&self, part: usize) -> Option<(&str, u64)> {
+        let id = self.semantic_ids.iter().find(|(_, key)| **key == part)?.0;
+        if self.actions.iter().filter(|a| a.id == *id).count() != 1 {
+            return None;
+        }
+        let (text, revision) = self.action_help.get(id)?;
+        Some((text.as_str(), *revision))
+    }
+    fn semantic_parts(&self) -> Vec<crate::composition::SemanticPart> {
+        use crate::composition::{ContentRole, ContentSemantics, SemanticPart};
+        let mut parts = Vec::new();
+        let open = self.menu.is_open();
+        let candidates = if open { &self.hidden } else { &self.visible };
+        for (slot, &i) in candidates.iter().enumerate() {
+            let action = &self.actions[i];
+            // Duplicate command IDs have no unambiguous public action owner.
+            if self.actions.iter().filter(|a| a.id == action.id).count() != 1 {
+                continue;
+            }
+            let layout = if open {
+                self.popup.as_ref().and_then(|p| p.items.get(slot)).copied()
+            } else {
+                self.buttons[i].button.layout()
+            };
+            let Some(frame) = layout.and_then(|l| l.visible).filter(|r| !r.is_empty()) else {
+                continue;
+            };
+            let mut semantics = ContentSemantics::new(
+                if open {
+                    ContentRole::MenuItem
+                } else {
+                    ContentRole::Button
+                },
+                &action.title,
+            );
+            semantics.disabled = !action.enabled;
+            semantics.selected = self.selected.contains(&action.id);
+            semantics.description = self
+                .action_help
+                .get(&action.id)
+                .map(|(text, _)| text.clone());
+            parts.push(SemanticPart {
+                index: self.semantic_ids[&action.id],
+                frame,
+                focused: self.has_focus
+                    && action.enabled
+                    && if open {
+                        self.popup.as_ref().is_some_and(|p| p.active_item == slot)
+                    } else {
+                        self.focused == Some(i)
+                    },
+                semantics,
+            });
+        }
+        if !self.hidden.is_empty()
+            && let Some(frame) = self
+                .trigger
+                .button
+                .layout()
+                .and_then(|l| l.visible)
+                .filter(|r| !r.is_empty())
+        {
+            let mut semantics = ContentSemantics::new(ContentRole::MenuButton, "More options");
+            semantics.expanded = Some(open);
+            parts.push(SemanticPart {
+                index: 0,
+                frame,
+                focused: !open && self.has_focus && self.focused == Some(self.actions.len()),
+                semantics,
+            });
+        }
+        parts
+    }
+    fn semantic_part_parent(&self, part: usize) -> Option<usize> {
+        (part != 0
+            && self.menu.is_open()
+            && self
+                .hidden
+                .iter()
+                .any(|&i| self.semantic_ids[&self.actions[i].id] == part))
+        .then_some(0)
+    }
+    fn accessibility_action(
+        &mut self,
+        part: Option<usize>,
+        action: &crate::composition::AccessibilityAction,
+    ) -> crate::composition::ContentResponse {
+        use crate::composition::{AccessibilityAction, ContentResponse};
+        self.last_action = None;
+        let Some(part) = part else {
+            return ContentResponse::default();
+        };
+        if !matches!(
+            action,
+            AccessibilityAction::Focus | AccessibilityAction::Press
+        ) || !self
+            .semantic_parts()
+            .iter()
+            .any(|p| p.index == part && !p.semantics.disabled)
+        {
+            return ContentResponse::default();
+        }
+        if part == 0 && self.menu.is_open() {
+            self.cancel();
+            self.focused = Some(self.actions.len());
+            let focus = matches!(action, AccessibilityAction::Focus);
+            self.set_focus(self.has_focus || focus, self.focus_visible || focus);
+            return ContentResponse::consumed(true);
+        }
+        if self.menu.is_open() {
+            let Some(slot) = self
+                .hidden
+                .iter()
+                .position(|&i| self.semantic_ids[&self.actions[i].id] == part)
+            else {
+                return ContentResponse::default();
+            };
+            if matches!(action, AccessibilityAction::Focus) {
+                if !self.menu.focus_item(slot) {
+                    return ContentResponse::default();
+                }
+                self.focused = Some(self.actions.len());
+                self.set_focus(true, true);
+                return ContentResponse::consumed(true);
+            }
+            let event = self.menu.activate_item(slot);
+            self.last_action = self.action_for(event);
+            return ContentResponse {
+                consumed: self.last_action.is_some(),
+                changed: self.last_action.is_some(),
+                activated: self.last_action.is_some(),
+                ..Default::default()
+            };
+        }
+        let target = if part == 0 {
+            self.actions.len()
+        } else {
+            let Some(i) = self
+                .visible
+                .iter()
+                .copied()
+                .find(|&i| self.semantic_ids[&self.actions[i].id] == part)
+            else {
+                return ContentResponse::default();
+            };
+            i
+        };
+        self.cancel();
+        self.focused = Some(target);
+        let focus = matches!(action, AccessibilityAction::Focus);
+        self.set_focus(self.has_focus || focus, self.focus_visible || focus);
+        if focus {
+            return ContentResponse::consumed(true);
+        }
+        if target == self.actions.len() {
+            let result = self.trigger.accessibility_action(None, action);
+            if result.activated {
+                self.menu.show(0);
+            }
+            ContentResponse {
+                activated: false,
+                ..result
+            }
+        } else {
+            let result = self.buttons[target].accessibility_action(None, action);
+            if result.activated {
+                self.last_action = Some(self.actions[target].id);
+            }
+            result
+        }
     }
     fn event(
         &mut self,
@@ -764,6 +1059,9 @@ impl crate::composition::Component for ToolbarControl {
 }
 struct ToolbarText<'a>(&'a mut dyn ButtonTextRenderer);
 impl ButtonTextRenderer for ToolbarText<'_> {
+    fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+        self.0.resolved_font_size(role)
+    }
     fn measure(&mut self, s: &str, role: proposal::TextRole, width: f32) -> Size {
         self.0.measure(s, role, width)
     }
@@ -793,6 +1091,9 @@ mod tests {
         height: f32,
     }
     impl ButtonTextRenderer for Text {
+        fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+            role.style().size * self.height / role.style().line_height
+        }
         fn measure(&mut self, text: &str, _: proposal::TextRole, _: f32) -> Size {
             assert!(!text.contains('\n'));
             Size::new(text.chars().count() as f32 * 8., self.height)
@@ -871,14 +1172,14 @@ mod tests {
         let chrome_a = toolbar.buttons[0].button.chrome_bounds().unwrap();
         let chrome_b = toolbar.buttons[1].button.chrome_bounds().unwrap();
         assert_eq!(chrome_a.size.height, chrome_b.size.height);
-        assert_eq!(chrome_a.size.height, 20.);
+        assert_eq!(chrome_a.size.height, 28.);
         assert_eq!(chrome_a.center().y, first.center().y);
         let margin = Point::new(first.center().x, first.min_y() + 1.);
-        assert!(!chrome_a.contains(margin));
+        assert!(chrome_a.contains(margin));
         toolbar.pointer_down(margin);
         assert_eq!(toolbar.pointer_up(margin), Some(1));
-        assert!(first.size.height >= crate::layout_view::IconButtonView::measure(false).height);
-        assert_eq!(toolbar.text_role, proposal::TextRole::ToolbarLabel);
+        assert_eq!(first.size.height, 28.);
+        assert_eq!(toolbar.text_role, proposal::TextRole::UiBody);
         assert_eq!(
             ToolbarControl::default().text_role,
             proposal::TextRole::UiBody
@@ -981,10 +1282,7 @@ mod tests {
             Palette::from(tekes_ui_tokens::Theme::LIGHT),
         );
         let first = toolbar.buttons[0].button.layout().unwrap().frame;
-        assert_eq!(
-            first.size.width,
-            crate::layout_view::IconButtonView::measure(false).width
-        );
+        assert_eq!(first.size.width, 28.);
         assert!(toolbar.pointer_down(first.center()));
         assert_eq!(toolbar.pointer_up(first.center()), Some(101));
         let second = toolbar.buttons[1].button.layout().unwrap().frame;

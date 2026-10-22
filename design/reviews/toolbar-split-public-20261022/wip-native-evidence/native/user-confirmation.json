@@ -1,0 +1,10 @@
+{
+  "confirmation": "看过了，一切正常",
+  "scope": "hover enter/leave and Toolbar single-line under Command zoom/narrow segments",
+  "source_identity": "acf65b4a395458332317843373f5b9e03c2393047d7f1e4fbfc83033d7800c7c",
+  "binary_sha256": "085e737bfd68a146f47f537d16bf458eddd8d28dda07956fa6a3fed4bd3e3ac7",
+  "native_cursor_log_checks": {
+    "horizontal_seen": true,
+    "arrow_seen": true
+  }
+}

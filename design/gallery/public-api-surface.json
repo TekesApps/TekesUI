@@ -1055,6 +1055,30 @@
       "reason": "Viewport constraints on the existing TextFieldContent: legacy Form, Fixed, Fill and bounded intrinsic Grow, excluding Field metadata. Reuses original TextSurface/ReadingController/Stack flexible child; not a new component or layout framework."
     },
     {
+      "api": "tekes_ui_controls::composition::ToolbarContent",
+      "category": "component",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Composable toolbar container using original Content children and existing typography metrics; scoped region layout, not a new Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarGroup",
+      "category": "component",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Stable original Content group declaring toolbar placement while retaining child control and semantic ownership."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarPlacement",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Semantic region policy for original Content groups inside the receiving toolbar; status and secondary actions remain distinct."
+    },
+    {
       "api": "tekes_ui_controls::extended::Axis",
       "category": "shared-support",
       "components": [],

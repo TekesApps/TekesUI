@@ -670,6 +670,10 @@ impl NumberFieldView {
         self.sync_model(model);
         self.minus.state.focused = self.focused == Some(false);
         self.plus.state.focused = self.focused == Some(true);
+        // The stepper owns these allocated hit slots, including narrow widths.
+        // Do not apply Button's minimum/insets again after typography scales.
+        self.minus.frame_policy = crate::ButtonFramePolicy::Exact;
+        self.plus.frame_policy = crate::ButtonFramePolicy::Exact;
         let d = self.minus.render(
             scene,
             text,

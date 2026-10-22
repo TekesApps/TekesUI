@@ -295,6 +295,10 @@ pub(crate) fn validate(p: &Value) -> Result<(), Errors> {
         "/layout/gallery/capture_size/0",
         "/layout/gallery/capture_size/1",
         "/layout/sidebar/default",
+        "/layout/icons/regular/visible_height_ratio",
+        "/layout/window/toolbar/row_to_visible_icon",
+        "/layout/window/toolbar/box_to_visible_icon",
+        "/layout/window/toolbar/inset_to_visible_icon",
         "/layout/scroll_area/content_padding",
         "/layout/scroll_area/single_line_padding_y",
         "/layout/scroll_area/scrollbar_width",
@@ -417,6 +421,22 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
             "SCROLL_SINGLE_LINE_PADDING_Y",
             "/layout/scroll_area/single_line_padding_y",
         ),
+        (
+            "REGULAR_ICON_VISIBLE_HEIGHT_RATIO",
+            "/layout/icons/regular/visible_height_ratio",
+        ),
+        (
+            "TOOLBAR_ROW_TO_VISIBLE_ICON",
+            "/layout/window/toolbar/row_to_visible_icon",
+        ),
+        (
+            "TOOLBAR_BOX_TO_VISIBLE_ICON",
+            "/layout/window/toolbar/box_to_visible_icon",
+        ),
+        (
+            "TOOLBAR_INSET_TO_VISIBLE_ICON",
+            "/layout/window/toolbar/inset_to_visible_icon",
+        ),
         ("SCROLLBAR_WIDTH", "/layout/scroll_area/scrollbar_width"),
         ("SCROLLBAR_INSET", "/layout/scroll_area/scrollbar_inset"),
         ("SIDEBAR_PADDING", "/layout/scroll_area/sidebar_padding"),
@@ -532,6 +552,7 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
             .join(",")
     )
     .unwrap();
+    out.push_str("pub const TOOLBAR_REFERENCE_TITLE_SIZE: f32 = TextRole::UiBody.style().size;\n");
     out.push_str("#[derive(Clone,Copy,Debug,PartialEq,Eq,Hash)]\npub enum TextRole {\n");
     for style in &styles {
         let variant = style["name"]

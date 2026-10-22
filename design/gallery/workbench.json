@@ -235,9 +235,11 @@
       "api_bindings": [
         "tekes_ui_controls::Toolbar",
         "tekes_ui_controls::feedback_view::ToolbarView",
-        "tekes_ui_controls::ToolbarControl"
+        "tekes_ui_controls::ToolbarControl",
+        "tekes_ui_controls::composition::ToolbarContent",
+        "tekes_ui_controls::composition::ToolbarGroup"
       ],
-      "api_notes": "Existing action-group model/View and additive original Component ToolbarControl with measured single-row overflow, stable IDs and icons. Module/window process contributions are separate experimental infrastructure; arbitrary caller Content slots and complete remote keyboard/IME/AX remain unaccepted."
+      "api_notes": "Original ToolbarContent and stable ToolbarGroup accept original Content children in semantic regions. ToolbarControl retains descriptor-based original Button/Menu overflow. Shared typography, single-line labels and SplitView toolbar bands are public; general window/process registration and complete native/remote acceptance remain separate."
     },
     {
       "title": "Text",

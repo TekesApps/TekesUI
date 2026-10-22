@@ -113,6 +113,8 @@ impl Separator {
 pub struct SplitView {
     ratio: f32,
     pub divider: f32,
+    /// Consumer-owned minimum along the split axis, in logical points.
+    /// Defaults to zero; no additional percentage floor is imposed.
     pub min_pane: f32,
     pub collapsed: Option<Pane>,
     drag: Option<(f32, f32, Option<Pane>, bool)>,
@@ -186,9 +188,9 @@ pub struct SplitViewLayout {
 impl SplitView {
     pub fn new(ratio: f32) -> Self {
         Self {
-            ratio: finite_or(ratio, 0.5).clamp(0.05, 0.95),
+            ratio: finite_or(ratio, 0.5).clamp(0., 1.),
             divider: 1.,
-            min_pane: 24.,
+            min_pane: 0.,
             collapsed: None,
             drag: None,
         }
@@ -209,7 +211,7 @@ impl SplitView {
     }
     fn min_ratio(&self, usable: f32) -> f32 {
         if usable >= 2. * finite_nonnegative(self.min_pane) && usable > 0. {
-            (finite_nonnegative(self.min_pane) / usable).clamp(0.05, 0.5)
+            (finite_nonnegative(self.min_pane) / usable).clamp(0., 0.5)
         } else {
             0.5
         }
@@ -218,7 +220,7 @@ impl SplitView {
         if !ratio.is_finite() {
             return false;
         }
-        let next = ratio.clamp(0.05, 0.95);
+        let next = ratio.clamp(0., 1.);
         let changed = self.ratio != next;
         self.ratio = next;
         changed
@@ -268,7 +270,10 @@ impl SplitView {
         .max(0.);
         let effective_divider = finite_nonnegative(self.divider).min(available);
         let usable = (available - effective_divider).max(0.);
-        if self.is_constrained(bounds, axis) || usable < 2. * finite_nonnegative(self.min_pane) {
+        if self.is_constrained(bounds, axis)
+            || usable <= 0.
+            || usable < 2. * finite_nonnegative(self.min_pane)
+        {
             return false;
         }
         self.drag = Some((pointer, self.ratio_in(bounds, axis), self.collapsed, false));
@@ -319,8 +324,8 @@ impl SplitView {
         match key {
             ControlKey::Left | ControlKey::Up => self.set_ratio(self.ratio - 0.02),
             ControlKey::Right | ControlKey::Down => self.set_ratio(self.ratio + 0.02),
-            ControlKey::Home => self.set_ratio(0.05),
-            ControlKey::End => self.set_ratio(0.95),
+            ControlKey::Home => self.set_ratio(0.),
+            ControlKey::End => self.set_ratio(1.),
             ControlKey::Escape => self.cancel_drag(),
             ControlKey::Enter | ControlKey::Space => self.reset(),
             _ => false,
@@ -1933,7 +1938,7 @@ mod tests {
                 .all(|r| r.size.height.is_finite())
         );
         let mut split = SplitView::new(9.);
-        assert_eq!(split.ratio(), 0.95);
+        assert_eq!(split.ratio(), 1.);
         split.collapse(Some(Pane::Leading));
         assert_eq!(
             split
@@ -2185,6 +2190,7 @@ mod tests {
     #[test]
     fn split_infeasible_minima_switches_single_visible_panel() {
         let mut split = SplitView::new(0.4);
+        split.min_pane = 24.; // Explicit consumer requirement.
         let narrow = Rect::new(0., 0., 40., 80.); // 39 content points cannot hold two 24pt panes.
         assert!(split.is_constrained(narrow, Axis::Horizontal));
         assert!(!split.begin_drag(20., narrow, Axis::Horizontal));
@@ -2204,6 +2210,7 @@ mod tests {
     #[test]
     fn split_cancel_restores_ratio_and_switchable_pane_after_latched_drag() {
         let mut split = SplitView::new(0.5);
+        split.min_pane = 24.; // This fixture explicitly exercises constrained fallback.
         split.choose_visible(Pane::Trailing);
         let bounds = Rect::new(0., 0., 160., 50.);
         assert!(split.begin_drag(80., bounds, Axis::Horizontal));

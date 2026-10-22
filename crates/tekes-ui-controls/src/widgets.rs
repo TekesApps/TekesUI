@@ -13,7 +13,7 @@ pub struct ControlMotionContext {
 }
 
 /// Button size roles resolve through the JSON Design System token table.
-/// `Body` preserves the existing 24pt/12pt application toolbar action metric.
+/// `Body` uses the Design System ordinary action-button metrics.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ButtonSize {
     Xs,
@@ -87,6 +87,15 @@ pub trait ButtonTextRenderer {
     fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
         None
     }
+    /// Effective point size used by this text backend, including its shared
+    /// typography/zoom context. Geometry consumers derive their ratios here;
+    /// applications never need to set each control's dimensions separately.
+    fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+        role.style().size
+            * self
+                .text_surface_host()
+                .map_or(1., |host| host.type_scale())
+    }
     /// Optional host clock and motion preference for animated production controls.
     fn motion_context(&self) -> Option<ControlMotionContext> {
         None
@@ -125,6 +134,9 @@ impl<T: ButtonTextRenderer + ?Sized> ButtonTextRenderer for &mut T {
     fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
         (**self).text_surface_host()
     }
+    fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+        (**self).resolved_font_size(role)
+    }
     fn motion_context(&self) -> Option<ControlMotionContext> {
         (**self).motion_context()
     }
@@ -147,6 +159,20 @@ impl<T: ButtonTextRenderer + ?Sized> ButtonTextRenderer for &mut T {
         ink: Rgba,
     ) {
         (**self).draw(scene, text, role, rect, align, ink);
+    }
+}
+
+// Shared logical geometry follows the resolved text role. A renderer that does
+// not opt into typography scaling retains the original DS metrics.
+fn button_typography_scale(
+    text: &mut (impl ButtonTextRenderer + ?Sized),
+    role: proposal::TextRole,
+) -> f32 {
+    let scale = text.resolved_font_size(role) / role.style().size;
+    if scale.is_finite() && scale > 0. {
+        scale
+    } else {
+        1.
     }
 }
 
@@ -173,6 +199,9 @@ pub struct ButtonLayout {
 }
 
 impl ButtonLayout {
+    /// Pure Design System baseline resolver for explicit geometry callers.
+    /// Button measurement/painting and Content slots additionally use the
+    /// renderer's resolved typography; Exact frames remain caller-owned.
     pub fn resolve(
         frame: Rect,
         clip: Option<Rect>,
@@ -202,6 +231,35 @@ impl ButtonLayout {
         align: ButtonTextAlign,
         policy: ButtonFramePolicy,
     ) -> Self {
+        Self::resolve_scaled(frame, clip, label_size, size, role, align, policy, 1.)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn resolve_with_text(
+        text: &mut (impl ButtonTextRenderer + ?Sized),
+        frame: Rect,
+        clip: Option<Rect>,
+        label_size: Size,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+        policy: ButtonFramePolicy,
+    ) -> Self {
+        let scale = button_typography_scale(text, role);
+        Self::resolve_scaled(frame, clip, label_size, size, role, align, policy, scale)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn resolve_scaled(
+        frame: Rect,
+        clip: Option<Rect>,
+        label_size: Size,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+        policy: ButtonFramePolicy,
+        scale: f32,
+    ) -> Self {
         if policy == ButtonFramePolicy::Exact {
             return Self {
                 frame,
@@ -213,14 +271,14 @@ impl ButtonLayout {
                 ),
             };
         }
-        let horizontal_inset = size.inset();
-        let vertical_inset = size.vertical_inset(role);
+        let horizontal_inset = size.inset() * scale;
+        let vertical_inset = size.vertical_inset(role) * scale;
         let label_size = Size::new(
             finite_nonnegative(label_size.width),
             finite_nonnegative(label_size.height),
         );
         let label_height = finite_nonnegative(label_size.height);
-        let min_height = size.minimum_height();
+        let min_height = size.minimum_height() * scale;
         let height = frame
             .size
             .height
@@ -373,7 +431,8 @@ impl Button {
 
     /// Measure the natural outer button size under an outer width constraint.
     /// The result includes token-driven horizontal and vertical insets and the
-    /// button size role's minimum height.
+    /// button size role's minimum height, scaled by the resolved text role.
+    /// Glyph height alone is not a scale input: wrapping must not inflate insets.
     pub fn measure(
         text: &mut impl ButtonTextRenderer,
         label: &str,
@@ -381,8 +440,9 @@ impl Button {
         size: ButtonSize,
         role: proposal::TextRole,
     ) -> Size {
-        let inset = size.inset();
-        let vertical_inset = size.vertical_inset(role);
+        let scale = button_typography_scale(text, role);
+        let inset = size.inset() * scale;
+        let vertical_inset = size.vertical_inset(role) * scale;
         let max_width = if max_width.is_finite() {
             max_width.max(0.0)
         } else {
@@ -399,7 +459,7 @@ impl Button {
             } else {
                 (finite_nonnegative(label_size.width) + inset * 2.0).min(max_width)
             },
-            size.minimum_height()
+            (size.minimum_height() * scale)
                 .max(finite_nonnegative(label_size.height) + vertical_inset * 2.0),
         )
     }
@@ -545,10 +605,11 @@ impl Button {
             return ButtonLayout::empty();
         }
         let palette = palette.into();
+        let scale = button_typography_scale(text, role);
         let inset = if self.frame_policy == ButtonFramePolicy::Exact {
             0.
         } else {
-            size.inset()
+            size.inset() * scale
         };
         let max_width = (frame.size.width - inset * 2.0).max(0.0);
         let label_size = measured_content.unwrap_or_else(|| {
@@ -558,7 +619,7 @@ impl Button {
                 text.measure(label, role, max_width)
             }
         });
-        let layout = ButtonLayout::resolve_with_policy(
+        let layout = ButtonLayout::resolve_scaled(
             frame,
             clip,
             label_size,
@@ -566,6 +627,7 @@ impl Button {
             role,
             align,
             self.frame_policy,
+            scale,
         );
         self.placement = Some(layout);
         let chrome = self
@@ -667,7 +729,7 @@ impl Button {
                     palette,
                     self.state,
                     variant,
-                    radius.unwrap_or_else(|| size.radius()),
+                    radius.unwrap_or_else(|| size.radius() * scale),
                     hover,
                     pressed,
                 )
@@ -678,7 +740,7 @@ impl Button {
                     palette,
                     self.state,
                     variant,
-                    radius.unwrap_or_else(|| size.radius()),
+                    radius.unwrap_or_else(|| size.radius() * scale),
                 )
             };
             if background_clip.is_some() {
