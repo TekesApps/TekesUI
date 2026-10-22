@@ -85,6 +85,16 @@ pub enum TextSurfacePresentation {
     Content,
 }
 
+/// Horizontal placement for single-line text. Multiline paragraphs retain
+/// their shaped line layout. All caret/hit/selection queries use this origin.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum TextSurfaceAlignment {
+    #[default]
+    Leading,
+    Center,
+    Trailing,
+}
+
 /// One intrinsic measurement retained until arrangement. This is derived data;
 /// measuring must not publish editing/scroll/IME geometry.
 #[derive(Debug)]
@@ -103,6 +113,7 @@ struct MeasuredParagraph {
 pub struct TextSurface {
     pub input: TextInput,
     pub presentation: TextSurfacePresentation,
+    pub alignment: TextSurfaceAlignment,
     /// Soft wrapping for multiline text. Single-line editing remains unwrapped.
     /// Scroll axes remain configurable on the original `scroll` model.
     pub wrap: bool,
@@ -145,6 +156,7 @@ impl TextSurface {
         Self {
             input,
             presentation: TextSurfacePresentation::Field,
+            alignment: TextSurfaceAlignment::Leading,
             wrap: true,
             scroll,
             paragraph: None,
@@ -765,8 +777,21 @@ impl TextSurface {
             p.origin_in(self.inner, !self.input.multiline)
         });
         let doc_origin = self.geometry().content_origin();
+        let alignment = if !self.input.multiline && self.alignment != TextSurfaceAlignment::Leading
+        {
+            self.paragraph.as_ref().map_or(0., |p| {
+                (self.inner.size.width - p.width as f32 - Stroke::Rule.value()).max(0.)
+                    * if self.alignment == TextSurfaceAlignment::Center {
+                        0.5
+                    } else {
+                        1.0
+                    }
+            })
+        } else {
+            0.
+        };
         Point::new(
-            base.x + doc_origin.x - self.inner.origin.x,
+            base.x + alignment + doc_origin.x - self.inner.origin.x,
             base.y + doc_origin.y - self.inner.origin.y,
         )
     }
@@ -1264,6 +1289,58 @@ mod tests {
         let mut renderer = RecordingRenderer::default();
         view.draw(&mut renderer, &mut scene, Theme::LIGHT, false, false);
         (view, scene, renderer)
+    }
+
+    #[test]
+    fn trailing_single_line_shares_paint_hit_caret_and_overflow_origin() {
+        fn paragraph(width: f64) -> Rc<Paragraph> {
+            Rc::new(Paragraph {
+                lines: vec![tekes_ui_text::Line {
+                    index: 0,
+                    utf16: 0..2,
+                    bytes: 0..2,
+                    ascent: 15.,
+                    descent: 5.,
+                    leading: 0.,
+                    height: 20.,
+                    top: 0.,
+                    baseline_y: 15.,
+                    width,
+                    width_trimmed: width,
+                    runs: vec![],
+                    carets: vec![(0, 0.), (1, width / 2.), (2, width)],
+                    has_newline: false,
+                }],
+                width,
+                height: 20.,
+                default_line_height: 20.,
+                fonts: vec![],
+                utf16_len: 2,
+            })
+        }
+        let mut surface = TextSurface::new("12", false, false);
+        surface.presentation = TextSurfacePresentation::Content;
+        surface.alignment = TextSurfaceAlignment::Trailing;
+        surface.input.caret = 2;
+        let frame = Rect::new(10., 20., 200., 32.);
+        surface.layout_with(frame, None, 2., 1., |_, _| paragraph(40.));
+        assert!((surface.caret().max_x() - frame.max_x()).abs() < 0.01);
+        assert_eq!(
+            surface.hit(Point::new(frame.max_x() - 1., frame.center().y)),
+            Some(2)
+        );
+        assert_eq!(
+            surface.hit(Point::new(frame.min_x() + 1., frame.center().y)),
+            Some(0)
+        );
+        let rects = surface.selection_rects(0..2);
+        assert!(!rects.is_empty());
+        assert!(rects.iter().all(|r| r.min_x() >= surface.origin().x));
+        surface.paragraph = None;
+        surface.layout_with(frame, None, 2., 1., |_, _| paragraph(400.));
+        surface.reveal();
+        assert!(surface.scroll.offset.x > 0.);
+        assert!((surface.caret().max_x() - frame.max_x()).abs() < 0.01);
     }
 
     #[test]

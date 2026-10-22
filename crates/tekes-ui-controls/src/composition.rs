@@ -13,6 +13,11 @@ mod help;
 mod key;
 mod label;
 mod menu;
+mod number;
+pub use number::{
+    DecimalNumberFormat, NumberCommitReason, NumberEditState, NumberFieldContent, NumberFormat,
+    NumberParseError, NumberValidation, NumberValueChange, NumberValueError,
+};
 mod pointer;
 mod toolbar_content;
 use crate::extended::{Axis, Grid, Stack};

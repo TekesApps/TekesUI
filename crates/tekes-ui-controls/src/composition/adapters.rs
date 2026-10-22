@@ -184,6 +184,9 @@ pub struct TextFieldContent {
     pub tab_policy: TextTabPolicy,
     pub submit_policy: TextSubmitPolicy,
     pub viewport: TextViewport,
+    /// Hide visible form label/help layout for inline controls. Semantic field
+    /// metadata and the original TextSurface chrome/editing remain available.
+    pub show_metadata: bool,
     focused: bool,
 }
 impl TextFieldContent {
@@ -199,6 +202,7 @@ impl TextFieldContent {
             tab_policy: TextTabPolicy::Navigate,
             submit_policy: TextSubmitPolicy::None,
             viewport: TextViewport::Form,
+            show_metadata: true,
             focused: false,
         }
     }
@@ -273,7 +277,7 @@ impl TextFieldContent {
         f: Rect,
         c: Rect,
     ) -> crate::feedback_view::FieldLayout {
-        if self.surface.presentation == TextSurfacePresentation::Content {
+        if !self.show_metadata || self.surface.presentation == TextSurfacePresentation::Content {
             let type_scale = t.text_surface_host().map_or(1., |host| host.type_scale());
             let minimum = self.surface.minimum_outer_height(type_scale);
             let height = self.viewport_height(t, f, 0., minimum);
@@ -406,7 +410,7 @@ impl Component for TextFieldContent {
     ) {
         // Arrangement owns the exact viewport. Paint must not shape/resize a
         // second time or derive a different slot from an unrelated height.
-        if self.surface.presentation == TextSurfacePresentation::Field {
+        if self.show_metadata && self.surface.presentation == TextSurfacePresentation::Field {
             let mut presentation = self.field_presentation(t);
             if self.viewport != TextViewport::Form {
                 presentation.slot_height = Some(self.surface.outer.size.height);

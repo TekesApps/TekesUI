@@ -1383,7 +1383,7 @@ impl NumberField {
         changed
     }
     pub fn increment(&mut self, up: bool) -> bool {
-        self.set(self.value + if up { self.step } else { -self.step })
+        self.set((self.value + if up { self.step } else { -self.step }).clamp(self.min, self.max))
     }
 }
 /// Semantic field metadata, separate from the input's editing model.
