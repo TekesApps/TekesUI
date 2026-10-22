@@ -8,17 +8,20 @@ publish = false
 [features]
 default = []
 three-panels = []
+two-panels = []
+independent-settings = []
 
 [dependencies]
 anyhow = "1"
+tekes-ui-settings = { path = "../../crates/tekes-ui-settings" }
 serde_json = "1"
 tekes-ui-app-host = { path = "../../crates/tekes-ui-app-host" }
 tekes-ui-panel-module-demo = { path = "../panel-module-demo" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-tekes-ui-app-protocol = { path = "../../crates/tekes-ui-app-protocol" }
-tekes-ui-render = { path = "../../crates/tekes-ui-render" }
-tekes-ui-scene = { path = "../../crates/tekes-ui-scene" }
-tekes-ui-tokens = { path = "../../crates/tekes-ui-tokens" }
+tekes-ui-app-protocol = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
+tekes-ui-render = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
+tekes-ui-scene = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
+tekes-ui-tokens = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
 
 [workspace]
