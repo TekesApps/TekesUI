@@ -1,3 +1,5 @@
+# Explicit local development source for docs/unified-button.md (unpublished WIP API).
+# Previous published baseline: controls-number-field-20261022; repin after API publication.
 [package]
 name = "tekes-ui-settings"
 description = "Declarative Settings schema, drafts and shared TekesUI forms"
@@ -9,6 +11,6 @@ license.workspace = true
 anyhow = "1"
 serde.workspace = true
 toml = "0.8"
-tekes-ui-controls = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
-tekes-ui-scene = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
-tekes-ui-tokens = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
+tekes-ui-controls = { path = "../tekes-ui-controls" }
+tekes-ui-scene = { path = "../tekes-ui-scene" }
+tekes-ui-tokens = { path = "../tekes-ui-tokens" }

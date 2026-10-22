@@ -1,15 +1,14 @@
-// The exact controls-number-field-20261022 pin exports this control as ButtonContent.
 use crate::{Draft, FieldType, Schema};
 #[path = "form_row.rs"]
 mod form_row;
 use anyhow::Result;
 use tekes_ui_controls::{
-    ButtonTextRenderer, ScrollArea, TextSurface, TextSurfaceAlignment, TextSurfacePresentation,
+    Button, ButtonTextRenderer, ScrollArea, TextSurface, TextSurfaceAlignment,
+    TextSurfacePresentation,
     composition::{
-        ButtonContent as Button, ComponentId, Content, ContentActionPayload, ContentEvent,
-        ContentHost, DecimalNumberFormat, MenuContent, MenuEntry, NumberCommitReason,
-        NumberFieldContent, NumberValidation, ScrollContent, StackContent, SwitchContent,
-        TextContent, TextFieldContent,
+        ComponentId, Content, ContentActionPayload, ContentEvent, ContentHost, DecimalNumberFormat,
+        MenuContent, MenuEntry, NumberCommitReason, NumberFieldContent, NumberValidation,
+        ScrollContent, StackContent, SwitchContent, TextContent, TextFieldContent,
     },
     extended::{Axis, Stack},
 };

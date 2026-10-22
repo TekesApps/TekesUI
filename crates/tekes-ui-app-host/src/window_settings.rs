@@ -291,6 +291,7 @@ impl Host {
                     renderer,
                     &self.text,
                     w.scale() as f32,
+                    &mut self.toolbar_images,
                 )?;
                 let measured = back
                     .get_mut(ComponentId(1))
@@ -931,10 +932,7 @@ mod back_button_tests {
             .unwrap()
             .get(ComponentId(1))
             .unwrap();
-        assert!(
-            back.component::<tekes_ui_controls::composition::CompoundButton>()
-                .is_some()
-        );
+        assert!(back.component::<tekes_ui_controls::Button>().is_some());
         assert_eq!(back.help_text(), Some("返回主窗口"));
 
         let node = crate::accessibility::content_nodes(

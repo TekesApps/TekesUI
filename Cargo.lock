@@ -1050,11 +1050,11 @@ dependencies = [
  "serde_json",
  "tekes-ui-city",
  "tekes-ui-platform-macos",
- "tekes-ui-render 0.1.0",
- "tekes-ui-scene 0.1.0",
+ "tekes-ui-render",
+ "tekes-ui-scene",
  "tekes-ui-scene3d",
- "tekes-ui-text 0.1.0",
- "tekes-ui-tokens 0.1.0",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
 ]
 
 [[package]]
@@ -1065,32 +1065,23 @@ dependencies = [
  "resvg",
  "serde",
  "serde_json",
- "tekes-ui-app-protocol 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-controls 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-icons 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-module-runtime 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-motion 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
+ "tekes-ui-app-protocol",
+ "tekes-ui-controls",
+ "tekes-ui-icons",
+ "tekes-ui-module-runtime",
+ "tekes-ui-motion",
  "tekes-ui-platform-macos",
- "tekes-ui-render 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-scene 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
+ "tekes-ui-render",
+ "tekes-ui-scene",
  "tekes-ui-settings",
- "tekes-ui-text 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-tokens 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
  "wgpu",
 ]
 
 [[package]]
 name = "tekes-ui-app-protocol"
 version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "tekes-ui-app-protocol"
-version = "0.1.0"
-source = "git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022#50ec49f3446924fdbc66b3cff22cd8cfe150fe7c"
 dependencies = [
  "serde",
  "serde_json",
@@ -1112,21 +1103,21 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "tekes-ui-render 0.1.0",
- "tekes-ui-scene 0.1.0",
- "tekes-ui-text 0.1.0",
- "tekes-ui-tokens 0.1.0",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
 ]
 
 [[package]]
 name = "tekes-ui-composition-consumer"
 version = "0.0.0"
 dependencies = [
- "tekes-ui-controls 0.1.0",
- "tekes-ui-icons 0.1.0",
- "tekes-ui-scene 0.1.0",
- "tekes-ui-text 0.1.0",
- "tekes-ui-tokens 0.1.0",
+ "tekes-ui-controls",
+ "tekes-ui-icons",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
 ]
 
 [[package]]
@@ -1134,38 +1125,16 @@ name = "tekes-ui-controls"
 version = "0.1.0"
 dependencies = [
  "serde_json",
- "tekes-ui-motion 0.1.0",
- "tekes-ui-scene 0.1.0",
- "tekes-ui-text 0.1.0",
- "tekes-ui-tokens 0.1.0",
- "unicode-segmentation",
-]
-
-[[package]]
-name = "tekes-ui-controls"
-version = "0.1.0"
-source = "git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022#50ec49f3446924fdbc66b3cff22cd8cfe150fe7c"
-dependencies = [
- "serde_json",
- "tekes-ui-motion 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-scene 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-text 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-tokens 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
+ "tekes-ui-motion",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
  "unicode-segmentation",
 ]
 
 [[package]]
 name = "tekes-ui-design-export"
 version = "0.1.0"
-dependencies = [
- "serde_json",
- "sha2",
-]
-
-[[package]]
-name = "tekes-ui-design-export"
-version = "0.1.0"
-source = "git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022#50ec49f3446924fdbc66b3cff22cd8cfe150fe7c"
 dependencies = [
  "serde_json",
  "sha2",
@@ -1180,26 +1149,21 @@ dependencies = [
  "resvg",
  "serde_json",
  "tekes-ui-composition-consumer",
- "tekes-ui-controls 0.1.0",
- "tekes-ui-icons 0.1.0",
- "tekes-ui-motion 0.1.0",
+ "tekes-ui-controls",
+ "tekes-ui-icons",
+ "tekes-ui-motion",
  "tekes-ui-platform-macos",
- "tekes-ui-render 0.1.0",
- "tekes-ui-scene 0.1.0",
+ "tekes-ui-render",
+ "tekes-ui-scene",
  "tekes-ui-scene3d",
- "tekes-ui-text 0.1.0",
- "tekes-ui-tokens 0.1.0",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
  "unicode-segmentation",
 ]
 
 [[package]]
 name = "tekes-ui-icons"
 version = "0.1.0"
-
-[[package]]
-name = "tekes-ui-icons"
-version = "0.1.0"
-source = "git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022#50ec49f3446924fdbc66b3cff22cd8cfe150fe7c"
 
 [[package]]
 name = "tekes-ui-module-runtime"
@@ -1210,40 +1174,18 @@ dependencies = [
  "objc2-io-surface",
  "png 0.17.16",
  "serde_json",
- "tekes-ui-app-protocol 0.1.0",
- "tekes-ui-controls 0.1.0",
- "tekes-ui-render 0.1.0",
- "tekes-ui-scene 0.1.0",
- "tekes-ui-text 0.1.0",
- "tekes-ui-tokens 0.1.0",
- "wgpu",
-]
-
-[[package]]
-name = "tekes-ui-module-runtime"
-version = "0.1.0"
-source = "git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022#50ec49f3446924fdbc66b3cff22cd8cfe150fe7c"
-dependencies = [
- "anyhow",
- "mach2",
- "objc2-io-surface",
- "serde_json",
- "tekes-ui-app-protocol 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-controls 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-render 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-scene 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-tokens 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
+ "tekes-ui-app-protocol",
+ "tekes-ui-controls",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
  "wgpu",
 ]
 
 [[package]]
 name = "tekes-ui-motion"
 version = "0.1.0"
-
-[[package]]
-name = "tekes-ui-motion"
-version = "0.1.0"
-source = "git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022#50ec49f3446924fdbc66b3cff22cd8cfe150fe7c"
 
 [[package]]
 name = "tekes-ui-platform-macos"
@@ -1258,8 +1200,8 @@ dependencies = [
  "objc2-metal",
  "objc2-quartz-core",
  "serde_json",
- "tekes-ui-controls 0.1.0",
- "tekes-ui-scene 0.1.0",
+ "tekes-ui-controls",
+ "tekes-ui-scene",
 ]
 
 [[package]]
@@ -1276,28 +1218,8 @@ dependencies = [
  "objc2-quartz-core",
  "png 0.17.16",
  "pollster",
- "tekes-ui-scene 0.1.0",
- "tekes-ui-tokens 0.1.0",
- "wgpu",
- "wgpu-hal",
-]
-
-[[package]]
-name = "tekes-ui-render"
-version = "0.1.0"
-source = "git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022#50ec49f3446924fdbc66b3cff22cd8cfe150fe7c"
-dependencies = [
- "anyhow",
- "bytemuck",
- "objc2",
- "objc2-core-foundation",
- "objc2-core-graphics",
- "objc2-io-surface",
- "objc2-metal",
- "objc2-quartz-core",
- "pollster",
- "tekes-ui-scene 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-tokens 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
+ "tekes-ui-scene",
+ "tekes-ui-tokens",
  "wgpu",
  "wgpu-hal",
 ]
@@ -1306,15 +1228,7 @@ dependencies = [
 name = "tekes-ui-scene"
 version = "0.1.0"
 dependencies = [
- "tekes-ui-tokens 0.1.0",
-]
-
-[[package]]
-name = "tekes-ui-scene"
-version = "0.1.0"
-source = "git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022#50ec49f3446924fdbc66b3cff22cd8cfe150fe7c"
-dependencies = [
- "tekes-ui-tokens 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
+ "tekes-ui-tokens",
 ]
 
 [[package]]
@@ -1326,9 +1240,9 @@ dependencies = [
  "gltf",
  "png 0.17.16",
  "serde_json",
- "tekes-ui-render 0.1.0",
- "tekes-ui-scene 0.1.0",
- "tekes-ui-tokens 0.1.0",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-tokens",
  "wgpu",
 ]
 
@@ -1338,9 +1252,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "serde",
- "tekes-ui-controls 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-scene 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-tokens 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
+ "tekes-ui-controls",
+ "tekes-ui-scene",
+ "tekes-ui-tokens",
  "toml",
 ]
 
@@ -1354,23 +1268,9 @@ dependencies = [
  "png 0.17.16",
  "serde",
  "serde_json",
- "tekes-ui-render 0.1.0",
- "tekes-ui-scene 0.1.0",
- "tekes-ui-tokens 0.1.0",
-]
-
-[[package]]
-name = "tekes-ui-text"
-version = "0.1.0"
-source = "git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022#50ec49f3446924fdbc66b3cff22cd8cfe150fe7c"
-dependencies = [
- "objc2-core-foundation",
- "objc2-core-graphics",
- "objc2-core-text",
- "serde",
- "serde_json",
- "tekes-ui-scene 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
- "tekes-ui-tokens 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-tokens",
 ]
 
 [[package]]
@@ -1379,17 +1279,7 @@ version = "0.1.0"
 dependencies = [
  "serde_json",
  "sha2",
- "tekes-ui-design-export 0.1.0",
-]
-
-[[package]]
-name = "tekes-ui-tokens"
-version = "0.1.0"
-source = "git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022#50ec49f3446924fdbc66b3cff22cd8cfe150fe7c"
-dependencies = [
- "serde_json",
- "sha2",
- "tekes-ui-design-export 0.1.0 (git+https://github.com/TekesApps/TekesUI.git?tag=controls-number-field-20261022)",
+ "tekes-ui-design-export",
 ]
 
 [[package]]

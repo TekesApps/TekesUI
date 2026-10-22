@@ -2,7 +2,7 @@
 
 实现范围：消费者固定 TOML → 共享 Group/Item/Field 模型 → TekesUI 共享目录/表单 → AppWindow 两列 SettingsWindow → 本地 Provider 的自动保存和独立进程 Undo/Redo。完整设计见 [Settings 契约](apphost-settings.md)。
 
-- `crates/tekes-ui-settings`：独立于 AppHost、Agent、平台/GPU 的解析、校验、草稿、共享表单与目录，以及可替换的本地文件适配；控件复用 TextFieldContent、SwitchContent、MenuContent、ButtonContent、ScrollContent，以及标准 List/ListView 的 SelectableListContent 适配；目录不定义选择颜色或其他按钮样式。
+- `crates/tekes-ui-settings`：独立于 AppHost、Agent、平台/GPU 的解析、校验、草稿、共享表单与目录，以及可替换的本地文件适配；控件复用 TextFieldContent、SwitchContent、MenuContent、Button、ScrollContent，以及标准 List/ListView 的 SelectableListContent 适配；目录不定义选择颜色或其他按钮样式。
 - `crates/tekes-ui-app-host`：AppWindow 装配及两列 SettingsWindow，菜单/⌘, 入口；复用原有 navigation ProcessComponent、toolbar、leading 显隐图标/Gold7 motion 和 splitter。主消费 App 的三列及模块进程继续保留。
 - `examples/app-host-demo/settings.schema.toml`：以 ClientKit General 为默认参考，只声明外观和文字缩放百分比；完整字段类型/多 Item 导航测试使用独立的 `tests/fixtures/layout.schema.toml`，不再让默认内容受测试夹具约束。
 - `examples/settings-consumer`：不依赖 AppHost 的第二个公共 API 消费者，验证定义、form/sidebar 和草稿机制；其 CLI 检查不代表 native/GPU 验收。
@@ -54,11 +54,11 @@ Exclusive 通过平台 `open_exclusive_window` 在首次显示前设置最终 fr
 
 Exclusive 模式在左侧导航 List 上方显示标准 `Back` Button，位于 List 滚动区域外、固定在原位；Independent 不创建该按钮。Back 不注册导航历史命令、不改变 nav.json，而是走 Settings 的现有 Close/自动保存屏障，保存或校验未完成时仍留在 Settings。leading 收起和过渡期间不接受该按钮的输入，重开 leading 后恢复。
 
-Back 呈现为 TekesUI 标准 CompoundButton：工具库 `tekes-back` 图标与原 TextContent 组合成单一按钮，保留 Back 可访问名称，并用 with_help 声明“返回主窗口”；图标和文字不拆成两个交互目标。hover overlay 由原 ContentHost 绘制。Settings 两侧顶部 inset 使用 space-regular（默认 8pt），替代 24pt；按钮与目录间距也为 8pt，水平及底部留白保留。间距随文字缩放。按钮仍在 List 滚动区域外。
+Back 呈现为 TekesUI 统一 `Button::new((image, "Back"))`：工具库 `tekes-back` 图标与文字由 Button 统一排列，保留 Back 可访问名称，并用 with_help 声明“返回主窗口”；图标和文字不拆成两个交互目标。hover overlay 由原 ContentHost 绘制。Settings 两侧顶部 inset 使用 space-regular（默认 8pt），替代 24pt；按钮与目录间距也为 8pt，水平及底部留白保留。间距随文字缩放。按钮仍在 List 滚动区域外。
 
 ## 固定容量的百分比输入（2026-10-22）
 
-控件、scene、tokens、text、motion、render、icons、protocol 和 module-runtime 的 git 依赖统一使用 tag `controls-number-field-20261022`，lockfile 固定 commit `50ec49f3446924fdbc66b3cff22cd8cfe150fe7c`。AppHost、Settings 与现有多窗口平台适配仍保留本地源码；该 tag 未含多窗口 API，不将其冒称为全部平台能力的发布 pin。dependency-sources.json 记录实际依赖来源。
+历史验证版本的控件、scene、tokens、text、motion、render、icons、protocol 和 module-runtime 的 git 依赖统一使用 tag `controls-number-field-20261022`，lockfile 固定 commit `50ec49f3446924fdbc66b3cff22cd8cfe150fe7c`。AppHost、Settings 与现有多窗口平台适配仍保留本地源码；该 tag 未含多窗口 API，不将其冒称为全部平台能力的发布 pin。dependency-sources.json 记录实际依赖来源。
 
 共享表单按声明的 default/current value、min、max、step、suffix 构建 NumberFieldContent，使用 DecimalNumberFormat，并调用 set_input_digits(3)。三位是布局容量，非输入长度或数值范围限制。控件自然宽度在 SettingsRow 的 trailing 侧挂载，不扩展到父容器宽度。原 TextSurface 处理文本/IME、控件处理提交、取消和步进；表单只 drain_value_changes 后交给既有 Draft/Provider。Enter/blur 提交，Escape 先取消数值草稿，不直接关闭 Settings；非法草稿不进入配置历史。配置 Undo/Redo 仍由 AppHost 的 headless 服务维护，数值编辑或保存期间不接受配置历史操作。
 
@@ -67,3 +67,10 @@ Back 呈现为 TekesUI 标准 CompoundButton：工具库 `tekes-back` 图标与�
 固定 tag 尚未导出 Settings 原先使用的 List Content 适配和 deferred-help API：Settings 使用薄 Content 适配调用该 tag 的原 List/ListView，不定义选中样式或输入状态机；hint 使用原 ContentHost 自动绘制，将完整 toolbar scene 在内容之后合成，避免被内容覆盖。数值 TextField 的 AX role 不因其 value_range 被错误改成 Slider。
 
 验证证据：design/reviews/apphost-number-field-20261022。AppHost 40 项、Settings 18 项、迁移 1 项测试，以及 Clippy、sample 构建和第二公共 API 消费者通过。原生 .32 验证输入/步进/边界/取消/持久化和 Undo/Redo；最终 .33 增加数值草稿与配置 Undo 的屏障，已打开并验证 200% 未提交时禁用配置 Undo、Escape 回到保存值 110%。
+
+
+### Unified Button consumer update (PR #52, draft)
+
+Current consumers follow docs/unified-button.md: Back is an ordinary image/text Button and form/retry actions use the same Button. ToolbarControl retains input/overflow ownership. Consumer-specific BackIcon and Stack arrangement are removed.
+
+The new shared Button API is unpublished and is not present in this PR's base controls implementation or the old controls-number-field-20261022 tag. Explicit local path dependencies select the developing API when available; they are not a published pin. Consumer adaptation is reviewable here, but this PR must wait for the shared UI API before it can build independently and be merged. The UI implementation and other WIP are deliberately outside this consumer update. No merge or tag is requested.

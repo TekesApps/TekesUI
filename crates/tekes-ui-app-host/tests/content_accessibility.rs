@@ -28,10 +28,7 @@ const BUTTON: ComponentId = ComponentId(2);
 fn host() -> ContentHost {
     let mut host = ContentHost::new(Content::new(
         ROOT,
-        ListContent::new(
-            "Actions",
-            vec![Content::new(BUTTON, ButtonContent::new("Send"))],
-        ),
+        ListContent::new("Actions", vec![Content::new(BUTTON, Button::new("Send"))]),
     ))
     .unwrap();
     host.set_action_events(true);
@@ -54,11 +51,8 @@ fn exact_original_mount_blocks_foreign_and_replaced_same_id_owners() {
     assert!(!content_action(&mut a, false, old, A::Press).consumed);
     assert!(a.drain_actions().is_empty());
     let removed = a.remove(BUTTON).unwrap();
-    a.insert(
-        ROOT,
-        Content::new(BUTTON, ButtonContent::new("Replacement")),
-    )
-    .unwrap();
+    a.insert(ROOT, Content::new(BUTTON, Button::new("Replacement")))
+        .unwrap();
     paint(&mut a);
     let new = content_key(&a, BUTTON, None).unwrap();
     assert_ne!(new, old);
@@ -74,11 +68,8 @@ fn exact_original_mount_blocks_foreign_and_replaced_same_id_owners() {
 #[test]
 fn reorder_preserves_keys_original_focus_and_one_action_source() {
     let mut h = host();
-    h.insert(
-        ROOT,
-        Content::new(ComponentId(3), ButtonContent::new("Other")),
-    )
-    .unwrap();
+    h.insert(ROOT, Content::new(ComponentId(3), Button::new("Other")))
+        .unwrap();
     paint(&mut h);
     let key = content_key(&h, BUTTON, None).unwrap();
     h.reorder(ROOT, &[ComponentId(3), BUTTON]).unwrap();
@@ -99,7 +90,7 @@ fn reorder_preserves_keys_original_focus_and_one_action_source() {
     assert!(content_nodes(&h, false).iter().all(|n| !n.focused));
     h.get_mut(BUTTON)
         .unwrap()
-        .component_mut::<ButtonContent>()
+        .component_mut::<Button>()
         .unwrap()
         .button
         .state
@@ -139,7 +130,7 @@ fn inactive_ancestor_removes_original_mount_from_projection_and_dispatch() {
         ROOT,
         Gate {
             active: true,
-            children: vec![Content::new(BUTTON, ButtonContent::new("Send"))],
+            children: vec![Content::new(BUTTON, Button::new("Send"))],
         },
     ))
     .unwrap();

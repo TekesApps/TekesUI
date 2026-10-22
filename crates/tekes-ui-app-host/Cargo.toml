@@ -1,3 +1,5 @@
+# Explicit local development source for docs/unified-button.md (unpublished WIP API).
+# Previous published baseline: controls-number-field-20261022; repin after API publication.
 [package]
 name = "tekes-ui-app-host"
 description = "Experimental native TekesUI Host with isolated native Panel processes"
@@ -10,17 +12,17 @@ anyhow = "1"
 tekes-ui-settings = { path = "../tekes-ui-settings" }
 serde.workspace = true
 serde_json.workspace = true
-tekes-ui-app-protocol = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
-tekes-ui-module-runtime = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
+tekes-ui-app-protocol = { path = "../tekes-ui-app-protocol" }
+tekes-ui-module-runtime = { path = "../tekes-ui-module-runtime" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 wgpu = { version = "30.0.1", default-features = false, features = ["metal", "wgsl", "std"] }
-tekes-ui-render = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022", features = ["macos-shared-surface"] }
+tekes-ui-render = { path = "../tekes-ui-render", features = ["macos-shared-surface"] }
 tekes-ui-platform-macos = { path = "../tekes-ui-platform-macos" }
-tekes-ui-controls = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
-tekes-ui-scene = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
-tekes-ui-tokens = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
-tekes-ui-text = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
-tekes-ui-motion = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
+tekes-ui-controls = { path = "../tekes-ui-controls" }
+tekes-ui-scene = { path = "../tekes-ui-scene" }
+tekes-ui-tokens = { path = "../tekes-ui-tokens" }
+tekes-ui-text = { path = "../tekes-ui-text" }
+tekes-ui-motion = { path = "../tekes-ui-motion" }
 resvg = { version = "0.48.0", default-features = false }
-tekes-ui-icons = { git = "https://github.com/TekesApps/TekesUI.git", tag = "controls-number-field-20261022" }
+tekes-ui-icons = { path = "../tekes-ui-icons" }
