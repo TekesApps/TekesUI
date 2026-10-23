@@ -189,5 +189,6 @@
   "crates/tekes-ui-icons/web/index.d.ts": "4ea36c710abded562a9893b640cd22c56593d68f8b1943599ec5c4e5fd76c0ab",
   "crates/tekes-ui-icons/web/index.mjs": "dfe41be0e9cde6a6db27cb2b18990d501d5e43fb9680664a470625a7278a594e",
   "docs/design/icon-visual-language.md": "d9e67b29742091276c4c89bba54145fd499b50742c7a2e2f08baf6a852acf830",
-  "package.json": "ab51425f0bf0143c3ab3d683d7071d27148ca6e3c3014120012e44138a289b05"
+  "package.json": "ab51425f0bf0143c3ab3d683d7071d27148ca6e3c3014120012e44138a289b05",
+  "crates/tekes-ui-gallery/src/gallery/symbol_assets.rs": "69163eaa0b5a993bd019ade551767e4db66bc1d460fc724c5eed037b256e44b9"
 }

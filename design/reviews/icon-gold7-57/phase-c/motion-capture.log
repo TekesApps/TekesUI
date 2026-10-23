@@ -1,0 +1,16 @@
+   Compiling tekes-ui-tokens v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/motion-final/sdk/crates/tekes-ui-tokens)
+   Compiling tekes-ui-controls v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/motion-final/sdk/crates/tekes-ui-controls)
+   Compiling tekes-ui-gallery v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/motion-final/sdk/crates/tekes-ui-gallery)
+   Compiling tekes-ui-scene v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/motion-final/sdk/crates/tekes-ui-scene)
+   Compiling tekes-ui-render v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/motion-final/sdk/crates/tekes-ui-render)
+   Compiling tekes-ui-text v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/motion-final/sdk/crates/tekes-ui-text)
+   Compiling tekes-ui-scene3d v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/motion-final/sdk/crates/tekes-ui-scene3d)
+   Compiling tekes-ui-composition-consumer v0.0.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/motion-final/sdk/examples/composition-consumer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 13.79s
+     Running unittests src/main.rs (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/icon-direction-57/debug/deps/tekes_ui_gallery-16f449ef0186b8f2)
+
+running 1 test
+test gallery::motion_preview::symbol_assets::transformed_pose_tests::transformed_layers_match_vector_coverage_and_centers ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 454 filtered out; finished in 5.05s
+

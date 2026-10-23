@@ -65,3 +65,10 @@ Local development paths are explicit overrides. Public consumers can pin the fin
 CI first run stopped at stale capability source hashes after the owned icon changes. The generated inventory was refreshed for the three changed source files and the new generated style module only; capability conclusions and public bindings are unchanged. Composition audit and public formatting checks pass. The failed CI log is retained.
 
 An independent consumer also fetched the exact public Git revision `ac37506ddcaf168df4aa99e74689ca64d65b70be` from GitHub and ran successfully: 177 square canonical glyphs and eight matching animated defaults. This confirms the remote commit rather than a local path override.
+
+
+## Final animation integration correction
+
+Full CI exposed an additional asset integration regression: the original animation layer raster paths hardcoded 1.5pt, while the whole canonical C SVG uses 1.25pt. On 2026-10-23 the user explicitly assigned `symbol_assets.rs`'s stroke-reading integration to this session. The minimal change stores the existing parser's `to_tiny_skia()` stroke with each shape and uses it in both existing layer paint paths; canonical width/cap/join/dash parameters now remain authoritative. No motion state, timing, resources, ticker or renderer is replaced.
+
+All **seven existing symbol asset tests pass**, including four-theme/two-scale GPU identity endpoints, all effects on all eight icons, contour annotation coverage, cached playback without raster/upload, filled/stroke drawing and MagicReplace, and **120 transformed poses** (8 icons × 5 effects × 3 scopes). The latter also produced **240 actual GPU/vector image files** for visual review. Their hashes, capture log, exact final frozen SDK identity and separate evidence-only capture-source hash are retained here. The static canonical/fixture/Gallery/native C evidence above remains unchanged; this new delta lives in the immutable `icon-c-rollout-57-20261023/motion-final` directory. The second CI failure is preserved, rather than relabeled as passed. Public capability hashes were regenerated for this additional owned source change.
