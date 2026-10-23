@@ -3,5 +3,5 @@
   "direction": "C explicitly approved by user",
   "implementation": "177 canonical assets reviewed: 158 changed,19 retained; square canvases and native proportional fit",
   "acceptance": "complete within icon artwork scope; see phase-c/README.md for layered limits",
-  "delivery": "local validated branch; public PR pending"
+  "delivery": "PR #58; ac37506 public artwork; CI source-hash inventory correction"
 }

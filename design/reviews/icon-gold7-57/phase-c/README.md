@@ -61,3 +61,7 @@ cargo clippy --locked -p tekes-ui-icons -p tekes-ui-gallery -- -D warnings
 ```
 
 Local development paths are explicit overrides. Public consumers can pin the final public Git commit exactly; no npm publish or release tag is part of this task.
+
+CI first run stopped at stale capability source hashes after the owned icon changes. The generated inventory was refreshed for the three changed source files and the new generated style module only; capability conclusions and public bindings are unchanged. Composition audit and public formatting checks pass. The failed CI log is retained.
+
+An independent consumer also fetched the exact public Git revision `ac37506ddcaf168df4aa99e74689ca64d65b70be` from GitHub and ran successfully: 177 square canonical glyphs and eight matching animated defaults. This confirms the remote commit rather than a local path override.

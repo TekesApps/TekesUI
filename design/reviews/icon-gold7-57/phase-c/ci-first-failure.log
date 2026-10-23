@@ -1,0 +1,113 @@
+check	Design package, brand generation and Rust boundaries	﻿2026-10-23T08:04:47.0877050Z ##[group]Run python3 -m pip install -r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0878000Z ^[[36;1mpython3 -m pip install -r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0878620Z ^[[36;1mpython3 -m unittest discover -s scripts/tests^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0879030Z ^[[36;1mfor test in scripts/test-*.py; do python3 "$test"; done^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0879500Z ^[[36;1mpython3 scripts/generate-gallery-brands.py --check^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0879940Z ^[[36;1mpython3 scripts/generate-component-capabilities.py --check^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0880680Z ^[[36;1mpython3 scripts/check-reference-alignment.py --self-test^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0881170Z ^[[36;1mpython3 scripts/check-reference-alignment.py^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0881450Z ^[[36;1mpython3 scripts/check-gold7.py^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0881760Z ^[[36;1mpython3 -I scripts/check-pure-rust.py --self-test^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0882190Z ^[[36;1mpython3 -I scripts/check-pure-rust.py^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0882500Z ^[[36;1mpython3 -I scripts/check-design-baseline.py --self-test^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0882870Z ^[[36;1mpython3 scripts/merge-design-system.py --check^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0883160Z ^[[36;1mpython3 scripts/check-design-system.py^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0883730Z ^[[36;1mcargo run --locked -p tekes-ui-design-export -- --generate design/tokens.json "$RUNNER_TEMP/tokens.rs"^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0884330Z ^[[36;1mcargo run --locked -p tekes-ui-design-export -- --check design/tokens.json "$RUNNER_TEMP/tokens.rs"^[[0m
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0923330Z shell: /bin/bash -e {0}
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0923680Z env:
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0923970Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.16/arm64
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0924430Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.16/arm64/lib/pkgconfig
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0924830Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.16/arm64
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0925250Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.16/arm64
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0925630Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.16/arm64
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:47.0925940Z ##[endgroup]
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:48.0770740Z Collecting jsonschema==4.26.0 (from -r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt (line 1))
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:48.1444160Z   Downloading jsonschema-4.26.0-py3-none-any.whl.metadata (7.6 kB)
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:48.5053890Z Collecting attrs>=22.2.0 (from jsonschema==4.26.0->-r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt (line 1))
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:48.5194300Z   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:48.5913980Z Collecting jsonschema-specifications>=2023.03.6 (from jsonschema==4.26.0->-r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt (line 1))
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:48.6053120Z   Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl.metadata (2.9 kB)
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:48.6510990Z Collecting referencing>=0.28.4 (from jsonschema==4.26.0->-r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt (line 1))
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:48.6639950Z   Downloading referencing-0.37.0-py3-none-any.whl.metadata (2.8 kB)
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:48.9308270Z Collecting rpds-py>=0.25.0 (from jsonschema==4.26.0->-r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt (line 1))
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:48.9410080Z   Downloading rpds_py-2026.9.1-cp313-cp313-macosx_11_0_arm64.whl.metadata (4.1 kB)
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:48.9711930Z Downloading jsonschema-4.26.0-py3-none-any.whl (90 kB)
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:48.9965590Z Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.0145730Z Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.0303840Z Downloading referencing-0.37.0-py3-none-any.whl (26 kB)
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.0474770Z Downloading rpds_py-2026.9.1-cp313-cp313-macosx_11_0_arm64.whl (340 kB)
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.0901660Z Installing collected packages: rpds-py, attrs, referencing, jsonschema-specifications, jsonschema
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.2534790Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.2543460Z Successfully installed attrs-26.1.0 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 referencing-0.37.0 rpds-py-2026.9.1
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.2548000Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.2548440Z [notice] A new release of pip is available: 26.2.1 -> 26.2.2
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.2548980Z [notice] To update, run: python3 -m pip install --upgrade pip
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.4472070Z ....
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.4489580Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.4490440Z Ran 4 tests in 0.007s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.4490740Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.4491020Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.5346550Z ......
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.5365310Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.5366090Z Ran 6 tests in 0.006s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.5366590Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.5366850Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.6074490Z ..
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.6075200Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.6075740Z Ran 2 tests in 0.000s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.6076030Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:49.6076210Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:50.6885010Z .......................
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:50.6909350Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:50.7006470Z Ran 23 tests in 1.001s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:50.7006910Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:04:50.7007120Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:30.5393610Z ............................................
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:30.5394780Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:30.5395290Z Ran 44 tests in 39.692s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:30.5395520Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:30.5395790Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:30.7435150Z ...........
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:30.7435720Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:30.7436720Z Ran 11 tests in 0.060s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:30.7437130Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:30.7437320Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:31.0616000Z ........
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:31.0616540Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:31.0616930Z Ran 8 tests in 0.258s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:05:31.0617170Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:17.8622130Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:17.8623220Z ..
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:17.8624040Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:17.8625110Z Ran 2 tests in 46.741s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:17.8625370Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:17.8625510Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:18.8728210Z ..........
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:18.8729050Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:18.8729620Z Ran 10 tests in 0.881s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:18.8729920Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:18.8730000Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:18.9491590Z ........
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:18.9592080Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:18.9654520Z Ran 8 tests in 0.001s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:18.9755320Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:18.9777680Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.0109150Z ......
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.0160790Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.0165640Z Ran 6 tests in 0.000s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.0168220Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.0173550Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.0691690Z ........
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.0692510Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.0705780Z Ran 8 tests in 0.001s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.0705980Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.0706050Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.1903030Z ...
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.1904510Z ----------------------------------------------------------------------
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.1918650Z Ran 3 tests in 0.001s
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.1921190Z 
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:19.1921520Z OK
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:20.7069940Z Gallery brand profiles match the authoritative registry and compiler inputs.
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:23.0584050Z Stale capability inventory: run scripts/generate-component-capabilities.py
+check	Design package, brand generation and Rust boundaries	2026-10-23T08:06:23.0712800Z ##[error]Process completed with exit code 1.
