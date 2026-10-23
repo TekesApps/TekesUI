@@ -1,0 +1,5 @@
+   Compiling tekes-ui-icons v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-icons)
+   Compiling tekes-ui-icon-catalog-consumer v0.0.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/examples/icon-catalog-consumer)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.17s
+     Running `/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/icon-public-57/debug/tekes-ui-icon-catalog-consumer`
+177 square canonical glyphs; all 8 animated defaults share the exact public artwork

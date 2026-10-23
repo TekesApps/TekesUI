@@ -17,7 +17,7 @@ const ICON_SIZE: f32 = 64.0;
 struct Shape {
     path: sk::Path,
     fill: bool,
-    stroke: bool,
+    stroke: Option<sk::Stroke>,
     contours: Vec<Vec<sk::Point>>,
     arc_length: f32,
 }
@@ -109,7 +109,7 @@ fn collect(group: &usvg::Group, paths: &mut Vec<Shape>) {
                     contours,
                     path: path_data,
                     fill: path.fill().is_some(),
-                    stroke: path.stroke().is_some(),
+                    stroke: path.stroke().map(usvg::Stroke::to_tiny_skia),
                 });
             }
             usvg::Node::Group(group) => collect(group, paths),
@@ -359,12 +359,6 @@ impl SymbolAssets {
             (ink.b * 255.0).round() as u8,
             255,
         );
-        let stroke = sk::Stroke {
-            width: 1.5,
-            line_cap: sk::LineCap::Round,
-            line_join: sk::LineJoin::Round,
-            ..Default::default()
-        };
         let target = icon.animation_partner();
         let effect = self.resolved_effect(icon, effect);
         let options = SymbolOptions {
@@ -483,11 +477,11 @@ impl SymbolAssets {
                         None,
                     );
                 }
-                if shape.stroke {
+                if let Some(stroke) = &shape.stroke {
                     if lo == 0.0 && hi >= len {
-                        pixmap.stroke_path(&shape.path, &paint, &stroke, transform, None);
+                        pixmap.stroke_path(&shape.path, &paint, stroke, transform, None);
                     } else if let Some(path) = trim(shape, lo, hi) {
-                        pixmap.stroke_path(&path, &paint, &stroke, transform, None);
+                        pixmap.stroke_path(&path, &paint, stroke, transform, None);
                     }
                 }
             }
@@ -522,7 +516,7 @@ impl SymbolAssets {
                                 + (b.arc_length - a.arc_length) * frame.replacement as f32,
                             path,
                             fill: a.fill,
-                            stroke: a.stroke,
+                            stroke: a.stroke.clone(),
                         })
                     })
                     .collect();
@@ -587,18 +581,12 @@ impl SymbolAssets {
                 (ink.b * 255.0).round() as u8,
                 255,
             );
-            let stroke = sk::Stroke {
-                width: 1.5,
-                line_cap: sk::LineCap::Round,
-                line_join: sk::LineJoin::Round,
-                ..Default::default()
-            };
             for shape in &geometry.layers[layer] {
                 if shape.fill {
                     out.fill_path(&shape.path, &paint, sk::FillRule::Winding, transform, None);
                 }
-                if shape.stroke {
-                    out.stroke_path(&shape.path, &paint, &stroke, transform, None);
+                if let Some(stroke) = &shape.stroke {
+                    out.stroke_path(&shape.path, &paint, stroke, transform, None);
                 }
             }
         } else {

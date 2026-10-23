@@ -1,0 +1,15 @@
+   Compiling tekes-ui-gallery v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-gallery)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.05s
+     Running unittests src/main.rs (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/icon-public-57/debug/deps/tekes_ui_gallery-bda57edb001c76ee)
+
+running 7 tests
+test gallery::motion_preview::symbol_assets::gpu_tests::cached_geometry_has_no_playback_raster_or_upload_and_paths_keep_fallback ... ok
+test gallery::motion_preview::symbol_assets::gpu_tests::gpu_endpoints_match_original_svg_texture_in_four_themes_and_two_scales ... ok
+test gallery::motion_preview::symbol_assets::tests::annotations_cover_every_original_svg_contour_once ... ok
+test gallery::motion_preview::symbol_assets::tests::completed_drawing_matches_original_approved_svg_pixels ... ok
+test gallery::motion_preview::symbol_assets::tests::every_effect_renders_on_every_approved_icon ... ok
+test gallery::motion_preview::symbol_assets::tests::stroke_progress_filled_layers_and_magic_pairs_are_real_assets ... ok
+test gallery::motion_preview::symbol_assets::transformed_pose_tests::transformed_layers_match_vector_coverage_and_centers ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 433 filtered out; finished in 2.07s
+

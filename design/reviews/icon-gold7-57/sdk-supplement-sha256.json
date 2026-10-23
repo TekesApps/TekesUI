@@ -1,0 +1,17 @@
+{
+  "design/reviews/proposal1/reference-language-profile-20261019.json": "8acfc07d908047cd965b6bc89d0282dfce6b73f2bede211ccdd01352c93849c1",
+  "fixtures/text/README.md": "7433d7046c3c9d8aa07f46ca92c39f8edb1df1216461ff34c8cea5770cf3dd19",
+  "fixtures/text/check.py": "4651b6259233b4e2196bd7c7b50912809c9f3f2691246e389b97f0e270ad4918",
+  "fixtures/text/combining.txt": "ddf230696812daee7759f015966a02473c5a81a8f1a2ff23832371764af3383b",
+  "fixtures/text/emoji.txt": "d8ab7fe19718a4568f66b5616925885146f4733c74aa6f7f26682366bbd57dc5",
+  "fixtures/text/gallery-reading-en.txt": "833362e826ac2dba9f4c9a4400949a3d6e60a1d2a5423e22c996db9e99b17039",
+  "fixtures/text/gallery-reading.txt": "1e51155d2a0959d95e364e602c55ad9341e5655c9fad82f0d1c26f22c658ceb2",
+  "fixtures/text/kinsoku.md": "b6aa7ea2573872b46792b8ec8d98269d5afa0c3a68f8576f85c247541a1c5169",
+  "fixtures/text/kinsoku.txt": "8c2baefb1000f7c715b1819b29b36b30f55e7872f2571a95a81fb7bf464fd31a",
+  "fixtures/text/long-paragraph.txt": "e6c998ca0f8648c905afe7443deb42c07e72dfb552aabbfe89ddfafacd7f3a97",
+  "fixtures/text/manifest.json": "95209d60e38b193f04e61e9b2d9a36a6c2a1793ed9ff42359220bf50b2a31e86",
+  "fixtures/text/mixed-cjk-latin.txt": "2032a17589785f4a15709e6d3931a334a2a51b0bab3966f8d7d0234f0a68d45c",
+  "fixtures/text/rtl.txt": "885538d2878517fcc64caa572c0ca34aa1bffc16953cfde0a266d9cf55d1d22a",
+  "fixtures/text/sentences-a.txt": "070e767144ce0431974a9195171f1e9ebe4433d1d0e6f94ef0c1e0521f880d7f",
+  "fixtures/text/sentences-b.txt": "fcc5fc5cc39cb7dfed9fd8ad6fd6b4aa6c8f2aeb11580f416b00fd6235d21e9b"
+}

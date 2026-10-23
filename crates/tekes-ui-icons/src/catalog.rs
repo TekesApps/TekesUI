@@ -730,6 +730,8 @@ mod tests {
             assert!(names.insert(icon.name));
             assert_eq!(Glyph::named(icon.name), Some(*icon));
             assert!(icon.svg.contains("viewBox=\"0 0 24 24\""));
+            assert!(icon.svg.contains("width=\"24\""));
+            assert!(icon.svg.contains("height=\"24\""));
             assert!(icon.svg.contains("currentColor"));
             assert!(!icon.svg.contains("#000"));
         }

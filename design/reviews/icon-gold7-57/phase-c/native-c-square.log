@@ -1,0 +1,8 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src/main.rs (target/icon-direction-57/debug/deps/tekes_ui_gallery-16f449ef0186b8f2)
+
+running 1 test
+test gallery::pages::showcase::tests::icon_gold7_native_all_sizes_gpu ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 454 filtered out; finished in 0.45s
+

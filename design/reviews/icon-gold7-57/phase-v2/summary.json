@@ -1,0 +1,92 @@
+{
+  "issue": 57,
+  "public_base_revision": "50ec49f3446924fdbc66b3cff22cd8cfe150fe7c",
+  "canonical": {
+    "total": 177,
+    "changed": 48,
+    "retained": 129,
+    "square_canvas": [
+      24,
+      24
+    ],
+    "GPU_configurations_per_phase": 4248,
+    "compiled_artwork_exact": true
+  },
+  "native_primitive_backend": [
+    {
+      "identity": "check",
+      "configurations": 24,
+      "changed_configurations": 24,
+      "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+    },
+    {
+      "identity": "chevron-right",
+      "configurations": 24,
+      "changed_configurations": 24,
+      "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+    },
+    {
+      "identity": "chevron-down",
+      "configurations": 24,
+      "changed_configurations": 24,
+      "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+    },
+    {
+      "identity": "close",
+      "configurations": 24,
+      "changed_configurations": 24,
+      "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+    },
+    {
+      "identity": "plus",
+      "configurations": 24,
+      "changed_configurations": 24,
+      "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+    },
+    {
+      "identity": "search",
+      "configurations": 24,
+      "changed_configurations": 24,
+      "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+    },
+    {
+      "identity": "folder",
+      "configurations": 24,
+      "changed_configurations": 24,
+      "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+    },
+    {
+      "identity": "file",
+      "configurations": 24,
+      "changed_configurations": 24,
+      "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+    },
+    {
+      "identity": "info",
+      "configurations": 24,
+      "changed_configurations": 24,
+      "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+    },
+    {
+      "identity": "spinner",
+      "configurations": 24,
+      "changed_configurations": 0,
+      "rule": "retain existing rounded spinner bars"
+    }
+  ],
+  "Gallery_whole_page_pairs": 144,
+  "shared_component_fixture_pairs": 64,
+  "native_window_observed": [
+    "four modes",
+    "settings 12/16/24pt",
+    "150% typography",
+    "actual narrow window and scrolling",
+    "text/focus survived mode and window changes"
+  ],
+  "system_input": "CUA native input; not physical keyboard/mouse",
+  "physical_IME": "not tested; no editing or composition code changed",
+  "VoiceOver": "not tested; no semantic or AX-owner code changed",
+  "performance": "out of scope; not measured",
+  "raw_local_evidence": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-full-rollout-57-20261023",
+  "release_pin": "publish exact commit after PR merge; local overrides are explicit development inputs"
+}

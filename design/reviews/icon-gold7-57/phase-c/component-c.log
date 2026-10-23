@@ -1,0 +1,55 @@
+   Compiling tekes-ui-design-export v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-design-export)
+   Compiling tekes-ui-tokens v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-tokens)
+   Compiling tekes-ui-scene v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-scene)
+   Compiling tekes-ui-text v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-text)
+   Compiling tekes-ui-render v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-render)
+   Compiling tekes-ui-controls v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-controls)
+   Compiling tekes-ui-composition-consumer v0.0.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/examples/composition-consumer)
+   Compiling tekes-ui-platform-macos v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-platform-macos)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.42s
+     Running tests/icon_content.rs (target/icon-direction-57/debug/deps/icon_content-9ccd8ff34c8b76e5)
+
+running 7 tests
+test allocated_slot_does_not_stretch_resolved_icon_metrics ... ok
+test business_status_declarations_and_passive_semantic_updates_keep_original_marked ... ok
+test canonical_icon_inherits_icon_channel_and_action_is_one_original_owner ... ok
+test failed_icon_and_background_glyph_update_preserve_original_composer_marked ... ok
+test independent_scene_run_stop_and_glyph_button_states_keep_original_composer_owner ... ok
+test missing_capability_and_resource_failure_are_explicit_and_same_owner_can_recover ... ok
+test named_passive_icon_has_full_name_but_no_focus_or_action ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running tests/icon_gpu.rs (target/icon-direction-57/debug/deps/icon_gpu-410cc9e800d9cde1)
+
+running 2 tests
+test canonical_svg_gpu_resources_reuse_retire_and_never_cross_renderer_namespace ... ok
+test original_svg_rotates_on_gpu_with_one_resource_and_original_clip_at_all_scales ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.65s
+
+     Running tests/icon_motion.rs (target/icon-direction-57/debug/deps/icon_motion-d9fb32512c71c956)
+
+running 3 tests
+test explicit_passive_disabled_stops_original_motor_and_reenable_starts_without_background_catchup ... ok
+test missing_clock_backward_time_and_upload_failure_never_schedule_failure_loops ... ok
+test original_motor_uses_json_period_and_reduced_stop_hide_unmount_window_gates ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/icon_status.rs (target/icon-direction-57/debug/deps/icon_status-fbf6ebf4adc88b89)
+
+running 3 tests
+test decorative_status_never_overrides_original_action_ink_in_any_original_phase ... ok
+test missing_status_packet_is_explicit_without_paint_fallback ... ignored, old Theme1.5.3 source capability rejection; not a positive candidate test
+test original_status_enum_resolves_full_parent_packets_without_changing_passive_mount ... ok
+
+test result: ok. 2 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/icon_status_gpu.rs (target/icon-direction-57/debug/deps/icon_status_gpu-811525174021c991)
+
+running 1 test
+test passive_status_real_svg_pixels_match_original_asset_oracle_and_disabled_variants_share ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.03s
+

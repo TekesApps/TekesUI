@@ -13,6 +13,8 @@ test('all catalog public SVGs resolve with exact hashes, tintable geometry and n
     const svg=await readFile(fileURLToPath(getIconUrl(icon.name)),'utf8');
     assert.equal(createHash('sha256').update(svg).digest('hex'),icon.sha256,icon.name);
     assert.ok(svg.includes('viewBox="0 0 24 24"'));assert.ok(svg.includes('currentColor'));
+    assert.match(svg, /<svg\b[^>]*\bwidth="24"/, icon.name+' square width');
+    assert.match(svg, /<svg\b[^>]*\bheight="24"/, icon.name+' square height');
     assert.ok(!/<(?:script|foreignObject|image|style)\b|\bon\w+\s*=|\b(?:href|src)\s*=|C2PA/i.test(svg),icon.name);
   }
 });

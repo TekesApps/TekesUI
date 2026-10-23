@@ -1,0 +1,28 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src/main.rs (target/icon-direction-57/debug/deps/tekes_ui_gallery-16f449ef0186b8f2)
+
+running 6 tests
+test gallery::pages::showcase::tests::all_forty_tiles_and_every_chip_fit_and_share_hit_geometry ... ok
+test gallery::pages::showcase::tests::check_chevron_and_folder_ink_bounds_stay_inside_odd_even_artboards ... ok
+test gallery::pages::showcase::tests::forty_components_all_base_states_render_in_four_themes_without_metadata_masks ... ok
+test gallery::pages::showcase::tests::icon_gold7_native_all_sizes_gpu ... ignored, Explicit native vector shape evidence
+test gallery::pages::showcase::tests::plus_ink_is_mirrored_about_its_actual_center_at_odd_even_frames_and_scales ... FAILED
+test gallery::pages::showcase::tests::semantic_icon_tint_is_used_in_light_and_dark_appearances ... ok
+
+failures:
+
+---- gallery::pages::showcase::tests::plus_ink_is_mirrored_about_its_actual_center_at_odd_even_frames_and_scales stdout ----
+
+thread 'gallery::pages::showcase::tests::plus_ink_is_mirrored_about_its_actual_center_at_odd_even_frames_and_scales' (59868064) panicked at crates/tekes-ui-gallery/src/gallery/pages/showcase.rs:2376:25:
+assertion `left == right` failed: + must be pixel symmetric at 17pt/1x around 16.5,18.5
+  left: [153, 171, 202, 255]
+ right: [152, 171, 202, 255]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    gallery::pages::showcase::tests::plus_ink_is_mirrored_about_its_actual_center_at_odd_even_frames_and_scales
+
+test result: FAILED. 4 passed; 1 failed; 1 ignored; 0 measured; 449 filtered out; finished in 0.21s
+
+error: test failed, to rerun pass `-p tekes-ui-gallery --bin tekes-ui-gallery`

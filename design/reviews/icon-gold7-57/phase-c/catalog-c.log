@@ -1,0 +1,12 @@
+   Compiling tekes-ui-design-export v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-design-export)
+   Compiling tekes-ui-controls v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-controls)
+   Compiling tekes-ui-motion v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-motion)
+   Compiling tekes-ui-icons v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-icons)
+   Compiling tekes-ui-tokens v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-tokens)
+   Compiling tekes-ui-scene v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-scene)
+   Compiling tekes-ui-render v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-render)
+   Compiling tekes-ui-text v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-text)
+   Compiling icon-direction-consumer v0.0.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/consumer)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.74s
+     Running `target/icon-direction-57/debug/catalog-review /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/catalog-c`
+4248 actual-size canonical GPU cases

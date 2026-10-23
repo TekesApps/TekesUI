@@ -1,0 +1,5 @@
+{
+  "source": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/theme-icon-palette-page-after-20261023/crates/tekes-ui-gallery/src/gallery/theme_acceptance.rs",
+  "sha256": "4bd7eb2c014a188589b9aeb2b6914490d06e3c42107fdbb1b69e5dc501e93ec8",
+  "change": "append existing whole-page GPU test in isolated source only"
+}

@@ -1,7 +1,7 @@
 # TekesUI public icons
 
-The complete 176-icon catalog is owned and distributed by TekesUI under MIT.
-All SVGs are self-contained, use a 24pt viewBox, 1.5pt rounded strokes and
+The complete 177-icon catalog is owned and distributed by TekesUI under MIT.
+All SVGs are self-contained, use a square 24×24pt canvas, optically tuned rounded strokes and
 `currentColor`. There is no private directory, network fetch or generation step
 needed to consume the published catalog.
 
@@ -13,9 +13,15 @@ needed to consume the published catalog.
 - The existing eight-variant `Icon` and its animation API remain unchanged for
   compatibility. The complete catalog is additive through `Glyph`.
 
-The 8 approved defaults keep their geometry. The promoted existing catalog and
-published proposal artwork are now publicly reusable; only fixed black paint was
-normalized to `currentColor`, without changing paths, viewBoxes or stroke widths.
+The Gold7 soft-contour revision keeps canonical identities and square 24×24
+artboards. The approved C direction adjusts 158 applicable assets and retains 19 with recorded reasons;
+the existing animation element/contour identities remain stable. See
+`docs/design/icon-visual-language.md` and the complete coverage manifest in
+`design/reviews/icon-gold7-57/coverage.json`.
+
+The promoted existing catalog and published proposal artwork are publicly reusable.
+The C revision uses 1.25pt for regular strokes, retaining 1.5pt for dense CAD
+construction and preserving filled silhouettes. Paint remains full-alpha `currentColor`.
 The 5 retired original names remain excluded; their independently drawn
 replacement slots are included. Provenance source/output hashes are retained.
 

@@ -1,0 +1,7 @@
+{
+  "issue": 57,
+  "direction": "C explicitly approved by user",
+  "implementation": "177 canonical assets reviewed: 158 changed,19 retained; square canvases and native proportional fit",
+  "acceptance": "complete within icon artwork scope; see phase-c/README.md for layered limits",
+  "delivery": "PR #58; final C includes user-authorized canonical stroke reading in animation layers; CI recheck"
+}

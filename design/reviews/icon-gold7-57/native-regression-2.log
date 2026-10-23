@@ -1,0 +1,14 @@
+   Compiling tekes-ui-gallery v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-full-rollout-57-20261023/sdk/crates/tekes-ui-gallery)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.19s
+     Running unittests src/main.rs (target/icon-direction-57/debug/deps/tekes_ui_gallery-16f449ef0186b8f2)
+
+running 6 tests
+test gallery::pages::showcase::tests::all_forty_tiles_and_every_chip_fit_and_share_hit_geometry ... ok
+test gallery::pages::showcase::tests::check_chevron_and_folder_ink_bounds_stay_inside_odd_even_artboards ... ok
+test gallery::pages::showcase::tests::forty_components_all_base_states_render_in_four_themes_without_metadata_masks ... ok
+test gallery::pages::showcase::tests::icon_gold7_native_all_sizes_gpu ... ignored, Explicit native vector shape evidence
+test gallery::pages::showcase::tests::plus_ink_is_mirrored_about_its_actual_center_at_odd_even_frames_and_scales ... ok
+test gallery::pages::showcase::tests::semantic_icon_tint_is_used_in_light_and_dark_appearances ... ok
+
+test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 449 filtered out; finished in 0.25s
+

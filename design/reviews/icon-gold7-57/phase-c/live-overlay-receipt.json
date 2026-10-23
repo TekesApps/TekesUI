@@ -1,0 +1,751 @@
+{
+  "crates/tekes-ui-icons/assets/tekes-mcp.svg": {
+    "before": "547828e5fd1d4819b0b23196fe5826a597edb914c01ee7dd729d9e4d797769eb",
+    "after": "4c333e3b2d3c571e194a9f132c9bbc3900a8382c2ea263180d03675c699c1acd"
+  },
+  "crates/tekes-ui-icons/assets/tekes-subagent.svg": {
+    "before": "82b967476987fd68c1fd957e9a7b91040d3d90415c99e8d57d6e4fd84a1af43d",
+    "after": "a906330128ba12482650ac634e55e36cc9d0875866e1fa35fd2d54b90e34d825"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-export.svg": {
+    "before": "24f0e92c2a5b9f6c5cd06b087fe1111a20f5306520e910c930535bfb4b538106",
+    "after": "24f0e92c2a5b9f6c5cd06b087fe1111a20f5306520e910c930535bfb4b538106"
+  },
+  "crates/tekes-ui-icons/assets/tekes-goal-state-active.svg": {
+    "before": "93410c44a1169cd3df7c62ac24b96f4e740daa1f0813ef1af267e692de6bfb34",
+    "after": "59d779efd4a94c661e70e047f1e5b3311e31419c4bf19e561f60fe4e0f34e4e2"
+  },
+  "crates/tekes-ui-icons/assets/tekes-show.svg": {
+    "before": "d050a2c2c9400cc7520213134b5ee1bcb0b145f2db518bf4d3938e673fcad867",
+    "after": "986104e40bb28996c9fab3d3079a00b079b724f3d1d300bb8ad986c40ac623ab"
+  },
+  "crates/tekes-ui-icons/assets/tekes-plugins.svg": {
+    "before": "16deb33ce5e493f62c2bb46dbe4889d66a85cdf3a266a5919bbb3809d88c5e2f",
+    "after": "40f211a911879fdc976f482333cf420a1af6aaf7f68f0110de44a5f5572cacb4"
+  },
+  "crates/tekes-ui-icons/assets/tekes-app-server.svg": {
+    "before": "038030199219b7a991a0f9f135e2a3f1329b43d45fdc5729477293f868c1a716",
+    "after": "d4f1d8809fec88be0a41ff91cbe055f256dc78a02f37cc494feff7a86c7e9255"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-editing.svg": {
+    "before": "70d71fd76225645b86872ed89d98e08d91ca95a31b9f951a7e1bea184efe6c28",
+    "after": "51074145263326080e9ba2ff8e9ccf278325ed14516267b2f52ab77100d422ef"
+  },
+  "crates/tekes-ui-icons/assets/tekes-trust.svg": {
+    "before": "fb9399ea5feb8cb509fbba8d489c1ae9571ddce290dec236df23d90db31cf780",
+    "after": "3aac37b34c0ae505164b7b03f8f46283774e1b1e3cf6e87f6a0513a98858202b"
+  },
+  "crates/tekes-ui-icons/assets/tekes-approval.svg": {
+    "before": "37d769bcff320d6bd979a9b215aa0f290d96e8cb58f875c8892fcc33a1d29ed5",
+    "after": "974e36a5f11524bbf87ea29fb5d2b01822d8cff65971f99a0c90f6b31b71c295"
+  },
+  "crates/tekes-ui-icons/assets/tekes-thumbs-up-fill.svg": {
+    "before": "d1957fe430bcf17df5673970bf0edb489796ccee4d6b642ee173f71add25d15c",
+    "after": "d03079082a372913441871762b0fccd44fb267b4c04414950eeb7c9163296811"
+  },
+  "crates/tekes-ui-icons/assets/tekes-think.svg": {
+    "before": "2469ed55708e9dbab091479fb96370011338230f0d16f4bbf6825fe118aef590",
+    "after": "46bb946973f0fbaa279f006f7063e06ceac595446295cfec49409d359ca26a83"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-audience.svg": {
+    "before": "25148ff46a817504d0845e253aab4c96b445e967edf98ff1eac96bfca048419b",
+    "after": "99c819d138346cf0512bbf9bdb3451282d3e2935238ab1fdf67f04bd49b8999a"
+  },
+  "crates/tekes-ui-icons/assets/tekes-diff-split-h.svg": {
+    "before": "38b6429b53b9951efb6d3d31d9b0ba4b4840bad6737cf01c90e8804c457ae282",
+    "after": "c49f8cb08f3bdf1593de9e68585521f767bb5e87d8f2134a27b235ec83a2c6a9"
+  },
+  "crates/tekes-ui-icons/assets/tekes-expand.svg": {
+    "before": "b20fbbcfd2e422658a6ff6ac7c9fecf2df706efebfad6163ddc71411d1684733",
+    "after": "13b4b05c3477dd336e7504a972e1cacba4ff8e40e15828f0d0707329e09c602c"
+  },
+  "crates/tekes-ui-icons/assets/tekes-file-added.svg": {
+    "before": "b587f59ca2b1f4636270db97cdb4d67345c235c62456d6bbd6c35165449305d1",
+    "after": "aa14a1f72baa8041263c1948069fa0feb43599af76bc7b93bb82dd539846b499"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-dimension.svg": {
+    "before": "852e9840bcf9989294553518e03af5d83eb4e0ab7875969c5e23de6b68802d5a",
+    "after": "852e9840bcf9989294553518e03af5d83eb4e0ab7875969c5e23de6b68802d5a"
+  },
+  "crates/tekes-ui-icons/assets/tekes-pull-request.svg": {
+    "before": "0284c42509b06bf4e6864e69f77c4b98ba5cfbdfd9b39c63993c804e5de6b8d2",
+    "after": "55bcb4acb0b70ef88698fdb4b1834d8bb37e0b37745da35ed268e40314e80ed2"
+  },
+  "crates/tekes-ui-icons/assets/tekes-compact.svg": {
+    "before": "73d0733aa2eadc27db124edb60ad4cef924cefe0ffadd89ed6354727d5b98293",
+    "after": "687e5e9704d8c234665d8e3067f1eb173140b595a73c3235d3bf9e234d4ac9cc"
+  },
+  "crates/tekes-ui-icons/assets/tekes-fullscreen.svg": {
+    "before": "f03c08f153beed2c59f363e2a3d9a43841b66b020d84ae7f596e7939ba3cf78f",
+    "after": "5ce5d7732fc4444c87b0287e8856b403c9f6197688f62da7f6e225df82dee8a0"
+  },
+  "crates/tekes-ui-icons/assets/tekes-swap-horizontal.svg": {
+    "before": "aee62a8f67824367e006909c8d0fba13eca503c73849faaf631a15b0de0adecc",
+    "after": "7d82326360ec416256bc4fb6d811e2956ead10e72ab7dc1d8e57ef76ad293c82"
+  },
+  "crates/tekes-ui-icons/assets/tekes-open-external.svg": {
+    "before": "80e871bc15281f580ef5f0f714e0a397fd51bb2a0f908236ffa99b495b0e44f4",
+    "after": "bffbccafc0256679d38ed61562183e1cd523587290684d2da6fac002a2cfff3c"
+  },
+  "crates/tekes-ui-icons/assets/tekes-popup-menu.svg": {
+    "before": "912958175a4037c5a234205b2f6f31ec1f76e92019b5ea8c942999fa3eab263a",
+    "after": "d2393c62d57693a2fcda3532f76693c0294c9b585178c59f09b93018b1455f12"
+  },
+  "crates/tekes-ui-icons/assets/tekes-new.svg": {
+    "before": "b15b5d70ad7f5052d93f038bf97a18be6ff5970c19d9c0290e57a8b2553a7e48",
+    "after": "6e9bb5d1d5c93f52f73eb57a38a3e41cd64bd3525ba7ebbcf3b8009202821c0f"
+  },
+  "crates/tekes-ui-icons/assets/tekes-tab-summary.svg": {
+    "before": "9d2278ec1070c722b77a99b273713cdff831d2818af6c8a0750e95fbb955b279",
+    "after": "0a7e0257013794a3bbb774fa1f8928567a9b7eb640cf3ead780ce99f8085efc4"
+  },
+  "crates/tekes-ui-icons/assets/tekes-merge.svg": {
+    "before": "7c81d6ddf846065329648cec5835a1120bcd0a5fcbffeb38ccd482b25900b9cb",
+    "after": "0b29fd162c556956810cb113726db94d456dad77b92d7a07372d323076aed223"
+  },
+  "crates/tekes-ui-icons/assets/tekes-web-search.svg": {
+    "before": "3f9dc38f853dd418bf0417207b848776c1255d1d640cb0543919f52d22a98fe6",
+    "after": "70439469d1d2d3e4af3767feef92034d2b8fe65aaaa2fd26c991885aaaea949a"
+  },
+  "crates/tekes-ui-icons/assets/tekes-pause.svg": {
+    "before": "ef5f946704355aefb8076d327010f601cfa395ea506ec7ca0ad3cabc2d97a956",
+    "after": "50ec93f9736aa6b40ca2a6efb6cb893f8183fb507001010fff95c275c5a904c6"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-character.svg": {
+    "before": "b5602866f0a011c1d9414cef7400b2d5b57e06ad17851e3f189f8d05ddfdc663",
+    "after": "2a19effc32cb0a349b5bb53f09cb1aacc1772c847c9a25d01f717d6cf35cb8dd"
+  },
+  "crates/tekes-ui-icons/assets/tekes-file-text.svg": {
+    "before": "380125192b3182a160991f5a5807a97735280f1ef2fd64421f6b8a45efd3e67f",
+    "after": "125d9dd57fab0ac8ee5093b895787670dc581925af550f340462b4eb6e455891"
+  },
+  "crates/tekes-ui-icons/assets/tekes-error.svg": {
+    "before": "031e33c2f49ca992722782d7ec3f462422ce84a7f59a3818c1cc12acc38922b5",
+    "after": "6e882110697fe8d33b5f28307c462e48333e520421f198231804a1a6ea141641"
+  },
+  "crates/tekes-ui-icons/assets/tekes-quote.svg": {
+    "before": "450d3f5fb2ca9c9f0ab766444a3599156e192dc16744b59c38f9f440136c063f",
+    "after": "bfa07c0f0df2f3868297017fab7695f7653b597875ab5a00cf402e92ba4fcc82"
+  },
+  "crates/tekes-ui-icons/assets/tekes-task.svg": {
+    "before": "35c1c1d6c8a186dd035e5e820307b9078962977930dc3c416de3dafbb90b8608",
+    "after": "9809553f87a5118a6686fb2ecf640dd274892551951dc8774725d66b91bf081b"
+  },
+  "crates/tekes-ui-icons/assets/tekes-clear-group.svg": {
+    "before": "0ab6445d9c537ab13e96de605bbc82c5ae58bc6ce4889fba2566e21981d1db39",
+    "after": "20219ba334aeddd154a954c35202fbad2b27ef916c11c990d5069b3d5f755635"
+  },
+  "crates/tekes-ui-icons/assets/tekes-new-project.svg": {
+    "before": "d1e78f06baaa61def0455c09e13dd460bfbdab36f7a06242e58a4bbbb19f9338",
+    "after": "1c996dac8ad8533b5fad17245ef4e2d99abe1323978fbb306c9b89004ddc25db"
+  },
+  "crates/tekes-ui-icons/assets/tekes-side-panel.svg": {
+    "before": "ea1a17ff482b1542bd416f96eb78efbdb30f9be6802df210c3e2e709d7641931",
+    "after": "7a48003c72ced2d1dfe8682d343b191bb6e363af564234b4896d61abc97864d6"
+  },
+  "crates/tekes-ui-icons/assets/tekes-info.svg": {
+    "before": "0871ba05f6cec1e7093f9a17bee9e14b31eb622f985cd0a6a1e53828f3f6d0f5",
+    "after": "b82a31c32768451e007cf3312005d542e5ef34e8f0df37d51989a36801661e9a"
+  },
+  "crates/tekes-ui-icons/assets/tekes-search.svg": {
+    "before": "10c806e61e3040e800bb9481075445fe42fc5fcf2b2e7b0dc338ff536df7109f",
+    "after": "0c0a0070d6a8f1055a0a2595a2cf47b8afc728f1ed35a4eff1e54b701046ff75"
+  },
+  "crates/tekes-ui-icons/assets/tekes-resume.svg": {
+    "before": "507723cffeb876f584db5d11fa2293a29bd41c955eebcb719cb07249f9cf0464",
+    "after": "d1303786f0a28eae845ed192d2e4c017e4e042df8f54cdb6f66123fba9b6bdca"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-layers.svg": {
+    "before": "698f048ddc1ddc4699c60ff7080cc93c8fbb730d4090729cbf4065fa6175363c",
+    "after": "698f048ddc1ddc4699c60ff7080cc93c8fbb730d4090729cbf4065fa6175363c"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-window-select.svg": {
+    "before": "1e2b29b8b8b15017679e593c2d3900f254856ca96aba2c255a54e65f3e7d36fa",
+    "after": "1e2b29b8b8b15017679e593c2d3900f254856ca96aba2c255a54e65f3e7d36fa"
+  },
+  "crates/tekes-ui-icons/assets/tekes-archive.svg": {
+    "before": "a0a067492fe590e204fe3498e4d42762336014c5938877ab9c4f1c75852334bc",
+    "after": "12f51739d1c64cd064e116e7a2423dfec063c7ad3db1207c5a9994f4a0457ba2"
+  },
+  "crates/tekes-ui-icons/assets/tekes-goal-state-blocked.svg": {
+    "before": "19abedcfd95514767945ca12d9a22d2e2a4194b0edac2b87b175b54d4fb2c0fc",
+    "after": "9df73bce6ebd568bd13f7c3a509b3338e8aeccad73cea40158a977510129a38a"
+  },
+  "crates/tekes-ui-icons/assets/tekes-queued-input.svg": {
+    "before": "004f9d308ae3083930fc27b93e3a94b1ec698b454909e551c65b5e6c6ee2da4a",
+    "after": "4dae452f78ac7986e2d3087b8dba5026f6964ddeb0e724795d80c3a861db6580"
+  },
+  "crates/tekes-ui-icons/assets/tekes-image.svg": {
+    "before": "6b2d889faec81c3d72c7e0afc7ee49cc02a3852b6ccfa4a3e3d0a34c9045fe96",
+    "after": "ebd7d87b33e19e464b55a33f7762146b41fb1823a3592695c8f5b1474e9e99dd"
+  },
+  "crates/tekes-ui-icons/assets/tekes-desktop-control.svg": {
+    "before": "681bcc91e692d22f771dd61fbe1bd00085e588ba5b1748cdbe34b329adc5af52",
+    "after": "e4a7a4a21b4f434811a5924cd640a62a7198005d2e8725b225528456a18eaa98"
+  },
+  "crates/tekes-ui-icons/assets/tekes-stop.svg": {
+    "before": "8796e8799a5f72f674b19911adc5f50691248cb06c6d216e4814f2d363e2c956",
+    "after": "8796e8799a5f72f674b19911adc5f50691248cb06c6d216e4814f2d363e2c956"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-storyboard.svg": {
+    "before": "df6d70971e4f474fa9cec4cfbe2b9db2ddb82f2585104189a97831021332f35a",
+    "after": "0dffff17424eed8be3f5aca554f0e5d7372a8296b259cda6ddddf79f495564c2"
+  },
+  "crates/tekes-ui-icons/assets/tekes-job.svg": {
+    "before": "f53b6b7257e8732776d0c6999559e4a8ec318525913a81a1fd6b4e5cf7117e4c",
+    "after": "4c7d0f556beaee98a193c2fc0529778437f47f25282bc0bb366fc942c763aa41"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-directing.svg": {
+    "before": "e6635f0e6a19741f592a9e13c55947a9a07d550b50e39d09dd0af472569b9ddf",
+    "after": "43310d0c7d30ac5865c1028373e6f83dd817d00dba2259576a5bc7503fc14231"
+  },
+  "crates/tekes-ui-icons/assets/tekes-thumbs-down-fill.svg": {
+    "before": "9db8d85375f4beac95b3722c73d0b9914c4e7ada0f035e58682a685f36541971",
+    "after": "5fd6a4cc8da0ff8b0894c778939fb163df968c57666313e86672977d15e5a909"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-brief.svg": {
+    "before": "6c1f450c641ab0ab567da2b2f63cc6375827615972a62f9081eebe6a00854f03",
+    "after": "24a8f4ab8d6d8f3bee3c9733563ed9b4b0f3273561df5f2ffe191f2cf5f3e07c"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-references.svg": {
+    "before": "1a752bf2bb853cb95faf08eb853479dd8912b9060fd4005b46e5e470711967d9",
+    "after": "0555c4ce30381b2996059a0a8ab04154fa7a585a56ad16cce6d67179efd55780"
+  },
+  "crates/tekes-ui-icons/assets/tekes-goal-state-completed.svg": {
+    "before": "81057c4800964b9d8ead5ce6d08575d9ef179100082981105354cbbfe2600961",
+    "after": "6960bdd323a2819790757ad6407d81dace9288738575f2e3bfa986ae1fa73484"
+  },
+  "crates/tekes-ui-icons/assets/tekes-access-workspace.svg": {
+    "before": "1ff38d3de3f2c0779b374403fdbc374025229274f4dd6cc7c63201191fc60a55",
+    "after": "bfb873a4ea7b44335cfa70590d2498b00a1c2c2480363da1741aed5da49b76e0"
+  },
+  "crates/tekes-ui-icons/assets/tekes-commit.svg": {
+    "before": "f458bf0047b287640faab47dfe5e6d51a16216cab0db626d3fefb508d8733c7c",
+    "after": "01881a92eb509b9d798a3588003cc7434de1eae59b55830beb75c7c7f00e6c9d"
+  },
+  "crates/tekes-ui-icons/assets/tekes-goal.svg": {
+    "before": "76d2d369117c334cb3e83759ae2d98012b5ce5385d2b691abe70928dd1315ef0",
+    "after": "50b26ee375395bedf4d6fa80a58674f9093900e253f15c6fdbb795b2bf2e1751"
+  },
+  "crates/tekes-ui-icons/assets/tekes-settings.svg": {
+    "before": "95847757adbce74ee5d55bbe9c53be728afbffb2b1224b029e0ed65171d63e59",
+    "after": "21f9c62a954212d3ff200956960666fd40dfeedcf288bacb1c2406b837561e77"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-production.svg": {
+    "before": "acb629e88ef0b39c88eb69817123ddeec0d8df8ba39916dd40f2147302e9188a",
+    "after": "a3b5760ba452a7893503402785366e90ef0c608f9f060f3e94aa256c21fdb5d9"
+  },
+  "crates/tekes-ui-icons/assets/tekes-pinned.svg": {
+    "before": "0509347b23af829163bb9d5f19ca876b1cf337a5eae4b5baaf48dedf43926274",
+    "after": "aa5056cfb13b458647581485cebd27ed2987653ac72f4b85a164546446c8a1ba"
+  },
+  "crates/tekes-ui-icons/assets/tekes-logout.svg": {
+    "before": "adc5a449eecb334bae0954d7c69302de3a7469a57e075daee0e4468c6e3d7309",
+    "after": "3353503ad6e9ca778be05e098210ef83a5be0f3709508c14ef901066049a749e"
+  },
+  "crates/tekes-ui-icons/assets/tekes-time.svg": {
+    "before": "7b3ee7dd00e903b01dd5ef476045e2d578a3e26400f06eddf06c038af450a6a3",
+    "after": "aa334ec2112c66119fcdf2167480bb432bb1611597c3b0a25e7f4763709ca120"
+  },
+  "crates/tekes-ui-icons/assets/tekes-note.svg": {
+    "before": "e90638044ed735d1421ac53e9a4f41a8ded7ffecdb0ab21b09ac89f4c444e914",
+    "after": "01820b92dff7ebb4707319007dee7fdf1c50963ac08edda79e9cd3e8493f6720"
+  },
+  "crates/tekes-ui-icons/assets/tekes-warning.svg": {
+    "before": "909d26a9541c6fc9c772907d76aac173cb276638272aaff587c8841aedca1edf",
+    "after": "9f6853c958c14903ca31899ff98aa54a44f09abb94821a541f508196a7c60c1f"
+  },
+  "crates/tekes-ui-icons/assets/tekes-recall.svg": {
+    "before": "c154b2e6d68fe08ad8d8e30c41ce5ad1cabc4aed0f48f67532ca056576aefa0d",
+    "after": "ee8f2219330759dd9b0d3aa394a2887751f23b34801dfba90f13567987d3efe6"
+  },
+  "crates/tekes-ui-icons/assets/tekes-plugin.svg": {
+    "before": "16deb33ce5e493f62c2bb46dbe4889d66a85cdf3a266a5919bbb3809d88c5e2f",
+    "after": "40f211a911879fdc976f482333cf420a1af6aaf7f68f0110de44a5f5572cacb4"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-delivery.svg": {
+    "before": "77e44de4aabd8c0b148c70a1fbbd8a3c48d72898ba7e8e1affe6d2ad06dfba1c",
+    "after": "c2b2c47841a28a92642a03999f5e617ec3ef9b798384d1ff6a190c843d43a472"
+  },
+  "crates/tekes-ui-icons/assets/tekes-progress.svg": {
+    "before": "6360db961bdb30ab31cc94d388a57c7cb1d0a50e54199fa7d6783749e2417089",
+    "after": "91f2d21051545252c469f999fa8ca47a1b21023be1bee18ce666e4276d276d01"
+  },
+  "crates/tekes-ui-icons/assets/tekes-collapse.svg": {
+    "before": "2a0ce0f6594812e76a74b600f70ee5d2aa63edd98a375fae56cf5a3af281bcd7",
+    "after": "b2b85bdef578cfd2073456250503192f5d7035c186fe9c5302412a576d7f4cc3"
+  },
+  "crates/tekes-ui-icons/assets/tekes-authorized-fill.svg": {
+    "before": "502f78c5664930b262611c400620838a6ac566b7de015a49bd3801631be88b8d",
+    "after": "502f78c5664930b262611c400620838a6ac566b7de015a49bd3801631be88b8d"
+  },
+  "crates/tekes-ui-icons/assets/tekes-agent-question.svg": {
+    "before": "9f11a52ae5a9f9088d2e18d35c753e35aafa837259ba20a7ee3794aed513579c",
+    "after": "f24c43528f34021b9328d4aca5bbb24e15142351cad9ef36858544a60dd687ca"
+  },
+  "crates/tekes-ui-icons/assets/tekes-write.svg": {
+    "before": "bad8b5da6a29715902436ee55cddb38c4880b7ce8385c4c20c85f6613e99c94e",
+    "after": "f2e0764bfe0b2719fba38149c22bd44e98295581dd1f822945a96ebf6ff2bd38"
+  },
+  "crates/tekes-ui-icons/assets/tekes-goal-state-stopped.svg": {
+    "before": "cde2e5d1c1710be3188bff5e7f693c1dcbe3f664aa5adc1f179af2926210e852",
+    "after": "ae06eef0219f041aaff31f53514746e35e13025971df53f9f4e2b428f982f9fd"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-crossing-select.svg": {
+    "before": "bc77022e35548c885b95074342da46ccf9972c2930c9be1b6bc282cd68a4e0a4",
+    "after": "bc77022e35548c885b95074342da46ccf9972c2930c9be1b6bc282cd68a4e0a4"
+  },
+  "crates/tekes-ui-icons/assets/tekes-ask-user.svg": {
+    "before": "a59230759d382381d79360cdfd6df8195ade4fe36fb78ca5775c13d7d9895a03",
+    "after": "c39c5745a744aa0790e3a215e70164d80c5a4fe66dde0bec894d1f156b3b0243"
+  },
+  "crates/tekes-ui-icons/assets/tekes-router.svg": {
+    "before": "83c70fce08e57b4c5a3cc3291c16db1eb486a4329551b536d1eaeb30fd81f69e",
+    "after": "37ed65353918582b89ce493db572ff066779b28003de6ce325ebe3be2e83bde2"
+  },
+  "crates/tekes-ui-icons/assets/tekes-delete.svg": {
+    "before": "de3a87ae78be5f72a556e9cef0306a5c16cc77be71a46199d8a955005ab96d64",
+    "after": "f6137dac7ea840fb96ebc70bd5c6c067afde0224a347a0574e94232d7bd82c87"
+  },
+  "crates/tekes-ui-icons/assets/tekes-goal-completed.svg": {
+    "before": "13bbd3053b4af1cd0ea9f8dfde05b6c13a3d96567e9c0ba03830afa03ee4b947",
+    "after": "f8bed10c6662f25c57b522b63496dae794855aa3f8f7cf04408c70cd2e001922"
+  },
+  "crates/tekes-ui-icons/assets/tekes-pending-task.svg": {
+    "before": "880c666fb812f6d202ab7b4c65cb4a53f0922fc09b49789dbd489428013a811f",
+    "after": "eba25010e36a284ecea4d47088d4c14e1076cbe2bfdc12635c8662826464639d"
+  },
+  "crates/tekes-ui-icons/assets/tekes-steer.svg": {
+    "before": "6ebade640be38681ce797441c0ddb64044b920d85dbeaa1db7743758837eca13",
+    "after": "fe50fee30a5677404ab91fe1536af00ef9060fa6ea45456c85fb9670d9cc96f8"
+  },
+  "crates/tekes-ui-icons/assets/tekes-unpushed.svg": {
+    "before": "67c9eadd884d0202fd6045e9675f0f77901f4845529aa5fa7cf8e33c63df9755",
+    "after": "1eb70253b62573f19f3d8184611ec6b1623689cc955a13dea2d482399aba0a6b"
+  },
+  "crates/tekes-ui-icons/assets/tekes-edit.svg": {
+    "before": "60a9b9f2569477938c4949f026a5b856c879719feb2fafff9e1c25a02d70b7d3",
+    "after": "acbda1be4eb54243e1e14a9165aba7de0b387d8cfaf06dfc1b3177f0d3746096"
+  },
+  "crates/tekes-ui-icons/assets/tekes-file-rich.svg": {
+    "before": "3c58d668917baefd9efc05909d2e0e9bbf7b5342558d91469e2834027712d793",
+    "after": "30e9aa06144d1eec4e15e3b93490ada4897cfe5de3a22775e8922c09fc99ce0d"
+  },
+  "crates/tekes-ui-icons/assets/tekes-thumbs-up.svg": {
+    "before": "71fe0e2df8b45d31f847157f520fdd3a9fadf26aab1d680914db4461c077632a",
+    "after": "1262f0a82b7c208b5d517acccc2214005ed9c9341a86d9d0c8c6a691f215d73f"
+  },
+  "crates/tekes-ui-icons/assets/tekes-attach.svg": {
+    "before": "1d6736475e7369148d32063026ea74c4f78f25eb89e172685fa6191492c77688",
+    "after": "d87fa0c974caacac88d30da8a48fa59d27100520ab7ed9230aa0c3545e734d81"
+  },
+  "crates/tekes-ui-icons/assets/tekes-filter.svg": {
+    "before": "8e7459f535b6f7412e0d35d78a99c47e68a3fcfdde23695b9483445121bc3cfd",
+    "after": "a98af245f4c1662eafafcda33e79e8fb8a935c3d817fba7533cf8b7ac1aff14d"
+  },
+  "crates/tekes-ui-icons/assets/tekes-ahead-behind.svg": {
+    "before": "d1d94fab3465a15e0adfc0e17d3c3521e1b6cb31bfd4b327e0eafd9d9da68618",
+    "after": "3ce43caf8bd515607c5656cdf30a59191450a7b629e14f86cd9e07adaabacf8d"
+  },
+  "crates/tekes-ui-icons/assets/tekes-web-fetch.svg": {
+    "before": "f514bac0900cf9eda85834cf6baa2e07d35222da8f92b80cb402abbff729d93d",
+    "after": "fa72df2a7baacf394cd9545945a695759f5f98ff228d969d6c08a8bae479fb5f"
+  },
+  "crates/tekes-ui-icons/assets/tekes-refresh.svg": {
+    "before": "f96d905b1ba249db26610e0d7e68fc79d3dde535a33a6a782502d5031660f5bb",
+    "after": "89f8c9cde7f6deb16daa4e6b4a113ba63627ddca431f08c4cdd3490cfc8b232e"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-snap.svg": {
+    "before": "fca86c83b2bb56133926b83ce8a56cc8b8ad7dc0170d997880a215fa9ad3e50c",
+    "after": "fca86c83b2bb56133926b83ce8a56cc8b8ad7dc0170d997880a215fa9ad3e50c"
+  },
+  "crates/tekes-ui-icons/assets/tekes-compare.svg": {
+    "before": "b6fec2bbfa4b8fdb817a0be3f1c0012d10183a83bd77ee8cc0251a5237a2826e",
+    "after": "7a3595376d1510e2f3bb82be0e745676bf3df352c09c96e686be0ff0afee9f55"
+  },
+  "crates/tekes-ui-icons/assets/tekes-context-usage.svg": {
+    "before": "87b69e0d25d6408dfff2b2e973978cde7f2b681d5544c9c6d1e11e51cd81587c",
+    "after": "78f3cd196437b107a4ac9a09769c3168d796f90c12fc84cd866af619aae179d1"
+  },
+  "crates/tekes-ui-icons/assets/tekes-zoom-in.svg": {
+    "before": "9ea695089c5a7739876dc4ff98c2b27039842ca5b3cb3b679a5771305a9ae102",
+    "after": "a17e564c37f5792be4c16b82826d2dbe6bf54f1f275d669de7799fab84842e39"
+  },
+  "crates/tekes-ui-icons/assets/tekes-zoom-out.svg": {
+    "before": "04aa009722af496f6d4607f9f06041b73a090d13f9ebda3fdd4f9a1341f1db37",
+    "after": "fd2baf9a745c0c243de062ba083f9bb077ec20336f6309427b6f3d2aa6638a30"
+  },
+  "crates/tekes-ui-icons/assets/tekes-more.svg": {
+    "before": "af9b44e26bb6964682b456e7b58e0c64fab27bac3028bb0472822d56daea6d8f",
+    "after": "af9b44e26bb6964682b456e7b58e0c64fab27bac3028bb0472822d56daea6d8f"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-compare.svg": {
+    "before": "c1e337caf943d651c341b290354ee2b4471e321a30e4644329253453193a3e7d",
+    "after": "c1e337caf943d651c341b290354ee2b4471e321a30e4644329253453193a3e7d"
+  },
+  "crates/tekes-ui-icons/assets/tekes-quick-panel.svg": {
+    "before": "379f1ee1a1e12cee810984a990fa50f6442d7e8ec8f08e26d6444bee7f4813f3",
+    "after": "f5fb9579fefeb4c309682847b19f14f476cdfd54dee35abfea86c9425e75241a"
+  },
+  "crates/tekes-ui-icons/assets/tekes-shell.svg": {
+    "before": "eb225a4dc75a81d425fee1f9382276b895cb3b9e509cd89bfb9a09a7a7830610",
+    "after": "cfb9a0fe931cfad2dd6073e3f3bbc3bb3d522883aa59467b12808d949dd2c863"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-script.svg": {
+    "before": "31ff08f819ab3488952196315c429c236eb9723721de9ce9a0bcb4dc68b2f7db",
+    "after": "04d06f0a5be65e7de865ddec6a9332f4408fe37308d17defc52e656d0db33cc7"
+  },
+  "crates/tekes-ui-icons/assets/tekes-redo.svg": {
+    "before": "356c5bf62897b5d9bdf9f4c10d34f59094281d75b8906349511eace7df49fd59",
+    "after": "79394f65f613156786f287b5a252e28008d1cc2b1dd69668832defb149e3f0d1"
+  },
+  "crates/tekes-ui-icons/assets/tekes-pin.svg": {
+    "before": "4f96af1a8c58b95b5da027e5b5a94355b6c065f02d4a272ece8911b1efceae4f",
+    "after": "fb64982562e7ae251f79a299c1015f99b0216fe0ce5e6a64efb4e011f800cc08"
+  },
+  "crates/tekes-ui-icons/assets/tekes-annotate.svg": {
+    "before": "7ac99c21afd1080fa84eebe73db81f338e9d305cd0c7b51fa85b11e6576e2686",
+    "after": "41aef042eff3d04532decf1a385982fa3547b152434ebf34cb65153c1e8eeb35"
+  },
+  "crates/tekes-ui-icons/assets/tekes-unknown-tool.svg": {
+    "before": "87587a0303eef0cead5d596cf34b045bf5d8cdea81016547426e3ddc4fb194cc",
+    "after": "29fb81839b5ae79f3610632e88317a3326aed1f44ee7afe64f84b3bc80ab85f4"
+  },
+  "crates/tekes-ui-icons/assets/tekes-rewind.svg": {
+    "before": "f1ab7fcdeafecfe865545baa489ee01775973e6c795b72204046324a88a4403b",
+    "after": "d39548076961f98e4d90340b8ff9b3871a4a0f608f3f83e2e098712529c668c1"
+  },
+  "crates/tekes-ui-icons/assets/tekes-send.svg": {
+    "before": "083a6c2d6f55920aeb6547277496217bf146b562b261147b81e32aa3edb9da28",
+    "after": "f9e20965dfb6ca993489fba695daa5bb6e520670daa1192f1d8b29792b42ce8c"
+  },
+  "crates/tekes-ui-icons/assets/tekes-provider.svg": {
+    "before": "ba287fdc8903f525fcaf93229562cb6e3277c2909a111eb81d2e9ac9b1f76808",
+    "after": "dbd1f566ba2329b4eab55ac549a6e887a0decb99d5029d44f64e05dc5254329d"
+  },
+  "crates/tekes-ui-icons/assets/tekes-thumbs-down.svg": {
+    "before": "c2d5d802db730e7360799a4e32391bd402bf7b12b61e7a41aa7073f4c7a0bf6d",
+    "after": "663770524f44f8fd839bd59c8631fe508d2756bfbf61b699ce059301c7ca0e9f"
+  },
+  "crates/tekes-ui-icons/assets/tekes-branch.svg": {
+    "before": "169f40ee24c6751f605533f6de6d5b76f9b317cd5142c230054fa6a55574fb96",
+    "after": "1c0bcffed768dafd9b6c1a3e1bc4659d8d1c013bc35b7e482bfa2ef7ecee3e87"
+  },
+  "crates/tekes-ui-icons/assets/tekes-back.svg": {
+    "before": "d924ef36e67aaab28aadaca1526739861e9a724eb5adba65952eb77495f018d1",
+    "after": "864769aaadd1e7facad14609a9a626a2405485b94a15062e74609fdb97e61c26"
+  },
+  "crates/tekes-ui-icons/assets/tekes-lock-fill.svg": {
+    "before": "75e8bb23fd86c9c532b1176aa369f1eff5649180b9cbac19b902a9968dc1e597",
+    "after": "2543a513dc91e3df573ad15e071b45a36752de73b4869b9adeb678db8c9df8c4"
+  },
+  "crates/tekes-ui-icons/assets/tekes-appearance.svg": {
+    "before": "05e6d29820da9acade156d3bb8cefbb16ec1711ce96db1c5d44a71b5d66e3bf6",
+    "after": "18bcc23b2d0b40d3295010ec2f0c77653acd9c6c28b2c3e988c2a37f4c7189f0"
+  },
+  "crates/tekes-ui-icons/assets/tekes-fork.svg": {
+    "before": "1972f1027787334cd8f6a186b1e015bd034b793ab3cbc4089c93633c27914678",
+    "after": "3e089bd677e38fe25e1917d140b95d0544b1149aa896ea0eb5a33d3881ba6826"
+  },
+  "crates/tekes-ui-icons/assets/tekes-folder.svg": {
+    "before": "234190d6b6ff5dbf4bd359c2b465e73bd4b8ea6c07aa1a5b73f54c62178c4fda",
+    "after": "eb58e1cf59f699c1648c093b943c1a6a924bf4624637d552a1f1e53b55fa2235"
+  },
+  "crates/tekes-ui-icons/assets/tekes-folder-open.svg": {
+    "before": "56e24e56feaa2514495726594cc9745e8c920ccfb705d6a15687636ff6efdfaa",
+    "after": "262a7e86b8a7b009c6923ff11c9c8654d5b46776d1dfe1b6656b0c150532fa08"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-audio.svg": {
+    "before": "cd6b9567d2be23f8344dbd440e2b6056e305e9372580bab0c69e00d4cf92b466",
+    "after": "819ad8fd3aba02a271c41967fffa5f85b6534020ef103f07c28c6a471a5eb7b2"
+  },
+  "crates/tekes-ui-icons/assets/tekes-access-read.svg": {
+    "before": "335c0a5618e0ae5f9b102c5723eabb5cc3189db9ad821e1861ab733f0d3559e5",
+    "after": "b2feb397185f48167fec84fa66a857dc3804083a5f1647a2143f0d78f8f915ba"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-collaboration.svg": {
+    "before": "dc859096c8bc79ba57a39bc0c68d96af3b0c7c3698d249d2f9b67d7eb6fa5bef",
+    "after": "b7f78d37124b24f3734da63ba17656970fe214d58d0f0c64bfbb0758833e02c7"
+  },
+  "crates/tekes-ui-icons/assets/tekes-hide.svg": {
+    "before": "0706cde0583ef7e5c764b84d5e2d65860c7d6ecd7d69c67f4b32ce403efe56a8",
+    "after": "34bc014a65597c06aefa1c1e8f6bfb451e588ec25d2d32c7a96d0632067d6d9c"
+  },
+  "crates/tekes-ui-icons/assets/tekes-steering.svg": {
+    "before": "cdbb80ed6ac75ab8bde6c51a29ff2744e81e8e515bf24be896e3d2a97737b3c5",
+    "after": "b138cdc116e5b5f13875aef25b7dbf66736ea291493d7c7b7a0f5bc39a678dd3"
+  },
+  "crates/tekes-ui-icons/assets/tekes-side-chat.svg": {
+    "before": "dc751cc5314dcd64f9af75da94cbb3c20738d9e4d7f22992009bc70dc5fda351",
+    "after": "7e86a00b8d0e0869c1c2f23e9bf5f7782b8dc0508fb242bbca5758bf64a6192b"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-polyline.svg": {
+    "before": "010cb6ab0cd0c37bb3d53c38e8fb0d7b7f0d537db140e5d9b3241cca76c1d091",
+    "after": "010cb6ab0cd0c37bb3d53c38e8fb0d7b7f0d537db140e5d9b3241cca76c1d091"
+  },
+  "crates/tekes-ui-icons/assets/tekes-copy.svg": {
+    "before": "b12e98ddd14336b09c9cfc28302f14bd4c062d4223d0a75ff51510fb63ab07bb",
+    "after": "f2af1a654eb571bf15211ac3a0fbec1423bf08988fb63fe5540c41efe5181863"
+  },
+  "crates/tekes-ui-icons/assets/tekes-flash.svg": {
+    "before": "a35fae10ec77cce93f51042ad515a025918b3c00ca05aff4b356d816bcd7e152",
+    "after": "58bebc38b08456964111359f9222e4fc4a7cb04b798491a68b027e180ff82fd6"
+  },
+  "crates/tekes-ui-icons/assets/tekes-diff-list.svg": {
+    "before": "264c977f20383415e8161f3d50046862d557dfdcc5c8f5d9d9e75672681310fb",
+    "after": "70d86a3768f67bb2c2e74a49d9c58d9e81db72d914874403acda1ebd52a91f22"
+  },
+  "crates/tekes-ui-icons/assets/tekes-side-bar.svg": {
+    "before": "7fec5beda4076ac160944f985412372f8c755d801adbff395855ef4bf6580110",
+    "after": "22490a842461d6b2646ac6b23f1129587931d205e9442556ac4e0cde043721f1"
+  },
+  "crates/tekes-ui-icons/assets/tekes-slash-command.svg": {
+    "before": "3f9d0351eabfab80dba2e0933272de3fd22a8294cd365e2fda5ef662cc00044c",
+    "after": "8d3a1ea1b665557864d32ce96054dabda45a8b1d0ccc7857ee4dae1d01f127dc"
+  },
+  "crates/tekes-ui-icons/assets/tekes-diff-annotation.svg": {
+    "before": "528a6eea39ad04452e2894126ceda456637a22dea05f75993580c6a303ab1d86",
+    "after": "fedabccafba70f6741b4ab0c1f386a9aeda72e25ec3c4aeb5958222d2601962a"
+  },
+  "crates/tekes-ui-icons/assets/tekes-test-connection.svg": {
+    "before": "580b6abdc9de9bb200400918063d60cb955378134860376b3837d2eed71470cf",
+    "after": "2b35c38f53d162fef66032efa53c8b31a2ee72e7288e7c0f8ddd00bca967b57f"
+  },
+  "crates/tekes-ui-icons/assets/tekes-no-default-app.svg": {
+    "before": "fe18d654055b62e9255cc47fc05d0fec0a7d149d318c6967e65c902a695acbaf",
+    "after": "2ac73a29980a518b657e7f2f83a280362261c43bc55b269725fd96222e1a671b"
+  },
+  "crates/tekes-ui-icons/assets/tekes-advanced-params.svg": {
+    "before": "293e80f1516fee6fce785839ffcfeba7691e59a0dbbecc587570f72ca133f70f",
+    "after": "ef102eb2989f6ffbcc5059efe771e38a245fce26eff7292503b836b78f36e9e3"
+  },
+  "crates/tekes-ui-icons/assets/tekes-skill.svg": {
+    "before": "69fb60fda1e977d12cba289f5e78643f1dbead06f6191e6e512d9f890b035ecf",
+    "after": "cc267c3d686178c88be43837a0698cf0194e5956a4ea36d82610a243cce03f52"
+  },
+  "crates/tekes-ui-icons/assets/tekes-flash-fill.svg": {
+    "before": "eef40e187d42450a541c49e76d697111d5af881b658bf0c3ec8ff4fbebfc3043",
+    "after": "eef40e187d42450a541c49e76d697111d5af881b658bf0c3ec8ff4fbebfc3043"
+  },
+  "crates/tekes-ui-icons/assets/tekes-access-full.svg": {
+    "before": "9ce8dedc6632efdfdcd22086b3874a742a58cd7de17849700f20806f9be3b8fc",
+    "after": "a076555220f0d9f184b99a46ad66f0ba325c3f32353924c0277499d478a5a999"
+  },
+  "crates/tekes-ui-icons/assets/tekes-report.svg": {
+    "before": "30a85be5135a7109de0193d99d831a80d47fdc877a3dffcc7433ce43c1bd3185",
+    "after": "c7627ae1236d47cd5d731f0805c44514e394e1f0c0b1fac7439d89819d213d65"
+  },
+  "crates/tekes-ui-icons/assets/tekes-jump-bottom.svg": {
+    "before": "40ebec8a9f40e51e9f0e7c95b5fecb29b23e17b5fde8022ad64274f826939e2f",
+    "after": "8af0108e2bd14e7ef9ac50133d8e3f618777123fcea68ac4e2d84cdefe4cd635"
+  },
+  "crates/tekes-ui-icons/assets/tekes-profile.svg": {
+    "before": "eec213d2d6057e1bcfc5059abb255685af4cd859afbeef8038bf432485d4bb40",
+    "after": "4463e0ee737c3fee58753f42cf5452021f3d84578085086c84dfdff9809478ba"
+  },
+  "crates/tekes-ui-icons/assets/tekes-warning-fill.svg": {
+    "before": "48a9cea0786d86e19f86ffc54149efd36be905e5388b41f3d502838be9f81b5b",
+    "after": "48a9cea0786d86e19f86ffc54149efd36be905e5388b41f3d502838be9f81b5b"
+  },
+  "crates/tekes-ui-icons/assets/tekes-scheduled.svg": {
+    "before": "a75f884cb99b15ae7f545a3c7d93fc51826b651b4f6b92a4849d8c2dc0853e38",
+    "after": "29bbfc6e55ef3e8b3f2c1dace63f9760a9ab5cf2aab171e133cf49dca1fce7e0"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-table-extract.svg": {
+    "before": "33aa759c61fb318a9ca13c1f324db984366091ecff240b6d291bb6d98de89b53",
+    "after": "33aa759c61fb318a9ca13c1f324db984366091ecff240b6d291bb6d98de89b53"
+  },
+  "crates/tekes-ui-icons/assets/tekes-tools.svg": {
+    "before": "3c3310aaf5db0ea5578eb51e625901c70c8d4e035804ae0c219d854a4daf407b",
+    "after": "f6177178c0a0be825bc43bd228d187413cb178004f5976328f3503127e5d5b24"
+  },
+  "crates/tekes-ui-icons/assets/tekes-tag.svg": {
+    "before": "19cb6b1b46da897e354685a5c293ee570d1d9508f43938ad19555ae89eb7a06a",
+    "after": "1c5d535f280b86fe790fe6f8fc3136266a4dd9d33758a786bf1c614a08ea5d32"
+  },
+  "crates/tekes-ui-icons/assets/tekes-unknown-fallback.svg": {
+    "before": "3c3310aaf5db0ea5578eb51e625901c70c8d4e035804ae0c219d854a4daf407b",
+    "after": "f6177178c0a0be825bc43bd228d187413cb178004f5976328f3503127e5d5b24"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-line.svg": {
+    "before": "bf733325d95f118c31db9cbfd0bb468e85895b557d9c65574cb3db8381463237",
+    "after": "bf733325d95f118c31db9cbfd0bb468e85895b557d9c65574cb3db8381463237"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-arc.svg": {
+    "before": "a8197b6c8c0a9ed795c9876693abacb97a4dbb2784b6693340e85b7852ccb27c",
+    "after": "a8197b6c8c0a9ed795c9876693abacb97a4dbb2784b6693340e85b7852ccb27c"
+  },
+  "crates/tekes-ui-icons/assets/tekes-file-generic.svg": {
+    "before": "5837e13eb9f1eb88527eed03147aa6734938926bae8e7ea0bbd485af45cc4a47",
+    "after": "9ca9fd3656d88b010dfba9093136d0400dfd48b0d3a8955b401c3a79596f2d57"
+  },
+  "crates/tekes-ui-icons/assets/tekes-remove-one.svg": {
+    "before": "34fb01b500397c5d6451c7f42ffc8dac5c9632fad41a21669f320559aef5b4b8",
+    "after": "cd232746d2ff777a1482b3b2b22842d4a72dc2d24238eef2661f0fd8a5e4868c"
+  },
+  "crates/tekes-ui-icons/assets/tekes-skills.svg": {
+    "before": "6dd375e67266f232172916c834e4f958aab0d403374458980bedb44012302ff5",
+    "after": "a62d764d6b81a4d6821404bd4f7e01c4982eb8aaa76c32eed3ea012950bd53e7"
+  },
+  "crates/tekes-ui-icons/assets/tekes-tab-diffs.svg": {
+    "before": "f4fe30e73458fcfc39a62aa42dd2fe971f3b0546a2e207e3b763858972e5cce4",
+    "after": "9b4fb02e038bfe09e4d55ba5162bd96f31d425d0e0c951c3504c0286ca5cb2e2"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-block.svg": {
+    "before": "5693462cb432ea94f2b79d0c8d3cddedd01d68d591e39b5485b2f65e9e068bfa",
+    "after": "5693462cb432ea94f2b79d0c8d3cddedd01d68d591e39b5485b2f65e9e068bfa"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-shot.svg": {
+    "before": "928d880943e8a44e17915f9f6b84a6c558d2ff3647faa3938de08255cf81bed5",
+    "after": "80605550ec2312f08ddf989d8baa7f911bf80daeedab4b970f0b6cdd97e4f334"
+  },
+  "crates/tekes-ui-icons/assets/tekes-file-code.svg": {
+    "before": "6aa17b648200c608594d318c1eea539313c963ca0a2bf146e078586a5ff5bc7d",
+    "after": "90db1516c1f7512c589ecca292690417b00da02a39f7f6e87b8c7573e49e8896"
+  },
+  "crates/tekes-ui-icons/assets/tekes-memorize.svg": {
+    "before": "faa0b47dbc4ac49a3656a7dff0c54c7f83a8208a4612958e691664f1979f963b",
+    "after": "517ee42a807bad8c1fd19822558c8c6babed63fa307d0166a130d0136869f4ed"
+  },
+  "crates/tekes-ui-icons/assets/tekes-waiting-user.svg": {
+    "before": "8df3b10dc873b9a6f0395d47c0d9b041f80021959084a3060708bf4d5dff63ab",
+    "after": "66ae325157f3070780fd8a587db76a3ceaf8988728e5d06b009cbdf760a9d54e"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-pdf-import.svg": {
+    "before": "9631d50fb98fa0772d979214f9cc57e951d8ce7524cdbee0d454366c3b93ab0d",
+    "after": "9631d50fb98fa0772d979214f9cc57e951d8ce7524cdbee0d454366c3b93ab0d"
+  },
+  "crates/tekes-ui-icons/assets/tekes-cad-layout.svg": {
+    "before": "599fe4a77c14ba2cf5405681801a59a0b724d9499b35c388173ecebf9c80f141",
+    "after": "599fe4a77c14ba2cf5405681801a59a0b724d9499b35c388173ecebf9c80f141"
+  },
+  "crates/tekes-ui-icons/assets/tekes-command.svg": {
+    "before": "eb225a4dc75a81d425fee1f9382276b895cb3b9e509cd89bfb9a09a7a7830610",
+    "after": "cfb9a0fe931cfad2dd6073e3f3bbc3bb3d522883aa59467b12808d949dd2c863"
+  },
+  "crates/tekes-ui-icons/assets/tekes-verify.svg": {
+    "before": "a98934d9782dac21763559a3c19f6da7984dfeef14f81eab302fb2340a4f2908",
+    "after": "204f5a7ecb86411bbb682acc807dc8fe5ab0f792d87ed646e4e065529bf5f648"
+  },
+  "crates/tekes-ui-icons/assets/tekes-rebuild.svg": {
+    "before": "92ed7314cc7966abc902e5bd55aa6c589490582974216f94a82080b2d445b69f",
+    "after": "7ff62cab3dd9b1173bf7f0ba0b1958c56d1e5bcbb5f37e3a26b1bebc08e11cc5"
+  },
+  "crates/tekes-ui-icons/assets/tekes-diff-split-v.svg": {
+    "before": "beddb66e19f99bb2acdec3e6b4acffa351699a4302acc4d316cd8c5d8438c120",
+    "after": "a89c0776c474973e872790c44b2d09bdbee0266f2b33da7a80f1c66e4c54be53"
+  },
+  "crates/tekes-ui-icons/assets/tekes-read.svg": {
+    "before": "380125192b3182a160991f5a5807a97735280f1ef2fd64421f6b8a45efd3e67f",
+    "after": "125d9dd57fab0ac8ee5093b895787670dc581925af550f340462b4eb6e455891"
+  },
+  "crates/tekes-ui-icons/assets/tekes-oauth-key.svg": {
+    "before": "47292c197a2e5d25c540098a27286745958256dcde212dac9502b684acb05f60",
+    "after": "7f88152bf60d390ab1dc79826a5a0d137ff1707f591751cb23f48f1740167513"
+  },
+  "crates/tekes-ui-icons/assets/tekes-drama-subtitles.svg": {
+    "before": "0459aef5dda10590cd66f9945716d58fe221dcb4c5e9bd99685b1e97650b0ff4",
+    "after": "5837145e20271f420eccc6193a067408640cb10b8db59bd252f365004d1d007f"
+  },
+  "crates/tekes-ui-icons/assets/tekes-review-plan.svg": {
+    "before": "027df5446093646eb458476b37db250560589fd1646b864c8d756d2b19222eb4",
+    "after": "186c8d0938cc05b11cb3b958dbbe84b836c6d76fdb675a06a83aaf1fc1935335"
+  },
+  "crates/tekes-ui-icons/assets/tekes-untracked-folder.svg": {
+    "before": "9627184141ffffd06ec518e6ca0ffbe56501bfd6b6957c67fcaa0b27c507e971",
+    "after": "99312d0a46e7f7490d04326851e3efb28c1d15749328d80ffa043d5e8636c219"
+  },
+  "crates/tekes-ui-icons/assets/tekes-files.svg": {
+    "before": "50002df32a9b8662fcb3affca75c00740ad822d88ca029f7d12414dec8900748",
+    "after": "474a00ab067c49b7b89e17c99ce3dd0040e3da3ed3221a22c13d028aff7a1a29"
+  },
+  "crates/tekes-ui-icons/assets/tekes-undo.svg": {
+    "before": "2bbd5b30c30f7dae513c26f8fd0ec6520059edb897becfff7436a351d1a5609a",
+    "after": "0d9387ecc2cd37579c0f8f73331ace93481c7466212796795b13a79ba5c266cd"
+  },
+  "crates/tekes-ui-icons/assets/tekes-memory.svg": {
+    "before": "41c0add7c8042c6142a4b54dceb3375ee1408ffdf1c5dac17583d085b8cb1775",
+    "after": "c7b11840b05ca93fac6a608e29d0cbef6dfec6f96fbaa4d106c76b7ca26fb13e"
+  },
+  "crates/tekes-ui-icons/assets/tekes-sort.svg": {
+    "before": "740c5320ac067975dcfd2d6a5a025cd64c919f199779ac7d4b3918988e8dd8ff",
+    "after": "648ac4d066a2f44b5a74b864f5f7af580bee45938d1a53a5f76c0622c556577a"
+  },
+  "crates/tekes-ui-icons/assets/tekes-new-goal.svg": {
+    "before": "e3ff1f1e71e7a3cbbc4c0ffd333293025c1daf5bf88811cd63cf489c082eeef3",
+    "after": "ce5f3a64b69c7a2b30caa0c097c0e1f920802cc992f7ea28c47066f80e3022d3"
+  },
+  "crates/tekes-ui-icons/assets/tekes-brief.svg": {
+    "before": "c57578617725683ab8dd82c1cc2a546cdc51f7fef99b2268e96108139b349680",
+    "after": "221fca47e39a63b8587f0c92609559876d19e258b2957302845e46120df61b96"
+  },
+  "crates/tekes-ui-icons/assets/tekes-confirm.svg": {
+    "before": "4cca1126777d85f5ca2b14c91bdf4aa8aace7925053715a3a1c061df849f8b4d",
+    "after": "1e23c2cc8d5bcfff531b96d484752f71e5c7e7705c174410ce90e390d920709a"
+  },
+  "crates/tekes-ui-icons/assets/tekes-context.svg": {
+    "before": "a6393e30e82c54228dddca14d69a6a768417582a1df04eca35c6b13b3430cb72",
+    "after": "13855dbb993ad690092ce9b2a9bfe34e58c52b71f4d9fa0130eefc46864f38ca"
+  },
+  "crates/tekes-ui-icons/assets/tekes-file-link.svg": {
+    "before": "53b8052e75f78e87f25a5f97eb4330c7f5e3e8719442feff013d2efdc958a635",
+    "after": "dd42d99eea52995e0b4c4ed57af2b5db998f020f8d568e54c316889756256cdc"
+  },
+  "crates/tekes-ui-icons/assets/tekes-error-fill.svg": {
+    "before": "92020736ec32061aaf89a1b553e786ac74376af1e2cde64ecc83609cbabe5c79",
+    "after": "c98b5ae66a6b5250211446cf7cc4e564d6a531767aae60259bb2da64179af824"
+  },
+  "crates/tekes-ui-icons/assets/tekes-forward.svg": {
+    "before": "49417d2e82aba8b78e26fbfa940242f59fa313f16a96df62c205bd7eb71ec6d1",
+    "after": "99976d3d1023d6314d4740885591013c18d5aa5221c6ffeace987e1dc2eecc67"
+  },
+  "crates/tekes-ui-icons/assets/tekes-mention.svg": {
+    "before": "92801b0ad59ead95a57b31da461fecb146e5c3c740c5033c4386980d2d57340a",
+    "after": "f53b073ca204c256e1714c1d2998dcdde4807f42000baf6861e6321dc564a62d"
+  },
+  "crates/tekes-ui-icons/assets/tekes-commands.svg": {
+    "before": "0e2ea4cd7c5c3d8ef12259e457943788bc0b28644edf033e611580e1ac15d670",
+    "after": "057b133998c15bcbc78072f0fdbf6c8f21bb2d679271d07d75fc62179e42db28"
+  },
+  "crates/tekes-ui-icons/catalog.json": {
+    "before": "d3b0ff5943b547ac903fade9f8d346c2247c7bd3303a724ef77a895175efaebb",
+    "after": "ec62134c6d501e4cce3a8aa7eefcedab2503fabc90546bbe701881d71d886773"
+  },
+  "crates/tekes-ui-icons/src/lib.rs": {
+    "before": "87263b2eb5756f65b57b6a50185fa606ab8060cc49620ad10238406cd1df1aa7",
+    "after": "08e2db461bc69d764a304c39dc08a1b68e495b0be436794fa38cfa1e683a6712"
+  },
+  "crates/tekes-ui-icons/src/style.rs": {
+    "before": null,
+    "after": "e932b5ed64a98f88c77d6b2b36c98024f31b52ab5a74d06096e3892c92a2d1e4"
+  },
+  "crates/tekes-ui-icons/src/catalog.rs": {
+    "before": "7f0b2df889f86ec015f2fde8356c5be04d07b3ca8be5fa749e84bd17229849d3",
+    "after": "7f0b2df889f86ec015f2fde8356c5be04d07b3ca8be5fa749e84bd17229849d3"
+  },
+  "crates/tekes-ui-icons/web/icons.test.mjs": {
+    "before": "682273cf35749acccc195836ebd166bccadf3e03c4a68c37ffb5fd772616315f",
+    "after": "682273cf35749acccc195836ebd166bccadf3e03c4a68c37ffb5fd772616315f"
+  },
+  "crates/tekes-ui-icons/README.md": {
+    "before": "c53d507865239dc12765baa77ee7d3b4adcb091748d0eb3a7e3324826ddc9434",
+    "after": "3a4d98ae0f134ab0ddb0ddf272bef125a8c0bb4ad5643bb2e553fb610521a267"
+  },
+  "crates/tekes-ui-icons/tools/soften.py": {
+    "before": null,
+    "after": "3d01867f2efdbb0af6140c089668642dce0c698c74b248544f0e3324d0d9abec"
+  },
+  "package.json": {
+    "before": "ab51425f0bf0143c3ab3d683d7071d27148ca6e3c3014120012e44138a289b05",
+    "after": "ab51425f0bf0143c3ab3d683d7071d27148ca6e3c3014120012e44138a289b05"
+  },
+  "docs/design/icon-visual-language.md": {
+    "before": "7b0153736af6ccf6825bf68a02660b1040371cf19349c0a41860b772c7b75784",
+    "after": "d9e67b29742091276c4c89bba54145fd499b50742c7a2e2f08baf6a852acf830"
+  },
+  "crates/tekes-ui-gallery/src/gallery/pages/showcase.rs": {
+    "before": "23494e078db3af35ee90c4e21f7e06207a18159a43cb163f7f98a19909c7715b",
+    "after": "aa8a7a2dd52e1d964031cdfac7b92c846e11a29e716f6063605a81009ac1a522",
+    "scope": "icon paint methods only"
+  }
+}

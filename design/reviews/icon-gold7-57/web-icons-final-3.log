@@ -1,0 +1,15 @@
+
+> @tekesui/icons@0.1.2 test:icons
+> node --test crates/tekes-ui-icons/web/icons.test.mjs
+
+✔ all catalog public SVGs resolve with exact hashes, tintable geometry and no active content (16.177917ms)
+✔ retired names and unknown names fail instead of silently substituting artwork (0.206875ms)
+✔ published typed declarations and Rust catalog cover exactly the same names (0.838375ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 63.8375

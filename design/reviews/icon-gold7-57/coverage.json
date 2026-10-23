@@ -1,0 +1,3546 @@
+{
+  "issue": 57,
+  "approved_direction": "C; user explicitly approved full rollout, square canvas and full acceptance before closure",
+  "icons": [
+    {
+      "name": "tekes-access-full",
+      "path": "crates/tekes-ui-icons/assets/tekes-access-full.svg",
+      "before_sha256": "ef1ad882763b22dc0e58ddf81a473baf54071cd8e2a66144a1ca2c745820052c",
+      "after_sha256": "a076555220f0d9f184b99a46ad66f0ba325c3f32353924c0277499d478a5a999",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-access-read",
+      "path": "crates/tekes-ui-icons/assets/tekes-access-read.svg",
+      "before_sha256": "335c0a5618e0ae5f9b102c5723eabb5cc3189db9ad821e1861ab733f0d3559e5",
+      "after_sha256": "b2feb397185f48167fec84fa66a857dc3804083a5f1647a2143f0d78f8f915ba",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-access-workspace",
+      "path": "crates/tekes-ui-icons/assets/tekes-access-workspace.svg",
+      "before_sha256": "6c7812760ec90c2ecd666482e3a3a99f12503dc5f8f9a3367c9a511586b59d64",
+      "after_sha256": "bfb873a4ea7b44335cfa70590d2498b00a1c2c2480363da1741aed5da49b76e0",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-advanced-params",
+      "path": "crates/tekes-ui-icons/assets/tekes-advanced-params.svg",
+      "before_sha256": "293e80f1516fee6fce785839ffcfeba7691e59a0dbbecc587570f72ca133f70f",
+      "after_sha256": "ef102eb2989f6ffbcc5059efe771e38a245fce26eff7292503b836b78f36e9e3",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-agent-question",
+      "path": "crates/tekes-ui-icons/assets/tekes-agent-question.svg",
+      "before_sha256": "9f11a52ae5a9f9088d2e18d35c753e35aafa837259ba20a7ee3794aed513579c",
+      "after_sha256": "f24c43528f34021b9328d4aca5bbb24e15142351cad9ef36858544a60dd687ca",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-ahead-behind",
+      "path": "crates/tekes-ui-icons/assets/tekes-ahead-behind.svg",
+      "before_sha256": "d1d94fab3465a15e0adfc0e17d3c3521e1b6cb31bfd4b327e0eafd9d9da68618",
+      "after_sha256": "3ce43caf8bd515607c5656cdf30a59191450a7b629e14f86cd9e07adaabacf8d",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-annotate",
+      "path": "crates/tekes-ui-icons/assets/tekes-annotate.svg",
+      "before_sha256": "29310dc793a9035fccd36ffcead097ecf4284434710a294d5f8d4da39fa6f219",
+      "after_sha256": "41aef042eff3d04532decf1a385982fa3547b152434ebf34cb65153c1e8eeb35",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-app-server",
+      "path": "crates/tekes-ui-icons/assets/tekes-app-server.svg",
+      "before_sha256": "038030199219b7a991a0f9f135e2a3f1329b43d45fdc5729477293f868c1a716",
+      "after_sha256": "d4f1d8809fec88be0a41ff91cbe055f256dc78a02f37cc494feff7a86c7e9255",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-appearance",
+      "path": "crates/tekes-ui-icons/assets/tekes-appearance.svg",
+      "before_sha256": "05e6d29820da9acade156d3bb8cefbb16ec1711ce96db1c5d44a71b5d66e3bf6",
+      "after_sha256": "18bcc23b2d0b40d3295010ec2f0c77653acd9c6c28b2c3e988c2a37f4c7189f0",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-approval",
+      "path": "crates/tekes-ui-icons/assets/tekes-approval.svg",
+      "before_sha256": "37d769bcff320d6bd979a9b215aa0f290d96e8cb58f875c8892fcc33a1d29ed5",
+      "after_sha256": "974e36a5f11524bbf87ea29fb5d2b01822d8cff65971f99a0c90f6b31b71c295",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-archive",
+      "path": "crates/tekes-ui-icons/assets/tekes-archive.svg",
+      "before_sha256": "a0a067492fe590e204fe3498e4d42762336014c5938877ab9c4f1c75852334bc",
+      "after_sha256": "12f51739d1c64cd064e116e7a2423dfec063c7ad3db1207c5a9994f4a0457ba2",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-ask-user",
+      "path": "crates/tekes-ui-icons/assets/tekes-ask-user.svg",
+      "before_sha256": "a59230759d382381d79360cdfd6df8195ade4fe36fb78ca5775c13d7d9895a03",
+      "after_sha256": "c39c5745a744aa0790e3a215e70164d80c5a4fe66dde0bec894d1f156b3b0243",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-attach",
+      "path": "crates/tekes-ui-icons/assets/tekes-attach.svg",
+      "before_sha256": "1d6736475e7369148d32063026ea74c4f78f25eb89e172685fa6191492c77688",
+      "after_sha256": "d87fa0c974caacac88d30da8a48fa59d27100520ab7ed9230aa0c3545e734d81",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-authorized-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-authorized-fill.svg",
+      "before_sha256": "502f78c5664930b262611c400620838a6ac566b7de015a49bd3801631be88b8d",
+      "after_sha256": "502f78c5664930b262611c400620838a6ac566b7de015a49bd3801631be88b8d",
+      "changed": false,
+      "rule": "filled-silhouette-exception",
+      "reason": "Pure filled state has no stroke to lighten; retain full-alpha silhouette and counters.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-back",
+      "path": "crates/tekes-ui-icons/assets/tekes-back.svg",
+      "before_sha256": "6154e319cdcdf92be465b1f197a6a016734ffe60d1677e1183d0a8f8d2fa720f",
+      "after_sha256": "864769aaadd1e7facad14609a9a626a2405485b94a15062e74609fdb97e61c26",
+      "changed": true,
+      "rule": "approved-c",
+      "reason": "User-approved C: rounded geometry, optical breathing room and 1.25pt strokes; exact representative bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-branch",
+      "path": "crates/tekes-ui-icons/assets/tekes-branch.svg",
+      "before_sha256": "169f40ee24c6751f605533f6de6d5b76f9b317cd5142c230054fa6a55574fb96",
+      "after_sha256": "1c0bcffed768dafd9b6c1a3e1bc4659d8d1c013bc35b7e482bfa2ef7ecee3e87",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-brief",
+      "path": "crates/tekes-ui-icons/assets/tekes-brief.svg",
+      "before_sha256": "c57578617725683ab8dd82c1cc2a546cdc51f7fef99b2268e96108139b349680",
+      "after_sha256": "221fca47e39a63b8587f0c92609559876d19e258b2957302845e46120df61b96",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-cad-arc",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-arc.svg",
+      "before_sha256": "a8197b6c8c0a9ed795c9876693abacb97a4dbb2784b6693340e85b7852ccb27c",
+      "after_sha256": "a8197b6c8c0a9ed795c9876693abacb97a4dbb2784b6693340e85b7852ccb27c",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-block",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-block.svg",
+      "before_sha256": "5693462cb432ea94f2b79d0c8d3cddedd01d68d591e39b5485b2f65e9e068bfa",
+      "after_sha256": "5693462cb432ea94f2b79d0c8d3cddedd01d68d591e39b5485b2f65e9e068bfa",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-compare",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-compare.svg",
+      "before_sha256": "c1e337caf943d651c341b290354ee2b4471e321a30e4644329253453193a3e7d",
+      "after_sha256": "c1e337caf943d651c341b290354ee2b4471e321a30e4644329253453193a3e7d",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-crossing-select",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-crossing-select.svg",
+      "before_sha256": "bc77022e35548c885b95074342da46ccf9972c2930c9be1b6bc282cd68a4e0a4",
+      "after_sha256": "bc77022e35548c885b95074342da46ccf9972c2930c9be1b6bc282cd68a4e0a4",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-dimension",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-dimension.svg",
+      "before_sha256": "852e9840bcf9989294553518e03af5d83eb4e0ab7875969c5e23de6b68802d5a",
+      "after_sha256": "852e9840bcf9989294553518e03af5d83eb4e0ab7875969c5e23de6b68802d5a",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-export",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-export.svg",
+      "before_sha256": "24f0e92c2a5b9f6c5cd06b087fe1111a20f5306520e910c930535bfb4b538106",
+      "after_sha256": "24f0e92c2a5b9f6c5cd06b087fe1111a20f5306520e910c930535bfb4b538106",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-layers",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-layers.svg",
+      "before_sha256": "698f048ddc1ddc4699c60ff7080cc93c8fbb730d4090729cbf4065fa6175363c",
+      "after_sha256": "698f048ddc1ddc4699c60ff7080cc93c8fbb730d4090729cbf4065fa6175363c",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-layout",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-layout.svg",
+      "before_sha256": "599fe4a77c14ba2cf5405681801a59a0b724d9499b35c388173ecebf9c80f141",
+      "after_sha256": "599fe4a77c14ba2cf5405681801a59a0b724d9499b35c388173ecebf9c80f141",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-line",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-line.svg",
+      "before_sha256": "bf733325d95f118c31db9cbfd0bb468e85895b557d9c65574cb3db8381463237",
+      "after_sha256": "bf733325d95f118c31db9cbfd0bb468e85895b557d9c65574cb3db8381463237",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-pdf-import",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-pdf-import.svg",
+      "before_sha256": "9631d50fb98fa0772d979214f9cc57e951d8ce7524cdbee0d454366c3b93ab0d",
+      "after_sha256": "9631d50fb98fa0772d979214f9cc57e951d8ce7524cdbee0d454366c3b93ab0d",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-polyline",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-polyline.svg",
+      "before_sha256": "010cb6ab0cd0c37bb3d53c38e8fb0d7b7f0d537db140e5d9b3241cca76c1d091",
+      "after_sha256": "010cb6ab0cd0c37bb3d53c38e8fb0d7b7f0d537db140e5d9b3241cca76c1d091",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-snap",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-snap.svg",
+      "before_sha256": "fca86c83b2bb56133926b83ce8a56cc8b8ad7dc0170d997880a215fa9ad3e50c",
+      "after_sha256": "fca86c83b2bb56133926b83ce8a56cc8b8ad7dc0170d997880a215fa9ad3e50c",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-table-extract",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-table-extract.svg",
+      "before_sha256": "33aa759c61fb318a9ca13c1f324db984366091ecff240b6d291bb6d98de89b53",
+      "after_sha256": "33aa759c61fb318a9ca13c1f324db984366091ecff240b6d291bb6d98de89b53",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-cad-window-select",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-window-select.svg",
+      "before_sha256": "1e2b29b8b8b15017679e593c2d3900f254856ca96aba2c255a54e65f3e7d36fa",
+      "after_sha256": "1e2b29b8b8b15017679e593c2d3900f254856ca96aba2c255a54e65f3e7d36fa",
+      "changed": false,
+      "rule": "optical-density-exception",
+      "reason": "Precision CAD geometry and 1.5pt strokes retained for 12pt control points, dashes and dense construction detail.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-clear-group",
+      "path": "crates/tekes-ui-icons/assets/tekes-clear-group.svg",
+      "before_sha256": "0ab6445d9c537ab13e96de605bbc82c5ae58bc6ce4889fba2566e21981d1db39",
+      "after_sha256": "20219ba334aeddd154a954c35202fbad2b27ef916c11c990d5069b3d5f755635",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-collapse",
+      "path": "crates/tekes-ui-icons/assets/tekes-collapse.svg",
+      "before_sha256": "72bffd4d9fb7af66c37543fb376a388cc5b6ef574ce2fdd4466bab194b911765",
+      "after_sha256": "b2b85bdef578cfd2073456250503192f5d7035c186fe9c5302412a576d7f4cc3",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-command",
+      "path": "crates/tekes-ui-icons/assets/tekes-command.svg",
+      "before_sha256": "c6df2a2b67e529839cf97f3817f519e91f94124300f9a9ee8b46a83d82b0a83e",
+      "after_sha256": "cfb9a0fe931cfad2dd6073e3f3bbc3bb3d522883aa59467b12808d949dd2c863",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-commands",
+      "path": "crates/tekes-ui-icons/assets/tekes-commands.svg",
+      "before_sha256": "0e2ea4cd7c5c3d8ef12259e457943788bc0b28644edf033e611580e1ac15d670",
+      "after_sha256": "057b133998c15bcbc78072f0fdbf6c8f21bb2d679271d07d75fc62179e42db28",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-commit",
+      "path": "crates/tekes-ui-icons/assets/tekes-commit.svg",
+      "before_sha256": "f458bf0047b287640faab47dfe5e6d51a16216cab0db626d3fefb508d8733c7c",
+      "after_sha256": "01881a92eb509b9d798a3588003cc7434de1eae59b55830beb75c7c7f00e6c9d",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-compact",
+      "path": "crates/tekes-ui-icons/assets/tekes-compact.svg",
+      "before_sha256": "73d0733aa2eadc27db124edb60ad4cef924cefe0ffadd89ed6354727d5b98293",
+      "after_sha256": "687e5e9704d8c234665d8e3067f1eb173140b595a73c3235d3bf9e234d4ac9cc",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-compare",
+      "path": "crates/tekes-ui-icons/assets/tekes-compare.svg",
+      "before_sha256": "b6fec2bbfa4b8fdb817a0be3f1c0012d10183a83bd77ee8cc0251a5237a2826e",
+      "after_sha256": "7a3595376d1510e2f3bb82be0e745676bf3df352c09c96e686be0ff0afee9f55",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-confirm",
+      "path": "crates/tekes-ui-icons/assets/tekes-confirm.svg",
+      "before_sha256": "4cca1126777d85f5ca2b14c91bdf4aa8aace7925053715a3a1c061df849f8b4d",
+      "after_sha256": "1e23c2cc8d5bcfff531b96d484752f71e5c7e7705c174410ce90e390d920709a",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-context-usage",
+      "path": "crates/tekes-ui-icons/assets/tekes-context-usage.svg",
+      "before_sha256": "87b69e0d25d6408dfff2b2e973978cde7f2b681d5544c9c6d1e11e51cd81587c",
+      "after_sha256": "78f3cd196437b107a4ac9a09769c3168d796f90c12fc84cd866af619aae179d1",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-context",
+      "path": "crates/tekes-ui-icons/assets/tekes-context.svg",
+      "before_sha256": "a6393e30e82c54228dddca14d69a6a768417582a1df04eca35c6b13b3430cb72",
+      "after_sha256": "13855dbb993ad690092ce9b2a9bfe34e58c52b71f4d9fa0130eefc46864f38ca",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-copy",
+      "path": "crates/tekes-ui-icons/assets/tekes-copy.svg",
+      "before_sha256": "b12e98ddd14336b09c9cfc28302f14bd4c062d4223d0a75ff51510fb63ab07bb",
+      "after_sha256": "f2af1a654eb571bf15211ac3a0fbec1423bf08988fb63fe5540c41efe5181863",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-delete",
+      "path": "crates/tekes-ui-icons/assets/tekes-delete.svg",
+      "before_sha256": "de3a87ae78be5f72a556e9cef0306a5c16cc77be71a46199d8a955005ab96d64",
+      "after_sha256": "f6137dac7ea840fb96ebc70bd5c6c067afde0224a347a0574e94232d7bd82c87",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-desktop-control",
+      "path": "crates/tekes-ui-icons/assets/tekes-desktop-control.svg",
+      "before_sha256": "0747781099b2bb15ba121b4904e9fb0d76008fe2dc145f9434e9a15c242a3736",
+      "after_sha256": "e4a7a4a21b4f434811a5924cd640a62a7198005d2e8725b225528456a18eaa98",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-diff-annotation",
+      "path": "crates/tekes-ui-icons/assets/tekes-diff-annotation.svg",
+      "before_sha256": "a6cfc6ff92df4205799721dc0e921d7475a276da94aceca78d8845df48d02b08",
+      "after_sha256": "fedabccafba70f6741b4ab0c1f386a9aeda72e25ec3c4aeb5958222d2601962a",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-diff-list",
+      "path": "crates/tekes-ui-icons/assets/tekes-diff-list.svg",
+      "before_sha256": "264c977f20383415e8161f3d50046862d557dfdcc5c8f5d9d9e75672681310fb",
+      "after_sha256": "70d86a3768f67bb2c2e74a49d9c58d9e81db72d914874403acda1ebd52a91f22",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-diff-split-h",
+      "path": "crates/tekes-ui-icons/assets/tekes-diff-split-h.svg",
+      "before_sha256": "38b6429b53b9951efb6d3d31d9b0ba4b4840bad6737cf01c90e8804c457ae282",
+      "after_sha256": "c49f8cb08f3bdf1593de9e68585521f767bb5e87d8f2134a27b235ec83a2c6a9",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-diff-split-v",
+      "path": "crates/tekes-ui-icons/assets/tekes-diff-split-v.svg",
+      "before_sha256": "beddb66e19f99bb2acdec3e6b4acffa351699a4302acc4d316cd8c5d8438c120",
+      "after_sha256": "a89c0776c474973e872790c44b2d09bdbee0266f2b33da7a80f1c66e4c54be53",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-audience",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-audience.svg",
+      "before_sha256": "25148ff46a817504d0845e253aab4c96b445e967edf98ff1eac96bfca048419b",
+      "after_sha256": "99c819d138346cf0512bbf9bdb3451282d3e2935238ab1fdf67f04bd49b8999a",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-audio",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-audio.svg",
+      "before_sha256": "cd6b9567d2be23f8344dbd440e2b6056e305e9372580bab0c69e00d4cf92b466",
+      "after_sha256": "819ad8fd3aba02a271c41967fffa5f85b6534020ef103f07c28c6a471a5eb7b2",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-brief",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-brief.svg",
+      "before_sha256": "6c1f450c641ab0ab567da2b2f63cc6375827615972a62f9081eebe6a00854f03",
+      "after_sha256": "24a8f4ab8d6d8f3bee3c9733563ed9b4b0f3273561df5f2ffe191f2cf5f3e07c",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-character",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-character.svg",
+      "before_sha256": "677ff2edea561a0ad870ef915ec6cb34bec6f49c2658483010706edc13480b35",
+      "after_sha256": "2a19effc32cb0a349b5bb53f09cb1aacc1772c847c9a25d01f717d6cf35cb8dd",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-collaboration",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-collaboration.svg",
+      "before_sha256": "f7e6d3574edf4ae8932fc61e089a6ecc60abbb332ebd606d04230468342b5562",
+      "after_sha256": "b7f78d37124b24f3734da63ba17656970fe214d58d0f0c64bfbb0758833e02c7",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-delivery",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-delivery.svg",
+      "before_sha256": "77e44de4aabd8c0b148c70a1fbbd8a3c48d72898ba7e8e1affe6d2ad06dfba1c",
+      "after_sha256": "c2b2c47841a28a92642a03999f5e617ec3ef9b798384d1ff6a190c843d43a472",
+      "changed": true,
+      "rule": "c-retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-directing",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-directing.svg",
+      "before_sha256": "67d10ccf7d0914183cfe49c7650be59a7a49782c171b7e8de72c95e2096f9d27",
+      "after_sha256": "43310d0c7d30ac5865c1028373e6f83dd817d00dba2259576a5bc7503fc14231",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-editing",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-editing.svg",
+      "before_sha256": "cb107ac899241e22fff7989966c72502b92db385c989f7a76a0284aef9d631cc",
+      "after_sha256": "51074145263326080e9ba2ff8e9ccf278325ed14516267b2f52ab77100d422ef",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-production",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-production.svg",
+      "before_sha256": "acb629e88ef0b39c88eb69817123ddeec0d8df8ba39916dd40f2147302e9188a",
+      "after_sha256": "a3b5760ba452a7893503402785366e90ef0c608f9f060f3e94aa256c21fdb5d9",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-references",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-references.svg",
+      "before_sha256": "1a752bf2bb853cb95faf08eb853479dd8912b9060fd4005b46e5e470711967d9",
+      "after_sha256": "0555c4ce30381b2996059a0a8ab04154fa7a585a56ad16cce6d67179efd55780",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-script",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-script.svg",
+      "before_sha256": "a7a6fe32db92606c1362957ed37f07f402d6152a41a8be64b4a807eb2f4b7759",
+      "after_sha256": "04d06f0a5be65e7de865ddec6a9332f4408fe37308d17defc52e656d0db33cc7",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-shot",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-shot.svg",
+      "before_sha256": "928d880943e8a44e17915f9f6b84a6c558d2ff3647faa3938de08255cf81bed5",
+      "after_sha256": "80605550ec2312f08ddf989d8baa7f911bf80daeedab4b970f0b6cdd97e4f334",
+      "changed": true,
+      "rule": "c-retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-storyboard",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-storyboard.svg",
+      "before_sha256": "df6d70971e4f474fa9cec4cfbe2b9db2ddb82f2585104189a97831021332f35a",
+      "after_sha256": "0dffff17424eed8be3f5aca554f0e5d7372a8296b259cda6ddddf79f495564c2",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-drama-subtitles",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-subtitles.svg",
+      "before_sha256": "0459aef5dda10590cd66f9945716d58fe221dcb4c5e9bd99685b1e97650b0ff4",
+      "after_sha256": "5837145e20271f420eccc6193a067408640cb10b8db59bd252f365004d1d007f",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-edit",
+      "path": "crates/tekes-ui-icons/assets/tekes-edit.svg",
+      "before_sha256": "60a9b9f2569477938c4949f026a5b856c879719feb2fafff9e1c25a02d70b7d3",
+      "after_sha256": "acbda1be4eb54243e1e14a9165aba7de0b387d8cfaf06dfc1b3177f0d3746096",
+      "changed": true,
+      "rule": "c-retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-error-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-error-fill.svg",
+      "before_sha256": "8c2610ce88fa7d79fa2409a915c650a6d65d8cc0de7d91d5fa4da1f6164c4c38",
+      "after_sha256": "c98b5ae66a6b5250211446cf7cc4e564d6a531767aae60259bb2da64179af824",
+      "changed": true,
+      "rule": "c-filled-pair",
+      "reason": "Approved C error exterior; original even-odd cross, filled state, opacity and paint retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-error",
+      "path": "crates/tekes-ui-icons/assets/tekes-error.svg",
+      "before_sha256": "d1d6bce8c2a3e97c5e89897a968b479987077dcda3a98d46e1612d26b947a383",
+      "after_sha256": "6e882110697fe8d33b5f28307c462e48333e520421f198231804a1a6ea141641",
+      "changed": true,
+      "rule": "approved-c",
+      "reason": "User-approved C: rounded geometry, optical breathing room and 1.25pt strokes; exact representative bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-expand",
+      "path": "crates/tekes-ui-icons/assets/tekes-expand.svg",
+      "before_sha256": "6a6097de9722375c65403e2001bbfd9f9e5d822056a2694140e7ce8d28efb060",
+      "after_sha256": "13b4b05c3477dd336e7504a972e1cacba4ff8e40e15828f0d0707329e09c602c",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-file-added",
+      "path": "crates/tekes-ui-icons/assets/tekes-file-added.svg",
+      "before_sha256": "037301407c5599775a54a237d31bb7dc150603fb70be4f68743f861d4ed0818f",
+      "after_sha256": "aa14a1f72baa8041263c1948069fa0feb43599af76bc7b93bb82dd539846b499",
+      "changed": true,
+      "rule": "c-c-document-family",
+      "reason": "Approved C document shoulders/fold and wider curved lower corners; interior marks retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-file-code",
+      "path": "crates/tekes-ui-icons/assets/tekes-file-code.svg",
+      "before_sha256": "6aa17b648200c608594d318c1eea539313c963ca0a2bf146e078586a5ff5bc7d",
+      "after_sha256": "90db1516c1f7512c589ecca292690417b00da02a39f7f6e87b8c7573e49e8896",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-file-generic",
+      "path": "crates/tekes-ui-icons/assets/tekes-file-generic.svg",
+      "before_sha256": "28948b1716a79980304b883a5bef342a2a9a3afe4d1a6d6268a3c4666f5f9d80",
+      "after_sha256": "9ca9fd3656d88b010dfba9093136d0400dfd48b0d3a8955b401c3a79596f2d57",
+      "changed": true,
+      "rule": "approved-c",
+      "reason": "User-approved C: rounded geometry, optical breathing room and 1.25pt strokes; exact representative bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-file-link",
+      "path": "crates/tekes-ui-icons/assets/tekes-file-link.svg",
+      "before_sha256": "cf3870b282297f2492fce0b2332f5cdc2a57e73ce70beced6590ea84835c636d",
+      "after_sha256": "dd42d99eea52995e0b4c4ed57af2b5db998f020f8d568e54c316889756256cdc",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-file-rich",
+      "path": "crates/tekes-ui-icons/assets/tekes-file-rich.svg",
+      "before_sha256": "d44db98e329128d22f3b0bb210ece355822fb689385441b07e77f0810affed74",
+      "after_sha256": "30e9aa06144d1eec4e15e3b93490ada4897cfe5de3a22775e8922c09fc99ce0d",
+      "changed": true,
+      "rule": "c-c-document-family",
+      "reason": "Approved C document shoulders/fold and wider curved lower corners; interior marks retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-file-text",
+      "path": "crates/tekes-ui-icons/assets/tekes-file-text.svg",
+      "before_sha256": "9bcbb7ad264a531336ef4d7bf8abdb482329744ce1443c7b2d88000303d528b7",
+      "after_sha256": "125d9dd57fab0ac8ee5093b895787670dc581925af550f340462b4eb6e455891",
+      "changed": true,
+      "rule": "c-c-document-family",
+      "reason": "Approved C document shoulders/fold and wider curved lower corners; interior marks retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-files",
+      "path": "crates/tekes-ui-icons/assets/tekes-files.svg",
+      "before_sha256": "123b19b61028058d09529a9d72da7ae52b9763f1d3d33b2d4879e4468be14b5f",
+      "after_sha256": "474a00ab067c49b7b89e17c99ce3dd0040e3da3ed3221a22c13d028aff7a1a29",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-filter",
+      "path": "crates/tekes-ui-icons/assets/tekes-filter.svg",
+      "before_sha256": "4e8f7c6e9cd175de8bbfb18ea2abea0bfbabb72fc4527ac51a0cccc5156ea9e4",
+      "after_sha256": "a98af245f4c1662eafafcda33e79e8fb8a935c3d817fba7533cf8b7ac1aff14d",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-flash-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-flash-fill.svg",
+      "before_sha256": "eef40e187d42450a541c49e76d697111d5af881b658bf0c3ec8ff4fbebfc3043",
+      "after_sha256": "eef40e187d42450a541c49e76d697111d5af881b658bf0c3ec8ff4fbebfc3043",
+      "changed": false,
+      "rule": "filled-silhouette-exception",
+      "reason": "Filled lightning silhouette retains its sharp semantic points and original perimeter weight.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-flash",
+      "path": "crates/tekes-ui-icons/assets/tekes-flash.svg",
+      "before_sha256": "a35fae10ec77cce93f51042ad515a025918b3c00ca05aff4b356d816bcd7e152",
+      "after_sha256": "58bebc38b08456964111359f9222e4fc4a7cb04b798491a68b027e180ff82fd6",
+      "changed": true,
+      "rule": "c-retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-folder-open",
+      "path": "crates/tekes-ui-icons/assets/tekes-folder-open.svg",
+      "before_sha256": "2f4539e31e464a80d79dd706a226a9e7149afb3dbf06caab22384b2033eafec0",
+      "after_sha256": "262a7e86b8a7b009c6923ff11c9c8654d5b46776d1dfe1b6656b0c150532fa08",
+      "changed": true,
+      "rule": "c-folder-family",
+      "reason": "Shared approved folder tab/shoulders; open front flap retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-folder",
+      "path": "crates/tekes-ui-icons/assets/tekes-folder.svg",
+      "before_sha256": "9c1670496c7f81d2c3cb809e96e82be03f8485a40c1ed7c3b506f555c3f5ce3e",
+      "after_sha256": "eb58e1cf59f699c1648c093b943c1a6a924bf4624637d552a1f1e53b55fa2235",
+      "changed": true,
+      "rule": "approved-c",
+      "reason": "User-approved C: rounded geometry, optical breathing room and 1.25pt strokes; exact representative bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-fork",
+      "path": "crates/tekes-ui-icons/assets/tekes-fork.svg",
+      "before_sha256": "1972f1027787334cd8f6a186b1e015bd034b793ab3cbc4089c93633c27914678",
+      "after_sha256": "3e089bd677e38fe25e1917d140b95d0544b1149aa896ea0eb5a33d3881ba6826",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-forward",
+      "path": "crates/tekes-ui-icons/assets/tekes-forward.svg",
+      "before_sha256": "04184600d7e56b1b40912036e6833df5da428c468afdf0e9652c95a598bb152b",
+      "after_sha256": "99976d3d1023d6314d4740885591013c18d5aa5221c6ffeace987e1dc2eecc67",
+      "changed": true,
+      "rule": "approved-c",
+      "reason": "User-approved C: rounded geometry, optical breathing room and 1.25pt strokes; exact representative bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-fullscreen",
+      "path": "crates/tekes-ui-icons/assets/tekes-fullscreen.svg",
+      "before_sha256": "d642920a49d2849cb84c9e6502421b99ed311d258fdfd74acbd724050781b35c",
+      "after_sha256": "5ce5d7732fc4444c87b0287e8856b403c9f6197688f62da7f6e225df82dee8a0",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-goal-completed",
+      "path": "crates/tekes-ui-icons/assets/tekes-goal-completed.svg",
+      "before_sha256": "13bbd3053b4af1cd0ea9f8dfde05b6c13a3d96567e9c0ba03830afa03ee4b947",
+      "after_sha256": "f8bed10c6662f25c57b522b63496dae794855aa3f8f7cf04408c70cd2e001922",
+      "changed": true,
+      "rule": "approved-c",
+      "reason": "User-approved C: rounded geometry, optical breathing room and 1.25pt strokes; exact representative bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-goal-state-active",
+      "path": "crates/tekes-ui-icons/assets/tekes-goal-state-active.svg",
+      "before_sha256": "93410c44a1169cd3df7c62ac24b96f4e740daa1f0813ef1af267e692de6bfb34",
+      "after_sha256": "59d779efd4a94c661e70e047f1e5b3311e31419c4bf19e561f60fe4e0f34e4e2",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-goal-state-blocked",
+      "path": "crates/tekes-ui-icons/assets/tekes-goal-state-blocked.svg",
+      "before_sha256": "19abedcfd95514767945ca12d9a22d2e2a4194b0edac2b87b175b54d4fb2c0fc",
+      "after_sha256": "9df73bce6ebd568bd13f7c3a509b3338e8aeccad73cea40158a977510129a38a",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-goal-state-completed",
+      "path": "crates/tekes-ui-icons/assets/tekes-goal-state-completed.svg",
+      "before_sha256": "81057c4800964b9d8ead5ce6d08575d9ef179100082981105354cbbfe2600961",
+      "after_sha256": "6960bdd323a2819790757ad6407d81dace9288738575f2e3bfa986ae1fa73484",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-goal-state-stopped",
+      "path": "crates/tekes-ui-icons/assets/tekes-goal-state-stopped.svg",
+      "before_sha256": "cde2e5d1c1710be3188bff5e7f693c1dcbe3f664aa5adc1f179af2926210e852",
+      "after_sha256": "ae06eef0219f041aaff31f53514746e35e13025971df53f9f4e2b428f982f9fd",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-goal",
+      "path": "crates/tekes-ui-icons/assets/tekes-goal.svg",
+      "before_sha256": "76d2d369117c334cb3e83759ae2d98012b5ce5385d2b691abe70928dd1315ef0",
+      "after_sha256": "50b26ee375395bedf4d6fa80a58674f9093900e253f15c6fdbb795b2bf2e1751",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-hide",
+      "path": "crates/tekes-ui-icons/assets/tekes-hide.svg",
+      "before_sha256": "0706cde0583ef7e5c764b84d5e2d65860c7d6ecd7d69c67f4b32ce403efe56a8",
+      "after_sha256": "34bc014a65597c06aefa1c1e8f6bfb451e588ec25d2d32c7a96d0632067d6d9c",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-image",
+      "path": "crates/tekes-ui-icons/assets/tekes-image.svg",
+      "before_sha256": "71060b6f0bd30310b71b6f0baa9feb032ade397bf3684927e83fe2f1ab1a9822",
+      "after_sha256": "ebd7d87b33e19e464b55a33f7762146b41fb1823a3592695c8f5b1474e9e99dd",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-info",
+      "path": "crates/tekes-ui-icons/assets/tekes-info.svg",
+      "before_sha256": "0871ba05f6cec1e7093f9a17bee9e14b31eb622f985cd0a6a1e53828f3f6d0f5",
+      "after_sha256": "b82a31c32768451e007cf3312005d542e5ef34e8f0df37d51989a36801661e9a",
+      "changed": true,
+      "rule": "approved-c",
+      "reason": "User-approved C: rounded geometry, optical breathing room and 1.25pt strokes; exact representative bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-job",
+      "path": "crates/tekes-ui-icons/assets/tekes-job.svg",
+      "before_sha256": "f53b6b7257e8732776d0c6999559e4a8ec318525913a81a1fd6b4e5cf7117e4c",
+      "after_sha256": "4c7d0f556beaee98a193c2fc0529778437f47f25282bc0bb366fc942c763aa41",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-jump-bottom",
+      "path": "crates/tekes-ui-icons/assets/tekes-jump-bottom.svg",
+      "before_sha256": "40ebec8a9f40e51e9f0e7c95b5fecb29b23e17b5fde8022ad64274f826939e2f",
+      "after_sha256": "8af0108e2bd14e7ef9ac50133d8e3f618777123fcea68ac4e2d84cdefe4cd635",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-lock-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-lock-fill.svg",
+      "before_sha256": "75e8bb23fd86c9c532b1176aa369f1eff5649180b9cbac19b902a9968dc1e597",
+      "after_sha256": "2543a513dc91e3df573ad15e071b45a36752de73b4869b9adeb678db8c9df8c4",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-logout",
+      "path": "crates/tekes-ui-icons/assets/tekes-logout.svg",
+      "before_sha256": "adc5a449eecb334bae0954d7c69302de3a7469a57e075daee0e4468c6e3d7309",
+      "after_sha256": "3353503ad6e9ca778be05e098210ef83a5be0f3709508c14ef901066049a749e",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-mcp",
+      "path": "crates/tekes-ui-icons/assets/tekes-mcp.svg",
+      "before_sha256": "547828e5fd1d4819b0b23196fe5826a597edb914c01ee7dd729d9e4d797769eb",
+      "after_sha256": "4c333e3b2d3c571e194a9f132c9bbc3900a8382c2ea263180d03675c699c1acd",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-memorize",
+      "path": "crates/tekes-ui-icons/assets/tekes-memorize.svg",
+      "before_sha256": "931ac7963c1047fddb8a0a291d864f615495fb9365611bfd63ae546a788b2995",
+      "after_sha256": "517ee42a807bad8c1fd19822558c8c6babed63fa307d0166a130d0136869f4ed",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-memory",
+      "path": "crates/tekes-ui-icons/assets/tekes-memory.svg",
+      "before_sha256": "41c0add7c8042c6142a4b54dceb3375ee1408ffdf1c5dac17583d085b8cb1775",
+      "after_sha256": "c7b11840b05ca93fac6a608e29d0cbef6dfec6f96fbaa4d106c76b7ca26fb13e",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-mention",
+      "path": "crates/tekes-ui-icons/assets/tekes-mention.svg",
+      "before_sha256": "92801b0ad59ead95a57b31da461fecb146e5c3c740c5033c4386980d2d57340a",
+      "after_sha256": "f53b073ca204c256e1714c1d2998dcdde4807f42000baf6861e6321dc564a62d",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-merge",
+      "path": "crates/tekes-ui-icons/assets/tekes-merge.svg",
+      "before_sha256": "7c81d6ddf846065329648cec5835a1120bcd0a5fcbffeb38ccd482b25900b9cb",
+      "after_sha256": "0b29fd162c556956810cb113726db94d456dad77b92d7a07372d323076aed223",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-more",
+      "path": "crates/tekes-ui-icons/assets/tekes-more.svg",
+      "before_sha256": "af9b44e26bb6964682b456e7b58e0c64fab27bac3028bb0472822d56daea6d8f",
+      "after_sha256": "af9b44e26bb6964682b456e7b58e0c64fab27bac3028bb0472822d56daea6d8f",
+      "changed": false,
+      "rule": "filled-silhouette-exception",
+      "reason": "Pure filled state has no stroke to lighten; retain full-alpha silhouette and counters.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-new-goal",
+      "path": "crates/tekes-ui-icons/assets/tekes-new-goal.svg",
+      "before_sha256": "e3ff1f1e71e7a3cbbc4c0ffd333293025c1daf5bf88811cd63cf489c082eeef3",
+      "after_sha256": "ce5f3a64b69c7a2b30caa0c097c0e1f920802cc992f7ea28c47066f80e3022d3",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-new-project",
+      "path": "crates/tekes-ui-icons/assets/tekes-new-project.svg",
+      "before_sha256": "ea83f280ab90cca68228a96fbf161559ce572dc0b19c3c11cc998fe1aea4689a",
+      "after_sha256": "1c996dac8ad8533b5fad17245ef4e2d99abe1323978fbb306c9b89004ddc25db",
+      "changed": true,
+      "rule": "c-c-folder-family",
+      "reason": "Approved C rounded folder body/tab; new-project mark and untracked dash contract retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-new",
+      "path": "crates/tekes-ui-icons/assets/tekes-new.svg",
+      "before_sha256": "b15b5d70ad7f5052d93f038bf97a18be6ff5970c19d9c0290e57a8b2553a7e48",
+      "after_sha256": "6e9bb5d1d5c93f52f73eb57a38a3e41cd64bd3525ba7ebbcf3b8009202821c0f",
+      "changed": true,
+      "rule": "approved-c",
+      "reason": "User-approved C: rounded geometry, optical breathing room and 1.25pt strokes; exact representative bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-no-default-app",
+      "path": "crates/tekes-ui-icons/assets/tekes-no-default-app.svg",
+      "before_sha256": "fe18d654055b62e9255cc47fc05d0fec0a7d149d318c6967e65c902a695acbaf",
+      "after_sha256": "2ac73a29980a518b657e7f2f83a280362261c43bc55b269725fd96222e1a671b",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-note",
+      "path": "crates/tekes-ui-icons/assets/tekes-note.svg",
+      "before_sha256": "a6328fc3a9cbc98400bd3b9880f4eac10b22629f07bab50ffd56660ed9d1f2de",
+      "after_sha256": "01820b92dff7ebb4707319007dee7fdf1c50963ac08edda79e9cd3e8493f6720",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-oauth-key",
+      "path": "crates/tekes-ui-icons/assets/tekes-oauth-key.svg",
+      "before_sha256": "47292c197a2e5d25c540098a27286745958256dcde212dac9502b684acb05f60",
+      "after_sha256": "7f88152bf60d390ab1dc79826a5a0d137ff1707f591751cb23f48f1740167513",
+      "changed": true,
+      "rule": "c-retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-open-external",
+      "path": "crates/tekes-ui-icons/assets/tekes-open-external.svg",
+      "before_sha256": "80e871bc15281f580ef5f0f714e0a397fd51bb2a0f908236ffa99b495b0e44f4",
+      "after_sha256": "bffbccafc0256679d38ed61562183e1cd523587290684d2da6fac002a2cfff3c",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-pause",
+      "path": "crates/tekes-ui-icons/assets/tekes-pause.svg",
+      "before_sha256": "ef5f946704355aefb8076d327010f601cfa395ea506ec7ca0ad3cabc2d97a956",
+      "after_sha256": "50ec93f9736aa6b40ca2a6efb6cb893f8183fb507001010fff95c275c5a904c6",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-pending-task",
+      "path": "crates/tekes-ui-icons/assets/tekes-pending-task.svg",
+      "before_sha256": "880c666fb812f6d202ab7b4c65cb4a53f0922fc09b49789dbd489428013a811f",
+      "after_sha256": "eba25010e36a284ecea4d47088d4c14e1076cbe2bfdc12635c8662826464639d",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-pin",
+      "path": "crates/tekes-ui-icons/assets/tekes-pin.svg",
+      "before_sha256": "4f96af1a8c58b95b5da027e5b5a94355b6c065f02d4a272ece8911b1efceae4f",
+      "after_sha256": "fb64982562e7ae251f79a299c1015f99b0216fe0ce5e6a64efb4e011f800cc08",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-pinned",
+      "path": "crates/tekes-ui-icons/assets/tekes-pinned.svg",
+      "before_sha256": "0509347b23af829163bb9d5f19ca876b1cf337a5eae4b5baaf48dedf43926274",
+      "after_sha256": "aa5056cfb13b458647581485cebd27ed2987653ac72f4b85a164546446c8a1ba",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-plugin",
+      "path": "crates/tekes-ui-icons/assets/tekes-plugin.svg",
+      "before_sha256": "48c7ae9ee5100a6d2a6ca31ca0ce8c9c37a61c86d62f7f7409e814a7c7f67ea5",
+      "after_sha256": "40f211a911879fdc976f482333cf420a1af6aaf7f68f0110de44a5f5572cacb4",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-plugins",
+      "path": "crates/tekes-ui-icons/assets/tekes-plugins.svg",
+      "before_sha256": "48c7ae9ee5100a6d2a6ca31ca0ce8c9c37a61c86d62f7f7409e814a7c7f67ea5",
+      "after_sha256": "40f211a911879fdc976f482333cf420a1af6aaf7f68f0110de44a5f5572cacb4",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-popup-menu",
+      "path": "crates/tekes-ui-icons/assets/tekes-popup-menu.svg",
+      "before_sha256": "c66524e63d3f9652f44718f0ec174645bb490d19952dfbf3402c262628e3e13a",
+      "after_sha256": "d2393c62d57693a2fcda3532f76693c0294c9b585178c59f09b93018b1455f12",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-profile",
+      "path": "crates/tekes-ui-icons/assets/tekes-profile.svg",
+      "before_sha256": "eec213d2d6057e1bcfc5059abb255685af4cd859afbeef8038bf432485d4bb40",
+      "after_sha256": "4463e0ee737c3fee58753f42cf5452021f3d84578085086c84dfdff9809478ba",
+      "changed": true,
+      "rule": "c-retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-progress",
+      "path": "crates/tekes-ui-icons/assets/tekes-progress.svg",
+      "before_sha256": "6360db961bdb30ab31cc94d388a57c7cb1d0a50e54199fa7d6783749e2417089",
+      "after_sha256": "91f2d21051545252c469f999fa8ca47a1b21023be1bee18ce666e4276d276d01",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-provider",
+      "path": "crates/tekes-ui-icons/assets/tekes-provider.svg",
+      "before_sha256": "ba287fdc8903f525fcaf93229562cb6e3277c2909a111eb81d2e9ac9b1f76808",
+      "after_sha256": "dbd1f566ba2329b4eab55ac549a6e887a0decb99d5029d44f64e05dc5254329d",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-pull-request",
+      "path": "crates/tekes-ui-icons/assets/tekes-pull-request.svg",
+      "before_sha256": "0284c42509b06bf4e6864e69f77c4b98ba5cfbdfd9b39c63993c804e5de6b8d2",
+      "after_sha256": "55bcb4acb0b70ef88698fdb4b1834d8bb37e0b37745da35ed268e40314e80ed2",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-queued-input",
+      "path": "crates/tekes-ui-icons/assets/tekes-queued-input.svg",
+      "before_sha256": "f3061bcdde140b02050f80f5cd018a1cb59dab81f7b35335f566ca690d0eae37",
+      "after_sha256": "4dae452f78ac7986e2d3087b8dba5026f6964ddeb0e724795d80c3a861db6580",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-quick-panel",
+      "path": "crates/tekes-ui-icons/assets/tekes-quick-panel.svg",
+      "before_sha256": "379f1ee1a1e12cee810984a990fa50f6442d7e8ec8f08e26d6444bee7f4813f3",
+      "after_sha256": "f5fb9579fefeb4c309682847b19f14f476cdfd54dee35abfea86c9425e75241a",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-quote",
+      "path": "crates/tekes-ui-icons/assets/tekes-quote.svg",
+      "before_sha256": "450d3f5fb2ca9c9f0ab766444a3599156e192dc16744b59c38f9f440136c063f",
+      "after_sha256": "bfa07c0f0df2f3868297017fab7695f7653b597875ab5a00cf402e92ba4fcc82",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-read",
+      "path": "crates/tekes-ui-icons/assets/tekes-read.svg",
+      "before_sha256": "9bcbb7ad264a531336ef4d7bf8abdb482329744ce1443c7b2d88000303d528b7",
+      "after_sha256": "125d9dd57fab0ac8ee5093b895787670dc581925af550f340462b4eb6e455891",
+      "changed": true,
+      "rule": "c-c-document-family",
+      "reason": "Approved C document shoulders/fold and wider curved lower corners; interior marks retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-rebuild",
+      "path": "crates/tekes-ui-icons/assets/tekes-rebuild.svg",
+      "before_sha256": "92ed7314cc7966abc902e5bd55aa6c589490582974216f94a82080b2d445b69f",
+      "after_sha256": "7ff62cab3dd9b1173bf7f0ba0b1958c56d1e5bcbb5f37e3a26b1bebc08e11cc5",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-recall",
+      "path": "crates/tekes-ui-icons/assets/tekes-recall.svg",
+      "before_sha256": "7b28a5ef2cec3ed538ea14783a59904ffc7d676001b5601ac16ed8f138b4f66c",
+      "after_sha256": "ee8f2219330759dd9b0d3aa394a2887751f23b34801dfba90f13567987d3efe6",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-redo",
+      "path": "crates/tekes-ui-icons/assets/tekes-redo.svg",
+      "before_sha256": "b86d319bdbea6ded2ffc3951eb92a005b9087cf6e43d1d21c63c1cf286046766",
+      "after_sha256": "79394f65f613156786f287b5a252e28008d1cc2b1dd69668832defb149e3f0d1",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-refresh",
+      "path": "crates/tekes-ui-icons/assets/tekes-refresh.svg",
+      "before_sha256": "f96d905b1ba249db26610e0d7e68fc79d3dde535a33a6a782502d5031660f5bb",
+      "after_sha256": "89f8c9cde7f6deb16daa4e6b4a113ba63627ddca431f08c4cdd3490cfc8b232e",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-remove-one",
+      "path": "crates/tekes-ui-icons/assets/tekes-remove-one.svg",
+      "before_sha256": "34fb01b500397c5d6451c7f42ffc8dac5c9632fad41a21669f320559aef5b4b8",
+      "after_sha256": "cd232746d2ff777a1482b3b2b22842d4a72dc2d24238eef2661f0fd8a5e4868c",
+      "changed": true,
+      "rule": "approved-c",
+      "reason": "User-approved C: rounded geometry, optical breathing room and 1.25pt strokes; exact representative bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-report",
+      "path": "crates/tekes-ui-icons/assets/tekes-report.svg",
+      "before_sha256": "866d41722ca7e48497155ca1c76b6d6a7770ffd94e7ec667684b14676fd78727",
+      "after_sha256": "c7627ae1236d47cd5d731f0805c44514e394e1f0c0b1fac7439d89819d213d65",
+      "changed": true,
+      "rule": "c-c-document-family",
+      "reason": "Approved C document shoulders/fold and wider curved lower corners; interior marks retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-resume",
+      "path": "crates/tekes-ui-icons/assets/tekes-resume.svg",
+      "before_sha256": "507723cffeb876f584db5d11fa2293a29bd41c955eebcb719cb07249f9cf0464",
+      "after_sha256": "d1303786f0a28eae845ed192d2e4c017e4e042df8f54cdb6f66123fba9b6bdca",
+      "changed": true,
+      "rule": "approved-c",
+      "reason": "User-approved C: rounded geometry, optical breathing room and 1.25pt strokes; exact representative bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-review-plan",
+      "path": "crates/tekes-ui-icons/assets/tekes-review-plan.svg",
+      "before_sha256": "1ffe5238a0b4e66a5245cb87e58abbb47d7a49db643ae6f26b54190d2be7dcbb",
+      "after_sha256": "186c8d0938cc05b11cb3b958dbbe84b836c6d76fdb675a06a83aaf1fc1935335",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-rewind",
+      "path": "crates/tekes-ui-icons/assets/tekes-rewind.svg",
+      "before_sha256": "4ec24a73d86e470afc89179a54fb98a707adb9eb34b7dc204e2a442715b8ba1e",
+      "after_sha256": "d39548076961f98e4d90340b8ff9b3871a4a0f608f3f83e2e098712529c668c1",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-router",
+      "path": "crates/tekes-ui-icons/assets/tekes-router.svg",
+      "before_sha256": "9f9fd657434f785e7a9924fa1a8e3081dd97b1abffda6a9ef0528a189e010495",
+      "after_sha256": "37ed65353918582b89ce493db572ff066779b28003de6ce325ebe3be2e83bde2",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-scheduled",
+      "path": "crates/tekes-ui-icons/assets/tekes-scheduled.svg",
+      "before_sha256": "a75f884cb99b15ae7f545a3c7d93fc51826b651b4f6b92a4849d8c2dc0853e38",
+      "after_sha256": "29bbfc6e55ef3e8b3f2c1dace63f9760a9ab5cf2aab171e133cf49dca1fce7e0",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-search",
+      "path": "crates/tekes-ui-icons/assets/tekes-search.svg",
+      "before_sha256": "10c806e61e3040e800bb9481075445fe42fc5fcf2b2e7b0dc338ff536df7109f",
+      "after_sha256": "0c0a0070d6a8f1055a0a2595a2cf47b8afc728f1ed35a4eff1e54b701046ff75",
+      "changed": true,
+      "rule": "approved-c",
+      "reason": "User-approved C: rounded geometry, optical breathing room and 1.25pt strokes; exact representative bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-send",
+      "path": "crates/tekes-ui-icons/assets/tekes-send.svg",
+      "before_sha256": "083a6c2d6f55920aeb6547277496217bf146b562b261147b81e32aa3edb9da28",
+      "after_sha256": "f9e20965dfb6ca993489fba695daa5bb6e520670daa1192f1d8b29792b42ce8c",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-settings",
+      "path": "crates/tekes-ui-icons/assets/tekes-settings.svg",
+      "before_sha256": "2bc1ae68873e019174cb4c78ace1d5a3c32ad15573e87748e22d2ee85b813ce0",
+      "after_sha256": "21f9c62a954212d3ff200956960666fd40dfeedcf288bacb1c2406b837561e77",
+      "changed": true,
+      "rule": "approved-c",
+      "reason": "User-approved C: rounded geometry, optical breathing room and 1.25pt strokes; exact representative bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-shell",
+      "path": "crates/tekes-ui-icons/assets/tekes-shell.svg",
+      "before_sha256": "c6df2a2b67e529839cf97f3817f519e91f94124300f9a9ee8b46a83d82b0a83e",
+      "after_sha256": "cfb9a0fe931cfad2dd6073e3f3bbc3bb3d522883aa59467b12808d949dd2c863",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-show",
+      "path": "crates/tekes-ui-icons/assets/tekes-show.svg",
+      "before_sha256": "d050a2c2c9400cc7520213134b5ee1bcb0b145f2db518bf4d3938e673fcad867",
+      "after_sha256": "986104e40bb28996c9fab3d3079a00b079b724f3d1d300bb8ad986c40ac623ab",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-side-bar",
+      "path": "crates/tekes-ui-icons/assets/tekes-side-bar.svg",
+      "before_sha256": "7fec5beda4076ac160944f985412372f8c755d801adbff395855ef4bf6580110",
+      "after_sha256": "22490a842461d6b2646ac6b23f1129587931d205e9442556ac4e0cde043721f1",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-side-chat",
+      "path": "crates/tekes-ui-icons/assets/tekes-side-chat.svg",
+      "before_sha256": "dc751cc5314dcd64f9af75da94cbb3c20738d9e4d7f22992009bc70dc5fda351",
+      "after_sha256": "7e86a00b8d0e0869c1c2f23e9bf5f7782b8dc0508fb242bbca5758bf64a6192b",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-side-panel",
+      "path": "crates/tekes-ui-icons/assets/tekes-side-panel.svg",
+      "before_sha256": "ea1a17ff482b1542bd416f96eb78efbdb30f9be6802df210c3e2e709d7641931",
+      "after_sha256": "7a48003c72ced2d1dfe8682d343b191bb6e363af564234b4896d61abc97864d6",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-skill",
+      "path": "crates/tekes-ui-icons/assets/tekes-skill.svg",
+      "before_sha256": "69fb60fda1e977d12cba289f5e78643f1dbead06f6191e6e512d9f890b035ecf",
+      "after_sha256": "cc267c3d686178c88be43837a0698cf0194e5956a4ea36d82610a243cce03f52",
+      "changed": true,
+      "rule": "c-retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-skills",
+      "path": "crates/tekes-ui-icons/assets/tekes-skills.svg",
+      "before_sha256": "6dd375e67266f232172916c834e4f958aab0d403374458980bedb44012302ff5",
+      "after_sha256": "a62d764d6b81a4d6821404bd4f7e01c4982eb8aaa76c32eed3ea012950bd53e7",
+      "changed": true,
+      "rule": "c-retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-slash-command",
+      "path": "crates/tekes-ui-icons/assets/tekes-slash-command.svg",
+      "before_sha256": "3f9d0351eabfab80dba2e0933272de3fd22a8294cd365e2fda5ef662cc00044c",
+      "after_sha256": "8d3a1ea1b665557864d32ce96054dabda45a8b1d0ccc7857ee4dae1d01f127dc",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-sort",
+      "path": "crates/tekes-ui-icons/assets/tekes-sort.svg",
+      "before_sha256": "740c5320ac067975dcfd2d6a5a025cd64c919f199779ac7d4b3918988e8dd8ff",
+      "after_sha256": "648ac4d066a2f44b5a74b864f5f7af580bee45938d1a53a5f76c0622c556577a",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-steer",
+      "path": "crates/tekes-ui-icons/assets/tekes-steer.svg",
+      "before_sha256": "de9c5769c99c7f06eba7a0954a58b4237ebe9d271da4e0744c9b4d69a0c833b3",
+      "after_sha256": "fe50fee30a5677404ab91fe1536af00ef9060fa6ea45456c85fb9670d9cc96f8",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-steering",
+      "path": "crates/tekes-ui-icons/assets/tekes-steering.svg",
+      "before_sha256": "1f5f0b3e182e2b9ef5f403c2a97d408dc608123e8513c66aede0d4cade7f16f1",
+      "after_sha256": "b138cdc116e5b5f13875aef25b7dbf66736ea291493d7c7b7a0f5bc39a678dd3",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-stop",
+      "path": "crates/tekes-ui-icons/assets/tekes-stop.svg",
+      "before_sha256": "8796e8799a5f72f674b19911adc5f50691248cb06c6d216e4814f2d363e2c956",
+      "after_sha256": "8796e8799a5f72f674b19911adc5f50691248cb06c6d216e4814f2d363e2c956",
+      "changed": false,
+      "rule": "filled-silhouette-exception",
+      "reason": "Pure filled state has no stroke to lighten; retain full-alpha silhouette and counters.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-subagent",
+      "path": "crates/tekes-ui-icons/assets/tekes-subagent.svg",
+      "before_sha256": "82b967476987fd68c1fd957e9a7b91040d3d90415c99e8d57d6e4fd84a1af43d",
+      "after_sha256": "a906330128ba12482650ac634e55e36cc9d0875866e1fa35fd2d54b90e34d825",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-swap-horizontal",
+      "path": "crates/tekes-ui-icons/assets/tekes-swap-horizontal.svg",
+      "before_sha256": "aee62a8f67824367e006909c8d0fba13eca503c73849faaf631a15b0de0adecc",
+      "after_sha256": "7d82326360ec416256bc4fb6d811e2956ead10e72ab7dc1d8e57ef76ad293c82",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-tab-diffs",
+      "path": "crates/tekes-ui-icons/assets/tekes-tab-diffs.svg",
+      "before_sha256": "f4fe30e73458fcfc39a62aa42dd2fe971f3b0546a2e207e3b763858972e5cce4",
+      "after_sha256": "9b4fb02e038bfe09e4d55ba5162bd96f31d425d0e0c951c3504c0286ca5cb2e2",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-tab-summary",
+      "path": "crates/tekes-ui-icons/assets/tekes-tab-summary.svg",
+      "before_sha256": "9d2278ec1070c722b77a99b273713cdff831d2818af6c8a0750e95fbb955b279",
+      "after_sha256": "0a7e0257013794a3bbb774fa1f8928567a9b7eb640cf3ead780ce99f8085efc4",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-tag",
+      "path": "crates/tekes-ui-icons/assets/tekes-tag.svg",
+      "before_sha256": "19cb6b1b46da897e354685a5c293ee570d1d9508f43938ad19555ae89eb7a06a",
+      "after_sha256": "1c5d535f280b86fe790fe6f8fc3136266a4dd9d33758a786bf1c614a08ea5d32",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-task",
+      "path": "crates/tekes-ui-icons/assets/tekes-task.svg",
+      "before_sha256": "35c1c1d6c8a186dd035e5e820307b9078962977930dc3c416de3dafbb90b8608",
+      "after_sha256": "9809553f87a5118a6686fb2ecf640dd274892551951dc8774725d66b91bf081b",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-test-connection",
+      "path": "crates/tekes-ui-icons/assets/tekes-test-connection.svg",
+      "before_sha256": "580b6abdc9de9bb200400918063d60cb955378134860376b3837d2eed71470cf",
+      "after_sha256": "2b35c38f53d162fef66032efa53c8b31a2ee72e7288e7c0f8ddd00bca967b57f",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-think",
+      "path": "crates/tekes-ui-icons/assets/tekes-think.svg",
+      "before_sha256": "2469ed55708e9dbab091479fb96370011338230f0d16f4bbf6825fe118aef590",
+      "after_sha256": "46bb946973f0fbaa279f006f7063e06ceac595446295cfec49409d359ca26a83",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-thumbs-down-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-thumbs-down-fill.svg",
+      "before_sha256": "9db8d85375f4beac95b3722c73d0b9914c4e7ada0f035e58682a685f36541971",
+      "after_sha256": "5fd6a4cc8da0ff8b0894c778939fb163df968c57666313e86672977d15e5a909",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-thumbs-down",
+      "path": "crates/tekes-ui-icons/assets/tekes-thumbs-down.svg",
+      "before_sha256": "c2d5d802db730e7360799a4e32391bd402bf7b12b61e7a41aa7073f4c7a0bf6d",
+      "after_sha256": "663770524f44f8fd839bd59c8631fe508d2756bfbf61b699ce059301c7ca0e9f",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-thumbs-up-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-thumbs-up-fill.svg",
+      "before_sha256": "d1957fe430bcf17df5673970bf0edb489796ccee4d6b642ee173f71add25d15c",
+      "after_sha256": "d03079082a372913441871762b0fccd44fb267b4c04414950eeb7c9163296811",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-thumbs-up",
+      "path": "crates/tekes-ui-icons/assets/tekes-thumbs-up.svg",
+      "before_sha256": "71fe0e2df8b45d31f847157f520fdd3a9fadf26aab1d680914db4461c077632a",
+      "after_sha256": "1262f0a82b7c208b5d517acccc2214005ed9c9341a86d9d0c8c6a691f215d73f",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-time",
+      "path": "crates/tekes-ui-icons/assets/tekes-time.svg",
+      "before_sha256": "7b3ee7dd00e903b01dd5ef476045e2d578a3e26400f06eddf06c038af450a6a3",
+      "after_sha256": "aa334ec2112c66119fcdf2167480bb432bb1611597c3b0a25e7f4763709ca120",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-tools",
+      "path": "crates/tekes-ui-icons/assets/tekes-tools.svg",
+      "before_sha256": "3c3310aaf5db0ea5578eb51e625901c70c8d4e035804ae0c219d854a4daf407b",
+      "after_sha256": "f6177178c0a0be825bc43bd228d187413cb178004f5976328f3503127e5d5b24",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-trust",
+      "path": "crates/tekes-ui-icons/assets/tekes-trust.svg",
+      "before_sha256": "fb9399ea5feb8cb509fbba8d489c1ae9571ddce290dec236df23d90db31cf780",
+      "after_sha256": "3aac37b34c0ae505164b7b03f8f46283774e1b1e3cf6e87f6a0513a98858202b",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-undo",
+      "path": "crates/tekes-ui-icons/assets/tekes-undo.svg",
+      "before_sha256": "0f38d9c4a813818cfc4df3ed7ec50e627c39b4b6e73bdc6c21db4351e76346c0",
+      "after_sha256": "0d9387ecc2cd37579c0f8f73331ace93481c7466212796795b13a79ba5c266cd",
+      "changed": true,
+      "rule": "c-rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-unknown-fallback",
+      "path": "crates/tekes-ui-icons/assets/tekes-unknown-fallback.svg",
+      "before_sha256": "3c3310aaf5db0ea5578eb51e625901c70c8d4e035804ae0c219d854a4daf407b",
+      "after_sha256": "f6177178c0a0be825bc43bd228d187413cb178004f5976328f3503127e5d5b24",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-unknown-tool",
+      "path": "crates/tekes-ui-icons/assets/tekes-unknown-tool.svg",
+      "before_sha256": "87587a0303eef0cead5d596cf34b045bf5d8cdea81016547426e3ddc4fb194cc",
+      "after_sha256": "29fb81839b5ae79f3610632e88317a3326aed1f44ee7afe64f84b3bc80ab85f4",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-unpushed",
+      "path": "crates/tekes-ui-icons/assets/tekes-unpushed.svg",
+      "before_sha256": "67c9eadd884d0202fd6045e9675f0f77901f4845529aa5fa7cf8e33c63df9755",
+      "after_sha256": "1eb70253b62573f19f3d8184611ec6b1623689cc955a13dea2d482399aba0a6b",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-untracked-folder",
+      "path": "crates/tekes-ui-icons/assets/tekes-untracked-folder.svg",
+      "before_sha256": "2bc3c7d51ff1036da86c765e9cc9031efab65d1f0be777bcb2fe43823d1ce8f8",
+      "after_sha256": "99312d0a46e7f7490d04326851e3efb28c1d15749328d80ffa043d5e8636c219",
+      "changed": true,
+      "rule": "c-c-folder-family",
+      "reason": "Approved C rounded folder body/tab; new-project mark and untracked dash contract retained. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-verify",
+      "path": "crates/tekes-ui-icons/assets/tekes-verify.svg",
+      "before_sha256": "a98934d9782dac21763559a3c19f6da7984dfeef14f81eab302fb2340a4f2908",
+      "after_sha256": "204f5a7ecb86411bbb682acc807dc8fe5ab0f792d87ed646e4e065529bf5f648",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-waiting-user",
+      "path": "crates/tekes-ui-icons/assets/tekes-waiting-user.svg",
+      "before_sha256": "8df3b10dc873b9a6f0395d47c0d9b041f80021959084a3060708bf4d5dff63ab",
+      "after_sha256": "66ae325157f3070780fd8a587db76a3ceaf8988728e5d06b009cbdf760a9d54e",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-warning-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-warning-fill.svg",
+      "before_sha256": "48a9cea0786d86e19f86ffc54149efd36be905e5388b41f3d502838be9f81b5b",
+      "after_sha256": "48a9cea0786d86e19f86ffc54149efd36be905e5388b41f3d502838be9f81b5b",
+      "changed": false,
+      "rule": "filled-silhouette-exception",
+      "reason": "Pure filled state has no stroke to lighten; retain full-alpha silhouette and counters.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.5
+    },
+    {
+      "name": "tekes-warning",
+      "path": "crates/tekes-ui-icons/assets/tekes-warning.svg",
+      "before_sha256": "909d26a9541c6fc9c772907d76aac173cb276638272aaff587c8841aedca1edf",
+      "after_sha256": "9f6853c958c14903ca31899ff98aa54a44f09abb94821a541f508196a7c60c1f",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-web-fetch",
+      "path": "crates/tekes-ui-icons/assets/tekes-web-fetch.svg",
+      "before_sha256": "f514bac0900cf9eda85834cf6baa2e07d35222da8f92b80cb402abbff729d93d",
+      "after_sha256": "fa72df2a7baacf394cd9545945a695759f5f98ff228d969d6c08a8bae479fb5f",
+      "changed": true,
+      "rule": "c-retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-web-search",
+      "path": "crates/tekes-ui-icons/assets/tekes-web-search.svg",
+      "before_sha256": "3f9dc38f853dd418bf0417207b848776c1255d1d640cb0543919f52d22a98fe6",
+      "after_sha256": "70439469d1d2d3e4af3767feef92034d2b8fe65aaaa2fd26c991885aaaea949a",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-write",
+      "path": "crates/tekes-ui-icons/assets/tekes-write.svg",
+      "before_sha256": "bad8b5da6a29715902436ee55cddb38c4880b7ce8385c4c20c85f6613e99c94e",
+      "after_sha256": "f2e0764bfe0b2719fba38149c22bd44e98295581dd1f822945a96ebf6ff2bd38",
+      "changed": true,
+      "rule": "c-retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-zoom-in",
+      "path": "crates/tekes-ui-icons/assets/tekes-zoom-in.svg",
+      "before_sha256": "9ea695089c5a7739876dc4ff98c2b27039842ca5b3cb3b679a5771305a9ae102",
+      "after_sha256": "a17e564c37f5792be4c16b82826d2dbe6bf54f1f275d669de7799fab84842e39",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    },
+    {
+      "name": "tekes-zoom-out",
+      "path": "crates/tekes-ui-icons/assets/tekes-zoom-out.svg",
+      "before_sha256": "04aa009722af496f6d4607f9f06041b73a090d13f9ebda3fdd4f9a1341f1db37",
+      "after_sha256": "fd2baf9a745c0c243de062ba083f9bb077ec20336f6309427b6f3d2aa6638a30",
+      "changed": true,
+      "rule": "c-retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw. C optical weight is 1.25pt; color and alpha unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ],
+      "stroke_width": 1.25
+    }
+  ]
+}

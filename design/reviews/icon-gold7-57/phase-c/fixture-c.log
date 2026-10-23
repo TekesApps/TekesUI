@@ -1,0 +1,4 @@
+   Compiling icon-direction-consumer v0.0.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/consumer)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.48s
+     Running `target/icon-direction-57/debug/icon-direction-consumer /Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/fixture-c`
+8 actual-size sheets + 64 shared-component GPU pages

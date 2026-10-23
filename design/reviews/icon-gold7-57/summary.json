@@ -1,0 +1,21 @@
+{
+  "issue": 57,
+  "direction": "C",
+  "canonical_total": 177,
+  "changed": 158,
+  "retained": 19,
+  "square_canvas": [
+    24,
+    24
+  ],
+  "canonical_gpu_cases": 4248,
+  "retained_pixel_identical_cases": 456,
+  "component_pages": 64,
+  "Gallery_frames": 144,
+  "native_primitive_cases": 240,
+  "public_Gallery_tests": 6,
+  "physical_IME": "untested",
+  "VoiceOver": "untested",
+  "performance": "not measured",
+  "final_receipt": "phase-c/README.md"
+}

@@ -1,0 +1,11 @@
+✔ all catalog public SVGs resolve with exact hashes, tintable geometry and no active content (14.708917ms)
+✔ retired names and unknown names fail instead of silently substituting artwork (0.183875ms)
+✔ published typed declarations and Rust catalog cover exactly the same names (0.798583ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 61.855042
