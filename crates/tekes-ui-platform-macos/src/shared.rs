@@ -52,6 +52,9 @@ fn resize_review(message: std::fmt::Arguments<'_>) {
 
 /// 引擎实现的处理器。平台层在主线程上同步调用，一次只有一个调用在运行。
 pub trait WindowHandler: 'static {
+    fn allows_app_quit(&self) -> bool {
+        true
+    }
     fn handle(&mut self, event: Event, window: &mut Window);
 }
 
@@ -116,6 +119,8 @@ pub(crate) struct Shared {
     /// `Created` 已经投递。在此之前视图收到的回调（初始 setFrameSize 等）不投递事件。
     pub ready: Cell<bool>,
     pub closed: Cell<bool>,
+    pub exclusive_restore: RefCell<Vec<std::rc::Weak<Shared>>>,
+    pub exclusive_key: RefCell<Option<std::rc::Weak<Shared>>>,
     /// 统计：用于示例和测试。
     pub redraw_count: Cell<u64>,
     /// 持续动画模式是否开着（`Window::set_animating`）。
@@ -167,6 +172,8 @@ impl Shared {
             placement: RefCell::new(None),
             ready: Cell::new(false),
             closed: Cell::new(false),
+            exclusive_restore: RefCell::new(Vec::new()),
+            exclusive_key: RefCell::new(None),
             redraw_count: Cell::new(0),
             animating: Cell::new(false),
             link_callbacks: Cell::new(0),
@@ -399,7 +406,14 @@ impl Shared {
     }
 
     /// 应用结束时丢弃处理器，让它的 Drop 在 `run()` 返回之前执行。
+    pub(crate) fn allows_app_quit(&self) -> bool {
+        self.handler
+            .borrow()
+            .as_ref()
+            .is_some_and(|h| h.allows_app_quit())
+    }
     pub fn finish(&self) {
+        crate::app::restore_windows(self);
         crate::wake::native::unregister(&self.wake_state);
         self.closed.set(true);
         self.titlebar_drag_origin.borrow_mut().take();
@@ -436,6 +450,30 @@ pub struct Window {
 }
 
 impl Window {
+    /// Create another native window sharing this application's event loop.
+    pub fn open_window(
+        &self,
+        config: crate::WindowConfig,
+        handler: impl WindowHandler,
+    ) -> crate::WindowHandle {
+        crate::app::open_window(self.shared.mtm, config, handler, None)
+    }
+
+    /// Create Settings at this window's frame before its first presentation.
+    /// Show Settings first, then hide the anchor and other visible app windows.
+    pub fn open_exclusive_window(
+        &self,
+        config: crate::WindowConfig,
+        handler: impl WindowHandler,
+    ) -> crate::WindowHandle {
+        crate::app::open_window(self.shared.mtm, config, handler, Some(&self.shared))
+    }
+
+    /// Match this window's frame, show the cover, then hide other app windows.
+    /// Closing the auxiliary window restores only those previously visible windows.
+    pub fn present_exclusive(&self, child: &crate::WindowHandle) {
+        crate::app::present_exclusive(&child.shared, &self.shared);
+    }
     /// UI-thread creation of a background-safe notification proxy. Clones do
     /// not retain this window; queued work is discarded when it closes.
     pub fn wake_proxy(&self) -> crate::WindowWake {

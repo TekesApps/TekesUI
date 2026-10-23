@@ -1,0 +1,102 @@
+   Compiling zmij v1.0.23
+   Compiling proc-macro2 v1.0.107
+   Compiling serde_core v1.0.229
+   Compiling typenum v1.20.1
+   Compiling serde_json v1.0.154
+   Compiling libc v0.2.190
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling itoa v1.0.18
+   Compiling memchr v2.8.3
+   Compiling const-oid v0.10.2
+   Compiling cfg-if v1.0.5
+   Compiling serde v1.0.229
+    Checking bitflags v2.13.2
+    Checking objc2-core-foundation v0.3.2
+   Compiling hybrid-array v0.4.15
+    Checking objc2-core-graphics v0.3.2
+   Compiling block-buffer v0.12.1
+   Compiling crypto-common v0.2.2
+    Checking equivalent v1.0.3
+    Checking hashbrown v0.17.1
+    Checking objc2-core-text v0.3.2
+    Checking indexmap v2.14.2
+   Compiling digest v0.11.3
+   Compiling anyhow v1.0.104
+    Checking toml_write v0.1.2
+    Checking winnow v0.7.15
+    Checking tekes-ui-motion v0.1.0 (/Users/frankqin/.codex/worktrees/apphost-button-pr52-20261022/TekesUI/crates/tekes-ui-motion)
+    Checking unicode-segmentation v1.13.3
+   Compiling syn v3.0.9
+   Compiling serde_derive v1.0.229
+   Compiling tekes-ui-controls v0.1.0 (/Users/frankqin/.codex/worktrees/apphost-button-pr52-20261022/TekesUI/crates/tekes-ui-controls)
+   Compiling cpufeatures v0.3.1
+   Compiling sha2 v0.11.1
+   Compiling tekes-ui-design-export v0.1.0 (/Users/frankqin/.codex/worktrees/apphost-button-pr52-20261022/TekesUI/crates/tekes-ui-design-export)
+   Compiling tekes-ui-tokens v0.1.0 (/Users/frankqin/.codex/worktrees/apphost-button-pr52-20261022/TekesUI/crates/tekes-ui-tokens)
+    Checking tekes-ui-scene v0.1.0 (/Users/frankqin/.codex/worktrees/apphost-button-pr52-20261022/TekesUI/crates/tekes-ui-scene)
+    Checking serde_spanned v0.6.9
+    Checking toml_datetime v0.6.11
+    Checking tekes-ui-text v0.1.0 (/Users/frankqin/.codex/worktrees/apphost-button-pr52-20261022/TekesUI/crates/tekes-ui-text)
+    Checking toml_edit v0.22.27
+    Checking toml v0.8.23
+    Checking tekes-ui-settings v0.1.0 (/Users/frankqin/.codex/worktrees/apphost-button-pr52-20261022/TekesUI/crates/tekes-ui-settings)
+error[E0599]: no function or associated item named `new` found for struct `tekes_ui_controls::Button` in the current scope
+   --> crates/tekes-ui-settings/src/form.rs:158:53
+    |
+158 |                         Content::new(RESET, Button::new("Reset")),
+    |                                                     ^^^ function or associated item not found in `tekes_ui_controls::Button`
+
+error[E0599]: no function or associated item named `new` found for struct `tekes_ui_controls::Button` in the current scope
+   --> crates/tekes-ui-settings/src/form.rs:159:54
+    |
+159 |                         Content::new(CANCEL, Button::new("Cancel")),
+    |                                                      ^^^ function or associated item not found in `tekes_ui_controls::Button`
+
+error[E0599]: no function or associated item named `new` found for struct `tekes_ui_controls::Button` in the current scope
+   --> crates/tekes-ui-settings/src/form.rs:160:53
+    |
+160 |                         Content::new(APPLY, Button::new("Apply")),
+    |                                                     ^^^ function or associated item not found in `tekes_ui_controls::Button`
+
+error[E0599]: no function or associated item named `new` found for struct `tekes_ui_controls::Button` in the current scope
+   --> crates/tekes-ui-settings/src/form.rs:361:37
+    |
+361 |             let mut retry = Button::new("Retry");
+    |                                     ^^^ function or associated item not found in `tekes_ui_controls::Button`
+
+error[E0277]: the trait bound `tekes_ui_controls::Button: tekes_ui_controls::composition::Component` is not satisfied
+   --> crates/tekes-ui-settings/src/form.rs:380:34
+    |
+380 |                 .component_mut::<Button>()
+    |                  -------------   ^^^^^^ the trait `tekes_ui_controls::composition::Component` is not implemented for `tekes_ui_controls::Button`
+    |                  |
+    |                  required by a bound introduced by this call
+    |
+    = help: the following other types implement trait `tekes_ui_controls::composition::Component`:
+              CompoundButton
+              DialogContent
+              GridContent
+              ListContent
+              MenuContent
+              NumberFieldContent
+              ScrollContent
+              SelectableListContent
+            and 10 others
+note: required by a bound in `tekes_ui_controls::composition::Content::component_mut`
+   --> crates/tekes-ui-controls/src/composition.rs:570:29
+    |
+570 |     pub fn component_mut<T: Component>(&mut self) -> Option<&mut T> {
+    |                             ^^^^^^^^^ required by this bound in `Content::component_mut`
+
+error[E0609]: no field `button` on type `&mut tekes_ui_controls::Button`
+   --> crates/tekes-ui-settings/src/form.rs:382:18
+    |
+382 |                 .button
+    |                  ^^^^^^ unknown field
+    |
+    = note: available fields are: `state`, `frame_policy`, `chrome_height`
+
+Some errors have detailed explanations: E0277, E0599, E0609.
+For more information about an error, try `rustc --explain E0277`.
+error: could not compile `tekes-ui-settings` (lib) due to 6 previous errors

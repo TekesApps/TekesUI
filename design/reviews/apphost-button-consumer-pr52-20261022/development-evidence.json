@@ -1,0 +1,15 @@
+{
+  "version": "20261022.36",
+  "bundle": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/apphost-native/settings-prototype-20261022/TekesAppHost.app",
+  "sha256": "aa787ea8f47d0a87c20a4e5594981d14971bf445d7caddd65db6f9c8248b0335",
+  "dependency_mode": "explicit local unpublished unified Button WIP",
+  "sample": "mixed-columns",
+  "scope": "Prior local development-workspace evidence only; not a successful build of this PR checkout",
+  "api_dependency": "unpublished shared unified Button; base main50ec49f lacks API",
+  "consumer_sha256": {
+    "crates/tekes-ui-app-host/src/settings_back.rs": "c5a0e45ce82207525d5d96c2b0e2af012597fed82b821551ae675cab7a1d6978",
+    "crates/tekes-ui-settings/src/form.rs": "78ac1a5d90332ce54679696339c8c064981961cee0469caea1c0ede81d38f3aa",
+    "crates/tekes-ui-app-host/tests/content_accessibility.rs": "2d851477a14a54fe66b299e7c3f6df845522e7890592f61201abab520cf909ce"
+  },
+  "document_sha256": "9245f7a0e434f21e5b77f10b7b8eb65e547a2b64d5a6d4311f8262f224e46b68"
+}

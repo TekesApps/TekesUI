@@ -697,6 +697,7 @@ name = "tekes-ui-app-protocol"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -728,6 +729,7 @@ dependencies = [
  "objc2-io-surface",
  "serde_json",
  "tekes-ui-app-protocol",
+ "tekes-ui-controls",
  "tekes-ui-render",
  "tekes-ui-scene",
  "tekes-ui-tokens",
