@@ -238,75 +238,127 @@ impl Painter<'_> {
             );
         }
     }
-    fn line_with_color(&mut self, a: Point, b: Point, ink: Rgba) {
-        let stroke = metric("size", "size-icon-artboard-stroke");
+    fn icon(&mut self, r: Rect, kind: Icon, ink: &str) {
+        self.icon_with_color(r, kind, color(self.theme, ink));
+    }
+    // Icon-only geometry: preserve other chart/rule line painting.
+    fn line_with_color(&mut self, a: Point, b: Point, ink: Rgba, stroke: f32) {
         let dx = b.x - a.x;
         let dy = b.y - a.y;
         if dx.abs() < 0.01 {
             self.quad(
-                Rect::new(a.x - stroke * 0.5, a.y.min(b.y), stroke, dy.abs()),
+                Rect::new(
+                    a.x - stroke * 0.5,
+                    a.y.min(b.y) - stroke * 0.5,
+                    stroke,
+                    dy.abs() + stroke,
+                ),
                 ink,
-                0.,
+                stroke * 0.5,
                 None,
             );
             return;
         }
         if dy.abs() < 0.01 {
             self.quad(
-                Rect::new(a.x.min(b.x), a.y - stroke * 0.5, dx.abs(), stroke),
+                Rect::new(
+                    a.x.min(b.x) - stroke * 0.5,
+                    a.y - stroke * 0.5,
+                    dx.abs() + stroke,
+                    stroke,
+                ),
                 ink,
-                0.,
+                stroke * 0.5,
                 None,
             );
             return;
         }
-        let steps = dx.abs().max(dy.abs()).ceil().max(1.) as usize;
+        let steps = (dx.abs().max(dy.abs()) * 2.).ceil().max(1.) as usize;
         for i in 0..=steps {
             let t = i as f32 / steps as f32;
-            let center = Point::new(a.x + dx * t, a.y + dy * t);
             self.quad(
                 Rect::new(
-                    center.x - stroke * 0.5,
-                    center.y - stroke * 0.5,
+                    a.x + dx * t - stroke * 0.5,
+                    a.y + dy * t - stroke * 0.5,
                     stroke,
                     stroke,
                 ),
                 ink,
-                0.,
+                stroke * 0.5,
                 None,
             );
         }
     }
-    fn icon(&mut self, r: Rect, kind: Icon, ink: &str) {
-        self.icon_with_color(r, kind, color(self.theme, ink));
+    fn soft_icon_chevron(&mut self, a: Point, b: Point, c: Point, ink: Rgba, stroke: f32) {
+        let before = Point::new(b.x + (a.x - b.x) * 0.22, b.y + (a.y - b.y) * 0.22);
+        let after = Point::new(b.x + (c.x - b.x) * 0.22, b.y + (c.y - b.y) * 0.22);
+        self.line_with_color(a, before, ink, stroke);
+        let mut last = before;
+        for i in 1..=12 {
+            let t = i as f32 / 12.;
+            let u = 1. - t;
+            let next = Point::new(
+                u * u * before.x + 2. * u * t * b.x + t * t * after.x,
+                u * u * before.y + 2. * u * t * b.y + t * t * after.y,
+            );
+            self.line_with_color(last, next, ink, stroke);
+            last = next;
+        }
+        self.line_with_color(after, c, ink, stroke);
+    }
+    fn icon_quad(
+        &mut self,
+        rect: Rect,
+        fill: Rgba,
+        radius: f32,
+        border: Option<Rgba>,
+        stroke: f32,
+    ) {
+        if rect.intersection(&self.clip).is_none() {
+            return;
+        }
+        let mut quad = Quad::new(rect, fill).with_corner_radius(radius);
+        if let Some(ink) = border {
+            quad = quad.with_border(stroke, ink);
+        }
+        self.scene.push_clip(self.clip);
+        self.scene.push_quad(quad);
+        self.scene.pop_clip();
     }
     fn icon_with_color(&mut self, r: Rect, kind: Icon, ink: Rgba) {
+        let side = r.size.width.min(r.size.height);
+        let r = Rect::new(
+            r.center().x - side * 0.5,
+            r.center().y - side * 0.5,
+            side,
+            side,
+        );
+        let stroke = tekes_ui_icons::REGULAR_STROKE_WIDTH * r.size.width.min(r.size.height)
+            / tekes_ui_icons::ARTBOARD_SIZE;
         let p = |x: f32, y: f32| {
             Point::new(r.min_x() + r.size.width * x, r.min_y() + r.size.height * y)
         };
         match kind {
             Icon::Check => {
-                self.line_with_color(p(0.15, 0.5), p(0.4, 0.75), ink);
-                self.line_with_color(p(0.4, 0.75), p(0.85, 0.2), ink);
+                self.line_with_color(p(0.15, 0.5), p(0.4, 0.75), ink, stroke);
+                self.line_with_color(p(0.4, 0.75), p(0.85, 0.2), ink, stroke);
             }
             Icon::Chevron => {
-                self.line_with_color(p(0.3, 0.2), p(0.65, 0.5), ink);
-                self.line_with_color(p(0.65, 0.5), p(0.3, 0.8), ink);
+                self.soft_icon_chevron(p(0.3, 0.2), p(0.65, 0.5), p(0.3, 0.8), ink, stroke);
             }
             Icon::Down => {
-                self.line_with_color(p(0.2, 0.35), p(0.5, 0.65), ink);
-                self.line_with_color(p(0.5, 0.65), p(0.8, 0.35), ink);
+                self.soft_icon_chevron(p(0.2, 0.35), p(0.5, 0.65), p(0.8, 0.35), ink, stroke);
             }
             Icon::Close => {
-                self.line_with_color(p(0.25, 0.25), p(0.75, 0.75), ink);
-                self.line_with_color(p(0.75, 0.25), p(0.25, 0.75), ink);
+                self.line_with_color(p(0.25, 0.25), p(0.75, 0.75), ink, stroke);
+                self.line_with_color(p(0.75, 0.25), p(0.25, 0.75), ink, stroke);
             }
             Icon::Plus => {
-                self.line_with_color(p(0.5, 0.2), p(0.5, 0.8), ink);
-                self.line_with_color(p(0.2, 0.5), p(0.8, 0.5), ink);
+                self.line_with_color(p(0.5, 0.2), p(0.5, 0.8), ink, stroke);
+                self.line_with_color(p(0.2, 0.5), p(0.8, 0.5), ink, stroke);
             }
             Icon::Search => {
-                self.quad(
+                self.icon_quad(
                     Rect::new(
                         p(0.1, 0.1).x,
                         p(0.1, 0.1).y,
@@ -316,11 +368,12 @@ impl Painter<'_> {
                     clear(self.theme),
                     r.size.width,
                     Some(ink),
+                    stroke,
                 );
-                self.line_with_color(p(0.57, 0.57), p(0.9, 0.9), ink);
+                self.line_with_color(p(0.57, 0.57), p(0.9, 0.9), ink, stroke);
             }
             Icon::Folder => {
-                self.quad(
+                self.icon_quad(
                     Rect::new(
                         p(0.1, 0.3).x,
                         p(0.1, 0.3).y,
@@ -328,15 +381,17 @@ impl Painter<'_> {
                         r.size.height * 0.6,
                     ),
                     clear(self.theme),
-                    metric("radius", "radius-agent-marker"),
+                    metric("radius", "radius-agent-marker") * r.size.width.min(r.size.height)
+                        / tekes_ui_icons::ARTBOARD_SIZE,
                     Some(ink),
+                    stroke,
                 );
-                self.line_with_color(p(0.1, 0.3), p(0.1, 0.15), ink);
-                self.line_with_color(p(0.1, 0.15), p(0.45, 0.15), ink);
-                self.line_with_color(p(0.45, 0.15), p(0.6, 0.3), ink);
+                self.line_with_color(p(0.1, 0.3), p(0.1, 0.15), ink, stroke);
+                self.line_with_color(p(0.1, 0.15), p(0.45, 0.15), ink, stroke);
+                self.line_with_color(p(0.45, 0.15), p(0.6, 0.3), ink, stroke);
             }
             Icon::File => {
-                self.quad(
+                self.icon_quad(
                     Rect::new(
                         p(0.2, 0.1).x,
                         p(0.2, 0.1).y,
@@ -344,39 +399,45 @@ impl Painter<'_> {
                         r.size.height * 0.8,
                     ),
                     clear(self.theme),
-                    metric("radius", "radius-agent-marker"),
+                    metric("radius", "radius-agent-marker") * r.size.width.min(r.size.height)
+                        / tekes_ui_icons::ARTBOARD_SIZE,
                     Some(ink),
+                    stroke,
                 );
-                self.line_with_color(p(0.35, 0.4), p(0.65, 0.4), ink);
-                self.line_with_color(p(0.35, 0.6), p(0.65, 0.6), ink);
+                self.line_with_color(p(0.35, 0.4), p(0.65, 0.4), ink, stroke);
+                self.line_with_color(p(0.35, 0.6), p(0.65, 0.6), ink, stroke);
             }
             Icon::Info => {
-                self.quad(r, clear(self.theme), r.size.width, Some(ink));
-                self.line_with_color(p(0.5, 0.42), p(0.5, 0.75), ink);
-                self.quad(
+                let dot_side = r.size.width.min(r.size.height) * 0.1;
+                self.icon_quad(r, clear(self.theme), r.size.width, Some(ink), stroke);
+                self.line_with_color(p(0.5, 0.42), p(0.5, 0.75), ink, stroke);
+                self.icon_quad(
                     Rect::new(
-                        p(0.5, 0.23).x - Stroke::Emphasis.value() * 0.5,
-                        p(0.5, 0.23).y - Stroke::Emphasis.value() * 0.5,
-                        Stroke::Emphasis.value(),
-                        Stroke::Emphasis.value(),
+                        p(0.5, 0.23).x - dot_side * 0.5,
+                        p(0.5, 0.23).y - dot_side * 0.5,
+                        dot_side,
+                        dot_side,
                     ),
                     ink,
-                    0.,
+                    dot_side * 0.5,
                     None,
+                    stroke,
                 );
             }
             Icon::Spinner => {
+                let height = r.size.height * 0.16;
                 for (x, y) in [(0.2, 0.2), (0.5, 0.1), (0.8, 0.3), (0.8, 0.7), (0.5, 0.85)] {
-                    self.quad(
+                    self.icon_quad(
                         Rect::new(
-                            p(x, y).x - Stroke::Emphasis.value() * 0.5,
-                            p(x, y).y - INSET / 4.,
-                            Stroke::Emphasis.value(),
-                            INSET / 2.,
+                            p(x, y).x - stroke * 0.5,
+                            p(x, y).y - height * 0.5,
+                            stroke,
+                            height,
                         ),
                         ink,
-                        Stroke::Rule.value(),
+                        stroke * 0.5,
                         None,
+                        stroke,
                     );
                 }
             }
@@ -2352,6 +2413,45 @@ mod tests {
             found = true;
         }
         found.then_some(bounds)
+    }
+
+    #[test]
+    fn native_icon_artboards_fit_square_without_stretching_wide_or_tall_slots() {
+        let mut renderer = Renderer::new_headless().expect("actual icon GPU");
+        for theme in Theme::ALL {
+            for scale in [1., 2.] {
+                for side in [12., 16., 24.] {
+                    let square = Rect::new(24. - side * 0.5, 24. - side * 0.5, side, side);
+                    for (icon, _) in Icon::ALL {
+                        let expected = render_icon_pixels(
+                            &mut renderer,
+                            icon,
+                            square,
+                            scale,
+                            theme,
+                            Rgba::gray(0.1),
+                        );
+                        for frame in [
+                            Rect::new(4., square.min_y(), 40., side),
+                            Rect::new(square.min_x(), 4., side, 40.),
+                        ] {
+                            let actual = render_icon_pixels(
+                                &mut renderer,
+                                icon,
+                                frame,
+                                scale,
+                                theme,
+                                Rgba::gray(0.1),
+                            );
+                            assert_eq!(
+                                actual, expected,
+                                "native artwork must fit a centered square at {side}pt/{scale}x"
+                            );
+                        }
+                    }
+                }
+            }
+        }
     }
 
     #[test]

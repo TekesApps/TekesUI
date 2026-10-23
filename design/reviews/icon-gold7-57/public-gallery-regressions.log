@@ -1,0 +1,144 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling cfg-if v1.0.5
+   Compiling bitflags v2.13.2
+   Compiling memchr v2.8.3
+   Compiling objc2 v0.6.5
+   Compiling zmij v1.0.23
+   Compiling objc2-encode v4.1.0
+   Compiling libc v0.2.190
+   Compiling itoa v1.0.18
+   Compiling serde_core v1.0.229
+   Compiling cfg_aliases v0.2.2
+   Compiling serde_json v1.0.154
+   Compiling libm v0.2.16
+   Compiling typenum v1.20.1
+   Compiling autocfg v1.5.1
+   Compiling num-traits v0.2.19
+   Compiling hybrid-array v0.4.15
+   Compiling arrayvec v0.7.8
+   Compiling log v0.4.34
+   Compiling objc2-core-foundation v0.3.2
+   Compiling block-buffer v0.12.1
+   Compiling crypto-common v0.2.2
+   Compiling smallvec v1.16.3
+   Compiling thiserror v2.0.21
+   Compiling const-oid v0.10.2
+   Compiling foldhash v0.2.0
+   Compiling digest v0.11.3
+   Compiling hashbrown v0.17.1
+   Compiling objc2-foundation v0.3.2
+   Compiling block2 v0.6.2
+   Compiling zerocopy v0.8.63
+   Compiling syn v3.0.9
+   Compiling syn v2.0.119
+   Compiling equivalent v1.0.3
+   Compiling simd-adler32 v0.3.10
+   Compiling indexmap v2.14.2
+   Compiling bytemuck_derive v1.12.1
+   Compiling objc2-core-graphics v0.3.2
+   Compiling thiserror-impl v2.0.21
+   Compiling bytemuck v1.25.2
+   Compiling objc2-metal v0.3.2
+   Compiling zerocopy-derive v0.8.63
+   Compiling crc32fast v1.5.2
+   Compiling cpufeatures v0.3.1
+   Compiling sha2 v0.11.1
+   Compiling adler2 v2.0.1
+   Compiling rustc-hash v1.1.0
+   Compiling naga v30.0.1
+   Compiling unicode-width v0.2.2
+   Compiling tekes-ui-design-export v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-design-export)
+   Compiling bit-vec v0.9.1
+   Compiling parking_lot_core v0.9.12
+   Compiling bit-set v0.10.0
+   Compiling codespan-reporting v0.13.1
+   Compiling miniz_oxide v0.9.1
+   Compiling static_assertions v1.1.0
+   Compiling objc2-quartz-core v0.3.2
+   Compiling tekes-ui-tokens v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-tokens)
+   Compiling raw-window-handle v0.6.2
+   Compiling serde v1.0.229
+   Compiling once_cell v1.21.4
+   Compiling scopeguard v1.2.0
+   Compiling lock_api v0.4.14
+   Compiling miniz_oxide v0.8.9
+   Compiling serde_derive v1.0.229
+   Compiling flate2 v1.1.10
+   Compiling fdeflate v0.3.7
+   Compiling wgpu-hal v30.0.1
+   Compiling naga-types v30.0.1
+   Compiling wgpu-types v30.0.1
+   Compiling raw-window-metal v1.1.0
+   Compiling libloading v0.8.9
+   Compiling profiling v1.0.18
+   Compiling png v0.18.1
+   Compiling wgpu-core v30.0.1
+   Compiling parking_lot v0.12.5
+   Compiling float-cmp v0.9.0
+   Compiling litrs v1.0.1
+   Compiling strict-num v0.1.1
+   Compiling polycool v0.4.0
+   Compiling document-features v0.2.12
+   Compiling wgpu v30.0.1
+   Compiling zune-core v0.5.3
+   Compiling inflections v1.1.1
+   Compiling pxfm v0.1.30
+   Compiling arrayref v0.3.9
+   Compiling tiny-skia-path v0.12.0
+   Compiling gltf-derive v1.4.1
+   Compiling zune-jpeg v0.5.15
+   Compiling kurbo v0.13.1
+   Compiling tekes-ui-controls v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-controls)
+   Compiling objc2-core-text v0.3.2
+   Compiling moxcms v0.8.1
+   Compiling byteorder-lite v0.1.0
+   Compiling siphasher v1.0.4
+   Compiling svgtypes v0.16.1
+   Compiling simplecss v0.2.2
+   Compiling tekes-ui-scene v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-scene)
+   Compiling half v2.7.1
+   Compiling roxmltree v0.21.1
+   Compiling data-url v0.3.2
+   Compiling pollster v1.0.1
+   Compiling byteorder v1.5.0
+   Compiling base64 v0.13.1
+   Compiling tekes-ui-motion v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-motion)
+   Compiling lazy_static v1.5.1
+   Compiling pico-args v0.5.0
+   Compiling imagesize v0.15.0
+   Compiling unicode-segmentation v1.13.3
+   Compiling urlencoding v2.1.3
+   Compiling tiny-skia v0.12.0
+   Compiling rgb v0.8.53
+   Compiling usvg v0.48.1
+   Compiling objc2-app-kit v0.3.2
+   Compiling tekes-ui-gallery v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-gallery)
+   Compiling glam v0.30.10
+   Compiling bitflags v1.3.2
+   Compiling tekes-ui-icons v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-icons)
+   Compiling png v0.17.16
+   Compiling gltf-json v1.4.1
+   Compiling tekes-ui-text v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-text)
+   Compiling image v0.25.10
+   Compiling resvg v0.48.1
+   Compiling gltf v1.4.1
+   Compiling tekes-ui-platform-macos v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-platform-macos)
+   Compiling tekes-ui-composition-consumer v0.0.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/examples/composition-consumer)
+   Compiling wgpu-naga-bridge v30.0.1
+   Compiling wgpu-core-deps-apple v30.0.1
+   Compiling tekes-ui-render v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-render)
+   Compiling tekes-ui-scene3d v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-scene3d)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 33.14s
+     Running unittests src/main.rs (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/icon-public-57/debug/deps/tekes_ui_gallery-bda57edb001c76ee)
+
+running 5 tests
+test gallery::pages::showcase::tests::all_forty_tiles_and_every_chip_fit_and_share_hit_geometry ... ok
+test gallery::pages::showcase::tests::check_chevron_and_folder_ink_bounds_stay_inside_odd_even_artboards ... ok
+test gallery::pages::showcase::tests::forty_components_all_base_states_render_in_four_themes_without_metadata_masks ... ok
+test gallery::pages::showcase::tests::plus_ink_is_mirrored_about_its_actual_center_at_odd_even_frames_and_scales ... ok
+test gallery::pages::showcase::tests::semantic_icon_tint_is_used_in_light_and_dark_appearances ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 434 filtered out; finished in 0.44s
+

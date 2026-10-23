@@ -1,0 +1,16 @@
+   Compiling tekes-ui-icons v0.1.0 (/Users/frankqin/dev/worktrees/tekesui-icon-gold7-57/crates/tekes-ui-icons)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.20s
+     Running unittests src/lib.rs (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/icon-public-57/debug/deps/tekes_ui_icons-8e72b991985393f5)
+
+running 2 tests
+test tests::canonical_names_resolve_to_the_approved_artwork ... ok
+test catalog::tests::full_catalog_is_unique_self_contained_and_tintable ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests tekes_ui_icons
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

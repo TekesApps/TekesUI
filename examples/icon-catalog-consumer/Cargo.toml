@@ -1,0 +1,11 @@
+[package]
+name = "tekes-ui-icon-catalog-consumer"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+# Explicit local development override; releases use a published exact Git pin.
+tekes-ui-icons = { path = "../../crates/tekes-ui-icons" }

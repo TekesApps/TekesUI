@@ -1,0 +1,3369 @@
+{
+  "issue": 57,
+  "approved_direction": "v2; user explicitly approved full rollout",
+  "icons": [
+    {
+      "name": "tekes-access-full",
+      "path": "crates/tekes-ui-icons/assets/tekes-access-full.svg",
+      "before_sha256": "ef1ad882763b22dc0e58ddf81a473baf54071cd8e2a66144a1ca2c745820052c",
+      "after_sha256": "9ce8dedc6632efdfdcd22086b3874a742a58cd7de17849700f20806f9be3b8fc",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-access-read",
+      "path": "crates/tekes-ui-icons/assets/tekes-access-read.svg",
+      "before_sha256": "335c0a5618e0ae5f9b102c5723eabb5cc3189db9ad821e1861ab733f0d3559e5",
+      "after_sha256": "335c0a5618e0ae5f9b102c5723eabb5cc3189db9ad821e1861ab733f0d3559e5",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-access-workspace",
+      "path": "crates/tekes-ui-icons/assets/tekes-access-workspace.svg",
+      "before_sha256": "6c7812760ec90c2ecd666482e3a3a99f12503dc5f8f9a3367c9a511586b59d64",
+      "after_sha256": "1ff38d3de3f2c0779b374403fdbc374025229274f4dd6cc7c63201191fc60a55",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-advanced-params",
+      "path": "crates/tekes-ui-icons/assets/tekes-advanced-params.svg",
+      "before_sha256": "293e80f1516fee6fce785839ffcfeba7691e59a0dbbecc587570f72ca133f70f",
+      "after_sha256": "293e80f1516fee6fce785839ffcfeba7691e59a0dbbecc587570f72ca133f70f",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-agent-question",
+      "path": "crates/tekes-ui-icons/assets/tekes-agent-question.svg",
+      "before_sha256": "9f11a52ae5a9f9088d2e18d35c753e35aafa837259ba20a7ee3794aed513579c",
+      "after_sha256": "9f11a52ae5a9f9088d2e18d35c753e35aafa837259ba20a7ee3794aed513579c",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-ahead-behind",
+      "path": "crates/tekes-ui-icons/assets/tekes-ahead-behind.svg",
+      "before_sha256": "d1d94fab3465a15e0adfc0e17d3c3521e1b6cb31bfd4b327e0eafd9d9da68618",
+      "after_sha256": "d1d94fab3465a15e0adfc0e17d3c3521e1b6cb31bfd4b327e0eafd9d9da68618",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-annotate",
+      "path": "crates/tekes-ui-icons/assets/tekes-annotate.svg",
+      "before_sha256": "29310dc793a9035fccd36ffcead097ecf4284434710a294d5f8d4da39fa6f219",
+      "after_sha256": "7ac99c21afd1080fa84eebe73db81f338e9d305cd0c7b51fa85b11e6576e2686",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-app-server",
+      "path": "crates/tekes-ui-icons/assets/tekes-app-server.svg",
+      "before_sha256": "038030199219b7a991a0f9f135e2a3f1329b43d45fdc5729477293f868c1a716",
+      "after_sha256": "038030199219b7a991a0f9f135e2a3f1329b43d45fdc5729477293f868c1a716",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-appearance",
+      "path": "crates/tekes-ui-icons/assets/tekes-appearance.svg",
+      "before_sha256": "05e6d29820da9acade156d3bb8cefbb16ec1711ce96db1c5d44a71b5d66e3bf6",
+      "after_sha256": "05e6d29820da9acade156d3bb8cefbb16ec1711ce96db1c5d44a71b5d66e3bf6",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-approval",
+      "path": "crates/tekes-ui-icons/assets/tekes-approval.svg",
+      "before_sha256": "37d769bcff320d6bd979a9b215aa0f290d96e8cb58f875c8892fcc33a1d29ed5",
+      "after_sha256": "37d769bcff320d6bd979a9b215aa0f290d96e8cb58f875c8892fcc33a1d29ed5",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-archive",
+      "path": "crates/tekes-ui-icons/assets/tekes-archive.svg",
+      "before_sha256": "a0a067492fe590e204fe3498e4d42762336014c5938877ab9c4f1c75852334bc",
+      "after_sha256": "a0a067492fe590e204fe3498e4d42762336014c5938877ab9c4f1c75852334bc",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-ask-user",
+      "path": "crates/tekes-ui-icons/assets/tekes-ask-user.svg",
+      "before_sha256": "a59230759d382381d79360cdfd6df8195ade4fe36fb78ca5775c13d7d9895a03",
+      "after_sha256": "a59230759d382381d79360cdfd6df8195ade4fe36fb78ca5775c13d7d9895a03",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-attach",
+      "path": "crates/tekes-ui-icons/assets/tekes-attach.svg",
+      "before_sha256": "1d6736475e7369148d32063026ea74c4f78f25eb89e172685fa6191492c77688",
+      "after_sha256": "1d6736475e7369148d32063026ea74c4f78f25eb89e172685fa6191492c77688",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-authorized-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-authorized-fill.svg",
+      "before_sha256": "502f78c5664930b262611c400620838a6ac566b7de015a49bd3801631be88b8d",
+      "after_sha256": "502f78c5664930b262611c400620838a6ac566b7de015a49bd3801631be88b8d",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-back",
+      "path": "crates/tekes-ui-icons/assets/tekes-back.svg",
+      "before_sha256": "6154e319cdcdf92be465b1f197a6a016734ffe60d1677e1183d0a8f8d2fa720f",
+      "after_sha256": "d924ef36e67aaab28aadaca1526739861e9a724eb5adba65952eb77495f018d1",
+      "changed": true,
+      "rule": "approved-v2",
+      "reason": "User-approved representative geometry, exact bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-branch",
+      "path": "crates/tekes-ui-icons/assets/tekes-branch.svg",
+      "before_sha256": "169f40ee24c6751f605533f6de6d5b76f9b317cd5142c230054fa6a55574fb96",
+      "after_sha256": "169f40ee24c6751f605533f6de6d5b76f9b317cd5142c230054fa6a55574fb96",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-brief",
+      "path": "crates/tekes-ui-icons/assets/tekes-brief.svg",
+      "before_sha256": "c57578617725683ab8dd82c1cc2a546cdc51f7fef99b2268e96108139b349680",
+      "after_sha256": "c57578617725683ab8dd82c1cc2a546cdc51f7fef99b2268e96108139b349680",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-arc",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-arc.svg",
+      "before_sha256": "a8197b6c8c0a9ed795c9876693abacb97a4dbb2784b6693340e85b7852ccb27c",
+      "after_sha256": "a8197b6c8c0a9ed795c9876693abacb97a4dbb2784b6693340e85b7852ccb27c",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-block",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-block.svg",
+      "before_sha256": "5693462cb432ea94f2b79d0c8d3cddedd01d68d591e39b5485b2f65e9e068bfa",
+      "after_sha256": "5693462cb432ea94f2b79d0c8d3cddedd01d68d591e39b5485b2f65e9e068bfa",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-compare",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-compare.svg",
+      "before_sha256": "c1e337caf943d651c341b290354ee2b4471e321a30e4644329253453193a3e7d",
+      "after_sha256": "c1e337caf943d651c341b290354ee2b4471e321a30e4644329253453193a3e7d",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-crossing-select",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-crossing-select.svg",
+      "before_sha256": "bc77022e35548c885b95074342da46ccf9972c2930c9be1b6bc282cd68a4e0a4",
+      "after_sha256": "bc77022e35548c885b95074342da46ccf9972c2930c9be1b6bc282cd68a4e0a4",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-dimension",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-dimension.svg",
+      "before_sha256": "852e9840bcf9989294553518e03af5d83eb4e0ab7875969c5e23de6b68802d5a",
+      "after_sha256": "852e9840bcf9989294553518e03af5d83eb4e0ab7875969c5e23de6b68802d5a",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-export",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-export.svg",
+      "before_sha256": "24f0e92c2a5b9f6c5cd06b087fe1111a20f5306520e910c930535bfb4b538106",
+      "after_sha256": "24f0e92c2a5b9f6c5cd06b087fe1111a20f5306520e910c930535bfb4b538106",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-layers",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-layers.svg",
+      "before_sha256": "698f048ddc1ddc4699c60ff7080cc93c8fbb730d4090729cbf4065fa6175363c",
+      "after_sha256": "698f048ddc1ddc4699c60ff7080cc93c8fbb730d4090729cbf4065fa6175363c",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-layout",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-layout.svg",
+      "before_sha256": "599fe4a77c14ba2cf5405681801a59a0b724d9499b35c388173ecebf9c80f141",
+      "after_sha256": "599fe4a77c14ba2cf5405681801a59a0b724d9499b35c388173ecebf9c80f141",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-line",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-line.svg",
+      "before_sha256": "bf733325d95f118c31db9cbfd0bb468e85895b557d9c65574cb3db8381463237",
+      "after_sha256": "bf733325d95f118c31db9cbfd0bb468e85895b557d9c65574cb3db8381463237",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-pdf-import",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-pdf-import.svg",
+      "before_sha256": "9631d50fb98fa0772d979214f9cc57e951d8ce7524cdbee0d454366c3b93ab0d",
+      "after_sha256": "9631d50fb98fa0772d979214f9cc57e951d8ce7524cdbee0d454366c3b93ab0d",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-polyline",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-polyline.svg",
+      "before_sha256": "010cb6ab0cd0c37bb3d53c38e8fb0d7b7f0d537db140e5d9b3241cca76c1d091",
+      "after_sha256": "010cb6ab0cd0c37bb3d53c38e8fb0d7b7f0d537db140e5d9b3241cca76c1d091",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-snap",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-snap.svg",
+      "before_sha256": "fca86c83b2bb56133926b83ce8a56cc8b8ad7dc0170d997880a215fa9ad3e50c",
+      "after_sha256": "fca86c83b2bb56133926b83ce8a56cc8b8ad7dc0170d997880a215fa9ad3e50c",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-table-extract",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-table-extract.svg",
+      "before_sha256": "33aa759c61fb318a9ca13c1f324db984366091ecff240b6d291bb6d98de89b53",
+      "after_sha256": "33aa759c61fb318a9ca13c1f324db984366091ecff240b6d291bb6d98de89b53",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-cad-window-select",
+      "path": "crates/tekes-ui-icons/assets/tekes-cad-window-select.svg",
+      "before_sha256": "1e2b29b8b8b15017679e593c2d3900f254856ca96aba2c255a54e65f3e7d36fa",
+      "after_sha256": "1e2b29b8b8b15017679e593c2d3900f254856ca96aba2c255a54e65f3e7d36fa",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-clear-group",
+      "path": "crates/tekes-ui-icons/assets/tekes-clear-group.svg",
+      "before_sha256": "0ab6445d9c537ab13e96de605bbc82c5ae58bc6ce4889fba2566e21981d1db39",
+      "after_sha256": "0ab6445d9c537ab13e96de605bbc82c5ae58bc6ce4889fba2566e21981d1db39",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-collapse",
+      "path": "crates/tekes-ui-icons/assets/tekes-collapse.svg",
+      "before_sha256": "72bffd4d9fb7af66c37543fb376a388cc5b6ef574ce2fdd4466bab194b911765",
+      "after_sha256": "2a0ce0f6594812e76a74b600f70ee5d2aa63edd98a375fae56cf5a3af281bcd7",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-command",
+      "path": "crates/tekes-ui-icons/assets/tekes-command.svg",
+      "before_sha256": "c6df2a2b67e529839cf97f3817f519e91f94124300f9a9ee8b46a83d82b0a83e",
+      "after_sha256": "eb225a4dc75a81d425fee1f9382276b895cb3b9e509cd89bfb9a09a7a7830610",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-commands",
+      "path": "crates/tekes-ui-icons/assets/tekes-commands.svg",
+      "before_sha256": "0e2ea4cd7c5c3d8ef12259e457943788bc0b28644edf033e611580e1ac15d670",
+      "after_sha256": "0e2ea4cd7c5c3d8ef12259e457943788bc0b28644edf033e611580e1ac15d670",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-commit",
+      "path": "crates/tekes-ui-icons/assets/tekes-commit.svg",
+      "before_sha256": "f458bf0047b287640faab47dfe5e6d51a16216cab0db626d3fefb508d8733c7c",
+      "after_sha256": "f458bf0047b287640faab47dfe5e6d51a16216cab0db626d3fefb508d8733c7c",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-compact",
+      "path": "crates/tekes-ui-icons/assets/tekes-compact.svg",
+      "before_sha256": "73d0733aa2eadc27db124edb60ad4cef924cefe0ffadd89ed6354727d5b98293",
+      "after_sha256": "73d0733aa2eadc27db124edb60ad4cef924cefe0ffadd89ed6354727d5b98293",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-compare",
+      "path": "crates/tekes-ui-icons/assets/tekes-compare.svg",
+      "before_sha256": "b6fec2bbfa4b8fdb817a0be3f1c0012d10183a83bd77ee8cc0251a5237a2826e",
+      "after_sha256": "b6fec2bbfa4b8fdb817a0be3f1c0012d10183a83bd77ee8cc0251a5237a2826e",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-confirm",
+      "path": "crates/tekes-ui-icons/assets/tekes-confirm.svg",
+      "before_sha256": "4cca1126777d85f5ca2b14c91bdf4aa8aace7925053715a3a1c061df849f8b4d",
+      "after_sha256": "4cca1126777d85f5ca2b14c91bdf4aa8aace7925053715a3a1c061df849f8b4d",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-context-usage",
+      "path": "crates/tekes-ui-icons/assets/tekes-context-usage.svg",
+      "before_sha256": "87b69e0d25d6408dfff2b2e973978cde7f2b681d5544c9c6d1e11e51cd81587c",
+      "after_sha256": "87b69e0d25d6408dfff2b2e973978cde7f2b681d5544c9c6d1e11e51cd81587c",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-context",
+      "path": "crates/tekes-ui-icons/assets/tekes-context.svg",
+      "before_sha256": "a6393e30e82c54228dddca14d69a6a768417582a1df04eca35c6b13b3430cb72",
+      "after_sha256": "a6393e30e82c54228dddca14d69a6a768417582a1df04eca35c6b13b3430cb72",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-copy",
+      "path": "crates/tekes-ui-icons/assets/tekes-copy.svg",
+      "before_sha256": "b12e98ddd14336b09c9cfc28302f14bd4c062d4223d0a75ff51510fb63ab07bb",
+      "after_sha256": "b12e98ddd14336b09c9cfc28302f14bd4c062d4223d0a75ff51510fb63ab07bb",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-delete",
+      "path": "crates/tekes-ui-icons/assets/tekes-delete.svg",
+      "before_sha256": "de3a87ae78be5f72a556e9cef0306a5c16cc77be71a46199d8a955005ab96d64",
+      "after_sha256": "de3a87ae78be5f72a556e9cef0306a5c16cc77be71a46199d8a955005ab96d64",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-desktop-control",
+      "path": "crates/tekes-ui-icons/assets/tekes-desktop-control.svg",
+      "before_sha256": "0747781099b2bb15ba121b4904e9fb0d76008fe2dc145f9434e9a15c242a3736",
+      "after_sha256": "681bcc91e692d22f771dd61fbe1bd00085e588ba5b1748cdbe34b329adc5af52",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-diff-annotation",
+      "path": "crates/tekes-ui-icons/assets/tekes-diff-annotation.svg",
+      "before_sha256": "a6cfc6ff92df4205799721dc0e921d7475a276da94aceca78d8845df48d02b08",
+      "after_sha256": "528a6eea39ad04452e2894126ceda456637a22dea05f75993580c6a303ab1d86",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-diff-list",
+      "path": "crates/tekes-ui-icons/assets/tekes-diff-list.svg",
+      "before_sha256": "264c977f20383415e8161f3d50046862d557dfdcc5c8f5d9d9e75672681310fb",
+      "after_sha256": "264c977f20383415e8161f3d50046862d557dfdcc5c8f5d9d9e75672681310fb",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-diff-split-h",
+      "path": "crates/tekes-ui-icons/assets/tekes-diff-split-h.svg",
+      "before_sha256": "38b6429b53b9951efb6d3d31d9b0ba4b4840bad6737cf01c90e8804c457ae282",
+      "after_sha256": "38b6429b53b9951efb6d3d31d9b0ba4b4840bad6737cf01c90e8804c457ae282",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-diff-split-v",
+      "path": "crates/tekes-ui-icons/assets/tekes-diff-split-v.svg",
+      "before_sha256": "beddb66e19f99bb2acdec3e6b4acffa351699a4302acc4d316cd8c5d8438c120",
+      "after_sha256": "beddb66e19f99bb2acdec3e6b4acffa351699a4302acc4d316cd8c5d8438c120",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-audience",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-audience.svg",
+      "before_sha256": "25148ff46a817504d0845e253aab4c96b445e967edf98ff1eac96bfca048419b",
+      "after_sha256": "25148ff46a817504d0845e253aab4c96b445e967edf98ff1eac96bfca048419b",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-audio",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-audio.svg",
+      "before_sha256": "cd6b9567d2be23f8344dbd440e2b6056e305e9372580bab0c69e00d4cf92b466",
+      "after_sha256": "cd6b9567d2be23f8344dbd440e2b6056e305e9372580bab0c69e00d4cf92b466",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-brief",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-brief.svg",
+      "before_sha256": "6c1f450c641ab0ab567da2b2f63cc6375827615972a62f9081eebe6a00854f03",
+      "after_sha256": "6c1f450c641ab0ab567da2b2f63cc6375827615972a62f9081eebe6a00854f03",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-character",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-character.svg",
+      "before_sha256": "677ff2edea561a0ad870ef915ec6cb34bec6f49c2658483010706edc13480b35",
+      "after_sha256": "b5602866f0a011c1d9414cef7400b2d5b57e06ad17851e3f189f8d05ddfdc663",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-collaboration",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-collaboration.svg",
+      "before_sha256": "f7e6d3574edf4ae8932fc61e089a6ecc60abbb332ebd606d04230468342b5562",
+      "after_sha256": "dc859096c8bc79ba57a39bc0c68d96af3b0c7c3698d249d2f9b67d7eb6fa5bef",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-delivery",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-delivery.svg",
+      "before_sha256": "77e44de4aabd8c0b148c70a1fbbd8a3c48d72898ba7e8e1affe6d2ad06dfba1c",
+      "after_sha256": "77e44de4aabd8c0b148c70a1fbbd8a3c48d72898ba7e8e1affe6d2ad06dfba1c",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-directing",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-directing.svg",
+      "before_sha256": "67d10ccf7d0914183cfe49c7650be59a7a49782c171b7e8de72c95e2096f9d27",
+      "after_sha256": "e6635f0e6a19741f592a9e13c55947a9a07d550b50e39d09dd0af472569b9ddf",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-editing",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-editing.svg",
+      "before_sha256": "cb107ac899241e22fff7989966c72502b92db385c989f7a76a0284aef9d631cc",
+      "after_sha256": "70d71fd76225645b86872ed89d98e08d91ca95a31b9f951a7e1bea184efe6c28",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-production",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-production.svg",
+      "before_sha256": "acb629e88ef0b39c88eb69817123ddeec0d8df8ba39916dd40f2147302e9188a",
+      "after_sha256": "acb629e88ef0b39c88eb69817123ddeec0d8df8ba39916dd40f2147302e9188a",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-references",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-references.svg",
+      "before_sha256": "1a752bf2bb853cb95faf08eb853479dd8912b9060fd4005b46e5e470711967d9",
+      "after_sha256": "1a752bf2bb853cb95faf08eb853479dd8912b9060fd4005b46e5e470711967d9",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-script",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-script.svg",
+      "before_sha256": "a7a6fe32db92606c1362957ed37f07f402d6152a41a8be64b4a807eb2f4b7759",
+      "after_sha256": "31ff08f819ab3488952196315c429c236eb9723721de9ce9a0bcb4dc68b2f7db",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-shot",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-shot.svg",
+      "before_sha256": "928d880943e8a44e17915f9f6b84a6c558d2ff3647faa3938de08255cf81bed5",
+      "after_sha256": "928d880943e8a44e17915f9f6b84a6c558d2ff3647faa3938de08255cf81bed5",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-storyboard",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-storyboard.svg",
+      "before_sha256": "df6d70971e4f474fa9cec4cfbe2b9db2ddb82f2585104189a97831021332f35a",
+      "after_sha256": "df6d70971e4f474fa9cec4cfbe2b9db2ddb82f2585104189a97831021332f35a",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-drama-subtitles",
+      "path": "crates/tekes-ui-icons/assets/tekes-drama-subtitles.svg",
+      "before_sha256": "0459aef5dda10590cd66f9945716d58fe221dcb4c5e9bd99685b1e97650b0ff4",
+      "after_sha256": "0459aef5dda10590cd66f9945716d58fe221dcb4c5e9bd99685b1e97650b0ff4",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-edit",
+      "path": "crates/tekes-ui-icons/assets/tekes-edit.svg",
+      "before_sha256": "60a9b9f2569477938c4949f026a5b856c879719feb2fafff9e1c25a02d70b7d3",
+      "after_sha256": "60a9b9f2569477938c4949f026a5b856c879719feb2fafff9e1c25a02d70b7d3",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-error-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-error-fill.svg",
+      "before_sha256": "8c2610ce88fa7d79fa2409a915c650a6d65d8cc0de7d91d5fa4da1f6164c4c38",
+      "after_sha256": "92020736ec32061aaf89a1b553e786ac74376af1e2cde64ecc83609cbabe5c79",
+      "changed": true,
+      "rule": "filled-pair",
+      "reason": "Match approved error exterior; even-odd interior cross and paint unchanged.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-error",
+      "path": "crates/tekes-ui-icons/assets/tekes-error.svg",
+      "before_sha256": "d1d6bce8c2a3e97c5e89897a968b479987077dcda3a98d46e1612d26b947a383",
+      "after_sha256": "031e33c2f49ca992722782d7ec3f462422ce84a7f59a3818c1cc12acc38922b5",
+      "changed": true,
+      "rule": "approved-v2",
+      "reason": "User-approved representative geometry, exact bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-expand",
+      "path": "crates/tekes-ui-icons/assets/tekes-expand.svg",
+      "before_sha256": "6a6097de9722375c65403e2001bbfd9f9e5d822056a2694140e7ce8d28efb060",
+      "after_sha256": "b20fbbcfd2e422658a6ff6ac7c9fecf2df706efebfad6163ddc71411d1684733",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-file-added",
+      "path": "crates/tekes-ui-icons/assets/tekes-file-added.svg",
+      "before_sha256": "037301407c5599775a54a237d31bb7dc150603fb70be4f68743f861d4ed0818f",
+      "after_sha256": "b587f59ca2b1f4636270db97cdb4d67345c235c62456d6bbd6c35165449305d1",
+      "changed": true,
+      "rule": "document-family",
+      "reason": "Shared approved file silhouette/fold; interior meaning retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-file-code",
+      "path": "crates/tekes-ui-icons/assets/tekes-file-code.svg",
+      "before_sha256": "6aa17b648200c608594d318c1eea539313c963ca0a2bf146e078586a5ff5bc7d",
+      "after_sha256": "6aa17b648200c608594d318c1eea539313c963ca0a2bf146e078586a5ff5bc7d",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-file-generic",
+      "path": "crates/tekes-ui-icons/assets/tekes-file-generic.svg",
+      "before_sha256": "28948b1716a79980304b883a5bef342a2a9a3afe4d1a6d6268a3c4666f5f9d80",
+      "after_sha256": "5837e13eb9f1eb88527eed03147aa6734938926bae8e7ea0bbd485af45cc4a47",
+      "changed": true,
+      "rule": "approved-v2",
+      "reason": "User-approved representative geometry, exact bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-file-link",
+      "path": "crates/tekes-ui-icons/assets/tekes-file-link.svg",
+      "before_sha256": "cf3870b282297f2492fce0b2332f5cdc2a57e73ce70beced6590ea84835c636d",
+      "after_sha256": "53b8052e75f78e87f25a5f97eb4330c7f5e3e8719442feff013d2efdc958a635",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-file-rich",
+      "path": "crates/tekes-ui-icons/assets/tekes-file-rich.svg",
+      "before_sha256": "d44db98e329128d22f3b0bb210ece355822fb689385441b07e77f0810affed74",
+      "after_sha256": "3c58d668917baefd9efc05909d2e0e9bbf7b5342558d91469e2834027712d793",
+      "changed": true,
+      "rule": "document-family",
+      "reason": "Shared approved file silhouette/fold; interior meaning retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-file-text",
+      "path": "crates/tekes-ui-icons/assets/tekes-file-text.svg",
+      "before_sha256": "9bcbb7ad264a531336ef4d7bf8abdb482329744ce1443c7b2d88000303d528b7",
+      "after_sha256": "380125192b3182a160991f5a5807a97735280f1ef2fd64421f6b8a45efd3e67f",
+      "changed": true,
+      "rule": "document-family",
+      "reason": "Shared approved file silhouette/fold; interior meaning retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-files",
+      "path": "crates/tekes-ui-icons/assets/tekes-files.svg",
+      "before_sha256": "123b19b61028058d09529a9d72da7ae52b9763f1d3d33b2d4879e4468be14b5f",
+      "after_sha256": "50002df32a9b8662fcb3affca75c00740ad822d88ca029f7d12414dec8900748",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-filter",
+      "path": "crates/tekes-ui-icons/assets/tekes-filter.svg",
+      "before_sha256": "4e8f7c6e9cd175de8bbfb18ea2abea0bfbabb72fc4527ac51a0cccc5156ea9e4",
+      "after_sha256": "8e7459f535b6f7412e0d35d78a99c47e68a3fcfdde23695b9483445121bc3cfd",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-flash-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-flash-fill.svg",
+      "before_sha256": "eef40e187d42450a541c49e76d697111d5af881b658bf0c3ec8ff4fbebfc3043",
+      "after_sha256": "eef40e187d42450a541c49e76d697111d5af881b658bf0c3ec8ff4fbebfc3043",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-flash",
+      "path": "crates/tekes-ui-icons/assets/tekes-flash.svg",
+      "before_sha256": "a35fae10ec77cce93f51042ad515a025918b3c00ca05aff4b356d816bcd7e152",
+      "after_sha256": "a35fae10ec77cce93f51042ad515a025918b3c00ca05aff4b356d816bcd7e152",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-folder-open",
+      "path": "crates/tekes-ui-icons/assets/tekes-folder-open.svg",
+      "before_sha256": "2f4539e31e464a80d79dd706a226a9e7149afb3dbf06caab22384b2033eafec0",
+      "after_sha256": "56e24e56feaa2514495726594cc9745e8c920ccfb705d6a15687636ff6efdfaa",
+      "changed": true,
+      "rule": "folder-family",
+      "reason": "Shared approved folder tab/shoulders; open front flap retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-folder",
+      "path": "crates/tekes-ui-icons/assets/tekes-folder.svg",
+      "before_sha256": "9c1670496c7f81d2c3cb809e96e82be03f8485a40c1ed7c3b506f555c3f5ce3e",
+      "after_sha256": "234190d6b6ff5dbf4bd359c2b465e73bd4b8ea6c07aa1a5b73f54c62178c4fda",
+      "changed": true,
+      "rule": "approved-v2",
+      "reason": "User-approved representative geometry, exact bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-fork",
+      "path": "crates/tekes-ui-icons/assets/tekes-fork.svg",
+      "before_sha256": "1972f1027787334cd8f6a186b1e015bd034b793ab3cbc4089c93633c27914678",
+      "after_sha256": "1972f1027787334cd8f6a186b1e015bd034b793ab3cbc4089c93633c27914678",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-forward",
+      "path": "crates/tekes-ui-icons/assets/tekes-forward.svg",
+      "before_sha256": "04184600d7e56b1b40912036e6833df5da428c468afdf0e9652c95a598bb152b",
+      "after_sha256": "49417d2e82aba8b78e26fbfa940242f59fa313f16a96df62c205bd7eb71ec6d1",
+      "changed": true,
+      "rule": "approved-v2",
+      "reason": "User-approved representative geometry, exact bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-fullscreen",
+      "path": "crates/tekes-ui-icons/assets/tekes-fullscreen.svg",
+      "before_sha256": "d642920a49d2849cb84c9e6502421b99ed311d258fdfd74acbd724050781b35c",
+      "after_sha256": "f03c08f153beed2c59f363e2a3d9a43841b66b020d84ae7f596e7939ba3cf78f",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-goal-completed",
+      "path": "crates/tekes-ui-icons/assets/tekes-goal-completed.svg",
+      "before_sha256": "13bbd3053b4af1cd0ea9f8dfde05b6c13a3d96567e9c0ba03830afa03ee4b947",
+      "after_sha256": "13bbd3053b4af1cd0ea9f8dfde05b6c13a3d96567e9c0ba03830afa03ee4b947",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-goal-state-active",
+      "path": "crates/tekes-ui-icons/assets/tekes-goal-state-active.svg",
+      "before_sha256": "93410c44a1169cd3df7c62ac24b96f4e740daa1f0813ef1af267e692de6bfb34",
+      "after_sha256": "93410c44a1169cd3df7c62ac24b96f4e740daa1f0813ef1af267e692de6bfb34",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-goal-state-blocked",
+      "path": "crates/tekes-ui-icons/assets/tekes-goal-state-blocked.svg",
+      "before_sha256": "19abedcfd95514767945ca12d9a22d2e2a4194b0edac2b87b175b54d4fb2c0fc",
+      "after_sha256": "19abedcfd95514767945ca12d9a22d2e2a4194b0edac2b87b175b54d4fb2c0fc",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-goal-state-completed",
+      "path": "crates/tekes-ui-icons/assets/tekes-goal-state-completed.svg",
+      "before_sha256": "81057c4800964b9d8ead5ce6d08575d9ef179100082981105354cbbfe2600961",
+      "after_sha256": "81057c4800964b9d8ead5ce6d08575d9ef179100082981105354cbbfe2600961",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-goal-state-stopped",
+      "path": "crates/tekes-ui-icons/assets/tekes-goal-state-stopped.svg",
+      "before_sha256": "cde2e5d1c1710be3188bff5e7f693c1dcbe3f664aa5adc1f179af2926210e852",
+      "after_sha256": "cde2e5d1c1710be3188bff5e7f693c1dcbe3f664aa5adc1f179af2926210e852",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-goal",
+      "path": "crates/tekes-ui-icons/assets/tekes-goal.svg",
+      "before_sha256": "76d2d369117c334cb3e83759ae2d98012b5ce5385d2b691abe70928dd1315ef0",
+      "after_sha256": "76d2d369117c334cb3e83759ae2d98012b5ce5385d2b691abe70928dd1315ef0",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-hide",
+      "path": "crates/tekes-ui-icons/assets/tekes-hide.svg",
+      "before_sha256": "0706cde0583ef7e5c764b84d5e2d65860c7d6ecd7d69c67f4b32ce403efe56a8",
+      "after_sha256": "0706cde0583ef7e5c764b84d5e2d65860c7d6ecd7d69c67f4b32ce403efe56a8",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-image",
+      "path": "crates/tekes-ui-icons/assets/tekes-image.svg",
+      "before_sha256": "71060b6f0bd30310b71b6f0baa9feb032ade397bf3684927e83fe2f1ab1a9822",
+      "after_sha256": "6b2d889faec81c3d72c7e0afc7ee49cc02a3852b6ccfa4a3e3d0a34c9045fe96",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-info",
+      "path": "crates/tekes-ui-icons/assets/tekes-info.svg",
+      "before_sha256": "0871ba05f6cec1e7093f9a17bee9e14b31eb622f985cd0a6a1e53828f3f6d0f5",
+      "after_sha256": "0871ba05f6cec1e7093f9a17bee9e14b31eb622f985cd0a6a1e53828f3f6d0f5",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-job",
+      "path": "crates/tekes-ui-icons/assets/tekes-job.svg",
+      "before_sha256": "f53b6b7257e8732776d0c6999559e4a8ec318525913a81a1fd6b4e5cf7117e4c",
+      "after_sha256": "f53b6b7257e8732776d0c6999559e4a8ec318525913a81a1fd6b4e5cf7117e4c",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-jump-bottom",
+      "path": "crates/tekes-ui-icons/assets/tekes-jump-bottom.svg",
+      "before_sha256": "40ebec8a9f40e51e9f0e7c95b5fecb29b23e17b5fde8022ad64274f826939e2f",
+      "after_sha256": "40ebec8a9f40e51e9f0e7c95b5fecb29b23e17b5fde8022ad64274f826939e2f",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-lock-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-lock-fill.svg",
+      "before_sha256": "75e8bb23fd86c9c532b1176aa369f1eff5649180b9cbac19b902a9968dc1e597",
+      "after_sha256": "75e8bb23fd86c9c532b1176aa369f1eff5649180b9cbac19b902a9968dc1e597",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-logout",
+      "path": "crates/tekes-ui-icons/assets/tekes-logout.svg",
+      "before_sha256": "adc5a449eecb334bae0954d7c69302de3a7469a57e075daee0e4468c6e3d7309",
+      "after_sha256": "adc5a449eecb334bae0954d7c69302de3a7469a57e075daee0e4468c6e3d7309",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-mcp",
+      "path": "crates/tekes-ui-icons/assets/tekes-mcp.svg",
+      "before_sha256": "547828e5fd1d4819b0b23196fe5826a597edb914c01ee7dd729d9e4d797769eb",
+      "after_sha256": "547828e5fd1d4819b0b23196fe5826a597edb914c01ee7dd729d9e4d797769eb",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-memorize",
+      "path": "crates/tekes-ui-icons/assets/tekes-memorize.svg",
+      "before_sha256": "931ac7963c1047fddb8a0a291d864f615495fb9365611bfd63ae546a788b2995",
+      "after_sha256": "faa0b47dbc4ac49a3656a7dff0c54c7f83a8208a4612958e691664f1979f963b",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-memory",
+      "path": "crates/tekes-ui-icons/assets/tekes-memory.svg",
+      "before_sha256": "41c0add7c8042c6142a4b54dceb3375ee1408ffdf1c5dac17583d085b8cb1775",
+      "after_sha256": "41c0add7c8042c6142a4b54dceb3375ee1408ffdf1c5dac17583d085b8cb1775",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-mention",
+      "path": "crates/tekes-ui-icons/assets/tekes-mention.svg",
+      "before_sha256": "92801b0ad59ead95a57b31da461fecb146e5c3c740c5033c4386980d2d57340a",
+      "after_sha256": "92801b0ad59ead95a57b31da461fecb146e5c3c740c5033c4386980d2d57340a",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-merge",
+      "path": "crates/tekes-ui-icons/assets/tekes-merge.svg",
+      "before_sha256": "7c81d6ddf846065329648cec5835a1120bcd0a5fcbffeb38ccd482b25900b9cb",
+      "after_sha256": "7c81d6ddf846065329648cec5835a1120bcd0a5fcbffeb38ccd482b25900b9cb",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-more",
+      "path": "crates/tekes-ui-icons/assets/tekes-more.svg",
+      "before_sha256": "af9b44e26bb6964682b456e7b58e0c64fab27bac3028bb0472822d56daea6d8f",
+      "after_sha256": "af9b44e26bb6964682b456e7b58e0c64fab27bac3028bb0472822d56daea6d8f",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-new-goal",
+      "path": "crates/tekes-ui-icons/assets/tekes-new-goal.svg",
+      "before_sha256": "e3ff1f1e71e7a3cbbc4c0ffd333293025c1daf5bf88811cd63cf489c082eeef3",
+      "after_sha256": "e3ff1f1e71e7a3cbbc4c0ffd333293025c1daf5bf88811cd63cf489c082eeef3",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-new-project",
+      "path": "crates/tekes-ui-icons/assets/tekes-new-project.svg",
+      "before_sha256": "ea83f280ab90cca68228a96fbf161559ce572dc0b19c3c11cc998fe1aea4689a",
+      "after_sha256": "d1e78f06baaa61def0455c09e13dd460bfbdab36f7a06242e58a4bbbb19f9338",
+      "changed": true,
+      "rule": "folder-family",
+      "reason": "Shared approved folder shoulders/tab; interior meaning retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-new",
+      "path": "crates/tekes-ui-icons/assets/tekes-new.svg",
+      "before_sha256": "b15b5d70ad7f5052d93f038bf97a18be6ff5970c19d9c0290e57a8b2553a7e48",
+      "after_sha256": "b15b5d70ad7f5052d93f038bf97a18be6ff5970c19d9c0290e57a8b2553a7e48",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-no-default-app",
+      "path": "crates/tekes-ui-icons/assets/tekes-no-default-app.svg",
+      "before_sha256": "fe18d654055b62e9255cc47fc05d0fec0a7d149d318c6967e65c902a695acbaf",
+      "after_sha256": "fe18d654055b62e9255cc47fc05d0fec0a7d149d318c6967e65c902a695acbaf",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-note",
+      "path": "crates/tekes-ui-icons/assets/tekes-note.svg",
+      "before_sha256": "a6328fc3a9cbc98400bd3b9880f4eac10b22629f07bab50ffd56660ed9d1f2de",
+      "after_sha256": "e90638044ed735d1421ac53e9a4f41a8ded7ffecdb0ab21b09ac89f4c444e914",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-oauth-key",
+      "path": "crates/tekes-ui-icons/assets/tekes-oauth-key.svg",
+      "before_sha256": "47292c197a2e5d25c540098a27286745958256dcde212dac9502b684acb05f60",
+      "after_sha256": "47292c197a2e5d25c540098a27286745958256dcde212dac9502b684acb05f60",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-open-external",
+      "path": "crates/tekes-ui-icons/assets/tekes-open-external.svg",
+      "before_sha256": "80e871bc15281f580ef5f0f714e0a397fd51bb2a0f908236ffa99b495b0e44f4",
+      "after_sha256": "80e871bc15281f580ef5f0f714e0a397fd51bb2a0f908236ffa99b495b0e44f4",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-pause",
+      "path": "crates/tekes-ui-icons/assets/tekes-pause.svg",
+      "before_sha256": "ef5f946704355aefb8076d327010f601cfa395ea506ec7ca0ad3cabc2d97a956",
+      "after_sha256": "ef5f946704355aefb8076d327010f601cfa395ea506ec7ca0ad3cabc2d97a956",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-pending-task",
+      "path": "crates/tekes-ui-icons/assets/tekes-pending-task.svg",
+      "before_sha256": "880c666fb812f6d202ab7b4c65cb4a53f0922fc09b49789dbd489428013a811f",
+      "after_sha256": "880c666fb812f6d202ab7b4c65cb4a53f0922fc09b49789dbd489428013a811f",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-pin",
+      "path": "crates/tekes-ui-icons/assets/tekes-pin.svg",
+      "before_sha256": "4f96af1a8c58b95b5da027e5b5a94355b6c065f02d4a272ece8911b1efceae4f",
+      "after_sha256": "4f96af1a8c58b95b5da027e5b5a94355b6c065f02d4a272ece8911b1efceae4f",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-pinned",
+      "path": "crates/tekes-ui-icons/assets/tekes-pinned.svg",
+      "before_sha256": "0509347b23af829163bb9d5f19ca876b1cf337a5eae4b5baaf48dedf43926274",
+      "after_sha256": "0509347b23af829163bb9d5f19ca876b1cf337a5eae4b5baaf48dedf43926274",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-plugin",
+      "path": "crates/tekes-ui-icons/assets/tekes-plugin.svg",
+      "before_sha256": "48c7ae9ee5100a6d2a6ca31ca0ce8c9c37a61c86d62f7f7409e814a7c7f67ea5",
+      "after_sha256": "16deb33ce5e493f62c2bb46dbe4889d66a85cdf3a266a5919bbb3809d88c5e2f",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-plugins",
+      "path": "crates/tekes-ui-icons/assets/tekes-plugins.svg",
+      "before_sha256": "48c7ae9ee5100a6d2a6ca31ca0ce8c9c37a61c86d62f7f7409e814a7c7f67ea5",
+      "after_sha256": "16deb33ce5e493f62c2bb46dbe4889d66a85cdf3a266a5919bbb3809d88c5e2f",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-popup-menu",
+      "path": "crates/tekes-ui-icons/assets/tekes-popup-menu.svg",
+      "before_sha256": "c66524e63d3f9652f44718f0ec174645bb490d19952dfbf3402c262628e3e13a",
+      "after_sha256": "912958175a4037c5a234205b2f6f31ec1f76e92019b5ea8c942999fa3eab263a",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-profile",
+      "path": "crates/tekes-ui-icons/assets/tekes-profile.svg",
+      "before_sha256": "eec213d2d6057e1bcfc5059abb255685af4cd859afbeef8038bf432485d4bb40",
+      "after_sha256": "eec213d2d6057e1bcfc5059abb255685af4cd859afbeef8038bf432485d4bb40",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-progress",
+      "path": "crates/tekes-ui-icons/assets/tekes-progress.svg",
+      "before_sha256": "6360db961bdb30ab31cc94d388a57c7cb1d0a50e54199fa7d6783749e2417089",
+      "after_sha256": "6360db961bdb30ab31cc94d388a57c7cb1d0a50e54199fa7d6783749e2417089",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-provider",
+      "path": "crates/tekes-ui-icons/assets/tekes-provider.svg",
+      "before_sha256": "ba287fdc8903f525fcaf93229562cb6e3277c2909a111eb81d2e9ac9b1f76808",
+      "after_sha256": "ba287fdc8903f525fcaf93229562cb6e3277c2909a111eb81d2e9ac9b1f76808",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-pull-request",
+      "path": "crates/tekes-ui-icons/assets/tekes-pull-request.svg",
+      "before_sha256": "0284c42509b06bf4e6864e69f77c4b98ba5cfbdfd9b39c63993c804e5de6b8d2",
+      "after_sha256": "0284c42509b06bf4e6864e69f77c4b98ba5cfbdfd9b39c63993c804e5de6b8d2",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-queued-input",
+      "path": "crates/tekes-ui-icons/assets/tekes-queued-input.svg",
+      "before_sha256": "f3061bcdde140b02050f80f5cd018a1cb59dab81f7b35335f566ca690d0eae37",
+      "after_sha256": "004f9d308ae3083930fc27b93e3a94b1ec698b454909e551c65b5e6c6ee2da4a",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-quick-panel",
+      "path": "crates/tekes-ui-icons/assets/tekes-quick-panel.svg",
+      "before_sha256": "379f1ee1a1e12cee810984a990fa50f6442d7e8ec8f08e26d6444bee7f4813f3",
+      "after_sha256": "379f1ee1a1e12cee810984a990fa50f6442d7e8ec8f08e26d6444bee7f4813f3",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-quote",
+      "path": "crates/tekes-ui-icons/assets/tekes-quote.svg",
+      "before_sha256": "450d3f5fb2ca9c9f0ab766444a3599156e192dc16744b59c38f9f440136c063f",
+      "after_sha256": "450d3f5fb2ca9c9f0ab766444a3599156e192dc16744b59c38f9f440136c063f",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-read",
+      "path": "crates/tekes-ui-icons/assets/tekes-read.svg",
+      "before_sha256": "9bcbb7ad264a531336ef4d7bf8abdb482329744ce1443c7b2d88000303d528b7",
+      "after_sha256": "380125192b3182a160991f5a5807a97735280f1ef2fd64421f6b8a45efd3e67f",
+      "changed": true,
+      "rule": "document-family",
+      "reason": "Shared approved file silhouette/fold; interior meaning retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-rebuild",
+      "path": "crates/tekes-ui-icons/assets/tekes-rebuild.svg",
+      "before_sha256": "92ed7314cc7966abc902e5bd55aa6c589490582974216f94a82080b2d445b69f",
+      "after_sha256": "92ed7314cc7966abc902e5bd55aa6c589490582974216f94a82080b2d445b69f",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-recall",
+      "path": "crates/tekes-ui-icons/assets/tekes-recall.svg",
+      "before_sha256": "7b28a5ef2cec3ed538ea14783a59904ffc7d676001b5601ac16ed8f138b4f66c",
+      "after_sha256": "c154b2e6d68fe08ad8d8e30c41ce5ad1cabc4aed0f48f67532ca056576aefa0d",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-redo",
+      "path": "crates/tekes-ui-icons/assets/tekes-redo.svg",
+      "before_sha256": "b86d319bdbea6ded2ffc3951eb92a005b9087cf6e43d1d21c63c1cf286046766",
+      "after_sha256": "356c5bf62897b5d9bdf9f4c10d34f59094281d75b8906349511eace7df49fd59",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-refresh",
+      "path": "crates/tekes-ui-icons/assets/tekes-refresh.svg",
+      "before_sha256": "f96d905b1ba249db26610e0d7e68fc79d3dde535a33a6a782502d5031660f5bb",
+      "after_sha256": "f96d905b1ba249db26610e0d7e68fc79d3dde535a33a6a782502d5031660f5bb",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-remove-one",
+      "path": "crates/tekes-ui-icons/assets/tekes-remove-one.svg",
+      "before_sha256": "34fb01b500397c5d6451c7f42ffc8dac5c9632fad41a21669f320559aef5b4b8",
+      "after_sha256": "34fb01b500397c5d6451c7f42ffc8dac5c9632fad41a21669f320559aef5b4b8",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-report",
+      "path": "crates/tekes-ui-icons/assets/tekes-report.svg",
+      "before_sha256": "866d41722ca7e48497155ca1c76b6d6a7770ffd94e7ec667684b14676fd78727",
+      "after_sha256": "30a85be5135a7109de0193d99d831a80d47fdc877a3dffcc7433ce43c1bd3185",
+      "changed": true,
+      "rule": "document-family",
+      "reason": "Shared approved file silhouette/fold; interior meaning retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-resume",
+      "path": "crates/tekes-ui-icons/assets/tekes-resume.svg",
+      "before_sha256": "507723cffeb876f584db5d11fa2293a29bd41c955eebcb719cb07249f9cf0464",
+      "after_sha256": "507723cffeb876f584db5d11fa2293a29bd41c955eebcb719cb07249f9cf0464",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-review-plan",
+      "path": "crates/tekes-ui-icons/assets/tekes-review-plan.svg",
+      "before_sha256": "1ffe5238a0b4e66a5245cb87e58abbb47d7a49db643ae6f26b54190d2be7dcbb",
+      "after_sha256": "027df5446093646eb458476b37db250560589fd1646b864c8d756d2b19222eb4",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-rewind",
+      "path": "crates/tekes-ui-icons/assets/tekes-rewind.svg",
+      "before_sha256": "4ec24a73d86e470afc89179a54fb98a707adb9eb34b7dc204e2a442715b8ba1e",
+      "after_sha256": "f1ab7fcdeafecfe865545baa489ee01775973e6c795b72204046324a88a4403b",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-router",
+      "path": "crates/tekes-ui-icons/assets/tekes-router.svg",
+      "before_sha256": "9f9fd657434f785e7a9924fa1a8e3081dd97b1abffda6a9ef0528a189e010495",
+      "after_sha256": "83c70fce08e57b4c5a3cc3291c16db1eb486a4329551b536d1eaeb30fd81f69e",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-scheduled",
+      "path": "crates/tekes-ui-icons/assets/tekes-scheduled.svg",
+      "before_sha256": "a75f884cb99b15ae7f545a3c7d93fc51826b651b4f6b92a4849d8c2dc0853e38",
+      "after_sha256": "a75f884cb99b15ae7f545a3c7d93fc51826b651b4f6b92a4849d8c2dc0853e38",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-search",
+      "path": "crates/tekes-ui-icons/assets/tekes-search.svg",
+      "before_sha256": "10c806e61e3040e800bb9481075445fe42fc5fcf2b2e7b0dc338ff536df7109f",
+      "after_sha256": "10c806e61e3040e800bb9481075445fe42fc5fcf2b2e7b0dc338ff536df7109f",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-send",
+      "path": "crates/tekes-ui-icons/assets/tekes-send.svg",
+      "before_sha256": "083a6c2d6f55920aeb6547277496217bf146b562b261147b81e32aa3edb9da28",
+      "after_sha256": "083a6c2d6f55920aeb6547277496217bf146b562b261147b81e32aa3edb9da28",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-settings",
+      "path": "crates/tekes-ui-icons/assets/tekes-settings.svg",
+      "before_sha256": "2bc1ae68873e019174cb4c78ace1d5a3c32ad15573e87748e22d2ee85b813ce0",
+      "after_sha256": "95847757adbce74ee5d55bbe9c53be728afbffb2b1224b029e0ed65171d63e59",
+      "changed": true,
+      "rule": "approved-v2",
+      "reason": "User-approved representative geometry, exact bytes.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-shell",
+      "path": "crates/tekes-ui-icons/assets/tekes-shell.svg",
+      "before_sha256": "c6df2a2b67e529839cf97f3817f519e91f94124300f9a9ee8b46a83d82b0a83e",
+      "after_sha256": "eb225a4dc75a81d425fee1f9382276b895cb3b9e509cd89bfb9a09a7a7830610",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-show",
+      "path": "crates/tekes-ui-icons/assets/tekes-show.svg",
+      "before_sha256": "d050a2c2c9400cc7520213134b5ee1bcb0b145f2db518bf4d3938e673fcad867",
+      "after_sha256": "d050a2c2c9400cc7520213134b5ee1bcb0b145f2db518bf4d3938e673fcad867",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-side-bar",
+      "path": "crates/tekes-ui-icons/assets/tekes-side-bar.svg",
+      "before_sha256": "7fec5beda4076ac160944f985412372f8c755d801adbff395855ef4bf6580110",
+      "after_sha256": "7fec5beda4076ac160944f985412372f8c755d801adbff395855ef4bf6580110",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-side-chat",
+      "path": "crates/tekes-ui-icons/assets/tekes-side-chat.svg",
+      "before_sha256": "dc751cc5314dcd64f9af75da94cbb3c20738d9e4d7f22992009bc70dc5fda351",
+      "after_sha256": "dc751cc5314dcd64f9af75da94cbb3c20738d9e4d7f22992009bc70dc5fda351",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-side-panel",
+      "path": "crates/tekes-ui-icons/assets/tekes-side-panel.svg",
+      "before_sha256": "ea1a17ff482b1542bd416f96eb78efbdb30f9be6802df210c3e2e709d7641931",
+      "after_sha256": "ea1a17ff482b1542bd416f96eb78efbdb30f9be6802df210c3e2e709d7641931",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-skill",
+      "path": "crates/tekes-ui-icons/assets/tekes-skill.svg",
+      "before_sha256": "69fb60fda1e977d12cba289f5e78643f1dbead06f6191e6e512d9f890b035ecf",
+      "after_sha256": "69fb60fda1e977d12cba289f5e78643f1dbead06f6191e6e512d9f890b035ecf",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-skills",
+      "path": "crates/tekes-ui-icons/assets/tekes-skills.svg",
+      "before_sha256": "6dd375e67266f232172916c834e4f958aab0d403374458980bedb44012302ff5",
+      "after_sha256": "6dd375e67266f232172916c834e4f958aab0d403374458980bedb44012302ff5",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-slash-command",
+      "path": "crates/tekes-ui-icons/assets/tekes-slash-command.svg",
+      "before_sha256": "3f9d0351eabfab80dba2e0933272de3fd22a8294cd365e2fda5ef662cc00044c",
+      "after_sha256": "3f9d0351eabfab80dba2e0933272de3fd22a8294cd365e2fda5ef662cc00044c",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-sort",
+      "path": "crates/tekes-ui-icons/assets/tekes-sort.svg",
+      "before_sha256": "740c5320ac067975dcfd2d6a5a025cd64c919f199779ac7d4b3918988e8dd8ff",
+      "after_sha256": "740c5320ac067975dcfd2d6a5a025cd64c919f199779ac7d4b3918988e8dd8ff",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-steer",
+      "path": "crates/tekes-ui-icons/assets/tekes-steer.svg",
+      "before_sha256": "de9c5769c99c7f06eba7a0954a58b4237ebe9d271da4e0744c9b4d69a0c833b3",
+      "after_sha256": "6ebade640be38681ce797441c0ddb64044b920d85dbeaa1db7743758837eca13",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-steering",
+      "path": "crates/tekes-ui-icons/assets/tekes-steering.svg",
+      "before_sha256": "1f5f0b3e182e2b9ef5f403c2a97d408dc608123e8513c66aede0d4cade7f16f1",
+      "after_sha256": "cdbb80ed6ac75ab8bde6c51a29ff2744e81e8e515bf24be896e3d2a97737b3c5",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-stop",
+      "path": "crates/tekes-ui-icons/assets/tekes-stop.svg",
+      "before_sha256": "8796e8799a5f72f674b19911adc5f50691248cb06c6d216e4814f2d363e2c956",
+      "after_sha256": "8796e8799a5f72f674b19911adc5f50691248cb06c6d216e4814f2d363e2c956",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-subagent",
+      "path": "crates/tekes-ui-icons/assets/tekes-subagent.svg",
+      "before_sha256": "82b967476987fd68c1fd957e9a7b91040d3d90415c99e8d57d6e4fd84a1af43d",
+      "after_sha256": "82b967476987fd68c1fd957e9a7b91040d3d90415c99e8d57d6e4fd84a1af43d",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-swap-horizontal",
+      "path": "crates/tekes-ui-icons/assets/tekes-swap-horizontal.svg",
+      "before_sha256": "aee62a8f67824367e006909c8d0fba13eca503c73849faaf631a15b0de0adecc",
+      "after_sha256": "aee62a8f67824367e006909c8d0fba13eca503c73849faaf631a15b0de0adecc",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-tab-diffs",
+      "path": "crates/tekes-ui-icons/assets/tekes-tab-diffs.svg",
+      "before_sha256": "f4fe30e73458fcfc39a62aa42dd2fe971f3b0546a2e207e3b763858972e5cce4",
+      "after_sha256": "f4fe30e73458fcfc39a62aa42dd2fe971f3b0546a2e207e3b763858972e5cce4",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-tab-summary",
+      "path": "crates/tekes-ui-icons/assets/tekes-tab-summary.svg",
+      "before_sha256": "9d2278ec1070c722b77a99b273713cdff831d2818af6c8a0750e95fbb955b279",
+      "after_sha256": "9d2278ec1070c722b77a99b273713cdff831d2818af6c8a0750e95fbb955b279",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-tag",
+      "path": "crates/tekes-ui-icons/assets/tekes-tag.svg",
+      "before_sha256": "19cb6b1b46da897e354685a5c293ee570d1d9508f43938ad19555ae89eb7a06a",
+      "after_sha256": "19cb6b1b46da897e354685a5c293ee570d1d9508f43938ad19555ae89eb7a06a",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-task",
+      "path": "crates/tekes-ui-icons/assets/tekes-task.svg",
+      "before_sha256": "35c1c1d6c8a186dd035e5e820307b9078962977930dc3c416de3dafbb90b8608",
+      "after_sha256": "35c1c1d6c8a186dd035e5e820307b9078962977930dc3c416de3dafbb90b8608",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-test-connection",
+      "path": "crates/tekes-ui-icons/assets/tekes-test-connection.svg",
+      "before_sha256": "580b6abdc9de9bb200400918063d60cb955378134860376b3837d2eed71470cf",
+      "after_sha256": "580b6abdc9de9bb200400918063d60cb955378134860376b3837d2eed71470cf",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-think",
+      "path": "crates/tekes-ui-icons/assets/tekes-think.svg",
+      "before_sha256": "2469ed55708e9dbab091479fb96370011338230f0d16f4bbf6825fe118aef590",
+      "after_sha256": "2469ed55708e9dbab091479fb96370011338230f0d16f4bbf6825fe118aef590",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-thumbs-down-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-thumbs-down-fill.svg",
+      "before_sha256": "9db8d85375f4beac95b3722c73d0b9914c4e7ada0f035e58682a685f36541971",
+      "after_sha256": "9db8d85375f4beac95b3722c73d0b9914c4e7ada0f035e58682a685f36541971",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-thumbs-down",
+      "path": "crates/tekes-ui-icons/assets/tekes-thumbs-down.svg",
+      "before_sha256": "c2d5d802db730e7360799a4e32391bd402bf7b12b61e7a41aa7073f4c7a0bf6d",
+      "after_sha256": "c2d5d802db730e7360799a4e32391bd402bf7b12b61e7a41aa7073f4c7a0bf6d",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-thumbs-up-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-thumbs-up-fill.svg",
+      "before_sha256": "d1957fe430bcf17df5673970bf0edb489796ccee4d6b642ee173f71add25d15c",
+      "after_sha256": "d1957fe430bcf17df5673970bf0edb489796ccee4d6b642ee173f71add25d15c",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-thumbs-up",
+      "path": "crates/tekes-ui-icons/assets/tekes-thumbs-up.svg",
+      "before_sha256": "71fe0e2df8b45d31f847157f520fdd3a9fadf26aab1d680914db4461c077632a",
+      "after_sha256": "71fe0e2df8b45d31f847157f520fdd3a9fadf26aab1d680914db4461c077632a",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-time",
+      "path": "crates/tekes-ui-icons/assets/tekes-time.svg",
+      "before_sha256": "7b3ee7dd00e903b01dd5ef476045e2d578a3e26400f06eddf06c038af450a6a3",
+      "after_sha256": "7b3ee7dd00e903b01dd5ef476045e2d578a3e26400f06eddf06c038af450a6a3",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-tools",
+      "path": "crates/tekes-ui-icons/assets/tekes-tools.svg",
+      "before_sha256": "3c3310aaf5db0ea5578eb51e625901c70c8d4e035804ae0c219d854a4daf407b",
+      "after_sha256": "3c3310aaf5db0ea5578eb51e625901c70c8d4e035804ae0c219d854a4daf407b",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-trust",
+      "path": "crates/tekes-ui-icons/assets/tekes-trust.svg",
+      "before_sha256": "fb9399ea5feb8cb509fbba8d489c1ae9571ddce290dec236df23d90db31cf780",
+      "after_sha256": "fb9399ea5feb8cb509fbba8d489c1ae9571ddce290dec236df23d90db31cf780",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-undo",
+      "path": "crates/tekes-ui-icons/assets/tekes-undo.svg",
+      "before_sha256": "0f38d9c4a813818cfc4df3ed7ec50e627c39b4b6e73bdc6c21db4351e76346c0",
+      "after_sha256": "2bbd5b30c30f7dae513c26f8fd0ec6520059edb897becfff7436a351d1a5609a",
+      "changed": true,
+      "rule": "rounded-line-junctions",
+      "reason": "Named ordinary contour joins softened; exact endpoints, curves and semantic detail retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-unknown-fallback",
+      "path": "crates/tekes-ui-icons/assets/tekes-unknown-fallback.svg",
+      "before_sha256": "3c3310aaf5db0ea5578eb51e625901c70c8d4e035804ae0c219d854a4daf407b",
+      "after_sha256": "3c3310aaf5db0ea5578eb51e625901c70c8d4e035804ae0c219d854a4daf407b",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-unknown-tool",
+      "path": "crates/tekes-ui-icons/assets/tekes-unknown-tool.svg",
+      "before_sha256": "87587a0303eef0cead5d596cf34b045bf5d8cdea81016547426e3ddc4fb194cc",
+      "after_sha256": "87587a0303eef0cead5d596cf34b045bf5d8cdea81016547426e3ddc4fb194cc",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-unpushed",
+      "path": "crates/tekes-ui-icons/assets/tekes-unpushed.svg",
+      "before_sha256": "67c9eadd884d0202fd6045e9675f0f77901f4845529aa5fa7cf8e33c63df9755",
+      "after_sha256": "67c9eadd884d0202fd6045e9675f0f77901f4845529aa5fa7cf8e33c63df9755",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-untracked-folder",
+      "path": "crates/tekes-ui-icons/assets/tekes-untracked-folder.svg",
+      "before_sha256": "2bc3c7d51ff1036da86c765e9cc9031efab65d1f0be777bcb2fe43823d1ce8f8",
+      "after_sha256": "9627184141ffffd06ec518e6ca0ffbe56501bfd6b6957c67fcaa0b27c507e971",
+      "changed": true,
+      "rule": "folder-family",
+      "reason": "Shared approved folder shoulders/tab; interior meaning retained.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-verify",
+      "path": "crates/tekes-ui-icons/assets/tekes-verify.svg",
+      "before_sha256": "a98934d9782dac21763559a3c19f6da7984dfeef14f81eab302fb2340a4f2908",
+      "after_sha256": "a98934d9782dac21763559a3c19f6da7984dfeef14f81eab302fb2340a4f2908",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-waiting-user",
+      "path": "crates/tekes-ui-icons/assets/tekes-waiting-user.svg",
+      "before_sha256": "8df3b10dc873b9a6f0395d47c0d9b041f80021959084a3060708bf4d5dff63ab",
+      "after_sha256": "8df3b10dc873b9a6f0395d47c0d9b041f80021959084a3060708bf4d5dff63ab",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-warning-fill",
+      "path": "crates/tekes-ui-icons/assets/tekes-warning-fill.svg",
+      "before_sha256": "48a9cea0786d86e19f86ffc54149efd36be905e5388b41f3d502838be9f81b5b",
+      "after_sha256": "48a9cea0786d86e19f86ffc54149efd36be905e5388b41f3d502838be9f81b5b",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-warning",
+      "path": "crates/tekes-ui-icons/assets/tekes-warning.svg",
+      "before_sha256": "909d26a9541c6fc9c772907d76aac173cb276638272aaff587c8841aedca1edf",
+      "after_sha256": "909d26a9541c6fc9c772907d76aac173cb276638272aaff587c8841aedca1edf",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-web-fetch",
+      "path": "crates/tekes-ui-icons/assets/tekes-web-fetch.svg",
+      "before_sha256": "f514bac0900cf9eda85834cf6baa2e07d35222da8f92b80cb402abbff729d93d",
+      "after_sha256": "f514bac0900cf9eda85834cf6baa2e07d35222da8f92b80cb402abbff729d93d",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-web-search",
+      "path": "crates/tekes-ui-icons/assets/tekes-web-search.svg",
+      "before_sha256": "3f9dc38f853dd418bf0417207b848776c1255d1d640cb0543919f52d22a98fe6",
+      "after_sha256": "3f9dc38f853dd418bf0417207b848776c1255d1d640cb0543919f52d22a98fe6",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-write",
+      "path": "crates/tekes-ui-icons/assets/tekes-write.svg",
+      "before_sha256": "bad8b5da6a29715902436ee55cddb38c4880b7ce8385c4c20c85f6613e99c94e",
+      "after_sha256": "bad8b5da6a29715902436ee55cddb38c4880b7ce8385c4c20c85f6613e99c94e",
+      "changed": false,
+      "rule": "retained-precision",
+      "reason": "Identifying technical geometry, pointer/tool tip, spark/bolt or perspective edges require precision.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-zoom-in",
+      "path": "crates/tekes-ui-icons/assets/tekes-zoom-in.svg",
+      "before_sha256": "9ea695089c5a7739876dc4ff98c2b27039842ca5b3cb3b679a5771305a9ae102",
+      "after_sha256": "9ea695089c5a7739876dc4ff98c2b27039842ca5b3cb3b679a5771305a9ae102",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    },
+    {
+      "name": "tekes-zoom-out",
+      "path": "crates/tekes-ui-icons/assets/tekes-zoom-out.svg",
+      "before_sha256": "04aa009722af496f6d4607f9f06041b73a090d13f9ebda3fdd4f9a1341f1db37",
+      "after_sha256": "04aa009722af496f6d4607f9f06041b73a090d13f9ebda3fdd4f9a1341f1db37",
+      "changed": false,
+      "rule": "retained-existing",
+      "reason": "Existing curved/rounded contour or sparse round-ended marks already match; no forced redraw.",
+      "canvas": [
+        24,
+        24
+      ],
+      "viewBox": [
+        0,
+        0,
+        24,
+        24
+      ]
+    }
+  ]
+}

@@ -1,10 +1,12 @@
 //! Platform-neutral public TekesUI icons. `Glyph` exposes the full canonical catalog.
 //! The eight-variant `Icon` API retains its approved animated subset for compatibility.
-//! SVGs use a 24 pt viewBox, currentColor and 1.5 pt rounded strokes.
+//! SVGs use square 24 pt artboards, currentColor and optical stroke weights.
 
 pub mod animation;
 mod catalog;
 pub use catalog::Glyph;
+mod style;
+pub use style::{ARTBOARD_SIZE, REGULAR_STROKE_WIDTH};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Icon {

@@ -1,0 +1,62 @@
+[
+  {
+    "identity": "check",
+    "configurations": 24,
+    "changed_configurations": 24,
+    "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+  },
+  {
+    "identity": "chevron-right",
+    "configurations": 24,
+    "changed_configurations": 24,
+    "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+  },
+  {
+    "identity": "chevron-down",
+    "configurations": 24,
+    "changed_configurations": 24,
+    "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+  },
+  {
+    "identity": "close",
+    "configurations": 24,
+    "changed_configurations": 24,
+    "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+  },
+  {
+    "identity": "plus",
+    "configurations": 24,
+    "changed_configurations": 24,
+    "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+  },
+  {
+    "identity": "search",
+    "configurations": 24,
+    "changed_configurations": 24,
+    "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+  },
+  {
+    "identity": "folder",
+    "configurations": 24,
+    "changed_configurations": 24,
+    "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+  },
+  {
+    "identity": "file",
+    "configurations": 24,
+    "changed_configurations": 24,
+    "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+  },
+  {
+    "identity": "info",
+    "configurations": 24,
+    "changed_configurations": 24,
+    "rule": "original primitive backend, rounded strokes/bends; original semantic identity"
+  },
+  {
+    "identity": "spinner",
+    "configurations": 24,
+    "changed_configurations": 0,
+    "rule": "retain existing rounded spinner bars"
+  }
+]

@@ -1,0 +1,9 @@
+   Compiling tekes-ui-gallery v0.1.0 (/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/design/reviews/icon-c-rollout-57-20261023/sdk/crates/tekes-ui-gallery)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.58s
+     Running unittests src/main.rs (target/icon-direction-57/debug/deps/tekes_ui_gallery-16f449ef0186b8f2)
+
+running 1 test
+test gallery::theme_acceptance::original_registered_icon_page_prepared_top_interior_bottom_gpu ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 454 filtered out; finished in 32.87s
+
