@@ -3,7 +3,9 @@
 > 2026-10-15 最新设计权威：用户提供的 v0.3.0-proposal1 有定义时优先，缺项保留现有补集。参见 [DESIGN.md](../DESIGN.md) 和完整导入索引；本文此前固定尺寸、旧值和原版优先约定仅在不冲突时适用。规范存在不等于原生实现已验收。
 
 
-> 外部库版本均为 2026-10 调研时状态，开工前复核：wgpu 30、Parley 0.12、objc2 0.6、AccessKit 2026-09 版本、winit 0.31 beta。
+> 本文中的外部库路线属于历史研究或长期设想，不是当前依赖清单或升级建议。已交付依赖以对应提交的 Cargo manifests / Cargo.lock 为准。
+
+> 2026-10-26 架构核对：已交付代码基线为本地 main `e39bfaa1785dbedd9672081a8877e27047155885`。当前职责、真实依赖、与本章程的差距及待确认决定统一见 [架构与平台边界](platform-boundary.md)。Gallery Root WIP 和私有候选不计入该基线；本次文档提交不表示它们已被接收。
 
 ## 1. 定位
 
@@ -51,6 +53,12 @@ TekesUI 本仓库保持纯 Rust 实现，不引入 Swift 源码、Swift package 
 
 ## 4. crate 分层
 
+下图保留早期的**拆分设想**，不是当前 workspace 或按名称补建 crate 的指令。当前公共组件、组合、控件布局和文本编辑主要位于 `tekes-ui-controls`；尚无独立的 `doc/edit/layout/a11y` crate。依赖必须按生产、构建期、测试及平台 cfg 分开核对。
+
+长期保留的是职责边界：单一状态 owner、设计输入的单一来源、绘制数据与 GPU 后端分离、平台协议与组件行为分离、基础库不反向依赖产品宿主。是否提取 crate 需说明实际复用、依赖阻塞、独立事务或可测的构建/测试收益，以及公共类型迁移和兼容代价。
+
+**待用户确认 A1/A3**：以按能力和实际触发条件演进，替代固定的 crate 拆分顺序；将文档模型/Markdown/完整文档编辑器定位为可选能力层。确认前不据此重构或取消 F3–F5 功能承诺，原 Issue AC 保留。
+
 ```
                  tekes-ui-gallery (app)
                          |
@@ -72,11 +80,11 @@ tekes-ui-platform-macos  (以后：tekes-ui-platform-windows)
    窗口 / 事件 / 菜单 / 输入法，经窄接口与引擎相连
 ```
 
-依赖方向自上而下；platform 层只通过窄接口与引擎通信，引擎不依赖任何具体平台。
+图中依赖方向表达目标，不是现状证明。当前 Scene 不依赖 GPU API；text 中有 cfg CoreText 实现，render 中有 macOS CAMetalLayer/surface 接口。不得把“平台窄接口”写成当前所有引擎 crate 均无平台代码。
 
-### 各 crate 职责
+### 历史职责设想及承接
 
-- **tekes-ui-tokens**：设计 token（颜色、间距、字号、圆角、动效），含 light/dark/increase contrast 变体。是否自有 token 取决于 [icons-and-tokens-brief.md](design/icons-and-tokens-brief.md) 的结论。
+- **tekes-ui-tokens**：设计 token（颜色、间距、字号、圆角、动效）及编译后的 Theme/Palette/Surface API。已采用的作者输入、品牌策略与生成规则见 [DESIGN.md](../DESIGN.md)，不再把是否采用自有 token 当作未决前提。
 - **tekes-ui-text**：三个 trait：`Shaper`、`Rasterizer`、`FontFallback`。mac 用 CoreText 实现，以后 Windows 用 DirectWrite，Linux 用 Parley。
 - **tekes-ui-scene**：display list 加 glyph atlas。上层把内容编译成绘制指令，这一层不关心 GPU API。
 - **tekes-ui-render**：基于 wgpu，接口保持窄，留出换成 objc2-metal 的余地（例如 mac 上需要更直接地控制 CAMetalLayer 和帧节奏时）。
@@ -87,6 +95,8 @@ tekes-ui-platform-macos  (以后：tekes-ui-platform-windows)
 - **tekes-ui-platform-macos**：基于 objc2，实现 NSApplication、窗口、菜单，以及完整的 NSTextInputClient（selectedRange、attributedSubstring、replacementRange、firstRect）。
 - **tekes-ui-platform-windows**（以后）：Win32 加 TSF。
 - **tekes-ui-gallery**：Gallery 应用，见第 2 节。
+
+这些 `doc/edit/layout/a11y` crate 当前尚未实现；本轮不把旧图转化为新建包任务。是否取消固定包级拆分要求待 A1 确认，原功能 AC 保留。doc 与虚拟布局设计由 #131 承接，Markdown 源文档/编辑映射由 #132 承接；现有输入、阅读及无障碍功能仍按各原票推进。**待用户确认 A2**：AccessKit 从指定路线改为与当前 native adapter 比较的候选方案。确认前保留原方向，不因已有 AppKit bridge 而宣布无障碍完成，也不启动 AccessKit 重写。
 
 ### 引擎与平台层的边界
 

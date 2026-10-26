@@ -4,6 +4,8 @@
 
 状态：设计基线与实验性基础通路原型并行；接口名称为职责示意，未冻结 Rust API 或 IPC 格式。原型验证记录见 `docs/handoffs/app-host-native-prototype-20261021.md`，不表示下列全部契约已实现或验收。
 
+2026-10-26 已交付架构核对：本地 main `e39bfaa1785dbedd9672081a8877e27047155885` 的 app-host/app-protocol/module-runtime 是同仓实验性宿主集成层，基础 controls/text/scene/render 不反向依赖它们。当前 PanelModule/固定进程通路不等于本文完整 ProcessContainer、插件系统或权限沙箱。普通 UI 库消费者不必采用 AppHost；选择该能力的消费者仍须按 #48 原 AC 验收真实 IPC、公开版本、输入/IME/AX、资源和生命周期。现状与目标的共同索引见 [架构与平台边界](../platform-boundary.md)，本次不修改下文既有功能契约或启动新的实现。
+
 本次修订纳入 advisor 对 `503e3ac` 的只读审查结论及后续讨论，并补齐对 `f99bf9e` 复审提出的几何身份、切换终态和文本/几何独立发布规则。整体架构可进入受控原型；公共接口冻结前必须验证这些契约。以下约定是设计要求，不表示技术原型或原生体验已经通过验证。
 
 ## 1. 目标与范围
