@@ -32,10 +32,16 @@ for _use in STATUS_CONTENT_USES: USES[_use] = ['rest','disabled']
 BADGE_USES = {'status-badge-' + tone for tone in ['info','running','succeeded','failed']}
 PASSIVE_USES = BADGE_USES | {'skeleton'}
 for _use in PASSIVE_USES: USES[_use] = ['rest']
-FOCUS_FREE_USES = PASSIVE_USES | STATUS_CONTENT_USES | {'content','text-selection','control-label','toggle-thumb','range-track','surface-frame','progress-track'}
+NOTICE_MARKERS = {'notice-marker-info': 'status-info', 'notice-marker-success': 'status-succeeded', 'notice-marker-error': 'status-failed', 'notice-marker-toast-warning': 'status-failed', 'notice-marker-banner-warning': 'status-running'}
+for _use in NOTICE_MARKERS: USES[_use] = ['rest']
+FOCUS_FREE_USES = set(NOTICE_MARKERS) | PASSIVE_USES | STATUS_CONTENT_USES | {'content','text-selection','control-label','toggle-thumb','range-track','surface-frame','progress-track'}
 
 
 def validate_use_channels(usage, state, pair):
+    if usage in NOTICE_MARKERS:
+        expected = dict(background='$surface',text='primary-text',icon='primary-text',boundary=None,focus=None,marker=NOTICE_MARKERS[usage],helper=None)
+        if state != 'rest' or pair != expected:
+            raise ValueError('invalid notice marker packet binding: ' + usage + '/' + state)
     if usage in PASSIVE_USES:
         expected = dict(background=('status-' + usage.removeprefix('status-badge-')) if usage in BADGE_USES else 'surface-2',
                         text='c-status-badge-foreground' if usage in BADGE_USES else 'primary-text',
@@ -81,7 +87,7 @@ def expand_profiles(rules):
 def validate(rules):
     import jsonschema
     jsonschema.validate(rules, merge.load(ROOT / 'design/theme/rules.schema.json'))
-    if rules['rules_version'] != '1.8.0': raise ValueError('unsupported generation rules version')
+    if rules['rules_version'] != '1.9.0': raise ValueError('unsupported generation rules version')
     profiles = expand_profiles(rules)
     if not {'canvas','code','hint','panel','popover','sidebar','toolbar'} <= set(rules['surfaces']): raise ValueError('missing required Surface')
     for surface, definition in rules['surfaces'].items():
@@ -160,6 +166,11 @@ def verify_profile_color_references(profiles, bundle):
                 role = profiles[name][state][channel]
                 if role is not None and role != '$surface' and role not in names:
                     raise ValueError(f'unknown color role: {role} in shared profile {name}/{state}/{channel}')
+
+
+def verify_notice_marker_contrast(usage, mode, colors, parent):
+    if usage in NOTICE_MARKERS and (colors['marker'] is None or contrast(colors['marker'],parent) < 3.0):
+        raise ValueError('insufficient notice marker-parent contrast: ' + mode + '/' + usage)
 
 
 def verify_passive_status_contrast(usage, mode, colors, parent):
@@ -262,8 +273,9 @@ def generate():
         # Check geometry constraints before overlapping Surface/track guards.
         for mode in MODES:
             for surface, usage, state, roles in rows:
-                if usage in PASSIVE_USES:
+                if usage in PASSIVE_USES or usage in NOTICE_MARKERS:
                     colors = {k: None if v is None else merge.token_value(bundle,'color',v,mode) for k,v in roles.items()}
+                    verify_notice_marker_contrast(usage, mode, colors, merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode))
                     verify_passive_status_contrast(usage, mode, colors, merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode))
         modes = {}
         for mode in MODES:

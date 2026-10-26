@@ -25,7 +25,7 @@ const STATES: [&str; 8] = [
     "selected-pressed",
     "selected-disabled",
 ];
-const USES: [&str; 37] = [
+const USES: [&str; 42] = [
     "content",
     "content-selectable",
     "action-quiet",
@@ -63,9 +63,31 @@ const USES: [&str; 37] = [
     "status-badge-succeeded",
     "status-badge-failed",
     "skeleton",
+    "notice-marker-info",
+    "notice-marker-success",
+    "notice-marker-error",
+    "notice-marker-toast-warning",
+    "notice-marker-banner-warning",
 ];
 
+fn notice_marker_role(usage: &str) -> Option<&'static str> {
+    Some(match usage {
+        "notice-marker-info" => "status-info",
+        "notice-marker-success" => "status-succeeded",
+        "notice-marker-error" => "status-failed",
+        "notice-marker-toast-warning" => "status-failed",
+        "notice-marker-banner-warning" => "status-running",
+        _ => return None,
+    })
+}
+
 fn validate_use_channels(usage: &str, state: &str, pair: &Value) -> Result<(), String> {
+    if let Some(marker) = notice_marker_role(usage) {
+        let expected = serde_json::json!({"background":"$surface","text":"primary-text","icon":"primary-text","boundary":null,"focus":null,"marker":marker,"helper":null});
+        if state != "rest" || *pair != expected {
+            return Err(format!("invalid notice marker packet binding: {usage}/{state}"));
+        }
+    }
     if usage.starts_with("status-badge-") || usage == "skeleton" {
         let badge = usage.starts_with("status-badge-");
         let background = if badge {
@@ -103,7 +125,7 @@ fn validate_use_channels(usage: &str, state: &str, pair: &Value) -> Result<(), S
     {
         return Err("progress track requires boundary/marker and forbids focus/helper".into());
     }
-    let focus_free = usage.starts_with("content-status-")
+    let focus_free = notice_marker_role(usage).is_some() || usage.starts_with("content-status-")
         || usage.starts_with("status-badge-")
         || usage == "skeleton"
         || [
@@ -713,7 +735,7 @@ pub fn compile_surface_rules(rules: &Value) -> Result<String, String> {
     )?;
     if rules["format"] != "tekesui.theme-rules/1"
         || rules["schema_version"] != "1.3.0"
-        || rules["rules_version"] != "1.8.0"
+        || rules["rules_version"] != "1.9.0"
         || rules["modes"] != serde_json::json!(["light", "dark", "light-ic", "dark-ic"])
     {
         return Err("unsupported Theme schema/rules/modes".into());
@@ -800,7 +822,12 @@ pub fn compile_surface_rules(rules: &Value) -> Result<String, String> {
                 | "status-badge-running"
                 | "status-badge-succeeded"
                 | "status-badge-failed"
-                | "skeleton" => &["rest"],
+                | "skeleton"
+                | "notice-marker-info"
+                | "notice-marker-success"
+                | "notice-marker-error"
+                | "notice-marker-toast-warning"
+                | "notice-marker-banner-warning" => &["rest"],
                 "link" | "range-track" | "range-thumb" => &STATES[..4],
                 _ => &STATES,
             };
@@ -981,6 +1008,7 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
         }
     }
     // Check the actual selected palette too, including explicit offline consumer artifacts.
+    verify_notice_marker_contrast(&rules, &tokens["proposal"]["tokens"])?;
     verify_passive_status_contrast(&rules, &tokens["proposal"]["tokens"])?;
     verify_track_boundaries(&rules, &tokens["proposal"]["tokens"])?;
     verify_surface_foregrounds(&rules, &tokens["proposal"]["tokens"])?;
@@ -990,6 +1018,7 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
         .as_array()
         .ok_or("missing Gallery palettes")?
     {
+        verify_notice_marker_contrast(&rules, &serde_json::json!({"color": preset["color"]}))?;
         verify_passive_status_contrast(&rules, &serde_json::json!({"color": preset["color"]}))?;
         verify_track_boundaries(&rules, &serde_json::json!({"color": preset["color"]}))?;
         verify_surface_foregrounds(&rules, &serde_json::json!({"color": preset["color"]}))?;
@@ -1257,6 +1286,26 @@ fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), Stri
                             ));
                         }
                     }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Notice marker ink must contrast with the actual Surface parent, never a badge fill.
+fn verify_notice_marker_contrast(rules: &Value, palette: &Value) -> Result<(), String> {
+    let profiles = expanded_profiles(rules)?;
+    for mode in ["light", "dark", "light-ic", "dark-ic"] {
+        let luminance = |role: &str| color_luminance(&resolved(palette, role, mode, 0)?);
+        for (surface, definition) in rules["surfaces"].as_object().ok_or("missing surfaces")? {
+            let parent = luminance(definition["background"].as_str().ok_or("missing parent ground")?)?;
+            for (usage, profile) in definition["usages"].as_object().ok_or("missing usages")? {
+                if notice_marker_role(usage).is_none() { continue; }
+                let pair = &profiles[profile.as_str().ok_or("invalid profile")?]["rest"];
+                let ink = luminance(pair["marker"].as_str().ok_or("missing notice marker")?)?;
+                if (ink.max(parent)+0.05)/(ink.min(parent)+0.05) < 3.0 {
+                    return Err(format!("insufficient notice marker-parent contrast: {mode}/{surface}/{usage}"));
                 }
             }
         }
@@ -1549,6 +1598,7 @@ fn verify_instances(
             effective_tokens.push(serde_json::json!({"name":name,"value":values}));
         }
         let effective_roles = serde_json::json!({"color":{"tokens":effective_tokens}});
+        verify_notice_marker_contrast(rules, &effective_roles)?;
         verify_passive_status_contrast(rules, &effective_roles)?;
         verify_track_boundaries(rules, &effective_roles)?;
         verify_surface_foregrounds(rules, &effective_roles)?;
@@ -2205,7 +2255,7 @@ mod progress_tests {
             1
         );
         for usage in USES.into_iter().filter(|u| {
-            *u != "progress-track" && !u.starts_with("status-badge-") && *u != "skeleton"
+            *u != "progress-track" && !u.starts_with("status-badge-") && *u != "skeleton" && notice_marker_role(u).is_none()
         }) {
             for indirect in [false, true] {
                 let mut r = rules();
@@ -2458,5 +2508,42 @@ mod passive_status_policy_tests {
             )
             .is_ok()
         );
+    }
+}
+
+#[cfg(test)]
+mod notice_marker_tests {
+    use super::*;
+    fn rules() -> Value { serde_json::from_str(include_str!("../../../design/theme/rules.json")).unwrap() }
+    #[test]
+    fn exact_notice_packets_states_aliases_and_warnings() {
+        let r=rules(); assert!(compile_surface_rules(&r).is_ok());
+        for usage in USES.into_iter().filter(|u| notice_marker_role(u).is_some()) {
+            let expected=serde_json::json!({"background":"$surface","text":"primary-text","icon":"primary-text","boundary":null,"focus":null,"marker":notice_marker_role(usage).unwrap(),"helper":null});
+            assert_eq!(r["profiles"][usage]["rest"],expected);
+            for channel in CHANNELS {
+                let mut bad=r.clone();bad["profiles"][usage]["rest"].as_object_mut().unwrap().remove(channel);
+                assert!(compile_surface_rules(&bad).is_err());
+                let mut bad=r.clone();bad["profiles"][usage]["rest"][channel]=Value::from(if expected[channel]=="primary-text" {"secondary-text"} else {"primary-text"});
+                assert!(compile_surface_rules(&bad).unwrap_err().contains("invalid notice marker packet binding"));
+            }
+            for state in ["hover","pressed","disabled","selected","focus","selected-hover","selected-pressed","selected-disabled"] {
+                let mut bad=r.clone();bad["profiles"][usage][state]=expected.clone();assert!(compile_surface_rules(&bad).is_err());
+            }
+            let mut bad=r.clone();bad["profiles"][usage]=serde_json::json!({"extends":usage});assert!(compile_surface_rules(&bad).unwrap_err().contains("cyclic"));
+        }
+        for (usage,wrong) in [("notice-marker-toast-warning","status-running"),("notice-marker-banner-warning","status-failed")] {
+            let mut bad=r.clone();bad["profiles"][usage]["rest"]["marker"]=Value::from(wrong);assert!(compile_surface_rules(&bad).unwrap_err().contains("invalid notice marker packet binding"));
+        }
+        let mut extra=r.clone();extra["surfaces"]["inspector"]=r["surfaces"]["panel"].clone();assert!(compile_surface_rules(&extra).unwrap().contains("inspector"));
+    }
+    #[test]
+    fn actual_parent_contrast_is_independent_of_fill() {
+        for usage in USES.into_iter().filter(|u| notice_marker_role(u).is_some()) {
+            let r=serde_json::json!({"profiles":{"p":{"rest":{"background":"fill","marker":"ink"}}},"surfaces":{"panel":{"background":"parent","usages":{usage:"p"}}}});
+            let palette=|ink|serde_json::json!({"color":{"tokens":[{"name":"parent","value":"#FFFFFF"},{"name":"fill","value":"#000000"},{"name":"ink","value":ink}]}});
+            assert!(verify_notice_marker_contrast(&r,&palette("#000000")).is_ok());
+            assert!(verify_notice_marker_contrast(&r,&palette("#FFFFFF")).unwrap_err().contains("notice marker-parent"));
+        }
     }
 }
