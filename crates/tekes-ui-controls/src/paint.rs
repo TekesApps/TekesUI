@@ -452,6 +452,79 @@ pub fn button_variant_with_interaction(
     )
 }
 
+// Surface override for the original EmptyState action; legacy callers retain
+// their existing palette path unless their Button owner supplies a Surface.
+pub(crate) fn button_surface_colors(
+    palette: Palette,
+    surface: &str,
+    state: ControlState,
+    variant: ButtonVariant,
+    hover: f32,
+    pressed: f32,
+) -> tekes_ui_tokens::surface_palette::SurfaceColors {
+    use tekes_ui_tokens::surface_palette::{resolve_surface_with_options, SurfaceOptions};
+    let usage = if variant == ButtonVariant::Primary { "action-primary" } else { "action-quiet" };
+    let options = SurfaceOptions { error: state.error, read_only: false };
+    let endpoint = |suffix| {
+        let name = match (state.selected, suffix) {
+            (true, "rest") => "selected",
+            (true, "hover") => "selected-hover",
+            (true, "pressed") => "selected-pressed",
+            (true, "disabled") => "selected-disabled",
+            (_, name) => name,
+        };
+        resolve_surface_with_options(palette, surface, usage, name, options)
+            .expect("validated original Button Surface/use/state")
+    };
+    if state.disabled {
+        return endpoint("disabled");
+    }
+    mix_button_colors(mix_button_colors(endpoint("rest"), endpoint("hover"), hover), endpoint("pressed"), pressed)
+}
+
+fn mix_button_colors(
+    a: tekes_ui_tokens::surface_palette::SurfaceColors,
+    b: tekes_ui_tokens::surface_palette::SurfaceColors,
+    progress: f32,
+) -> tekes_ui_tokens::surface_palette::SurfaceColors {
+    use tekes_ui_tokens::surface_palette::SurfaceColors;
+    let t = if progress.is_finite() { progress.clamp(0., 1.) } else { 0. };
+    if t == 0. { return a; }
+    if t == 1. { return b; }
+    let mix = |a: Rgba, b: Rgba| Rgba::new(
+        a.r+(b.r-a.r)*t, a.g+(b.g-a.g)*t, a.b+(b.b-a.b)*t, a.a+(b.a-a.a)*t,
+    );
+    let optional = |a: Option<Rgba>, b: Option<Rgba>| match (a,b) {
+        (None,None) => None,
+        (Some(a),Some(b)) => Some(mix(a,b)),
+        (Some(a),None) => Some(mix(a,Rgba::new(a.r,a.g,a.b,0.))),
+        (None,Some(b)) => Some(mix(Rgba::new(b.r,b.g,b.b,0.),b)),
+    };
+    SurfaceColors {
+        background: mix(a.background,b.background), text: mix(a.text,b.text), icon: mix(a.icon,b.icon),
+        boundary: optional(a.boundary,b.boundary), focus: optional(a.focus,b.focus),
+        marker: optional(a.marker,b.marker), helper: optional(a.helper,b.helper),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn button_variant_on_surface(
+    scene: &mut Scene, rect: Rect, palette: Palette, state: ControlState,
+    variant: ButtonVariant, radius: f32, hover: f32, pressed: f32, surface: &str,
+) -> tekes_ui_tokens::surface_palette::SurfaceColors {
+    let colors = button_surface_colors(palette, surface, state, variant, hover, pressed);
+    let mut quad = Quad::new(rect,colors.background).with_corner_radius(radius);
+    if let Some(boundary) = colors.boundary {
+        quad = quad.with_border(proposal::metric("stroke","stroke-rule").expect("control stroke"),boundary);
+    }
+    scene.push_quad(quad);
+    if state.focused && state.focus_visible && !state.disabled && let Some(focus) = colors.focus {
+        focus_ring_with_color(scene,rect,focus,radius);
+    }
+    colors
+}
+
+
 #[cfg(test)]
 mod boundary_tests {
     use super::*;

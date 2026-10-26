@@ -67,10 +67,21 @@ pub(super) struct PendingAction {
 }
 static NEXT_MOUNT: AtomicU64 = AtomicU64::new(1);
 pub(super) fn next_mount() -> u64 {
-    NEXT_MOUNT
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
-        .expect("content mount identity exhausted")
+    try_next_mount().expect("content mount identity exhausted")
 }
+/// Same allocator and successful sequence as Content::new/lifecycle.
+pub(super) fn try_next_mount() -> Result<u64, CompositionError> {
+    #[cfg(test)]
+    if FAIL_MOUNT.with(|flag| flag.get()) { return Err(CompositionError::MountExhausted); }
+    NEXT_MOUNT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
+        .map_err(|_| CompositionError::MountExhausted)
+}
+#[cfg(test)]
+mod mount_capacity_test {
+    thread_local! { pub(crate) static FAIL_MOUNT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
+}
+#[cfg(test)]
+pub(super) use mount_capacity_test::FAIL_MOUNT;
 impl ContentEvent {
     fn action_source(&self) -> ContentActionSource {
         match self {
@@ -167,7 +178,9 @@ impl ContentHost {
             .filter_map(|pending| {
                 self.root
                     .find(pending.action.target)
-                    .filter(|content| content.mount == pending.mount)
+                    .filter(|content| content.mount == pending.mount
+                        && empty_state::authorized_action(&self.root, pending.action.target)
+                        && pending.payload.as_ref().is_none_or(|p| content.component.action_payload_current(p)))
                     .map(|_| ContentActionRecord {
                         action: pending.action,
                         mount: pending.mount,
@@ -175,5 +188,46 @@ impl ContentHost {
                     })
             })
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod freshness_tests {
+    use super::*;
+    use std::{cell::Cell, rc::Rc};
+    #[derive(Debug)]
+    struct Producer { revision: Rc<Cell<u64>>, filter: bool }
+    impl Component for Producer {
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild { MeasuredChild::new(available) }
+        fn semantics(&self) -> ContentSemantics { ContentSemantics::new(ContentRole::Button, "Produce") }
+        fn accessibility_action(&mut self, _: Option<usize>, action: &AccessibilityAction) -> ContentResponse {
+            ContentResponse { activated: matches!(action, AccessibilityAction::Press), ..Default::default() }
+        }
+        fn action_payload(&self, _: ContentActionKind) -> Option<ContentActionPayload> {
+            Some(ContentActionPayload::MenuSelection(MenuSelection { index: 0, label: "item".into(), model_revision: self.revision.get(), value_path: None }))
+        }
+        fn action_payload_current(&self, payload: &ContentActionPayload) -> bool {
+            let ContentActionPayload::MenuSelection(value) = payload;
+            !self.filter || value.model_revision() == self.revision.get()
+        }
+    }
+    #[test]
+    fn stale_payload_is_filtered_at_original_once_only_drain() {
+        for filter in [false, true] {
+            let revision = Rc::new(Cell::new(1));
+            let mut h = ContentHost::new(Content::new(ComponentId(740), Producer { revision: revision.clone(), filter })).unwrap();
+            h.set_action_events(true);
+            h.accessibility_action(ComponentId(740), None, AccessibilityAction::Press);
+            revision.set(2);
+            assert_eq!(h.drain_action_records().len(), usize::from(!filter));
+            assert!(h.drain_actions().is_empty());
+            assert_eq!(revision.get(), 2);
+        }
+    }
+    #[test]
+    fn ordinary_owners_default_to_accepting_payloads() {
+        let owner = TextContent::new("ordinary");
+        let payload = ContentActionPayload::MenuSelection(MenuSelection { index: 0, label: "item".into(), model_revision: 1, value_path: None });
+        assert!(owner.action_payload_current(&payload));
     }
 }

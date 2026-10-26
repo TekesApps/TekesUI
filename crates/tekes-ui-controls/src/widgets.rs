@@ -410,6 +410,8 @@ pub struct Button {
     motion_palette: Option<(tekes_ui_tokens::Theme, tekes_ui_tokens::palette::PaletteSource)>,
     motion_now: Duration,
     motion_suspended: bool,
+    // Effective parent Surface supplied by the original feedback View.
+    surface: Option<&'static str>,
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum ButtonArm {
@@ -420,6 +422,20 @@ enum ButtonArm {
     Space,
 }
 impl Button {
+    pub(crate) fn set_surface(&mut self, surface: &'static str) {
+        self.surface = Some(surface);
+    }
+    pub(crate) fn surface_colors(
+        &self, palette: Palette, variant: crate::paint::ButtonVariant, surface: &str,
+    ) -> tekes_ui_tokens::surface_palette::SurfaceColors {
+        crate::paint::button_surface_colors(
+            palette,
+            surface,
+            self.state, variant,
+            self.hover_transition.value() as f32,
+            self.press_transition.value() as f32,
+        )
+    }
     pub(crate) fn synchronize_activation(&mut self) {
         if self.state.disabled
             || self.state.loading
@@ -493,6 +509,7 @@ impl Button {
             context,
             Some(content_size),
             None,
+            None,
         )
     }
 
@@ -539,6 +556,7 @@ impl Button {
         self.render_with_motion_context(
             scene, text, label, frame, clip, palette, variant, size, role, align, context, None,
             radius,
+            None,
         )
     }
 
@@ -575,6 +593,7 @@ impl Button {
             }),
             None,
             None,
+            None,
         )
     }
 
@@ -594,6 +613,7 @@ impl Button {
         context: Option<ControlMotionContext>,
         measured_content: Option<Size>,
         radius: Option<f32>,
+        prepared: Option<ButtonLayout>,
     ) -> ButtonLayout {
         // Pointer capture survives focus changes; only a keyboard Space arm
         // is canceled when focus leaves between key-down and key-up.
@@ -612,6 +632,7 @@ impl Button {
             size.inset() * scale
         };
         let max_width = (frame.size.width - inset * 2.0).max(0.0);
+        let layout = prepared.unwrap_or_else(|| {
         let label_size = measured_content.unwrap_or_else(|| {
             if label.is_empty() {
                 Size::default()
@@ -619,7 +640,7 @@ impl Button {
                 text.measure(label, role, max_width)
             }
         });
-        let layout = ButtonLayout::resolve_scaled(
+        ButtonLayout::resolve_scaled(
             frame,
             clip,
             label_size,
@@ -628,7 +649,8 @@ impl Button {
             align,
             self.frame_policy,
             scale,
-        );
+        )
+        });
         self.placement = Some(layout);
         let chrome = self
             .chrome_height
@@ -722,7 +744,17 @@ impl Button {
             if let Some(background_clip) = background_clip {
                 scene.push_clip(background_clip);
             }
-            let ink = if let Some((hover, pressed)) = transition_progress {
+            let ink = if let Some(surface) = self.surface {
+                let (hover, pressed) = transition_progress.unwrap_or((
+                    self.hover_transition.value() as f32,
+                    self.press_transition.value() as f32,
+                ));
+                crate::paint::button_variant_on_surface(
+                    scene, chrome, palette, self.state, variant,
+                    radius.unwrap_or_else(|| size.radius() * scale),
+                    hover, pressed, surface,
+                ).text
+            } else if let Some((hover, pressed)) = transition_progress {
                 crate::paint::button_variant_with_interaction(
                     scene,
                     chrome,
@@ -753,6 +785,31 @@ impl Button {
             }
         }
         layout
+    }
+
+    /// Arrange through the original resolver without painting or arming input.
+    pub(crate) fn prepare_label(
+        &mut self, text: &mut impl ButtonTextRenderer, label: &str,
+        frame: Rect, clip: Option<Rect>, role: proposal::TextRole,
+    ) -> ButtonLayout {
+        let scale = button_typography_scale(text, role);
+        let width = (frame.size.width - ButtonSize::Body.inset() * scale * 2.).max(0.);
+        let measured = text.measure(label, role, width);
+        let layout = ButtonLayout::resolve_scaled(frame, clip, measured, ButtonSize::Body,
+            role, ButtonTextAlign::default(), self.frame_policy, scale);
+        self.placement = Some(layout);
+        layout
+    }
+    // Keep the original arranged geometry, clip and text role explicit.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn paint_prepared_label(
+        &mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
+        label: &str, layout: ButtonLayout, clip: Option<Rect>, palette: Palette, role: proposal::TextRole,
+    ) {
+        let context = text.motion_context();
+        self.render_with_motion_context(scene, text, label, layout.frame, clip,
+            palette, crate::paint::ButtonVariant::Primary, ButtonSize::Body, role,
+            ButtonTextAlign::default(), context, None, None, Some(layout));
     }
 
     pub fn layout(&self) -> Option<ButtonLayout> {
@@ -2899,5 +2956,68 @@ impl Toolbar {
                 )
             })
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod empty_state_surface_tests {
+    use super::*;
+    use tekes_ui_tokens::{Theme, surface_palette::{resolve_surface, surface_names}};
+    #[derive(Default)]
+    struct Text { measures: usize, inks: Vec<Rgba> }
+    impl ButtonTextRenderer for Text {
+        fn measure(&mut self, _: &str, _: proposal::TextRole, _: f32) -> Size {
+            self.measures += 1;
+            Size::new(50., 18.)
+        }
+        fn draw(&mut self, _: &mut Scene, _: &str, _: proposal::TextRole,
+            _: Rect, _: ButtonTextAlign, ink: Rgba) { self.inks.push(ink); }
+    }
+    #[test]
+    fn empty_state_prepared_action_consumes_surface_packets_and_keeps_geometry() {
+        for theme in Theme::ALL {
+            let palettes = (0..3).map(|brand| Palette::new(theme, brand).unwrap())
+                .chain(["blue", "blue-inputs"].into_iter()
+                    .map(|id| Palette::for_theme_definition(theme, id).expect("required Theme definition")));
+            for palette in palettes {
+                for surface in surface_names() {
+                    for state in ["rest", "hover", "pressed", "disabled", "focus"] {
+                        let mut button = Button::default();
+                        let mut text = Text::default();
+                        let frame = Rect::new(10.25, 12.5, 140., 40.);
+                        let clip = Rect::new(0., 0., 220., 160.);
+                        let layout = button.prepare_label(&mut text, "Create", frame, Some(clip), proposal::TextRole::UiBody);
+                        button.set_surface(surface);
+                        match state {
+                            "hover" => button.pointer_move_at(frame.center()),
+                            "pressed" => { assert!(button.pointer_down_at(frame.center())); }
+                            "disabled" => button.state.disabled = true,
+                            "focus" => { button.state.focused = true; button.state.focus_visible = true; }
+                            _ => {}
+                        }
+                        let expected = resolve_surface(palette, surface, "action-primary",
+                            if state == "focus" { "rest" } else { state }).unwrap();
+                        let measures = text.measures;
+                        let mut scene = Scene::new();
+                        button.paint_prepared_label(&mut scene, &mut text, "Create", layout, Some(clip), palette, proposal::TextRole::UiBody);
+                        assert_eq!(text.measures, measures, "paint must retain prepared geometry");
+                        assert_eq!(button.layout(), Some(layout));
+                        assert_eq!(text.inks, vec![expected.text], "{theme:?}/{surface}/{state}");
+                        let quads: Vec<_> = scene.primitives().iter().filter_map(|p| match p {
+                            tekes_ui_scene::Primitive::Quad(quad) => Some(quad), _ => None,
+                        }).collect();
+                        assert_eq!(quads[0].fill, expected.background, "{theme:?}/{surface}/{state}");
+                        if let Some(boundary) = expected.boundary {
+                            assert_eq!(quads[0].border_color, boundary);
+                            assert_eq!(quads[0].border_width, proposal::metric("stroke", "stroke-rule").unwrap());
+                        } else { assert_eq!(quads[0].border_width, 0.); }
+                        if state == "focus" {
+                            assert_eq!(quads.len(), 2);
+                            assert_eq!(quads[1].border_color, expected.focus.expect("action focus packet"));
+                        } else { assert_eq!(quads.len(), 1); }
+                    }
+                }
+            }
+        }
     }
 }

@@ -469,6 +469,12 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-empty-state",
         "tekes_ui_controls::feedback_view::EmptyStateView",
     );
+    bind::<tekes_ui_controls::composition::EmptyStateContent>(
+        &mut actual,
+        "tui.empty-state",
+        "component-empty-state",
+        "tekes_ui_controls::composition::EmptyStateContent",
+    );
     bind::<tekes_ui_controls::feedback_view::SkeletonView>(
         &mut actual,
         "tui.skeleton",
@@ -925,6 +931,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::DialogContent",
     );
+    public_type::<tekes_ui_controls::composition::EmptyStateContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::EmptyStateContent",
+    );
     public_type::<tekes_ui_controls::composition::GridContent>(
         &mut actual,
         "tekes_ui_controls::composition::GridContent",
@@ -974,7 +984,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_134<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_135<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1393,7 +1403,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_239<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_240<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

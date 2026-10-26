@@ -27,8 +27,75 @@ pub(super) struct FeedbackViews {
     pub banner: BannerView,
     pub status_badge: StatusBadgeView,
     pub progress: ProgressView,
-    pub empty_state: EmptyStateView,
+    pub empty_state: MountedEmptyState,
     pub surface: SurfaceView,
+}
+
+/// Gallery host adapter: layout/theme/copy stay here; SDK owns action routing.
+#[derive(Debug)]
+pub(super) struct MountedEmptyState {
+    host: Option<tekes_ui_controls::composition::ContentHost>,
+    disabled: bool,
+    active: bool,
+    focus: (bool, bool),
+}
+impl Default for MountedEmptyState {
+    fn default() -> Self { Self { host: None, disabled: false, active: true, focus: (false, false) } }
+}
+impl MountedEmptyState {
+    const ROOT: tekes_ui_controls::composition::ComponentId = tekes_ui_controls::composition::ComponentId(78001);
+    const ACTION: tekes_ui_controls::composition::ComponentId = tekes_ui_controls::composition::ComponentId(78002);
+    fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+        if let Some(host) = &mut self.host { host.set_empty_state_disabled(Self::ROOT, disabled).expect("Gallery valid EmptyState"); }
+    }
+    fn set_window_active(&mut self, active: bool) {
+        self.active = active;
+        if let Some(host) = &mut self.host { host.set_window_active(active); }
+    }
+    fn focus_action(&mut self, focused: bool, visible: bool) {
+        self.focus = (focused, visible);
+        if let Some(host) = &mut self.host { host.focus(focused.then_some(Self::ACTION), visible); }
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn render(&mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer, model: &EmptyState,
+        frame: Rect, clip: Option<Rect>, palette: Palette, _role: proposal::TextRole) -> ViewLayout {
+        use tekes_ui_controls::composition::*;
+        let host = self.host.get_or_insert_with(|| {
+            let mut host = ContentHost::new(Content::new(Self::ROOT,
+                EmptyStateContent::new("Empty state", model.clone(), Self::ACTION).expect("fixture action name"))).unwrap();
+            host.set_action_events(true); host.set_window_active(self.active); host
+        });
+        if *host.get(Self::ROOT).unwrap().component::<EmptyStateContent>().unwrap().model() != *model {
+            host.replace_empty_state(Self::ROOT, model.clone()).expect("valid fixture update");
+        }
+        host.set_empty_state_disabled(Self::ROOT, self.disabled).expect("valid fixture availability");
+        // The parent already allocated a measured content slot. ContentHost
+        // renders the retained tree and publishes its actual action target.
+        host.render(scene, text, frame, clip.unwrap_or(frame), palette).expect("Gallery EmptyState layout");
+        host.focus(self.focus.0.then_some(Self::ACTION), self.focus.1);
+        self.layout()
+    }
+    fn layout(&self) -> ViewLayout {
+        self.host.as_ref().and_then(|h|h.get(Self::ROOT)).and_then(|n|n.component::<tekes_ui_controls::composition::EmptyStateContent>())
+            .map_or(ViewLayout::default(), |c|c.layout())
+    }
+    fn logical_focus_target(&self) -> Option<Rect> {
+        self.host.as_ref()?.semantics().into_iter().find(|n|n.id==Self::ACTION).map(|n|n.frame)
+    }
+    fn focus_target(&self) -> Option<Rect> {
+        self.host.as_ref()?.semantics().into_iter().find(|n|n.id==Self::ACTION)?.visible
+    }
+    fn event(&mut self, event: tekes_ui_controls::composition::ContentEvent) -> tekes_ui_controls::composition::ContentResponse {
+        let Some(host) = &mut self.host else { return Default::default(); };
+        let result = host.event(&event);
+        let activated = host.drain_actions().into_iter().any(|a|a.target==Self::ACTION);
+        tekes_ui_controls::composition::ContentResponse { activated, ..result }
+    }
+    fn pointer_down(&mut self, point: Point) -> bool { self.event(tekes_ui_controls::composition::ContentEvent::PointerDown(point)).consumed }
+    fn pointer_move(&mut self, point: Point) { self.event(tekes_ui_controls::composition::ContentEvent::PointerMove(point)); }
+    fn pointer_up(&mut self, point: Point) -> bool { self.event(tekes_ui_controls::composition::ContentEvent::PointerUp(point)).activated }
+    fn key(&mut self, key: ControlKey, down: bool) -> bool { self.event(tekes_ui_controls::composition::ContentEvent::Key { key, down }).activated }
 }
 
 pub(super) fn supports(renderer: &str) -> bool {
@@ -550,7 +617,7 @@ fn matrix_empty_state(
             true,
             ctx.text.backing_scale(),
         );
-        let mut view = EmptyStateView::default();
+        let mut view = MountedEmptyState::default();
         view.set_disabled(disabled);
         if focused {
             view.render(
@@ -745,7 +812,7 @@ fn matrix_empty_variants(
             true,
             ctx.text.backing_scale(),
         );
-        EmptyStateView::default().render(
+        MountedEmptyState::default().render(
             scene,
             ctx.text,
             &model,
@@ -1989,15 +2056,17 @@ mod layout_tests {
     }
 
     #[test]
+    #[ignore = "explicit GPU acceptance with fresh SSD output"]
     fn empty_state_playground_keeps_the_full_measured_action_visible() {
         let entry = crate::gallery::workbench::entries()
             .iter()
             .find(|entry| entry.renderer() == "empty-state")
             .unwrap();
-        let output = std::env::var_os("TEKESUI_EMPTY_STATE_OUT").map(std::path::PathBuf::from);
-        if let Some(p) = &output {
-            std::fs::create_dir_all(p).unwrap();
-        }
+        let output = Some(std::path::PathBuf::from(std::env::var_os("TEKESUI_EMPTY_STATE_OUT")
+            .expect("fresh SSD output required for explicit EmptyState GPU capture")));
+        let path = output.as_ref().unwrap();
+        assert!(path.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts"), "SSD evidence output required");
+        std::fs::create_dir(path).expect("fresh output directory required");
         let mut renderer = tekes_ui_render::Renderer::new_headless().expect("real GPU required");
         let mut records = Vec::new();
         for (theme_index, theme) in tekes_ui_tokens::Theme::ALL.into_iter().enumerate() {

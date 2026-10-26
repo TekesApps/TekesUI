@@ -6,6 +6,9 @@
 //! never reconstructs controls. Removed content is returned to its owner, which
 //! may retain it for virtualization. No implicit serialization or rehydration.
 mod actions;
+mod action_proxy;
+mod empty_state;
+pub use empty_state::EmptyStateContent;
 mod adapters;
 mod content_reading;
 mod content_reveal;
@@ -276,6 +279,11 @@ pub trait Component: Debug + Any {
     fn action_payload(&self, _kind: ContentActionKind) -> Option<ContentActionPayload> {
         None
     }
+    /// Pure filter for an undrained delivery. Defaults preserve existing owners.
+    /// Implementations must not mutate models, consume queues or produce actions.
+    fn action_payload_current(&self, _payload: &ContentActionPayload) -> bool {
+        true
+    }
     fn key_event(&mut self, key: &ContentKeyEvent) -> ContentResponse {
         key.key
             .map(|k| {
@@ -307,6 +315,8 @@ pub trait Component: Debug + Any {
     fn active(&self) -> bool {
         true
     }
+    /// Effective activity notification, including inactive retained descendants.
+    fn window_active_changed(&mut self, _active: bool) {}
     fn fixed_slots(&self) -> bool {
         false
     }
@@ -491,6 +501,7 @@ pub struct Content {
     help: Option<String>,
     help_revision: u64,
     surface: Option<&'static str>,
+    activity_effective: bool,
 }
 impl Content {
     pub fn new(id: ComponentId, component: impl Component) -> Self {
@@ -507,6 +518,7 @@ impl Content {
             help: None,
             help_revision: 0,
             surface: None,
+            activity_effective: true,
         }
     }
     pub fn with_surface(
@@ -841,6 +853,17 @@ impl Content {
             .iter_mut()
             .find_map(|c| c.find_mut(id))
     }
+    fn refresh_activity(&mut self, parent_active: bool) {
+        let active = parent_active && self.component.active();
+        if self.activity_effective != active {
+            self.activity_effective = active;
+            self.component.window_active_changed(active);
+        }
+        // Visit retained descendants even when this owner is inactive.
+        if let Some(children) = self.component.children_mut() {
+            for child in children { child.refresh_activity(active); }
+        }
+    }
     fn lifecycle(&mut self, event: Lifecycle) {
         self.mount = actions::next_mount();
         if event == Lifecycle::Unmounted {
@@ -1137,6 +1160,8 @@ impl Content {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompositionError {
+    MountExhausted,
+    InvalidEmptyState(ComponentId),
     SceneFragment(tekes_ui_scene::FragmentError),
     InvalidSurface,
     DuplicateId(ComponentId),
@@ -1179,6 +1204,7 @@ pub struct ContentHost {
     text_keys: Vec<key::KeyFrame>,
     last_text_key: u64,
     focus_epoch: u64,
+    window_active: bool,
     actions: Option<Vec<actions::PendingAction>>,
     reading_transaction: bool,
     last_layout: Option<(Rect, Rect)>,
@@ -1202,6 +1228,7 @@ impl ContentHost {
             text_keys: Vec::new(),
             last_text_key: 0,
             focus_epoch: 0,
+            window_active: true,
             actions: None,
             reading_transaction: false,
             last_layout: None,
@@ -1420,13 +1447,15 @@ impl ContentHost {
         if self.reading_transaction {
             return Err(CompositionError::ReadingTransactionInProgress);
         }
+        self.preflight_empty_state_structures()?;
+        self.root.refresh_activity(self.window_active);
         if let Err(e) = self.root.ids(&mut BTreeSet::new()) {
             self.cancel();
             return Err(e);
         }
         // Reject a changed attachment/mount before ticking any old navigation.
         self.observe_item_reveal();
-        self.layout_frame(text, frame, clip)?;
+        self.layout_preflighted(text, frame, clip)?;
         self.observe_item_reveal();
         self.reconcile_active_inputs();
         if self.modal_focus_pending && self.focused.is_none() {
@@ -1492,6 +1521,18 @@ impl ContentHost {
         frame: Rect,
         clip: Rect,
     ) -> Result<Rect, CompositionError> {
+        self.preflight_empty_state_structures()?;
+        self.root.refresh_activity(self.window_active);
+        self.layout_preflighted(text, frame, clip)
+    }
+    // render_frame already checked the adapter boundary before legacy ID-error
+    // cancellation. Direct reading/reveal layout enters through layout_frame.
+    fn layout_preflighted(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+    ) -> Result<Rect, CompositionError> {
         let requested = (frame, clip);
         if self
             .last_layout
@@ -1520,6 +1561,8 @@ impl ContentHost {
             self.cancel();
             return Err(CompositionError::MissingLabelServices(id));
         }
+        self.root.refresh_activity(self.window_active);
+        self.publish_empty_state_exposures()?;
         self.last_layout = Some(requested);
         Ok(frame)
     }
@@ -1559,6 +1602,7 @@ impl ContentHost {
         }
     }
     pub fn focus(&mut self, id: Option<ComponentId>, visible: bool) -> bool {
+        if !self.window_active && id.is_some() { return false; }
         self.dirty = true;
         if let Some(target) = id
             && (self.root.find_active(target).is_none()
@@ -1605,6 +1649,7 @@ impl ContentHost {
         self.event_bubbled.unwrap_or(false)
     }
     pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+        if !self.window_active { return ContentResponse::default(); }
         self.event_bubbled = None;
         let previous_caret = self.focused.and_then(|id| {
             self.focused_text()
@@ -1927,7 +1972,50 @@ impl ContentHost {
     /// Reorder retains it; replacement/remount changes it even for the same ID.
     /// This is not a persistent identifier and does not acquire focus or input.
     pub fn semantic_mount(&self, id: ComponentId) -> Option<u64> {
+        if !self.window_active { return None; }
         self.scope().find_active(id).map(|node| node.mount)
+    }
+    /// Read the existing focus lease, including blur/refocus ABA.
+    pub fn focus_epoch(&self) -> u64 { self.focus_epoch }
+    /// Current original capture owner and mount; no synthetic gesture identity.
+    pub fn pointer_capture(&self) -> Option<(ComponentId, u64)> {
+        self.captured.and_then(|id| self.root.find_active(id)
+            .filter(|node| node.visible().is_some() && !node.component.semantics().disabled)
+            .map(|node| (id, node.mount)))
+    }
+    /// The existing focused editor/custom component composition barrier.
+    pub fn is_composing(&self) -> bool {
+        self.focused.and_then(|id| self.root.find_active(id))
+            .is_some_and(|node| node.component.composing())
+            || self.focused_text().is_some_and(|s| s.input.marked.is_some())
+    }
+    /// Revoke adapter authorization recursively, including hidden descendants.
+    pub fn set_window_active(&mut self, active: bool) {
+        if self.window_active == active { return; }
+        if !active { self.cancel(); }
+        self.window_active = active;
+        self.root.refresh_activity(active);
+        self.dirty = true;
+    }
+    /// Cancel only this original subtree before its typed declaration changes.
+    pub fn cancel_subtree(&mut self, id: ComponentId) -> bool {
+        let Some(node) = self.root.find(id) else { return false; };
+        let focus = self.focused.is_some_and(|id| node.find(id).is_some());
+        let capture = self.captured.is_some_and(|id| node.find(id).is_some());
+        fn cancel(node: &mut Content) {
+            node.component.event(&ContentEvent::Cancel);
+            node.component.event(&ContentEvent::PointerMove(Point::new(f32::MIN, f32::MIN)));
+            if let Some(children) = node.component.children_mut() {
+                for child in children { cancel(child); }
+            }
+        }
+        cancel(self.root.find_mut(id).unwrap());
+        if capture { self.captured = None; }
+        if focus { self.focus(None, false); }
+        self.help.clear();
+        self.dirty = true;
+        self.reconcile_active_inputs();
+        true
     }
     /// Read the existing original owner's part hierarchy; no focus or input.
     pub fn semantic_part_parent(&self, id: ComponentId, part: usize) -> Option<usize> {
@@ -1944,6 +2032,7 @@ impl ContentHost {
         part: Option<usize>,
         action: AccessibilityAction,
     ) -> ContentResponse {
+        if !self.window_active { return ContentResponse::default(); }
         self.reconcile_active_inputs();
         if self
             .scope()
@@ -1952,6 +2041,13 @@ impl ContentHost {
         {
             return ContentResponse::default();
         }
+        // Preserve the original composing owner unless an auxiliary action
+        // explicitly retains focus. Use the same marked/custom barrier as Tab.
+        if self.is_composing() && self.focused != Some(id)
+            && (matches!(action, AccessibilityAction::Focus | AccessibilityAction::SetSelection(_))
+                || (matches!(action, AccessibilityAction::Press)
+                    && self.scope().find_active(id).is_some_and(|n| n.component.focusable() && !n.preserve_activation_focus)))
+        { return ContentResponse::default(); }
         if matches!(action, AccessibilityAction::Press) {
             self.help.suppress();
         }
@@ -2056,6 +2152,9 @@ impl ContentHost {
         {
             dialog.model.close();
         }
+        if let Some(node) = self.root.find_mut(id) {
+            empty_state::hide_subtree(node);
+        }
         self.modal = None;
         self.restore_focus(restore);
         true
@@ -2076,7 +2175,7 @@ impl ContentHost {
         self.captured = None;
         self.focus(None, false);
     }
-    pub fn insert(&mut self, parent: ComponentId, child: Content) -> Result<(), CompositionError> {
+    pub fn insert(&mut self, parent: ComponentId, mut child: Content) -> Result<(), CompositionError> {
         if let Some(action) = self.root.action_ancestor(parent)
             && let Some(child) = child.interactive_id()
         {
@@ -2085,6 +2184,7 @@ impl ContentHost {
         let mut ids = BTreeSet::new();
         self.root.ids(&mut ids)?;
         child.ids(&mut ids)?;
+        child.refresh_activity(self.window_active);
         let node = self
             .root
             .find_mut(parent)

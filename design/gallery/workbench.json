@@ -763,7 +763,8 @@
       "api": "tekes_ui_controls::extended::EmptyState",
       "api_bindings": [
         "tekes_ui_controls::extended::EmptyState",
-        "tekes_ui_controls::feedback_view::EmptyStateView"
+        "tekes_ui_controls::feedback_view::EmptyStateView",
+        "tekes_ui_controls::composition::EmptyStateContent"
       ]
     },
     {

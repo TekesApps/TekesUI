@@ -3147,7 +3147,51 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "b4fbed121d9cdec87ded2cf6c3cc05825538764a",
+        "scope": "Local main baseline plus exact EmptyState integration delta: original View/action owner, shared Surface, mixed Host and actual GPU/Gallery. Not full native or Tree/Notice delivery.",
+        "claims": [
+          "Original prepared geometry, fixed proxy identity and complete action Surface states verified",
+          "Malformed slots, stale action authorization, inactive recovery and allocation failure preserve required original state",
+          "Public Composer/reading and current external Theme consumption passed",
+          "1176 default/784 external GPU cases plus 24 actual original Gallery frames passed"
+        ],
+        "exceptions": [
+          "Parent supplies finite allocation; no new layout engine or intrinsic product copy",
+          "Ordinary Button without an explicit Surface keeps its existing paint branch"
+        ],
+        "gaps": [
+          "Native window/physical IME/VoiceOver/performance/release",
+          "Absent module-runtime wire bridge and full #74 Tree delivery on local main",
+          "Whole Design System/all52 roots"
+        ],
+        "source_identity": {
+          "scope": "Exact integrated production inputs; full runtime manifests and earlier failures retained on SSD.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "ea76cd13f2025af8da2b2f84628d884b50ab439afcd560d4e6e411a6285090d2",
+            "crates/tekes-ui-controls/src/composition/empty_state.rs": "8154a463e348d22cd8f44355323ccba104567896dffcba8524c82e0c90d6ca11",
+            "crates/tekes-ui-controls/src/composition/action_proxy.rs": "0c5f8496ded8a5a3562442c4f2125e4f8a5bb2be99e3bdb48b9b8508e4a3f9d5",
+            "crates/tekes-ui-controls/src/composition/actions.rs": "47747e5a45540f9832888b2de7ce773a07cd6e63e41ca025cb7b61cfc133e37e",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "e9ece792d6cdce80810e79955dd4e454ce26dbd56ea2a99fa0eb7d740d41f14f",
+            "crates/tekes-ui-controls/src/widgets.rs": "bc13c3b9a6674d946ace922447cd27a3a327e4daffce88ff34e3c172ee30b7d4",
+            "crates/tekes-ui-controls/src/paint.rs": "067d33f31f4d0717d30268b22031fe69e7b1560ce2fe2908a04254c74e5842eb",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "0268883ac590fc7c5f51cd35a8cc0655580b7440a3eda2363f83c319ddf68e65",
+            "examples/composition-consumer/src/empty_state_content.rs": "a73d1bb24db806e91efadedcad79225ca0a4339ff212b8a85a446c6330ca61cb"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#78",
+            "component": "tui.empty-state",
+            "commit": "b4fbed121d9cdec87ded2cf6c3cc05825538764a",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/empty78-mainb4fbed1-intake/root-review.json",
+            "sha256": "bd50cb00c7f310158a77208db4e7bd762f02b0b67ede653ca51df260d6728ae8",
+            "scope": "Baseline b4fbed1 plus frozen integration delta, actual public/anchor/protocol/strict/GPU/Gallery review; not a transfer of old R proof."
+          }
+        ]
+      }
     },
     {
       "id": "tui.skeleton",

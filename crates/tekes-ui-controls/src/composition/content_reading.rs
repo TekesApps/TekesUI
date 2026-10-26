@@ -325,6 +325,10 @@ impl ScrollContent {
         state.result = None;
         Ok(version)
     }
+    /// Declared stable item IDs from the original current document.
+    pub fn reading_items(&self) -> &[ComponentId] {
+        self.reading.as_ref().map_or(&[], |state| state.items.as_slice())
+    }
     pub fn reading_document_version(&self) -> Option<&ReadingDocumentVersion> {
         self.reading.as_ref().map(|s| &s.version)
     }

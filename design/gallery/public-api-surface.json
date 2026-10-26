@@ -917,6 +917,14 @@
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
     },
     {
+      "api": "tekes_ui_controls::composition::EmptyStateContent",
+      "category": "component",
+      "components": [
+        "tui.empty-state"
+      ],
+      "reason": "Public Content adapter mounts the original EmptyState View and sole action owner; retains the existing registered identity."
+    },
+    {
       "api": "tekes_ui_controls::composition::GridContent",
       "category": "component-adapter",
       "components": [

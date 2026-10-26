@@ -2140,8 +2140,37 @@ pub struct EmptyStateView {
     logical_action_frame: Option<Rect>,
     disabled: bool,
     inactive: bool,
+    surface: Option<&'static str>,
+    prepared: Option<EmptyStatePrepared>,
+}
+/// Geometry owned by the original View; only prepare can replace it.
+#[derive(Clone, Copy, Debug)]
+struct EmptyStatePrepared {
+    title: Rect,
+    detail: Rect,
+    title_draw: Rect,
+    detail_draw: Rect,
+    role: proposal::TextRole,
 }
 impl EmptyStateView {
+    pub fn set_surface(&mut self, name: &str) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);
+        Ok(())
+    }
+    pub fn cancel_action(&mut self) { self.action.cancel(); }
+    pub fn invalidate_body_geometry(&mut self) { self.prepared = None; }
+    pub fn invalidate_geometry(&mut self) {
+        self.invalidate_body_geometry();
+        self.action_layout = None;
+        self.logical_action_frame = None;
+        self.action.clear_layout();
+    }
+    pub fn activate_action(&mut self) -> bool {
+        if self.focus_target().is_none() { return false; }
+        self.action.pointer_down();
+        self.action.pointer_up(true)
+    }
+
     /// Natural content-slot size, including wrapped title, detail and action.
     /// Parent surface padding is separate. Supply the same width and text
     /// renderer to `render`; a deliberately smaller frame still clips content.
@@ -2213,16 +2242,9 @@ impl EmptyStateView {
             self.action.cancel();
         }
     }
-    #[allow(clippy::too_many_arguments)]
-    pub fn render(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut impl ButtonTextRenderer,
-        model: &EmptyState,
-        frame: Rect,
-        clip: Option<Rect>,
-        palette: Palette,
-        role: proposal::TextRole,
+    pub fn prepare(
+        &mut self, text: &mut impl ButtonTextRenderer, model: &EmptyState,
+        frame: Rect, clip: Option<Rect>, role: proposal::TextRole,
     ) -> ViewLayout {
         let visible = clipped(frame, clip);
         // Keep the Gallery's established left-aligned empty-state composition.
@@ -2261,50 +2283,57 @@ impl EmptyStateView {
             (!self.disabled && !self.inactive && valid_logical_target(logical_action_frame, clip))
                 .then_some(logical_action_frame)
         });
-        if let Some(v) = visible {
-            scene.push_clip(v);
-            draw_text(
-                scene,
-                text,
-                &model.title,
-                proposal::TextRole::UiHeading,
-                Rect::new(x, title_y, title_width, title_h),
-                palette,
-                ButtonTextAlign::Leading,
-            );
-            draw_text(
-                scene,
-                text,
-                &model.detail,
-                role,
-                Rect::new(x, detail_y, content_width.min(460.), detail_h),
-                palette,
-                ButtonTextAlign::Leading,
-            );
-            if let Some(label) = &model.action {
-                let r = Rect::new(x, action_y, action_w, action_h);
-                self.action.state.disabled = self.disabled || self.inactive;
-                self.action_layout = Some(self.action.render(
-                    scene,
-                    text,
-                    label,
-                    r,
-                    Some(v),
-                    palette,
-                    paint::ButtonVariant::Primary,
-                    ButtonSize::Body,
-                    role,
-                    ButtonTextAlign::default(),
-                ));
-            } else {
-                self.action_layout = None;
-                self.action.blur();
-            }
-            scene.pop_clip();
-        } else {
-            self.action_layout = None;
-            self.action.blur();
+        let title_frame = Rect::new(x, title_y, title_width, title_h);
+        let detail_frame = Rect::new(x, detail_y, content_width.min(460.), detail_h);
+        let title_draw_h = text.measure(&model.title, proposal::TextRole::UiHeading, title_width).height.max(0.).min(title_h);
+        let detail_draw_h = text.measure(&model.detail, role, detail_frame.size.width).height.max(0.).min(detail_h);
+        self.prepared = Some(EmptyStatePrepared {
+            title: title_frame, detail: detail_frame,
+            title_draw: Rect::new(x, title_y, title_width, title_draw_h),
+            detail_draw: Rect::new(x, detail_y, detail_frame.size.width, detail_draw_h), role,
+        });
+        self.action.state.disabled = self.disabled || self.inactive;
+        self.action_layout = match (&model.action, visible) {
+            (Some(label), Some(v)) => Some(self.action.prepare_label(text, label, logical_action_frame, Some(v), role)),
+            _ => { self.action.clear_layout(); self.action.blur(); None }
+        };
+        self.layout
+    }
+    /// Consume the arranged geometry. No measure call or hit-frame mutation.
+    pub fn paint_prepared(
+        &mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
+        model: &EmptyState, palette: Palette,
+    ) {
+        let Some(prepared) = self.prepared else { return; };
+        let Some(visible) = self.layout.visible else { return; };
+        let surface = self.surface.unwrap_or("canvas");
+        let body = tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, "content", "rest")
+            .expect("generated EmptyState content packet");
+        // Resolve both complete packets before adding any ink or clip.
+        self.action.set_surface(surface);
+        let _action_packet = self.action.surface_colors(palette, paint::ButtonVariant::Primary, surface);
+        scene.push_clip(visible);
+        if !model.title.is_empty() && !prepared.title.is_empty() {
+            text.draw(scene, &model.title, proposal::TextRole::UiHeading, prepared.title_draw,
+                ButtonTextAlign::Leading, body.text);
         }
+        if !model.detail.is_empty() && !prepared.detail.is_empty() {
+            text.draw(scene, &model.detail, prepared.role, prepared.detail_draw,
+                ButtonTextAlign::Leading, body.text);
+        }
+        if let (Some(label), Some(layout)) = (&model.action, self.action_layout) {
+            self.action.paint_prepared_label(scene, text, label, layout, self.layout.visible, palette, prepared.role);
+        }
+        scene.pop_clip();
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn render(
+        &mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
+        model: &EmptyState, frame: Rect, clip: Option<Rect>, palette: Palette,
+        role: proposal::TextRole,
+    ) -> ViewLayout {
+        self.prepare(text, model, frame, clip, role);
+        self.paint_prepared(scene, text, model, palette);
         self.layout
     }
     pub fn pointer_down(&mut self, p: Point) -> bool {
