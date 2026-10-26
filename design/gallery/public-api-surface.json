@@ -599,6 +599,30 @@
       "reason": "Resolved icon action descriptor for the existing Toolbar route; accessible labels remain authoritative in overflow."
     },
     {
+      "api": "tekes_ui_controls::collections_view::ChartOwnerCapacity",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Measured original Chart owner body capacity; not a separate component or acceptance result."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::ChartOwnerFocusSpace",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Original Chart owner focus-space layout outcome; not native accessibility or GPU acceptance."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::ChartOwnerMeasurement",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Original Chart owner label measurement and capacity; preserves the existing Chart identity."
+    },
+    {
       "api": "tekes_ui_controls::collections_view::ChartView",
       "category": "component",
       "components": [
@@ -1255,6 +1279,12 @@
         "tui.empty-state"
       ],
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::FocusRingMetrics",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared token-derived focus stroke, gap and backing-pixel coverage metrics; no independent component lifecycle."
     },
     {
       "api": "tekes_ui_controls::extended::Grid",
