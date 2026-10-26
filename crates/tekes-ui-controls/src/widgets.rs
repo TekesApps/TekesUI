@@ -803,13 +803,23 @@ impl Button {
     // Keep the original arranged geometry, clip and text role explicit.
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn paint_prepared_label(
-        &mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
-        label: &str, layout: ButtonLayout, clip: Option<Rect>, palette: Palette, role: proposal::TextRole,
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        layout: ButtonLayout,
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
     ) {
-        let context = text.motion_context();
-        self.render_with_motion_context(scene, text, label, layout.frame, clip,
-            palette, crate::paint::ButtonVariant::Primary, ButtonSize::Body, role,
-            ButtonTextAlign::default(), context, None, None, Some(layout));
+        self.paint_prepared_label_variant(scene,text,label,layout,clip,palette,role,crate::paint::ButtonVariant::Primary);
+    }
+    // Preserve the existing explicit renderer/layout/clip/Theme contract;
+    // the variant is the original Toast Quiet versus Banner Primary choice.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn paint_prepared_label_variant(&mut self,scene:&mut Scene,text:&mut impl ButtonTextRenderer,label:&str,layout:ButtonLayout,clip:Option<Rect>,palette:Palette,role:proposal::TextRole,variant:crate::paint::ButtonVariant){
+        let context=text.motion_context();
+        self.render_with_motion_context(scene,text,label,layout.frame,clip,palette,variant,ButtonSize::Body,role,ButtonTextAlign::default(),context,None,None,Some(layout));
     }
 
     pub fn layout(&self) -> Option<ButtonLayout> {
@@ -3020,4 +3030,33 @@ mod empty_state_surface_tests {
             }
         }
     }
+    #[test]
+    fn notice_prepared_dismiss_consumes_quiet_and_primary_state_packets() {
+        for theme in Theme::ALL {
+            let palette=Palette::for_theme_definition(theme,"blue-inputs").expect("required Theme definition");
+            for surface in surface_names() {
+                for (variant,usage) in [(crate::paint::ButtonVariant::Quiet,"action-quiet"),(crate::paint::ButtonVariant::Primary,"action-primary")] {
+                    for state in ["rest","hover","pressed","disabled","focus"] {
+                        let mut button=Button::default();let mut text=Text::default();let frame=Rect::new(10.25,12.5,140.,40.);let clip=Rect::new(0.,0.,220.,160.);
+                        let layout=button.prepare_label(&mut text,"Dismiss",frame,Some(clip),proposal::TextRole::UiBody);button.set_surface(surface);
+                        match state {
+                            "hover"=>button.pointer_move_at(frame.center()),
+                            "pressed"=>{assert!(button.pointer_down_at(frame.center()));},
+                            "disabled"=>button.state.disabled=true,
+                            "focus"=>{button.state.focused=true;button.state.focus_visible=true;},
+                            _=>{},
+                        }
+                        let expected=resolve_surface(palette,surface,usage,if state=="focus"{"rest"}else{state}).unwrap();let measures=text.measures;let mut scene=Scene::new();
+                        button.paint_prepared_label_variant(&mut scene,&mut text,"Dismiss",layout,Some(clip),palette,proposal::TextRole::UiBody,variant);
+                        assert_eq!(text.measures,measures);assert_eq!(button.layout(),Some(layout));assert_eq!(text.inks,vec![expected.text]);
+                        let quads:Vec<_>=scene.primitives().iter().filter_map(|p|match p{tekes_ui_scene::Primitive::Quad(q)=>Some(q),_=>None}).collect();
+                        assert_eq!(quads[0].fill,expected.background);
+                        if let Some(boundary)=expected.boundary{assert_eq!(quads[0].border_color,boundary);assert_eq!(quads[0].border_width,proposal::metric("stroke","stroke-rule").unwrap());}else{assert_eq!(quads[0].border_width,0.);}
+                        if state=="focus"{assert_eq!(quads.len(),2);assert_eq!(quads[1].border_color,expected.focus.unwrap());}else{assert_eq!(quads.len(),1);}
+                    }
+                }
+            }
+        }
+    }
+
 }

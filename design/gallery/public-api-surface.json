@@ -743,6 +743,14 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::BannerContent",
+      "category": "component",
+      "components": [
+        "tui.banner"
+      ],
+      "reason": "Public Content adapter retains the original Notice model/View, action owner and registered identity; no new queue or component."
+    },
+    {
       "api": "tekes_ui_controls::composition::ButtonActivationPhase",
       "category": "composition",
       "components": [],
@@ -1193,6 +1201,14 @@
       "category": "shared-support",
       "components": [],
       "reason": "Viewport constraints on the existing TextFieldContent: legacy Form, Fixed, Fill and bounded intrinsic Grow, excluding Field metadata. Reuses original TextSurface/ReadingController/Stack flexible child; not a new component or layout framework."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToastContent",
+      "category": "component",
+      "components": [
+        "tui.toast"
+      ],
+      "reason": "Public Content adapter retains the original Notice model/View, action owner and registered identity; no new queue or component."
     },
     {
       "api": "tekes_ui_controls::composition::ToolbarContent",

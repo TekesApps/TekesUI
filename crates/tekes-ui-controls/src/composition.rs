@@ -7,6 +7,8 @@
 //! may retain it for virtualization. No implicit serialization or rehydration.
 mod actions;
 mod action_proxy;
+mod notice;
+pub use notice::{ToastContent, BannerContent};
 mod empty_state;
 pub use empty_state::EmptyStateContent;
 mod adapters;
@@ -315,8 +317,12 @@ pub trait Component: Debug + Any {
     fn active(&self) -> bool {
         true
     }
-    /// Effective activity notification, including inactive retained descendants.
+    /// Activity notification, including inactive retained descendants. Notice
+    /// owners receive window + ancestor activity; other owners retain the #78
+    /// effective self/ancestor activity contract. Own notice visibility is runnable state.
     fn window_active_changed(&mut self, _active: bool) {}
+    /// Effective active ancestry and this node's arranged nonempty visible clip.
+    fn presentation_runnable_changed(&mut self, _runnable: bool) {}
     fn fixed_slots(&self) -> bool {
         false
     }
@@ -501,6 +507,8 @@ pub struct Content {
     help: Option<String>,
     help_revision: u64,
     surface: Option<&'static str>,
+    // Cached value last notified to this owner; notice and ordinary owner
+    // notification semantics differ. This is not a generic activity fact.
     activity_effective: bool,
 }
 impl Content {
@@ -853,11 +861,30 @@ impl Content {
             .iter_mut()
             .find_map(|c| c.find_mut(id))
     }
+    fn notify_presentation_runnable(&mut self, ancestor_active: bool) {
+        let active = ancestor_active && self.component.active();
+        self.component.presentation_runnable_changed(active && self.visible().is_some());
+        if let Some(children) = self.component.children_mut() {
+            for child in children { child.notify_presentation_runnable(active); }
+        }
+    }
+    // Withdraw only. Successful layout is the sole publisher of true.
+    fn reconcile_presentation_runnable(&mut self, ancestor_active: bool) {
+        let active = ancestor_active && self.component.active();
+        if !active || self.visible().is_none() { self.component.presentation_runnable_changed(false); }
+        if let Some(children) = self.component.children_mut() {
+            for child in children { child.reconcile_presentation_runnable(active); }
+        }
+    }
     fn refresh_activity(&mut self, parent_active: bool) {
         let active = parent_active && self.component.active();
-        if self.activity_effective != active {
-            self.activity_effective = active;
-            self.component.window_active_changed(active);
+        // Notice visibility owns its runnable lifecycle. Its window authority
+        // follows ancestry so a completed Dismiss can still drain once.
+        let notification_active = if self.component::<ToastContent>().is_some()
+            || self.component::<BannerContent>().is_some() { parent_active } else { active };
+        if self.activity_effective != notification_active {
+            self.activity_effective = notification_active;
+            self.component.window_active_changed(notification_active);
         }
         // Visit retained descendants even when this owner is inactive.
         if let Some(children) = self.component.children_mut() {
@@ -1162,6 +1189,9 @@ impl Content {
 pub enum CompositionError {
     MountExhausted,
     InvalidEmptyState(ComponentId),
+    InvalidNotice(ComponentId),
+    MissingNoticeClock(ComponentId),
+    NoticeClockWentBackwards(ComponentId),
     SceneFragment(tekes_ui_scene::FragmentError),
     InvalidSurface,
     DuplicateId(ComponentId),
@@ -1205,6 +1235,7 @@ pub struct ContentHost {
     last_text_key: u64,
     focus_epoch: u64,
     window_active: bool,
+    animation_frame_requested: bool,
     actions: Option<Vec<actions::PendingAction>>,
     reading_transaction: bool,
     last_layout: Option<(Rect, Rect)>,
@@ -1229,6 +1260,7 @@ impl ContentHost {
             last_text_key: 0,
             focus_epoch: 0,
             window_active: true,
+            animation_frame_requested: false,
             actions: None,
             reading_transaction: false,
             last_layout: None,
@@ -1426,9 +1458,13 @@ impl ContentHost {
         clip: Rect,
         palette: Palette,
     ) -> Result<(), CompositionError> {
-        let result = self.render_frame(scene, text, frame, clip, palette);
+        let mut requested = false;
+        let active = self.window_active;
+        let result = self.render_frame(scene, &mut FrameTextAdapter(text, Some(&mut requested), active), frame, clip, palette);
+        self.animation_frame_requested = result.is_ok() && requested;
         self.last_layout = result.is_ok().then_some((frame, clip));
         if let Err(error) = &result {
+            notice::clear_samples(&mut self.root);
             self.fail_item_reveal(ContentRevealError::Layout(*error));
         }
         result
@@ -1448,15 +1484,18 @@ impl ContentHost {
             return Err(CompositionError::ReadingTransactionInProgress);
         }
         self.preflight_empty_state_structures()?;
+        self.preflight_notice_structures()?;
         self.root.refresh_activity(self.window_active);
         if let Err(e) = self.root.ids(&mut BTreeSet::new()) {
             self.cancel();
             return Err(e);
         }
+        self.root.reconcile_presentation_runnable(self.window_active);
         // Reject a changed attachment/mount before ticking any old navigation.
         self.observe_item_reveal();
         self.layout_preflighted(text, frame, clip)?;
         self.observe_item_reveal();
+        self.advance_notices(text)?;
         self.reconcile_active_inputs();
         if self.modal_focus_pending && self.focused.is_none() {
             self.modal_focus_pending = false;
@@ -1522,6 +1561,7 @@ impl ContentHost {
         clip: Rect,
     ) -> Result<Rect, CompositionError> {
         self.preflight_empty_state_structures()?;
+        self.preflight_notice_structures()?;
         self.root.refresh_activity(self.window_active);
         self.layout_preflighted(text, frame, clip)
     }
@@ -1562,11 +1602,15 @@ impl ContentHost {
             return Err(CompositionError::MissingLabelServices(id));
         }
         self.root.refresh_activity(self.window_active);
+        self.root.notify_presentation_runnable(self.window_active);
         self.publish_empty_state_exposures()?;
+        self.publish_notice_exposures()?;
         self.last_layout = Some(requested);
         Ok(frame)
     }
     fn reconcile_active_inputs(&mut self) {
+        self.root.refresh_activity(self.window_active);
+        self.root.reconcile_presentation_runnable(self.window_active);
         if self
             .modal
             .is_some_and(|(id, _)| self.root.find_active(id).is_none())
@@ -1730,6 +1774,9 @@ impl ContentHost {
             if let Some(key) = key {
                 return self.dispatch(&ContentEvent::Key { key, down: true });
             }
+        }
+        if !matches!(event,ContentEvent::Cancel) && self.preflight_notice_structures().is_err() {
+            return ContentResponse::default();
         }
         if self.root.ids(&mut BTreeSet::new()).is_err() {
             self.cancel();
@@ -1976,6 +2023,7 @@ impl ContentHost {
         self.scope().find_active(id).map(|node| node.mount)
     }
     /// Read the existing focus lease, including blur/refocus ABA.
+    pub fn animation_frame_requested(&self) -> bool { self.window_active && self.animation_frame_requested }
     pub fn focus_epoch(&self) -> u64 { self.focus_epoch }
     /// Current original capture owner and mount; no synthetic gesture identity.
     pub fn pointer_capture(&self) -> Option<(ComponentId, u64)> {
@@ -2154,6 +2202,8 @@ impl ContentHost {
         }
         if let Some(node) = self.root.find_mut(id) {
             empty_state::hide_subtree(node);
+            notice::hide_subtree(node);
+            node.reconcile_presentation_runnable(false);
         }
         self.modal = None;
         self.restore_focus(restore);
@@ -2614,6 +2664,44 @@ impl Component for ScrollContent {
 }
 
 /// The forwarding value keeps existing sized renderer APIs source-compatible.
+struct FrameTextAdapter<'a>(&'a mut dyn ButtonTextRenderer, Option<&'a mut bool>, bool);
+impl ButtonTextRenderer for FrameTextAdapter<'_> {
+    fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+        self.0.resolved_font_size(role)
+    }
+    fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
+        self.0.text_surface_host()
+    }
+    fn measure(&mut self, t: &str, r: proposal::TextRole, w: f32) -> Size {
+        self.0.measure(t, r, w)
+    }
+    fn draw(
+        &mut self,
+        s: &mut Scene,
+        t: &str,
+        r: proposal::TextRole,
+        f: Rect,
+        a: ButtonTextAlign,
+        i: Rgba,
+    ) {
+        self.0.draw(s, t, r, f, a, i)
+    }
+    fn motion_context(&self) -> Option<ControlMotionContext> {
+        self.0.motion_context()
+    }
+    fn request_animation_frame(&mut self) {
+        if !self.2 { return; }
+        if let Some(requested) = &mut self.1 { **requested = true; }
+        self.0.request_animation_frame()
+    }
+    fn backing_scale(&self) -> f32 {
+        self.0.backing_scale()
+    }
+    fn first_line_height(&mut self, t: &str, r: proposal::TextRole, w: f32) -> f32 {
+        self.0.first_line_height(t, r, w)
+    }
+}
+
 struct TextAdapter<'a>(&'a mut dyn ButtonTextRenderer);
 impl ButtonTextRenderer for TextAdapter<'_> {
     fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {

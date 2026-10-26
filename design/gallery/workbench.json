@@ -699,7 +699,8 @@
       "api": "tekes_ui_controls::extended::Toast",
       "api_bindings": [
         "tekes_ui_controls::extended::Toast",
-        "tekes_ui_controls::feedback_view::ToastView"
+        "tekes_ui_controls::feedback_view::ToastView",
+        "tekes_ui_controls::composition::ToastContent"
       ]
     },
     {
@@ -715,7 +716,8 @@
       "api": "tekes_ui_controls::extended::Banner",
       "api_bindings": [
         "tekes_ui_controls::extended::Banner",
-        "tekes_ui_controls::feedback_view::BannerView"
+        "tekes_ui_controls::feedback_view::BannerView",
+        "tekes_ui_controls::composition::BannerContent"
       ]
     },
     {

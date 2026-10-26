@@ -180,6 +180,7 @@ impl ContentHost {
                     .find(pending.action.target)
                     .filter(|content| content.mount == pending.mount
                         && empty_state::authorized_action(&self.root, pending.action.target)
+                        && notice::authorized_action(&self.root, pending.action.target)
                         && pending.payload.as_ref().is_none_or(|p| content.component.action_payload_current(p)))
                     .map(|_| ContentActionRecord {
                         action: pending.action,

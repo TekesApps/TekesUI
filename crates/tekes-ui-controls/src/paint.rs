@@ -107,6 +107,38 @@ pub(crate) fn surface_kind_with_elevation_at_scale(
     }
     scene.push_quad(q);
 }
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn surface_kind_with_elevation_colors_at_scale(scene: &mut Scene, rect: Rect, theme: Palette, kind: SurfaceKind, backing_scale: f32, elevation_role: &str, colors: tekes_ui_tokens::surface_palette::SurfaceColors) {
+    let (radius, framed) = match kind {
+        SurfaceKind::Canvas => ("radius-panel", false),
+        SurfaceKind::Panel => ("radius-panel", true),
+        SurfaceKind::Floating => ("radius-floating", true),
+        SurfaceKind::Dialog => ("c-dialog-radius", true),
+        SurfaceKind::Code => ("c-code-radius", true),
+    };
+    let radius = proposal::metric("radius", radius).expect("surface radius");
+    // JSON layers are front-to-back; painter order is back-to-front. Shadows
+    // retain the caller's ancestor clip, never the surface's own bounds.
+    for layer in proposal::elevation(elevation_role, theme.theme)
+        .iter()
+        .rev()
+    {
+        let mut ink = color(theme, layer.color);
+        ink.a *= layer.alpha;
+        scene.push_shadow(
+            ShadowQuad::new(rect, ink)
+                .with_corner_radius(radius)
+                .with_offset(Point::new(layer.offset_x, layer.offset_y))
+                .with_blur_radius(layer.blur_radius)
+                .with_outset(layer.spread),
+        );
+    }
+    let mut q = Quad::new(rect, colors.background).with_corner_radius(radius);
+    if framed && let Some(ink) = colors.boundary {
+        q = q.with_border(decorative_border(theme, backing_scale).0, ink);
+    }
+    scene.push_quad(q);
+}
 /// Decorative frame, following layout.json hairline policy. Never use this
 /// for a necessary control boundary or a focus/selection indicator.
 pub fn decorative_border(theme: impl Into<Palette>, backing_scale: f32) -> (f32, Rgba) {

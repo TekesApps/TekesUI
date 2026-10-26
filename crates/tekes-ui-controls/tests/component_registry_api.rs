@@ -421,6 +421,12 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-toast",
         "tekes_ui_controls::feedback_view::ToastView",
     );
+    bind::<tekes_ui_controls::composition::ToastContent>(
+        &mut actual,
+        "tui.toast",
+        "component-toast",
+        "tekes_ui_controls::composition::ToastContent",
+    );
     bind::<tekes_ui_controls::extended::Banner>(
         &mut actual,
         "tui.banner",
@@ -432,6 +438,12 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "tui.banner",
         "component-banner",
         "tekes_ui_controls::feedback_view::BannerView",
+    );
+    bind::<tekes_ui_controls::composition::BannerContent>(
+        &mut actual,
+        "tui.banner",
+        "component-banner",
+        "tekes_ui_controls::composition::BannerContent",
     );
     bind::<tekes_ui_controls::extended::StatusBadge>(
         &mut actual,
@@ -824,6 +836,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::AccessibilityAction",
     );
+    public_type::<tekes_ui_controls::composition::BannerContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::BannerContent",
+    );
     public_type::<tekes_ui_controls::composition::ButtonActivationPhase>(
         &mut actual,
         "tekes_ui_controls::composition::ButtonActivationPhase",
@@ -833,7 +849,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::ButtonContent",
     );
     #[allow(dead_code)]
-    fn public_trait_97<T: tekes_ui_controls::composition::Component + ?Sized>() {}
+    fn public_trait_98<T: tekes_ui_controls::composition::Component + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::Component");
     public_type::<tekes_ui_controls::composition::ComponentId>(
         &mut actual,
@@ -984,7 +1000,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_135<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_136<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1081,6 +1097,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::TextViewport>(
         &mut actual,
         "tekes_ui_controls::composition::TextViewport",
+    );
+    public_type::<tekes_ui_controls::composition::ToastContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToastContent",
     );
     public_type::<tekes_ui_controls::composition::ToolbarContent>(
         &mut actual,
@@ -1403,7 +1423,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_240<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_242<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

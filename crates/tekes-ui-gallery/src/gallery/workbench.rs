@@ -1875,6 +1875,8 @@ impl Workbench {
             w.state(i).extended.combo.open = true;
         }
         let mut text = super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, false);
         text.begin_frame();
         let mut st = super::static_text::StaticText::new(None);
         let mut ctx = PageCtx {
@@ -2223,6 +2225,29 @@ impl Workbench {
     /// Build a story whose document geometry may be translated while the actual host viewport
     /// remains fixed in window coordinates. Component hit geometry and drawing share this clip.
     pub fn build_clipped(
+        &mut self,
+        i: usize,
+        ctx: &mut PageCtx<'_>,
+        content: Rect,
+        viewport_clip: Rect,
+        scene: &mut Scene,
+    ) {
+        // Snapshot stories have no window frame loop. Borrow an explicit,
+        // deterministic frame sample and restore the caller's exact context.
+        if self.snapshot {
+            let host_clock = ctx.text.motion_context();
+            ctx.text.replace_fixture_motion_context(Some(tekes_ui_controls::ControlMotionContext {
+                now: host_clock.map_or(Duration::ZERO, |clock| clock.now),
+                reduced_motion: true,
+            }));
+            self.build_clipped_story(i, ctx, content, viewport_clip, scene);
+            ctx.text.replace_fixture_motion_context(host_clock);
+        } else {
+            self.build_clipped_story(i, ctx, content, viewport_clip, scene);
+        }
+    }
+
+    fn build_clipped_story(
         &mut self,
         i: usize,
         ctx: &mut PageCtx<'_>,
@@ -5945,6 +5970,11 @@ mod interaction_tests {
         content: Rect,
         viewport_clip: Rect,
     ) -> Scene {
+        // Interactive fixtures start at zero; tests explicitly advance time.
+        if t.motion_context().is_none() {
+            t.set_motion_enabled(true);
+            t.set_motion_context(Duration::ZERO, false);
+        }
         t.begin_frame();
         let mut st = super::super::static_text::StaticText::new(None);
         let mut ctx = PageCtx {
@@ -5955,6 +5985,46 @@ mod interaction_tests {
         let mut scene = Scene::new();
         w.build_clipped(i, &mut ctx, content, viewport_clip, &mut scene);
         scene
+    }
+
+    #[test]
+    fn issue79_snapshot_clock_is_explicit_and_restores_the_caller() {
+        let i = index("toast");
+        let mut text = super::super::text::TextEngine::new();
+        for clock in [None, Some(tekes_ui_controls::ControlMotionContext {
+            now: Duration::from_secs(42), reduced_motion: false,
+        })] {
+            text.replace_fixture_motion_context(clock);
+            let mut w = Workbench::fixture();
+            let mut st = super::super::static_text::StaticText::new(None);
+            let mut ctx = PageCtx { theme: tekes_ui_tokens::Theme::LIGHT, text: &mut text, static_text: &mut st };
+            ctx.text.begin_frame();
+            let mut first = Scene::new();
+            w.build(i, &mut ctx, Rect::new(312.,70.,1000.,820.), &mut first);
+            assert_eq!(ctx.text.motion_context(), clock);
+            ctx.text.begin_frame();
+            let mut second = Scene::new();
+            w.build(i, &mut ctx, Rect::new(312.,70.,1000.,820.), &mut second);
+            assert_eq!(ctx.text.motion_context(), clock);
+            assert_eq!(first, second);
+            assert_eq!(w.state(i).extended.toast.remaining_ms(), 5000);
+        }
+    }
+
+    #[test]
+    fn issue79_real_gallery_retains_toast_and_advances_the_frame_clock() {
+        let i = index("toast");
+        let mut gallery = super::super::Gallery::new();
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(gallery.workbench.state(i).extended.toast.remaining_ms(), 5000);
+        assert!(gallery.text.motion_frame_requested());
+        assert!(gallery.animate(0.125));
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(gallery.workbench.state(i).extended.toast.remaining_ms(), 4875);
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(gallery.workbench.state(i).extended.toast.remaining_ms(), 4875);
     }
 
     #[test]
@@ -6062,6 +6132,8 @@ mod interaction_tests {
                         let mut text = super::super::text::TextEngine::new();
                         text.set_scale(1.);
                         text.set_type_scale(type_scale);
+                        text.set_motion_enabled(true);
+                        text.set_motion_context(Duration::ZERO, false);
                         text.begin_frame();
                         let mut static_text = super::super::static_text::StaticText::new(None);
                         let mut ctx = PageCtx {

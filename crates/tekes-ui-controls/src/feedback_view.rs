@@ -56,6 +56,29 @@ fn paint_surface_background(
         scene.pop_clip();
     }
 }
+#[allow(clippy::too_many_arguments)]
+fn paint_notice_background(
+    scene: &mut Scene,
+    frame: Rect,
+    ancestor_clip: Option<Rect>,
+    visible: Option<Rect>,
+    palette: Palette,
+    kind: paint::SurfaceKind,
+    backing_scale: f32,
+    colors: tekes_ui_tokens::surface_palette::SurfaceColors,
+) {
+    if visible.is_none() {
+        return;
+    }
+    let layout = ContainerLayout::new(frame, Insets::ZERO, Insets::ZERO, ancestor_clip);
+    if let Some(clip) = layout.background_paint_clip() {
+        scene.push_clip(clip);
+    }
+    paint::surface_kind_with_elevation_colors_at_scale(scene, frame, palette, kind, backing_scale, "panel", colors);
+    if layout.background_paint_clip().is_some() {
+        scene.pop_clip();
+    }
+}
 fn intersect(a: Rect, b: Rect) -> Option<Rect> {
     if !finite_rect(a) || !finite_rect(b) {
         return None;
@@ -1498,6 +1521,12 @@ pub(crate) fn place_overlay(anchor: Rect, size: Size, viewport: Rect, gap: f32) 
 }
 
 /// Toast rendering keeps duration progression deterministic in its model.
+#[derive(Clone,Copy,Debug)]
+struct NoticePrepared { message:Rect, marker:Rect, role:proposal::TextRole, clip:Option<Rect> }
+fn notice_usage(tone:NoticeTone,toast:bool)->&'static str {match tone {
+ NoticeTone::Info=>"notice-marker-info",NoticeTone::Success=>"notice-marker-success",NoticeTone::Error=>"notice-marker-error",
+ NoticeTone::Warning if toast=>"notice-marker-toast-warning",NoticeTone::Warning=>"notice-marker-banner-warning",
+}}
 #[derive(Clone, Debug, Default)]
 pub struct ToastView {
     layout: ViewLayout,
@@ -1505,6 +1534,8 @@ pub struct ToastView {
     dismiss_layout: Option<crate::ButtonLayout>,
     logical_dismiss_frame: Option<Rect>,
     inactive: bool,
+    surface: Option<&'static str>,
+    prepared: Option<NoticePrepared>,
 }
 impl ToastView {
     fn stacked(frame: Rect) -> bool {
@@ -1556,17 +1587,7 @@ impl ToastView {
         Size::new(width, height)
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn render(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut impl ButtonTextRenderer,
-        model: &Toast,
-        frame: Rect,
-        clip: Option<Rect>,
-        palette: Palette,
-        role: proposal::TextRole,
-    ) -> ViewLayout {
+    pub fn prepare(&mut self, text: &mut impl ButtonTextRenderer, model: &Toast, frame: Rect, clip: Option<Rect>, role: proposal::TextRole) -> ViewLayout {
         let visible = clipped(frame, clip);
         let stacked = Self::stacked(frame);
         let right_inset = if stacked { 12.0 } else { 50.0 };
@@ -1627,70 +1648,47 @@ impl ToastView {
         self.logical_dismiss_frame =
             (model.visible && !self.inactive && valid_logical_target(logical_dismiss_frame, clip))
                 .then_some(logical_dismiss_frame);
-        if model.visible {
-            if let Some(v) = visible {
-                paint_surface_background(
-                    scene,
-                    frame,
-                    clip,
-                    visible,
-                    palette,
-                    paint::SurfaceKind::Panel,
-                    text.backing_scale(),
-                );
-                scene.push_clip(v);
-                let status = match model.tone {
-                    NoticeTone::Info => StatusBadge::Info,
-                    NoticeTone::Success => StatusBadge::Succeeded,
-                    NoticeTone::Warning | NoticeTone::Error => StatusBadge::Failed,
-                };
-                crate::extended::status_badge(
-                    scene,
-                    notice_marker_frame(
-                        text,
-                        &model.message,
-                        role,
-                        self.layout.content,
-                        frame.min_x() + 14.,
-                        10.,
-                    ),
-                    palette,
-                    status,
-                );
-                draw_text(
-                    scene,
-                    text,
-                    &model.message,
-                    role,
-                    self.layout.content,
-                    palette,
-                    ButtonTextAlign::Leading,
-                );
-                self.dismiss_layout = Some(self.dismiss.render(
-                    scene,
-                    text,
-                    "Dismiss",
-                    Rect::new(
-                        dismiss_x,
-                        dismiss_y,
-                        dismiss_w,
-                        dismiss_h.min(frame.size.height.max(0.)),
-                    ),
-                    Some(v),
-                    palette,
-                    paint::ButtonVariant::Quiet,
-                    ButtonSize::Body,
-                    role,
-                    ButtonTextAlign::default(),
-                ));
-                scene.pop_clip();
-            } else {
-                self.dismiss.blur();
-            }
-        } else {
-            self.dismiss.blur();
-        }
+
+        let message = self.layout.content;
+        let marker = notice_marker_frame(text, &model.message, role, message, frame.min_x()+14.,10.);
+        let h=text.measure(&model.message,role,message.size.width).height.max(0.).min(message.size.height);
+        let draw=Rect::new(message.min_x(),message.min_y(),message.size.width,h);
+        self.prepared=Some(NoticePrepared {message:draw,marker,role,clip});
+        self.dismiss_layout=if model.visible  { visible.map(|v|self.dismiss.prepare_label(text,"Dismiss",logical_dismiss_frame,Some(v),role)) } else {None};
+        if self.dismiss_layout.is_none() {self.dismiss.clear_layout();}
         self.layout
+    }
+    pub fn set_surface(&mut self,name:&str)->Result<(),tekes_ui_tokens::surface_palette::SurfaceError>{
+        self.surface=Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);Ok(())
+    }
+    pub fn invalidate_geometry(&mut self){ self.prepared=None;self.dismiss_layout=None;self.logical_dismiss_frame=None;self.dismiss.clear_layout(); }
+    pub fn activate_dismiss(&mut self,model:&mut Toast)->bool{
+        if !model.visible  || self.focus_target().is_none() {return false;}
+        self.dismiss.pointer_down();
+        let activated=self.dismiss.pointer_up(true);
+        if activated {model.dismiss();self.dismiss.blur();} activated
+    }
+    pub fn pointer_move_button(&mut self,p:Point){self.dismiss.pointer_move_at(p);}
+    pub fn paint_prepared(&mut self,scene:&mut Scene,text:&mut impl ButtonTextRenderer,model:&Toast,palette:Palette){
+        if !model.visible {return;}
+        let (Some(p),Some(v))=(self.prepared,self.layout.visible) else {return;};
+        let surface=self.surface.unwrap_or("panel");
+        let usage=notice_usage(model.tone,true);
+        let marker=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,usage,"rest").expect("validated notice marker packet");
+        let body=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,"content","rest").expect("validated notice content packet");
+        let frame_colors=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,"surface-frame","rest").expect("validated notice frame packet");
+        self.dismiss.set_surface(surface);
+        let _action=self.dismiss.surface_colors(palette,paint::ButtonVariant::Quiet,surface);
+        paint_notice_background(scene,self.layout.frame,p.clip,Some(v),palette,paint::SurfaceKind::Panel,text.backing_scale(),frame_colors);
+        scene.push_clip(v);
+        scene.push_quad(Quad::new(p.marker,marker.marker.expect("notice marker")).with_corner_radius(p.marker.size.height*0.5));
+        if !p.message.is_empty() && !model.message.is_empty() {text.draw(scene,&model.message,p.role,p.message,ButtonTextAlign::Leading,body.text);}
+        if let Some(layout)=self.dismiss_layout {self.dismiss.paint_prepared_label_variant(scene,text,"Dismiss",layout,Some(v),palette,p.role,paint::ButtonVariant::Quiet);}
+        scene.pop_clip();
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn render(&mut self,scene:&mut Scene,text:&mut impl ButtonTextRenderer,model:&Toast,frame:Rect,clip:Option<Rect>,palette:Palette,role:proposal::TextRole)->ViewLayout{
+        self.prepare(text,model,frame,clip,role);self.paint_prepared(scene,text,model,palette);self.layout
     }
     pub fn focus_dismiss(&mut self, focused: bool, focus_visible: bool) {
         let enabled = focused && self.logical_dismiss_frame.is_some() && !self.inactive;
@@ -1774,6 +1772,8 @@ pub struct BannerView {
     dismiss_layout: Option<crate::ButtonLayout>,
     logical_dismiss_frame: Option<Rect>,
     inactive: bool,
+    surface: Option<&'static str>,
+    prepared: Option<NoticePrepared>,
 }
 impl BannerView {
     fn stacked(width: f32, dismissible: bool) -> bool {
@@ -1819,17 +1819,7 @@ impl BannerView {
             self.dismiss_button.cancel();
         }
     }
-    #[allow(clippy::too_many_arguments)]
-    pub fn render(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut impl ButtonTextRenderer,
-        model: &Banner,
-        frame: Rect,
-        clip: Option<Rect>,
-        palette: Palette,
-        role: proposal::TextRole,
-    ) -> ViewLayout {
+    pub fn prepare(&mut self, text: &mut impl ButtonTextRenderer, model: &Banner, frame: Rect, clip: Option<Rect>, role: proposal::TextRole) -> ViewLayout {
         let visible = clipped(frame, clip);
         self.layout = ViewLayout {
             frame,
@@ -1868,82 +1858,49 @@ impl BannerView {
             && valid_logical_target(logical_dismiss_frame, clip))
         .then_some(logical_dismiss_frame);
         self.dismiss_layout = None;
-        if model.visible {
-            if let Some(v) = visible {
-                paint_surface_background(
-                    scene,
-                    frame,
-                    clip,
-                    visible,
-                    palette,
-                    paint::SurfaceKind::Panel,
-                    text.backing_scale(),
-                );
-                scene.push_clip(v);
-                // Preserve the established Gallery banner specimen: bordered
-                // panel, tone badge, two-line message slot and visible action.
-                let status = match model.tone {
-                    NoticeTone::Info => StatusBadge::Info,
-                    NoticeTone::Success => StatusBadge::Succeeded,
-                    NoticeTone::Warning => StatusBadge::Running,
-                    NoticeTone::Error => StatusBadge::Failed,
-                };
-                let msg_width = if stacked {
-                    (frame.size.width - 46.0).max(0.0)
-                } else if model.dismissible {
-                    (dismiss_x - frame.min_x() - 50.).max(0.)
-                } else {
-                    (frame.size.width - 40.).max(0.)
-                };
-                let message_top = frame.min_y() + 6.;
-                let measured_message_height = text
-                    .measure(&model.message, role, msg_width)
-                    .height
-                    .max(54.);
-                let message_height = measured_message_height.min((frame.size.height - 12.).max(0.));
-                let msg = Rect::new(frame.min_x() + 34., message_top, msg_width, message_height);
-                crate::extended::status_badge(
-                    scene,
-                    notice_marker_frame(text, &model.message, role, msg, frame.min_x() + 12., 12.),
-                    palette,
-                    status,
-                );
-                draw_text(
-                    scene,
-                    text,
-                    &model.message,
-                    role,
-                    msg,
-                    palette,
-                    ButtonTextAlign::Leading,
-                );
-                if model.dismissible {
-                    // Passive painting is valid while the window is inactive;
-                    // actionable focus publication is deliberately withdrawn.
-                    let dismiss = logical_dismiss_frame;
-                    self.dismiss_layout = Some(self.dismiss_button.render(
-                        scene,
-                        text,
-                        "Dismiss",
-                        dismiss,
-                        Some(v),
-                        palette,
-                        paint::ButtonVariant::Primary,
-                        ButtonSize::Body,
-                        role,
-                        ButtonTextAlign::default(),
-                    ));
-                } else {
-                    self.dismiss_button.blur();
-                }
-                scene.pop_clip();
-            } else {
-                self.dismiss_button.blur();
-            }
-        } else {
-            self.dismiss_button.blur();
-        }
+
+        let msg_width = if stacked {(frame.size.width-46.).max(0.)} else if model.dismissible {(dismiss_x-frame.min_x()-50.).max(0.)} else {(frame.size.width-40.).max(0.)};
+        let height=text.measure(&model.message,role,msg_width).height.max(54.).min((frame.size.height-12.).max(0.));
+        let message=Rect::new(frame.min_x()+34.,frame.min_y()+6.,msg_width,height);
+        let marker=notice_marker_frame(text,&model.message,role,message,frame.min_x()+12.,12.);
+        let h=text.measure(&model.message,role,message.size.width).height.max(0.).min(message.size.height);
+        let draw=Rect::new(message.min_x(),message.min_y(),message.size.width,h);
+        self.prepared=Some(NoticePrepared {message:draw,marker,role,clip});
+        self.dismiss_layout=if model.visible && model.dismissible { visible.map(|v|self.dismiss_button.prepare_label(text,"Dismiss",logical_dismiss_frame,Some(v),role)) } else {None};
+        if self.dismiss_layout.is_none() {self.dismiss_button.clear_layout();}
         self.layout
+    }
+    pub fn set_surface(&mut self,name:&str)->Result<(),tekes_ui_tokens::surface_palette::SurfaceError>{
+        self.surface=Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);Ok(())
+    }
+    pub fn invalidate_geometry(&mut self){ self.prepared=None;self.dismiss_layout=None;self.logical_dismiss_frame=None;self.dismiss_button.clear_layout(); }
+    pub fn activate_dismiss(&mut self,model:&mut Banner)->bool{
+        if !model.visible || !model.dismissible || self.focus_target().is_none() {return false;}
+        self.dismiss_button.pointer_down();
+        let activated=self.dismiss_button.pointer_up(true);
+        if activated {model.dismiss();self.dismiss_button.blur();} activated
+    }
+    pub fn pointer_move_button(&mut self,p:Point){self.dismiss_button.pointer_move_at(p);}
+    pub fn paint_prepared(&mut self,scene:&mut Scene,text:&mut impl ButtonTextRenderer,model:&Banner,palette:Palette){
+        if !model.visible {return;}
+        let (Some(p),Some(v))=(self.prepared,self.layout.visible) else {return;};
+        let surface=self.surface.unwrap_or("panel");
+        let usage=notice_usage(model.tone,false);
+        let marker=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,usage,"rest").expect("validated notice marker packet");
+        let body=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,"content","rest").expect("validated notice content packet");
+        let frame_colors=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,"surface-frame","rest").expect("validated notice frame packet");
+        self.dismiss_button.set_surface(surface);
+        let _action=self.dismiss_button.surface_colors(palette,paint::ButtonVariant::Primary,surface);
+        paint_notice_background(scene,self.layout.frame,p.clip,Some(v),palette,paint::SurfaceKind::Panel,text.backing_scale(),frame_colors);
+        scene.push_clip(v);
+        scene.push_quad(Quad::new(p.marker,marker.marker.expect("notice marker")).with_corner_radius(p.marker.size.height*0.5));
+        if !p.message.is_empty() && !model.message.is_empty() {text.draw(scene,&model.message,p.role,p.message,ButtonTextAlign::Leading,body.text);}
+        if let Some(layout)=self.dismiss_layout {self.dismiss_button.paint_prepared_label_variant(scene,text,"Dismiss",layout,Some(v),palette,p.role,paint::ButtonVariant::Primary);}
+        scene.pop_clip();
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn render(&mut self,scene:&mut Scene,text:&mut impl ButtonTextRenderer,model:&Banner,frame:Rect,clip:Option<Rect>,palette:Palette,role:proposal::TextRole)->ViewLayout{
+        self.prepare(text,model,frame,clip,role);self.paint_prepared(scene,text,model,palette);self.layout
     }
     pub fn pointer_move(&mut self, p: Point) {
         self.dismiss_button.pointer_move_at(p);
