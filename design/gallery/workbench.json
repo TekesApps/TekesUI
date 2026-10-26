@@ -172,7 +172,8 @@
       "api": "tekes_ui_controls::extended::SplitView",
       "api_bindings": [
         "tekes_ui_controls::extended::SplitView",
-        "tekes_ui_controls::layout_view::SplitViewView"
+        "tekes_ui_controls::layout_view::SplitViewView",
+        "tekes_ui_controls::composition::SplitViewContent"
       ]
     },
     {

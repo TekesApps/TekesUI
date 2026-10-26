@@ -34,16 +34,16 @@ pub struct ContentRevealResult {
     pub clamped: bool,
 }
 #[derive(Clone, Debug)]
-struct Step {
-    id: ComponentId,
-    mount: u64,
-    rect: Rect,
-    target: Point,
-    viewport: Size,
-    document: Size,
-    generation: u64,
-    options: ScrollRevealOptions,
-    start_clip_usable: bool,
+pub(super) struct Step {
+    pub(super) id: ComponentId,
+    pub(super) mount: u64,
+    pub(super) rect: Rect,
+    pub(super) target: Point,
+    pub(super) viewport: Size,
+    pub(super) document: Size,
+    pub(super) generation: u64,
+    pub(super) options: ScrollRevealOptions,
+    pub(super) start_clip_usable: bool,
 }
 #[derive(Debug)]
 pub(super) struct ItemReveal {
@@ -55,8 +55,8 @@ pub(super) struct ItemReveal {
 /// Only library-owned scroll/reading metadata is saved for clipping preflight.
 /// Children, editors, actions and application components are never cloned.
 struct ScrollSnapshot {
-    id: ComponentId,
-    mount: u64,
+    pub(super) id: ComponentId,
+    pub(super) mount: u64,
     scroll: ScrollArea,
     reading: Option<content_reading::ContentReadingState>,
     viewport: Rect,

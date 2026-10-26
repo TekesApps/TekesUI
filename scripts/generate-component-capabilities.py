@@ -241,6 +241,11 @@ def reverse_coverage(registry: dict) -> dict:
         api, category = entry['api'], entry.get('category')
         if category not in {'component', 'component-adapter', 'component-alias', 'component-support', 'composition', 'shared-support'} or not isinstance(entry.get('reason'), str) or not entry['reason'].strip():
             raise ValueError(f'{api}: explicit category and reason required')
+        arguments = entry.get('type_arguments', [])
+        if (not isinstance(arguments, list)
+                or any(not isinstance(arg, str) or not re.fullmatch(r"\(\)|'_|'static|[A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*", arg) for arg in arguments)
+                or (arguments and surface[api]['kind'] == 'trait')):
+            raise ValueError(f'{api}: invalid explicit compiler type arguments')
         ids = entry.get('components', [])
         if not isinstance(ids, list) or len(ids) != len(set(ids)) or not set(ids) <= set(components):
             raise ValueError(f'{api}: unknown/duplicate component identity')
@@ -293,8 +298,10 @@ def binding_test(registry: dict) -> str:
             # Check the public trait bound without imposing dyn compatibility.
             surface_calls.append(f'    #[allow(dead_code)]\n    fn public_trait_{index}<T: {api} + ?Sized>() {{}}\n    actual.push({json.dumps(api)});')
         else:
-            call = f'    public_type::<{api}>(&mut actual, {json.dumps(api)});'
-            surface_calls.append(call if len(call) <= 100 else f'    public_type::<{api}>(\n        &mut actual,\n        {json.dumps(api)},\n    );')
+            arguments = entry.get('type_arguments', [])
+            bound = api + ('<' + ', '.join(arguments) + '>' if arguments else '')
+            call = f'    public_type::<{bound}>(&mut actual, {json.dumps(api)});'
+            surface_calls.append(call if len(call) <= 100 else f'    public_type::<{bound}>(\n        &mut actual,\n        {json.dumps(api)},\n    );')
     calls = []
     for entry in registry['entries']:
         if entry.get('kind') != 'component':

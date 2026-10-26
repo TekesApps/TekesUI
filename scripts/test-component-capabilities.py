@@ -556,7 +556,15 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
         chart = next(c for c in self.data['components'] if c['id'] == 'tui.chart')
         for component in (button, chart):
             intake = component['state_coverage']['practical_intake']
-            self.assertEqual(intake['status'], 'accepted-source-subset-matched')
+            differences = intake['source_identity']['differences']
+            if differences:
+                self.assertEqual(intake['status'], 'accepted-source-subset-stale')
+                for source, difference in differences.items():
+                    self.assertEqual(difference['expected'], intake['source_identity']['sha256'][source])
+                    self.assertEqual(difference['actual'], capabilities.digest((ROOT / source).read_bytes()))
+                    self.assertNotEqual(difference['expected'], difference['actual'])
+            else:
+                self.assertEqual(intake['status'], 'accepted-source-subset-matched')
             self.assertTrue(intake['claims'])
             self.assertTrue(intake['exceptions'])
             self.assertTrue(intake['gaps'])

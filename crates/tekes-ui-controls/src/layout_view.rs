@@ -411,7 +411,7 @@ impl SplitViewView {
         bounds: Rect,
         clip: Option<Rect>,
     ) -> SplitViewLayout {
-        if !valid(bounds, clip) {
+        if !valid(bounds, None) || clip.is_some_and(|c| !valid(c,None)) {
             self.cancel(model);
             self.layout = SplitViewLayout::default();
             return self.layout;

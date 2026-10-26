@@ -61,6 +61,12 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-split-view",
         "tekes_ui_controls::layout_view::SplitViewView",
     );
+    bind::<tekes_ui_controls::composition::SplitViewContent>(
+        &mut actual,
+        "tui.split-view",
+        "component-split-view",
+        "tekes_ui_controls::composition::SplitViewContent",
+    );
     bind::<tekes_ui_controls::ScrollArea>(
         &mut actual,
         "tui.scroll-area",
@@ -836,6 +842,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::AccessibilityAction",
     );
+    public_type::<tekes_ui_controls::composition::ActionPreparation>(
+        &mut actual,
+        "tekes_ui_controls::composition::ActionPreparation",
+    );
+    public_type::<tekes_ui_controls::composition::ActionTransactionCompatibility>(
+        &mut actual,
+        "tekes_ui_controls::composition::ActionTransactionCompatibility",
+    );
     public_type::<tekes_ui_controls::composition::BannerContent>(
         &mut actual,
         "tekes_ui_controls::composition::BannerContent",
@@ -849,8 +863,12 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::ButtonContent",
     );
     #[allow(dead_code)]
-    fn public_trait_98<T: tekes_ui_controls::composition::Component + ?Sized>() {}
+    fn public_trait_100<T: tekes_ui_controls::composition::Component + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::Component");
+    public_type::<tekes_ui_controls::composition::ComponentActionRequest<'_>>(
+        &mut actual,
+        "tekes_ui_controls::composition::ComponentActionRequest",
+    );
     public_type::<tekes_ui_controls::composition::ComponentId>(
         &mut actual,
         "tekes_ui_controls::composition::ComponentId",
@@ -955,6 +973,22 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::GridContent",
     );
+    public_type::<tekes_ui_controls::composition::HostRevealBudget>(
+        &mut actual,
+        "tekes_ui_controls::composition::HostRevealBudget",
+    );
+    public_type::<tekes_ui_controls::composition::HostRevealError>(
+        &mut actual,
+        "tekes_ui_controls::composition::HostRevealError",
+    );
+    public_type::<tekes_ui_controls::composition::HostRevealOutcome>(
+        &mut actual,
+        "tekes_ui_controls::composition::HostRevealOutcome",
+    );
+    public_type::<tekes_ui_controls::composition::HostRevealPlan>(
+        &mut actual,
+        "tekes_ui_controls::composition::HostRevealPlan",
+    );
     public_type::<tekes_ui_controls::composition::InputModifiers>(
         &mut actual,
         "tekes_ui_controls::composition::InputModifiers",
@@ -1000,7 +1034,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_136<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_143<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1034,9 +1068,48 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::PointerPhase",
     );
+    #[allow(dead_code)]
+    fn public_trait_152<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    actual.push("tekes_ui_controls::composition::PreparedActionEffect");
+    public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
+        &mut actual,
+        "tekes_ui_controls::composition::PreparedActionFocus",
+    );
+    public_type::<tekes_ui_controls::composition::PreparedComponentAction>(
+        &mut actual,
+        "tekes_ui_controls::composition::PreparedComponentAction",
+    );
+    public_type::<tekes_ui_controls::composition::PreparedEffects>(
+        &mut actual,
+        "tekes_ui_controls::composition::PreparedEffects",
+    );
+    public_type::<tekes_ui_controls::composition::PreparedEffectsError>(
+        &mut actual,
+        "tekes_ui_controls::composition::PreparedEffectsError",
+    );
+    public_type::<tekes_ui_controls::composition::PreparedHook>(
+        &mut actual,
+        "tekes_ui_controls::composition::PreparedHook",
+    );
+    public_type::<tekes_ui_controls::composition::PreparedHookKind>(
+        &mut actual,
+        "tekes_ui_controls::composition::PreparedHookKind",
+    );
+    public_type::<tekes_ui_controls::composition::PreparedLifecycleContext>(
+        &mut actual,
+        "tekes_ui_controls::composition::PreparedLifecycleContext",
+    );
+    public_type::<tekes_ui_controls::composition::PreparedPhase>(
+        &mut actual,
+        "tekes_ui_controls::composition::PreparedPhase",
+    );
     public_type::<tekes_ui_controls::composition::ProgressContent>(
         &mut actual,
         "tekes_ui_controls::composition::ProgressContent",
+    );
+    public_type::<tekes_ui_controls::composition::Rejected<()>>(
+        &mut actual,
+        "tekes_ui_controls::composition::Rejected",
     );
     public_type::<tekes_ui_controls::composition::ScrollContent>(
         &mut actual,
@@ -1058,6 +1131,34 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::SliderContent",
     );
+    public_type::<tekes_ui_controls::composition::SplitViewConfig>(
+        &mut actual,
+        "tekes_ui_controls::composition::SplitViewConfig",
+    );
+    public_type::<tekes_ui_controls::composition::SplitViewConstruction>(
+        &mut actual,
+        "tekes_ui_controls::composition::SplitViewConstruction",
+    );
+    public_type::<tekes_ui_controls::composition::SplitViewContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::SplitViewContent",
+    );
+    public_type::<tekes_ui_controls::composition::SplitViewError>(
+        &mut actual,
+        "tekes_ui_controls::composition::SplitViewError",
+    );
+    public_type::<tekes_ui_controls::composition::SplitViewExpected>(
+        &mut actual,
+        "tekes_ui_controls::composition::SplitViewExpected",
+    );
+    public_type::<tekes_ui_controls::composition::SplitViewReplacement>(
+        &mut actual,
+        "tekes_ui_controls::composition::SplitViewReplacement",
+    );
+    public_type::<tekes_ui_controls::composition::SplitViewSlotIds>(
+        &mut actual,
+        "tekes_ui_controls::composition::SplitViewSlotIds",
+    );
     public_type::<tekes_ui_controls::composition::StackContent>(
         &mut actual,
         "tekes_ui_controls::composition::StackContent",
@@ -1069,6 +1170,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::SwitchContent>(
         &mut actual,
         "tekes_ui_controls::composition::SwitchContent",
+    );
+    public_type::<tekes_ui_controls::composition::TableTransactionCompatibility>(
+        &mut actual,
+        "tekes_ui_controls::composition::TableTransactionCompatibility",
     );
     public_type::<tekes_ui_controls::composition::TextContent>(
         &mut actual,
@@ -1423,7 +1528,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_242<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_267<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

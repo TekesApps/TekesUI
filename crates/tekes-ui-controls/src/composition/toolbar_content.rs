@@ -52,6 +52,13 @@ impl ToolbarGroup {
     }
 }
 impl Component for ToolbarGroup {
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn children(&self) -> &[Content] {
         &self.children
     }
@@ -128,6 +135,13 @@ impl ToolbarContent {
     }
 }
 impl Component for ToolbarContent {
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn children(&self) -> &[Content] {
         &self.children
     }

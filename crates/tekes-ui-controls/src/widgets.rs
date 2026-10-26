@@ -421,6 +421,15 @@ enum ButtonArm {
     PointerActivated,
     Space,
 }
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ButtonActionDecision {
+    expected: (ControlState, ButtonArm, Option<ButtonLayout>, Option<Point>, bool),
+    next_state: ControlState,
+    next_arm: ButtonArm,
+    point: Option<Point>,
+    pub consumed: bool,
+    pub activated: bool,
+}
 impl Button {
     pub(crate) fn set_surface(&mut self, surface: &'static str) {
         self.surface = Some(surface);
@@ -894,11 +903,86 @@ impl Button {
         self.refresh_pointer_state();
     }
 
+
+
+    fn hit_test(&self, point: Point) -> bool {
+        self.placement.is_some_and(|layout| layout.hit_test(point))
+
+    }
+
+    fn decided_pointer_arm(&self, mut state: ControlState) -> (ControlState, ButtonArm) {
+        if self.arm != ButtonArm::None {
+            return (state, self.arm);
+        }
+        let armed = !self.motion_suspended && !state.disabled && !state.loading;
+        state.pressed = armed;
+        state.focused = armed;
+        state.focus_visible = false;
+        (state, if armed { ButtonArm::Pointer } else { ButtonArm::None })
+    }
+
+    pub(crate) fn prepare_content_down(
+        &self,
+        point: Point,
+        activate_on_press: bool,
+    ) -> ButtonActionDecision {
+        let mut state = self.state;
+        let mut arm = self.arm;
+        let inside = self.hit_test(point);
+        state.hovered = inside && !self.motion_suspended && !state.disabled && !state.loading;
+        if matches!(arm, ButtonArm::Pointer | ButtonArm::PointerActivated) {
+            state.pressed = state.hovered;
+        }
+        if inside {
+            (state, arm) = self.decided_pointer_arm(state);
+        }
+        let consumed = inside && arm == ButtonArm::Pointer;
+        let activated = consumed
+            && activate_on_press
+            && !self.motion_suspended
+            && !state.disabled
+            && !state.loading;
+        if activated {
+            arm = ButtonArm::PointerActivated;
+        }
+        ButtonActionDecision {
+            expected: (self.state, self.arm, self.placement, self.last_pointer, self.motion_suspended),
+            next_state: state,
+            next_arm: arm,
+            point: Some(point),
+            consumed,
+            activated,
+        }
+    }
+
+    pub(crate) fn prepare_accessibility_press(&self) -> ButtonActionDecision {
+        let (mut state, mut arm) = self.decided_pointer_arm(self.state);
+        let activated = arm == ButtonArm::Pointer && !state.disabled && !state.loading;
+        if matches!(arm, ButtonArm::Pointer | ButtonArm::PointerActivated) {
+            arm = ButtonArm::None;
+            state.pressed = false;
+        }
+        ButtonActionDecision {
+            expected: (self.state, self.arm, self.placement, self.last_pointer, self.motion_suspended),
+            next_state: state,
+            next_arm: arm,
+            point: self.last_pointer,
+            consumed: activated,
+            activated,
+        }
+    }
+
+    pub(crate) fn apply_content_action(&mut self, decision: ButtonActionDecision) {
+        self.state = decision.next_state;
+        self.arm = decision.next_arm;
+        self.last_pointer = decision.point;
+    }
+
     fn refresh_pointer_state(&mut self) {
         let Some(point) = self.last_pointer else {
             return;
         };
-        let inside = self.placement.is_some_and(|layout| layout.hit_test(point));
+        let inside = self.hit_test(point);
         self.state.hovered =
             inside && !self.motion_suspended && !self.state.disabled && !self.state.loading;
         if matches!(self.arm, ButtonArm::Pointer | ButtonArm::PointerActivated) {
@@ -907,7 +991,7 @@ impl Button {
     }
 
     pub fn pointer_down_at(&mut self, point: Point) -> bool {
-        if !self.placement.is_some_and(|layout| layout.hit_test(point)) {
+        if !self.hit_test(point) {
             self.pointer_move_at(point);
             return false;
         }
@@ -918,7 +1002,7 @@ impl Button {
 
     pub fn pointer_up_at(&mut self, point: Point) -> bool {
         self.last_pointer = Some(point);
-        let inside = self.placement.is_some_and(|layout| layout.hit_test(point));
+        let inside = self.hit_test(point);
         let activated = self.pointer_up(inside);
         self.state.hovered =
             inside && !self.motion_suspended && !self.state.disabled && !self.state.loading;

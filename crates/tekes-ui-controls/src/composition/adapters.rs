@@ -31,6 +31,13 @@ impl ListContent {
     }
 }
 impl Component for ListContent {
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
         self.rows.measure(t, a)
     }
@@ -67,6 +74,7 @@ impl SwitchContent {
     }
 }
 impl Component for SwitchContent {
+
     fn accessibility_action(
         &mut self,
         part: Option<usize>,
@@ -318,6 +326,16 @@ impl TextFieldContent {
     }
 }
 impl Component for TextFieldContent {
+    fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{PreparedEffects::local_work(n)?.checked_add(self.surface.input.text.len().checked_add(self.field.label.len()).and_then(|v|v.checked_add(self.field.message().len())).and_then(|v|v.checked_mul(n.max(1))).ok_or(PreparedEffectsError::CounterCapacity)?).ok_or(PreparedEffectsError::CounterCapacity)}
+    fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError>{
+        let mut focused=self.focused;let mut unmark=false;
+        for h in hooks {if let PreparedHookKind::Focus{focused:next,..}=h.kind {if focused&&!next {unmark=true;}focused=next;}}
+        if !self.surface.input.preflight_unmark(unmark){return Err(PreparedEffectsError::CounterCapacity);}
+        Ok(PreparedEffects::local(self,hooks))
+    }
+    fn table_transaction_compatibility(&self)->TableTransactionCompatibility{TableTransactionCompatibility::StableHooks}
+
+
     fn action_kinds(&self, result: &ContentResponse) -> Vec<ContentActionKind> {
         if result.activated {
             vec![ContentActionKind::Submit]
@@ -814,6 +832,17 @@ impl DialogContent {
     }
 }
 impl Component for DialogContent {
+    fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{PreparedEffects::local_work(n)}
+    fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError>{if self.presence.preflight_clears(hooks.iter().filter(|h|h.kind==PreparedHookKind::Lifecycle(Lifecycle::Unmounted)).count()){Ok(PreparedEffects::local(self,hooks))}else{Err(PreparedEffectsError::CounterCapacity)}}
+    fn table_transaction_compatibility(&self)->TableTransactionCompatibility{TableTransactionCompatibility::StableHooks}
+
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn semantic_frame(&self, _: Rect) -> Rect {
         self.modal
     }
@@ -927,6 +956,7 @@ impl SliderContent {
     }
 }
 impl Component for SliderContent {
+
     fn validate(&self) -> Result<(), CompositionError> {
         if self.name.trim().is_empty() {
             Err(CompositionError::EmptyAccessibleName)

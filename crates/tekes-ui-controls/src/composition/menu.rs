@@ -1069,6 +1069,13 @@ fn deliver_menu_input(view: &mut MenuView, event: &ContentEvent) -> (MenuEvent, 
 }
 
 impl Component for MenuContent {
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn fixed_slots(&self) -> bool {
         true
     }

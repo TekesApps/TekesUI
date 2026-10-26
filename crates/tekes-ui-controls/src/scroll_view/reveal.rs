@@ -41,6 +41,7 @@ pub enum ScrollRevealError {
     InvalidRect,
     InvalidMargins,
     UnlaidOut,
+    IdentityExhausted,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ScrollRevealResult {
@@ -114,24 +115,41 @@ impl ScrollView {
         options: ScrollRevealOptions,
     ) -> Result<ScrollRevealResult, ScrollRevealError> {
         let (target, clamped) = self.reveal_target(rect, options)?;
-        self.reveal_generation = NEXT_REVEAL
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |id| id.checked_add(1))
-            .expect("scroll navigation identity exhausted");
+        let generation = reserve_reveal_identities(1)?;
+        let prepared = self.prepare_reveal_commit(target, clamped, options, generation);
+        Ok(self.commit_reveal(prepared))
+    }
+    pub(crate) fn prepare_reveal_commit(
+        &self,
+        target: Point,
+        clamped: bool,
+        options: ScrollRevealOptions,
+        generation: u64,
+    ) -> PreparedReveal {
         let changed = target != self.offset || self.overscroll != Point::default();
-        let from = self.offset;
-        self.cancel();
-        self.ignore_momentum = true;
-        let animated = options.animated && !self.reduced_motion && target != from;
-        if animated {
-            self.reveal_animation = Some(RevealTransition::new(from, target));
-        } else {
-            self.scroll_by(target.x - self.offset.x, target.y - self.offset.y);
+        let animated = options.animated && !self.reduced_motion && target != self.offset;
+        PreparedReveal {
+            generation,
+            target,
+            animation: animated.then(|| RevealTransition::new(self.offset, target)),
+            result: ScrollRevealResult {
+                changed,
+                clamped,
+                animated,
+            },
         }
-        Ok(ScrollRevealResult {
-            changed,
-            clamped,
-            animated,
-        })
+    }
+    pub(crate) fn commit_reveal(&mut self, prepared: PreparedReveal) -> ScrollRevealResult {
+        self.cancel();
+        self.reveal_generation = prepared.generation;
+        self.ignore_momentum = true;
+        self.reveal_animation = prepared.animation;
+        if !prepared.result.animated {
+            // Validated against the same limits before commit. Assignment avoids
+            // cancellation from subtract/add rounding at large finite offsets.
+            self.offset = prepared.target;
+        }
+        prepared.result
     }
     pub(crate) fn reveal_target(
         &self,
@@ -252,4 +270,20 @@ impl ScrollView {
             animation.to.y - self.offset.y,
         )
     }
+}
+
+#[derive(Debug)]
+pub(crate) struct PreparedReveal {
+    generation: u64,
+    target: Point,
+    animation: Option<RevealTransition>,
+    result: ScrollRevealResult,
+}
+pub(crate) fn reserve_reveal_identities(count: usize) -> Result<u64, ScrollRevealError> {
+    let count = u64::try_from(count).map_err(|_| ScrollRevealError::IdentityExhausted)?;
+    NEXT_REVEAL
+        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |id| {
+            id.checked_add(count)
+        })
+        .map_err(|_| ScrollRevealError::IdentityExhausted)
 }

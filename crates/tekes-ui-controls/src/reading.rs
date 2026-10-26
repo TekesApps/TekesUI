@@ -5,6 +5,19 @@ use tekes_ui_scene::{Point, Rect};
 use tekes_ui_text::Paragraph;
 static NEXT_ATTACHMENT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
+/// Finite tickets owned by the original reading allocator, never mount tickets.
+#[derive(Debug)]
+pub(crate) struct AttachmentRange { next:u64, end:u64 }
+impl AttachmentRange {
+    pub(crate) fn empty()->Self{Self{next:0,end:0}}
+    pub(crate) fn take(&mut self)->u64 {assert!(self.next<self.end);let n=self.next;self.next+=1;n}
+}
+pub(crate) fn reserve_attachments(count:usize)->Result<AttachmentRange,ReadingUpdateError> {
+    let n=u64::try_from(count).map_err(|_|ReadingUpdateError::InvalidDocument)?;
+    if n==0 {return Ok(AttachmentRange{next:0,end:0});}
+    let start=NEXT_ATTACHMENT.fetch_update(std::sync::atomic::Ordering::Relaxed,std::sync::atomic::Ordering::Relaxed,|v|v.checked_add(n)).map_err(|_|ReadingUpdateError::InvalidDocument)?;
+    Ok(AttachmentRange{next:start,end:start+n})
+}
 /// A token for one attachment and revision, returned by the controller. Retain
 /// this token with an async request, not a freshly read version at callback time.
 /// Reattaching A after B creates a new attachment, even for the same key/revision.
@@ -15,6 +28,8 @@ pub struct ReadingDocumentVersion {
     attachment: u64,
 }
 impl ReadingDocumentVersion {
+    pub(crate) fn from_reserved(key:String,revision:u64,attachment:u64)->Self { Self{key,revision,attachment} }
+
     pub(crate) fn attach(key: String, revision: u64) -> Result<Self, ReadingUpdateError> {
         if key.trim().is_empty() {
             return Err(ReadingUpdateError::InvalidDocument);
@@ -54,6 +69,8 @@ impl ReadingDocumentVersion {
         }
         Ok(())
     }
+    /// Read-only attachment generation; this cannot construct or reattach a token.
+    pub fn attachment(&self) -> u64 { self.attachment }
     pub fn key(&self) -> &str {
         &self.key
     }
@@ -408,4 +425,10 @@ fn slice(text: &str, range: Range<usize>) -> Option<&str> {
         (utf16 == index).then_some(text.len())
     };
     text.get(byte(range.start)?..byte(range.end)?)
+}
+
+#[cfg(test)]
+pub(crate) fn test_attachment_counter(value:Option<u64>)->u64 {
+    use std::sync::atomic::Ordering;
+    match value{Some(v)=>NEXT_ATTACHMENT.swap(v,Ordering::Relaxed),None=>NEXT_ATTACHMENT.load(Ordering::Relaxed)}
 }

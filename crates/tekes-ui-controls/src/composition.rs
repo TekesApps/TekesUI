@@ -6,11 +6,19 @@
 //! never reconstructs controls. Removed content is returned to its owner, which
 //! may retain it for virtualization. No implicit serialization or rehydration.
 mod actions;
+mod split_view;
+pub use split_view::{SplitViewContent,SplitViewConfig,SplitViewSlotIds,SplitViewExpected,SplitViewConstruction,SplitViewReplacement,SplitViewError,Rejected};
+mod prepared;
+pub use prepared::{PreparedEffects,PreparedEffectsError,PreparedHook,PreparedHookKind,PreparedPhase,PreparedLifecycleContext};
 mod action_proxy;
 mod notice;
 pub use notice::{ToastContent, BannerContent};
 mod empty_state;
 pub use empty_state::EmptyStateContent;
+mod action_preparation;
+pub use action_preparation::{ActionPreparation, ActionTransactionCompatibility, ComponentActionRequest, PreparedActionEffect, PreparedActionFocus, PreparedComponentAction};
+mod content_reveal_plan;
+pub use content_reveal_plan::{HostRevealBudget, HostRevealError, HostRevealOutcome, HostRevealPlan};
 mod adapters;
 mod content_reading;
 mod content_reveal;
@@ -255,7 +263,53 @@ impl From<Palette> for ContentTheme {
 /// never an implicit clip to a control's own frame (including its focus ring).
 /// `measure` is read-layout work, `arrange` places descendants, `paint` may use
 /// existing render APIs. Hosts call render before input after geometry changes.
+/// Opt-in contract required recursively by typed collection transactions.
+/// StableHooks promises Cancel, focus, lifecycle, activity, mutable child access
+/// (including window_active_changed and presentation_runnable_changed, their
+/// forwarding and actually notified descendants),
+/// and Drop neither allocate Content/mount identities, change the declared tree,
+/// nor reenter component/Host updates. The mutable children getter itself is
+/// accessor-only: it returns the existing vector without other observable state
+/// changes. This matters on ancestor paths accessed before reservation.
+/// Pure queries remain side-effect free. This is a
+/// semantic contract, not protection against arbitrary panics or violations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TableTransactionCompatibility { Unknown, StableHooks }
 pub trait Component: Debug + Any {
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::Unknown
+    }
+    /// Pure finite preparation for this owner's complete ordered hook sequence.
+    /// Default unavailable: StableHooks alone does not promise eligibility purity.
+    /// A compliant wrapper delegates preparation and lifecycle context to the same
+    /// retained original owner; refusal occurs before notification side effects.
+    fn prepared_effects_work(&self,_max_calls:usize)->Result<usize,PreparedEffectsError>{Err(PreparedEffectsError::Unavailable)}
+    fn prepare_effects(&self,_hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError> {Err(PreparedEffectsError::Unavailable)}
+    fn lifecycle_prepared(&mut self,event:Lifecycle,context:&mut PreparedLifecycleContext) {context.original_lifecycle(self,event);}
+    fn participates_in_focus_traversal(&self)->bool {true}
+    fn semantic_subtree_hidden(&self)->bool {false}
+
+    /// The read-only focus/reveal planner consumes this original-owner geometry
+    /// constraint and revalidates its generation before commit.
+    fn requires_focus_reveal(&self) -> bool { false }
+
+    /// Pure positive translation capability for the most recent valid arrange.
+    /// Child identity/order, relative frames and local clip remain invariant under
+    /// ancestor Scroll translation. Return false when unarranged or requiring reflow.
+    /// Indexed mutable child access is accessor-only; this is not a runtime sandbox.
+    fn host_reveal_passthrough(&self)->bool{false}
+    /// Additional local rectangular clip in Host coordinates. None is no extra
+    /// clip; Some zero area is an empty domain. Finite safe-edge numeric input is
+    /// checked during planning and final validation before any effects.
+    fn host_reveal_local_clip(&self)->Option<Rect>{None}
+
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::Unsupported
+    }
+    fn prepare_action(&self, _request: ComponentActionRequest<'_>) -> ActionPreparation {
+        ActionPreparation::Unsupported
+    }
     /// Refresh only the existing arranged text geometry, not a second layout or
     /// painting pipeline. Text-owning wrappers forward this to their public field.
     fn prepare_text_input(
@@ -348,6 +402,12 @@ pub trait Component: Debug + Any {
     fn text_surface(&self) -> Option<&crate::TextSurface> {
         None
     }
+    /// Native key provenance from the retained original input owner, independent
+    /// of arranged caret/clip geometry. Host key frames separately validate the
+    /// original owner mount and focus epoch against blur/refocus and remount ABA.
+    fn native_key_binding(&self) -> Option<Vec<u8>> {
+        self.text_surface().map(ContentTextInput::local_binding)
+    }
     fn overlay_open(&self) -> bool {
         false
     }
@@ -376,6 +436,12 @@ pub trait Component: Debug + Any {
     /// Default flat parts and their public struct representation stay unchanged.
     fn semantic_part_parent(&self, _part: usize) -> Option<usize> {
         None
+    }
+    fn semantic_part_preserves_activation_focus(&self, _part: usize) -> bool {
+        false
+    }
+    fn preserves_activation_focus(&self) -> bool {
+        false
     }
     fn semantic_parts(&self) -> Vec<SemanticPart> {
         Vec::new()
@@ -482,6 +548,10 @@ pub trait Component: Debug + Any {
         false
     }
     fn set_focus(&mut self, _focused: bool, _visible: bool) {}
+    fn set_focus_from_traversal(&mut self, _reverse: bool) { self.set_focus(true, true); }
+    fn cancel_pointer(&mut self) -> ContentResponse {
+        self.event(&ContentEvent::Cancel)
+    }
     fn composing(&self) -> bool {
         false
     }
@@ -510,15 +580,20 @@ pub struct Content {
     // Cached value last notified to this owner; notice and ordinary owner
     // notification semantics differ. This is not a generic activity fact.
     activity_effective: bool,
+    activity_parent: bool,
 }
 impl Content {
+    fn active(&self) -> bool { self.component.active() }
     pub fn new(id: ComponentId, component: impl Component) -> Self {
+        Self::new_with_mount(id, component, actions::next_mount())
+    }
+    fn new_with_mount(id: ComponentId, component: impl Component, mount: u64) -> Self {
         Self {
             id,
             component: Box::new(component),
             frame: Rect::default(),
             clip: Rect::default(),
-            mount: actions::next_mount(),
+            mount,
             preserve_activation_focus: false,
             bubble_handled_events: None,
             padding_focus: None,
@@ -527,6 +602,7 @@ impl Content {
             help_revision: 0,
             surface: None,
             activity_effective: true,
+            activity_parent: true,
         }
     }
     pub fn with_surface(
@@ -648,8 +724,13 @@ impl Content {
     pub fn frame(&self) -> Rect {
         self.frame
     }
-    pub fn visible(&self) -> Option<Rect> {
-        self.frame.intersection(&self.clip)
+    pub fn visible(&self) -> Option<Rect> { self.frame.intersection(&self.clip) }
+    fn routes_pointer_children(&self) -> bool {
+        !self.component.semantics().role.is_action_owner()
+    }
+    fn pointer_target_at(&self, point: Point) -> bool {
+        self.component.interactive()
+            && self.visible().is_some_and(|visible| visible.contains(point))
     }
     /// Keep the current keyboard/IME owner on pointer or accessibility Press.
     /// This instance remains eligible for Tab and explicit accessibility Focus.
@@ -672,6 +753,7 @@ impl Content {
                 .bubble_handled_events
                 .unwrap_or_else(|| self.component.bubble_handled_event(event))
     }
+    pub fn mount_identity(&self)->u64 { self.mount }
     pub fn component<T: Component>(&self) -> Option<&T> {
         (self.component.as_ref() as &dyn Any).downcast_ref()
     }
@@ -764,6 +846,7 @@ impl Content {
             }
         }
     }
+
     fn has_raised_focus_decoration(&self) -> bool {
         if !self.component.active() {
             return false;
@@ -877,6 +960,7 @@ impl Content {
         }
     }
     fn refresh_activity(&mut self, parent_active: bool) {
+        self.activity_parent = parent_active;
         let active = parent_active && self.component.active();
         // Notice visibility owns its runnable lifecycle. Its window authority
         // follows ancestry so a completed Dismiss can still drain once.
@@ -891,19 +975,37 @@ impl Content {
             for child in children { child.refresh_activity(active); }
         }
     }
-    fn lifecycle(&mut self, event: Lifecycle) {
-        self.mount = actions::next_mount();
+    fn notification_activity(&self, parent: bool) -> bool {
+        if self.component::<ToastContent>().is_some() || self.component::<BannerContent>().is_some() {
+            parent
+        } else { parent && self.active() }
+    }
+    fn window_active_state(&mut self, parent: bool) -> (bool, bool) {
+        self.activity_parent = parent;
+        let effective = self.notification_activity(parent);
+        let changed = self.activity_effective != effective;
+        self.activity_effective = effective;
+        (effective, changed)
+    }
+    fn lifecycle(&mut self, event: Lifecycle) { self.lifecycle_with(event, &mut actions::next_mount); }
+    fn lifecycle_start(&mut self,event:Lifecycle,mount:u64){
+        self.mount=mount;
+        if event==Lifecycle::Unmounted {self.set_help(None);}
+    }
+    fn lifecycle_with(&mut self, event: Lifecycle, next: &mut impl FnMut() -> u64) {
+        let split_was_intact=self.component::<SplitViewContent>().is_some_and(|s|s.validate().is_ok());
+        self.lifecycle_start(event,next());
         if event == Lifecycle::Unmounted {
-            self.set_help(None);
             self.component.event(&ContentEvent::Cancel);
             self.component.set_focus(false, false);
         }
         self.component.lifecycle(event);
         if let Some(children) = self.component.children_mut() {
             for c in children {
-                c.lifecycle(event)
+                c.lifecycle_with(event, next)
             }
         }
+        if split_was_intact {split_view::refresh_local(self);}
     }
     fn interactive_id(&self) -> Option<ComponentId> {
         if self.component.interactive() {
@@ -954,7 +1056,7 @@ impl Content {
         Ok(())
     }
     fn focus_ids(&self, ids: &mut Vec<ComponentId>) {
-        if !self.component.active() {
+        if !self.component.participates_in_focus_traversal() || !self.component.active() {
             return;
         }
         if self.component.focusable()
@@ -1130,6 +1232,9 @@ impl Content {
             // branch's event. Stopped ancestors still receive an exit update.
             let stopped = hit.is_some_and(|(_, _, bubbles)| !bubbles);
             if !stopped || !inside {
+                // Preserve the original captured point. Region-aware owners
+                // receive the Host-derived inside bit through deliver_actions;
+                // ordinary owners keep their existing Move semantics.
                 let response = self.deliver_actions(event, false, actions);
                 changed |= response.changed;
                 if !stopped && (hit.is_some() || inside) {
@@ -1158,7 +1263,7 @@ impl Content {
         focused: Option<ComponentId>,
         out: &mut Vec<SemanticNode>,
     ) {
-        if !self.component.active() {
+        if !self.component.active() || self.component.semantic_subtree_hidden() {
             return;
         }
         let hidden = self.component.semantic_hidden();
@@ -1167,10 +1272,7 @@ impl Content {
             id: self.id,
             parent,
             frame: self.component.semantic_frame(self.frame),
-            visible: self
-                .component
-                .semantic_frame(self.frame)
-                .intersection(&self.clip),
+            visible: self.component.semantic_frame(self.frame).intersection(&self.clip),
             focused: focused == Some(self.id),
             semantics: self.help_semantics(),
             parts: self.component.semantic_parts(),
@@ -1223,8 +1325,10 @@ enum PaddingFocusHit {
 #[derive(Debug)]
 pub struct ContentHost {
     root: Content,
+    reveal_clock: content_reveal_plan::RevealClock,
     focused: Option<ComponentId>,
     captured: Option<ComponentId>,
+    capture_epoch: u64,
     dirty: bool,
     inherited_surface: &'static str,
     modal: Option<(ComponentId, Option<(ComponentId, u64)>)>,
@@ -1247,10 +1351,15 @@ impl ContentHost {
     pub fn new(mut root: Content) -> Result<Self, CompositionError> {
         root.ids(&mut BTreeSet::new())?;
         root.lifecycle(Lifecycle::Mounted);
-        Ok(Self {
+        Ok(Self::from_mounted(root))
+    }
+    fn from_mounted(root: Content) -> Self {
+        Self {
             root,
+            reveal_clock: Default::default(),
             focused: None,
             captured: None,
+            capture_epoch: 0,
             dirty: true,
             inherited_surface: "canvas",
             modal: None,
@@ -1267,7 +1376,7 @@ impl ContentHost {
             item_reveal: None,
             help: Default::default(),
             event_bubbled: None,
-        })
+        }
     }
     pub fn set_inherited_surface(
         &mut self,
@@ -1286,6 +1395,8 @@ impl ContentHost {
         self.root.find(id)
     }
     pub fn get_mut(&mut self, id: ComponentId) -> Option<&mut Content> {
+        self.reveal_clock.invalidate_input();
+        self.reveal_clock.pending = true;
         self.dirty = true;
         self.root.find_mut(id)
     }
@@ -1493,7 +1604,9 @@ impl ContentHost {
         self.root.reconcile_presentation_runnable(self.window_active);
         // Reject a changed attachment/mount before ticking any old navigation.
         self.observe_item_reveal();
+        self.reveal_clock.invalidate_geometry();
         self.layout_preflighted(text, frame, clip)?;
+        self.reveal_clock.pending = false;
         self.observe_item_reveal();
         self.advance_notices(text)?;
         self.reconcile_active_inputs();
@@ -1583,6 +1696,7 @@ impl ContentHost {
         self.last_layout = None;
         self.check_text_services(text)?;
         self.root.reset_label_layouts();
+        self.prepare_split_layout(frame, clip);
         let measured = self.root.measure(text, frame.size);
         self.check_text_services(text)?;
         if let Some(id) = self.root.label_failure() {
@@ -1596,6 +1710,7 @@ impl ContentHost {
             frame.size.height.max(measured.size.height),
         ));
         self.root.arrange(text, frame, clip);
+        self.finish_split_layout();
         self.check_text_services(text)?;
         if let Some(id) = self.root.label_failure() {
             self.cancel();
@@ -1646,45 +1761,21 @@ impl ContentHost {
         }
     }
     pub fn focus(&mut self, id: Option<ComponentId>, visible: bool) -> bool {
-        if !self.window_active && id.is_some() { return false; }
-        self.dirty = true;
-        if let Some(target) = id
-            && (self.root.find_active(target).is_none()
-                || self
-                    .scope()
-                    .find_active(target)
-                    .is_none_or(|c| !c.component.focusable() || c.component.semantics().disabled))
-        {
-            return false;
-        }
-        if self.focused != id {
-            self.focus_epoch = self
-                .focus_epoch
-                .checked_add(1)
-                .expect("focus epoch exhausted");
-        }
-        if self.focused != id
-            && let Some(c) = self.focused.and_then(|old| self.root.find_mut(old))
-        {
-            c.component.set_focus(false, false);
-        }
-        let changed = self.focused != id;
-        self.focused = id;
-        if let Some(id) = id {
-            let frame = {
-                let c = self.root.find_mut(id).unwrap();
-                c.component.set_focus(true, visible);
-                c.component
-                    .text_surface()
-                    .filter(|surface| {
-                        surface.presentation == crate::TextSurfacePresentation::Content
-                    })
-                    .map_or(c.frame, |surface| surface.caret())
-            };
-            self.root.reveal(id, frame);
-        }
-        self.help_focus(id, visible);
-        changed
+        matches!(self.admit_ordinary_focus(id, visible, None, action_preparation::FocusOrigin::Direct),
+            action_preparation::FocusAdmission::Accepted { changed: true })
+    }
+    /// Enter the first/last eligible original owner in the current input scope.
+    /// Composing editors retain their existing Tab/IME boundary; accepted entry
+    /// uses the same focus/reveal admission and traversal direction as Tab.
+    pub fn enter_focus(&mut self, reverse: bool) -> bool {
+        if self.is_composing() { return false; }
+        let mut ids = Vec::new();
+        self.scope().focus_ids(&mut ids);
+        let target = if reverse { ids.last() } else { ids.first() }.copied();
+        matches!(
+            self.admit_ordinary_focus(target, true, Some(reverse), action_preparation::FocusOrigin::Traversal),
+            action_preparation::FocusAdmission::Accepted { changed: true }
+        )
     }
     /// Whether the last event may continue to the enclosing host. A handled
     /// event can bubble, so consumed alone is not a propagation decision.
@@ -1694,6 +1785,7 @@ impl ContentHost {
     }
     pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {
         if !self.window_active { return ContentResponse::default(); }
+        self.reveal_clock.invalidate_input();
         self.event_bubbled = None;
         let previous_caret = self.focused.and_then(|id| {
             self.focused_text()
@@ -1717,7 +1809,22 @@ impl ContentHost {
             && surface.input.caret != caret
         {
             let frame = surface.caret();
-            self.root.reveal(id, frame);
+            match self.plan_host_reveal_rect(
+                id,
+                frame,
+                crate::ScrollRevealOptions {
+                    animated: false,
+                    ..Default::default()
+                },
+                &[],
+                content_reveal_plan::HostRevealBudget::default(),
+            ) {
+                Ok(plan) => { let _ = self.commit_host_reveal(plan); }
+                Err(HostRevealError::UnsupportedLayout) if self.original_reveal_admissible(id) => {
+                    self.root.reveal(id, frame);
+                }
+                Err(_) => {}
+            }
         }
         // Preserve the existing modal barrier for hosts which only inspect
         // consumed; explicit bubbling cannot expose background input.
@@ -1760,6 +1867,8 @@ impl ContentHost {
         }
     }
     fn dispatch(&mut self, event: &ContentEvent) -> ContentResponse {
+        if !self.split_structures_intact() { return ContentResponse::default(); }
+        if self.split_input_guard(event) { return ContentResponse::consumed(false); }
         if let ContentEvent::TextCommand(command) = event {
             let key = match command.as_str() {
                 "insertTab:" => Some(ControlKey::Tab { reverse: false }),
@@ -1789,6 +1898,9 @@ impl ContentHost {
         }
         let routing = event.routing_event();
         let routed = routing.as_ref();
+        if matches!(routed, ContentEvent::PointerDown(_)) && event.is_primary_pointer() && self.capture_epoch == u64::MAX {
+            self.event_bubbled = Some(false); return ContentResponse::default();
+        }
         if self.help_event(event) {
             return ContentResponse::consumed(true);
         }
@@ -1868,6 +1980,20 @@ impl ContentHost {
                 }
             }
         }
+        let pointer_down = match event {
+            ContentEvent::PointerDown(point) => Some(*point),
+            ContentEvent::Pointer(pointer)
+                if pointer.phase == PointerPhase::Down && pointer.is_primary() =>
+            {
+                Some(pointer.position)
+            }
+            _ => None,
+        };
+        if let Some(point) = pointer_down
+            && let Some(response) = self.try_prepared_pointer(event, point)
+        {
+            return response;
+        }
         if matches!(
             routed,
             ContentEvent::Key {
@@ -1916,7 +2042,15 @@ impl ContentHost {
                 None if *reverse => ids.len() - 1,
                 None => 0,
             };
-            let changed = self.focus(Some(ids[next]), true);
+            let changed = matches!(
+                self.admit_ordinary_focus(
+                    Some(ids[next]),
+                    true,
+                    Some(*reverse),
+                    action_preparation::FocusOrigin::Traversal,
+                ),
+                action_preparation::FocusAdmission::Accepted { changed: true }
+            );
             return ContentResponse::consumed(changed);
         }
         if let ContentEvent::PointerMove(position) = routed {
@@ -1951,6 +2085,7 @@ impl ContentHost {
             self.event_bubbled = Some(bubbles);
             if matches!(routed, ContentEvent::PointerDown(_)) && event.is_primary_pointer() {
                 if r.capture_pointer {
+                    self.capture_epoch = self.capture_epoch.checked_add(1).expect("pointer capture identity exhausted");
                     self.captured = Some(id)
                 }
                 if r.consumed
@@ -1984,6 +2119,23 @@ impl ContentHost {
         };
         (scope, &mut self.actions)
     }
+    /// Current original interactive overlay/modal authority. A retained exit
+    /// painter has no input authority, and an inactive window publishes none.
+    pub fn input_overlay_owner(&self) -> Option<(ComponentId, u64)> {
+        if !self.window_active { return None; }
+        let id = self.modal.map(|(id, _)| id).or_else(|| self.scope().overlay_id())?;
+        let node = self.root.find_active(id)?;
+        Some((id, node.mount))
+    }
+    /// Original native key owner binding, retained across geometry-only changes
+    /// and zero pane allocation. Focus epoch and mount authenticate key frames;
+    /// editor/document identity remains owned by the original component.
+    pub fn native_key_binding(&self) -> Option<Vec<u8>> {
+        if !self.window_active { return None; }
+        let owner = self.scope().find_active(self.focused?)?;
+        if owner.component.semantics().disabled { return None; }
+        owner.component.native_key_binding()
+    }
     /// Current UTF-16 editing/geometry source for a platform's text query bridge.
     pub fn focused_text(&self) -> Option<&crate::TextSurface> {
         self.focused.and_then(|id| self.text_surface(id))
@@ -1999,14 +2151,18 @@ impl ContentHost {
     }
     /// Read the original semantic owner's text and visible caret geometry.
     pub fn semantic_text_input_snapshot(&self, id: ComponentId) -> Option<ContentTextInput> {
+        if !self.window_active { return None; }
         let owner = self.scope().find_active(id)?;
-        if owner.component.semantics().disabled {
-            return None;
+        if owner.component.semantics().disabled { return None; }
+        let mut input = owner.component.text_surface().map(ContentTextInput::from_surface)?;
+        // Zero panes retain the original logical editor, selection and marked
+        // state. They must not publish retained geometry from an earlier frame.
+        if self.split_text_geometry_hidden(id) {
+            input.caret = None;
+            input.clip = None;
+            input.carets.clear();
         }
-        owner
-            .component
-            .text_surface()
-            .map(ContentTextInput::from_surface)
+        Some(input)
     }
     /// Published text queries for active semantic owners, including unfocused
     /// fields. Closed or background modal subtrees cannot expose editable text.
@@ -2040,6 +2196,10 @@ impl ContentHost {
     /// Revoke adapter authorization recursively, including hidden descendants.
     pub fn set_window_active(&mut self, active: bool) {
         if self.window_active == active { return; }
+        // A window-authority change invalidates a prepared input/reveal plan.
+        // Keep the 078 cancellation order: blur/cancel while the old window
+        // authority is still live, then notify every retained descendant.
+        self.reveal_clock.invalidate_input();
         if !active { self.cancel(); }
         self.window_active = active;
         self.root.refresh_activity(active);
@@ -2072,6 +2232,19 @@ impl ContentHost {
             .component
             .semantic_part_parent(part)
     }
+    pub fn semantic_preserves_activation_focus(
+        &self,
+        id: ComponentId,
+        part: Option<usize>,
+    ) -> bool {
+        self.scope().find_active(id).is_some_and(|node| {
+            node.preserve_activation_focus
+                || node.component.preserves_activation_focus()
+                || part.is_some_and(|part| {
+                    node.component.semantic_part_preserves_activation_focus(part)
+                })
+        })
+    }
     /// Actions use the same semantic owner and production state machine as input.
     /// Closed/dismissed/inactive subtrees and stale menu parts reject requests.
     pub fn accessibility_action(
@@ -2080,7 +2253,11 @@ impl ContentHost {
         part: Option<usize>,
         action: AccessibilityAction,
     ) -> ContentResponse {
+        if self.split_ax_guard(id) { return ContentResponse::default(); }
         if !self.window_active { return ContentResponse::default(); }
+        if let Some(response) = self.try_prepared_ax(id, part, &action) {
+            return response;
+        }
         self.reconcile_active_inputs();
         if self
             .scope()
@@ -2209,6 +2386,17 @@ impl ContentHost {
         self.restore_focus(restore);
         true
     }
+    pub fn cancel_pointer_capture(&mut self) -> bool {
+        let Some(id) = self.captured.take() else {
+            return false;
+        };
+        if let Some(owner) = self.root.find_mut(id) {
+            owner.component.cancel_pointer();
+        }
+        self.help.clear();
+        self.dirty = true;
+        true
+    }
     pub fn cancel(&mut self) {
         self.help.clear();
         self.dirty = true;
@@ -2249,6 +2437,8 @@ impl ContentHost {
         let mut child = child;
         child.lifecycle(Lifecycle::Mounted);
         children.push(child);
+        self.reveal_clock.invalidate_input();
+        self.reveal_clock.pending = true;
         self.dirty = true;
         Ok(())
     }
@@ -2293,6 +2483,8 @@ impl ContentHost {
             self.captured = None;
         }
         child.lifecycle(Lifecycle::Unmounted);
+        self.reveal_clock.invalidate_input();
+        self.reveal_clock.pending = true;
         self.dirty = true;
         Ok(child)
     }
@@ -2323,6 +2515,8 @@ impl ContentHost {
             let i = old.iter().position(|c| c.id == *id).unwrap();
             children.push(old.remove(i));
         }
+        self.reveal_clock.invalidate_input();
+        self.reveal_clock.pending = true;
         self.dirty = true;
         Ok(())
     }
@@ -2345,6 +2539,7 @@ impl ContentHost {
 }
 impl Drop for ContentHost {
     fn drop(&mut self) {
+        self.reveal_clock.invalidate_geometry();
         self.root.lifecycle(Lifecycle::Unmounted)
     }
 }
@@ -2406,6 +2601,19 @@ impl StackContent {
     }
 }
 impl Component for StackContent {
+    fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{PreparedEffects::local_work(n)}
+    fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError>{Ok(PreparedEffects::local(self,hooks))}
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn children(&self) -> &[Content] {
         &self.children
     }
@@ -2453,6 +2661,19 @@ pub struct GridContent {
     pub children: Vec<Content>,
 }
 impl Component for GridContent {
+    fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{PreparedEffects::local_work(n)}
+    fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError>{Ok(PreparedEffects::local(self,hooks))}
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn children(&self) -> &[Content] {
         &self.children
     }
@@ -2513,6 +2734,7 @@ pub struct ScrollContent {
     viewport: Rect,
     last_frame: Option<std::time::Duration>,
     reading: Option<content_reading::ContentReadingState>,
+    reading_mounted: bool,
 }
 impl ScrollContent {
     pub fn new(scroll: ScrollArea, child: Content) -> Self {
@@ -2524,6 +2746,7 @@ impl ScrollContent {
             viewport: Rect::default(),
             last_frame: None,
             reading: None,
+            reading_mounted: false,
         }
     }
     fn arrange_content(
@@ -2547,6 +2770,23 @@ impl ScrollContent {
     }
 }
 impl Component for ScrollContent {
+    fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{
+        let base=PreparedEffects::local_work(n)?;
+        base.checked_add(match &self.reading{Some(r)=>content_reading::reader_preparation_work(r,n).ok_or(PreparedEffectsError::CounterCapacity)?,None=>0}).ok_or(PreparedEffectsError::CounterCapacity)
+    }
+    fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError>{self.prepare_scroll_effects(hooks)}
+    fn lifecycle_prepared(&mut self,event:Lifecycle,context:&mut PreparedLifecycleContext){context.scroll_lifecycle(self,event);}
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn interactive(&self) -> bool {
         true
     }
@@ -2656,6 +2896,7 @@ impl Component for ScrollContent {
         descendant.offset(old.x - new.x, old.y - new.y)
     }
     fn lifecycle(&mut self, event: Lifecycle) {
+        self.reading_mounted = event == Lifecycle::Mounted;
         if event == Lifecycle::Unmounted {
             self.last_frame = None;
             self.reading_unmounted();
@@ -2764,7 +3005,95 @@ impl ButtonContent {
         }
     }
 }
+#[derive(Clone, Debug, PartialEq)]
+struct ButtonContentActionDecision {
+    button: crate::widgets::ButtonActionDecision,
+    activations: usize,
+    response: ContentResponse,
+    focus: PreparedActionFocus,
+}
+impl action_preparation::OriginalActionDecision for ButtonContentActionDecision {}
+impl ButtonContent {
+    fn decide_action(
+        &self,
+        request: &action_preparation::OwnedActionRequest,
+    ) -> Option<ButtonContentActionDecision> {
+        let (button, is_pointer) = match request {
+            action_preparation::OwnedActionRequest::Pointer(event) => {
+                let event = event.routing_event();
+                let ContentEvent::PointerDown(point) = event.as_ref() else {
+                    return None;
+                };
+                (self.button.prepare_content_down(
+                    *point,
+                    self.pointer_activation_phase == ButtonActivationPhase::Press,
+                ), true)
+            }
+            action_preparation::OwnedActionRequest::Accessibility(None, AccessibilityAction::Press) => {
+                if !self.focusable() {
+                    return None;
+                }
+                (self.button.prepare_accessibility_press(), false)
+            }
+            _ => return None,
+        };
+        let response = ContentResponse {
+            consumed: if is_pointer { button.consumed } else { button.activated },
+            changed: if is_pointer { button.consumed } else { button.activated },
+            capture_pointer: is_pointer && button.consumed,
+            activated: button.activated,
+            ..Default::default()
+        };
+        Some(ButtonContentActionDecision {
+            button,
+            activations: self.activations,
+            focus: if response.consumed { PreparedActionFocus::Owner } else { PreparedActionFocus::None },
+            response,
+        })
+    }
+
+    fn apply_action(&mut self, decision: ButtonContentActionDecision) {
+        let activated = decision.button.activated;
+        let next_activations = if activated {
+            let Some(next) = self.activations.checked_add(1) else {
+                return;
+            };
+            Some(next)
+        } else {
+            None
+        };
+        self.button.apply_content_action(decision.button);
+        if let Some(next) = next_activations {
+            self.activations = next;
+        }
+    }
+}
 impl Component for ButtonContent {
+    fn table_transaction_compatibility(&self)->TableTransactionCompatibility { TableTransactionCompatibility::StableHooks }
+    fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError> { PreparedEffects::local_work(n) }
+    fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError> { Ok(PreparedEffects::local(self,hooks)) }
+
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        let owned = action_preparation::OwnedActionRequest::read(request);
+        if self
+            .decide_action(&owned)
+            .is_some_and(|decision| decision.response.activated && self.activations == usize::MAX)
+        {
+            return action_preparation::rejected();
+        }
+        action_preparation::prepare_original(
+            self,
+            request,
+            Self::decide_action,
+            Self::apply_action,
+            |decision| (decision.response, decision.focus),
+        )
+    }
+
     fn focus_decoration_above_siblings(&self) -> bool {
         self.button.frame_policy == crate::ButtonFramePolicy::Exact
             && self.button.state.focused
@@ -2894,6 +3223,16 @@ impl TextContent {
     }
 }
 impl Component for TextContent {
+    fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{PreparedEffects::local_work(n)?.checked_add(self.text.len().checked_mul(n.max(1)).ok_or(PreparedEffectsError::CounterCapacity)?).ok_or(PreparedEffectsError::CounterCapacity)}
+    fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError>{Ok(PreparedEffects::local(self,hooks))}
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         MeasuredChild::new(text.measure(&self.text, self.role, available.width))
     }
@@ -2943,6 +3282,11 @@ pub struct CompoundButton {
     content: Vec<Content>,
     measured: Size,
 }
+#[derive(Clone, Debug, PartialEq)]
+struct CompoundButtonActionDecision {
+    action: ButtonContentActionDecision,
+}
+impl action_preparation::OriginalActionDecision for CompoundButtonActionDecision {}
 impl CompoundButton {
     pub fn new(
         accessible_name: impl Into<String>,
@@ -2966,8 +3310,33 @@ impl CompoundButton {
     ) -> crate::ButtonLayout {
         resolve_action_slot(&self.action, self.measured, frame, clip, text)
     }
+    fn decide_action(
+        &self,
+        request: &action_preparation::OwnedActionRequest,
+    ) -> Option<CompoundButtonActionDecision> {
+        self.action
+            .decide_action(request)
+            .map(|action| CompoundButtonActionDecision { action })
+    }
+    fn apply_action(&mut self, decision: CompoundButtonActionDecision) {
+        self.action.apply_action(decision.action);
+    }
 }
 impl Component for CompoundButton {
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::prepare_original(
+            self,
+            request,
+            Self::decide_action,
+            Self::apply_action,
+            |decision| (decision.action.response, decision.action.focus),
+        )
+    }
+
     fn focus_decoration_above_siblings(&self) -> bool {
         self.action.focus_decoration_above_siblings()
     }

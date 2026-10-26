@@ -115,10 +115,7 @@ define_class!(
         #[unsafe(method(characterIndexForPoint:))]
         fn characterIndexForPoint(&self,point:objc2_foundation::NSPoint)->usize {
             let p=self.window().map_or(point,|w|w.convertPointFromScreen(point));let p=self.convertPoint_fromView(p,None);
-            self.ivars().shared.text_input.borrow().as_ref().map_or(0,|s|s.carets.iter().min_by(|a,b|{
-                let distance=|v:&(usize,Point,Size)| ((p.y-(v.1.y+v.2.height*0.5)).abs()*1000.0)+(p.x-v.1.x).abs();
-                distance(a).total_cmp(&distance(b))
-            }).map_or(s.caret_index,|v|v.0))
+            self.ivars().shared.text_input.borrow().as_ref().and_then(|s|s.character_index_for_point(Point{x:p.x,y:p.y})).unwrap_or(isize::MAX as usize)
         }
     }
 

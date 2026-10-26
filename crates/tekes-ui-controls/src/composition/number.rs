@@ -371,6 +371,7 @@ impl NumberFieldContent {
     }
 }
 impl Component for NumberFieldContent {
+
     fn requires_text_services(&self) -> bool {
         true
     }
