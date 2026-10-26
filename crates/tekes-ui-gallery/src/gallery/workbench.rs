@@ -8373,6 +8373,165 @@ mod interaction_tests {
         }
     }
     #[test]
+    fn gallery_primary_button_theme_and_brand_changes_repaint_real_button_states() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        fn sample_button(
+            scene: &Scene,
+            frame: Rect,
+            content: Rect,
+            scale: f32,
+        ) -> (tekes_ui_tokens::Rgba, Vec<tekes_ui_tokens::Rgba>) {
+            let fill = scene
+                .primitives()
+                .iter()
+                .find_map(|primitive| match primitive {
+                    Primitive::Quad(quad) if quad.rect == frame => Some(quad.fill),
+                    _ => None,
+                })
+                .expect("real Gallery Button background quad");
+            let inks = scene
+                .primitives()
+                .iter()
+                .filter_map(|primitive| match primitive {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|positioned| {
+                            let glyph = positioned.glyph;
+                            let bounds = Rect::new(
+                                positioned.origin.x + glyph.left as f32 / scale,
+                                positioned.origin.y + glyph.top as f32 / scale,
+                                glyph.width as f32 / scale,
+                                glyph.height as f32 / scale,
+                            );
+                            content.intersection(&bounds).is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            (fill, inks)
+        }
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::Light));
+        gallery.apply(Command::Contrast(ContrastChoice::Off));
+        assert_eq!(gallery.theme(), Theme::LIGHT);
+        assert!(gallery.open_route("component-button/playground"));
+        gallery.set_view_size(1440., 900.);
+        let i = index("button");
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        let (button_frame, button_content) = {
+            let layout = gallery.workbench.state(i).buttons[&20]
+                .layout()
+                .expect("public Gallery primary Button is laid out");
+            (layout.frame, layout.content)
+        };
+        let point = button_frame.center();
+
+        gallery.handle_input(&move_pointer(point));
+        assert!(gallery.workbench.state(i).buttons[&20].state.hovered);
+        gallery.animate(0.001);
+        gallery.build_scene(&mut Scene::new());
+        gallery.animate(0.1);
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(gallery.workbench.state(i).buttons[&20].needs_animation());
+        let (mid_hover_fill, _) =
+            sample_button(&scene, button_frame, button_content, gallery.text.scale());
+        let light_palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
+        assert_ne!(
+            mid_hover_fill,
+            light_palette.color("action-primary-ground").unwrap()
+        );
+        assert_ne!(
+            mid_hover_fill,
+            light_palette.color("action-primary-hover").unwrap()
+        );
+
+        gallery.apply(Command::Appearance(AppearanceChoice::Dark));
+        gallery.apply(Command::Contrast(ContrastChoice::On));
+        assert_eq!(gallery.theme(), Theme::DARK_INCREASED);
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        let (pending_hover_animation, current_frame) = {
+            let button = &gallery.workbench.state(i).buttons[&20];
+            (
+                button.needs_animation(),
+                button.layout().expect("real Gallery Button layout").frame,
+            )
+        };
+        assert!(!pending_hover_animation);
+        assert_eq!(current_frame, button_frame, "theme change preserves layout");
+        let palette = Palette::new(Theme::DARK_INCREASED, 0).expect("registered Gallery brand");
+        let (fill, inks) =
+            sample_button(&scene, button_frame, button_content, gallery.text.scale());
+        assert_eq!(
+            fill,
+            palette
+                .color("action-primary-hover")
+                .expect("primary hover role")
+        );
+        assert!(
+            !inks.is_empty(),
+            "real Button label glyphs are in the Gallery scene"
+        );
+        assert!(inks.iter().all(|ink| {
+            *ink == palette
+                .color("action-primary-foreground")
+                .expect("primary ink role")
+        }));
+
+        gallery.handle_input(&mouse(point, true));
+        assert!(gallery.workbench.state(i).buttons[&20].state.pressed);
+        gallery.animate(0.001);
+        gallery.build_scene(&mut Scene::new());
+        gallery.animate(0.028);
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(gallery.workbench.state(i).buttons[&20].needs_animation());
+        let dark_palette =
+            Palette::new(Theme::DARK_INCREASED, 0).expect("registered Gallery brand");
+        let (mid_press_fill, _) =
+            sample_button(&scene, button_frame, button_content, gallery.text.scale());
+        assert_ne!(
+            mid_press_fill,
+            dark_palette.color("action-primary-hover").unwrap()
+        );
+        assert_ne!(
+            mid_press_fill,
+            dark_palette.color("action-primary-pressed").unwrap()
+        );
+
+        gallery.apply(Command::Brand(1));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        let pending_press_animation = gallery.workbench.state(i).buttons[&20].needs_animation();
+        assert!(!pending_press_animation);
+        let palette = Palette::new(Theme::DARK_INCREASED, 1).expect("registered Gallery brand");
+        let (fill, inks) =
+            sample_button(&scene, button_frame, button_content, gallery.text.scale());
+        assert_eq!(
+            fill,
+            palette
+                .color("action-primary-pressed")
+                .expect("primary pressed role")
+        );
+        assert!(!inks.is_empty(), "real Button label glyphs remain rendered");
+        assert!(inks.iter().all(|ink| {
+            *ink == palette
+                .color("action-primary-foreground")
+                .expect("primary ink role")
+        }));
+    }
+
+    #[test]
     fn preview_density_brand_and_font_scale_change_actual_scene() {
         let mut w = Workbench::default();
         let mut t = super::super::text::TextEngine::new();
