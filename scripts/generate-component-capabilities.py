@@ -925,7 +925,9 @@ def generate(binding_override: bytes | None = None) -> dict:
     mapping = historical_mapping(registry, historical)
     reverse = reverse_coverage(registry)
     observation_paths = [Path(row['runtime_token_observation']) for row in read_json(COVERAGE)['components'] if row.get('runtime_token_observation')]
-    input_paths = [*observation_paths, REGISTRY, REVIEWS, COVERAGE, STATE_PROFILES, COMPONENT_CONTRACTS, TOKENS, PUBLIC_SURFACE, HISTORICAL_MAP, historical_path, Path('scripts/generate-component-capabilities.py'), Path('scripts/component-context.py'), Path('design/integration.json'), Path('design/gallery/navigation.json'), *files]
+    practical_paths = [Path(source) for row in read_json(COVERAGE)['components']
+                       for source in row.get('practical_intake', {}).get('source_identity', {}).get('sha256', {})]
+    input_paths = [*observation_paths, *practical_paths, REGISTRY, REVIEWS, COVERAGE, STATE_PROFILES, COMPONENT_CONTRACTS, TOKENS, PUBLIC_SURFACE, HISTORICAL_MAP, historical_path, Path('scripts/generate-component-capabilities.py'), Path('scripts/component-context.py'), Path('design/integration.json'), Path('design/gallery/navigation.json'), *files]
     return {
         'format': 'tekesui-component-capabilities/1',
         'source_state': 'content-addressed by input SHA-256 hashes; Git HEAD is intentionally excluded',

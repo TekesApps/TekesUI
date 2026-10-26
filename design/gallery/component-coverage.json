@@ -2661,7 +2661,60 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
+        "scope": "#62 accepted Surface inheritance/default/override/clear through the retained Dialog ancestor chain, with restored public retained regressions.",
+        "claims": [
+          "ContentTheme Surface inheritance reaches retained Dialog through actual ancestor resolution.",
+          "Default, explicit override, clear, and invalid default Surface rejection were covered in the accepted batch.",
+          "Original #97 public retained/half-ULP regression tests were restored and passed in the same batch."
+        ],
+        "exceptions": [
+          "This record is limited to the 2026-10-26 retained Dialog Surface batch; older #62 Palette/ContentTheme consumption evidence retains its own identity."
+        ],
+        "gaps": [
+          "Native/VoiceOver acceptance.",
+          "ProgressContent full main acceptance.",
+          "Panel 450/18 integration.",
+          "Whole Design System or all 52 roots."
+        ],
+        "source_identity": {
+          "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "1d1c57425c66e41a70147354ce236bbeef10806b2b76d1bf58a427c10f8d1040",
+            "examples/composition-consumer/tests/scene_fragment.rs": "912c2761b46cd3c32fd7c8779116dc81b0b14ee5fb752ba265edfcdd1b5e1813",
+            "examples/composition-consumer/tests/surface_dialog_inheritance.rs": "ddbc8efcceebfe6c276b01d24d5aa90ea1aa4b7303de5f8e7ce56747445045d9"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#62",
+            "component": "tui.dialog",
+            "commit": "8e4c01de5fae9a429016a039f53034b5737a0a2b",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/commit-receipt.json",
+            "sha256": "835a583d2d2a5f67c2bde38336e3dd1e0d3c5f08ca44f1667fba04a42f2b56c9",
+            "scope": "Accepted local main commit and explicitly bounded Surface/Dialog scope."
+          },
+          {
+            "issue": "#62",
+            "component": "tui.dialog",
+            "commit": "8e4c01de5fae9a429016a039f53034b5737a0a2b",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/final-source-receipt.json",
+            "sha256": "6f510f10398a456b36ebd858cd3b7ae4b6667ef6fab6b7faf9f90ba4301d7b8a",
+            "scope": "Exact source paths and hashes for the accepted candidate."
+          },
+          {
+            "issue": "#62",
+            "component": "tui.dialog",
+            "commit": "8e4c01de5fae9a429016a039f53034b5737a0a2b",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/run-20261026T150112.663305Z/run-receipt.json",
+            "sha256": "b2243e8a88fda39684aae1590c89e32740cd00ec3a385eb79d4d7878faad64f3",
+            "scope": "Controls Surface, public Dialog/fragment regressions, Controls Gallery strict, and public Surface strict all passed."
+          }
+        ]
+      }
     },
     {
       "id": "tui.toast",
@@ -2701,7 +2754,66 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
+        "scope": "#93 accepted shared Notice marker Theme rules only for tui.toast; no Content or component consumption claim.",
+        "claims": [
+          "Shared rules include the rest-only toast-warning marker purpose, mapped to the existing status-failed marker token.",
+          "The accepted rules define five rest-only Notice marker purposes and preserve actual-background contrast guards."
+        ],
+        "exceptions": [
+          "Theme rules and generated packet acceptance do not certify component adapter behavior."
+        ],
+        "gaps": [
+          "Toast #79 actual Content/View/Gallery/GPU consumption remains unverified by #93.",
+          "Native/GPU/performance/publication.",
+          "Whole Design System or all 52 roots."
+        ],
+        "source_identity": {
+          "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+          "sha256": {
+            "design/theme/rules.json": "0d6769f8a33ad4a0ebfb53358a9d392b956e7076d6698b8f3a654711965f3896",
+            "scripts/generate-theme-system.py": "163af0aa8ccb7730ed87d9b8a0ea9ec5e8f5a3a02933ad54a90dab4e1ac7b88e",
+            "scripts/test-theme-system.py": "03a2db27fd0ad8190a96202cba2b52e8870a2bde5396506133360f8183a4f84e",
+            "crates/tekes-ui-design-export/src/theme_system.rs": "599b1599c4f6fa94fcc0763c2bfebcea6cd006666c1fdc494eedaf0925567395",
+            "crates/tekes-ui-tokens/src/surface_palette.rs": "bcad91a7da1eae9810ec9cff6613d4f6f15971c6676fe4ddfc69d0e9565a910c",
+            "design/system.json": "b821f5c4169079e0aae9f6b277f34785a6a696736f1a131f7183c4ab7cd0f20c",
+            "design/system.schema.json": "6d0d92288d90aeac812fa9592d293237c32750a4c3427d3913a58318c60b9cff",
+            "design/reviews/notice-marker-theme-implementation-20261024/api-v1.9.0.md": "50598f86b248d809bb2762b102b977188599dac0962590e9aaf39f0da3417824",
+            "design/theme/generated/instances.json": "1a00f7cac820f5a5beb1f438dd73054200f9a91c459d6d44ccdff1adba829f69",
+            "design/theme/generated/surface_rules.rs": "15420c83a76281d92d046aae96b75ac2be5e198c51906aa51853769d633b43d3",
+            "design/theme/artifact.lock.json": "0b5eb4b4fba81c004636991fc39e1affe847ce25b8cacd84f1dab16c4e4d3a5e"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#93",
+            "component": "tui.toast",
+            "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-intake-20261026-01/local-main-commit-receipt.json",
+            "sha256": "ba8fa2718bc1d392c814145cc1134cf4e48afc4cca9441838e98a4525d89e1c2",
+            "scope": "Accepted local main commit 3e989f1; five shared Notice marker purposes only."
+          },
+          {
+            "issue": "#93",
+            "component": "tui.toast",
+            "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-external-20261026-01/root-acceptance-audit.json",
+            "sha256": "17d8c48285d74bc87b897f158258438c33fe67d6b4e5d8fbf1109b13c379bfc4",
+            "scope": "External acceptance audit: 80 bounded commands passed, including rejection and legal-packet runs; component/GPU use excluded."
+          },
+          {
+            "issue": "#93",
+            "component": "tui.toast",
+            "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-rust-20261026-01/root-artifact-audit.json",
+            "sha256": "baaae0958b5a9ae69f797690a6c1f8b83972658888460fe1af1d990174f4ba61",
+            "scope": "Six local Rust/design-export/token/consumer commands passed for shared rules; component/GPU use excluded."
+          }
+        ]
+      }
     },
     {
       "id": "tui.banner",
@@ -2741,7 +2853,66 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
+        "scope": "#93 accepted shared Notice marker Theme rules only for tui.banner; no Content or component consumption claim.",
+        "claims": [
+          "Shared rules include the rest-only banner-warning marker purpose, mapped to the existing status-running marker token.",
+          "The accepted rules define five rest-only Notice marker purposes and preserve actual-background contrast guards."
+        ],
+        "exceptions": [
+          "Theme rules and generated packet acceptance do not certify component adapter behavior."
+        ],
+        "gaps": [
+          "Banner #79 actual Content/View/Gallery/GPU consumption remains unverified by #93.",
+          "Native/GPU/performance/publication.",
+          "Whole Design System or all 52 roots."
+        ],
+        "source_identity": {
+          "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+          "sha256": {
+            "design/theme/rules.json": "0d6769f8a33ad4a0ebfb53358a9d392b956e7076d6698b8f3a654711965f3896",
+            "scripts/generate-theme-system.py": "163af0aa8ccb7730ed87d9b8a0ea9ec5e8f5a3a02933ad54a90dab4e1ac7b88e",
+            "scripts/test-theme-system.py": "03a2db27fd0ad8190a96202cba2b52e8870a2bde5396506133360f8183a4f84e",
+            "crates/tekes-ui-design-export/src/theme_system.rs": "599b1599c4f6fa94fcc0763c2bfebcea6cd006666c1fdc494eedaf0925567395",
+            "crates/tekes-ui-tokens/src/surface_palette.rs": "bcad91a7da1eae9810ec9cff6613d4f6f15971c6676fe4ddfc69d0e9565a910c",
+            "design/system.json": "b821f5c4169079e0aae9f6b277f34785a6a696736f1a131f7183c4ab7cd0f20c",
+            "design/system.schema.json": "6d0d92288d90aeac812fa9592d293237c32750a4c3427d3913a58318c60b9cff",
+            "design/reviews/notice-marker-theme-implementation-20261024/api-v1.9.0.md": "50598f86b248d809bb2762b102b977188599dac0962590e9aaf39f0da3417824",
+            "design/theme/generated/instances.json": "1a00f7cac820f5a5beb1f438dd73054200f9a91c459d6d44ccdff1adba829f69",
+            "design/theme/generated/surface_rules.rs": "15420c83a76281d92d046aae96b75ac2be5e198c51906aa51853769d633b43d3",
+            "design/theme/artifact.lock.json": "0b5eb4b4fba81c004636991fc39e1affe847ce25b8cacd84f1dab16c4e4d3a5e"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#93",
+            "component": "tui.banner",
+            "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-intake-20261026-01/local-main-commit-receipt.json",
+            "sha256": "ba8fa2718bc1d392c814145cc1134cf4e48afc4cca9441838e98a4525d89e1c2",
+            "scope": "Accepted local main commit 3e989f1; five shared Notice marker purposes only."
+          },
+          {
+            "issue": "#93",
+            "component": "tui.banner",
+            "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-external-20261026-01/root-acceptance-audit.json",
+            "sha256": "17d8c48285d74bc87b897f158258438c33fe67d6b4e5d8fbf1109b13c379bfc4",
+            "scope": "External acceptance audit: 80 bounded commands passed, including rejection and legal-packet runs; component/GPU use excluded."
+          },
+          {
+            "issue": "#93",
+            "component": "tui.banner",
+            "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-rust-20261026-01/root-artifact-audit.json",
+            "sha256": "baaae0958b5a9ae69f797690a6c1f8b83972658888460fe1af1d990174f4ba61",
+            "scope": "Six local Rust/design-export/token/consumer commands passed for shared rules; component/GPU use excluded."
+          }
+        ]
+      }
     },
     {
       "id": "tui.status-badge",
@@ -2789,7 +2960,67 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
+        "scope": "#83 accepted shared Theme rules only for tui.status-badge; no component-consumption claim.",
+        "claims": [
+          "Four rest-only StatusBadge Surface purposes: info/running/succeeded/failed, with the accepted seven-channel and contrast guards.",
+          "The accepted packet expansion is five shared purposes total, preserving the prior packet identities."
+        ],
+        "exceptions": [
+          "The shared rules/handoff acceptance is distinct from implementation by the named component adapter."
+        ],
+        "gaps": [
+          "Actual StatusBadge #76 Content/View/Gallery/GPU consumption remains owned by its adapter issue.",
+          "Native/GPU/performance/publication.",
+          "Whole Design System or all 52 roots."
+        ],
+        "source_identity": {
+          "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+          "sha256": {
+            "design/theme/rules.json": "e9bc8fd9c3f9d354b66efba7081c1fea228237e00f08fc6f1f7ad72ffb01c113",
+            "scripts/generate-theme-system.py": "015a9e459db44d87ba7fb1e1784507a943dea0db979ea822d31d8951d1cf22d4",
+            "scripts/test-theme-system.py": "6fec51db4edc81f018da28040059955b8e0f3d70713ced486439f044a248772e",
+            "crates/tekes-ui-design-export/src/theme_system.rs": "cae05956335d3d8a24395c93ebec986fe57e81df17874d5e9064526c05651006",
+            "crates/tekes-ui-tokens/src/surface_palette.rs": "cec82e44119f03c56bb6e2437bd484a08d74778f663064a0a1ad15cd66777657",
+            "design/system.json": "f6b141abf83113616a14abc72e77b35afb8433d38b3f2b1b0fea76eaf3cf192b",
+            "design/system.schema.json": "f2af7574156d741a1f89cb3bcfabc27e68520df801b754f0cd5cf547c67dfe89",
+            "design/reviews/passive-status-theme-implementation-20261024/api-v1.8.0.md": "e3bb1dbb7ed6facd9715a1e6d87867819836a8ca0d0a4ff6c51f51d9d7013c25",
+            "design/reviews/progress-shared-purpose-20261024/api-v1.7.0.md": "e8965ac0231b3559f8ccbea7848b2018d94bc2b4a87016cd770a0f5be3503471",
+            "design/theme/generated/instances.json": "a12db1ea6433281acdef7bf4d01177dbc900fadfe1ad9d62a1d24501cc590aef",
+            "design/theme/generated/surface_rules.rs": "b483e31843ca53aaa7701afd0717cee6f6c56b7d42c0488fab0429b28ce99029",
+            "design/theme/artifact.lock.json": "684c8b825868b8ccb24b0aa2f494b22447bc08d35201be831d542ee5dd580190"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#83",
+            "component": "tui.status-badge",
+            "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-intake-20261026-01/local-main-commit-receipt.json",
+            "sha256": "6b184f703586fc9a20cd9bc8d1f3098d84cde633b9d4e7056b5d6f1c9342ccb0",
+            "scope": "Accepted local main commit 8fb1909; shared theme purpose only."
+          },
+          {
+            "issue": "#83",
+            "component": "tui.status-badge",
+            "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-external-20261026-01/root-review.json",
+            "sha256": "4ac946581db12471a3d35453853d571624202241aba8f13a616a139bea4fbfba",
+            "scope": "External accepted-source review: 23 semantic negative cases and 25 legal 280-packet runs; component adapter use excluded."
+          },
+          {
+            "issue": "#83",
+            "component": "tui.status-badge",
+            "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-rust-20261026-01/root-artifact-audit.json",
+            "sha256": "3c085fbc3d52f67ba3be9653cbf21e9094809db6943c6531d4aff8d4c2917280",
+            "scope": "Six local Rust/design-export/token/consumer commands passed for shared theme rules; component/GPU use excluded."
+          }
+        ]
+      }
     },
     {
       "id": "tui.progress",
@@ -2927,7 +3158,67 @@
           "note": "Actual public passive paint API, asserted geometry and runtime token reads across4themes/3brands/ancestor clip. Existing Progress loading consumer and StatusBadge shaped-label Gallery checks verified separately. Host composition, native, VoiceOver and matched ClientKit/Gold7 remain unverified; no maturity promotion."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
+        "scope": "#83 accepted shared Theme rules only for tui.skeleton; no component-consumption claim.",
+        "claims": [
+          "One rest-only Skeleton Surface purpose, with the accepted boundary contrast and null-channel rules.",
+          "The accepted packet expansion is five shared purposes total, preserving the prior packet identities."
+        ],
+        "exceptions": [
+          "The shared rules/handoff acceptance is distinct from implementation by the named component adapter."
+        ],
+        "gaps": [
+          "Actual Skeleton #77 Content/View/Gallery/GPU consumption remains owned by its adapter issue.",
+          "Native/GPU/performance/publication.",
+          "Whole Design System or all 52 roots."
+        ],
+        "source_identity": {
+          "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+          "sha256": {
+            "design/theme/rules.json": "e9bc8fd9c3f9d354b66efba7081c1fea228237e00f08fc6f1f7ad72ffb01c113",
+            "scripts/generate-theme-system.py": "015a9e459db44d87ba7fb1e1784507a943dea0db979ea822d31d8951d1cf22d4",
+            "scripts/test-theme-system.py": "6fec51db4edc81f018da28040059955b8e0f3d70713ced486439f044a248772e",
+            "crates/tekes-ui-design-export/src/theme_system.rs": "cae05956335d3d8a24395c93ebec986fe57e81df17874d5e9064526c05651006",
+            "crates/tekes-ui-tokens/src/surface_palette.rs": "cec82e44119f03c56bb6e2437bd484a08d74778f663064a0a1ad15cd66777657",
+            "design/system.json": "f6b141abf83113616a14abc72e77b35afb8433d38b3f2b1b0fea76eaf3cf192b",
+            "design/system.schema.json": "f2af7574156d741a1f89cb3bcfabc27e68520df801b754f0cd5cf547c67dfe89",
+            "design/reviews/passive-status-theme-implementation-20261024/api-v1.8.0.md": "e3bb1dbb7ed6facd9715a1e6d87867819836a8ca0d0a4ff6c51f51d9d7013c25",
+            "design/reviews/progress-shared-purpose-20261024/api-v1.7.0.md": "e8965ac0231b3559f8ccbea7848b2018d94bc2b4a87016cd770a0f5be3503471",
+            "design/theme/generated/instances.json": "a12db1ea6433281acdef7bf4d01177dbc900fadfe1ad9d62a1d24501cc590aef",
+            "design/theme/generated/surface_rules.rs": "b483e31843ca53aaa7701afd0717cee6f6c56b7d42c0488fab0429b28ce99029",
+            "design/theme/artifact.lock.json": "684c8b825868b8ccb24b0aa2f494b22447bc08d35201be831d542ee5dd580190"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#83",
+            "component": "tui.skeleton",
+            "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-intake-20261026-01/local-main-commit-receipt.json",
+            "sha256": "6b184f703586fc9a20cd9bc8d1f3098d84cde633b9d4e7056b5d6f1c9342ccb0",
+            "scope": "Accepted local main commit 8fb1909; shared theme purpose only."
+          },
+          {
+            "issue": "#83",
+            "component": "tui.skeleton",
+            "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-external-20261026-01/root-review.json",
+            "sha256": "4ac946581db12471a3d35453853d571624202241aba8f13a616a139bea4fbfba",
+            "scope": "External accepted-source review: 23 semantic negative cases and 25 legal 280-packet runs; component adapter use excluded."
+          },
+          {
+            "issue": "#83",
+            "component": "tui.skeleton",
+            "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-rust-20261026-01/root-artifact-audit.json",
+            "sha256": "3c085fbc3d52f67ba3be9653cbf21e9094809db6943c6531d4aff8d4c2917280",
+            "scope": "Six local Rust/design-export/token/consumer commands passed for shared theme rules; component/GPU use excluded."
+          }
+        ]
+      }
     },
     {
       "id": "tui.markdown",

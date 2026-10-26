@@ -28339,7 +28339,7 @@
                 "path": "examples/composition-consumer/tests/tooltip_tokens.rs"
               },
               {
-                "actual_sha256": "5f166a2bc44fd7ac899dca78aef81a112e94b8d0c9b60b3959c70c8bbf96d056",
+                "actual_sha256": "74e4c445bfbdcccd26244232650b97903eaa17c2f688d1f7af14efccf118aad3",
                 "expected_sha256": "d348de240e96dc516459cb7c91403de5640f47a00e71f504554e46f0d07d7c31",
                 "path": "scripts/generate-component-capabilities.py"
               }
@@ -28445,7 +28445,7 @@
                 "path": "examples/composition-consumer/tests/tooltip_tokens.rs"
               },
               {
-                "actual_sha256": "5f166a2bc44fd7ac899dca78aef81a112e94b8d0c9b60b3959c70c8bbf96d056",
+                "actual_sha256": "74e4c445bfbdcccd26244232650b97903eaa17c2f688d1f7af14efccf118aad3",
                 "expected_sha256": "d348de240e96dc516459cb7c91403de5640f47a00e71f504554e46f0d07d7c31",
                 "path": "scripts/generate-component-capabilities.py"
               }
@@ -28545,7 +28545,7 @@
             "path": "examples/composition-consumer/tests/tooltip_tokens.rs"
           },
           {
-            "actual_sha256": "5f166a2bc44fd7ac899dca78aef81a112e94b8d0c9b60b3959c70c8bbf96d056",
+            "actual_sha256": "74e4c445bfbdcccd26244232650b97903eaa17c2f688d1f7af14efccf118aad3",
             "expected_sha256": "d348de240e96dc516459cb7c91403de5640f47a00e71f504554e46f0d07d7c31",
             "path": "scripts/generate-component-capabilities.py"
           }
@@ -28669,7 +28669,7 @@
               "path": "examples/composition-consumer/tests/tooltip_tokens.rs"
             },
             {
-              "actual_sha256": "5f166a2bc44fd7ac899dca78aef81a112e94b8d0c9b60b3959c70c8bbf96d056",
+              "actual_sha256": "74e4c445bfbdcccd26244232650b97903eaa17c2f688d1f7af14efccf118aad3",
               "expected_sha256": "d348de240e96dc516459cb7c91403de5640f47a00e71f504554e46f0d07d7c31",
               "path": "scripts/generate-component-capabilities.py"
             }
@@ -29285,6 +29285,71 @@
           "open",
           "closing"
         ],
+        "practical_intake": {
+          "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
+          "claims": [
+            "ContentTheme Surface inheritance reaches retained Dialog through actual ancestor resolution.",
+            "Default, explicit override, clear, and invalid default Surface rejection were covered in the accepted batch.",
+            "Original #97 public retained/half-ULP regression tests were restored and passed in the same batch."
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.dialog",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/commit-receipt.json",
+              "commit": "8e4c01de5fae9a429016a039f53034b5737a0a2b",
+              "component": "tui.dialog",
+              "issue": "#62",
+              "scope": "Accepted local main commit and explicitly bounded Surface/Dialog scope.",
+              "sha256": "835a583d2d2a5f67c2bde38336e3dd1e0d3c5f08ca44f1667fba04a42f2b56c9"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/final-source-receipt.json",
+              "commit": "8e4c01de5fae9a429016a039f53034b5737a0a2b",
+              "component": "tui.dialog",
+              "issue": "#62",
+              "scope": "Exact source paths and hashes for the accepted candidate.",
+              "sha256": "6f510f10398a456b36ebd858cd3b7ae4b6667ef6fab6b7faf9f90ba4301d7b8a"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/run-20261026T150112.663305Z/run-receipt.json",
+              "commit": "8e4c01de5fae9a429016a039f53034b5737a0a2b",
+              "component": "tui.dialog",
+              "issue": "#62",
+              "scope": "Controls Surface, public Dialog/fragment regressions, Controls Gallery strict, and public Surface strict all passed.",
+              "sha256": "b2243e8a88fda39684aae1590c89e32740cd00ec3a385eb79d4d7878faad64f3"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "This record is limited to the 2026-10-26 retained Dialog Surface batch; older #62 Palette/ContentTheme consumption evidence retains its own identity."
+          ],
+          "gaps": [
+            "Native/VoiceOver acceptance.",
+            "ProgressContent full main acceptance.",
+            "Panel 450/18 integration.",
+            "Whole Design System or all 52 roots."
+          ],
+          "scope": "#62 accepted Surface inheritance/default/override/clear through the retained Dialog ancestor chain, with restored public retained regressions.",
+          "source_identity": {
+            "differences": {
+              "crates/tekes-ui-controls/src/composition.rs": {
+                "actual": "6916505ba36966172bcb1d543c4a2d17acd10fb34a6bc5f0940e3aff1d191270",
+                "expected": "1d1c57425c66e41a70147354ce236bbeef10806b2b76d1bf58a427c10f8d1040"
+              }
+            },
+            "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+            "sha256": {
+              "crates/tekes-ui-controls/src/composition.rs": "1d1c57425c66e41a70147354ce236bbeef10806b2b76d1bf58a427c10f8d1040",
+              "examples/composition-consumer/tests/scene_fragment.rs": "912c2761b46cd3c32fd7c8779116dc81b0b14ee5fb752ba265edfcdd1b5e1813",
+              "examples/composition-consumer/tests/surface_dialog_inheritance.rs": "ddbc8efcceebfe6c276b01d24d5aa90ea1aa4b7303de5f8e7ce56747445045d9"
+            }
+          },
+          "status": "accepted-source-subset-stale"
+        },
         "profile": "overlay",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -29417,6 +29482,113 @@
           "success",
           "restricted"
         ],
+        "practical_intake": {
+          "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
+          "claims": [
+            "Shared rules include the rest-only toast-warning marker purpose, mapped to the existing status-failed marker token.",
+            "The accepted rules define five rest-only Notice marker purposes and preserve actual-background contrast guards."
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.toast",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-intake-20261026-01/local-main-commit-receipt.json",
+              "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+              "component": "tui.toast",
+              "issue": "#93",
+              "scope": "Accepted local main commit 3e989f1; five shared Notice marker purposes only.",
+              "sha256": "ba8fa2718bc1d392c814145cc1134cf4e48afc4cca9441838e98a4525d89e1c2"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-external-20261026-01/root-acceptance-audit.json",
+              "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+              "component": "tui.toast",
+              "issue": "#93",
+              "scope": "External acceptance audit: 80 bounded commands passed, including rejection and legal-packet runs; component/GPU use excluded.",
+              "sha256": "17d8c48285d74bc87b897f158258438c33fe67d6b4e5d8fbf1109b13c379bfc4"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-rust-20261026-01/root-artifact-audit.json",
+              "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+              "component": "tui.toast",
+              "issue": "#93",
+              "scope": "Six local Rust/design-export/token/consumer commands passed for shared rules; component/GPU use excluded.",
+              "sha256": "baaae0958b5a9ae69f797690a6c1f8b83972658888460fe1af1d990174f4ba61"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Theme rules and generated packet acceptance do not certify component adapter behavior."
+          ],
+          "gaps": [
+            "Toast #79 actual Content/View/Gallery/GPU consumption remains unverified by #93.",
+            "Native/GPU/performance/publication.",
+            "Whole Design System or all 52 roots."
+          ],
+          "scope": "#93 accepted shared Notice marker Theme rules only for tui.toast; no Content or component consumption claim.",
+          "source_identity": {
+            "differences": {
+              "crates/tekes-ui-design-export/src/theme_system.rs": {
+                "actual": "36dc6d92215a491f2d26554a90752ff57d9f840e2e6c2ad02dbce0e31d9f53ce",
+                "expected": "599b1599c4f6fa94fcc0763c2bfebcea6cd006666c1fdc494eedaf0925567395"
+              },
+              "crates/tekes-ui-tokens/src/surface_palette.rs": {
+                "actual": "1578e544c2ba89703bbe0fdfe8f4c69c6bf4edba8c0b38686e4b4d00b5bfa276",
+                "expected": "bcad91a7da1eae9810ec9cff6613d4f6f15971c6676fe4ddfc69d0e9565a910c"
+              },
+              "design/system.json": {
+                "actual": "f3bf6a0719ba00f95fa1ab67ed782b94e6b31e4525b6d05411c6a62c71b3e72f",
+                "expected": "b821f5c4169079e0aae9f6b277f34785a6a696736f1a131f7183c4ab7cd0f20c"
+              },
+              "design/system.schema.json": {
+                "actual": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
+                "expected": "6d0d92288d90aeac812fa9592d293237c32750a4c3427d3913a58318c60b9cff"
+              },
+              "design/theme/artifact.lock.json": {
+                "actual": "c8cd2a031ea64925336c03930a948c1366ae205a640518dc9530b0e8a10a5490",
+                "expected": "0b5eb4b4fba81c004636991fc39e1affe847ce25b8cacd84f1dab16c4e4d3a5e"
+              },
+              "design/theme/generated/instances.json": {
+                "actual": "f59b65124c89695ca411ee85d2dec37e8dc249bb5141debfd5a07865492eb176",
+                "expected": "1a00f7cac820f5a5beb1f438dd73054200f9a91c459d6d44ccdff1adba829f69"
+              },
+              "design/theme/generated/surface_rules.rs": {
+                "actual": "56a4bf73c9bea027fc40791595b4487cfda48b164416e545db10cc24c5a077c9",
+                "expected": "15420c83a76281d92d046aae96b75ac2be5e198c51906aa51853769d633b43d3"
+              },
+              "design/theme/rules.json": {
+                "actual": "3e353c9b5cf35e92c79dd64020b195bfd85fb8e41e51b1d5cb1ed4b1dba423f0",
+                "expected": "0d6769f8a33ad4a0ebfb53358a9d392b956e7076d6698b8f3a654711965f3896"
+              },
+              "scripts/generate-theme-system.py": {
+                "actual": "cabc0172733b41835740c266f5a13d6ffedacc3768ef0dca19e95e0c357f7a69",
+                "expected": "163af0aa8ccb7730ed87d9b8a0ea9ec5e8f5a3a02933ad54a90dab4e1ac7b88e"
+              },
+              "scripts/test-theme-system.py": {
+                "actual": "e351cd612af6bce7116feb2e846bd87c109c5a503b44b4f5b3421e9740d12ef6",
+                "expected": "03a2db27fd0ad8190a96202cba2b52e8870a2bde5396506133360f8183a4f84e"
+              }
+            },
+            "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+            "sha256": {
+              "crates/tekes-ui-design-export/src/theme_system.rs": "599b1599c4f6fa94fcc0763c2bfebcea6cd006666c1fdc494eedaf0925567395",
+              "crates/tekes-ui-tokens/src/surface_palette.rs": "bcad91a7da1eae9810ec9cff6613d4f6f15971c6676fe4ddfc69d0e9565a910c",
+              "design/reviews/notice-marker-theme-implementation-20261024/api-v1.9.0.md": "50598f86b248d809bb2762b102b977188599dac0962590e9aaf39f0da3417824",
+              "design/system.json": "b821f5c4169079e0aae9f6b277f34785a6a696736f1a131f7183c4ab7cd0f20c",
+              "design/system.schema.json": "6d0d92288d90aeac812fa9592d293237c32750a4c3427d3913a58318c60b9cff",
+              "design/theme/artifact.lock.json": "0b5eb4b4fba81c004636991fc39e1affe847ce25b8cacd84f1dab16c4e4d3a5e",
+              "design/theme/generated/instances.json": "1a00f7cac820f5a5beb1f438dd73054200f9a91c459d6d44ccdff1adba829f69",
+              "design/theme/generated/surface_rules.rs": "15420c83a76281d92d046aae96b75ac2be5e198c51906aa51853769d633b43d3",
+              "design/theme/rules.json": "0d6769f8a33ad4a0ebfb53358a9d392b956e7076d6698b8f3a654711965f3896",
+              "scripts/generate-theme-system.py": "163af0aa8ccb7730ed87d9b8a0ea9ec5e8f5a3a02933ad54a90dab4e1ac7b88e",
+              "scripts/test-theme-system.py": "03a2db27fd0ad8190a96202cba2b52e8870a2bde5396506133360f8183a4f84e"
+            }
+          },
+          "status": "accepted-source-subset-stale"
+        },
         "profile": "feedback",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -29534,6 +29706,113 @@
           "success",
           "restricted"
         ],
+        "practical_intake": {
+          "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
+          "claims": [
+            "Shared rules include the rest-only banner-warning marker purpose, mapped to the existing status-running marker token.",
+            "The accepted rules define five rest-only Notice marker purposes and preserve actual-background contrast guards."
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.banner",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-intake-20261026-01/local-main-commit-receipt.json",
+              "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+              "component": "tui.banner",
+              "issue": "#93",
+              "scope": "Accepted local main commit 3e989f1; five shared Notice marker purposes only.",
+              "sha256": "ba8fa2718bc1d392c814145cc1134cf4e48afc4cca9441838e98a4525d89e1c2"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-external-20261026-01/root-acceptance-audit.json",
+              "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+              "component": "tui.banner",
+              "issue": "#93",
+              "scope": "External acceptance audit: 80 bounded commands passed, including rejection and legal-packet runs; component/GPU use excluded.",
+              "sha256": "17d8c48285d74bc87b897f158258438c33fe67d6b4e5d8fbf1109b13c379bfc4"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-rust-20261026-01/root-artifact-audit.json",
+              "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+              "component": "tui.banner",
+              "issue": "#93",
+              "scope": "Six local Rust/design-export/token/consumer commands passed for shared rules; component/GPU use excluded.",
+              "sha256": "baaae0958b5a9ae69f797690a6c1f8b83972658888460fe1af1d990174f4ba61"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Theme rules and generated packet acceptance do not certify component adapter behavior."
+          ],
+          "gaps": [
+            "Banner #79 actual Content/View/Gallery/GPU consumption remains unverified by #93.",
+            "Native/GPU/performance/publication.",
+            "Whole Design System or all 52 roots."
+          ],
+          "scope": "#93 accepted shared Notice marker Theme rules only for tui.banner; no Content or component consumption claim.",
+          "source_identity": {
+            "differences": {
+              "crates/tekes-ui-design-export/src/theme_system.rs": {
+                "actual": "36dc6d92215a491f2d26554a90752ff57d9f840e2e6c2ad02dbce0e31d9f53ce",
+                "expected": "599b1599c4f6fa94fcc0763c2bfebcea6cd006666c1fdc494eedaf0925567395"
+              },
+              "crates/tekes-ui-tokens/src/surface_palette.rs": {
+                "actual": "1578e544c2ba89703bbe0fdfe8f4c69c6bf4edba8c0b38686e4b4d00b5bfa276",
+                "expected": "bcad91a7da1eae9810ec9cff6613d4f6f15971c6676fe4ddfc69d0e9565a910c"
+              },
+              "design/system.json": {
+                "actual": "f3bf6a0719ba00f95fa1ab67ed782b94e6b31e4525b6d05411c6a62c71b3e72f",
+                "expected": "b821f5c4169079e0aae9f6b277f34785a6a696736f1a131f7183c4ab7cd0f20c"
+              },
+              "design/system.schema.json": {
+                "actual": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
+                "expected": "6d0d92288d90aeac812fa9592d293237c32750a4c3427d3913a58318c60b9cff"
+              },
+              "design/theme/artifact.lock.json": {
+                "actual": "c8cd2a031ea64925336c03930a948c1366ae205a640518dc9530b0e8a10a5490",
+                "expected": "0b5eb4b4fba81c004636991fc39e1affe847ce25b8cacd84f1dab16c4e4d3a5e"
+              },
+              "design/theme/generated/instances.json": {
+                "actual": "f59b65124c89695ca411ee85d2dec37e8dc249bb5141debfd5a07865492eb176",
+                "expected": "1a00f7cac820f5a5beb1f438dd73054200f9a91c459d6d44ccdff1adba829f69"
+              },
+              "design/theme/generated/surface_rules.rs": {
+                "actual": "56a4bf73c9bea027fc40791595b4487cfda48b164416e545db10cc24c5a077c9",
+                "expected": "15420c83a76281d92d046aae96b75ac2be5e198c51906aa51853769d633b43d3"
+              },
+              "design/theme/rules.json": {
+                "actual": "3e353c9b5cf35e92c79dd64020b195bfd85fb8e41e51b1d5cb1ed4b1dba423f0",
+                "expected": "0d6769f8a33ad4a0ebfb53358a9d392b956e7076d6698b8f3a654711965f3896"
+              },
+              "scripts/generate-theme-system.py": {
+                "actual": "cabc0172733b41835740c266f5a13d6ffedacc3768ef0dca19e95e0c357f7a69",
+                "expected": "163af0aa8ccb7730ed87d9b8a0ea9ec5e8f5a3a02933ad54a90dab4e1ac7b88e"
+              },
+              "scripts/test-theme-system.py": {
+                "actual": "e351cd612af6bce7116feb2e846bd87c109c5a503b44b4f5b3421e9740d12ef6",
+                "expected": "03a2db27fd0ad8190a96202cba2b52e8870a2bde5396506133360f8183a4f84e"
+              }
+            },
+            "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+            "sha256": {
+              "crates/tekes-ui-design-export/src/theme_system.rs": "599b1599c4f6fa94fcc0763c2bfebcea6cd006666c1fdc494eedaf0925567395",
+              "crates/tekes-ui-tokens/src/surface_palette.rs": "bcad91a7da1eae9810ec9cff6613d4f6f15971c6676fe4ddfc69d0e9565a910c",
+              "design/reviews/notice-marker-theme-implementation-20261024/api-v1.9.0.md": "50598f86b248d809bb2762b102b977188599dac0962590e9aaf39f0da3417824",
+              "design/system.json": "b821f5c4169079e0aae9f6b277f34785a6a696736f1a131f7183c4ab7cd0f20c",
+              "design/system.schema.json": "6d0d92288d90aeac812fa9592d293237c32750a4c3427d3913a58318c60b9cff",
+              "design/theme/artifact.lock.json": "0b5eb4b4fba81c004636991fc39e1affe847ce25b8cacd84f1dab16c4e4d3a5e",
+              "design/theme/generated/instances.json": "1a00f7cac820f5a5beb1f438dd73054200f9a91c459d6d44ccdff1adba829f69",
+              "design/theme/generated/surface_rules.rs": "15420c83a76281d92d046aae96b75ac2be5e198c51906aa51853769d633b43d3",
+              "design/theme/rules.json": "0d6769f8a33ad4a0ebfb53358a9d392b956e7076d6698b8f3a654711965f3896",
+              "scripts/generate-theme-system.py": "163af0aa8ccb7730ed87d9b8a0ea9ec5e8f5a3a02933ad54a90dab4e1ac7b88e",
+              "scripts/test-theme-system.py": "03a2db27fd0ad8190a96202cba2b52e8870a2bde5396506133360f8183a4f84e"
+            }
+          },
+          "status": "accepted-source-subset-stale"
+        },
         "profile": "feedback",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -29658,6 +29937,114 @@
           "error",
           "success"
         ],
+        "practical_intake": {
+          "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
+          "claims": [
+            "Four rest-only StatusBadge Surface purposes: info/running/succeeded/failed, with the accepted seven-channel and contrast guards.",
+            "The accepted packet expansion is five shared purposes total, preserving the prior packet identities."
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.status-badge",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-intake-20261026-01/local-main-commit-receipt.json",
+              "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+              "component": "tui.status-badge",
+              "issue": "#83",
+              "scope": "Accepted local main commit 8fb1909; shared theme purpose only.",
+              "sha256": "6b184f703586fc9a20cd9bc8d1f3098d84cde633b9d4e7056b5d6f1c9342ccb0"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-external-20261026-01/root-review.json",
+              "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+              "component": "tui.status-badge",
+              "issue": "#83",
+              "scope": "External accepted-source review: 23 semantic negative cases and 25 legal 280-packet runs; component adapter use excluded.",
+              "sha256": "4ac946581db12471a3d35453853d571624202241aba8f13a616a139bea4fbfba"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-rust-20261026-01/root-artifact-audit.json",
+              "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+              "component": "tui.status-badge",
+              "issue": "#83",
+              "scope": "Six local Rust/design-export/token/consumer commands passed for shared theme rules; component/GPU use excluded.",
+              "sha256": "3c085fbc3d52f67ba3be9653cbf21e9094809db6943c6531d4aff8d4c2917280"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "The shared rules/handoff acceptance is distinct from implementation by the named component adapter."
+          ],
+          "gaps": [
+            "Actual StatusBadge #76 Content/View/Gallery/GPU consumption remains owned by its adapter issue.",
+            "Native/GPU/performance/publication.",
+            "Whole Design System or all 52 roots."
+          ],
+          "scope": "#83 accepted shared Theme rules only for tui.status-badge; no component-consumption claim.",
+          "source_identity": {
+            "differences": {
+              "crates/tekes-ui-design-export/src/theme_system.rs": {
+                "actual": "36dc6d92215a491f2d26554a90752ff57d9f840e2e6c2ad02dbce0e31d9f53ce",
+                "expected": "cae05956335d3d8a24395c93ebec986fe57e81df17874d5e9064526c05651006"
+              },
+              "crates/tekes-ui-tokens/src/surface_palette.rs": {
+                "actual": "1578e544c2ba89703bbe0fdfe8f4c69c6bf4edba8c0b38686e4b4d00b5bfa276",
+                "expected": "cec82e44119f03c56bb6e2437bd484a08d74778f663064a0a1ad15cd66777657"
+              },
+              "design/system.json": {
+                "actual": "f3bf6a0719ba00f95fa1ab67ed782b94e6b31e4525b6d05411c6a62c71b3e72f",
+                "expected": "f6b141abf83113616a14abc72e77b35afb8433d38b3f2b1b0fea76eaf3cf192b"
+              },
+              "design/system.schema.json": {
+                "actual": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
+                "expected": "f2af7574156d741a1f89cb3bcfabc27e68520df801b754f0cd5cf547c67dfe89"
+              },
+              "design/theme/artifact.lock.json": {
+                "actual": "c8cd2a031ea64925336c03930a948c1366ae205a640518dc9530b0e8a10a5490",
+                "expected": "684c8b825868b8ccb24b0aa2f494b22447bc08d35201be831d542ee5dd580190"
+              },
+              "design/theme/generated/instances.json": {
+                "actual": "f59b65124c89695ca411ee85d2dec37e8dc249bb5141debfd5a07865492eb176",
+                "expected": "a12db1ea6433281acdef7bf4d01177dbc900fadfe1ad9d62a1d24501cc590aef"
+              },
+              "design/theme/generated/surface_rules.rs": {
+                "actual": "56a4bf73c9bea027fc40791595b4487cfda48b164416e545db10cc24c5a077c9",
+                "expected": "b483e31843ca53aaa7701afd0717cee6f6c56b7d42c0488fab0429b28ce99029"
+              },
+              "design/theme/rules.json": {
+                "actual": "3e353c9b5cf35e92c79dd64020b195bfd85fb8e41e51b1d5cb1ed4b1dba423f0",
+                "expected": "e9bc8fd9c3f9d354b66efba7081c1fea228237e00f08fc6f1f7ad72ffb01c113"
+              },
+              "scripts/generate-theme-system.py": {
+                "actual": "cabc0172733b41835740c266f5a13d6ffedacc3768ef0dca19e95e0c357f7a69",
+                "expected": "015a9e459db44d87ba7fb1e1784507a943dea0db979ea822d31d8951d1cf22d4"
+              },
+              "scripts/test-theme-system.py": {
+                "actual": "e351cd612af6bce7116feb2e846bd87c109c5a503b44b4f5b3421e9740d12ef6",
+                "expected": "6fec51db4edc81f018da28040059955b8e0f3d70713ced486439f044a248772e"
+              }
+            },
+            "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+            "sha256": {
+              "crates/tekes-ui-design-export/src/theme_system.rs": "cae05956335d3d8a24395c93ebec986fe57e81df17874d5e9064526c05651006",
+              "crates/tekes-ui-tokens/src/surface_palette.rs": "cec82e44119f03c56bb6e2437bd484a08d74778f663064a0a1ad15cd66777657",
+              "design/reviews/passive-status-theme-implementation-20261024/api-v1.8.0.md": "e3bb1dbb7ed6facd9715a1e6d87867819836a8ca0d0a4ff6c51f51d9d7013c25",
+              "design/reviews/progress-shared-purpose-20261024/api-v1.7.0.md": "e8965ac0231b3559f8ccbea7848b2018d94bc2b4a87016cd770a0f5be3503471",
+              "design/system.json": "f6b141abf83113616a14abc72e77b35afb8433d38b3f2b1b0fea76eaf3cf192b",
+              "design/system.schema.json": "f2af7574156d741a1f89cb3bcfabc27e68520df801b754f0cd5cf547c67dfe89",
+              "design/theme/artifact.lock.json": "684c8b825868b8ccb24b0aa2f494b22447bc08d35201be831d542ee5dd580190",
+              "design/theme/generated/instances.json": "a12db1ea6433281acdef7bf4d01177dbc900fadfe1ad9d62a1d24501cc590aef",
+              "design/theme/generated/surface_rules.rs": "b483e31843ca53aaa7701afd0717cee6f6c56b7d42c0488fab0429b28ce99029",
+              "design/theme/rules.json": "e9bc8fd9c3f9d354b66efba7081c1fea228237e00f08fc6f1f7ad72ffb01c113",
+              "scripts/generate-theme-system.py": "015a9e459db44d87ba7fb1e1784507a943dea0db979ea822d31d8951d1cf22d4",
+              "scripts/test-theme-system.py": "6fec51db4edc81f018da28040059955b8e0f3d70713ced486439f044a248772e"
+            }
+          },
+          "status": "accepted-source-subset-stale"
+        },
         "profile": "status",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -31104,6 +31491,114 @@
         "historical_public_api_verified": [
           "rest"
         ],
+        "practical_intake": {
+          "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
+          "claims": [
+            "One rest-only Skeleton Surface purpose, with the accepted boundary contrast and null-channel rules.",
+            "The accepted packet expansion is five shared purposes total, preserving the prior packet identities."
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.skeleton",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-intake-20261026-01/local-main-commit-receipt.json",
+              "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+              "component": "tui.skeleton",
+              "issue": "#83",
+              "scope": "Accepted local main commit 8fb1909; shared theme purpose only.",
+              "sha256": "6b184f703586fc9a20cd9bc8d1f3098d84cde633b9d4e7056b5d6f1c9342ccb0"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-external-20261026-01/root-review.json",
+              "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+              "component": "tui.skeleton",
+              "issue": "#83",
+              "scope": "External accepted-source review: 23 semantic negative cases and 25 legal 280-packet runs; component adapter use excluded.",
+              "sha256": "4ac946581db12471a3d35453853d571624202241aba8f13a616a139bea4fbfba"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-rust-20261026-01/root-artifact-audit.json",
+              "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+              "component": "tui.skeleton",
+              "issue": "#83",
+              "scope": "Six local Rust/design-export/token/consumer commands passed for shared theme rules; component/GPU use excluded.",
+              "sha256": "3c085fbc3d52f67ba3be9653cbf21e9094809db6943c6531d4aff8d4c2917280"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "The shared rules/handoff acceptance is distinct from implementation by the named component adapter."
+          ],
+          "gaps": [
+            "Actual Skeleton #77 Content/View/Gallery/GPU consumption remains owned by its adapter issue.",
+            "Native/GPU/performance/publication.",
+            "Whole Design System or all 52 roots."
+          ],
+          "scope": "#83 accepted shared Theme rules only for tui.skeleton; no component-consumption claim.",
+          "source_identity": {
+            "differences": {
+              "crates/tekes-ui-design-export/src/theme_system.rs": {
+                "actual": "36dc6d92215a491f2d26554a90752ff57d9f840e2e6c2ad02dbce0e31d9f53ce",
+                "expected": "cae05956335d3d8a24395c93ebec986fe57e81df17874d5e9064526c05651006"
+              },
+              "crates/tekes-ui-tokens/src/surface_palette.rs": {
+                "actual": "1578e544c2ba89703bbe0fdfe8f4c69c6bf4edba8c0b38686e4b4d00b5bfa276",
+                "expected": "cec82e44119f03c56bb6e2437bd484a08d74778f663064a0a1ad15cd66777657"
+              },
+              "design/system.json": {
+                "actual": "f3bf6a0719ba00f95fa1ab67ed782b94e6b31e4525b6d05411c6a62c71b3e72f",
+                "expected": "f6b141abf83113616a14abc72e77b35afb8433d38b3f2b1b0fea76eaf3cf192b"
+              },
+              "design/system.schema.json": {
+                "actual": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
+                "expected": "f2af7574156d741a1f89cb3bcfabc27e68520df801b754f0cd5cf547c67dfe89"
+              },
+              "design/theme/artifact.lock.json": {
+                "actual": "c8cd2a031ea64925336c03930a948c1366ae205a640518dc9530b0e8a10a5490",
+                "expected": "684c8b825868b8ccb24b0aa2f494b22447bc08d35201be831d542ee5dd580190"
+              },
+              "design/theme/generated/instances.json": {
+                "actual": "f59b65124c89695ca411ee85d2dec37e8dc249bb5141debfd5a07865492eb176",
+                "expected": "a12db1ea6433281acdef7bf4d01177dbc900fadfe1ad9d62a1d24501cc590aef"
+              },
+              "design/theme/generated/surface_rules.rs": {
+                "actual": "56a4bf73c9bea027fc40791595b4487cfda48b164416e545db10cc24c5a077c9",
+                "expected": "b483e31843ca53aaa7701afd0717cee6f6c56b7d42c0488fab0429b28ce99029"
+              },
+              "design/theme/rules.json": {
+                "actual": "3e353c9b5cf35e92c79dd64020b195bfd85fb8e41e51b1d5cb1ed4b1dba423f0",
+                "expected": "e9bc8fd9c3f9d354b66efba7081c1fea228237e00f08fc6f1f7ad72ffb01c113"
+              },
+              "scripts/generate-theme-system.py": {
+                "actual": "cabc0172733b41835740c266f5a13d6ffedacc3768ef0dca19e95e0c357f7a69",
+                "expected": "015a9e459db44d87ba7fb1e1784507a943dea0db979ea822d31d8951d1cf22d4"
+              },
+              "scripts/test-theme-system.py": {
+                "actual": "e351cd612af6bce7116feb2e846bd87c109c5a503b44b4f5b3421e9740d12ef6",
+                "expected": "6fec51db4edc81f018da28040059955b8e0f3d70713ced486439f044a248772e"
+              }
+            },
+            "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+            "sha256": {
+              "crates/tekes-ui-design-export/src/theme_system.rs": "cae05956335d3d8a24395c93ebec986fe57e81df17874d5e9064526c05651006",
+              "crates/tekes-ui-tokens/src/surface_palette.rs": "cec82e44119f03c56bb6e2437bd484a08d74778f663064a0a1ad15cd66777657",
+              "design/reviews/passive-status-theme-implementation-20261024/api-v1.8.0.md": "e3bb1dbb7ed6facd9715a1e6d87867819836a8ca0d0a4ff6c51f51d9d7013c25",
+              "design/reviews/progress-shared-purpose-20261024/api-v1.7.0.md": "e8965ac0231b3559f8ccbea7848b2018d94bc2b4a87016cd770a0f5be3503471",
+              "design/system.json": "f6b141abf83113616a14abc72e77b35afb8433d38b3f2b1b0fea76eaf3cf192b",
+              "design/system.schema.json": "f2af7574156d741a1f89cb3bcfabc27e68520df801b754f0cd5cf547c67dfe89",
+              "design/theme/artifact.lock.json": "684c8b825868b8ccb24b0aa2f494b22447bc08d35201be831d542ee5dd580190",
+              "design/theme/generated/instances.json": "a12db1ea6433281acdef7bf4d01177dbc900fadfe1ad9d62a1d24501cc590aef",
+              "design/theme/generated/surface_rules.rs": "b483e31843ca53aaa7701afd0717cee6f6c56b7d42c0488fab0429b28ce99029",
+              "design/theme/rules.json": "e9bc8fd9c3f9d354b66efba7081c1fea228237e00f08fc6f1f7ad72ffb01c113",
+              "scripts/generate-theme-system.py": "015a9e459db44d87ba7fb1e1784507a943dea0db979ea822d31d8951d1cf22d4",
+              "scripts/test-theme-system.py": "6fec51db4edc81f018da28040059955b8e0f3d70713ced486439f044a248772e"
+            }
+          },
+          "status": "accepted-source-subset-stale"
+        },
         "profile": "static",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -32704,7 +33199,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "0c0efb2795a1003a9d5766deb8c281d8b32f5a042953002b58bb22f88f24fac0",
+    "design/gallery/component-coverage.json": "dc866faf32401b5c90e34f15cf51d7cc518ffad0c32a1234c856aad74395779a",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "57317de3e2e2cd76cf70277e06c81bf15efc4ea514431e1dbe5040088f9a39a1",
@@ -32713,6 +33208,7 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json": "07e807d924ea0109023be25224b48763b59eb81f98ac3552bac9750b0f3059cd",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json": "b50872467c94d2a6d626d95f787070a33bd9325a338c9284d7659f390337a8fd",
     "design/integration.json": "9addde2be2860ecf53ee957a2cd1800a2ae311f29c15c1255eb79b846bdd5f79",
+    "design/reviews/notice-marker-theme-implementation-20261024/api-v1.9.0.md": "50598f86b248d809bb2762b102b977188599dac0962590e9aaf39f0da3417824",
     "design/reviews/number-field-release-20261022/probes-final/action.json": "8fe029c61d41ef2bc6164b8b5be19a8657c4d6cb9a68992e36421965d14a2fc3",
     "design/reviews/number-field-release-20261022/probes-final/collection-focus.json": "2d778e06b8497f49abf347aeb833f00c42b22ddff3585d2f80a9b1580d40f6b5",
     "design/reviews/number-field-release-20261022/probes-final/combo-async.json": "80c9eb3e66eb2c16bc7e20aca1386cdf18cb989ed2442d1a34e4f19c74ad9c8a",
@@ -32731,9 +33227,21 @@
     "design/reviews/number-field-release-20261022/probes-final/slider-composition.json": "116718a50b749ab03659e794698297991c35dd51a2494d869ad9b80d32e413c8",
     "design/reviews/number-field-release-20261022/probes-final/toolbar.json": "db79c58d569dc82c7715999713a6dce62c4716bb55d9eb5239b354c2cbe6f043",
     "design/reviews/number-field-release-20261022/probes-final/tooltip.json": "3dfec5cdc4a4d49815c84eaf933de25dd9b263ef238b5b0f71ee24d2c466ae59",
+    "design/reviews/passive-status-theme-implementation-20261024/api-v1.8.0.md": "e3bb1dbb7ed6facd9715a1e6d87867819836a8ca0d0a4ff6c51f51d9d7013c25",
+    "design/reviews/progress-shared-purpose-20261024/api-v1.7.0.md": "e8965ac0231b3559f8ccbea7848b2018d94bc2b4a87016cd770a0f5be3503471",
+    "design/system.json": "f3bf6a0719ba00f95fa1ab67ed782b94e6b31e4525b6d05411c6a62c71b3e72f",
+    "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
+    "design/theme/artifact.lock.json": "c8cd2a031ea64925336c03930a948c1366ae205a640518dc9530b0e8a10a5490",
+    "design/theme/generated/instances.json": "f59b65124c89695ca411ee85d2dec37e8dc249bb5141debfd5a07865492eb176",
+    "design/theme/generated/surface_rules.rs": "56a4bf73c9bea027fc40791595b4487cfda48b164416e545db10cc24c5a077c9",
+    "design/theme/rules.json": "3e353c9b5cf35e92c79dd64020b195bfd85fb8e41e51b1d5cb1ed4b1dba423f0",
     "design/tokens.json": "6aabbcdad574a0fac10fcde2841063f74438048ca2f086aaebcb387d391d64ac",
+    "examples/composition-consumer/tests/scene_fragment.rs": "912c2761b46cd3c32fd7c8779116dc81b0b14ee5fb752ba265edfcdd1b5e1813",
+    "examples/composition-consumer/tests/surface_dialog_inheritance.rs": "ddbc8efcceebfe6c276b01d24d5aa90ea1aa4b7303de5f8e7ce56747445045d9",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",
-    "scripts/generate-component-capabilities.py": "5f166a2bc44fd7ac899dca78aef81a112e94b8d0c9b60b3959c70c8bbf96d056"
+    "scripts/generate-component-capabilities.py": "74e4c445bfbdcccd26244232650b97903eaa17c2f688d1f7af14efccf118aad3",
+    "scripts/generate-theme-system.py": "cabc0172733b41835740c266f5a13d6ffedacc3768ef0dca19e95e0c357f7a69",
+    "scripts/test-theme-system.py": "e351cd612af6bce7116feb2e846bd87c109c5a503b44b4f5b3421e9740d12ef6"
   },
   "patterns": [
     {

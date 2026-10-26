@@ -118,4 +118,20 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 
 - Progress 当前投影引用本地 `3f13a1e` 的原公共组件/Gallery/实际GPU及严格检查，必要共享查询与平台投影已接收；专用原生role、VoiceOver、全Gold7及Gallery文案/窄宽布局仍未声明完成。
 - 生成器核对源码子集哈希和字段结构；receipt字段是保留的不可变引用，不声称自动认证其内容。本次主协调另核实了全部五份receipt字节与记录SHA一致，记录在SSD `artifacts/issue-114/main3f13-intake/receipt-reference-check.json`。
-- 当前main实际验证：48项Python测试、生成器一致性、公开API编译绑定与strict；Button/Chart/Progress机器入口查询。未重跑生产Rust/GPU；未把其余49根标complete。Dialog有限Surface继承等其他已接收批次的实证投影尚待补录，pattern/example继续保留原registry状态；#114本批是有限接收，非所有范围完成。
+- 当前main实际验证：48项Python测试、生成器一致性、公开API编译绑定与strict；Button/Chart/Progress机器入口查询。未重跑生产Rust/GPU；未把其余49根标complete。首批未包含的Dialog等记录由下节补齐；pattern/example继续保留原registry状态，投影完成不代表所有组件范围完成。
+
+### 其余已接收 Theme 批次
+
+以下记录复用既有 `practical_intake` 字段。`accepted-bounded-evidence` 标识原批次按其验收边界被接收；记录保留原提交和 receipts，生成器会在最终主线输入上逐路径比较源哈希。后续批次改动同一文件时会显示源码身份差异；这既不表示旧批次功能失败，也不把旧证据改签为当前源码验证。
+
+| 组件入口 | 已接收范围 | 该记录不证明 |
+| --- | --- | --- |
+| `tui.dialog` | #62，`8e4c01de5fae9a429016a039f53034b5737a0a2b`：Surface 默认、继承、显式覆盖/清除及真实 retained Dialog 祖先链；公共 fragment/Dialog regressions 通过。 | 这条只投影 2026-10-26 Surface 批次；native/VoiceOver、ProgressContent 完整验收、Panel 450/18 集成。 |
+| `tui.status-badge` | #83，`8fb1909aa2590473a499b7f4af69278ec34672c3`：四个 rest-only shared Surface 用途及对比/拒绝守卫。 | 只证明共享规则与 handoff；不证明 #76 StatusBadge Content/View/Gallery/GPU 消费。 |
+| `tui.skeleton` | #83，同一提交：一个 rest-only shared Surface 用途及 boundary 对比守卫。 | 只证明共享规则与 handoff；不证明 #77 Skeleton Content/View/Gallery/GPU 消费。 |
+| `tui.toast` | #93，`3e989f1a6d05466d157b60209d2194348ab131ce`：仅 rest-only `toast-warning` marker 共享 Theme 用途。 | 不证明 #79 Toast Content/View/Gallery/GPU 消费。 |
+| `tui.banner` | #93，同一提交：仅 rest-only `banner-warning` marker 共享 Theme 用途。 | 不证明 #79 Banner Content/View/Gallery/GPU 消费。 |
+
+#83/#93 的测试证明 shared Theme 规则、生成产物、Rust 校验与外部拒绝/合法消费边界；它们不替代组件 adapter acceptance。组件行把共享用途映射到便于查阅的消费入口，不等于该组件已消费这些用途。未在本批重跑旧 GPU，也未扩展 52 根状态。
+
+本次补录后，#114按2026-10-26明确简化的四项AC完成：复用52根登记及原API/route/state/maturity；八个有界接收入口保留scope/claims/exceptions/gaps和证据；历史观察与当前源码不符有定位诊断；实际生成/context/公开编译绑定检查通过。新补录运行五个context查询、receipt字节核对及三项受影响Python检查，未重跑未变化的Rust/GPU。隔离检查曾发现examples源码未列入生成输入，现将既有source_identity路径纳入原输入清单并验证修复。完整组件主题接入、#8其余原AC、native/视觉成熟度均未因此完成；后续每批接收继续更新同一记录。
