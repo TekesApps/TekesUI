@@ -6,6 +6,8 @@
 //! never reconstructs controls. Removed content is returned to its owner, which
 //! may retain it for virtualization. No implicit serialization or rehydration.
 mod actions;
+mod panel;
+pub use panel::{PanelContent, PanelGeometry, CurveSubtreeCapability, ContentGeometrySnapshot, HostRevealGeometry};
 mod split_view;
 pub use split_view::{SplitViewContent,SplitViewConfig,SplitViewSlotIds,SplitViewExpected,SplitViewConstruction,SplitViewReplacement,SplitViewError,Rejected};
 mod prepared;
@@ -276,6 +278,25 @@ impl From<Palette> for ContentTheme {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TableTransactionCompatibility { Unknown, StableHooks }
 pub trait Component: Debug + Any {
+    /// Opt in to the original Host's exact curve-clip geometry. Unknown owners
+    /// remain rejected inside a curved Panel subtree.
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Unsupported
+    }
+    /// Existing controls receive the same event; this adds exact clip-region
+    /// membership to their original reducer without creating another owner.
+    fn set_clip_region(&mut self, _region: Option<tekes_ui_scene::ClipRegion>) {}
+    fn pointer_event_in_region(
+        &mut self,
+        event: &ContentEvent,
+        _inside: bool,
+    ) -> ContentResponse {
+        match event {
+            ContentEvent::Pointer(pointer) => self.pointer_event(pointer),
+            _ => self.event(event),
+        }
+    }
+
     fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
         TableTransactionCompatibility::Unknown
     }
@@ -292,6 +313,10 @@ pub trait Component: Debug + Any {
     /// The read-only focus/reveal planner consumes this original-owner geometry
     /// constraint and revalidates its generation before commit.
     fn requires_focus_reveal(&self) -> bool { false }
+    fn host_reveal_geometry_constraint(&self) -> Option<HostRevealGeometry> { None }
+    fn required_focus_space(&self) -> RequiredFocusSpace { RequiredFocusSpace::Legacy }
+    fn required_focus_result(&self) -> Option<RequiredFocusResult> { None }
+    fn focus_boundary_visible(&self) -> bool { self.focus_decoration_above_siblings() }
 
     /// Pure positive translation capability for the most recent valid arrange.
     /// Child identity/order, relative frames and local clip remain invariant under
@@ -569,6 +594,7 @@ pub struct Content {
     component: Box<dyn Component>,
     frame: Rect,
     clip: Rect,
+    curve_geometry: Option<panel::NodeGeometry>,
     mount: u64,
     preserve_activation_focus: bool,
     bubble_handled_events: Option<bool>,
@@ -593,6 +619,7 @@ impl Content {
             component: Box::new(component),
             frame: Rect::default(),
             clip: Rect::default(),
+            curve_geometry: None,
             mount,
             preserve_activation_focus: false,
             bubble_handled_events: None,
@@ -730,6 +757,7 @@ impl Content {
     }
     fn pointer_target_at(&self, point: Point) -> bool {
         self.component.interactive()
+            && self.curve_contains(point)
             && self.visible().is_some_and(|visible| visible.contains(point))
     }
     /// Keep the current keyboard/IME owner on pointer or accessibility Press.
@@ -808,6 +836,7 @@ impl Content {
         if !self.component.active() {
             return;
         }
+        let curve_scope = self.push_curve_scope(scene);
         let theme = self.resolved_theme(theme);
         // Offscreen ancestors may contain visible overflowing children. Walk
         // children even when their parent frame itself is outside the viewport.
@@ -828,6 +857,7 @@ impl Content {
             scene.pop_clip();
         }
         if self.component.paints_children() {
+            for _ in 0..curve_scope { scene.pop_clip(); }
             return;
         }
         let child_theme = self.child_theme(theme);
@@ -845,8 +875,19 @@ impl Content {
                 }
             }
         }
+        let descendant_focus = self.component.children().iter().any(Content::has_focus_boundary);
+        let panel_clip = self.clip;
+        if let Some(panel) = self.component_mut::<PanelContent>() {
+            scene.push_clip(panel_clip);
+            panel.paint_boundary(scene, theme, descendant_focus);
+            scene.pop_clip();
+        }
+        for _ in 0..curve_scope { scene.pop_clip(); }
     }
-
+    fn has_focus_boundary(&self) -> bool {
+        self.active() && (self.component.focus_boundary_visible()
+            || self.component.children().iter().any(Content::has_focus_boundary))
+    }
     fn has_raised_focus_decoration(&self) -> bool {
         if !self.component.active() {
             return false;
@@ -880,8 +921,10 @@ impl Content {
             }
         }
         if self.component.overlay_presented() {
+            let count = self.push_curve_scope(scene);
             self.component
                 .paint_overlay(scene, text, self.frame, self.clip, theme);
+            for _ in 0..count { scene.pop_clip(); }
         }
     }
     fn overlay_id(&self) -> Option<ComponentId> {
@@ -989,6 +1032,8 @@ impl Content {
     }
     fn lifecycle(&mut self, event: Lifecycle) { self.lifecycle_with(event, &mut actions::next_mount); }
     fn lifecycle_start(&mut self,event:Lifecycle,mount:u64){
+        self.curve_geometry = None;
+        self.component.set_clip_region(None);
         self.mount=mount;
         if event==Lifecycle::Unmounted {self.set_help(None);}
     }
@@ -1077,7 +1122,7 @@ impl Content {
         position: Point,
         actions: &mut Option<Vec<actions::PendingAction>>,
     ) -> Option<(ComponentId, ContentResponse, bool)> {
-        if !self.component.active() {
+        if !self.component.active() || !self.curve_contains(position) {
             return None;
         }
         let action = self.component.semantics().role.is_action_owner();
@@ -1226,7 +1271,7 @@ impl Content {
                 }
             }
         }
-        let inside = self.visible().is_some_and(|r| r.contains(position));
+        let inside = self.visible().is_some_and(|r| r.contains(position)) && self.curve_contains(position);
         if self.component.interactive() || hit.is_some_and(|(_, _, bubbles)| bubbles) {
             // Outside delivery clears old hover but cannot consume another
             // branch's event. Stopped ancestors still receive an exit update.
@@ -1272,7 +1317,7 @@ impl Content {
             id: self.id,
             parent,
             frame: self.component.semantic_frame(self.frame),
-            visible: self.component.semantic_frame(self.frame).intersection(&self.clip),
+            visible: self.curve_bounds(self.component.semantic_frame(self.frame)).ok().flatten(),
             focused: focused == Some(self.id),
             semantics: self.help_semantics(),
             parts: self.component.semantic_parts(),
@@ -1295,6 +1340,10 @@ pub enum CompositionError {
     MissingNoticeClock(ComponentId),
     NoticeClockWentBackwards(ComponentId),
     SceneFragment(tekes_ui_scene::FragmentError),
+    CurveGeometry(tekes_ui_scene::ClipError),
+    CurvePointerRegionsUnsupported,
+    UnsupportedCurveChild(ComponentId),
+    InvalidPanelPadding,
     InvalidSurface,
     DuplicateId(ComponentId),
     MissingId(ComponentId),
@@ -1317,6 +1366,33 @@ pub enum CompositionError {
     },
     ReadingTransactionInProgress,
 }
+/// Owner-local identity for the exact arranged focus evidence.
+#[derive(Clone, Debug)]
+pub struct RequiredFocusEvidence(std::sync::Arc<()>);
+impl RequiredFocusEvidence {
+    pub fn new() -> Self { Self(std::sync::Arc::new(())) }
+}
+impl Default for RequiredFocusEvidence { fn default() -> Self { Self::new() } }
+impl PartialEq for RequiredFocusEvidence {
+    fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }
+}
+/// Read-only finite evidence for the original required-focus region.
+#[derive(Clone, Debug, PartialEq)]
+pub enum RequiredFocusSpace {
+    Legacy,
+    NotRequired,
+    Unmeasured,
+    Insufficient,
+    Sufficient { witness: Rect, evidence: RequiredFocusEvidence },
+}
+#[derive(Clone, Debug, PartialEq)]
+pub enum RequiredFocusResult {
+    NotRequired,
+    Unmeasured,
+    Insufficient,
+    Clipped { witness: Rect },
+    Visible { witness: Rect },
+}
 enum PaddingFocusHit {
     None,
     Blocked,
@@ -1325,9 +1401,11 @@ enum PaddingFocusHit {
 #[derive(Debug)]
 pub struct ContentHost {
     root: Content,
+    curve_shapes: Option<tekes_ui_scene::ShapeTable>,
     reveal_clock: content_reveal_plan::RevealClock,
     focused: Option<ComponentId>,
     captured: Option<ComponentId>,
+    captured_mount: Option<u64>,
     capture_epoch: u64,
     dirty: bool,
     inherited_surface: &'static str,
@@ -1349,6 +1427,7 @@ pub struct ContentHost {
 }
 impl ContentHost {
     pub fn new(mut root: Content) -> Result<Self, CompositionError> {
+        root.validate_curve_tree(false)?;
         root.ids(&mut BTreeSet::new())?;
         root.lifecycle(Lifecycle::Mounted);
         Ok(Self::from_mounted(root))
@@ -1356,9 +1435,11 @@ impl ContentHost {
     fn from_mounted(root: Content) -> Self {
         Self {
             root,
+            curve_shapes: None,
             reveal_clock: Default::default(),
             focused: None,
             captured: None,
+            captured_mount: None,
             capture_epoch: 0,
             dirty: true,
             inherited_surface: "canvas",
@@ -1421,6 +1502,11 @@ impl ContentHost {
     /// Visible original pointer/hover regions, including disabled controls.
     /// No semantic-frame approximation or second control layout is computed.
     pub fn pointer_regions(&self) -> Vec<Rect> {
+        self.try_pointer_regions().unwrap_or_default()
+    }
+    /// Curved domains cannot be exported as exact rectangle pointer regions.
+    pub fn try_pointer_regions(&self) -> Result<Vec<Rect>, CompositionError> {
+        if self.requires_curve_geometry() { return Err(CompositionError::CurvePointerRegionsUnsupported); }
         fn collect(node: &Content, regions: &mut Vec<Rect>) {
             if !node.component.active() {
                 return;
@@ -1432,7 +1518,11 @@ impl ContentHost {
         }
         let mut regions = Vec::new();
         collect(self.scope(), &mut regions);
-        regions
+        Ok(regions)
+    }
+    /// Current actual-layout focus result of the retained original owner.
+    pub fn required_focus_result(&self, id: ComponentId) -> Option<RequiredFocusResult> {
+        self.scope().find_active(id)?.component.required_focus_result()
     }
     pub fn focused(&self) -> Option<ComponentId> {
         self.focused
@@ -1555,6 +1645,12 @@ impl ContentHost {
         }
         Ok(())
     }
+    /// Original frame and clip passed to the last successful render. This is
+    /// remembered application allocation, not current geometry authorization;
+    /// reading it does not refresh layout or validate pending mutations.
+    pub fn last_layout_allocation(&self) -> Option<(Rect, Rect)> {
+        self.last_layout
+    }
     /// Supports activation changes during measure/arrange. Required text
     /// services are checked at entry and after each layout stage, before paint
     /// and modal focus selection. On failure, do not publish native text/AX
@@ -1602,10 +1698,15 @@ impl ContentHost {
             return Err(e);
         }
         self.root.reconcile_presentation_runnable(self.window_active);
+        self.root.validate_curve_tree(false)?;
         // Reject a changed attachment/mount before ticking any old navigation.
         self.observe_item_reveal();
         self.reveal_clock.invalidate_geometry();
         self.layout_preflighted(text, frame, clip)?;
+        self.freeze_curve_geometry()?;
+        if let Some(table) = &self.curve_shapes {
+            scene.try_import_clip_shapes(table, Default::default()).map_err(CompositionError::SceneFragment)?;
+        }
         self.reveal_clock.pending = false;
         self.observe_item_reveal();
         self.advance_notices(text)?;
@@ -1667,19 +1768,8 @@ impl ContentHost {
         self.dirty = false;
         Ok(())
     }
-    fn layout_frame(
-        &mut self,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        clip: Rect,
-    ) -> Result<Rect, CompositionError> {
-        self.preflight_empty_state_structures()?;
-        self.preflight_notice_structures()?;
-        self.root.refresh_activity(self.window_active);
-        self.layout_preflighted(text, frame, clip)
-    }
     // render_frame already checked the adapter boundary before legacy ID-error
-    // cancellation. Direct reading/reveal layout enters through layout_frame.
+    // cancellation.
     fn layout_preflighted(
         &mut self,
         text: &mut dyn ButtonTextRenderer,
@@ -1742,11 +1832,12 @@ impl ContentHost {
         if self.captured.is_some_and(|id| {
             self.scope()
                 .find_active(id)
-                .is_none_or(|c| c.visible().is_none() || c.component.semantics().disabled)
+                .is_none_or(|c| self.captured_mount != Some(c.mount) || c.visible().is_none() || c.component.semantics().disabled)
         }) {
             if let Some(c) = self.captured.take().and_then(|id| self.root.find_mut(id)) {
                 c.component.event(&ContentEvent::Cancel);
             }
+            self.captured_mount = None;
             self.dirty = true;
         }
         if self.focused.is_some_and(|id| {
@@ -1892,6 +1983,11 @@ impl ContentHost {
             return ContentResponse::default();
         }
         self.reconcile_active_inputs();
+        if event.is_primary_pointer() && self.requires_curve_geometry()
+            && self.geometry_snapshot().is_none_or(|snapshot| !snapshot.is_current()) {
+            self.event_bubbled = Some(false);
+            return ContentResponse::default();
+        }
         if matches!(event, ContentEvent::Cancel) {
             self.cancel();
             return ContentResponse::consumed(true);
@@ -1950,7 +2046,7 @@ impl ContentHost {
             && let Some(id) = self.captured
         {
             if matches!(routed, ContentEvent::PointerUp(_)) {
-                self.captured = None;
+                self.captured = None; self.captured_mount = None;
             }
             let result = self.root.route_from(id, event, &mut self.actions);
             return result
@@ -2086,7 +2182,8 @@ impl ContentHost {
             if matches!(routed, ContentEvent::PointerDown(_)) && event.is_primary_pointer() {
                 if r.capture_pointer {
                     self.capture_epoch = self.capture_epoch.checked_add(1).expect("pointer capture identity exhausted");
-                    self.captured = Some(id)
+                    self.captured = Some(id);
+                    self.captured_mount = self.root.find_active(id).map(|node| node.mount)
                 }
                 if r.consumed
                     && self
@@ -2183,8 +2280,9 @@ impl ContentHost {
     pub fn focus_epoch(&self) -> u64 { self.focus_epoch }
     /// Current original capture owner and mount; no synthetic gesture identity.
     pub fn pointer_capture(&self) -> Option<(ComponentId, u64)> {
+        if self.requires_curve_geometry() && self.geometry_snapshot().is_none_or(|snapshot| !snapshot.is_current()) { return None; }
         self.captured.and_then(|id| self.root.find_active(id)
-            .filter(|node| node.visible().is_some() && !node.component.semantics().disabled)
+            .filter(|node| self.captured_mount == Some(node.mount) && node.visible().is_some() && !node.component.semantics().disabled)
             .map(|node| (id, node.mount)))
     }
     /// The existing focused editor/custom component composition barrier.
@@ -2218,7 +2316,7 @@ impl ContentHost {
             }
         }
         cancel(self.root.find_mut(id).unwrap());
-        if capture { self.captured = None; }
+        if capture { self.captured = None; self.captured_mount = None; }
         if focus { self.focus(None, false); }
         self.help.clear();
         self.dirty = true;
@@ -2390,6 +2488,7 @@ impl ContentHost {
         let Some(id) = self.captured.take() else {
             return false;
         };
+        self.captured_mount = None;
         if let Some(owner) = self.root.find_mut(id) {
             owner.component.cancel_pointer();
         }
@@ -2410,7 +2509,7 @@ impl ContentHost {
             }
         }
         cancel(&mut self.root);
-        self.captured = None;
+        self.captured = None; self.captured_mount = None;
         self.focus(None, false);
     }
     pub fn insert(&mut self, parent: ComponentId, mut child: Content) -> Result<(), CompositionError> {
@@ -2422,6 +2521,7 @@ impl ContentHost {
         let mut ids = BTreeSet::new();
         self.root.ids(&mut ids)?;
         child.ids(&mut ids)?;
+        if self.root.curve_ancestor(parent, false).unwrap_or(false) { child.validate_curve_tree(true)?; }
         child.refresh_activity(self.window_active);
         let node = self
             .root
@@ -2480,7 +2580,7 @@ impl ContentHost {
             self.focused = None;
         }
         if self.captured.is_some_and(|id| child.find(id).is_some()) {
-            self.captured = None;
+            self.captured = None; self.captured_mount = None;
         }
         child.lifecycle(Lifecycle::Unmounted);
         self.reveal_clock.invalidate_input();
@@ -2601,6 +2701,7 @@ impl StackContent {
     }
 }
 impl Component for StackContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
     fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{PreparedEffects::local_work(n)}
     fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError>{Ok(PreparedEffects::local(self,hooks))}
     fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
@@ -2661,6 +2762,7 @@ pub struct GridContent {
     pub children: Vec<Content>,
 }
 impl Component for GridContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
     fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{PreparedEffects::local_work(n)}
     fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError>{Ok(PreparedEffects::local(self,hooks))}
     fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
@@ -2770,6 +2872,7 @@ impl ScrollContent {
     }
 }
 impl Component for ScrollContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
     fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{
         let base=PreparedEffects::local_work(n)?;
         base.checked_add(match &self.reading{Some(r)=>content_reading::reader_preparation_work(r,n).ok_or(PreparedEffectsError::CounterCapacity)?,None=>0}).ok_or(PreparedEffectsError::CounterCapacity)
@@ -3069,6 +3172,8 @@ impl ButtonContent {
     }
 }
 impl Component for ButtonContent {
+    fn set_clip_region(&mut self, region: Option<tekes_ui_scene::ClipRegion>) { self.button.set_clip_region(region); }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Local }
     fn table_transaction_compatibility(&self)->TableTransactionCompatibility { TableTransactionCompatibility::StableHooks }
     fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError> { PreparedEffects::local_work(n) }
     fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError> { Ok(PreparedEffects::local(self,hooks)) }
@@ -3223,6 +3328,7 @@ impl TextContent {
     }
 }
 impl Component for TextContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Local }
     fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{PreparedEffects::local_work(n)?.checked_add(self.text.len().checked_mul(n.max(1)).ok_or(PreparedEffectsError::CounterCapacity)?).ok_or(PreparedEffectsError::CounterCapacity)}
     fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError>{Ok(PreparedEffects::local(self,hooks))}
     fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
@@ -3323,6 +3429,8 @@ impl CompoundButton {
     }
 }
 impl Component for CompoundButton {
+    fn set_clip_region(&mut self, region: Option<tekes_ui_scene::ClipRegion>) { self.action.set_clip_region(region); }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
 
     fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
         ActionTransactionCompatibility::StableHooks

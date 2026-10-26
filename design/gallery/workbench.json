@@ -219,7 +219,8 @@
       "status": "experimental",
       "api": "tekes_ui_controls::feedback_view::SurfaceView",
       "api_bindings": [
-        "tekes_ui_controls::feedback_view::SurfaceView"
+        "tekes_ui_controls::feedback_view::SurfaceView",
+        "tekes_ui_controls::composition::PanelContent"
       ]
     },
     {

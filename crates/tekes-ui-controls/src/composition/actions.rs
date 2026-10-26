@@ -154,7 +154,13 @@ impl Content {
         let result = if overlay {
             event.deliver_overlay(&mut *self.component)
         } else {
-            event.deliver(&mut *self.component)
+            match event.routing_event().as_ref() {
+                ContentEvent::PointerMove(point) | ContentEvent::PointerUp(point) => {
+                    let inside = self.curve_contains(*point);
+                    self.component.pointer_event_in_region(event, inside)
+                }
+                _ => event.deliver(&mut *self.component),
+            }
         };
         self.record_actions(&result, event.action_source(), allowed, pending);
         result

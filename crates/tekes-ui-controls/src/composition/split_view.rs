@@ -132,9 +132,6 @@ impl<const LEADING: bool> Component for PaneSlot<LEADING> {
     fn host_reveal_passthrough(&self) -> bool {
         self.arranged && self.intact()
     }
-    fn host_reveal_local_clip(&self) -> Option<Rect> {
-        Some(self.frame)
-    }
 
     fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
         TableTransactionCompatibility::StableHooks
@@ -601,6 +598,16 @@ impl Component for SplitViewContent {
         self.arranged_config = if valid_allocation(frame) && valid_allocation(clip) { self.config() } else { None };
     }
 }
+// SplitView's original parent layout clips each Slot before arranging the Slot
+// itself. This is library-owned owner geometry, not a custom descendant clip.
+// Preserve that published owner allocation and read its full pane boundary.
+pub(super) fn reveal_pane_boundary(node: &Content) -> Option<Rect> {
+    if let Some(slot) = node.component::<PaneSlot<true>>() {
+        return (slot.arranged && slot.intact()).then_some(slot.frame);
+    }
+    let slot = node.component::<PaneSlot<false>>()?;
+    (slot.arranged && slot.intact()).then_some(slot.frame)
+}
 pub(super) fn refresh_local(c: &mut Content) {
     if let Some(s) = c.component_mut::<SplitViewContent>()
         && s.children.len() == 3
@@ -1015,6 +1022,9 @@ impl ContentHost {
         };
         plan.effects.bind(&mut reading);
         plan.new.bind(&mut reading);
+        // Original Host publication authority expires only after all refusals.
+        let _=self.reveal_clock.geometry_lease.fetch_update(std::sync::atomic::Ordering::AcqRel,std::sync::atomic::Ordering::Acquire,|n|Some(n.saturating_add(1)));
+        self.reveal_clock.pending = true;
         // All ordinary refusal ends above. No callbacks, IDs or authorization were published.
         self.reading_transaction = true;
         plan.effects
@@ -1262,6 +1272,9 @@ impl ContentHost {
         let mut empty_mounts = actions::MountRange::empty();
         effects.validate(&self.root)?;
         effects.bind(&mut empty_reading);
+        // No Keep/refusal path reaches this infallible original lease revoke.
+        let _=self.reveal_clock.geometry_lease.fetch_update(std::sync::atomic::Ordering::AcqRel,std::sync::atomic::Ordering::Acquire,|n|Some(n.saturating_add(1)));
+        self.reveal_clock.pending = true;
         self.reading_transaction = true;
         effects.commit(&mut self.root, &mut empty_mounts);
         if cancel_capture {

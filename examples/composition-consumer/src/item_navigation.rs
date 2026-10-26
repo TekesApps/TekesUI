@@ -7,7 +7,7 @@ use tekes_ui_controls::{
     feedback_view::SurfaceView,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
-use tekes_ui_tokens::{Spacing, proposal};
+use tekes_ui_tokens::{Spacing, Theme, proposal};
 pub const ROOT: ComponentId = ComponentId(11000);
 pub const OWNER: ComponentId = ComponentId(11001);
 pub const ITEMS: ComponentId = ComponentId(11002);
@@ -29,6 +29,7 @@ pub struct Panel {
     pub content_shift: f32,
     children: Vec<Content>,
     view: SurfaceView,
+    arranged: Option<(bool, f32, Rect)>,
 }
 impl Panel {
     fn padding() -> f32 {
@@ -36,6 +37,13 @@ impl Panel {
     }
 }
 impl Component for Panel {
+    fn host_reveal_passthrough(&self) -> bool {
+        self.children.len() == 1 && self.arranged.is_some_and(|(clipped, shift, _)|
+            clipped == self.clipped && shift == self.content_shift && shift.is_finite())
+    }
+    fn host_reveal_local_clip(&self) -> Option<Rect> {
+        self.arranged.map(|(clipped, _, frame)| if clipped { Rect::default() } else { frame })
+    }
     fn children(&self) -> &[Content] {
         &self.children
     }
@@ -56,6 +64,7 @@ impl Component for Panel {
         ))
     }
     fn arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
+        self.arranged = None;
         let clip = if self.clipped {
             Rect::default()
         } else {
@@ -66,6 +75,7 @@ impl Component for Panel {
             f.inset(Self::padding()).offset(0., self.content_shift),
             clip,
         );
+        self.arranged = Some((self.clipped, self.content_shift, f));
     }
     fn paint(
         &mut self,
@@ -130,6 +140,7 @@ impl Fixture {
                 clipped: false,
                 content_shift: 0.,
                 view: SurfaceView::default(),
+                arranged: None,
                 children: vec![column(
                     ComponentId(11011),
                     vec![
@@ -237,7 +248,25 @@ impl Fixture {
         options: ScrollRevealOptions,
         text: &mut dyn ButtonTextRenderer,
     ) -> Result<ContentRevealResult, ContentRevealError> {
-        self.host
-            .reveal_scroll_reading_item(OWNER, &self.version, item, options, text)
+        // Normal application frames are outside the read-only reveal transaction.
+        // A document without a completed layout must still be rejected by Host;
+        // a failed render has no allocation to reuse and is not auto-recovered.
+        let allocation = self.host.last_layout_allocation();
+        let document_laid_out = self.host.get(OWNER)
+            .and_then(|owner| owner.component::<ScrollContent>())
+            .is_some_and(|scroll| scroll.reading_result().is_some());
+        if document_laid_out && self.host.needs_render()
+            && let Some((frame, clip)) = allocation
+        {
+            self.host.render(&mut Scene::new(), text, frame, clip, Theme::LIGHT.into())
+                .map_err(ContentRevealError::Layout)?;
+        }
+        let result = self.host
+            .reveal_scroll_reading_item(OWNER, &self.version, item, options, text)?;
+        if let Some((frame, clip)) = allocation {
+            self.host.render(&mut Scene::new(), text, frame, clip, Theme::LIGHT.into())
+                .map_err(ContentRevealError::Layout)?;
+        }
+        Ok(result)
     }
 }

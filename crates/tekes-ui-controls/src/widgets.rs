@@ -404,6 +404,7 @@ pub struct Button {
     chrome_bounds: Option<Rect>,
     arm: ButtonArm,
     placement: Option<ButtonLayout>,
+    clip_region: Option<tekes_ui_scene::ClipRegion>,
     last_pointer: Option<Point>,
     hover_transition: ProgressTransition,
     press_transition: ProgressTransition,
@@ -905,9 +906,16 @@ impl Button {
 
 
 
+    pub(crate) fn set_clip_region(&mut self, region: Option<tekes_ui_scene::ClipRegion>) {
+        self.clip_region = region;
+        self.refresh_pointer_state();
+    }
+
     fn hit_test(&self, point: Point) -> bool {
         self.placement.is_some_and(|layout| layout.hit_test(point))
-
+            && self.clip_region.as_ref().is_none_or(|region| {
+                region.contains([point.x as f64, point.y as f64]) == Ok(true)
+            })
     }
 
     fn decided_pointer_arm(&self, mut state: ControlState) -> (ControlState, ButtonArm) {

@@ -1,3 +1,19 @@
+# Local main delivery boundary — 2026-10-27
+
+This is the existing Panel/curve design. Historical Gallery Root evidence below retains its original source identity; it is not a remote release or a current-main acceptance result.
+
+Local main already contains the #80 shared shape/clip and R1/R2 glyph-scissor implementation, #97 fallible Scene fragments, Surface inheritance and #102 A. The next bounded batch, based on `8511dad88d98f47aeb64085d7210d113a4114500`, receives the real single-slot `PanelContent`, original-tree curve paint/input and frozen geometry, required-focus evidence, and the shared readonly Host/reading plan→validate→commit path. It also includes the necessary #98 Start/Nearest/overscroll compatibility corrections and #102 successful typed-update geometry-lease retirement. These shared seams cannot be separated without leaving the original public consumers broken. The existing52 registry identities and maturity remain unchanged; `PanelContent` is an additional `tui.surface` API binding.
+
+The reading transaction no longer performs trial layout, live offset mutation or rollback. Custom translation owners must supply their actual arranged pure query; unknown layouts stay unsupported. Library SplitView slots retain their original owner-level pane clip, separately from descendant-only custom clips. Planning binds the current visual/offset state; accepted explicit navigation uses the existing commit that clears old overscroll/motion. Partial visibility of a tall target remains distinct from an actual limit/shape clamp. Ordinary CurveLocal controls retain their original reducer after successful current focus/reveal gates; this does not invent a prepared-action contract.
+
+The legacy macOS Rect-only adapter explicitly refuses curve trees, including actions. The real Host snapshot/hit/parts remain curve-aware; a bounding rectangle is not point authority. This refusal prevents a false positive and does **not** complete the original B1 positive native/Window atomic-publication, point/range/text-generation chain. That chain, B2 parent-image clipping and cross-process authority, the original #82 450/18 combination, and immutable public delivery remain separate unreceived or unverified work. #81 stays open. Full virtual-row #98 acceptance on local main is not inferred from this finite common-core batch.
+
+Validation and exact round/source/program identities are recorded on SSD under `artifacts/issue-136/panel81-main8511dad-intake/`. The actual Panel Metal checks cover five pipelines × five scales × light/dark (50 captures), plus ancestor-outside and zero-width negatives; the glyph input is a synthetic atlas clipping check, not native text appearance. The original Host15, item-navigation25, scroll11, Controls309 and selected public/editor/reading/action regressions are separate runtime receipts. Later pane-boundary repair reruns only the affected Split/Host/local-clip checks and pending strict checks. Earlier failures, candidate results and historical receipts remain intact; no evidence is reassigned to a different source. No GPU/native/IME/VoiceOver/performance result is inferred from compilation or from this source commit. No push, merge or publication.
+
+---
+
+<details><summary>Earlier local-main foundation-only boundary (historical)</summary>
+
 # Local main delivery boundary — 2026-10-26
 
 This is the existing Panel/curve design, received from Gallery Root with its history retained below. “Main” in the historical sections means the Gallery Root integration at that date, not this checkout or a remote release.
@@ -10,7 +26,8 @@ Evidence: SSD `artifacts/issue-136/phase2-r2-main33-20261026-01/` and `artifacts
 
 **Remaining integration acceptance:** the original #82 450/18 Panel matrix depends on #81 Panel/Host APIs absent from this local-main batch. It has not run here and is not replaced by the shared-library GPU checks. The supplementary per-run source contains 448 glyphs/12 runs, not a dedicated 260-glyph/7-run pairing. Receive #62 Surface inheritance, #98 Host/reveal and #81 Panel dependencies before running the original combination. Keep #81 B2/native/VoiceOver/publication obligations separate and incomplete. This local source commit does not claim all original #80/#81/#82 criteria passed on current main or close a planning Issue.
 
----
+
+</details>
 
 ## Existing design and historical Gallery Root evidence
 

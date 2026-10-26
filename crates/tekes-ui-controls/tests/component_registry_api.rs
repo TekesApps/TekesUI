@@ -91,6 +91,12 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-surface",
         "tekes_ui_controls::feedback_view::SurfaceView",
     );
+    bind::<tekes_ui_controls::composition::PanelContent>(
+        &mut actual,
+        "tui.surface",
+        "component-surface",
+        "tekes_ui_controls::composition::PanelContent",
+    );
     bind::<tekes_ui_controls::Toolbar>(
         &mut actual,
         "tui.toolbar",
@@ -909,6 +915,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::ContentEvent",
     );
+    public_type::<tekes_ui_controls::composition::ContentGeometrySnapshot>(
+        &mut actual,
+        "tekes_ui_controls::composition::ContentGeometrySnapshot",
+    );
     public_type::<tekes_ui_controls::composition::ContentHost>(
         &mut actual,
         "tekes_ui_controls::composition::ContentHost",
@@ -957,6 +967,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::ContentTheme",
     );
+    public_type::<tekes_ui_controls::composition::CurveSubtreeCapability>(
+        &mut actual,
+        "tekes_ui_controls::composition::CurveSubtreeCapability",
+    );
     public_type::<tekes_ui_controls::composition::DecimalNumberFormat>(
         &mut actual,
         "tekes_ui_controls::composition::DecimalNumberFormat",
@@ -980,6 +994,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::HostRevealError>(
         &mut actual,
         "tekes_ui_controls::composition::HostRevealError",
+    );
+    public_type::<tekes_ui_controls::composition::HostRevealGeometry>(
+        &mut actual,
+        "tekes_ui_controls::composition::HostRevealGeometry",
     );
     public_type::<tekes_ui_controls::composition::HostRevealOutcome>(
         &mut actual,
@@ -1034,7 +1052,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_143<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_146<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1051,6 +1069,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::NumberValueError>(
         &mut actual,
         "tekes_ui_controls::composition::NumberValueError",
+    );
+    public_type::<tekes_ui_controls::composition::PanelContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::PanelContent",
+    );
+    public_type::<tekes_ui_controls::composition::PanelGeometry>(
+        &mut actual,
+        "tekes_ui_controls::composition::PanelGeometry",
     );
     public_type::<tekes_ui_controls::composition::PointerButton>(
         &mut actual,
@@ -1069,7 +1095,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::PointerPhase",
     );
     #[allow(dead_code)]
-    fn public_trait_152<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    fn public_trait_157<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::PreparedActionEffect");
     public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
         &mut actual,
@@ -1110,6 +1136,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::Rejected<()>>(
         &mut actual,
         "tekes_ui_controls::composition::Rejected",
+    );
+    public_type::<tekes_ui_controls::composition::RequiredFocusEvidence>(
+        &mut actual,
+        "tekes_ui_controls::composition::RequiredFocusEvidence",
+    );
+    public_type::<tekes_ui_controls::composition::RequiredFocusResult>(
+        &mut actual,
+        "tekes_ui_controls::composition::RequiredFocusResult",
+    );
+    public_type::<tekes_ui_controls::composition::RequiredFocusSpace>(
+        &mut actual,
+        "tekes_ui_controls::composition::RequiredFocusSpace",
     );
     public_type::<tekes_ui_controls::composition::ScrollContent>(
         &mut actual,
@@ -1528,7 +1566,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_267<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_275<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

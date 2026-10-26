@@ -854,6 +854,12 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::ContentGeometrySnapshot",
+      "category": "composition",
+      "components": [],
+      "reason": "Immutable original ContentHost geometry/shape identity and generation-bound point/bounds queries; not a new Gallery component or native acceptance."
+    },
+    {
       "api": "tekes_ui_controls::composition::ContentHost",
       "category": "composition",
       "components": [],
@@ -930,6 +936,12 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::CurveSubtreeCapability",
+      "category": "composition",
+      "components": [],
+      "reason": "Explicit original composition subtree capability for certified Panel curve traversal; unsupported descendants refuse. Classification does not certify B1/B2."
+    },
+    {
       "api": "tekes_ui_controls::composition::DecimalNumberFormat",
       "category": "component-support",
       "components": [
@@ -972,6 +984,12 @@
       "category": "composition",
       "components": [],
       "reason": "Current R1 host reveal preparation rejection boundary; #98 acceptance remains pending."
+    },
+    {
+      "api": "tekes_ui_controls::composition::HostRevealGeometry",
+      "category": "composition",
+      "components": [],
+      "reason": "Original Host additional ancestor curve boundary, separate from target RequiredFocus witness; not a new reveal owner or runtime acceptance."
     },
     {
       "api": "tekes_ui_controls::composition::HostRevealOutcome",
@@ -1110,6 +1128,20 @@
       "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle."
     },
     {
+      "api": "tekes_ui_controls::composition::PanelContent",
+      "category": "component",
+      "components": [
+        "tui.surface"
+      ],
+      "reason": "Owned Content adapter for the existing registered Surface / Panel family. Added compiler binding proves availability only; no new Gallery identity, maturity, native publication or B2 acceptance."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PanelGeometry",
+      "category": "composition",
+      "components": [],
+      "reason": "Original Panel frozen allocation/outer/shape/generation data for shared paint/hit/reveal/publication; source-visible support, not acceptance."
+    },
+    {
       "api": "tekes_ui_controls::composition::PointerButton",
       "category": "composition",
       "components": [],
@@ -1205,6 +1237,24 @@
       "type_arguments": [
         "()"
       ]
+    },
+    {
+      "api": "tekes_ui_controls::composition::RequiredFocusEvidence",
+      "category": "composition",
+      "components": [],
+      "reason": "Owner-local identity for arranged required-focus evidence, shared by ContentHost and focus/reveal runtime; not a component API."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RequiredFocusResult",
+      "category": "composition",
+      "components": [],
+      "reason": "Host-visible outcome for the arranged required-focus region, shared by ContentHost and focus/reveal runtime; not a component API."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RequiredFocusSpace",
+      "category": "composition",
+      "components": [],
+      "reason": "Host-visible required-focus space contract used by ContentHost and focus/reveal runtime; not a component API."
     },
     {
       "api": "tekes_ui_controls::composition::ScrollContent",

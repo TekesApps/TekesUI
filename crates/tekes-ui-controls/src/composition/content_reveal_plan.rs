@@ -4,7 +4,7 @@ use crate::{
     ReadingDocumentVersion, ScrollRevealError, ScrollRevealOptions, ScrollRevealPlacement,
 };
 use std::sync::Arc;
-use tekes_ui_scene::{ClipError, ClipRegion};
+use tekes_ui_scene::{ClipError, ClipRegion, ClipShape};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HostRevealError {
@@ -52,6 +52,7 @@ pub struct HostRevealOutcome {
 #[derive(Debug)]
 pub(super) struct RevealClock {
     owner: Arc<()>,
+    pub(super) geometry_lease: Arc<std::sync::atomic::AtomicU64>,
     geometry: Option<u64>,
     input: Option<u64>,
     pub(super) pending: bool,
@@ -60,6 +61,7 @@ impl Default for RevealClock {
     fn default() -> Self {
         Self {
             owner: Arc::new(()),
+            geometry_lease: Arc::new(std::sync::atomic::AtomicU64::new(0)),
             geometry: Some(0),
             input: Some(0),
             pending: false,
@@ -68,9 +70,11 @@ impl Default for RevealClock {
 }
 impl RevealClock {
     pub(super) fn invalidate_input(&mut self) {
+        let _ = self.geometry_lease.fetch_update(std::sync::atomic::Ordering::AcqRel, std::sync::atomic::Ordering::Acquire, |n| Some(n.saturating_add(1)));
         self.input = self.input.and_then(|n| n.checked_add(1));
     }
     pub(super) fn invalidate_geometry(&mut self) {
+        let _ = self.geometry_lease.fetch_update(std::sync::atomic::Ordering::AcqRel, std::sync::atomic::Ordering::Acquire, |n| Some(n.saturating_add(1)));
         self.geometry = self.geometry.and_then(|n| n.checked_add(1));
         self.pending = true;
     }
@@ -101,6 +105,10 @@ struct NodeState {
     clip: Rect,
     scroll: Option<ScrollState>,
     child_clip:Option<Rect>,
+    pane_boundary: Option<Rect>,
+    curve_requirement: bool,
+    reveal_geometry: Option<HostRevealGeometry>,
+    fixed_ancestor_curves: Vec<HostRevealGeometry>,
 }
 impl NodeState {
     fn read(node: &Content) -> Result<Self, HostRevealError> {
@@ -115,6 +123,10 @@ impl NodeState {
             frame: node.frame,
             clip: node.clip,
             child_clip,
+            pane_boundary: split_view::reveal_pane_boundary(node),
+            curve_requirement: node.component.requires_focus_reveal(),
+            reveal_geometry: node.component.host_reveal_geometry_constraint(),
+            fixed_ancestor_curves: Vec::new(),
             scroll: node.component::<ScrollContent>().map(|s| ScrollState {
                 viewport: s.viewport,
                 viewport_size: s.scroll.viewport_size(),
@@ -129,13 +141,15 @@ impl NodeState {
         })
     }
 }
-fn read_reveal_nodes(path: &[&Content]) -> Result<Vec<NodeState>, HostRevealError> {
-    let nodes = path.iter().map(|n| NodeState::read(n)).collect::<Result<Vec<_>, _>>()?;
+fn read_reveal_nodes(path: &[&Content], fixed_ancestor_curves: Vec<HostRevealGeometry>) -> Result<Vec<NodeState>, HostRevealError> {
+    let mut nodes = path.iter().map(|n| NodeState::read(n)).collect::<Result<Vec<_>, _>>()?;
+    if let Some(first) = nodes.first_mut() { first.fixed_ancestor_curves = fixed_ancestor_curves; }
     for node in path.iter().take(path.len().saturating_sub(1)) {
         if node.component::<StackContent>().is_none()
             && node.component::<GridContent>().is_none()
             && node.component::<ScrollContent>().is_none()
             && node.component::<ListContent>().is_none()
+            && node.component.host_reveal_geometry_constraint().is_none()
             && !node.component.host_reveal_passthrough() {
             return Err(HostRevealError::UnsupportedLayout);
         }
@@ -197,6 +211,18 @@ impl ContentRoute {
         }
         Ok(route)
     }
+    fn fixed_ancestor_curves(&self, root: &Content, scope_depth: usize) -> Result<Vec<HostRevealGeometry>, HostRevealError> {
+        let mut curves = Vec::new();
+        for depth in 0..scope_depth {
+            let node = self.node(root, depth).ok_or(HostRevealError::StalePlan)?;
+            match node.component.host_reveal_geometry_constraint() {
+                Some(curve) if !curves.contains(&curve) => { curves.push(curve); }
+                None if node.component.requires_focus_reveal() => return Err(HostRevealError::UnsupportedLayout),
+                _ => {}
+            }
+        }
+        Ok(curves)
+    }
     fn require_passthrough(&mut self, root: &Content, depth: usize) -> Result<(), HostRevealError> {
         if self.node(root, depth).is_none_or(|n| !n.component.host_reveal_passthrough()) {
             return Err(HostRevealError::UnsupportedLayout);
@@ -221,6 +247,7 @@ impl ContentRoute {
                 && node.component::<ListContent>().is_none()
                 && node.component::<ScrollContent>().is_none()
                 && node.component::<DialogContent>().is_none()
+                && node.component.host_reveal_geometry_constraint().is_none()
             {
                 if !node.component.host_reveal_passthrough() { return false; }
                 if !self.passthrough_depths.contains(&i) { self.passthrough_depths.push(i); }
@@ -287,6 +314,9 @@ pub struct HostRevealPlan {
     nodes: Vec<NodeState>,
     route: ContentRoute,
     scope_depth: usize,
+    target_rect: Rect,
+    required_witness: Option<Rect>,
+    required_evidence: Option<RequiredFocusEvidence>,
     target_caret: Option<Rect>,
     targets: Vec<Point>,
     options: ScrollRevealOptions,
@@ -349,6 +379,35 @@ fn record_numeric_state(
 fn intersection(a: Rect, b: Rect) -> Rect {
     a.intersection(&b).unwrap_or_default()
 }
+fn translated_witness(nodes: &[NodeState], targets: &[Point], witness: Rect) -> Option<Rect> {
+    let (frames, _, _) = projected(nodes, targets);
+    let original = nodes.last()?.frame;
+    let projected = *frames.last()?;
+    Some(witness.offset(
+        projected.min_x() - original.min_x(),
+        projected.min_y() - original.min_y(),
+    ))
+}
+fn contains_rect(outer: Rect, inner: Rect) -> bool {
+    [
+        outer.min_x(),
+        outer.min_y(),
+        outer.max_x(),
+        outer.max_y(),
+        inner.min_x(),
+        inner.min_y(),
+        inner.max_x(),
+        inner.max_y(),
+    ]
+    .into_iter()
+    .all(f32::is_finite)
+        && inner.size.width > 0.0
+        && inner.size.height > 0.0
+        && inner.min_x() >= outer.min_x()
+        && inner.min_y() >= outer.min_y()
+        && inner.max_x() <= outer.max_x()
+        && inner.max_y() <= outer.max_y()
+}
 fn projected(nodes: &[NodeState], targets: &[Point]) -> (Vec<Rect>, Vec<Rect>, Vec<Rect>) {
     let mut frames = Vec::with_capacity(nodes.len());
     let mut clips = Vec::with_capacity(nodes.len());
@@ -356,9 +415,16 @@ fn projected(nodes: &[NodeState], targets: &[Point]) -> (Vec<Rect>, Vec<Rect>, V
     let mut delta = Point::default();
     let mut clip = nodes[0].clip;
     for (i, n) in nodes.iter().enumerate() {
-        if let Some(boundary)=n.child_clip {clip=intersection(clip,boundary.offset(delta.x,delta.y));}
+        // SplitView's parent already clips the original Slot owner to its pane;
+        // ordinary custom local clips below still apply only to descendants.
+        if let Some(boundary) = n.pane_boundary {
+            clip = intersection(clip, boundary.offset(delta.x, delta.y));
+        }
         frames.push(n.frame.offset(delta.x, delta.y));
         clips.push(clip);
+        // The owner receives the ancestor clip. Its local boundary constrains
+        // descendants, in the owner's translated coordinates before its Scroll.
+        if let Some(boundary)=n.child_clip {clip=intersection(clip,boundary.offset(delta.x,delta.y));}
         if let Some(s) = &n.scroll {
             let viewport = s.viewport.offset(delta.x, delta.y);
             viewports.push(viewport);
@@ -494,6 +560,22 @@ fn constrained_axis(
     ))
 }
 impl ContentHost {
+    fn validate_curve_path(&self, path: &[&Content]) -> Result<(), HostRevealError> {
+        if !self.active_curve_geometry_is_current() {
+            return Err(HostRevealError::UnlaidOut);
+        }
+        let mut in_curve = false;
+        for node in path {
+            in_curve |= node.component::<PanelContent>().is_some();
+            if in_curve && node.curve_geometry.is_none() {
+                return Err(HostRevealError::UnlaidOut);
+            }
+            if in_curve && node.component.curve_subtree_capability() == CurveSubtreeCapability::Unsupported {
+                return Err(HostRevealError::UnsupportedLayout);
+            }
+        }
+        Ok(())
+    }
     fn capture_reveal_route(
         &self,
         path: &[&Content],
@@ -590,20 +672,40 @@ impl ContentHost {
         if !collect_path(scope, item, &mut path, budget.max_path_nodes)? {
             return Err(HostRevealError::UnavailableTarget);
         }
-        if path.iter().any(|n| n.component.requires_focus_reveal()) {
-            // B1 must supply this structural owner's authoritative current
-            // geometry. Caller-supplied extra constraints cannot replace it.
+        self.validate_curve_path(&path)?;
+        let target_node = path.last().expect("collected reveal target");
+        let (required_witness, required_evidence) = match target_node.component.required_focus_space() {
+            RequiredFocusSpace::Sufficient { witness, evidence } => (Some(witness), Some(evidence)),
+            RequiredFocusSpace::Insufficient | RequiredFocusSpace::Unmeasured => {
+                return Err(HostRevealError::NoFeasibleRegion);
+            }
+            RequiredFocusSpace::Legacy if target_node.component.requires_focus_reveal() => {
+                return Err(HostRevealError::UnsupportedLayout);
+            }
+            RequiredFocusSpace::Legacy | RequiredFocusSpace::NotRequired => (None, None),
+        };
+        if target_node.component.requires_focus_reveal() && required_witness.is_none() {
             return Err(HostRevealError::UnsupportedLayout);
         }
+        let rect = required_witness.unwrap_or(rect);
+        if let Some(witness) = required_witness {
+            let edges = [witness.min_x(), witness.min_y(), witness.max_x(), witness.max_y(), witness.size.width, witness.size.height];
+            if edges.into_iter().any(|v| !v.is_finite()) || witness.size.width <= 0.0
+                || witness.size.height <= 0.0 || !contains_rect(target_node.frame, witness) {
+                return Err(HostRevealError::NoFeasibleRegion);
+            }
+        }
         let (mut route, scope_depth) = self.capture_reveal_route(&path, budget.max_path_nodes)?;
-        let nodes=read_reveal_nodes(&path)?;
+        let nodes=read_reveal_nodes(&path, route.fixed_ancestor_curves(&self.root, scope_depth)?)?;
+        validate_curve_constraints(&nodes, path.len().saturating_sub(1), stamp.0)?;
         for (i, n) in path.iter().take(path.len().saturating_sub(1)).enumerate() {
             // Original row authority was already resolved by its exact owner.
             // Only generic geometry paths use the separate positive opt-in.
             if n.component::<StackContent>().is_none()
                 && n.component::<GridContent>().is_none()
                 && n.component::<ScrollContent>().is_none()
-                && n.component::<ListContent>().is_none() {
+                && n.component::<ListContent>().is_none()
+                && nodes[i].reveal_geometry.is_none() {
                 route.require_passthrough(&self.root, scope_depth + i)?;
             }
         }
@@ -612,13 +714,14 @@ impl ContentHost {
         }
         let mut targets: Vec<_> = nodes
             .iter()
+            .map(|n| n.scroll.as_ref().map_or(Point::default(), |s| s.offset))
+            .collect();
+        // Original frames include the current visual transform (offset plus
+        // overscroll); accepted explicit commits cancel that overscroll. Keep
+        // baseline reconstruction separate from the final-offset projection.
+        let visual_targets: Vec<_> = nodes.iter()
             .map(|n| n.scroll.as_ref().map_or(Point::default(), |s| s.visual))
             .collect();
-        for s in nodes.iter().filter_map(|n| n.scroll.as_ref()) {
-            if s.visual != s.offset {
-                return Err(HostRevealError::UnsupportedLayout);
-            }
-        }
 
         let expanded = Rect::new(
             rect.min_x() - m.left,
@@ -627,9 +730,14 @@ impl ContentHost {
             rect.size.height + m.top + m.bottom,
         );
         if constraints.is_empty()
+            && targets == visual_targets
+            && !requires_complete_curve_landing(&nodes)
             && options.placement == ScrollRevealPlacement::Nearest
             && expanded.intersection(&path.last().unwrap().clip) == Some(expanded)
         {
+            let (frames, _, _) = projected(&nodes, &targets);
+            let shapes = translated_curve_shapes(&nodes, &frames, path.len().saturating_sub(1))?;
+            validate_rect_in_curve_shapes(expanded, &shapes)?;
             // No prediction or custom reveal is needed for a fully visible
             // target. Preserve opaque containers' current original geometry.
             return Ok(HostRevealPlan {
@@ -646,6 +754,9 @@ impl ContentHost {
                 nodes,
                 route,
                 scope_depth,
+                target_rect: rect,
+                required_witness,
+                required_evidence,
                 targets,
                 options,
                 outcome: HostRevealOutcome {
@@ -671,7 +782,7 @@ impl ContentHost {
         let mut queries = 0usize;
         let mut history = Vec::new();
         let mut outcome = HostRevealOutcome::default();
-        let baseline = projected(&nodes, &targets);
+        let baseline = projected(&nodes, &visual_targets);
         // Only the original passthrough clips and ScrollContent viewport clipping
         // can be predicted without an application layout callback.
         if nodes.iter().zip(&baseline.1).any(|(n, c)| n.clip != *c) {
@@ -688,6 +799,7 @@ impl ContentHost {
             record_numeric_state(&mut history, &targets)?;
             let previous = targets.clone();
             outcome = HostRevealOutcome::default();
+            let mut provisional_start_margin = false;
             for i in (0..nodes.len().saturating_sub(1)).rev() {
                 let Some(state) = &nodes[i].scroll else {
                     continue;
@@ -742,9 +854,21 @@ impl ContentHost {
                 let mut numeric = scroll.scroll.clone();
                 numeric.offset = targets[i];
                 numeric.overscroll = Point::default();
-                let (mut wanted, clamped) = numeric
-                    .reveal_target(local, step_options)
-                    .map_err(HostRevealError::InvalidOptions)?;
+                let (mut wanted, clamped) = match numeric.reveal_target(local, step_options) {
+                    Err(ScrollRevealError::InvalidMargins)
+                        if matches!(options.placement, ScrollRevealPlacement::Start(_)) => {
+                        // A parent can enlarge a currently tiny visible slice.
+                        // Validate the original margins against the full real
+                        // viewport and use only a provisional numeric target.
+                        // A settled pass must satisfy the actual visible slice.
+                        let result = numeric.reveal_target(local, options)
+                            .map_err(HostRevealError::InvalidOptions)?;
+                        step_options = options;
+                        provisional_start_margin = true;
+                        result
+                    }
+                    result => result.map_err(HostRevealError::InvalidOptions)?,
+                };
                 outcome.limit_clamped |= clamped;
                 outcome.partial |= local.size.width
                     + step_options.margins.left
@@ -752,7 +876,10 @@ impl ContentHost {
                     > state.viewport_size.width
                     || local.size.height + step_options.margins.top + step_options.margins.bottom
                         > state.viewport_size.height;
-                if let Some((_, region)) = constraints.iter().find(|(id, _)| *id == nodes[i].id) {
+                let projected_region = projected_curve_region(&nodes, &frames, i, budget, stamp.0)?;
+                let external = constraints.iter().find(|(id, _)| *id == nodes[i].id).map(|(_, r)| r);
+                if projected_region.is_some() && external.is_some() { return Err(HostRevealError::UnsupportedLayout); }
+                if let Some(region) = projected_region.as_ref().or(external) {
                     work = work
                         .checked_add(region.reserved_work())
                         .ok_or(HostRevealError::PlanBudgetExceeded)?;
@@ -788,6 +915,7 @@ impl ContentHost {
                 targets[i] = wanted;
             }
             if targets == previous {
+                if provisional_start_margin { return Err(HostRevealError::NoFeasibleRegion); }
                 settled = true;
                 break;
             }
@@ -809,9 +937,11 @@ impl ContentHost {
         // The numeric offset solver's f64 result alone cannot authorize a
         // landing whose conversion/translation moved across a curved boundary.
         for (i, node) in nodes.iter().enumerate() {
-            let Some((_, region)) = constraints.iter().find(|(id, _)| *id == node.id) else {
-                continue;
-            };
+            if node.scroll.is_none() { continue; }
+            let projected_region = projected_curve_region(&nodes, &frames, i, budget, stamp.0)?;
+            let external = constraints.iter().find(|(id, _)| *id == node.id).map(|(_, r)| r);
+            if projected_region.is_some() && external.is_some() { return Err(HostRevealError::UnsupportedLayout); }
+            let Some(region) = projected_region.as_ref().or(external) else { continue; };
             work = work
                 .checked_add(region.reserved_work())
                 .ok_or(HostRevealError::PlanBudgetExceeded)?;
@@ -888,6 +1018,23 @@ impl ContentHost {
                 }
             }
         }
+        let (final_frames, final_clips, _) = projected(&nodes, &targets);
+        if requires_complete_curve_landing(&nodes) {
+            let landing = expanded_rect(required_witness.unwrap_or(rect), options.margins);
+            let projected_landing = translated_witness(&nodes, &targets, landing)
+                .ok_or(HostRevealError::NoFeasibleRegion)?;
+            let curve_shapes = translated_curve_shapes(&nodes, &final_frames, path.len().saturating_sub(1))?;
+            if !final_clips.last().is_some_and(|clip| contains_rect(*clip, projected_landing)) {
+                return Err(HostRevealError::NoFeasibleRegion);
+            }
+            validate_rect_in_curve_shapes(projected_landing, &curve_shapes)?;
+        } else if let Some(witness) = required_witness {
+            let projected_witness = translated_witness(&nodes, &targets, witness)
+                .ok_or(HostRevealError::NoFeasibleRegion)?;
+            if !final_clips.last().is_some_and(|clip| contains_rect(*clip, projected_witness)) {
+                return Err(HostRevealError::NoFeasibleRegion);
+            }
+        }
         outcome.revealed = true;
         Ok(HostRevealPlan {
             owner: self.reveal_clock.owner.clone(),
@@ -903,6 +1050,9 @@ impl ContentHost {
             nodes,
             route,
             scope_depth,
+            target_rect: rect,
+            required_witness,
+            required_evidence,
             targets,
             options,
             outcome,
@@ -938,7 +1088,7 @@ impl ContentHost {
         )
         .map_err(|_| HostRevealError::StalePlan)?
             || path.len() != plan.nodes.len()
-            || (if plan.purpose==PlanPurpose::Reveal {read_reveal_nodes(&path).map_err(|_|HostRevealError::StalePlan)?}else{path.iter().map(|n|NodeState::read(n)).collect::<Result<_, _>>().map_err(|_|HostRevealError::StalePlan)?})!=plan.nodes
+            || (if plan.purpose==PlanPurpose::Reveal {read_reveal_nodes(&path, plan.route.fixed_ancestor_curves(&self.root, plan.scope_depth).map_err(|_|HostRevealError::StalePlan)?).map_err(|_|HostRevealError::StalePlan)?}else{path.iter().map(|n|NodeState::read(n)).collect::<Result<_, _>>().map_err(|_|HostRevealError::StalePlan)?})!=plan.nodes
             || path
                 .last()
                 .unwrap()
@@ -948,6 +1098,42 @@ impl ContentHost {
                 != plan.target_caret
         {
             return Err(HostRevealError::StalePlan);
+        }
+        self.validate_curve_path(&path).map_err(|_|HostRevealError::StalePlan)?;
+        if let Some(witness) = plan.required_witness {
+            let current = path.last().map(|n| n.component.required_focus_space());
+            if current
+                != Some(RequiredFocusSpace::Sufficient {
+                    witness,
+                    evidence: plan
+                        .required_evidence
+                        .clone()
+                        .ok_or(HostRevealError::StalePlan)?,
+                })
+            {
+                return Err(HostRevealError::StalePlan);
+            }
+        }
+        validate_curve_constraints(&plan.nodes, plan.nodes.len().saturating_sub(1), plan.stamp.0)
+            .map_err(|_| HostRevealError::StalePlan)?;
+        let (frames, clips, _) = projected(&plan.nodes, &plan.targets);
+        if requires_complete_curve_landing(&plan.nodes) {
+            let landing = expanded_rect(plan.required_witness.unwrap_or(plan.target_rect), plan.options.margins);
+            let projected_landing = translated_witness(&plan.nodes, &plan.targets, landing)
+                .ok_or(HostRevealError::StalePlan)?;
+            let curve_shapes = translated_curve_shapes(&plan.nodes, &frames, plan.nodes.len().saturating_sub(1))
+                .map_err(|_| HostRevealError::StalePlan)?;
+            if !clips.last().is_some_and(|clip| contains_rect(*clip, projected_landing)) {
+                return Err(HostRevealError::StalePlan);
+            }
+            validate_rect_in_curve_shapes(projected_landing, &curve_shapes)
+                .map_err(|_| HostRevealError::StalePlan)?;
+        } else if let Some(witness) = plan.required_witness {
+            let projected_witness = translated_witness(&plan.nodes, &plan.targets, witness)
+                .ok_or(HostRevealError::StalePlan)?;
+            if !clips.last().is_some_and(|clip| contains_rect(*clip, projected_witness)) {
+                return Err(HostRevealError::StalePlan);
+            }
         }
         if plan.purpose == PlanPurpose::LogicalFocus
             && (path.iter().any(|n| {
@@ -1043,6 +1229,7 @@ impl ContentHost {
                 reading.fence_momentum();
             }
         }
+        let _ = self.reveal_clock.geometry_lease.fetch_update(std::sync::atomic::Ordering::AcqRel, std::sync::atomic::Ordering::Acquire, |n| Some(n.saturating_add(1)));
         self.reveal_clock.input = Some(ready.next_input);
         if outcome.changed {
             self.reveal_clock.pending = true;
@@ -1055,6 +1242,34 @@ impl ContentHost {
 impl HostRevealPlan {
     pub(super) fn target_route(&self) -> ContentRoute {
         self.route.clone()
+    }
+    pub(super) fn item_steps(&self) -> Vec<content_reveal::Step> {
+        let (frames, _, viewports) = projected(&self.nodes, &self.targets);
+        let delta = Point::new(
+            frames.last().unwrap().min_x() - self.nodes.last().unwrap().frame.min_x(),
+            frames.last().unwrap().min_y() - self.nodes.last().unwrap().frame.min_y(),
+        );
+        let mut rect = self.target_rect.offset(delta.x, delta.y);
+        let mut steps = Vec::new();
+        for (i, n) in self.nodes.iter().enumerate().rev().skip(1) {
+            if let Some(s) = &n.scroll {
+                let origin = Point::new(
+                    viewports[i].min_x() - self.targets[i].x,
+                    viewports[i].min_y() - self.targets[i].y,
+                );
+                steps.push(content_reveal::Step {
+                    id: n.id,
+                    mount: n.mount,
+                    rect: rect.offset(-origin.x, -origin.y),
+                    target: self.targets[i],
+                    viewport: s.viewport_size,
+                    document: s.document,
+                    generation: 0,
+                });
+                rect = intersection(rect, viewports[i]);
+            }
+        }
+        steps
     }
 }
 impl ContentHost {
@@ -1084,7 +1299,16 @@ impl ContentHost {
         if !target.component.focusable() || target.component.semantics().disabled {
             return Err(HostRevealError::UnavailableTarget);
         }
-        let requires_reveal = path.iter().any(|n| n.component.requires_focus_reveal());
+        let target_requirement = target.component.required_focus_space();
+        let requires_reveal = self.root.curve_ancestor(scope.id, false).unwrap_or(false)
+            || path.iter().any(|n| n.component.requires_focus_reveal())
+            || matches!(
+                target_requirement,
+                RequiredFocusSpace::Sufficient { .. }
+                    | RequiredFocusSpace::Insufficient
+                    | RequiredFocusSpace::Unmeasured
+            );
+
         let has_scroll = path
             .iter()
             .take(path.len().saturating_sub(1))
@@ -1101,6 +1325,9 @@ impl ContentHost {
                 focus: self.focused,
                 focus_epoch: self.focus_epoch,
                 targets: vec![Point::default(); nodes.len()],
+                target_rect: target.frame,
+                required_witness: None,
+                required_evidence: None,
                 target_caret: target.component.text_surface().map(|s| s.caret()),
                 nodes,
                 route,
@@ -1115,16 +1342,27 @@ impl ContentHost {
                 purpose: PlanPurpose::LogicalFocus,
             });
         }
-        // B1 supplies the declared curve owner's current region through the
-        // common strict planner. A declaration alone is never Rect permission.
-        if requires_reveal {
-            return Err(HostRevealError::UnsupportedLayout);
-        }
-        let rect = prepared_rect.unwrap_or_else(||target
+        // Target focus-space remains independent of any certified ancestor clip.
+        let (required_witness, required_evidence) = match target.component.required_focus_space() {
+            RequiredFocusSpace::Sufficient { witness, evidence } => (Some(witness), Some(evidence)),
+            RequiredFocusSpace::Insufficient | RequiredFocusSpace::Unmeasured => {
+                return Err(HostRevealError::NoFeasibleRegion);
+            }
+            RequiredFocusSpace::Legacy if target.component.requires_focus_reveal() => {
+                return Err(HostRevealError::UnsupportedLayout);
+            }
+            RequiredFocusSpace::NotRequired if target.component.requires_focus_reveal() => {
+                return Err(HostRevealError::UnsupportedLayout);
+            }
+            RequiredFocusSpace::Legacy | RequiredFocusSpace::NotRequired => (None, None),
+        };
+        let rect = required_witness.or(prepared_rect).unwrap_or_else(|| {
+            target
             .component
             .text_surface()
             .filter(|s| s.presentation == crate::TextSurfacePresentation::Content)
-            .map_or(target.frame, |s| s.caret()));
+                .map_or(target.frame, |s| s.caret())
+        });
         let rect = if let Some(scroll) = path
             .iter()
             .rev()
@@ -1145,6 +1383,19 @@ impl ContentHost {
             budget,
         )?;
         plan.explicit = false;
+        plan.required_witness = required_witness;
+        plan.required_evidence = required_evidence;
+        if let Some(witness) = required_witness {
+            let (_, final_clips, _) = projected(&plan.nodes, &plan.targets);
+            let projected_witness = translated_witness(&plan.nodes, &plan.targets, witness);
+            if !projected_witness.is_some_and(|w| {
+                final_clips
+                    .last()
+                    .is_some_and(|clip| contains_rect(*clip, w))
+            }) {
+                return Err(HostRevealError::NoFeasibleRegion);
+            }
+        }
         Ok(plan)
     }
 }
@@ -1414,4 +1665,135 @@ mod convergence_tests {
         );
         assert_eq!(history.len(), 2);
     }
+}
+
+fn expanded_rect(r:Rect,m:crate::Insets)->Rect {Rect::new(r.min_x()-m.left,r.min_y()-m.top,r.size.width+m.left+m.right,r.size.height+m.top+m.bottom)}
+
+fn projected_curve_region(
+    nodes: &[NodeState],
+    frames: &[Rect],
+    through: usize,
+    budget: HostRevealBudget,
+    generation: u64,
+) -> Result<Option<ClipRegion>, HostRevealError> {
+    use tekes_ui_scene::{ClipBudget, ClipShape};
+    let mut shapes = Vec::new();
+    if let Some(first) = nodes.first() {
+        for HostRevealGeometry::Curve { shape, .. } in &first.fixed_ancestor_curves {
+            if !shapes.contains(shape) { shapes.push(*shape); }
+        }
+    }
+    for (i, node) in nodes.iter().enumerate().take(through.saturating_add(1)) {
+        if node.curve_requirement && node.reveal_geometry.is_none() {
+            return Err(HostRevealError::UnsupportedLayout);
+        }
+        let Some(HostRevealGeometry::Curve { generation: current_generation, shape }) = node.reveal_geometry else {
+            continue;
+        };
+        if current_generation != generation || shape.is_empty() {
+            return Err(HostRevealError::NoFeasibleRegion);
+        }
+        let delta = Point::new(
+            frames[i].min_x() - node.frame.min_x(),
+            frames[i].min_y() - node.frame.min_y(),
+        );
+        let moved = ClipShape::normalize(shape.rect(), shape.radii(), delta)
+            .map_err(HostRevealError::Geometry)?;
+        if !shapes.contains(&moved) {
+            shapes.push(moved);
+        }
+    }
+    if shapes.is_empty() {
+        Ok(None)
+    } else {
+        ClipRegion::new(
+            &shapes,
+            ClipBudget {
+                max_shapes: budget.max_path_nodes,
+                max_work: budget.max_geometry_work,
+            },
+        )
+        .map(Some)
+        .map_err(HostRevealError::Geometry)
+    }
+}
+
+fn requires_complete_curve_landing(nodes: &[NodeState]) -> bool {
+    nodes.first().is_some_and(|node| !node.fixed_ancestor_curves.is_empty()) || nodes.iter().take(nodes.len().saturating_sub(1)).any(|node| {
+        node.curve_requirement || node.reveal_geometry.is_some()
+    })
+}
+
+fn validate_curve_constraints(
+    nodes: &[NodeState],
+    ancestor_count: usize,
+    generation: u64,
+) -> Result<(), HostRevealError> {
+    if let Some(first) = nodes.first() {
+        for HostRevealGeometry::Curve { generation: current, shape } in &first.fixed_ancestor_curves {
+            if *current != generation { return Err(HostRevealError::StalePlan); }
+            if shape.is_empty() { return Err(HostRevealError::NoFeasibleRegion); }
+        }
+    }
+    for node in nodes.iter().take(ancestor_count) {
+        if node.curve_requirement && node.reveal_geometry.is_none() {
+            return Err(HostRevealError::UnsupportedLayout);
+        }
+        if let Some(HostRevealGeometry::Curve { generation: current, shape }) = node.reveal_geometry {
+            if current != generation {
+                return Err(HostRevealError::StalePlan);
+            }
+            if shape.is_empty() {
+                return Err(HostRevealError::NoFeasibleRegion);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn translated_curve_shapes(
+    nodes: &[NodeState],
+    frames: &[Rect],
+    ancestor_count: usize,
+) -> Result<Vec<ClipShape>, HostRevealError> {
+    let mut shapes = Vec::new();
+    if let Some(first) = nodes.first() {
+        for HostRevealGeometry::Curve { shape, .. } in &first.fixed_ancestor_curves {
+            if !shapes.contains(shape) { shapes.push(*shape); }
+        }
+    }
+    for (i, node) in nodes.iter().enumerate().take(ancestor_count) {
+        if node.curve_requirement && node.reveal_geometry.is_none() {
+            return Err(HostRevealError::UnsupportedLayout);
+        }
+        let Some(HostRevealGeometry::Curve { shape, .. }) = node.reveal_geometry else {
+            continue;
+        };
+        let delta = Point::new(frames[i].min_x() - node.frame.min_x(), frames[i].min_y() - node.frame.min_y());
+        let moved = ClipShape::normalize(shape.rect(), shape.radii(), delta)
+            .map_err(HostRevealError::Geometry)?;
+        if !shapes.contains(&moved) { shapes.push(moved); }
+    }
+    Ok(shapes)
+}
+
+fn validate_rect_in_curve_shapes(rect: Rect, shapes: &[ClipShape]) -> Result<(), HostRevealError> {
+    if [rect.min_x(), rect.min_y(), rect.max_x(), rect.max_y(), rect.size.width, rect.size.height]
+        .into_iter().any(|v| !v.is_finite()) || rect.size.width <= 0. || rect.size.height <= 0. {
+        return Err(HostRevealError::NoFeasibleRegion);
+    }
+    // ClipShape currently represents only convex axis-aligned rectangles or
+    // rounded rectangles. Four-corner containment is valid for these domains;
+    // do not generalize it to arbitrary masks.
+    for shape in shapes {
+        for point in [[rect.min_x(), rect.min_y()], [rect.max_x(), rect.min_y()],
+                      [rect.min_x(), rect.max_y()], [rect.max_x(), rect.max_y()]] {
+            match shape.contains([f64::from(point[0]), f64::from(point[1])]) {
+                Ok(true) => {},
+                Ok(false) => return Err(HostRevealError::NoFeasibleRegion),
+                Err(error) => return Err(HostRevealError::Geometry(error)),
+            }
+        }
+    }
+    Ok(())
 }

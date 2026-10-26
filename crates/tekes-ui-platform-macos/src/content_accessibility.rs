@@ -24,6 +24,10 @@ pub fn content_key(
 }
 
 pub fn content_nodes(host: &ContentHost) -> Vec<AccessibilityNode> {
+    // This legacy Rect-only adapter cannot carry curve point authority.
+    if host.requires_curve_geometry() {
+        return Vec::new();
+    }
     let mut out = Vec::new();
     for node in host.semantics() {
         let Some(key) = content_key(host, node.id, None) else {
@@ -143,6 +147,9 @@ pub fn content_action(
     target: AccessibilityKey,
     action: AccessibilityAction,
 ) -> ContentResponse {
+    if host.requires_curve_geometry() {
+        return ContentResponse::default();
+    }
     let Some(id) = host.semantics().into_iter().find_map(|node| {
         (host.semantic_mount(node.id) == Some(target.component)).then_some(node.id)
     }) else {

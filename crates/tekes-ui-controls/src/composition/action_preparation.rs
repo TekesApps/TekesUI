@@ -269,7 +269,7 @@ impl ContentHost {
             &self.root, id, HostRevealBudget::default().max_path_nodes,
         ) else { return false; };
         if (0..=route.depth()).any(|depth| route.node(&self.root, depth)
-            .is_none_or(|node| node.component.requires_focus_reveal())) {
+            .is_none_or(|node| node.component.requires_focus_reveal() || node.component::<ScrollContent>().is_some())) {
             return false;
         }
         self.reveal_clock.stamp().is_ok_and(|(_, input)| input.checked_add(1).is_some())
@@ -308,11 +308,33 @@ impl ContentHost {
         self.help_focus(id, visible);
         FocusAdmission::Accepted { changed }
     }
+    /// CurveLocal qualifies only the original ordinary geometry consumer, not
+    /// prepared-effect purity. A real successful current reveal plan is required
+    /// for focus transfer; UnsupportedLayout is never a success on this path.
+    fn local_ordinary_action_admissible(&self, id: ComponentId, origin: FocusOrigin, wants_focus: bool) -> bool {
+        let Some(node) = self.scope().find_active(id) else { return false; };
+        if !self.window_active || node.component.semantics().disabled
+            || node.component.curve_subtree_capability() != CurveSubtreeCapability::Local
+            || !self.reveal_clock.stamp().is_ok_and(|(_, input)| input.checked_add(1).is_some())
+            || (self.requires_curve_geometry() && self.geometry_snapshot().is_none_or(|snapshot| !snapshot.is_current())) {
+            return false;
+        }
+        !wants_focus || self.prepare_focus(Some(id), matches!(origin, FocusOrigin::Accessibility), None, origin).is_ok()
+    }
+    fn ordinary_pointer_action_admissible(&self, id: ComponentId) -> bool {
+        if self.original_reveal_admissible(id) { return true; }
+        let wants_focus = self.scope().find_active(id).is_some_and(|node| node.component.focusable()
+            && !node.preserve_activation_focus && !node.component.preserves_activation_focus());
+        self.local_ordinary_action_admissible(id, FocusOrigin::Pointer, wants_focus)
+    }
     fn ordinary_ax_focus_admissible(&self, id: ComponentId, part: Option<usize>, action: &AccessibilityAction) -> bool {
         let candidate = matches!(action, AccessibilityAction::Focus | AccessibilityAction::Press | AccessibilityAction::SetSelection(_))
             && self.scope().find_active(id).is_some_and(|node| node.component.focusable())
             && (!matches!(action, AccessibilityAction::Press) || !self.semantic_preserves_activation_focus(id, part));
-        if !candidate { return self.original_reveal_admissible(id); }
+        if !self.original_reveal_admissible(id) {
+            return self.local_ordinary_action_admissible(id, FocusOrigin::Accessibility, candidate);
+        }
+        if !candidate { return true; }
         match self.prepare_focus(Some(id), true, None, FocusOrigin::Accessibility) {
             Ok(_) => self.reveal_clock.stamp().is_ok_and(|(_, input)| input.checked_add(1).is_some()),
             Err(HostRevealError::UnsupportedLayout) => self.original_reveal_admissible(id),
@@ -443,7 +465,7 @@ impl ContentHost {
                 // This original owner has no transaction contract. Keep its
                 // existing reducer/capture behavior; do not reject a supported
                 // pointer action merely because a focus plan cannot be staged.
-                return if !self.original_reveal_admissible(original_target)
+                return if !self.ordinary_pointer_action_admissible(original_target)
                     || self.validate_action_owners(&actions, None) == Some(false) {
                     Some(ContentResponse::default())
                 } else { None };
@@ -455,7 +477,7 @@ impl ContentHost {
                 // This original owner has no transaction contract. Keep its
                 // existing reducer/capture behavior; do not reject a supported
                 // pointer action merely because a focus plan cannot be staged.
-                return if !self.original_reveal_admissible(original_target)
+                return if !self.ordinary_pointer_action_admissible(original_target)
                     || self.validate_action_owners(&actions, None) == Some(false) {
                     Some(ContentResponse::default())
                 } else { None };
@@ -512,7 +534,7 @@ impl ContentHost {
         let capture = self.capture_epoch;
         if stamp.is_none() { return Some(ContentResponse::default()); }
         let owners_current = self.validate_action_owners(&actions, focus.as_ref()).or_else(|| {
-            if self.original_reveal_admissible(original_target) { None } else { Some(false) }
+            if focus.is_some() || self.ordinary_pointer_action_admissible(original_target) { None } else { Some(false) }
         })?;
         if !owners_current
             || self.capture_epoch != capture
@@ -537,6 +559,7 @@ impl ContentHost {
         if let Some(epoch) = next_capture {
             self.capture_epoch = epoch;
             self.captured = Some(id);
+            self.captured_mount = self.root.find_active(id).map(|node| node.mount);
         }
         self.event_bubbled = Some(bubbles);
         Some(response)
@@ -637,7 +660,7 @@ impl ContentHost {
         }];
         match self.validate_action_owners(&actions, focus.as_ref()) {
             Some(true) => {}
-            None if self.original_reveal_admissible(id) => return None,
+            None if focus.is_some() || self.ordinary_ax_focus_admissible(id, part, action) => return None,
             _ => return Some(ContentResponse::default()),
         }
         let changed = if let Some(p) = focus {
@@ -1004,14 +1027,16 @@ mod tests {
     }
 
     #[test]
-    fn ordinary_unknown_layout_fallback_keeps_explicit_ime_and_capacity_refusals() {
+    fn ordinary_predictable_layout_without_prepared_action_keeps_explicit_ime_and_capacity_refusals() {
         #[derive(Debug)]
         struct OrdinaryLayout {
             children: Vec<Content>,
             explicit_reveal: bool,
             composing: bool,
+            arranged: bool,
         }
         impl Component for OrdinaryLayout {
+            fn host_reveal_passthrough(&self) -> bool { self.arranged && self.children.len() == 1 }
             fn children(&self) -> &[Content] { &self.children }
             fn children_mut(&mut self) -> Option<&mut Vec<Content>> { Some(&mut self.children) }
             fn requires_focus_reveal(&self) -> bool { self.explicit_reveal }
@@ -1022,9 +1047,11 @@ mod tests {
                 crate::layout::MeasuredChild::new(tekes_ui_scene::Size::new(available.width, if self.children.is_empty() {40.} else {400.}))
             }
             fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+                self.arranged = false;
                 if let Some(child) = self.children.first_mut() {
                     child.arrange(text, Rect::new(frame.min_x(), frame.min_y()+300., frame.size.width, 40.), clip);
                 }
+                self.arranged = [frame, clip].into_iter().all(|rect| [rect.min_x(), rect.min_y(), rect.max_x(), rect.max_y(), rect.size.width, rect.size.height].into_iter().all(f32::is_finite) && rect.size.width >= 0. && rect.size.height >= 0.);
             }
         }
         fn ordinary(explicit_reveal: bool, composing: bool) -> ContentHost {
@@ -1032,10 +1059,11 @@ mod tests {
                 children: vec![Content::new(TARGET, ButtonContent::new("ordinary target"))],
                 explicit_reveal,
                 composing: false,
+                arranged: false,
             });
             let mut scroll = ScrollContent::new(ScrollArea::default(), body);
             scroll.viewport_height = Some(100.);
-            let old = Content::new(OLD, OrdinaryLayout { children: vec![], explicit_reveal: false, composing });
+            let old = Content::new(OLD, OrdinaryLayout { children: vec![], explicit_reveal: false, composing, arranged: false });
             let mut h = ContentHost::new(Content::new(ComponentId(9990), StackContent {
                 model: Stack { axis: Axis::Vertical, gap: 0. }, flexible_child: None,
                 children: vec![Content::new(SCROLL, scroll), old],
@@ -1047,7 +1075,7 @@ mod tests {
         }
         for explicit in [false, true] {
             let mut h = ordinary(explicit, false);
-            assert!(matches!(h.prepare_focus(Some(TARGET), true, None, FocusOrigin::Accessibility), Err(HostRevealError::UnsupportedLayout)));
+            assert_eq!(h.prepare_focus(Some(TARGET), true, None, FocusOrigin::Accessibility).is_ok(), !explicit, "the fixed arranged wrapper declares geometry, not prepared-action support");
             let response = h.accessibility_action(TARGET, None, AccessibilityAction::Press);
             assert_eq!(response.consumed, !explicit);
             assert_eq!(h.focused(), Some(if explicit {OLD} else {TARGET}));
@@ -1061,6 +1089,8 @@ mod tests {
             assert!(response.consumed);
             assert_eq!(response.changed, !explicit);
             assert_eq!(h.focused(), Some(if explicit {OLD} else {TARGET}));
+            // Tab may commit a real Scroll move; refresh normal geometry before re-entry.
+            render(&mut h);
             h.focus(None, false);
             assert_eq!(h.enter_focus(false), !explicit);
             assert_eq!(h.focused(), if explicit {None} else {Some(TARGET)});

@@ -52,6 +52,7 @@ impl ToolbarGroup {
     }
 }
 impl Component for ToolbarGroup {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
 
     fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
         ActionTransactionCompatibility::StableHooks
@@ -135,6 +136,7 @@ impl ToolbarContent {
     }
 }
 impl Component for ToolbarContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
 
     fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
         ActionTransactionCompatibility::StableHooks

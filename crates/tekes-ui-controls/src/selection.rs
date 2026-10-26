@@ -1019,7 +1019,10 @@ impl SwitchView {
         }
     }
     pub fn pointer_move(&mut self, point: Point) -> bool {
-        let next = self.window_active && self.placement.contains(point);
+        self.pointer_move_in_region(point, true)
+    }
+    pub(crate) fn pointer_move_in_region(&mut self, point: Point, inside: bool) -> bool {
+        let next = inside && self.window_active && self.placement.contains(point);
         let changed = self.hovered != next;
         self.hovered = next;
         changed
@@ -1044,6 +1047,9 @@ impl SwitchView {
         true
     }
     pub fn pointer_up(&mut self, point: Point, model: &mut Switch) -> SelectionEvent {
+        self.pointer_up_in_region(point, model, true)
+    }
+    pub(crate) fn pointer_up_in_region(&mut self, point: Point, model: &mut Switch, inside: bool) -> SelectionEvent {
         if model.disabled {
             return if self.cancel() {
                 SelectionEvent::Handled
@@ -1058,7 +1064,7 @@ impl SwitchView {
         if !self.window_active || model.disabled {
             return SelectionEvent::Handled;
         }
-        if self.placement.contains(point) && model.toggle() {
+        if inside && self.placement.contains(point) && model.toggle() {
             SelectionEvent::Changed
         } else {
             SelectionEvent::Handled

@@ -139,6 +139,92 @@ pub(crate) fn surface_kind_with_elevation_colors_at_scale(scene: &mut Scene, rec
     }
     scene.push_quad(q);
 }
+// Panel's original paint order places children between the semantic Surface
+// fill/elevation and the Surface boundary/focus decoration.
+#[derive(Clone, Copy)]
+enum PanelSurfacePhase {
+    Background,
+    Boundary,
+}
+fn panel_surface_parts(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    surface: &str,
+    canvas: bool,
+    backing_scale: f32,
+    phase: PanelSurfacePhase,
+) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    let (fill, border, shadows) = match phase {
+        PanelSurfacePhase::Background => (true, false, true),
+        PanelSurfacePhase::Boundary => (false, true, false),
+    };
+    let framed = !canvas;
+    let colors = tekes_ui_tokens::surface_palette::resolve_surface(
+        palette,
+        surface,
+        if framed { "surface-frame" } else { "content" },
+        "rest",
+    )?;
+    let radius = proposal::metric("radius", "radius-panel").expect("Surface radius");
+    for layer in proposal::elevation("panel", palette.theme)
+        .iter()
+        .rev()
+        .filter(|_| shadows)
+    {
+        let mut ink = color(palette, layer.color);
+        ink.a *= layer.alpha;
+        scene.push_shadow(
+            ShadowQuad::new(rect, ink)
+                .with_corner_radius(radius)
+                .with_offset(Point::new(layer.offset_x, layer.offset_y))
+                .with_blur_radius(layer.blur_radius)
+                .with_outset(layer.spread),
+        );
+    }
+    let mut quad = Quad::new(
+        rect,
+        if fill { colors.background } else { Rgba::new(0., 0., 0., 0.) },
+    )
+    .with_corner_radius(radius);
+    if border && framed && let Some(ink) = colors.boundary {
+        let (width, _) = decorative_border(palette, backing_scale);
+        quad = quad.with_border(width, ink);
+    }
+    scene.push_quad(quad);
+    Ok(())
+}
+
+pub(crate) fn panel_background(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    surface: &str,
+    canvas: bool,
+    backing_scale: f32,
+) {
+    panel_surface_parts(scene, rect, palette, surface, canvas, backing_scale, PanelSurfacePhase::Background)
+        .expect("validated Panel Surface");
+}
+
+pub(crate) fn panel_boundary(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    surface: &str,
+    canvas: bool,
+    backing_scale: f32,
+    focused: bool,
+) {
+    if !canvas {
+        panel_surface_parts(scene, rect, palette, surface, canvas, backing_scale, PanelSurfacePhase::Boundary)
+            .expect("validated Panel Surface");
+    }
+    if focused {
+        let radius = proposal::metric("radius", "radius-panel").expect("Panel radius");
+        focus_ring(scene, rect, palette, radius);
+    }
+}
 /// Decorative frame, following layout.json hairline policy. Never use this
 /// for a necessary control boundary or a focus/selection indicator.
 pub fn decorative_border(theme: impl Into<Palette>, backing_scale: f32) -> (f32, Rgba) {
