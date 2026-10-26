@@ -261,3 +261,5 @@ pub mod split_toolbar;
 pub mod editable_number;
 
 pub mod progress_content;
+
+pub mod status_badge_content;

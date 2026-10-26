@@ -9,6 +9,8 @@ mod actions;
 mod adapters;
 mod content_reading;
 mod content_reveal;
+mod status_badge;
+pub use status_badge::StatusBadgeContent;
 mod progress;
 pub use progress::ProgressContent;
 mod help;
@@ -379,6 +381,11 @@ pub trait Component: Debug + Any {
         _clip: Rect,
         _theme: ContentTheme,
     ) {
+    }
+    /// Hide this semantic node, promoting visible descendants to its parent.
+    /// Painting, layout and input ownership remain unchanged.
+    fn semantic_hidden(&self) -> bool {
+        false
     }
     /// Declare independent interaction, separately from keyboard focus.
     /// Pointer-only consumer controls must override this; passive decorative
@@ -1102,6 +1109,8 @@ impl Content {
         if !self.component.active() {
             return;
         }
+        let hidden = self.component.semantic_hidden();
+        if !hidden {
         out.push(SemanticNode {
             id: self.id,
             parent,
@@ -1114,11 +1123,12 @@ impl Content {
             semantics: self.help_semantics(),
             parts: self.component.semantic_parts(),
         });
+        }
         // Ordinary action content is decorative to assistive technology;
         // the action supplies one explicit accessible name and one focus.
         if !self.component.semantics().role.is_action_owner() {
             for c in self.component.children() {
-                c.semantic_nodes(Some(self.id), focused, out)
+                c.semantic_nodes(if hidden { parent } else { Some(self.id) }, focused, out)
             }
         }
     }

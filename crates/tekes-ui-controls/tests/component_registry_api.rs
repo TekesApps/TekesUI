@@ -1026,6 +1026,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::StackContent",
     );
+    public_type::<tekes_ui_controls::composition::StatusBadgeContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::StatusBadgeContent",
+    );
     public_type::<tekes_ui_controls::composition::SwitchContent>(
         &mut actual,
         "tekes_ui_controls::composition::SwitchContent",
@@ -1379,7 +1383,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_237<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_238<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

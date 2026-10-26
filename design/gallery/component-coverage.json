@@ -2963,35 +2963,32 @@
       "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
-        "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
-        "scope": "#83 accepted shared Theme rules only for tui.status-badge; no component-consumption claim.",
+        "baseline_commit": "437b5b6b41019389368c81f969bedc763875fe6b",
+        "scope": "Local main baseline plus exact received StatusBadge delta: shared solid painter/View/Content, mixed Host and actual Gallery/GPU. Not native or whole-library acceptance.",
         "claims": [
-          "Four rest-only StatusBadge Surface purposes: info/running/succeeded/failed, with the accepted seven-channel and contrast guards.",
-          "The accepted packet expansion is five shared purposes total, preserving the prior packet identities."
+          "Four original tones consume seven Surface packets in default brands and external blue/blue-inputs themes",
+          "Passive named/decorative semantics, original Composer/reading preservation and invalid-input rejection passed",
+          "Actual default/external GPU parity, clipping, normal-label readability and real Gallery page/variants passed"
         ],
         "exceptions": [
-          "The shared rules/handoff acceptance is distinct from implementation by the named component adapter."
+          "Parent supplies finite allocation; pill radius is original half-height geometry, not a new token",
+          "Normal label readability is distinct from legal narrow clipping; no arbitrary-width full-text readability claim"
         ],
         "gaps": [
-          "Actual StatusBadge #76 Content/View/Gallery/GPU consumption remains owned by its adapter issue.",
-          "Native/GPU/performance/publication.",
-          "Whole Design System or all 52 roots."
+          "native window/VoiceOver/physical IME/performance/release",
+          "historical icon_foreground override is unavailable in current ContentTheme; foreground override was tested",
+          "full text readability in arbitrary narrow allocations",
+          "Other registered roots and complete Gold7 acceptance remain separate"
         ],
         "source_identity": {
-          "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+          "scope": "Exact integrated production inputs for this bounded StatusBadge batch; full runtime manifests remain in SSD receipts.",
           "sha256": {
-            "design/theme/rules.json": "e9bc8fd9c3f9d354b66efba7081c1fea228237e00f08fc6f1f7ad72ffb01c113",
-            "scripts/generate-theme-system.py": "015a9e459db44d87ba7fb1e1784507a943dea0db979ea822d31d8951d1cf22d4",
-            "scripts/test-theme-system.py": "6fec51db4edc81f018da28040059955b8e0f3d70713ced486439f044a248772e",
-            "crates/tekes-ui-design-export/src/theme_system.rs": "cae05956335d3d8a24395c93ebec986fe57e81df17874d5e9064526c05651006",
-            "crates/tekes-ui-tokens/src/surface_palette.rs": "cec82e44119f03c56bb6e2437bd484a08d74778f663064a0a1ad15cd66777657",
-            "design/system.json": "f6b141abf83113616a14abc72e77b35afb8433d38b3f2b1b0fea76eaf3cf192b",
-            "design/system.schema.json": "f2af7574156d741a1f89cb3bcfabc27e68520df801b754f0cd5cf547c67dfe89",
-            "design/reviews/passive-status-theme-implementation-20261024/api-v1.8.0.md": "e3bb1dbb7ed6facd9715a1e6d87867819836a8ca0d0a4ff6c51f51d9d7013c25",
-            "design/reviews/progress-shared-purpose-20261024/api-v1.7.0.md": "e8965ac0231b3559f8ccbea7848b2018d94bc2b4a87016cd770a0f5be3503471",
-            "design/theme/generated/instances.json": "a12db1ea6433281acdef7bf4d01177dbc900fadfe1ad9d62a1d24501cc590aef",
-            "design/theme/generated/surface_rules.rs": "b483e31843ca53aaa7701afd0717cee6f6c56b7d42c0488fab0429b28ce99029",
-            "design/theme/artifact.lock.json": "684c8b825868b8ccb24b0aa2f494b22447bc08d35201be831d542ee5dd580190"
+            "crates/tekes-ui-controls/src/composition.rs": "f335285b35c4dce31d5a406c37e20ddc757551a546b7e2e32f748981c3b45817",
+            "crates/tekes-ui-controls/src/composition/status_badge.rs": "55160ac8e5f901e644b09dcedb11f5b227e36a6aec7ff91706e6d3b422007f41",
+            "crates/tekes-ui-controls/src/extended.rs": "6025448e349502c3011b90960f67efe990c6fc2eb2aa18c588cdec133c1cfcbf",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "c7a0bc565690e2deeda891459c8de2cf68dd00f9ba9c906b83c081f7d91a8192",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "259a952b1750821fbf7d2832b175845be6a512a86d543ff30e65f885f92dad9c",
+            "examples/composition-consumer/src/status_badge_content.rs": "58006b3eb44e1cb7261c25ebd8bbd8819591a22f5ac53ae48fec6379b62b3a9c"
           }
         },
         "evidence": [
@@ -3018,6 +3015,14 @@
             "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-rust-20261026-01/root-artifact-audit.json",
             "sha256": "3c085fbc3d52f67ba3be9653cbf21e9094809db6943c6531d4aff8d4c2917280",
             "scope": "Six local Rust/design-export/token/consumer commands passed for shared theme rules; component/GPU use excluded."
+          },
+          {
+            "issue": "#76",
+            "component": "tui.status-badge",
+            "commit": "437b5b6b41019389368c81f969bedc763875fe6b",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status76-main437b5b6-intake/root-review.json",
+            "sha256": "36e90c7bc59a4fc086610bca8be6c44a9218e94a1d77a9de5c2ba59cd74b1e5e",
+            "scope": "Baseline 437b5b6 plus frozen integration delta; review indexes actual final-main consumer/Gallery/strict/GPU rounds, preserving earlier failures."
           }
         ]
       }

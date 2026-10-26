@@ -2007,8 +2007,57 @@ impl BannerView {
 #[derive(Clone, Copy, Debug, Default)]
 pub struct StatusBadgeView {
     layout: ViewLayout,
+    surface: Option<&'static str>,
 }
 impl StatusBadgeView {
+    pub fn set_surface(&mut self, name: &str) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);
+        Ok(())
+    }
+    pub fn surface(&self) -> &'static str { self.surface.unwrap_or("canvas") }
+    /// UiCaption uses the caller's original text service; there is no intrinsic
+    /// badge height/padding. The parent owns the finite allocation.
+    pub fn measure_label(text: &mut dyn ButtonTextRenderer, label: &str, available: Size)
+        -> Result<Size, tekes_ui_tokens::surface_palette::SurfaceError> {
+        if !finite_rect(Rect::new(0., 0., available.width, available.height)) {
+            return Err(tekes_ui_tokens::surface_palette::SurfaceError::UnknownCombination);
+        }
+        let size = text.measure(label, proposal::TextRole::UiCaption, available.width);
+        Ok(Size::new(size.width.min(available.width).max(0.), size.height.min(available.height).max(0.)))
+    }
+    /// Both original View and Content delegate text geometry to this entry.
+    /// label_frame is an explicit host allocation (Gallery retains its inset).
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_labelled(&mut self, scene: &mut Scene, text: &mut dyn ButtonTextRenderer,
+        model: StatusBadge, label: &str, frame: Rect, label_frame: Rect, clip: Option<Rect>, palette: Palette,
+    ) -> Result<ViewLayout, tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.render_labelled_aligned(scene, text, model, label, frame, label_frame, clip, palette, ButtonTextAlign::Center)
+    }
+    /// Explicit existing text alignment for original hosts such as Gallery;
+    /// this does not add padding, intrinsic height, or a separate text layout.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_labelled_aligned(&mut self, scene: &mut Scene, text: &mut dyn ButtonTextRenderer,
+        model: StatusBadge, label: &str, frame: Rect, label_frame: Rect, clip: Option<Rect>, palette: Palette, align: ButtonTextAlign,
+    ) -> Result<ViewLayout, tekes_ui_tokens::surface_palette::SurfaceError> {
+        if !finite_rect(frame) || !finite_rect(label_frame) || clip.is_some_and(|r| !finite_rect(r)) {
+            return Err(tekes_ui_tokens::surface_palette::SurfaceError::UnknownCombination);
+        }
+        let colors = tekes_ui_tokens::surface_palette::resolve_surface(palette, self.surface(), crate::extended::status_badge_usage(model), "rest")?;
+        let layout = ViewLayout { frame, content: label_frame, visible: clipped(frame, clip) };
+        // Validate the entire request before committing retained layout or Scene.
+        Self::measure_label(text, label, label_frame.size)?;
+        if let Some(visible) = layout.visible {
+            scene.push_clip(visible);
+            crate::extended::status_badge_on_surface(scene, frame, palette, model, self.surface())?;
+            if !label.is_empty() && !label_frame.is_empty() {
+                text.draw(scene, label, proposal::TextRole::UiCaption, label_frame, align, colors.text);
+            }
+            scene.pop_clip();
+        }
+        self.layout = layout;
+        Ok(layout)
+    }
+
     /// Foreground ink for labels placed over the solid status badge surface.
     /// This neutral semantic role is intentionally independent of brand action colors.
     pub fn label_color(palette: Palette) -> tekes_ui_tokens::Rgba {
@@ -2034,7 +2083,7 @@ impl StatusBadgeView {
         };
         if let Some(v) = visible {
             scene.push_clip(v);
-            crate::extended::status_badge(scene, frame, palette, model);
+            crate::extended::status_badge_on_surface(scene, frame, palette, model, self.surface()).expect("validated StatusBadge Surface");
             scene.pop_clip();
         }
         self.layout

@@ -1117,6 +1117,14 @@
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
     },
     {
+      "api": "tekes_ui_controls::composition::StatusBadgeContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.status-badge"
+      ],
+      "reason": "Public passive Content adapter for the existing StatusBadge model and View; retains the same registered identity."
+    },
+    {
       "api": "tekes_ui_controls::composition::SwitchContent",
       "category": "component-adapter",
       "components": [

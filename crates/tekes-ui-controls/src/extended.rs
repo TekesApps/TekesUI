@@ -1909,22 +1909,41 @@ pub fn progress_on_surface(
     }
     Ok(())
 }
+/// Compatibility entry point; the canonical canvas packet owns all solid ink.
 pub fn status_badge(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, status: StatusBadge) {
-    let theme = theme.into();
-    let role = match status {
-        StatusBadge::Info => "status-info",
-        StatusBadge::Running => "status-running",
-        StatusBadge::Succeeded => "status-succeeded",
-        StatusBadge::Failed => "status-failed",
-    };
-    scene.push_quad(
-        Quad::new(rect, paint_color(theme, role))
-            .with_corner_radius(rect.size.height.max(0.) * 0.5),
-    );
+    status_badge_on_surface(scene, rect, theme, status, "canvas")
+        .expect("valid StatusBadge canvas allocation and packet");
 }
+/// Resolve the complete rest-only packet before writing any Scene primitive.
+/// Invalid/non-finite allocations reject atomically as an unknown combination.
+pub fn status_badge_on_surface(
+    scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, status: StatusBadge, surface: &str,
+) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    let colors = tekes_ui_tokens::surface_palette::resolve_surface(theme.into(), surface, status_badge_usage(status), "rest")?;
+    if !rect.min_x().is_finite() || !rect.min_y().is_finite()
+        || !rect.max_x().is_finite() || !rect.max_y().is_finite()
+        || !rect.size.width.is_finite() || !rect.size.height.is_finite()
+        || rect.size.width < 0. || rect.size.height < 0. {
+        return Err(tekes_ui_tokens::surface_palette::SurfaceError::UnknownCombination);
+    }
+    scene.push_quad(Quad::new(rect, colors.background)
+        .with_corner_radius(rect.size.height.max(0.) * 0.5));
+    Ok(())
+}
+pub(crate) fn status_badge_usage(status: StatusBadge) -> &'static str {
+    match status {
+        StatusBadge::Info => "status-badge-info",
+        StatusBadge::Running => "status-badge-running",
+        StatusBadge::Succeeded => "status-badge-succeeded",
+        StatusBadge::Failed => "status-badge-failed",
+    }
+}
+
+// Shared semantic token lookup for the existing extended painters.
 fn paint_color(theme: Palette, role: &str) -> Rgba {
     theme.color(role).expect("Design System semantic token")
 }
+
 fn finite_nonnegative(x: f32) -> f32 {
     if x.is_finite() { x.max(0.) } else { 0. }
 }

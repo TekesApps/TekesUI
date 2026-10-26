@@ -685,8 +685,8 @@ fn matrix_status_badges(
             cell_width,
             cell_height,
         );
-        StatusBadgeView::default().render(scene, status, frame, Some(clip), palette);
-        draw_status_badge_label(ctx.text, scene, ctx.theme, frame, label, palette);
+        StatusBadgeView::default().render_labelled_aligned(scene, ctx.text, status, label,
+            frame, frame.inset(5.), Some(clip), palette, tekes_ui_controls::ButtonTextAlign::Leading).expect("finite Gallery badge allocation");
     }
     *y += labels.len().div_ceil(columns) as f32 * (cell_height + 8.0);
 }
@@ -770,23 +770,6 @@ fn empty_state_matrix_height(ctx: &mut PageCtx<'_>, model: &EmptyState, width: f
         + 2.0 * inset
 }
 
-fn draw_status_badge_label(
-    text: &mut super::super::super::text::TextEngine,
-    scene: &mut Scene,
-    theme: tekes_ui_tokens::Theme,
-    frame: Rect,
-    label: &str,
-    palette: Palette,
-) {
-    text.proposal_label_in(
-        scene,
-        theme,
-        frame.inset(5.0),
-        label,
-        proposal::TextRole::UiCaption,
-        StatusBadgeView::label_color(palette),
-    );
-}
 
 fn status_badge_grid(ctx: &mut PageCtx<'_>, width: f32) -> (usize, f32, f32, usize) {
     let labels = ["Info", "Running", "Succeeded", "Failed"];
@@ -801,7 +784,8 @@ fn status_badge_grid(ctx: &mut PageCtx<'_>, width: f32) -> (usize, f32, f32, usi
     let cell_width = ((width - gap * (columns - 1) as f32) / columns as f32).max(0.0);
     let cell_height = labels
         .iter()
-        .map(|label| measured_caption_size(ctx, label, (cell_width - 10.0).max(0.0)).height + 10.0)
+        .map(|label| StatusBadgeView::measure_label(ctx.text, label,
+            Size::new((cell_width - 10.).max(0.), f32::MAX)).expect("finite Gallery allocation").height + 10.)
         .fold(28.0_f32, f32::max);
     let rows = labels.len().div_ceil(columns);
     (columns, cell_width, cell_height, rows)
@@ -1098,9 +1082,8 @@ pub(super) fn build(
                     cell_width,
                     cell_height,
                 );
-                ext.feedback_views
-                    .render_status_badge(scene, status, frame, Some(clip), palette);
-                draw_status_badge_label(ctx.text, scene, ctx.theme, frame, labels[index], palette);
+                ext.feedback_views.status_badge.render_labelled_aligned(scene, ctx.text, status, labels[index],
+                    frame, frame.inset(5.), Some(clip), palette, tekes_ui_controls::ButtonTextAlign::Leading).expect("finite Gallery badge allocation");
             }
             natural_bottom = y + 20.0 + rows as f32 * (cell_height + 8.0) - 8.0;
         }
@@ -1933,17 +1916,6 @@ impl FeedbackViews {
         self.banner.focus_target()
     }
 
-    pub fn render_status_badge(
-        &mut self,
-        scene: &mut Scene,
-        model: StatusBadge,
-        frame: Rect,
-        clip: Option<Rect>,
-        palette: Palette,
-    ) -> ViewLayout {
-        self.status_badge.render(scene, model, frame, clip, palette)
-    }
-
     pub fn render_progress(
         &mut self,
         scene: &mut Scene,
@@ -2340,8 +2312,8 @@ mod layout_tests {
                     let mut scene = Scene::new();
                     let mut badge = StatusBadgeView::default();
                     let mut text = TextEngine::new();
-                    badge.render(&mut scene, status, frame, None, palette);
-                    draw_status_badge_label(&mut text, &mut scene, theme, frame, label, palette);
+                    badge.render_labelled_aligned(&mut scene, &mut text, status, label,
+                        frame, frame.inset(5.), None, palette, tekes_ui_controls::ButtonTextAlign::Leading).unwrap();
 
                     let fill = scene
                         .primitives()
@@ -2907,6 +2879,41 @@ mod layout_tests {
                 }
             }
         }
+    }
+
+    #[test]
+    #[ignore = "explicit GPU acceptance under shared lock with fresh SSD output"]
+    fn issue76_original_gallery_page_and_variants_actual_gpu_match_badge_view() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Theme, surface_palette::resolve_surface};
+        let out=std::env::var_os("TEKESUI_BADGE_GALLERY_OUT").map(std::path::PathBuf::from);
+        if let Some(p)=&out { assert!(!p.exists());std::fs::create_dir_all(p).unwrap(); }
+        let entry=crate::gallery::workbench::entries().iter().find(|e|e.renderer()=="status-badge").unwrap();
+        let mut gpu=tekes_ui_render::Renderer::new_headless().expect("actual GPU required");let mut receipt=vec![];
+        for (mi,mode) in Theme::ALL.into_iter().enumerate(){for brand in 0..3{for backing in [1.,2.]{for width in [180.,320.,500.]{for variants_page in [false,true]{
+            let palette=Palette::new(mode,brand).unwrap();let mut state=StoryState::for_entry(entry);state.brand=brand;
+            let mut ext=ExtendedStory::default();let mut text=TextEngine::new();text.set_scale(backing);text.set_type_scale(1.5);text.begin_frame();let mut static_text=StaticText::new(None);
+            let mut ctx=PageCtx{theme:mode,text:&mut text,static_text:&mut static_text};let mut scene=Scene::new();
+            let body=Rect::new(12.25,20.5,width,600.);let clip=Rect::new(0.,0.,width+30.,640.);
+            if variants_page{variants(entry,&mut state,&mut ctx,&mut scene,body);}else{assert!(build(&mut ext,entry,&mut state,&mut ctx,&mut scene,body,clip,palette));}
+            let size=(((width+30.)*backing).ceil()as u32,(640.*backing)as u32);let ground=crate::gallery::Gallery::background(mode);
+            let actual=gpu.render_to_rgba8(&scene,ctx.text.atlas_mut(),size,backing,ground).unwrap();
+            let mut oracle=Scene::new();let mut badge_frames=vec![];
+            for (tone,usage,label)in [(StatusBadge::Info,"status-badge-info","Info"),(StatusBadge::Running,"status-badge-running","Running"),(StatusBadge::Succeeded,"status-badge-succeeded","Succeeded"),(StatusBadge::Failed,"status-badge-failed","Failed")]{
+                let packet=resolve_surface(palette,"canvas",usage,"rest").unwrap();let frame=scene.primitives().iter().find_map(|v|match v{Primitive::Quad(q)if q.fill==packet.background&&q.corner_radii==tekes_ui_scene::CornerRadii::uniform(q.rect.size.height*0.5)=>Some(q.rect),_=>None}).expect("actual original Gallery solid badge");
+                StatusBadgeView::default().render_labelled_aligned(&mut oracle,ctx.text,tone,label,frame,frame.inset(5.),Some(clip),palette,tekes_ui_controls::ButtonTextAlign::Leading).unwrap();badge_frames.push(frame);
+            }
+            let expected=gpu.render_to_rgba8(&oracle,ctx.text.atlas_mut(),size,backing,ground).unwrap();let blank=gpu.render_to_rgba8(&Scene::new(),ctx.text.atlas_mut(),size,backing,ground).unwrap();
+            let mut checked=0;let mut positive=0;
+            for (i,(a,b))in actual.chunks_exact(4).zip(expected.chunks_exact(4)).enumerate(){let x=((i as u32%size.0)as f32+0.5)/backing;let y=((i as u32/size.0)as f32+0.5)/backing;
+                if badge_frames.iter().any(|f|x>f.min_x()+1.&&x<f.max_x()-1.&&y>f.min_y()+1.&&y<f.max_y()-1.) {assert_eq!(a,b,"original Gallery/labelled View m{mi} b{brand} width{width} variants{variants_page} x{x} y{y}");checked+=1;if a!=&blank[i*4..i*4+4]{positive+=1;}}
+            }
+            assert!(checked>0&&positive>0);let key=format!("m{mi}-brand{brand}-w{width}-variants{variants_page}@{backing}x");
+            if let Some(p)=&out && width==320. && brand==0 {let file=std::fs::File::create(p.join(format!("{key}.png"))).unwrap();let mut encoder=png::Encoder::new(file,size.0,size.1);encoder.set_color(png::ColorType::Rgba);encoder.set_depth(png::BitDepth::Eight);encoder.write_header().unwrap().write_image_data(&actual).unwrap();}
+            receipt.push(serde_json::json!({"case":key,"original_Gallery_build":!variants_page,"original_Gallery_variants":variants_page,"four_original_badge_frames":badge_frames.len(),"checked_pixels":checked,"positive_pixels":positive}));
+        }}}}}
+        println!("actual original Gallery page/variants GPU cases: {}",receipt.len());
+        if let Some(p)=out{std::fs::write(p.join("receipt.json"),serde_json::to_vec_pretty(&serde_json::json!({"cases":receipt,"GUI_opened":false})).unwrap()).unwrap();}
     }
 
 }
