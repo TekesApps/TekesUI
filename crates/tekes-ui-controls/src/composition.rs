@@ -67,7 +67,7 @@ pub use pointer::{InputModifiers, PointerButton, PointerEvent, PointerModifiers,
 use std::{any::Any, collections::BTreeSet, fmt::Debug, ops::Range};
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Rgba, proposal};
-pub use text_query::ContentTextInput;
+pub use text_query::{ContentTextInput, ContentTextLayout};
 pub use toolbar_content::{ToolbarContent, ToolbarGroup, ToolbarPlacement};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -427,6 +427,17 @@ pub trait Component: Debug + Any {
     fn text_surface(&self) -> Option<&crate::TextSurface> {
         None
     }
+    /// Whether this original owner accepted a wheel that can update reading intent.
+    fn reading_scroll_source(&self) -> bool {
+        self.text_surface().is_some_and(|surface| surface.input.read_only
+            && !surface.input.disabled && surface.scroll.limit().y > 0.)
+    }
+    /// Complete current shaper output from this retained text owner, without
+    /// shaping, focus or editor mutation. Decorative parts have no text owner.
+    fn semantic_text_layout(&self) -> Option<ContentTextLayout> {
+        self.text_surface().and_then(ContentTextLayout::from_surface)
+    }
+    fn semantic_part_text_layout(&self, _part: usize) -> Option<ContentTextLayout> { None }
     /// Native key provenance from the retained original input owner, independent
     /// of arranged caret/clip geometry. Host key frames separately validate the
     /// original owner mount and focus epoch against blur/refocus and remount ABA.
@@ -1422,6 +1433,7 @@ pub struct ContentHost {
     reading_transaction: bool,
     last_layout: Option<(Rect, Rect)>,
     item_reveal: Option<content_reveal::ItemReveal>,
+    reading_scroll_source: Option<(ComponentId, u64)>,
     help: help::HelpState,
     event_bubbled: Option<bool>,
 }
@@ -1455,6 +1467,7 @@ impl ContentHost {
             reading_transaction: false,
             last_layout: None,
             item_reveal: None,
+            reading_scroll_source: None,
             help: Default::default(),
             event_bubbled: None,
         }
@@ -1874,7 +1887,27 @@ impl ContentHost {
     pub fn event_bubbled(&self) -> bool {
         self.event_bubbled.unwrap_or(false)
     }
+    /// Result of the most recent accepted reading wheel, not a queued callback.
+    /// A replaced, inactive, disabled or out-of-scope source is no longer current.
+    pub fn reading_scroll_source(&self) -> Option<(ComponentId, u64)> {
+        if !self.window_active { return None; }
+        let (id, mount) = self.reading_scroll_source?;
+        self.scope().find_active(id)
+            .filter(|node| node.mount == mount && !node.component.semantics().disabled)
+            .map(|_| (id, mount))
+    }
+    fn record_reading_scroll(&mut self, event: &ContentEvent, id: ComponentId, response: &ContentResponse) {
+        let ContentEvent::Scroll { position, .. } = event else { return; };
+        if response.consumed && let Some(node) = self.scope().find_active(id)
+            && node.visible().is_some_and(|frame| frame.contains(*position))
+            && node.curve_contains(*position)
+            && !node.component.semantics().disabled && node.component.reading_scroll_source()
+        {
+            self.reading_scroll_source = Some((id, node.mount));
+        }
+    }
     pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+        self.reading_scroll_source = None;
         if !self.window_active { return ContentResponse::default(); }
         self.reveal_clock.invalidate_input();
         self.event_bubbled = None;
@@ -1936,6 +1969,7 @@ impl ContentHost {
         event: &ContentEvent,
         text: &mut dyn ButtonTextRenderer,
     ) -> Result<ContentResponse, CompositionError> {
+        self.reading_scroll_source = None;
         if let Some(id) = self.root.needs_text()
             && text.text_surface_host().is_none()
         {
@@ -2063,6 +2097,7 @@ impl ContentHost {
                     .unwrap()
                     .deliver_actions(event, true, &mut self.actions);
             if response.consumed {
+                self.record_reading_scroll(event, id, &response);
                 return response;
             }
             if let Some(key) = self.overlay_command_key(event) {
@@ -2178,6 +2213,7 @@ impl ContentHost {
             }),
         };
         if let Some((id, r, bubbles)) = result {
+            self.record_reading_scroll(event, id, &r);
             self.event_bubbled = Some(bubbles);
             if matches!(routed, ContentEvent::PointerDown(_)) && event.is_primary_pointer() {
                 if r.capture_pointer {
@@ -2260,6 +2296,19 @@ impl ContentHost {
             input.carets.clear();
         }
         Some(input)
+    }
+    /// Complete original text geometry, including off-focus and offscreen text.
+    /// Zero Split panes retain logical editing state but cannot publish old layout.
+    pub fn semantic_text_layout_snapshot(&self, id: ComponentId, part: Option<usize>) -> Option<ContentTextLayout> {
+        if !self.window_active || self.split_text_geometry_hidden(id) { return None; }
+        let owner = self.scope().find_active(id)?;
+        if owner.component.semantics().disabled { return None; }
+        if let Some(part) = part {
+            if !owner.component.semantic_parts().iter().any(|p| p.index == part && !p.semantics.disabled) { return None; }
+            owner.component.semantic_part_text_layout(part)
+        } else {
+            owner.component.semantic_text_layout()
+        }
     }
     /// Published text queries for active semantic owners, including unfocused
     /// fields. Closed or background modal subtrees cannot expose editable text.
@@ -2497,6 +2546,7 @@ impl ContentHost {
         true
     }
     pub fn cancel(&mut self) {
+        self.reading_scroll_source = None;
         self.help.clear();
         self.dirty = true;
         self.modal_focus_pending = false;
@@ -2872,6 +2922,7 @@ impl ScrollContent {
     }
 }
 impl Component for ScrollContent {
+    fn reading_scroll_source(&self) -> bool { true }
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
     fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{
         let base=PreparedEffects::local_work(n)?;

@@ -930,6 +930,12 @@
       "reason": "Read-only snapshot of original Content text owner binding, text and visible caret geometry; no independent editor or component."
     },
     {
+      "api": "tekes_ui_controls::composition::ContentTextLayout",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Read-only original TextSurface/Paragraph shaped lines and full caret geometry for existing Host semantic queries; no editor, separate component or copied layout model."
+    },
+    {
       "api": "tekes_ui_controls::composition::ContentTheme",
       "category": "composition",
       "components": [],
