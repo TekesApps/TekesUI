@@ -169,3 +169,192 @@ fn original_host_reports_scene_composition_failure_explicitly() {
         Some(FragmentError::BudgetExceeded)
     );
 }
+
+struct ClockText(u64);
+impl ButtonTextRenderer for ClockText {
+    fn measure(&mut self, s: &str, r: proposal::TextRole, w: f32) -> Size {
+        Text.measure(s, r, w)
+    }
+    fn draw(
+        &mut self,
+        _: &mut Scene,
+        _: &str,
+        _: proposal::TextRole,
+        _: Rect,
+        _: ButtonTextAlign,
+        _: Rgba,
+    ) {
+    }
+    fn motion_context(&self) -> Option<tekes_ui_controls::ControlMotionContext> {
+        Some(tekes_ui_controls::ControlMotionContext {
+            now: std::time::Duration::from_millis(self.0),
+            reduced_motion: false,
+        })
+    }
+}
+#[test]
+fn retained_exit_replays_translated_immutable_keys_with_original_source() {
+    let (table, key, shape) = source();
+    let mut original = Scene::with_clip_shapes(&table);
+    original.push_shape_clip(key.clone());
+    original.push_keyed_quad(
+        Quad::new(shape.rect(), Rgba::gray(1.)).with_corner_radius(8.),
+        key,
+    );
+    original.pop_clip();
+    let mut translated = Scene::new();
+    translated
+        .try_append_fragment(
+            &original,
+            Default::default(),
+            FragmentTransform {
+                translation: Point::new(0.25, 0.5),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    let expected =
+        ClipShape::normalize(shape.rect(), shape.radii(), Point::new(0.25, 0.5)).unwrap();
+    let mut model = Popover::default();
+    let mut view = PopoverView::default();
+    view.show(&mut model, 1);
+    let mut samples = Vec::new();
+    for (millis, open) in [(0, true), (1000, true), (1000, false), (1050, false)] {
+        model.open = open;
+        let mut scene = Scene::with_clip_shapes(&table);
+        view.try_render_with_text_content(
+            &mut scene,
+            &mut ClockText(millis),
+            &model,
+            Rect::new(20., 20., 30., 20.),
+            Size::new(140., 100.),
+            Rect::new(0., 0., 500., 400.),
+            None,
+            Theme::LIGHT.into(),
+            proposal::TextRole::UiBody,
+            "translated-retained",
+            |scene, _, _| {
+                scene
+                    .try_append_fragment(&translated, Default::default(), Default::default())
+                    .unwrap();
+            },
+        )
+        .unwrap();
+        if millis > 0 {
+            let (quad, key) = scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::KeyedQuad { quad, outer } => Some((quad, outer)),
+                    _ => None,
+                })
+                .expect("nonempty retained translated keyed paint");
+            assert_eq!(scene.clip_shape(key), Ok(expected));
+            assert_eq!(quad.rect, expected.rect());
+            samples.push((open, quad.fill.a));
+        }
+    }
+    assert_eq!(samples[0].1, 1.);
+    assert_eq!(samples[1].1, 1.);
+    assert!(
+        samples[2].1 > 0. && samples[2].1 < 1.,
+        "exit alpha should animate without dropping translated keys: {samples:?}"
+    );
+}
+#[test]
+fn nested_half_ulp_translation_remains_aligned_during_original_retained_exit() {
+    let original_shape = ClipShape::normalize(
+        Rect::new(1_000_000., 0., 8., 8.),
+        CornerRadii::uniform(2.),
+        Point::new(0., 0.),
+    )
+    .unwrap();
+    let mut table = ShapeTable::new(77, 4);
+    let original_key = table.intern(original_shape).unwrap();
+    let marker = Rgba::new(0.123, 0.456, 0.789, 1.);
+    let mut fragment = Scene::with_clip_shapes(&table);
+    fragment.push_shape_clip(original_key.clone());
+    fragment.push_keyed_quad(
+        Quad::new(original_shape.rect(), Rgba::gray(1.)).with_corner_radius(2.),
+        original_key.clone(),
+    );
+    fragment.push_quad(Quad::new(original_shape.rect(), marker));
+    fragment.pop_clip();
+    for delta in [
+        Point::new(0.03125, 0.),
+        Point::new(0.03125, 0.),
+        Point::new(-999_990., 10.),
+    ] {
+        let mut next = Scene::new();
+        next.try_append_fragment(
+            &fragment,
+            Default::default(),
+            FragmentTransform {
+                translation: delta,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        fragment = next;
+    }
+    let expected = ClipShape::normalize(
+        Rect::new(10., 10., 8., 8.),
+        CornerRadii::uniform(2.),
+        Point::new(0., 0.),
+    )
+    .unwrap();
+    let mut model = Popover::default();
+    let mut view = PopoverView::default();
+    view.show(&mut model, 1);
+    for (millis, open) in [(0, true), (1000, true), (1000, false), (1050, false)] {
+        model.open = open;
+        let mut scene = Scene::new();
+        view.try_render_with_text_content(
+            &mut scene,
+            &mut ClockText(millis),
+            &model,
+            Rect::new(20., 20., 30., 20.),
+            Size::new(140., 100.),
+            Rect::new(0., 0., 500., 400.),
+            None,
+            Theme::LIGHT.into(),
+            proposal::TextRole::UiBody,
+            "nested-rounding-retained",
+            |scene, _, _| {
+                scene
+                    .try_append_fragment(&fragment, Default::default(), Default::default())
+                    .unwrap();
+            },
+        )
+        .unwrap();
+        if millis > 0 {
+            let (keyed, key) = scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::KeyedQuad { quad, outer } => Some((quad, outer)),
+                    _ => None,
+                })
+                .unwrap();
+            let ordinary = scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Quad(quad)
+                        if quad.fill.r == marker.r
+                            && quad.fill.g == marker.g
+                            && quad.fill.b == marker.b =>
+                    {
+                        Some(quad)
+                    }
+                    _ => None,
+                })
+                .unwrap();
+            assert_eq!(scene.clip_shape(key), Ok(expected));
+            assert_eq!(keyed.rect, expected.rect());
+            assert_eq!(ordinary.rect, expected.rect());
+            assert!(keyed.fill.a > 0.);
+        }
+    }
+    assert_eq!(table.get(original_key), Ok(original_shape));
+}

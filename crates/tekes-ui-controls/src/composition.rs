@@ -211,12 +211,27 @@ pub struct SemanticNode {
 pub struct ContentTheme {
     pub palette: Palette,
     pub foreground: Option<Rgba>,
+    surface: &'static str,
+}
+impl ContentTheme {
+    pub fn surface(self) -> &'static str {
+        self.surface
+    }
+    pub fn with_surface(
+        mut self,
+        name: &str,
+    ) -> Result<Self, tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
+        self.foreground = None;
+        Ok(self)
+    }
 }
 impl From<Palette> for ContentTheme {
     fn from(palette: Palette) -> Self {
         Self {
             palette,
             foreground: None,
+            surface: "canvas",
         }
     }
 }
@@ -420,6 +435,10 @@ pub trait Component: Debug + Any {
     fn event(&mut self, _event: &ContentEvent) -> ContentResponse {
         ContentResponse::default()
     }
+    /// Default semantic Surface for this component's own paint and children.
+    fn default_surface(&self) -> Option<&'static str> {
+        None
+    }
     fn child_theme(&self, theme: ContentTheme) -> ContentTheme {
         theme
     }
@@ -458,6 +477,7 @@ pub struct Content {
     label: Option<label::LabelState>,
     help: Option<String>,
     help_revision: u64,
+    surface: Option<&'static str>,
 }
 impl Content {
     pub fn new(id: ComponentId, component: impl Component) -> Self {
@@ -473,7 +493,62 @@ impl Content {
             label: None,
             help: None,
             help_revision: 0,
+            surface: None,
         }
+    }
+    pub fn with_surface(
+        mut self,
+        name: &str,
+    ) -> Result<Self, tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.set_surface(Some(name))?;
+        Ok(self)
+    }
+    pub fn set_surface(
+        &mut self,
+        name: Option<&str>,
+    ) -> Result<bool, tekes_ui_tokens::surface_palette::SurfaceError> {
+        let next = name
+            .map(tekes_ui_tokens::surface_palette::canonical_surface)
+            .transpose()?;
+        let changed = self.surface != next;
+        self.surface = next;
+        Ok(changed)
+    }
+    pub fn surface(&self) -> Option<&'static str> {
+        self.surface
+    }
+    fn resolved_theme(&self, theme: ContentTheme) -> ContentTheme {
+        let surface = self
+            .surface
+            .or_else(|| self.component.default_surface())
+            .map(|name| {
+                tekes_ui_tokens::surface_palette::canonical_surface(name)
+                    .expect("component Surface validated before host paint")
+            });
+        surface.map_or(theme, |surface| ContentTheme {
+            surface,
+            foreground: None,
+            ..theme
+        })
+    }
+    fn child_theme(&self, theme: ContentTheme) -> ContentTheme {
+        let mut child = self.component.child_theme(theme);
+        if let Some(surface) = self.surface {
+            child.surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)
+                .expect("Content Surface validated before host paint");
+        }
+        child
+    }
+    fn theme_for(&self, id: ComponentId, theme: ContentTheme) -> Option<ContentTheme> {
+        let theme = self.resolved_theme(theme);
+        if self.id == id {
+            return Some(theme);
+        }
+        let child_theme = self.child_theme(theme);
+        self.component
+            .children()
+            .iter()
+            .find_map(|child| child.theme_for(id, child_theme))
     }
     /// Opt in for this TextContent or ButtonContent label. Original component,
     /// source, accessible name and interaction state remain owned by this node.
@@ -618,6 +693,7 @@ impl Content {
         if !self.component.active() {
             return;
         }
+        let theme = self.resolved_theme(theme);
         // Offscreen ancestors may contain visible overflowing children. Walk
         // children even when their parent frame itself is outside the viewport.
         if self.visible().is_some() {
@@ -639,7 +715,7 @@ impl Content {
         if self.component.paints_children() {
             return;
         }
-        let child_theme = self.component.child_theme(theme);
+        let child_theme = self.child_theme(theme);
         if let Some(children) = self.component.children_mut() {
             // Exact compact actions can be adjacent with no gap. Keep their
             // existing outsetting keyboard ring above sibling chrome by drawing
@@ -680,9 +756,11 @@ impl Content {
         if !(self.component.active() || owned && self.component.overlay_presented()) {
             return;
         }
+        let theme = self.resolved_theme(theme);
+        let child_theme = self.child_theme(theme);
         if !owned && let Some(children) = self.component.children_mut() {
             for child in children {
-                child.paint_overlays(scene, text, theme);
+                child.paint_overlays(scene, text, child_theme);
             }
         }
         if self.component.overlay_presented() {
@@ -785,6 +863,13 @@ impl Content {
     }
     fn ids(&self, ids: &mut BTreeSet<ComponentId>) -> Result<(), CompositionError> {
         self.component.validate()?;
+        if self
+            .component
+            .default_surface()
+            .is_some_and(|name| tekes_ui_tokens::surface_palette::canonical_surface(name).is_err())
+        {
+            return Err(CompositionError::InvalidSurface);
+        }
         if !ids.insert(self.id) {
             return Err(CompositionError::DuplicateId(self.id));
         }
@@ -1037,6 +1122,7 @@ impl Content {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompositionError {
     SceneFragment(tekes_ui_scene::FragmentError),
+    InvalidSurface,
     DuplicateId(ComponentId),
     MissingId(ComponentId),
     NotContainer(ComponentId),
@@ -1069,6 +1155,7 @@ pub struct ContentHost {
     focused: Option<ComponentId>,
     captured: Option<ComponentId>,
     dirty: bool,
+    inherited_surface: &'static str,
     modal: Option<(ComponentId, Option<(ComponentId, u64)>)>,
     modal_focus_pending: bool,
     // Paint-only owner after close. It is never used as the event/focus scope.
@@ -1092,6 +1179,7 @@ impl ContentHost {
             focused: None,
             captured: None,
             dirty: true,
+            inherited_surface: "canvas",
             modal: None,
             modal_focus_pending: false,
             presented_dialog: None,
@@ -1105,6 +1193,19 @@ impl ContentHost {
             help: Default::default(),
             event_bubbled: None,
         })
+    }
+    pub fn set_inherited_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<bool, tekes_ui_tokens::surface_palette::SurfaceError> {
+        let surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
+        let changed = self.inherited_surface != surface;
+        self.inherited_surface = surface;
+        self.dirty |= changed;
+        Ok(changed)
+    }
+    pub fn inherited_surface(&self) -> &'static str {
+        self.inherited_surface
     }
     pub fn get(&self, id: ComponentId) -> Option<&Content> {
         self.root.find(id)
@@ -1319,13 +1420,16 @@ impl ContentHost {
             self.focus(ids.first().copied(), true);
         }
         let paint_id = self.presented_dialog;
-        self.root
-            .paint_except(scene, text, palette.into(), paint_id);
+        let theme = ContentTheme::from(palette)
+            .with_surface(self.inherited_surface)
+            .expect("validated inherited Surface");
+        self.root.paint_except(scene, text, theme, paint_id);
         if self.modal.is_none() {
-            self.root.paint_overlays(scene, text, palette.into());
+            self.root.paint_overlays(scene, text, theme);
         }
         if let Some(id) = paint_id {
-            if let Some(node) = self.root.find_mut(id) {
+            let dialog_theme = self.root.theme_for(id, theme);
+            if let (Some(node), Some(dialog_theme)) = (self.root.find_mut(id), dialog_theme) {
                 let presented = node
                     .component::<DialogContent>()
                     .is_some_and(DialogContent::is_presented);
@@ -1333,7 +1437,7 @@ impl ContentHost {
                     // Rebuild all glyph/image geometry in this host frame, including
                     // exit frames. OverlayPresence must never replay stale atlas slots.
                     let mut current = scene.fragment();
-                    scene_dialog_contents(node, &mut current, text, palette.into());
+                    scene_dialog_contents(node, &mut current, text, dialog_theme);
                     let (frame, clip) = (node.frame, node.clip);
                     node.component_mut::<DialogContent>()
                         .expect("dialog paint owner")
@@ -2785,8 +2889,8 @@ fn action_child_theme(action: &ButtonContent, theme: ContentTheme) -> ContentThe
         "primary-text"
     };
     ContentTheme {
-        palette: theme.palette,
         foreground: theme.palette.color(role),
+        ..theme
     }
 }
 
@@ -2803,14 +2907,16 @@ fn scene_dialog_contents(
     text: &mut dyn ButtonTextRenderer,
     theme: ContentTheme,
 ) {
+    let theme = node.resolved_theme(theme);
     scene.push_clip(node.clip);
     node.component
         .paint(scene, text, node.frame, node.clip, theme);
     scene.pop_clip();
+    let child_theme = node.child_theme(theme);
     if let Some(children) = node.component.children_mut() {
         for child in children {
-            child.paint(scene, text, theme);
-            child.paint_overlays(scene, text, theme);
+            child.paint(scene, text, child_theme);
+            child.paint_overlays(scene, text, child_theme);
         }
     }
 }
