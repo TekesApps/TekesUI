@@ -212,6 +212,7 @@ pub struct TextFieldContent {
     /// Hide visible form label/help layout for inline controls. Semantic field
     /// metadata and the original TextSurface chrome/editing remain available.
     pub show_metadata: bool,
+    inline_width_em: Option<f32>,
     focused: bool,
 }
 impl TextFieldContent {
@@ -228,9 +229,19 @@ impl TextFieldContent {
             submit_policy: TextSubmitPolicy::None,
             viewport: TextViewport::Form,
             show_metadata: true,
+            inline_width_em: None,
             focused: false,
         }
     }
+    /// A single-line original editor for compact rows. Width follows body
+    /// typography and the receiving allocation; editing/IME stay in TextSurface.
+    pub fn inline(name: impl Into<String>, value: &str, width_em: f32) -> Self {
+        let mut content = Self::new(name, value);
+        content.show_metadata = false;
+        content.inline_width_em = Some(if width_em.is_finite() { width_em.max(0.) } else { 0. });
+        content
+    }
+
     /// Selectable document text without a visible form label, help, input
     /// background or border. The parent supplies decoration and document scroll.
     /// Native text services, controlled updates and selection reuse this field.
@@ -418,6 +429,9 @@ impl Component for TextFieldContent {
         Some(&self.surface)
     }
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
+        let a = if let Some(em) = self.inline_width_em {
+            Size::new(a.width.min(t.resolved_font_size(proposal::TextRole::UiBody) * em), a.height)
+        } else { a };
         let l = self.field_layout(
             t,
             Rect::new(0., 0., a.width, a.height),

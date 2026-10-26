@@ -64,7 +64,7 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 | `tui.toolbar` | `tekes_ui_controls::Toolbar`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
 | `tui.text` | `tekes_ui_controls::TextSurface`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
 | `tui.icon` | `tekes_ui_controls::layout_view::IconView`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
-| `tui.button` | `ButtonContent → Button::render → paint::button_variant_with_interaction → Palette` | main: public state/focus/transition regressions; actual public ink/fill contrast; real Gallery theme/brand switching, pointer activation/cancel and disabled-focus regressions passed | 无新增豁免；普通几何/索引数字不要求token化 | Representative label-Button theme acceptance passed; remaining #60 content/Host functionality and native/Gold7 obligations stay separate, not claimed complete | button-public-contrast-main2a / button-gallery-main-cef receipts (SSD issue-113); candidate89 remains historical; #113/#60；#113 |
+| `tui.button` | `ButtonContent → Button::render → paint::button_variant_with_interaction → Palette` | main: public state/focus/transition regressions; actual public ink/fill contrast; real Gallery theme/brand switching, pointer activation/cancel and disabled-focus regressions passed | 无新增豁免；普通几何/索引数字不要求token化 | Representative label-Button theme acceptance passed; remaining #136 unified Button reception / #69 Host functionality and native/Gold7 obligations stay separate, not claimed complete | button-public-contrast-main2a / button-gallery-main-cef receipts (SSD issue-113); candidate89 remains historical; #113/#136/#69；#113 |
 | `tui.icon-button` | `tekes_ui_controls::extended::IconButton`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
 | `tui.link` | `tekes_ui_controls::extended::Link`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
 | `tui.text-field` | `tekes_ui_controls::TextSurface`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
@@ -111,7 +111,7 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 
 现有 `component-coverage.json` 对 `tui.button`、`tui.chart` 和 `tui.progress` 增加了 `practical_intake`，生成器将其投影到各自的 `state_coverage.practical_intake`。它记录原 Issue、接受提交、证据文件 SHA-256、明确范围、未声明范围，以及本次冻结基线下可核对的有限源码路径哈希。Chart 项明确标注这是 V5 21 文件收据中的 producer 子集；完整运行身份仍由原不可变收据约束。它只提供已接收证据的定位，不替代原状态矩阵、根验收或 maturity。
 
-- Button 当前投影包括 #113 的 72 组公共 ink/fill 对比和实际 Gallery theme/brand 切换代表状态回归；GPU、原生/VoiceOver、完整 #60 Host/content 与全部 52 根仍未由这些记录证明。
+- Button 当前投影包括 #113 的 72 组公共 ink/fill 对比和实际 Gallery theme/brand 切换代表状态回归；GPU、原生/VoiceOver、完整 #136 统一Button接收／#69 Host/content 与全部 52 根仍未由这些记录证明。
 - Chart 当前投影包括 #104 的有限 Theme/Surface 与 focus GPU 门禁；#92 Host/reveal/paired、#112 `/2` sidecar、native/IME/AX 和发布仍明确未证明。
 - 证据 commit、receipt 和原始哈希保持原身份。源码哈希匹配只说明该有限证据输入仍对应当前投影源码；不把旧 18 组观察改签为当前证据，也不将 16 个输入差异解释成功能失败。
 - 若投影源码发生变化，`practical_intake.status` 会变成 `accepted-source-subset-stale` 并给出逐路径差异；旧证据保留，但不再称为当前源码身份匹配。损坏的状态、路径、哈希或跨组件证据会被拒绝。
