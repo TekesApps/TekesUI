@@ -4,15 +4,6 @@
 // 格式的纹理，不做任何 sRGB <-> 线性转换。混合由管线的 premultiplied alpha
 // 混合状态完成。见 lib.rs 的"颜色管线"。
 
-struct Globals {
-    // 渲染目标的像素尺寸。
-    viewport_px: vec2<f32>,
-    // 逻辑点到设备像素的比例。
-    scale: f32,
-    _pad: f32,
-}
-
-@group(0) @binding(0) var<uniform> globals: Globals;
 
 struct Instance {
     // x, y, width, height，单位 pt。
@@ -27,6 +18,7 @@ struct Instance {
     // 可选阴影颜色及 offset x/y、CSS blur radius、outset，单位 pt。
     @location(5) shadow_color: vec4<f32>,
     @location(6) shadow_params: vec4<f32>,
+    @location(7) clip_meta: vec4<u32>,
 }
 
 struct VsOut {
@@ -42,6 +34,7 @@ struct VsOut {
     @location(8) @interpolate(flat) shadow_radii_px: vec4<f32>,
     @location(9) @interpolate(flat) shadow_sigma_px: f32,
     @location(10) @interpolate(flat) shadow_color: vec4<f32>,
+    @location(11) @interpolate(flat) clip_meta: vec3<u32>,
 }
 
 // 包围盒向外多画 1 个设备像素，给抗锯齿的外侧半个像素留位置。
@@ -81,16 +74,14 @@ fn vs_main(@builtin(vertex_index) vi: u32, inst: Instance) -> VsOut {
     out.shadow_radii_px = max(inst.radii * s + vec4<f32>(shadow_outset_px), vec4<f32>(0.0));
     out.shadow_sigma_px = shadow_sigma_px;
     out.shadow_color = inst.shadow_color;
+    out.clip_meta=inst.clip_meta.xyz;
     return out;
 }
 
 // 圆角矩形的有符号距离：p 相对矩形中心，b 是半宽高，r 是当前象限的圆角半径。
 // 外部为正，内部为负，单位与输入相同（这里是设备像素）。
 // b 允许为负（描边吃满整个矩形时内矩形退化），此时处处为正。
-fn sd_round_rect(p: vec2<f32>, b: vec2<f32>, r: f32) -> f32 {
-    let q = abs(p) - b + vec2<f32>(r);
-    return min(max(q.x, q.y), 0.0) + length(max(q, vec2<f32>(0.0))) - r;
-}
+
 
 fn premultiply(c: vec4<f32>) -> vec4<f32> {
     return vec4<f32>(c.rgb * c.a, c.a);
@@ -173,7 +164,8 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
 
     // 覆盖率：距离边界 0.5 像素以内线性过渡，总宽约 1 个设备像素。
     let d_outer = sd_round_rect(p, in.half_px, r);
-    let outer_cov = clamp(0.5 - d_outer, 0.0, 1.0);
+    var outer_cov = clamp(0.5 - d_outer, 0.0, 1.0);
+    if globals.clip_mode!=0u && in.clip_meta.z!=0u {outer_cov=0.0;}
 
     // 描边带：外形内缩 border_px，圆角半径也相应缩小。
     var border_cov = 0.0;
@@ -189,7 +181,30 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     // during scrolling. Composite the ring exactly once over the covered fill.
     let fill = premultiply(in.fill);
     var foreground: vec4<f32>;
-    if outer_cov < 0.99999 && inner_cov > 0.00001 {
+    if globals.clip_mode!=0u {
+        // Shadow instances have no foreground. Do not traverse the chain here;
+        // their original gradient is multiplied by the full chain once below.
+        var k=1.0;
+        if in.shadow_color.a<=0.0 {k=clip_coverage(in.position.xy,in.clip_meta.x);}
+        let u=min(outer_cov,k);
+        var i=outer_cov;
+        if in.border_px>0.0 {
+            i=0.0;
+            if in.clip_meta.y==0u {
+                let d=sd_round_rect(p,in.half_px-vec2<f32>(in.border_px),max(r-in.border_px,0.0));
+                i=clamp(0.5-d,0.0,1.0);
+            }
+        }
+        // Geometric inner subset is checked separately on CPU; this clamp only
+        // constrains the f32 AA approximation to 0<=V<=U<=1.
+        let v=min(min(i,k),u);
+        let ring=max(u-v,0.0);
+        foreground=fill*u;
+        if in.border_px>0.0 {
+            let b=premultiply(in.border_color);
+            foreground=b*ring+fill*(u-b.a*ring);
+        }
+    } else if outer_cov < 0.99999 && inner_cov > 0.00001 {
         let ring = max(outer_cov - inner_cov, 0.0);
         let border = premultiply(in.border_color) * ring;
         foreground = border + fill * (outer_cov - border.a);
@@ -220,6 +235,6 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
             in.shadow_sigma_px,
         );
     }
-    let shadow = premultiply(in.shadow_color) * shadow_coverage;
+    let shadow = premultiply(in.shadow_color) * shadow_coverage * clip_coverage(in.position.xy,0u);
     return foreground + shadow * (1.0 - foreground.a);
 }

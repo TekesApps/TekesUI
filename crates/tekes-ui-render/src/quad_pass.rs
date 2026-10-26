@@ -18,7 +18,9 @@ impl QuadPass {
     pub fn new(device: &wgpu::Device, globals_layout: &wgpu::BindGroupLayout) -> QuadPass {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("tekes quad shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("quad.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                concat!(include_str!("clip.wgsl"), "\n", include_str!("quad.wgsl")).into(),
+            ),
         });
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("tekes quad pipeline layout"),
@@ -34,6 +36,7 @@ impl QuadPass {
             4 => Float32x4,
             5 => Float32x4,
             6 => Float32x4,
+            7 => Uint32x4,
         ];
         QuadPass {
             pipeline: instanced_pipeline(

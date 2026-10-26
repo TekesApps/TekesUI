@@ -794,7 +794,7 @@ impl DialogContent {
     pub fn clear_presentation(&mut self) {
         self.presence.clear();
     }
-    pub(super) fn present(
+    pub(super) fn try_present(
         &mut self,
         destination: &mut Scene,
         text: &mut dyn ButtonTextRenderer,
@@ -802,15 +802,15 @@ impl DialogContent {
         clip: Rect,
         palette: Palette,
         current: Option<Scene>,
-    ) {
+    ) -> Result<(), tekes_ui_scene::FragmentError> {
         let context = format!("{frame:?}{clip:?}{palette:?}{}", text.backing_scale());
-        self.presence.paint(
+        self.presence.try_paint(
             destination,
             &mut TextAdapter(text),
             self.model.open,
             context,
             current,
-        );
+        )
     }
 }
 impl Component for DialogContent {

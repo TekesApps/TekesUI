@@ -21,6 +21,8 @@ pub(crate) struct QuadInstance {
     pub shadow_color: [f32; 4],
     /// offset x/y、CSS blur radius、outset，单位 pt。非阴影实例全零。
     pub shadow_params: [f32; 4],
+    /// Exact integer identity/inner-empty flag for the analytic clip path.
+    pub clip_meta: [u32; 4],
 }
 
 impl QuadInstance {
@@ -44,6 +46,7 @@ impl QuadInstance {
             params: [bw, 0.0, 0.0, 0.0],
             shadow_color: [0.0; 4],
             shadow_params: [0.0; 4],
+            clip_meta: [0; 4],
         }
     }
 
@@ -67,6 +70,7 @@ impl QuadInstance {
             radii,
             params: [0.0; 4],
             shadow_color: [color.r, color.g, color.b, color.a],
+            clip_meta: [0; 4],
             shadow_params: [
                 finite(shadow.offset.x),
                 finite(shadow.offset.y),
@@ -92,8 +96,8 @@ mod tests {
     use tekes_ui_tokens::Rgba;
 
     #[test]
-    fn instance_is_112_bytes() {
-        assert_eq!(size_of::<QuadInstance>(), 112);
+    fn instance_is_128_bytes() {
+        assert_eq!(size_of::<QuadInstance>(), 128);
     }
 
     #[test]

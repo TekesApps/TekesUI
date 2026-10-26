@@ -192,59 +192,211 @@ impl OverlayPresence {
         context: String,
         current: Option<tekes_ui_scene::Scene>,
     ) {
+        if let Err(error) = self.try_paint(destination, text, open, context, current) {
+            destination.record_composition_error(error);
+        }
+    }
+
+    pub(super) fn try_paint(
+        &mut self,
+        destination: &mut tekes_ui_scene::Scene,
+        text: &mut impl crate::ButtonTextRenderer,
+        open: bool,
+        context: String,
+        current: Option<tekes_ui_scene::Scene>,
+    ) -> Result<(), tekes_ui_scene::FragmentError> {
+        if let Some(error) = destination.composition_error().or(current
+            .as_ref()
+            .and_then(tekes_ui_scene::Scene::composition_error))
+        {
+            return Err(error);
+        }
         let clock = text.motion_context();
-        if let Some(clock) = clock {
-            self.now = self.now.max(clock.now);
+        let now = clock.map_or(self.now, |clock| self.now.max(clock.now));
+        // Stage only this component's transition. Borrow retained geometry until
+        // append commits; no mutable Host/editor or full destination clone.
+        let mut progress = self.progress.clone();
+        if !open && self.context != context
+            || current
+                .as_ref()
+                .is_some_and(tekes_ui_scene::Scene::is_empty)
+        {
+            let _ = progress.snap(0.0, now);
+            self.now = now;
+            self.progress = progress;
+            self.retained.clear();
+            self.context.clear();
+            return Ok(());
         }
-        if !open && self.context != context {
-            self.clear();
-            return;
-        }
-        if let Some(current) = current {
-            if current.is_empty() {
-                self.clear();
-                return;
-            }
-            self.retained = current;
-            self.context = context;
+        let retained = current.as_ref().unwrap_or(&self.retained);
+        if let Some(error) = retained.composition_error() {
+            return Err(error);
         }
         let target = if open { 1.0 } else { 0.0 };
         let value = if let Some(clock) = clock {
-            self.progress.retarget(
+            progress.retarget(
                 target,
                 motion_for("overlay_presence"),
-                self.now,
+                now,
                 clock.reduced_motion,
             )
         } else {
-            self.progress.snap(target, self.now)
+            progress.snap(target, now)
         }
         .unwrap_or(target)
         .clamp(0.0, 1.0) as f32;
         if value > 0.0 {
-            for primitive in self.retained.primitives() {
-                let mut primitive = primitive.clone();
-                use tekes_ui_scene::Primitive;
-                match &mut primitive {
-                    Primitive::Quad(quad) => {
-                        quad.fill.a *= value;
-                        quad.border_color.a *= value;
-                    }
-                    Primitive::Shadow(shadow) => shadow.color.a *= value,
-                    Primitive::Glyphs(run) => run.color.a *= value,
-                    Primitive::Image(image) => image.opacity *= value,
-                    Primitive::TransformedImage(image) => image.quad.opacity *= value,
-                    Primitive::PushClip(_) | Primitive::PopClip => {}
-                    // Future primitives must explicitly support retained fading.
-                    _ => return,
-                }
-                destination.push(primitive);
-            }
+            destination.try_append_fragment(
+                retained,
+                tekes_ui_scene::FragmentBudget::default(),
+                tekes_ui_scene::FragmentTransform {
+                    opacity: value,
+                    ..Default::default()
+                },
+            )?;
+        }
+        // No ordinary fallible tail. Failed append leaves retained/context/
+        // progress/clock and the entire caller Scene unchanged.
+        self.now = now;
+        self.progress = progress;
+        if let Some(current) = current {
+            self.retained = current;
+            self.context = context;
         }
         if self.progress.needs_animation() {
             text.request_animation_frame();
         } else if !open {
             self.retained.clear();
         }
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod fragment_green {
+    use super::*;
+    use tekes_ui_scene::*;
+    struct Text;
+    impl crate::ButtonTextRenderer for Text {
+        fn measure(&mut self, _: &str, _: proposal::TextRole, _: f32) -> Size {
+            Size::new(0., 0.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: crate::ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+    #[test]
+    fn retained_replay_must_not_truncate_at_shape_clip() {
+        let mut table = ShapeTable::new(1, 8);
+        let key = table
+            .intern(
+                ClipShape::normalize(
+                    Rect::new(0., 0., 40., 40.),
+                    CornerRadii::uniform(8.),
+                    Point::new(0., 0.),
+                )
+                .unwrap(),
+            )
+            .unwrap();
+        let mut current = Scene::with_clip_shapes(&table);
+        current.push_quad(Quad::new(
+            Rect::new(0., 0., 1., 1.),
+            tekes_ui_tokens::Rgba::gray(1.),
+        ));
+        current.push_shape_clip(key.clone());
+        current.push_keyed_quad(
+            Quad::new(Rect::new(0., 0., 40., 40.), tekes_ui_tokens::Rgba::gray(1.))
+                .with_corner_radius(8.),
+            key.clone(),
+        );
+        current.pop_clip();
+        let expected = current.len();
+        let mut caller = Scene::new();
+        let mut presence = OverlayPresence::default();
+        presence.paint(&mut caller, &mut Text, true, String::new(), Some(current));
+        assert_eq!(
+            caller.len(),
+            expected,
+            "retained replay truncated a shape fragment"
+        );
+        assert!(caller.clip_shape(&key).is_ok());
+    }
+}
+#[cfg(test)]
+mod atomic_presence {
+    use super::*;
+    use tekes_ui_scene::*;
+    struct Text;
+    impl crate::ButtonTextRenderer for Text {
+        fn measure(&mut self, _: &str, _: proposal::TextRole, _: f32) -> Size {
+            Size::new(1., 1.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: crate::ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+    #[test]
+    fn rejected_replay_preserves_presence_and_fallible_caller_legacy_marks_first_error() {
+        let mut presence = OverlayPresence::default();
+        let mut caller = Scene::new();
+        let mut valid = Scene::new();
+        valid.push_quad(Quad::new(
+            Rect::new(1., 1., 4., 4.),
+            tekes_ui_tokens::Rgba::gray(1.),
+        ));
+        presence
+            .try_paint(&mut caller, &mut Text, true, "old".into(), Some(valid))
+            .unwrap();
+        let mut table = ShapeTable::new(1, 1);
+        let key = table
+            .intern(
+                ClipShape::normalize(
+                    Rect::new(0., 0., 8., 8.),
+                    CornerRadii::ZERO,
+                    Point::new(0., 0.),
+                )
+                .unwrap(),
+            )
+            .unwrap();
+        let mut invalid = Scene::new();
+        invalid.require_clip_geometry(1);
+        invalid.push_shape_clip(key);
+        invalid.pop_clip();
+        let before = caller.clone();
+        let state = format!("{presence:?}");
+        let error = presence
+            .try_paint(
+                &mut caller,
+                &mut Text,
+                true,
+                "new".into(),
+                Some(invalid.clone()),
+            )
+            .unwrap_err();
+        assert_eq!(error, FragmentError::Geometry(ClipError::StaleShapeKey));
+        assert_eq!(caller, before);
+        assert_eq!(format!("{presence:?}"), state);
+        presence.paint(&mut caller, &mut Text, true, "new".into(), Some(invalid));
+        assert_eq!(caller.primitives(), before.primitives());
+        assert_eq!(caller.clip_shape_count(), before.clip_shape_count());
+        assert_eq!(caller.composition_error(), Some(error));
+        assert_eq!(format!("{presence:?}"), state);
+        caller.record_composition_error(FragmentError::UnsupportedTransform);
+        assert_eq!(caller.composition_error(), Some(error));
     }
 }

@@ -1,13 +1,6 @@
 // 实例化图像：把一张预乘 alpha 的纹理线性采样画进矩形。
 // 不做颜色转换：纹理里的数值原样当作 sRGB 编码值，和其他图元在同一个空间里混合。
 
-struct Globals {
-    viewport_px: vec2<f32>,
-    scale: f32,
-    _pad: f32,
-}
-
-@group(0) @binding(0) var<uniform> globals: Globals;
 @group(1) @binding(0) var image: texture_2d<f32>;
 @group(1) @binding(1) var image_sampler: sampler;
 
@@ -50,5 +43,5 @@ fn vs_main(@builtin(vertex_index) vi: u32, inst: Instance) -> VsOut {
 
 @fragment
 fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
-    return textureSample(image, image_sampler, in.uv) * in.opacity;
+    return textureSample(image, image_sampler, in.uv) * in.opacity * clip_coverage(in.position.xy,0u);
 }

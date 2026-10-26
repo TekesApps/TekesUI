@@ -8,15 +8,6 @@
 // 覆盖率线性混合；混合由管线的 premultiplied alpha 混合状态完成。
 // 见 lib.rs 的"颜色管线"。
 
-struct Globals {
-    // 渲染目标的像素尺寸。
-    viewport_px: vec2<f32>,
-    // 逻辑点到设备像素的比例（字形用不到，位置已经在 CPU 侧换成像素）。
-    scale: f32,
-    _pad: f32,
-}
-
-@group(0) @binding(0) var<uniform> globals: Globals;
 @group(1) @binding(0) var atlas: texture_2d_array<f32>;
 
 struct Instance {
@@ -61,8 +52,8 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     if in.src.w == 0u {
         // 单色字形：覆盖率在 alpha，颜色来自 run。
         let a = in.color.a * s.a;
-        return vec4<f32>(in.color.rgb * a, a);
+        return vec4<f32>(in.color.rgb * a, a) * clip_coverage(in.position.xy,0u);
     }
     // 彩色字形：采样值已预乘，color.a 只当不透明度。
-    return s * in.color.a;
+    return s * in.color.a * clip_coverage(in.position.xy,0u);
 }

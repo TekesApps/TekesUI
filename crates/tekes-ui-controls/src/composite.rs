@@ -1104,7 +1104,7 @@ impl MenuRuntime {
             return None;
         }
         let destination = scene;
-        let mut overlay_scene = Scene::new();
+        let mut overlay_scene = destination.fragment();
         let scene = &mut overlay_scene;
         self.compact = compact;
         self.palette = palette;
@@ -1792,6 +1792,9 @@ impl DialogView {
     }
 
     #[allow(clippy::too_many_arguments)]
+    /// Compatible entry; a returned layout does not imply successful paint.
+    /// Renderer rejects a Scene carrying any composition error.
+    #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
         scene: &mut Scene,
@@ -1803,6 +1806,38 @@ impl DialogView {
         role: proposal::TextRole,
         compact: bool,
     ) -> Option<DialogLayout> {
+        match self.try_render(
+            scene,
+            text,
+            title,
+            preview,
+            ancestor_clip,
+            palette,
+            role,
+            compact,
+        ) {
+            Ok(layout) => layout,
+            Err(error) => {
+                scene.record_composition_error(error);
+                None
+            }
+        }
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn try_render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        title: &str,
+        preview: Rect,
+        ancestor_clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+        compact: bool,
+    ) -> Result<Option<DialogLayout>, tekes_ui_scene::FragmentError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(error);
+        }
         if safe_rect(preview) != preview
             || preview.size.width <= 0.0
             || preview.size.height <= 0.0
@@ -1814,7 +1849,7 @@ impl DialogView {
             for button in &mut self.buttons {
                 button.clear_layout();
             }
-            return None;
+            return Ok(None);
         }
         let paint_context = format!(
             "{title}{preview:?}{ancestor_clip:?}{palette:?}{role:?}{compact:?}{}",
@@ -1822,11 +1857,12 @@ impl DialogView {
         );
         if !self.model.open && !self.presence.is_presented() {
             self.placement = DialogLayout::default();
-            self.presence.paint(scene, text, false, paint_context, None);
-            return None;
+            self.presence
+                .try_paint(scene, text, false, paint_context, None)?;
+            return Ok(None);
         }
         let destination = scene;
-        let mut overlay_scene = Scene::new();
+        let mut overlay_scene = destination.fragment();
         let scene = &mut overlay_scene;
         let preview = safe_rect(preview);
         let visible = clip_rect(preview, ancestor_clip);
@@ -1837,7 +1873,7 @@ impl DialogView {
             for button in &mut self.buttons {
                 button.clear_layout();
             }
-            return None;
+            return Ok(None);
         }
         let modal_width = (preview.size.width - 16.0).clamp(0.0, 460.0);
         let modal_height = preview.size.height.clamp(0.0, 200.0);
@@ -2027,24 +2063,24 @@ impl DialogView {
             buttons: button_layouts,
             focus: self.model.focus,
         };
-        if !self.window_active {
-            self.presence.settle(self.model.open);
-        }
-        self.presence.paint(
+        self.presence.try_paint(
             destination,
             text,
             self.model.open,
             paint_context,
             Some(overlay_scene),
-        );
+        )?;
+        if !self.window_active {
+            self.presence.settle(self.model.open);
+        }
         if !self.model.open {
             self.placement = DialogLayout::default();
             for button in &mut self.buttons {
                 button.clear_layout();
             }
-            return None;
+            return Ok(None);
         }
-        Some(self.placement.clone())
+        Ok(Some(self.placement.clone()))
     }
 
     pub fn pointer_move_at(&mut self, point: Point) {

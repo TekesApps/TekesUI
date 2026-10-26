@@ -127,6 +127,18 @@ fn check_size(size_px: (u32, u32), scale: f32) -> Result<(), RenderError> {
 }
 
 impl Renderer {
+    /// Analytic clip capability required by Scene::with_clip_shapes.
+    pub const fn clip_geometry_version() -> u32 {
+        crate::clip::CLIP_GEOMETRY_VERSION
+    }
+    pub fn clip_frame_budget(&self) -> crate::clip::ClipFrameBudget {
+        self.gpu.clip_budget
+    }
+    /// Explicit policy for subsequent complete-frame validation. Device limits are
+    /// checked independently and cannot be raised by this budget.
+    pub fn set_clip_frame_budget(&mut self, budget: crate::clip::ClipFrameBudget) {
+        self.gpu.clip_budget = budget;
+    }
     /// 在一个 `CAMetalLayer` 上建 surface 并初始化设备。阻塞，通常几十毫秒。
     ///
     /// `drawable_size` 是 drawable 的像素尺寸，`scale` 是 layer 的 `contentsScale`
@@ -297,6 +309,9 @@ impl Renderer {
         clear: Rgba,
         before_ui: impl FnOnce(&mut wgpu::CommandEncoder) -> Result<(), RenderError>,
     ) -> Result<(), RenderError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(RenderError::SceneComposition(error));
+        }
         self.collect_retired_images();
         let Some(s) = &self.surface else {
             return Err(RenderError::Surface("这个渲染器没有 surface".into()));
@@ -304,6 +319,8 @@ impl Renderer {
         if s.size_px.0 == 0 || s.size_px.1 == 0 {
             return Ok(());
         }
+        self.gpu
+            .prepare_frame(&self.device, scene, atlas, s.size_px, s.scale, clear)?;
         if !s.configured {
             self.configure_surface()?;
         }
@@ -459,6 +476,9 @@ impl Renderer {
         scale: f32,
         clear: Rgba,
     ) -> Result<wgpu::SubmissionIndex, RenderError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(RenderError::SceneComposition(error));
+        }
         self.collect_retired_images();
         let size = (texture.width(), texture.height());
         check_size(size, scale)?;
@@ -481,6 +501,8 @@ impl Renderer {
                 "external target timing is not supported",
             ));
         }
+        self.gpu
+            .prepare_frame(&self.device, scene, atlas, size, scale, clear)?;
         let view = texture.create_view(&Default::default());
         let mut encoder = self.device.create_command_encoder(&Default::default());
         self.encode_scene(&mut encoder, &view, size, scale, scene, atlas, clear);
@@ -509,8 +531,13 @@ impl Renderer {
         clear: Rgba,
         before_ui: impl FnOnce(&mut wgpu::CommandEncoder) -> Result<(), RenderError>,
     ) -> Result<Vec<u8>, RenderError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(RenderError::SceneComposition(error));
+        }
         self.collect_retired_images();
         check_size(size_px, scale)?;
+        self.gpu
+            .prepare_frame(&self.device, scene, atlas, size_px, scale, clear)?;
         let (w, h) = size_px;
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("tekes offscreen"),

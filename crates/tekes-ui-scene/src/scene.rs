@@ -9,11 +9,19 @@ use crate::shadow::ShadowQuad;
 #[non_exhaustive]
 pub enum Primitive {
     Quad(Quad),
+    /// Quad with explicit normalized outer identity. Enables same-key AA exclusion.
+    KeyedQuad {
+        quad: Quad,
+        outer: crate::ShapeKey,
+    },
+    /// Intersect with a key in this Scene's immutable clip registry (version 1).
+    PushShapeClip(crate::ShapeKey),
     /// Gaussian-blurred rounded-rectangle shadow, painted in painter order.
     Shadow(ShadowQuad),
     /// Intersect with the current rectangular clip, in logical points.
     PushClip(crate::Rect),
-    /// Restore the enclosing clip. Unmatched pops restore the target bounds.
+    /// Restore the enclosing clip. Legacy scenes allow unmatched pops; scenes
+    /// requiring analytic clipping must have fully balanced scopes.
     PopClip,
     /// 一串同色字形，引用 [`crate::GlyphAtlas`] 里的位图。
     Glyphs(GlyphRun),
@@ -26,16 +34,73 @@ pub enum Primitive {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Scene {
     primitives: Vec<Primitive>,
+    clip_shapes: Vec<crate::clip::ShapeSnapshot>,
+    required_clip_version: u32,
+    composition_error: Option<FragmentError>,
 }
+
+mod fragment;
+pub use fragment::{FragmentBudget, FragmentError, FragmentTransform};
 
 impl Scene {
     pub fn new() -> Scene {
         Scene::default()
     }
 
-    /// 清空图元，保留已分配的容量，便于每帧复用。
+    /// Snapshot an arrangement's immutable key inventory. Later interning does not
+    /// retroactively extend this Scene, and foreign/rebuilt table keys still reject.
+    pub fn with_clip_shapes(table: &crate::ShapeTable) -> Scene {
+        Scene {
+            clip_shapes: vec![table.snapshot()],
+            required_clip_version: 1,
+            ..Scene::default()
+        }
+    }
+    pub fn clip_shape(&self, key: &crate::ShapeKey) -> Result<crate::ClipShape, crate::ClipError> {
+        for source in &self.clip_shapes {
+            match source.get(key) {
+                Err(crate::ClipError::StaleShapeKey) => {}
+                result => return result,
+            }
+        }
+        Err(crate::ClipError::StaleShapeKey)
+    }
+    pub fn clip_shape_count(&self) -> usize {
+        self.clip_shapes.iter().map(|s| s.len()).sum()
+    }
+    /// A capability requirement, never an instruction to approximate an unknown version.
+    pub fn require_clip_geometry(&mut self, version: u32) {
+        self.required_clip_version = version;
+    }
+    pub fn required_clip_geometry(&self) -> u32 {
+        self.required_clip_version
+    }
+    pub fn push_shape_clip(&mut self, key: crate::ShapeKey) {
+        self.push(Primitive::PushShapeClip(key));
+    }
+    pub fn push_keyed_quad(&mut self, quad: Quad, outer: crate::ShapeKey) {
+        self.push(Primitive::KeyedQuad { quad, outer });
+    }
+
+    /// Clear primitives while retaining capacity and the immutable clip registry.
+    /// A changed geometry arrangement requires a new registry snapshot/Scene.
     pub fn clear(&mut self) {
         self.primitives.clear();
+        self.composition_error = None;
+    }
+
+    /// The first rejected legacy composition makes this frame non-submittable.
+    /// Layout values returned by infallible Views do not imply successful paint.
+    pub fn composition_error(&self) -> Option<FragmentError> {
+        self.composition_error
+    }
+
+    /// Preserve the first composition failure; Renderer rejects before GPU work.
+    /// Only clear() starts a new frame and resets this sticky error.
+    pub fn record_composition_error(&mut self, error: FragmentError) {
+        if self.composition_error.is_none() {
+            self.composition_error = Some(error);
+        }
     }
 
     pub fn push(&mut self, primitive: Primitive) {

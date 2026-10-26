@@ -1036,6 +1036,7 @@ impl Content {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompositionError {
+    SceneFragment(tekes_ui_scene::FragmentError),
     DuplicateId(ComponentId),
     MissingId(ComponentId),
     NotContainer(ComponentId),
@@ -1296,6 +1297,9 @@ impl ContentHost {
         clip: Rect,
         palette: Palette,
     ) -> Result<(), CompositionError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(CompositionError::SceneFragment(error));
+        }
         if self.reading_transaction {
             return Err(CompositionError::ReadingTransactionInProgress);
         }
@@ -1328,12 +1332,16 @@ impl ContentHost {
                 if presented && node.visible().is_some() {
                     // Rebuild all glyph/image geometry in this host frame, including
                     // exit frames. OverlayPresence must never replay stale atlas slots.
-                    let mut current = Scene::new();
+                    let mut current = scene.fragment();
                     scene_dialog_contents(node, &mut current, text, palette.into());
                     let (frame, clip) = (node.frame, node.clip);
                     node.component_mut::<DialogContent>()
                         .expect("dialog paint owner")
-                        .present(scene, text, frame, clip, palette, Some(current));
+                        .try_present(scene, text, frame, clip, palette, Some(current))
+                        .map_err(|error| {
+                            scene.record_composition_error(error);
+                            CompositionError::SceneFragment(error)
+                        })?;
                 } else if let Some(dialog) = node.component_mut::<DialogContent>() {
                     dialog.clear_presentation();
                 }
@@ -1352,6 +1360,9 @@ impl ContentHost {
             return Err(CompositionError::MissingLabelServices(id));
         }
         self.render_help(scene, text, frame, clip, palette);
+        if let Some(error) = scene.composition_error() {
+            return Err(CompositionError::SceneFragment(error));
+        }
         self.dirty = false;
         Ok(())
     }

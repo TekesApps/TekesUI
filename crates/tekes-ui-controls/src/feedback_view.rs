@@ -1261,6 +1261,9 @@ impl PopoverView {
     /// Text-aware content slot included in retained enter/exit paint. Change
     /// `content_identity` when caller-owned content or resource identities change.
     #[allow(clippy::too_many_arguments)]
+    /// Compatible layout-returning entry. On composition failure the Scene is
+    /// explicitly non-submittable; the returned layout is not paint success.
+    #[allow(clippy::too_many_arguments)]
     pub fn render_with_text_content<T: ButtonTextRenderer>(
         &mut self,
         scene: &mut Scene,
@@ -1275,6 +1278,45 @@ impl PopoverView {
         content_identity: &str,
         draw_content: impl FnOnce(&mut Scene, &mut T, Rect),
     ) -> OverlayLayout {
+        match self.try_render_with_text_content(
+            scene,
+            text,
+            model,
+            anchor,
+            size,
+            viewport,
+            clip,
+            palette,
+            role,
+            content_identity,
+            draw_content,
+        ) {
+            Ok(layout) => layout,
+            Err(error) => {
+                scene.record_composition_error(error);
+                self.layout
+            }
+        }
+    }
+    /// Fallible overlay composition. Rejected paint is never appended in part.
+    #[allow(clippy::too_many_arguments)]
+    pub fn try_render_with_text_content<T: ButtonTextRenderer>(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut T,
+        model: &Popover,
+        anchor: Rect,
+        size: Size,
+        viewport: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+        content_identity: &str,
+        draw_content: impl FnOnce(&mut Scene, &mut T, Rect),
+    ) -> Result<OverlayLayout, tekes_ui_scene::FragmentError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(error);
+        }
         let paint_context = format!(
             "{anchor:?}{size:?}{viewport:?}{clip:?}{palette:?}{role:?}{content_identity}{}",
             text.backing_scale()
@@ -1285,11 +1327,12 @@ impl PopoverView {
             self.logical_dismiss_frame = None;
             self.layout.visible = None;
             self.outside_armed = false;
-            self.presence.paint(scene, text, false, paint_context, None);
-            return self.layout;
+            self.presence
+                .try_paint(scene, text, false, paint_context, None)?;
+            return Ok(self.layout);
         }
         let destination = scene;
-        let mut overlay_scene = Scene::new();
+        let mut overlay_scene = destination.fragment();
         let scene = &mut overlay_scene;
         let (layout, dismiss_frame) =
             self.arrange_geometry(text, model, anchor, size, viewport, clip, role);
@@ -1334,19 +1377,19 @@ impl PopoverView {
             self.dismiss.blur();
             self.outside_armed = false;
         }
-        self.presence.paint(
+        self.presence.try_paint(
             destination,
             text,
             model.open,
             paint_context,
             Some(overlay_scene),
-        );
+        )?;
         if !model.open {
             self.layout.visible = None;
             self.dismiss_layout = None;
             self.dismiss.blur();
         }
-        self.layout
+        Ok(self.layout)
     }
     pub fn pointer_move(&mut self, point: Point) {
         self.dismiss.pointer_move_at(point);

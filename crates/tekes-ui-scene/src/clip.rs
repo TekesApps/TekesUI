@@ -317,6 +317,15 @@ impl InnerClipShape {
     }
 }
 
+// Fixed-size immutable result of sequential canonical translation. Admission
+// remains anchored to the original immutable source slot; no transform history
+// or second mutable geometry table exists.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+struct KeyDerivation {
+    source: ClipShape,
+    canonical: ClipShape,
+}
+
 #[derive(Clone, Debug)]
 pub struct ShapeKey {
     // Retaining the allocation prevents address reuse while any key can be queried.
@@ -324,12 +333,15 @@ pub struct ShapeKey {
     owner: std::sync::Arc<()>,
     generation: u64,
     index: usize,
+    // A canonical result authorized by this original source owner/generation/slot.
+    derived: Option<KeyDerivation>,
 }
 impl PartialEq for ShapeKey {
     fn eq(&self, other: &Self) -> bool {
         std::sync::Arc::ptr_eq(&self.owner, &other.owner)
             && self.generation == other.generation
             && self.index == other.index
+            && self.derived == other.derived
     }
 }
 impl Eq for ShapeKey {}
@@ -338,6 +350,7 @@ impl std::hash::Hash for ShapeKey {
         std::ptr::hash(std::sync::Arc::as_ptr(&self.owner), state);
         std::hash::Hash::hash(&self.generation, state);
         std::hash::Hash::hash(&self.index, state);
+        std::hash::Hash::hash(&self.derived, state);
     }
 }
 /// Every new table owns a fresh private allocation, independently of its supplied
@@ -372,6 +385,7 @@ impl ShapeTable {
                 owner: std::sync::Arc::clone(&self.owner),
                 generation: self.generation,
                 index,
+                derived: None,
             });
         }
         if self.shapes.len() >= self.limit {
@@ -381,6 +395,7 @@ impl ShapeTable {
             owner: std::sync::Arc::clone(&self.owner),
             generation: self.generation,
             index: self.shapes.len(),
+            derived: None,
         };
         self.shapes.push(shape);
         Ok(key)
@@ -389,10 +404,12 @@ impl ShapeTable {
         if !std::sync::Arc::ptr_eq(&key.owner, &self.owner) || key.generation != self.generation {
             return Err(ClipError::StaleShapeKey);
         }
-        self.shapes
+        let shape = self
+            .shapes
             .get(key.index)
             .copied()
-            .ok_or(ClipError::StaleShapeKey)
+            .ok_or(ClipError::StaleShapeKey)?;
+        key.resolve(shape)
     }
 }
 
@@ -950,4 +967,121 @@ fn intersections(a: Boundary, b: Boundary, limit: [f64; 4]) -> Result<Vec<[Iv; 2
         }
     }
     Ok(out)
+}
+
+// Immutable per-Scene registry. Unlike a mutable ShapeTable clone, two snapshots
+// can never diverge at an existing slot or mint keys for different geometry.
+#[derive(Clone, Debug)]
+pub(crate) struct ShapeSnapshot {
+    owner: std::sync::Arc<()>,
+    generation: u64,
+    shapes: Vec<ClipShape>,
+}
+impl PartialEq for ShapeSnapshot {
+    fn eq(&self, other: &Self) -> bool {
+        std::sync::Arc::ptr_eq(&self.owner, &other.owner)
+            && self.generation == other.generation
+            && self.shapes == other.shapes
+    }
+}
+impl ShapeSnapshot {
+    pub(crate) fn get(&self, key: &ShapeKey) -> Result<ClipShape> {
+        if !std::sync::Arc::ptr_eq(&self.owner, &key.owner) || self.generation != key.generation {
+            return Err(ClipError::StaleShapeKey);
+        }
+        let shape = self
+            .shapes
+            .get(key.index)
+            .copied()
+            .ok_or(ClipError::StaleShapeKey)?;
+        key.resolve(shape)
+    }
+    pub(crate) fn len(&self) -> usize {
+        self.shapes.len()
+    }
+    pub(crate) fn same_owner(&self, other: &Self) -> bool {
+        std::sync::Arc::ptr_eq(&self.owner, &other.owner)
+    }
+    pub(crate) fn compatible(&self, other: &Self) -> bool {
+        self.generation == other.generation
+            && self.shapes.iter().zip(&other.shapes).all(|(a, b)| a == b)
+    }
+}
+impl ShapeKey {
+    fn resolve(&self, source: ClipShape) -> Result<ClipShape> {
+        match self.derived {
+            Some(derived) if derived.source != source => Err(ClipError::StaleShapeKey),
+            Some(derived) => Ok(derived.canonical),
+            None => Ok(source),
+        }
+    }
+    /// Apply this step to the already resolved canonical tuple, exactly like
+    /// ordinary primitive coordinates. Never sum deltas against an older origin.
+    pub(crate) fn translated(&self, current: ClipShape, delta: Point) -> Result<Self> {
+        let source = match self.derived {
+            Some(derived) if derived.canonical != current => return Err(ClipError::StaleShapeKey),
+            Some(derived) => derived.source,
+            None => current,
+        };
+        let canonical = ClipShape::normalize(current.rect(), current.radii(), delta)?;
+        let mut result = self.clone();
+        result.derived = (canonical != source).then_some(KeyDerivation { source, canonical });
+        Ok(result)
+    }
+}
+
+impl ShapeTable {
+    pub(crate) fn snapshot(&self) -> ShapeSnapshot {
+        ShapeSnapshot {
+            owner: std::sync::Arc::clone(&self.owner),
+            generation: self.generation,
+            shapes: self.shapes.clone(),
+        }
+    }
+}
+#[cfg(test)]
+impl ShapeSnapshot {
+    pub(crate) fn conflicting_for_test(&self, generation: bool) -> Self {
+        let mut result = self.clone();
+        if generation {
+            result.generation = result.generation.wrapping_add(1);
+        } else {
+            result.shapes[0] = ClipShape::normalize(
+                Rect::new(4., 4., 8., 8.),
+                CornerRadii::ZERO,
+                Point::new(0., 0.),
+            )
+            .unwrap();
+        }
+        result
+    }
+}
+#[cfg(test)]
+mod sequential_key_authority {
+    use super::*;
+    #[test]
+    fn immutable_derived_geometry_cannot_bypass_original_source_slot_tuple() {
+        let source = ClipShape::normalize(
+            Rect::new(1_000_000., 0., 8., 8.),
+            CornerRadii::uniform(2.),
+            Point::new(0., 0.),
+        )
+        .unwrap();
+        let mut table = ShapeTable::new(9, 1);
+        let original = table.intern(source).unwrap();
+        let derived = original.translated(source, Point::new(0.0625, 0.)).unwrap();
+        let mut conflicting = table.snapshot();
+        conflicting.shapes[0] = ClipShape::normalize(
+            Rect::new(f32::from_bits(0x4974_2402), 0., 8., 8.),
+            CornerRadii::uniform(2.),
+            Point::new(0., 0.),
+        )
+        .unwrap();
+        assert_eq!(conflicting.get(&derived), Err(ClipError::StaleShapeKey));
+        assert_eq!(
+            table.get(derived).unwrap().rect().origin.x.to_bits(),
+            0x49742401
+        );
+        assert_eq!(table.get(original), Ok(source));
+    }
 }

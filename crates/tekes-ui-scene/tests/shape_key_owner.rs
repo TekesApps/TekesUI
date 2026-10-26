@@ -85,3 +85,24 @@ fn supported_numeric_domain_is_translation_dependent() {
         Err(ClipError::UnsupportedNumericRange)
     );
 }
+
+#[test]
+fn scene_snapshot_is_immutable_and_rejects_foreign_and_late_keys() {
+    let mut a = ShapeTable::new(7, 3);
+    let key = a.intern(shape(3.)).unwrap();
+    let scene = tekes_ui_scene::Scene::with_clip_shapes(&a);
+    let copy = scene.clone();
+    assert_eq!(scene.clip_shape(&key), Ok(shape(3.)));
+    assert_eq!(copy.clip_shape(&key), Ok(shape(3.)));
+    let later = a.intern(shape(4.)).unwrap();
+    assert_eq!(scene.clip_shape(&later), Err(ClipError::StaleShapeKey));
+    let mut other = ShapeTable::new(7, 3);
+    let foreign = other.intern(shape(3.)).unwrap();
+    assert_eq!(copy.clip_shape(&foreign), Err(ClipError::StaleShapeKey));
+    drop(a);
+    assert_eq!(
+        scene.clip_shape(&key),
+        Ok(shape(3.)),
+        "snapshot intentionally retains old immutable geometry"
+    );
+}

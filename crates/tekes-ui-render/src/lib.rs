@@ -123,6 +123,7 @@
 //!   （`NSWindowDidChangeOcclusionState`），否则会一直停留在旧画面。
 //! - 所有调用都在主线程。
 
+mod clip;
 mod common;
 mod error;
 mod frame;
@@ -135,6 +136,7 @@ mod renderer;
 pub mod stats;
 mod timing;
 
+pub use clip::{CLIP_GEOMETRY_VERSION, ClipFrameBudget};
 pub use error::RenderError;
 pub use renderer::Renderer;
 pub use stats::{DROP_THRESHOLD, Distribution, DropReport, FrameSample, FrameStats};

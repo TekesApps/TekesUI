@@ -7,6 +7,7 @@
 //! 所以 painter's order 跨种类成立（文字压在 quad 上、另一个 quad 又压在文字上）。
 //! 字形批里允许多个 `GlyphRun`（颜色在实例里）；图像批要求是同一张图。
 
+use crate::clip::{ClipFrame, ClipFrameBudget};
 use crate::common::GlobalsBinding;
 use crate::error::RenderError;
 use crate::glyph_pass::{GlyphInstance, GlyphPass};
@@ -14,12 +15,12 @@ use crate::image_pass::{ImageInstance, ImagePass};
 use crate::instance::QuadInstance;
 use crate::quad_pass::QuadPass;
 use std::ops::Range;
-use tekes_ui_scene::{GlyphAtlas, ImageId, Primitive, Rect, Scene};
+use tekes_ui_scene::{GlyphAtlas, ImageId, Primitive, Scene};
 use tekes_ui_tokens::Rgba;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Batch {
-    Clip([u32; 4]),
+    Clip([u32; 4], u32),
     Quads(Range<u32>),
     Glyphs(Range<u32>),
     Image(ImageId, Range<u32>),
@@ -31,6 +32,8 @@ pub(crate) struct Pipelines {
     pub glyph: GlyphPass,
     pub image: ImagePass,
     batches: Vec<Batch>,
+    prepared: Option<ClipFrame>,
+    pub clip_budget: ClipFrameBudget,
 }
 
 /// 每帧要画的各类实例数，测试用。
@@ -54,7 +57,35 @@ impl Pipelines {
             glyph,
             image,
             batches: Vec::new(),
+            prepared: None,
+            clip_budget: ClipFrameBudget::for_device(&device.limits()),
         }
+    }
+
+    /// Pure preflight before callbacks, atlas sync, buffer writes or draw encoding.
+    pub fn prepare_frame(
+        &mut self,
+        device: &wgpu::Device,
+        scene: &Scene,
+        atlas: &GlyphAtlas,
+        size: (u32, u32),
+        scale: f32,
+        clear: Rgba,
+    ) -> Result<(), RenderError> {
+        self.prepared = None;
+        let frame = ClipFrame::prepare(
+            scene,
+            atlas,
+            size,
+            scale,
+            self.clip_budget,
+            &device.limits(),
+        )?;
+        if frame.analytic {
+            crate::clip::validate_color(clear)?;
+        }
+        self.prepared = Some(frame);
+        Ok(())
     }
 
     pub fn register_image(
@@ -84,6 +115,10 @@ impl Pipelines {
         clear: Rgba,
         timestamp_writes: Option<wgpu::RenderPassTimestampWrites<'_>>,
     ) -> FrameCounts {
+        let prepared = self
+            .prepared
+            .take()
+            .expect("complete-frame preflight before encoding");
         // 先让 GPU 纹理跟上 CPU 页。write_texture 排在本次提交所有命令缓冲之前。
         self.glyph.sync(device, queue, atlas);
         let atlas_layers = self.glyph.atlas.as_ref().map_or(0, |t| t.layers());
@@ -92,29 +127,43 @@ impl Pipelines {
         self.glyph.staging.clear();
         self.image.staging.clear();
         self.batches.clear();
-        let full = Rect::new(0.0, 0.0, size_px.0 as f32 / scale, size_px.1 as f32 / scale);
-        let mut clips = vec![full];
-        for p in scene.primitives() {
+        let mut last_clip = ([0, 0, size_px.0, size_px.1], 0);
+        for (index, p) in scene.primitives().iter().enumerate() {
+            let clip = prepared.states[index];
+            let binding = (clip.scissor, clip.binding_slot);
+            if !matches!(
+                p,
+                Primitive::PushClip(_) | Primitive::PushShapeClip(_) | Primitive::PopClip
+            ) && binding != last_clip
+            {
+                self.batches.push(Batch::Clip(binding.0, binding.1));
+                last_clip = binding;
+            }
             match p {
-                Primitive::PushClip(rect) => {
-                    let parent = *clips.last().unwrap();
-                    let clip = parent
-                        .intersection(rect)
-                        .unwrap_or(Rect::new(0.0, 0.0, 0.0, 0.0));
-                    clips.push(clip);
-                    self.batches
-                        .push(Batch::Clip(scissor(clip, scale, size_px)));
+                Primitive::PushClip(_) | Primitive::PushShapeClip(_) | Primitive::PopClip => {
+                    self.batches.push(Batch::Clip(binding.0, binding.1));
+                    last_clip = binding;
                 }
-                Primitive::PopClip => {
-                    if clips.len() > 1 {
-                        clips.pop();
-                    }
-                    self.batches
-                        .push(Batch::Clip(scissor(*clips.last().unwrap(), scale, size_px)));
-                }
-                Primitive::Quad(q) => {
+                Primitive::Quad(q) | Primitive::KeyedQuad { quad: q, .. } => {
                     let start = self.quad.staging.len() as u32;
-                    self.quad.staging.push(QuadInstance::from_quad(q));
+                    let mut instance = QuadInstance::from_quad(q);
+                    if let Some(shape) = clip.quad_shape {
+                        instance.radii = shape.radii().to_array();
+                        if clip.inner_empty && q.border_width > 0. {
+                            // Once the exact CPU inner domain is empty, coverage
+                            // is independent of further border width. Encode an
+                            // equivalent finite width, keeping the explicit flag.
+                            instance.params[0] =
+                                shape.rect().size.width.min(shape.rect().size.height) * 0.5;
+                        }
+                    }
+                    instance.clip_meta = [
+                        clip.outer_id,
+                        u32::from(clip.inner_empty),
+                        u32::from(clip.quad_shape.is_some_and(|s| s.is_empty())),
+                        0,
+                    ];
+                    self.quad.staging.push(instance);
                     push_batch(&mut self.batches, Kind::Quads, start, start + 1);
                 }
                 Primitive::Shadow(shadow) => {
@@ -162,7 +211,7 @@ impl Pipelines {
                     );
                 }
                 // Primitive 是 non_exhaustive，新增的图元种类在这里要显式处理。
-                _ => {}
+                _ => unreachable!("unsupported primitive rejected by preflight"),
             }
         }
 
@@ -173,7 +222,7 @@ impl Pipelines {
         self.image
             .instances
             .write(device, queue, &self.image.staging);
-        self.globals.write(queue, size_px, scale);
+        self.globals.write(device, queue, size_px, scale, &prepared);
 
         // clear 是非预乘 sRGB，目标里存的是预乘值，所以清屏色也要预乘。
         let a = clear.a as f64;
@@ -199,10 +248,15 @@ impl Pipelines {
             occlusion_query_set: None,
             multiview_mask: None,
         });
-        pass.set_bind_group(0, &self.globals.bind_group, &[]);
+        pass.set_bind_group(0, &self.globals.bind_group, &[0]);
         let mut visible = true;
         for b in &self.batches {
-            if let Batch::Clip([x, y, w, h]) = b {
+            if let Batch::Clip([x, y, w, h], slot) = b {
+                pass.set_bind_group(
+                    0,
+                    &self.globals.bind_group,
+                    &[slot * self.globals.alignment],
+                );
                 visible = *w > 0 && *h > 0;
                 if visible {
                     pass.set_scissor_rect(*x, *y, *w, *h);
@@ -213,7 +267,7 @@ impl Pipelines {
                 continue;
             }
             match b {
-                Batch::Clip(_) => unreachable!(),
+                Batch::Clip(_, _) => unreachable!(),
                 Batch::Quads(r) => {
                     pass.set_pipeline(&self.quad.pipeline);
                     pass.set_vertex_buffer(0, self.quad.instances.buffer().slice(..));
@@ -246,24 +300,10 @@ impl Pipelines {
             draws: self
                 .batches
                 .iter()
-                .filter(|b| !matches!(b, Batch::Clip(_)))
+                .filter(|b| !matches!(b, Batch::Clip(_, _)))
                 .count(),
         }
     }
-}
-
-fn scissor(rect: Rect, scale: f32, size: (u32, u32)) -> [u32; 4] {
-    let x = (rect.min_x() * scale).ceil().max(0.0).min(size.0 as f32) as u32;
-    let y = (rect.min_y() * scale).ceil().max(0.0).min(size.1 as f32) as u32;
-    let right = (rect.max_x() * scale)
-        .floor()
-        .max(x as f32)
-        .min(size.0 as f32) as u32;
-    let bottom = (rect.max_y() * scale)
-        .floor()
-        .max(y as f32)
-        .min(size.1 as f32) as u32;
-    [x, y, right - x, bottom - y]
 }
 
 enum Kind {
