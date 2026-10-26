@@ -120,6 +120,23 @@ impl BarChart {
         self.set_from_key(next)
     }
 
+    /// Original horizontal slots, independent of whether vertical label rows fit.
+    pub(crate) fn label_widths(&self, bounds: Rect) -> Option<(f32, f32)> {
+        let bounds = finite_bounds(bounds)?;
+        if self.data.is_empty() {
+            return None;
+        }
+        let outer = token_metric("spacing", "space-regular");
+        let width = (bounds.size.width - outer * 2.0).max(0.0);
+        if width <= 0.0 {
+            return None;
+        }
+        let slot_width = width / self.data.len() as f32;
+        let gap = token_metric("spacing", "space-tight");
+        let bar_width = (slot_width - gap).max(0.0).min(slot_width * 0.72);
+        Some((bar_width, slot_width))
+    }
+
     /// Calculate bar and label geometry from the actual data and current bounds.
     /// Empty, non-finite, and degenerate bounds produce safe empty geometry.
     pub fn layout(&self, bounds: Rect) -> ChartGeometry {
@@ -190,8 +207,7 @@ impl BarChart {
         let span = (max_value - min_value).max(f64::EPSILON);
         let baseline = (plot.min_y() as f64 + (max_value / span) * plot.size.height as f64) as f32;
 
-        let slot_width = plot.size.width / self.data.len() as f32;
-        let bar_width = (slot_width - label_gap).max(0.0).min(slot_width * 0.72);
+        let (bar_width, slot_width) = self.label_widths(bounds).expect("nonempty chart plot");
         let value_label_height = label_height * 0.5;
         let category_label_height = label_height - value_label_height;
         let mut bars = Vec::with_capacity(self.data.len());
@@ -233,24 +249,28 @@ impl BarChart {
                 focus_visible: self.focus_visible && self.selected == Some(index),
             });
         }
-        ChartGeometry {
-            bounds,
-            plot,
-            baseline,
-            bars,
-            invalid_count: self
-                .data
-                .iter()
-                .filter(|datum| !datum.value.is_finite())
-                .count(),
-        }
+        finalize_category_row(
+            ChartGeometry {
+                bounds,
+                plot,
+                baseline,
+                bars,
+                invalid_count: self
+                    .data
+                    .iter()
+                    .filter(|datum| !datum.value.is_finite())
+                    .count(),
+            },
+            label_gap,
+        )
     }
 
     /// Layout using the host text shaper's actual caption line heights.
     ///
     /// This is the production path for views that shape labels before painting:
     /// value labels are given a row above/below the plot endpoint, and category
-    /// labels receive their own row after the plot. The older scale-only API is
+    /// labels receive their own row after all lower value labels. Unused upper
+    /// space is omitted for nonpositive data. The older scale-only API is
     /// retained for consumers that do not provide shaping metrics.
     pub fn layout_with_label_metrics(
         &self,
@@ -277,93 +297,127 @@ impl BarChart {
             (bounds.size.width - outer * 2.0).max(0.0),
             (bounds.size.height - outer * 2.0).max(0.0),
         );
-        let reserved = value_height + category_height + gap * 2.0;
-        let plot_height = (inset.size.height - reserved).max(0.0);
-        let plot = Rect::new(
-            inset.min_x(),
-            inset.min_y() + value_height + gap,
-            inset.size.width,
-            plot_height,
-        );
-        if plot.is_empty() {
-            return ChartGeometry {
-                bounds,
-                plot,
-                ..ChartGeometry::default()
-            };
-        }
-        let max_abs = self
+        let has_positive = self
             .data
             .iter()
-            .map(|d| d.value.abs())
-            .filter(|v| v.is_finite())
-            .fold(0.0_f64, f64::max);
-        let (min_value, max_value) = if max_abs == 0.0 {
-            (0.0, 0.0)
+            .any(|d| d.value.is_finite() && d.value > 0.0);
+        let has_nonpositive = self
+            .data
+            .iter()
+            .any(|d| d.value.is_finite() && d.value <= 0.0);
+        let top = if has_positive || !has_nonpositive {
+            value_height + gap
         } else {
-            self.data.iter().filter(|d| d.value.is_finite()).fold(
-                (0.0_f64, 0.0_f64),
-                |(min, max), d| {
-                    let value = d.value / max_abs;
-                    (min.min(value), max.max(value))
-                },
-            )
+            0.0
         };
-        let span = (max_value - min_value).max(f64::EPSILON);
-        let baseline = (plot.min_y() as f64 + (max_value / span) * plot.size.height as f64) as f32;
-        let slot_width = plot.size.width / self.data.len() as f32;
-        let bar_width = (slot_width - gap).max(0.0).min(slot_width * 0.72);
-        let category_y = plot.max_y() + gap;
-        let bars = self
-            .data
-            .iter()
-            .enumerate()
-            .filter(|(_, d)| d.value.is_finite())
-            .map(|(index, datum)| {
-                let normalized = if max_abs == 0.0 {
-                    0.0
-                } else {
-                    datum.value / max_abs
+        let mut bottom = if has_nonpositive { value_height } else { 0.0 };
+        // One monotonic promotion handles positive endpoints rounded onto baseline.
+        for _ in 0..2 {
+            let reserved = if bottom == 0.0 && top > 0.0 {
+                value_height + category_height + gap * 2.0
+            } else {
+                top + bottom + category_height + gap
+            };
+            let plot_height = (inset.size.height - reserved).max(0.0);
+            let plot = Rect::new(
+                inset.min_x(),
+                inset.min_y() + top,
+                inset.size.width,
+                plot_height,
+            );
+            if plot.is_empty() {
+                return ChartGeometry {
+                    bounds,
+                    plot,
+                    ..ChartGeometry::default()
                 };
-                let value_y =
-                    (baseline as f64 - normalized / span * plot.size.height as f64) as f32;
-                let x = plot.min_x() + slot_width * index as f32 + (slot_width - bar_width) * 0.5;
-                let value_label_y = if value_y < baseline {
-                    value_y - value_height
-                } else {
-                    value_y
-                };
-                BarGeometry {
-                    index,
-                    label: datum.label.clone(),
-                    value: datum.value,
-                    rect: Rect::new(
-                        x,
-                        value_y.min(baseline),
-                        bar_width,
-                        (baseline - value_y).abs(),
-                    ),
-                    value_label: Rect::new(x, value_label_y, bar_width, value_height),
-                    category_label: Rect::new(
-                        plot.min_x() + slot_width * index as f32,
-                        category_y,
-                        slot_width,
-                        category_height,
-                    ),
-                    selected: self.selected == Some(index),
-                    hovered: self.hovered == Some(index),
-                    focused: self.focused && self.selected == Some(index),
-                    focus_visible: self.focus_visible && self.selected == Some(index),
-                }
-            })
-            .collect();
-        ChartGeometry {
-            bounds,
-            plot,
-            baseline,
-            bars,
-            invalid_count: self.data.iter().filter(|d| !d.value.is_finite()).count(),
+            }
+            let max_abs = self
+                .data
+                .iter()
+                .map(|d| d.value.abs())
+                .filter(|v| v.is_finite())
+                .fold(0.0_f64, f64::max);
+            let (min_value, max_value) = if max_abs == 0.0 {
+                (0.0, 0.0)
+            } else {
+                self.data.iter().filter(|d| d.value.is_finite()).fold(
+                    (0.0_f64, 0.0_f64),
+                    |(min, max), d| {
+                        let value = d.value / max_abs;
+                        (min.min(value), max.max(value))
+                    },
+                )
+            };
+            let span = (max_value - min_value).max(f64::EPSILON);
+            let baseline =
+                (plot.min_y() as f64 + (max_value / span) * plot.size.height as f64) as f32;
+            let (bar_width, slot_width) = self.label_widths(bounds).expect("nonempty chart plot");
+            let category_y = plot.max_y() + gap;
+            let bars: Vec<BarGeometry> = self
+                .data
+                .iter()
+                .enumerate()
+                .filter(|(_, d)| d.value.is_finite())
+                .map(|(index, datum)| {
+                    let normalized = if max_abs == 0.0 {
+                        0.0
+                    } else {
+                        datum.value / max_abs
+                    };
+                    let value_y =
+                        (baseline as f64 - normalized / span * plot.size.height as f64) as f32;
+                    let x =
+                        plot.min_x() + slot_width * index as f32 + (slot_width - bar_width) * 0.5;
+                    let value_label_y = if value_y < baseline {
+                        value_y - value_height
+                    } else {
+                        value_y
+                    };
+                    BarGeometry {
+                        index,
+                        label: datum.label.clone(),
+                        value: datum.value,
+                        rect: Rect::new(
+                            x,
+                            value_y.min(baseline),
+                            bar_width,
+                            (baseline - value_y).abs(),
+                        ),
+                        value_label: Rect::new(x, value_label_y, bar_width, value_height),
+                        category_label: Rect::new(
+                            plot.min_x() + slot_width * index as f32,
+                            category_y,
+                            slot_width,
+                            category_height,
+                        ),
+                        selected: self.selected == Some(index),
+                        hovered: self.hovered == Some(index),
+                        focused: self.focused && self.selected == Some(index),
+                        focus_visible: self.focus_visible && self.selected == Some(index),
+                    }
+                })
+                .collect();
+            if bottom == 0.0
+                && bars
+                    .iter()
+                    .any(|bar| bar.value_label.max_y() > plot.max_y())
+            {
+                bottom = value_height;
+                continue;
+            }
+            return finalize_category_row(
+                ChartGeometry {
+                    bounds,
+                    plot,
+                    baseline,
+                    bars,
+                    invalid_count: self.data.iter().filter(|d| !d.value.is_finite()).count(),
+                },
+                gap,
+            );
         }
+        unreachable!("one bottom-row promotion is sufficient")
     }
 
     fn layout_zero_values(
@@ -374,8 +428,7 @@ impl BarChart {
         label_height: f32,
         label_gap: f32,
     ) -> ChartGeometry {
-        let slot_width = plot.size.width / self.data.len() as f32;
-        let bar_width = (slot_width - label_gap).max(0.0).min(slot_width * 0.72);
+        let (bar_width, slot_width) = self.label_widths(bounds).expect("nonempty chart plot");
         let value_label_height = label_height * 0.5;
         let category_label_height = label_height - value_label_height;
         let bars = self
@@ -404,17 +457,20 @@ impl BarChart {
                 }
             })
             .collect();
-        ChartGeometry {
-            bounds,
-            plot,
-            baseline: plot.center().y,
-            bars,
-            invalid_count: self
-                .data
-                .iter()
-                .filter(|datum| !datum.value.is_finite())
-                .count(),
-        }
+        finalize_category_row(
+            ChartGeometry {
+                bounds,
+                plot,
+                baseline: plot.center().y,
+                bars,
+                invalid_count: self
+                    .data
+                    .iter()
+                    .filter(|datum| !datum.value.is_finite())
+                    .count(),
+            },
+            label_gap,
+        )
     }
 
     fn is_valid(&self, index: usize) -> bool {
@@ -583,6 +639,21 @@ fn paint_chart_geometry(
         border_width,
     );
     scene.push_quad(Quad::new(baseline, baseline_color));
+    geometry
+}
+
+// The original geometry owner places categories after actual lower value ink slots.
+// Raw layout already reserved V below categories; measured layout reserves each side.
+fn finalize_category_row(mut geometry: ChartGeometry, gap: f32) -> ChartGeometry {
+    let lower_edge = geometry
+        .bars
+        .iter()
+        .fold(geometry.plot.max_y(), |edge, bar| {
+            edge.max(bar.value_label.max_y())
+        });
+    for bar in &mut geometry.bars {
+        bar.category_label.origin.y = lower_edge + gap;
+    }
     geometry
 }
 

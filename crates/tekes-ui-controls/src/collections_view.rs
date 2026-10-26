@@ -1548,26 +1548,24 @@ impl ChartView {
         model.set_focused(self.focused && self.window_active, self.focus_visible);
         model.set_hovered(self.hovered);
         let mut local = Scene::new();
-        let probe = model.layout_with_text_scale(frame, text_scale);
+        let _ = text_scale; // Label heights come from the active text shaper.
         let mut value_line_height: f32 = 16.0;
         let mut category_line_height: f32 = 16.0;
-        for bar in &probe.bars {
-            value_line_height = value_line_height.max(
-                text.measure(
-                    &bar.value.to_string(),
-                    proposal::TextRole::UiCaption,
-                    bar.value_label.size.width,
-                )
-                .height,
-            );
-            category_line_height = category_line_height.max(
-                text.measure(
-                    &bar.label,
-                    proposal::TextRole::UiCaption,
-                    bar.category_label.size.width,
-                )
-                .height,
-            );
+        if let Some((value_width, category_width)) = model.label_widths(frame) {
+            for datum in model.data().iter().filter(|datum| datum.value.is_finite()) {
+                value_line_height = value_line_height.max(
+                    text.measure(
+                        &datum.value.to_string(),
+                        proposal::TextRole::UiCaption,
+                        value_width,
+                    )
+                    .height,
+                );
+                category_line_height = category_line_height.max(
+                    text.measure(&datum.label, proposal::TextRole::UiCaption, category_width)
+                        .height,
+                );
+            }
         }
         let geometry = if own_clip.is_some() {
             paint_bar_chart_with_label_metrics(
