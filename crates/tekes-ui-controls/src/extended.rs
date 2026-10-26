@@ -3,7 +3,7 @@
 //! These types own behavior and layout data; a host remains responsible for
 //! text shaping, event translation, clipping, and scheduling presentation.
 use crate::{
-    Button, ControlKey, ControlState,
+    ButtonModel, ControlKey, ControlState,
     layout::{ContainerLayout, Insets},
 };
 use tekes_ui_scene::{Quad, Rect, Scene};
@@ -555,38 +555,9 @@ impl Disclosure {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct IconButton {
-    pub button: Button,
-    accessible_name: String,
-}
-impl IconButton {
-    pub fn new(accessible_name: impl Into<String>) -> Option<Self> {
-        let accessible_name = accessible_name.into();
-        (!accessible_name.trim().is_empty()).then_some(Self {
-            button: Button::default(),
-            accessible_name,
-        })
-    }
-    pub fn accessible_name(&self) -> &str {
-        &self.accessible_name
-    }
-    pub fn layout(&self, frame: Rect, ancestor_clip: Option<Rect>) -> ControlFrame {
-        ControlFrame::new(frame, ancestor_clip)
-    }
-    pub fn key(&mut self, key: ControlKey, down: bool) -> bool {
-        self.button.key(key, down)
-    }
-    pub fn pointer_down(&mut self) {
-        self.button.pointer_down()
-    }
-    pub fn pointer_up(&mut self, inside: bool) -> bool {
-        self.button.pointer_up(inside)
-    }
-}
 #[derive(Clone, Debug, Default)]
 pub struct Link {
-    pub button: Button,
+    pub button: ButtonModel,
 }
 impl Link {
     pub fn layout(&self, frame: Rect, ancestor_clip: Option<Rect>) -> ControlFrame {
@@ -2078,18 +2049,30 @@ mod tests {
 
     #[test]
     fn clipped_control_frames_do_not_retain_hit_regions_after_resize_or_disable() {
-        let icon = IconButton::new("Add").unwrap();
-        let original = icon.layout(
-            Rect::new(10., 10., 44., 40.),
-            Some(Rect::new(0., 0., 80., 80.)),
-        );
-        assert!(original.contains(Point::new(20., 20.)));
-        let resized = icon.layout(
-            Rect::new(110., 110., 44., 40.),
-            Some(Rect::new(0., 0., 80., 80.)),
-        );
-        assert_eq!(resized.visible_frame(), None);
-        assert!(!resized.contains(Point::new(20., 20.)));
+        use crate::composition::Component;
+        struct Text;
+        impl crate::ButtonTextRenderer for Text {
+            fn measure(&mut self, _: &str, role: proposal::TextRole, _: f32) -> tekes_ui_scene::Size {
+                tekes_ui_scene::Size::new(0., role.style().line_height)
+            }
+            fn draw(&mut self, _: &mut Scene, _: &str, _: proposal::TextRole, _: Rect,
+                _: crate::ButtonTextAlign, _: tekes_ui_tokens::Rgba) {}
+        }
+        let mut icon = crate::composition::Button::new(tekes_ui_scene::ImageId(1))
+            .with_accessible_name("Add");
+        let clip = Rect::new(0., 0., 80., 80.);
+        let palette = Palette::from(tekes_ui_tokens::Theme::LIGHT);
+        let frame = Rect::new(10., 10., 44., 40.);
+        icon.arrange(&mut Text, frame, clip);
+        icon.paint(&mut Scene::new(), &mut Text, frame, clip, palette.into());
+        let original = icon.button.layout().unwrap();
+        assert!(original.hit_test(Point::new(20., 20.)));
+        let frame = Rect::new(110., 110., 44., 40.);
+        icon.arrange(&mut Text, frame, clip);
+        icon.paint(&mut Scene::new(), &mut Text, frame, clip, palette.into());
+        let resized = icon.button.layout().unwrap();
+        assert_eq!(resized.visible, None);
+        assert!(!resized.hit_test(Point::new(20., 20.)));
 
         let mut switch_model = Switch {
             checked: false,

@@ -40,7 +40,7 @@ impl Component for TranslationBox {
 type Fixture = (ContentHost, Rc<Cell<bool>>, Rc<Cell<Option<Rect>>>, Rc<Cell<usize>>);
 fn fixture(scroll:bool)->Fixture {
     let allowed=Rc::new(Cell::new(true));let local=Rc::new(Cell::new(None));let callbacks=Rc::new(Cell::new(0));
-    let wrapper=Content::new(ComponentId(2),TranslationBox{child:vec![Content::new(ComponentId(3),ButtonContent::new("target"))],allowed:allowed.clone(),local:local.clone(),callbacks:callbacks.clone(),arranged:false});
+    let wrapper=Content::new(ComponentId(2),TranslationBox{child:vec![Content::new(ComponentId(3),Button::new("target"))],allowed:allowed.clone(),local:local.clone(),callbacks:callbacks.clone(),arranged:false});
     let root=if scroll{Content::new(ComponentId(1),ScrollContent::new(ScrollArea::default(),wrapper))}else{wrapper};
     let mut host=ContentHost::new(root).unwrap();render(&mut host,scroll);callbacks.set(0);(host,allowed,local,callbacks)
 }
@@ -58,7 +58,7 @@ fn positive_qualification_expires_without_geometry_change_and_logical_focus_need
     assert_eq!(plan(&host).unwrap_err(),HostRevealError::UnsupportedLayout);
     let (mut logical,allowed,_,_)=fixture(false);allowed.set(false);
     assert!(logical.focus(Some(ComponentId(3)),true));assert_eq!(logical.focused(),Some(ComponentId(3)));
-    let split=SplitViewContent::try_new(SplitViewConstruction{config:SplitViewConfig::default(),slots:SplitViewSlotIds{leading:ComponentId(21),trailing:ComponentId(22),divider:ComponentId(23)},leading:Content::new(ComponentId(11),ButtonContent::new("left")),trailing:Content::new(ComponentId(12),ButtonContent::new("right")),budget:64*1024*1024}).unwrap();
+    let split=SplitViewContent::try_new(SplitViewConstruction{config:SplitViewConfig::default(),slots:SplitViewSlotIds{leading:ComponentId(21),trailing:ComponentId(22),divider:ComponentId(23)},leading:Content::new(ComponentId(11),Button::new("left")),trailing:Content::new(ComponentId(12),Button::new("right")),budget:64*1024*1024}).unwrap();
     assert!(!split.host_reveal_passthrough());
     let mut sdk=ContentHost::try_new_prepared(Content::new(ComponentId(10),split),64*1024*1024).unwrap();
     let bounds=Rect::new(0.,0.,600.,200.);sdk.render(&mut Scene::new(),&mut Text,bounds,bounds,Theme::LIGHT.into()).unwrap();

@@ -134,7 +134,7 @@ fn plain_document_delegates_precise_and_wheel_scroll_to_its_single_parent() {
             model: Stack::new(Axis::Vertical),
             children: vec![
                 body,
-                Content::new(ComponentId(4), ButtonContent::new("Action")),
+                Content::new(ComponentId(4), Button::new("Action")),
             ],
             flexible_child: None,
         },

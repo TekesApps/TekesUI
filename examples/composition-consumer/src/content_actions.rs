@@ -31,8 +31,8 @@ impl ActionFixture {
                 },
                 flexible_child: None,
                 children: vec![
-                    Content::new(FIRST, ButtonContent::new("动作 A")),
-                    Content::new(SECOND, ButtonContent::new("动作 B")),
+                    Content::new(FIRST, Button::new("动作 A")),
+                    Content::new(SECOND, Button::new("动作 B")),
                     Content::new(EDITOR, editor),
                     Content::new(STATUS, TextContent::new("尚无动作")),
                 ],

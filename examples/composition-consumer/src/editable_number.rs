@@ -52,7 +52,7 @@ pub fn build() -> Result<ContentHost, CompositionError> {
                 Content::new(DECIMAL, decimal).with_help("Borderless decimal; step 0.25"),
                 Content::new(
                     ComponentId(9404),
-                    ButtonContent::new("After numeric fields"),
+                    Button::new("After numeric fields"),
                 ),
             ],
         },

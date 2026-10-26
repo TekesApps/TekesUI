@@ -4,7 +4,7 @@
 //! state. Hosts provide the existing text shaper and forward translated events.
 #![allow(clippy::too_many_arguments)]
 use crate::{
-    Button, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout, ControlKey,
+    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout, ControlKey,
     ControlState, Insets,
     chart::{BarChart, ChartGeometry, paint_bar_chart_with_label_metrics},
     extended::{CodeBlock, DataTable, DiffKind, DiffView, List, Markdown, MarkdownBlock, Tree},
@@ -61,7 +61,7 @@ fn mounted_bounds(frame: Rect, ancestor: Option<Rect>) -> bool {
     positive(frame) && ancestor.is_none_or(positive)
 }
 fn render_quiet_button(
-    button: &mut Button,
+    button: &mut ButtonModel,
     scene: &mut Scene,
     text: &mut impl ButtonTextRenderer,
     label: &str,
@@ -231,7 +231,7 @@ pub struct ListView {
     layout: CollectionLayout,
     state: CollectionInteraction,
     disabled: bool,
-    buttons: Vec<Button>,
+    buttons: Vec<ButtonModel>,
 }
 impl Default for ListView {
     fn default() -> Self {
@@ -325,7 +325,7 @@ impl ListView {
             .iter()
             .take(count)
             .map(|label| {
-                Button::measure(
+                ButtonModel::measure(
                     text,
                     label,
                     frame.size.width,
@@ -368,7 +368,7 @@ impl ListView {
             return self.layout.clone();
         }
         scene.push_clip(own_clip.expect("checked list clip"));
-        self.buttons.resize_with(count, Button::default);
+        self.buttons.resize_with(count, ButtonModel::default);
         if self.buttons.len() > count {
             self.buttons.truncate(count);
         }
@@ -528,7 +528,7 @@ pub struct TreeView {
     layout: CollectionLayout,
     state: CollectionInteraction,
     disabled: bool,
-    buttons: Vec<Button>,
+    buttons: Vec<ButtonModel>,
     icons: Vec<IconView>,
     icon_slots: Vec<TreeIconSlot>,
 }
@@ -650,7 +650,7 @@ impl TreeView {
         }
         scene.push_clip(own_clip.expect("checked tree clip"));
         self.buttons
-            .resize_with(model.nodes().len(), Button::default);
+            .resize_with(model.nodes().len(), ButtonModel::default);
         if self.buttons.len() > model.nodes().len() {
             self.buttons.truncate(model.nodes().len());
         }
@@ -982,8 +982,8 @@ pub struct DataTableView {
     layout: DataTableLayout,
     state: CollectionInteraction,
     disabled: bool,
-    header_buttons: Vec<Button>,
-    row_buttons: Vec<Button>,
+    header_buttons: Vec<ButtonModel>,
+    row_buttons: Vec<ButtonModel>,
     focused_header: Option<usize>,
 }
 impl Default for DataTableView {
@@ -1092,7 +1092,7 @@ impl DataTableView {
         let header_heights = header_labels
             .iter()
             .map(|title| {
-                Button::measure(
+                ButtonModel::measure(
                     text,
                     title,
                     cw,
@@ -1186,8 +1186,8 @@ impl DataTableView {
         }
         scene.push_clip(own_clip.expect("checked table clip"));
         self.header_buttons
-            .resize_with(model.columns, Button::default);
-        self.row_buttons.resize_with(model.rows, Button::default);
+            .resize_with(model.columns, ButtonModel::default);
+        self.row_buttons.resize_with(model.rows, ButtonModel::default);
         for (col, _header_height) in header_heights.iter().copied().enumerate() {
             let r = Rect::new(
                 frame.min_x() + col as f32 * cw,

@@ -80,7 +80,7 @@ pub fn build() -> Result<ContentHost, CompositionError> {
         view: SurfaceView::default(),
         children: vec![
             Content::new(EDITOR, field),
-            Content::new(ACTION, ButtonContent::new("Send")),
+            Content::new(ACTION, Button::new("Send")),
         ],
     };
     let mut host = ContentHost::new(Content::new(

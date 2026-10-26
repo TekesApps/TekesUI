@@ -155,7 +155,7 @@ fn declared_nested_item_reveal_preserves_original_composer_and_only_moves_target
         f.host
             .get(TARGET)
             .unwrap()
-            .component::<ButtonContent>()
+            .component::<Button>()
             .unwrap()
             .activations,
         0
@@ -259,7 +259,7 @@ fn replacing_a_mounted_item_needs_a_new_document_revision_even_after_layout() {
         f.host
             .insert(
                 INNER_ITEMS,
-                Content::new(TARGET, ButtonContent::new("Replacement same numeric key")),
+                Content::new(TARGET, Button::new("Replacement same numeric key")),
             )
             .unwrap();
         paint(&mut f, &mut t);

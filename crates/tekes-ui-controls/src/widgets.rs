@@ -12,7 +12,7 @@ pub struct ControlMotionContext {
     pub reduced_motion: bool,
 }
 
-/// Button size roles resolve through the JSON Design System token table.
+/// ButtonModel size roles resolve through the JSON Design System token table.
 /// `Body` uses the Design System ordinary action-button metrics.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ButtonSize {
@@ -32,7 +32,7 @@ impl ButtonSize {
             Self::Md | Self::Body => "c-button-md-radius",
             Self::Lg => "c-button-lg-radius",
         };
-        proposal::metric("radius", token).expect("Button component radius token")
+        proposal::metric("radius", token).expect("ButtonModel component radius token")
     }
     fn minimum_height(self) -> f32 {
         match self {
@@ -72,14 +72,14 @@ impl Default for ButtonTextAlign {
             proposal::layout::TextAlignment::Leading => Self::Leading,
             proposal::layout::TextAlignment::Center => Self::Center,
             proposal::layout::TextAlignment::Trailing => unreachable!(
-                "Design compiler rejects unsupported trailing Button content alignment"
+                "Design compiler rejects unsupported trailing ButtonModel content alignment"
             ),
         }
     }
 }
 
 /// Text shaping and glyph output are supplied by the host; layout and paint
-/// remain owned by the production Button component.
+/// remain owned by the production ButtonModel component.
 pub trait ButtonTextRenderer {
     fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size;
     /// Optional text capability. Existing label-only hosts remain compatible;
@@ -200,7 +200,7 @@ pub struct ButtonLayout {
 
 impl ButtonLayout {
     /// Pure Design System baseline resolver for explicit geometry callers.
-    /// Button measurement/painting and Content slots additionally use the
+    /// ButtonModel measurement/painting and Content slots additionally use the
     /// renderer's resolved typography; Exact frames remain caller-owned.
     pub fn resolve(
         frame: Rect,
@@ -347,7 +347,7 @@ fn finite_nonnegative(value: f32) -> f32 {
     }
 }
 
-fn valid_frame(frame: Rect) -> bool {
+pub(crate) fn valid_frame(frame: Rect) -> bool {
     frame.min_x().is_finite()
         && frame.min_y().is_finite()
         && frame.size.width.is_finite()
@@ -358,7 +358,7 @@ fn valid_frame(frame: Rect) -> bool {
         && frame.size.height >= 0.0
 }
 
-fn valid_clip(clip: Rect) -> bool {
+pub(crate) fn valid_clip(clip: Rect) -> bool {
     clip.min_x().is_finite()
         && clip.min_y().is_finite()
         && clip.size.width.is_finite()
@@ -394,7 +394,7 @@ pub struct ControlState {
     pub error: bool,
 }
 #[derive(Clone, Debug, Default)]
-pub struct Button {
+pub struct ButtonModel {
     pub state: ControlState,
     pub frame_policy: ButtonFramePolicy,
     /// Optional compact decorative height, independent of layout/hit geometry.
@@ -431,9 +431,12 @@ pub(crate) struct ButtonActionDecision {
     pub consumed: bool,
     pub activated: bool,
 }
-impl Button {
+impl ButtonModel {
     pub(crate) fn set_surface(&mut self, surface: &'static str) {
         self.surface = Some(surface);
+    }
+    pub(crate) fn clear_surface(&mut self) {
+        self.surface = None;
     }
     pub(crate) fn surface_colors(
         &self, palette: Palette, variant: crate::paint::ButtonVariant, surface: &str,
@@ -490,9 +493,18 @@ impl Button {
         )
     }
 
+    pub(crate) fn measure_content(
+        text: &mut dyn ButtonTextRenderer, content: Size, max_width: f32,
+        size: ButtonSize, role: proposal::TextRole,
+    ) -> Size {
+        let scale = button_typography_scale(text, role);
+        Size::new((finite_nonnegative(content.width) + size.inset() * scale * 2.).min(max_width),
+            (size.minimum_height() * scale).max(finite_nonnegative(content.height) + size.vertical_inset(role) * scale * 2.))
+    }
+
     /// Paint the existing action chrome around content measured through the
     /// public composition protocol. ContentHost owns child traversal; this
-    /// method retains Button's original press, motion, focus and hit geometry.
+    /// method retains ButtonModel's original press, motion, focus and hit geometry.
     #[allow(clippy::too_many_arguments)]
     pub fn render_content_frame(
         &mut self,
@@ -544,9 +556,9 @@ impl Button {
         )
     }
 
-    // Icon-only controls share Button's interaction/motion/clip machinery, but
+    // Icon-only controls share ButtonModel's interaction/motion/clip machinery, but
     // resolve their own semantic radius. This is internal geometry plumbing;
-    // public Button callers continue to use the size-specific Button token.
+    // public ButtonModel callers continue to use the size-specific ButtonModel token.
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn render_with_radius(
         &mut self,
@@ -754,7 +766,7 @@ impl Button {
             if let Some(background_clip) = background_clip {
                 scene.push_clip(background_clip);
             }
-            let ink = if let Some(surface) = self.surface {
+            let ink = if let Some(surface) = self.surface.or((variant == crate::paint::ButtonVariant::Toolbar).then_some("toolbar")) {
                 let (hover, pressed) = transition_progress.unwrap_or((
                     self.hover_transition.value() as f32,
                     self.press_transition.value() as f32,
@@ -1040,19 +1052,6 @@ impl Button {
         self.cancel();
         activated
     }
-    // Shares the original pointer arm/cancel/motion state. Committing a press
-    // cannot produce a second activation on release or a repeated down.
-    pub(crate) fn activate_pointer_press(&mut self) -> bool {
-        if self.arm != ButtonArm::Pointer
-            || self.motion_suspended
-            || self.state.disabled
-            || self.state.loading
-        {
-            return false;
-        }
-        self.arm = ButtonArm::PointerActivated;
-        true
-    }
     pub fn cancel(&mut self) {
         self.arm = ButtonArm::None;
         self.state.pressed = false;
@@ -1118,7 +1117,7 @@ pub enum CheckState {
 }
 #[derive(Clone, Debug, Default)]
 pub struct Checkbox {
-    pub button: Button,
+    pub button: ButtonModel,
     pub checked: CheckState,
 }
 impl Checkbox {
@@ -1151,9 +1150,9 @@ impl Checkbox {
     }
 
     /// Paint and place the complete checkbox row. Its outer placement is also
-    /// installed on the shared Button interaction model, so pointer and
+    /// installed on the shared ButtonModel interaction model, so pointer and
     /// keyboard behavior use the same clipped geometry as drawing.
-    // Like Button::render, this adapts layout, state, drawing, and text shaping.
+    // Like ButtonModel::render, this adapts layout, state, drawing, and text shaping.
     #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
@@ -1662,7 +1661,7 @@ mod tests {
         let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let frame = Rect::new(0., 0., 120., 40.);
         let point = Point::new(60., 20.);
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let mut text = MotionText {
             context: Some(ControlMotionContext {
                 now: Duration::ZERO,
@@ -1769,7 +1768,7 @@ mod tests {
         let alternate_brand = Palette::new(Theme::DARK, 1).expect("registered Gallery brand");
         let frame = Rect::new(0., 0., 120., 40.);
         let point = Point::new(60., 20.);
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let mut text = MotionText {
             context: Some(ControlMotionContext {
                 now: Duration::ZERO,
@@ -1905,7 +1904,7 @@ mod tests {
 
     #[test]
     fn invalid_button_layout_cannot_keep_keyboard_activation_or_motion() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         button.state.focused = true;
         button.state.focus_visible = true;
         let mut text = FixedText {
@@ -1945,7 +1944,7 @@ mod tests {
                 drawn: None,
             };
             let mut scene = Scene::new();
-            let mut button = Button::default();
+            let mut button = ButtonModel::default();
             button.state.focused = true;
             button.state.focus_visible = true;
             let layout = button.render(
@@ -1983,7 +1982,7 @@ mod tests {
 
     #[test]
     fn rendered_button_owns_large_text_layout_clipping_and_hit_geometry() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let mut text = FixedText {
             measured: Size::new(88.0, 54.0),
             drawn: None,
@@ -2029,7 +2028,7 @@ mod tests {
 
     #[test]
     fn fractional_button_background_uses_only_the_ancestor_clip() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let mut text = FixedText {
             measured: Size::new(40.0, proposal::TextRole::UiBody.style().line_height),
             drawn: None,
@@ -2076,7 +2075,7 @@ mod tests {
 
     #[test]
     fn button_background_remains_clipped_by_a_real_parent_viewport_edge() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let mut text = FixedText {
             measured: Size::new(40.0, proposal::TextRole::UiBody.style().line_height),
             drawn: None,
@@ -2244,7 +2243,7 @@ mod tests {
             measured: Size::new(80.0, proposal::TextRole::ButtonXs.style().line_height),
             drawn: None,
         };
-        let default = Button::measure(
+        let default = ButtonModel::measure(
             &mut text,
             "Motion action",
             160.0,
@@ -2259,7 +2258,7 @@ mod tests {
             )
         );
         text.measured.height = proposal::TextRole::ButtonXs.style().line_height * 1.5;
-        let large = Button::measure(
+        let large = ButtonModel::measure(
             &mut text,
             "Motion action",
             160.0,
@@ -2272,7 +2271,7 @@ mod tests {
 
     #[test]
     fn invalid_geometry_and_empty_labels_never_emit_invalid_or_unclipped_text() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let mut text = FixedText {
             measured: Size::new(f32::NAN, f32::INFINITY),
             drawn: None,
@@ -2312,7 +2311,7 @@ mod tests {
 
     #[test]
     fn button_point_interaction_uses_clipped_placement_and_cancels_outside_release() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let mut text = FixedText {
             measured: Size::new(40.0, 16.0),
             drawn: None,
@@ -2343,13 +2342,13 @@ mod tests {
 
     #[test]
     fn stationary_pointer_rehits_after_layout_translation_and_restoration() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let mut text = FixedText {
             measured: Size::new(40.0, 16.0),
             drawn: None,
         };
         let mut scene = Scene::new();
-        let render = |button: &mut Button,
+        let render = |button: &mut ButtonModel,
                       frame: Rect,
                       clip: Option<Rect>,
                       text: &mut FixedText,
@@ -2400,14 +2399,14 @@ mod tests {
 
     #[test]
     fn stationary_pointer_hover_tracks_new_ancestor_clip() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let mut text = FixedText {
             measured: Size::new(40.0, 16.0),
             drawn: None,
         };
         let mut scene = Scene::new();
         let frame = Rect::new(10.0, 10.0, 100.0, 30.0);
-        let render = |button: &mut Button, clip, text: &mut FixedText, scene: &mut Scene| {
+        let render = |button: &mut ButtonModel, clip, text: &mut FixedText, scene: &mut Scene| {
             button.render(
                 scene,
                 text,
@@ -2442,8 +2441,8 @@ mod tests {
 
     #[test]
     fn leading_and_centered_label_positions_are_component_owned() {
-        let mut leading = Button::default();
-        let mut centered = Button::default();
+        let mut leading = ButtonModel::default();
+        let mut centered = ButtonModel::default();
         for (button, align) in [
             (&mut leading, ButtonTextAlign::Leading),
             (&mut centered, ButtonTextAlign::Center),
@@ -2473,7 +2472,7 @@ mod tests {
 
     #[test]
     fn button_release_contract_and_disabled_loading() {
-        let mut b = Button::default();
+        let mut b = ButtonModel::default();
         b.pointer_down();
         assert!(!b.pointer_up(false));
         b.pointer_down();
@@ -2493,7 +2492,7 @@ mod tests {
 
     #[test]
     fn keyboard_and_pointer_arms_cannot_release_or_activate_each_other() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         button.state.focused = true;
         assert!(!button.key(ControlKey::Space, true));
         assert!(!button.key(ControlKey::Space, true)); // key repeat does not re-arm
@@ -2529,7 +2528,7 @@ mod tests {
 
     #[test]
     fn pointer_cancellation_preserves_keyboard_space_arm() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         button.state.focused = true;
         assert!(!button.key(ControlKey::Space, true));
         button.cancel_pointer();
@@ -2545,7 +2544,7 @@ mod tests {
 
     #[test]
     fn inactive_window_rejects_new_button_and_checkbox_activation() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let mut text = FixedText {
             measured: Size::new(40., 16.),
             drawn: None,
@@ -2601,13 +2600,13 @@ mod tests {
 
     #[test]
     fn render_cancels_pointer_and_space_arms_when_disabled_or_loading() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let mut text = FixedText {
             measured: Size::new(40.0, 16.0),
             drawn: None,
         };
         let frame = Rect::new(10.0, 10.0, 100.0, 30.0);
-        let render = |button: &mut Button, text: &mut FixedText| {
+        let render = |button: &mut ButtonModel, text: &mut FixedText| {
             button.render(
                 &mut Scene::new(),
                 text,
@@ -2651,12 +2650,12 @@ mod tests {
 
     #[test]
     fn render_cancels_space_arm_when_controlled_focus_is_lost() {
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let mut text = FixedText {
             measured: Size::new(40.0, 16.0),
             drawn: None,
         };
-        let render = |button: &mut Button, text: &mut FixedText| {
+        let render = |button: &mut ButtonModel, text: &mut FixedText| {
             button.render(
                 &mut Scene::new(),
                 text,
@@ -2879,7 +2878,7 @@ mod tests {
                 let palette = tekes_ui_tokens::Palette::new(theme, brand).expect("registered Gallery brand");
                 for (checked, state) in states {
                     let mut checkbox = Checkbox {
-                        button: Button {
+                        button: ButtonModel {
                             state,
                             ..Default::default()
                         },
@@ -3084,7 +3083,7 @@ mod empty_state_surface_tests {
             for palette in palettes {
                 for surface in surface_names() {
                     for state in ["rest", "hover", "pressed", "disabled", "focus"] {
-                        let mut button = Button::default();
+                        let mut button = ButtonModel::default();
                         let mut text = Text::default();
                         let frame = Rect::new(10.25, 12.5, 140., 40.);
                         let clip = Rect::new(0., 0., 220., 160.);
@@ -3129,7 +3128,7 @@ mod empty_state_surface_tests {
             for surface in surface_names() {
                 for (variant,usage) in [(crate::paint::ButtonVariant::Quiet,"action-quiet"),(crate::paint::ButtonVariant::Primary,"action-primary")] {
                     for state in ["rest","hover","pressed","disabled","focus"] {
-                        let mut button=Button::default();let mut text=Text::default();let frame=Rect::new(10.25,12.5,140.,40.);let clip=Rect::new(0.,0.,220.,160.);
+                        let mut button=ButtonModel::default();let mut text=Text::default();let frame=Rect::new(10.25,12.5,140.,40.);let clip=Rect::new(0.,0.,220.,160.);
                         let layout=button.prepare_label(&mut text,"Dismiss",frame,Some(clip),proposal::TextRole::UiBody);button.set_surface(surface);
                         match state {
                             "hover"=>button.pointer_move_at(frame.center()),

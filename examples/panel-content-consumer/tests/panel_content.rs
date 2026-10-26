@@ -159,7 +159,7 @@ fn original_panel_stack_preserves_real_editor_geometry_actions_and_reading_inten
     });
     let mut scroll = ScrollContent::new(ScrollArea::default(), rows);
     scroll.viewport_height = Some(68.);
-    let button = Content::new(ACTION, ButtonContent::new("原按钮")).preserving_focus();
+    let button = Content::new(ACTION, Button::new("原按钮")).preserving_focus();
     let content = stack(
         vec![
             Content::new(
@@ -584,7 +584,7 @@ fn zero_inset_self_framed_field_and_real_split_panes_keep_one_host_and_owner() {
             stack(
                 vec![
                     Content::new(ComponentId(8231), TextContent::new("Leading panel")),
-                    Content::new(ComponentId(8232), ButtonContent::new("Leading action")),
+                    Content::new(ComponentId(8232), Button::new("Leading action")),
                 ],
                 None,
             ),

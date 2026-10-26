@@ -34,7 +34,7 @@ impl Component for Decoration {
 }
 #[derive(Debug)]
 pub struct ForwardedAction {
-    pub button: CompoundButton,
+    pub button: Button,
     pub captures: usize,
 }
 impl ForwardedAction {
@@ -133,15 +133,15 @@ impl Component for Rows {
         }
     }
 }
-pub fn action(h: &ContentHost, id: ComponentId) -> &CompoundButton {
+pub fn action(h: &ContentHost, id: ComponentId) -> &Button {
     let n = h.get(id).unwrap();
-    n.component::<CompoundButton>()
+    n.component::<Button>()
         .or_else(|| n.component::<ForwardedAction>().map(|a| &a.button))
         .unwrap()
 }
-pub fn action_mut(h: &mut ContentHost, id: ComponentId) -> &mut CompoundButton {
+pub fn action_mut(h: &mut ContentHost, id: ComponentId) -> &mut Button {
     let n = h.get_mut(id).unwrap();
-    if n.component::<CompoundButton>().is_some() {
+    if n.component::<Button>().is_some() {
         n.component_mut().unwrap()
     } else {
         &mut n.component_mut::<ForwardedAction>().unwrap().button
@@ -171,9 +171,9 @@ pub fn build() -> ContentHost {
         ),
     ] {
         let mut b =
-            CompoundButton::new(label, Content::new(ComponentId(id.0 + 100), Decoration)).unwrap();
-        b.action.button.frame_policy = ButtonFramePolicy::Exact;
-        b.action.pointer_activation_phase = phase;
+            Button::new(Content::new(ComponentId(id.0 + 100), Decoration)).with_accessible_name(label);
+        b.button.frame_policy = ButtonFramePolicy::Exact;
+        b.pointer_activation_phase = phase;
         children.push(if wrapped {
             Content::new(
                 id,
@@ -186,7 +186,7 @@ pub fn build() -> ContentHost {
             Content::new(id, b)
         });
     }
-    children.push(Content::new(NORMAL, ButtonContent::new("Ordinary action")));
+    children.push(Content::new(NORMAL, Button::new("Ordinary action")));
     let mut h = ContentHost::new(Content::new(ROOT, Rows { children })).unwrap();
     h.set_action_events(true);
     h

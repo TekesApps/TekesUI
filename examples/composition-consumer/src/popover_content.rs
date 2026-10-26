@@ -282,8 +282,8 @@ impl Scenario {
         let mut host = ContentHost::new(Content::new(
             ROOT,
             Screen(vec![
-                Content::new(CALLER, ButtonContent::new("Edit preferences")),
-                Content::new(OTHER, ButtonContent::new("Unrelated action")),
+                Content::new(CALLER, Button::new("Edit preferences")),
+                Content::new(OTHER, Button::new("Unrelated action")),
                 Content::new(POPOVER, card),
             ]),
         ))?;

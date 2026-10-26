@@ -132,7 +132,7 @@ fn actual_button_wins_including_disabled_unhandled_bounds() {
     h.focus(None, false);
     h.get_mut(ACTION)
         .unwrap()
-        .component_mut::<ButtonContent>()
+        .component_mut::<Button>()
         .unwrap()
         .button
         .state
@@ -463,7 +463,7 @@ fn padding_intent_rejects_real_actions_and_non_down_pointer_phases() {
         let b = &mut h
             .get_mut(ACTION)
             .unwrap()
-            .component_mut::<ButtonContent>()
+            .component_mut::<Button>()
             .unwrap()
             .button;
         b.state.disabled = state == 1;
@@ -617,7 +617,7 @@ fn padding_intent_yields_to_real_menu_and_modal_scope() {
     assert_ne!(h.focused(), Some(EDITOR));
     h.remove(menu_id).unwrap();
     let modal_id = ComponentId(14910);
-    let slot = |id| Content::new(ComponentId(id), ButtonContent::new("Modal slot"));
+    let slot = |id| Content::new(ComponentId(id), Button::new("Modal slot"));
     h.insert(
         ROOT,
         Content::new(
@@ -683,9 +683,9 @@ fn padding_inside_current_modal_uses_the_original_modal_editor() {
             modal,
             DialogContent::new(
                 "Edit",
-                Content::new(ComponentId(14921), ButtonContent::new("Header")),
+                Content::new(ComponentId(14921), Button::new("Header")),
                 band,
-                Content::new(ComponentId(14922), ButtonContent::new("Done")),
+                Content::new(ComponentId(14922), Button::new("Done")),
             ),
         ),
     )

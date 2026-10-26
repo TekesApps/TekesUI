@@ -206,7 +206,7 @@ fn range_is_an_independent_interaction_and_cannot_be_nested_inside_an_action() {
     assert!(matches!(
         ContentHost::new(Content::new(
             ComponentId(8599),
-            CompoundButton::new("Bad nesting", range).unwrap()
+            Button::new(range).with_accessible_name("Bad nesting")
         )),
         Err(CompositionError::NestedInteractive { .. })
     ));

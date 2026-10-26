@@ -28,7 +28,7 @@ fn id(n: u64) -> ComponentId {
     ComponentId(n)
 }
 fn button(n: u64) -> Content {
-    Content::new(id(n), ButtonContent::new(format!("Action {n}")))
+    Content::new(id(n), Button::new(format!("Action {n}")))
 }
 fn stack(children: Vec<Content>) -> Content {
     Content::new(
@@ -286,7 +286,7 @@ fn nested_scroll_grid_uses_real_button_and_same_clip_for_hits() {
     assert_eq!(
         h.get(id(4))
             .unwrap()
-            .component::<ButtonContent>()
+            .component::<Button>()
             .unwrap()
             .activations,
         1
@@ -394,7 +394,7 @@ fn compound_action_has_one_focus_one_name_and_rejects_nested_controls() {
             ],
         },
     );
-    let action = CompoundButton::new("Open workspace", content).unwrap();
+    let action = Button::new(content).with_accessible_name("Open workspace");
     let mut h = ContentHost::new(Content::new(id(1), action)).unwrap();
     render(&mut h);
     assert_eq!(h.focus_targets().len(), 1);
@@ -406,9 +406,9 @@ fn compound_action_has_one_focus_one_name_and_rejects_nested_controls() {
     assert_eq!(
         h.get(id(1))
             .unwrap()
-            .component::<CompoundButton>()
+            .component::<Button>()
             .unwrap()
-            .action
+
             .activations,
         1
     );
@@ -419,7 +419,7 @@ fn compound_action_has_one_focus_one_name_and_rejects_nested_controls() {
             .is_some(),
         "fixed action slot still uses the common content traversal"
     );
-    let bad = CompoundButton::new("Bad nesting", button(7)).unwrap();
+    let bad = Button::new(button(7)).with_accessible_name("Bad nesting");
     assert!(matches!(
         ContentHost::new(Content::new(id(6), bad)),
         Err(CompositionError::NestedInteractive {
@@ -428,7 +428,7 @@ fn compound_action_has_one_focus_one_name_and_rejects_nested_controls() {
         })
     ));
     assert!(matches!(
-        CompoundButton::new("  ", button(7)),
+        ContentHost::new(Content::new(id(6), Button::new(button(7)).with_accessible_name("  "))),
         Err(CompositionError::EmptyAccessibleName)
     ));
 }
@@ -529,12 +529,12 @@ fn consumed_child_input_does_not_activate_the_containing_row() {
 #[test]
 fn fixed_action_slots_fail_closed_after_invalid_direct_structural_mutation() {
     let action =
-        CompoundButton::new("Action", Content::new(id(2), TextContent::new("Text"))).unwrap();
+        Button::new(Content::new(id(2), TextContent::new("Text"))).with_accessible_name("Action");
     let mut h = ContentHost::new(Content::new(id(1), action)).unwrap();
     render(&mut h);
     h.get_mut(id(1))
         .unwrap()
-        .component_mut::<CompoundButton>()
+        .component_mut::<Button>()
         .unwrap()
         .children_mut()
         .unwrap()
@@ -559,7 +559,7 @@ fn pointer_only_consumer_controls_are_diagnosed_inside_an_action() {
             events: Rc::new(Cell::new(0)),
         },
     );
-    let action = CompoundButton::new("Invalid action", drag).unwrap();
+    let action = Button::new(drag).with_accessible_name("Invalid action");
     assert!(matches!(
         ContentHost::new(Content::new(id(1), action)),
         Err(CompositionError::NestedInteractive {

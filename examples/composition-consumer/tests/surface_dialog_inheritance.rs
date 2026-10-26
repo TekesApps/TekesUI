@@ -5,7 +5,7 @@ use std::{cell::RefCell, rc::Rc};
 use tekes_ui_controls::{
     ButtonTextRenderer,
     composition::{
-        ButtonContent, Component, ComponentId, Content, ContentHost, ContentTheme, DialogContent,
+        Button, Component, ComponentId, Content, ContentHost, ContentTheme, DialogContent,
         StackContent, TextContent,
     },
     extended::{Axis, Stack},
@@ -69,7 +69,7 @@ fn retained_dialog_inherits_ancestor_surface_and_respects_override_clear() {
             "Surface dialog",
             Content::new(ComponentId(91003), TextContent::new("Header")),
             Content::new(ComponentId(91004), SurfaceProbe(seen.clone())),
-            Content::new(ComponentId(91005), ButtonContent::new("Close")),
+            Content::new(ComponentId(91005), Button::new("Close")),
         ),
     );
     let root = Content::new(

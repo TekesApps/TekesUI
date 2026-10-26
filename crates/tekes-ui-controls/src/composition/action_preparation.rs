@@ -766,7 +766,7 @@ pub(super) fn prepare_original<T: Component, D: OriginalActionDecision + 'static
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::ButtonContent;
+    use super::super::Button;
     struct Text;
     impl ButtonTextRenderer for Text {
         fn measure(
@@ -794,7 +794,7 @@ mod tests {
     fn host() -> ContentHost {
         let mut scroll = ScrollContent::new(
             ScrollArea::default(),
-            Content::new(TARGET, ButtonContent::new("target")),
+            Content::new(TARGET, Button::new("target")),
         );
         scroll.viewport_height = Some(100.);
         let mut h = ContentHost::new(Content::new(
@@ -807,7 +807,7 @@ mod tests {
                 flexible_child: None,
                 children: vec![
                     Content::new(SCROLL, scroll),
-                    Content::new(OLD, ButtonContent::new("old")),
+                    Content::new(OLD, Button::new("old")),
                 ],
             },
         ))
@@ -837,7 +837,7 @@ mod tests {
             } else {
                 h.get_mut(TARGET)
                     .unwrap()
-                    .component_mut::<ButtonContent>()
+                    .component_mut::<Button>()
                     .unwrap()
                     .activations = usize::MAX;
                 render(&mut h);
@@ -857,7 +857,7 @@ mod tests {
             assert!(
                 !h.get(TARGET)
                     .unwrap()
-                    .component::<ButtonContent>()
+                    .component::<Button>()
                     .unwrap()
                     .button
                     .state
@@ -893,7 +893,7 @@ mod tests {
         assert!(p.effect.validate(&*n.component));
         h.get_mut(TARGET)
             .unwrap()
-            .component_mut::<ButtonContent>()
+            .component_mut::<Button>()
             .unwrap()
             .activations += 1;
         assert!(!p.effect.validate(&*h.get(TARGET).unwrap().component));
@@ -903,7 +903,7 @@ mod tests {
 
     #[test]
     fn ordinary_rect_focus_counter_failure_precedes_target_action() {
-        let mut button = ButtonContent::new("target");
+        let mut button = Button::new("target");
         button.pointer_activation_phase = ButtonActivationPhase::Press;
         let mut h = ContentHost::new(Content::new(
             ComponentId(9990),
@@ -915,7 +915,7 @@ mod tests {
                 flexible_child: None,
                 children: vec![
                     Content::new(TARGET, button),
-                    Content::new(OLD, ButtonContent::new("old")),
+                    Content::new(OLD, Button::new("old")),
                 ],
             },
         ))
@@ -926,7 +926,7 @@ mod tests {
         h.focus_epoch = u64::MAX;
         let point = h.get(TARGET).unwrap().frame.center();
         let response = h.event(&ContentEvent::PointerDown(point));
-        let target = h.get(TARGET).unwrap().component::<ButtonContent>().unwrap();
+        let target = h.get(TARGET).unwrap().component::<Button>().unwrap();
         let observed = (
             response.consumed,
             response.activated,
@@ -946,7 +946,7 @@ mod tests {
         assert_eq!(
             h.get(TARGET)
                 .unwrap()
-                .component::<ButtonContent>()
+                .component::<Button>()
                 .unwrap()
                 .activations,
             0
@@ -954,7 +954,7 @@ mod tests {
         assert!(
             !h.get(TARGET)
                 .unwrap()
-                .component::<ButtonContent>()
+                .component::<Button>()
                 .unwrap()
                 .button
                 .state
@@ -1003,7 +1003,7 @@ mod tests {
                     flexible_child: None,
                     children: vec![
                         Content::new(TARGET, Owner { calls: 0 }),
-                        Content::new(OLD, ButtonContent::new("old")),
+                        Content::new(OLD, Button::new("old")),
                     ],
                 },
             ))
@@ -1056,7 +1056,7 @@ mod tests {
         }
         fn ordinary(explicit_reveal: bool, composing: bool) -> ContentHost {
             let body = Content::new(ComponentId(9994), OrdinaryLayout {
-                children: vec![Content::new(TARGET, ButtonContent::new("ordinary target"))],
+                children: vec![Content::new(TARGET, Button::new("ordinary target"))],
                 explicit_reveal,
                 composing: false,
                 arranged: false,
@@ -1079,7 +1079,7 @@ mod tests {
             let response = h.accessibility_action(TARGET, None, AccessibilityAction::Press);
             assert_eq!(response.consumed, !explicit);
             assert_eq!(h.focused(), Some(if explicit {OLD} else {TARGET}));
-            assert_eq!(h.get(TARGET).unwrap().component::<ButtonContent>().unwrap().activations, usize::from(!explicit));
+            assert_eq!(h.get(TARGET).unwrap().component::<Button>().unwrap().activations, usize::from(!explicit));
             assert_eq!(h.drain_actions().len(), usize::from(!explicit));
             assert_eq!(h.get(SCROLL).unwrap().component::<ScrollContent>().unwrap().scroll.offset.y > 0., !explicit);
         }
@@ -1103,7 +1103,7 @@ mod tests {
         let route = ContentRoute::capture(&stale.root, TARGET, HostRevealBudget::default().max_path_nodes).unwrap();
         let actions = [OwnerAction { route, action }];
         assert_eq!(stale.validate_action_owners(&actions, None), None, "current ordinary wrapper lacks the prepared-hook contract");
-        stale.get_mut(TARGET).unwrap().component_mut::<ButtonContent>().unwrap().activations += 1;
+        stale.get_mut(TARGET).unwrap().component_mut::<Button>().unwrap().activations += 1;
         assert_eq!(stale.validate_action_owners(&actions, None), Some(false), "unknown ancestry cannot mask a stale original decision");
         let mut pointer_max = ordinary(false, false);
         assert!(pointer_max.focus(Some(TARGET), true));
@@ -1111,7 +1111,7 @@ mod tests {
         assert!(pointer_max.focus(Some(OLD), true));
         let point = pointer_max.get(TARGET).unwrap().frame.center();
         assert!(pointer_max.get(TARGET).unwrap().visible().is_some_and(|r| r.contains(point)));
-        let button = pointer_max.get_mut(TARGET).unwrap().component_mut::<ButtonContent>().unwrap();
+        let button = pointer_max.get_mut(TARGET).unwrap().component_mut::<Button>().unwrap();
         button.pointer_activation_phase = ButtonActivationPhase::Press;
         button.activations = usize::MAX;
         let before = format!("{:?}", pointer_max.root);
@@ -1124,7 +1124,7 @@ mod tests {
         for failure in 0..3 {
             let mut h = ordinary(false, failure == 1);
             if failure == 0 { h.focus_epoch = u64::MAX; }
-            if failure == 2 { h.get_mut(TARGET).unwrap().component_mut::<ButtonContent>().unwrap().activations = usize::MAX; }
+            if failure == 2 { h.get_mut(TARGET).unwrap().component_mut::<Button>().unwrap().activations = usize::MAX; }
             let before = format!("{:?}", h.root);
             let epoch = h.focus_epoch;
             let response = h.accessibility_action(TARGET, None, AccessibilityAction::Press);

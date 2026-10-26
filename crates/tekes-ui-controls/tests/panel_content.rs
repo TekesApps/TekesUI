@@ -156,7 +156,7 @@ fn split_view_accepts_nested_panels_with_local_prepared_effects() {
     );
     let trailing = Content::new(
         ComponentId(8260),
-        panel(Content::new(ComponentId(8261), ButtonContent::new("trailing")), true),
+        panel(Content::new(ComponentId(8261), Button::new("trailing")), true),
     );
 
     assert!(SplitViewContent::try_new(split_input(leading, trailing)).is_ok());
@@ -175,7 +175,7 @@ fn split_view_rejects_unsupported_nested_panel_descendant_and_returns_full_input
     );
     let trailing = Content::new(
         ComponentId(8240),
-        panel(Content::new(ComponentId(8241), ButtonContent::new("trailing")), true),
+        panel(Content::new(ComponentId(8241), Button::new("trailing")), true),
     );
     let input = split_input(leading, trailing);
     let expected_slots = input.slots;
@@ -214,7 +214,7 @@ fn original_route_gap_capture_identity_and_atomic_fragment() {
     let mut h = ContentHost::new(Content::new(
         ROOT,
         panel(
-            Content::new(CHILD, ButtonContent::new("real button"))
+            Content::new(CHILD, Button::new("real button"))
                 .preserving_focus()
                 .bubbling_handled_events(true),
             true,
@@ -270,7 +270,7 @@ fn original_route_gap_capture_identity_and_atomic_fragment() {
     assert!(
         !h.get(CHILD)
             .unwrap()
-            .component::<ButtonContent>()
+            .component::<Button>()
             .unwrap()
             .button
             .state
@@ -283,7 +283,7 @@ fn original_route_gap_capture_identity_and_atomic_fragment() {
     assert_eq!(
         h.get(CHILD)
             .unwrap()
-            .component::<ButtonContent>()
+            .component::<Button>()
             .unwrap()
             .activations,
         0
@@ -383,7 +383,7 @@ fn real_original_editor_marked_selection_survives_full_clip() {
 fn strict_curve_never_downgrades_before_layout_or_after_geometry_mutation() {
     let mut h = ContentHost::new(Content::new(
         ROOT,
-        panel(Content::new(CHILD, ButtonContent::new("button")), false),
+        panel(Content::new(CHILD, Button::new("button")), false),
     ))
     .unwrap();
     assert!(!h.focus(Some(CHILD), true));
@@ -500,7 +500,7 @@ fn original_reading_reveal_consumes_curve_plan_and_stale_plan_cannot_change_user
 fn prepared_primary_down_in_panel_commits_focus_before_capture() {
     let mut host = ContentHost::new(Content::new(
         ROOT,
-        panel(Content::new(CHILD, ButtonContent::new("prepared button")), false),
+        panel(Content::new(CHILD, Button::new("prepared button")), false),
     ))
     .unwrap();
     let mut text = Text::new(true);
@@ -509,7 +509,7 @@ fn prepared_primary_down_in_panel_commits_focus_before_capture() {
     assert!(response.consumed);
     assert_eq!(host.focused(), Some(CHILD));
     assert!(host.pointer_capture().is_some());
-    assert_eq!(host.get(CHILD).unwrap().component::<ButtonContent>().unwrap().activations, 0);
+    assert_eq!(host.get(CHILD).unwrap().component::<Button>().unwrap().activations, 0);
 }
 
 #[test]
@@ -520,7 +520,7 @@ fn same_id_remount_replaces_frozen_curve_mount_identity() {
         StackContent {
             model: Stack { axis: Axis::Vertical, gap: 0. },
             flexible_child: None,
-            children: vec![Content::new(CHILD, ButtonContent::new("first mount"))],
+            children: vec![Content::new(CHILD, Button::new("first mount"))],
         },
     );
     let mut host = ContentHost::new(Content::new(ROOT, panel(stack, false))).unwrap();
@@ -531,7 +531,7 @@ fn same_id_remount_replaces_frozen_curve_mount_identity() {
     assert_eq!(old_snapshot.identity(CHILD, None), Some(old_mount));
 
     host.remove(CHILD).unwrap();
-    host.insert(stack_id, Content::new(CHILD, ButtonContent::new("replacement mount")))
+    host.insert(stack_id, Content::new(CHILD, Button::new("replacement mount")))
         .unwrap();
     assert!(!old_snapshot.is_current());
     assert!(host.geometry_snapshot().is_none());
@@ -548,7 +548,7 @@ fn same_id_remount_replaces_frozen_curve_mount_identity() {
 fn captured_button_uses_current_curve_after_legal_relayout() {
     let mut host = ContentHost::new(Content::new(
         ROOT,
-        panel(Content::new(CHILD, ButtonContent::new("relayout capture")), false),
+        panel(Content::new(CHILD, Button::new("relayout capture")), false),
     ))
     .unwrap();
     let mut text = Text::new(true);
@@ -571,11 +571,11 @@ fn captured_button_uses_current_curve_after_legal_relayout() {
     assert_eq!(host.pointer_capture(), Some(capture));
     assert_eq!(host.pointer_hit_test(Point::new(60., 50.)), Some(CHILD));
     assert!(host.event(&ContentEvent::PointerMove(Point::new(60., 50.))).changed);
-    assert!(host.get(CHILD).unwrap().component::<ButtonContent>().unwrap().button.state.hovered);
+    assert!(host.get(CHILD).unwrap().component::<Button>().unwrap().button.state.hovered);
 
     assert!(host.pointer_hit_test(Point::new(10., 0.)).is_none());
     assert!(host.event(&ContentEvent::PointerMove(Point::new(10., 0.))).changed);
-    assert!(!host.get(CHILD).unwrap().component::<ButtonContent>().unwrap().button.state.hovered);
+    assert!(!host.get(CHILD).unwrap().component::<Button>().unwrap().button.state.hovered);
     assert_eq!(host.pointer_capture(), Some(capture));
 }
 
@@ -646,7 +646,7 @@ fn one_original_tree_keeps_composer_and_reading_owners_through_streaming_and_rev
             flexible_child: None,
             children: vec![
                 Content::new(text, TextContent::new("original text")),
-                Content::new(button, ButtonContent::new("original action")),
+                Content::new(button, Button::new("original action")),
                 Content::new(editor, composer),
                 Content::new(scroll, reading),
             ],

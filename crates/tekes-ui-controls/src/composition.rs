@@ -22,6 +22,9 @@ pub use action_preparation::{ActionPreparation, ActionTransactionCompatibility, 
 mod content_reveal_plan;
 pub use content_reveal_plan::{HostRevealBudget, HostRevealError, HostRevealOutcome, HostRevealPlan};
 mod adapters;
+mod button;
+pub use button::{Button, ButtonContents, ButtonImagePosition, ButtonActivationPhase};
+use button::{resolve_action_slot, measure_action_slot, action_child_theme};
 mod content_reading;
 mod content_reveal;
 mod status_badge;
@@ -46,7 +49,7 @@ use crate::extended::{Axis, Grid, Stack};
 use crate::layout::{AlignmentOverride, MeasuredChild, layout_measured_children};
 use crate::paint::ButtonVariant;
 use crate::{
-    Button, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, ControlMotionContext,
+    ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, ControlMotionContext,
     ScrollArea,
 };
 pub use actions::{
@@ -234,7 +237,9 @@ pub struct SemanticNode {
 pub struct ContentTheme {
     pub palette: Palette,
     pub foreground: Option<Rgba>,
+    pub icon_foreground: Option<Rgba>,
     surface: &'static str,
+    surface_declared: bool,
 }
 impl ContentTheme {
     pub fn surface(self) -> &'static str {
@@ -245,7 +250,9 @@ impl ContentTheme {
         name: &str,
     ) -> Result<Self, tekes_ui_tokens::surface_palette::SurfaceError> {
         self.surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
+        self.surface_declared = true;
         self.foreground = None;
+        self.icon_foreground = None;
         Ok(self)
     }
 }
@@ -254,7 +261,9 @@ impl From<Palette> for ContentTheme {
         Self {
             palette,
             foreground: None,
+            icon_foreground: None,
             surface: "canvas",
+            surface_declared: false,
         }
     }
 }
@@ -309,6 +318,8 @@ pub trait Component: Debug + Any {
     fn lifecycle_prepared(&mut self,event:Lifecycle,context:&mut PreparedLifecycleContext) {context.original_lifecycle(self,event);}
     fn participates_in_focus_traversal(&self)->bool {true}
     fn semantic_subtree_hidden(&self)->bool {false}
+    /// Optional component-owned help text and revision; Content declarations override it.
+    fn help(&self) -> Option<(&str,u64)> { None }
 
     /// The read-only focus/reveal planner consumes this original-owner geometry
     /// constraint and revalidates its generation before commit.
@@ -386,6 +397,7 @@ pub trait Component: Debug + Any {
             .unwrap_or_default()
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild;
+    fn measure_intrinsic(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild { self.measure(text, available) }
     /// Check semantic slot constraints before a host mounts or uses this node.
     fn validate(&self) -> Result<(), CompositionError> {
         Ok(())
@@ -674,7 +686,9 @@ impl Content {
             });
         surface.map_or(theme, |surface| ContentTheme {
             surface,
+            surface_declared: true,
             foreground: None,
+            icon_foreground: None,
             ..theme
         })
     }
@@ -683,6 +697,7 @@ impl Content {
         if let Some(surface) = self.surface {
             child.surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)
                 .expect("Content Surface validated before host paint");
+            child.surface_declared = true;
         }
         child
     }
@@ -697,14 +712,14 @@ impl Content {
             .iter()
             .find_map(|child| child.theme_for(id, child_theme))
     }
-    /// Opt in for this TextContent or ButtonContent label. Original component,
+    /// Opt in for this TextContent or Button label. Original component,
     /// source, accessible name and interaction state remain owned by this node.
-    /// For CompoundButton, apply this to its decorative TextContent slot.
+    /// For a custom Button, apply this to its decorative TextContent slot.
     pub fn with_label_layout(
         mut self,
         options: tekes_ui_text::LabelOptions,
     ) -> Result<Self, CompositionError> {
-        if self.component::<TextContent>().is_none() && self.component::<ButtonContent>().is_none()
+        if self.component::<TextContent>().is_none() && !self.component::<Button>().is_some_and(Button::supports_label_layout)
         {
             return Err(CompositionError::UnsupportedLabelLayout(self.id));
         }
@@ -714,7 +729,7 @@ impl Content {
     // Toolbar owns a single-line presentation policy, while every descendant
     // retains its source, semantics, mount identity and interaction state.
     fn toolbar_label_layouts(&mut self) {
-        if self.component::<TextContent>().is_some() || self.component::<ButtonContent>().is_some()
+        if self.component::<TextContent>().is_some() || self.component::<Button>().is_some_and(Button::supports_label_layout)
         {
             let state = self.label.get_or_insert_with(|| {
                 label::LabelState::new(tekes_ui_text::LabelOptions::single_line(
@@ -800,12 +815,20 @@ impl Content {
         (self.component.as_mut() as &mut dyn Any).downcast_mut()
     }
     pub fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.measure_content(text, available, false)
+    }
+    /// Same label and finite-geometry service as measure, for decorative slots.
+    pub fn measure_intrinsic(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.measure_content(text, available, true)
+    }
+    fn measure_content(&mut self, text: &mut dyn ButtonTextRenderer, available: Size, intrinsic: bool) -> MeasuredChild {
         let mut measured = if let Some(label) = &mut self.label {
             label.reset();
-            self.component.measure(
-                &mut label::LabelRenderer::new(text, label, self.clip),
-                clean_size(available),
-            )
+            let mut text = label::LabelRenderer::new(text, label, self.clip);
+            if intrinsic { self.component.measure_intrinsic(&mut text, clean_size(available)) }
+            else { self.component.measure(&mut text, clean_size(available)) }
+        } else if intrinsic {
+            self.component.measure_intrinsic(text, clean_size(available))
         } else {
             self.component.measure(text, clean_size(available))
         };
@@ -1420,6 +1443,7 @@ pub struct ContentHost {
     capture_epoch: u64,
     dirty: bool,
     inherited_surface: &'static str,
+    inherited_surface_declared: bool,
     modal: Option<(ComponentId, Option<(ComponentId, u64)>)>,
     modal_focus_pending: bool,
     // Paint-only owner after close. It is never used as the event/focus scope.
@@ -1456,6 +1480,7 @@ impl ContentHost {
             capture_epoch: 0,
             dirty: true,
             inherited_surface: "canvas",
+            inherited_surface_declared: false,
             modal: None,
             modal_focus_pending: false,
             presented_dialog: None,
@@ -1479,8 +1504,9 @@ impl ContentHost {
         name: &str,
     ) -> Result<bool, tekes_ui_tokens::surface_palette::SurfaceError> {
         let surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
-        let changed = self.inherited_surface != surface;
+        let changed = !self.inherited_surface_declared || self.inherited_surface != surface;
         self.inherited_surface = surface;
+        self.inherited_surface_declared = true;
         self.dirty |= changed;
         Ok(changed)
     }
@@ -1733,9 +1759,10 @@ impl ContentHost {
             self.focus(ids.first().copied(), true);
         }
         let paint_id = self.presented_dialog;
-        let theme = ContentTheme::from(palette)
-            .with_surface(self.inherited_surface)
-            .expect("validated inherited Surface");
+        let mut theme = ContentTheme::from(palette);
+        if self.inherited_surface_declared {
+            theme = theme.with_surface(self.inherited_surface).expect("validated inherited Surface");
+        }
         self.root.paint_except(scene, text, theme, paint_id);
         if self.modal.is_none() {
             self.root.paint_overlays(scene, text, theme);
@@ -2717,11 +2744,12 @@ impl StackContent {
         &mut self,
         text: &mut dyn ButtonTextRenderer,
         available: Size,
+        intrinsic: bool,
     ) -> Vec<MeasuredChild> {
         let mut measured: Vec<_> = self
             .children
             .iter_mut()
-            .map(|c| c.measure(text, available))
+            .map(|c| if intrinsic { c.measure_intrinsic(text, available) } else { c.measure(text, available) })
             .collect();
         if let Some(i) = self
             .flexible_child
@@ -2752,10 +2780,27 @@ impl StackContent {
             } else {
                 Size::new(available.width, left)
             };
-            measured[i] = self.children[i].measure(text, constrained);
+            measured[i] = if intrinsic { self.children[i].measure_intrinsic(text, constrained) } else { self.children[i].measure(text, constrained) };
         }
         measured
     }
+    fn measure_content(&mut self, text: &mut dyn ButtonTextRenderer, available: Size, intrinsic: bool) -> MeasuredChild {
+        let horizontal = self.model.axis == Axis::Horizontal;
+        let mut main = 0_f32;
+        let mut cross = 0_f32;
+        for m in self.measurements(text, available, intrinsic) {
+            let m = m.size;
+            main += (if horizontal { m.width } else { m.height }).min(1e8);
+            cross = cross.max(if horizontal { m.height } else { m.width });
+        }
+        main += finite(self.model.gap) * self.children.len().saturating_sub(1) as f32;
+        MeasuredChild::new(if horizontal {
+            Size::new(main, cross)
+        } else {
+            Size::new(cross, main)
+        })
+    }
+
 }
 impl Component for StackContent {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
@@ -2778,24 +2823,11 @@ impl Component for StackContent {
     fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
         Some(&mut self.children)
     }
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        let horizontal = self.model.axis == Axis::Horizontal;
-        let mut main = 0_f32;
-        let mut cross = 0_f32;
-        for m in self.measurements(text, available) {
-            let m = m.size;
-            main += (if horizontal { m.width } else { m.height }).min(1e8);
-            cross = cross.max(if horizontal { m.height } else { m.width });
-        }
-        main += finite(self.model.gap) * self.children.len().saturating_sub(1) as f32;
-        MeasuredChild::new(if horizontal {
-            Size::new(main, cross)
-        } else {
-            Size::new(cross, main)
-        })
-    }
+    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild { self.measure_content(text,available,false) }
+    fn measure_intrinsic(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild { self.measure_content(text,available,true) }
+
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        let measured = self.measurements(text, frame.size);
+        let measured = self.measurements(text, frame.size, false);
         let placements = layout_measured_children(
             frame,
             self.model.axis,
@@ -2859,6 +2891,18 @@ impl Component for GridContent {
             rows.iter().sum::<f32>()
                 + finite(self.model.gap_y) * rows.len().saturating_sub(1) as f32,
         ))
+    }
+    fn measure_intrinsic(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        let columns = self.model.columns.max(1);
+        let cells = self.model.layout(Rect::new(0., 0., available.width, available.height), self.children.len(), 0.);
+        let width = self.children.iter_mut().zip(cells).map(|(child, cell)| {
+            child.measure_intrinsic(text, Size::new(cell.size.width, available.height)).size.width
+        }).fold(0_f32, f32::max);
+        let gap = finite(self.model.gap_x).min(available.width / columns.saturating_sub(1).max(1) as f32);
+        let width = (width * columns as f32 + gap * columns.saturating_sub(1) as f32).min(available.width);
+        // Preserve the original equal-column allocation and remeasure its rows
+        // at the receiving width. No alternative Grid arrangement is introduced.
+        self.measure(text, Size::new(width, available.height))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         let columns = self.model.columns.max(1);
@@ -3139,239 +3183,6 @@ impl ButtonTextRenderer for TextAdapter<'_> {
         self.0.first_line_height(t, r, w)
     }
 }
-/// Real Button model/painter; composition does not duplicate press or key logic.
-/// Pointer-only timing. Keyboard and AX remain their normal once-only actions.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum ButtonActivationPhase {
-    #[default]
-    Release,
-    Press,
-}
-#[derive(Debug)]
-pub struct ButtonContent {
-    pub button: Button,
-    pub label: String,
-    pub variant: ButtonVariant,
-    pub activations: usize,
-    pub pointer_activation_phase: ButtonActivationPhase,
-}
-impl ButtonContent {
-    pub fn new(label: impl Into<String>) -> Self {
-        Self {
-            button: Button::default(),
-            label: label.into(),
-            variant: ButtonVariant::Quiet,
-            activations: 0,
-            pointer_activation_phase: ButtonActivationPhase::Release,
-        }
-    }
-}
-#[derive(Clone, Debug, PartialEq)]
-struct ButtonContentActionDecision {
-    button: crate::widgets::ButtonActionDecision,
-    activations: usize,
-    response: ContentResponse,
-    focus: PreparedActionFocus,
-}
-impl action_preparation::OriginalActionDecision for ButtonContentActionDecision {}
-impl ButtonContent {
-    fn decide_action(
-        &self,
-        request: &action_preparation::OwnedActionRequest,
-    ) -> Option<ButtonContentActionDecision> {
-        let (button, is_pointer) = match request {
-            action_preparation::OwnedActionRequest::Pointer(event) => {
-                let event = event.routing_event();
-                let ContentEvent::PointerDown(point) = event.as_ref() else {
-                    return None;
-                };
-                (self.button.prepare_content_down(
-                    *point,
-                    self.pointer_activation_phase == ButtonActivationPhase::Press,
-                ), true)
-            }
-            action_preparation::OwnedActionRequest::Accessibility(None, AccessibilityAction::Press) => {
-                if !self.focusable() {
-                    return None;
-                }
-                (self.button.prepare_accessibility_press(), false)
-            }
-            _ => return None,
-        };
-        let response = ContentResponse {
-            consumed: if is_pointer { button.consumed } else { button.activated },
-            changed: if is_pointer { button.consumed } else { button.activated },
-            capture_pointer: is_pointer && button.consumed,
-            activated: button.activated,
-            ..Default::default()
-        };
-        Some(ButtonContentActionDecision {
-            button,
-            activations: self.activations,
-            focus: if response.consumed { PreparedActionFocus::Owner } else { PreparedActionFocus::None },
-            response,
-        })
-    }
-
-    fn apply_action(&mut self, decision: ButtonContentActionDecision) {
-        let activated = decision.button.activated;
-        let next_activations = if activated {
-            let Some(next) = self.activations.checked_add(1) else {
-                return;
-            };
-            Some(next)
-        } else {
-            None
-        };
-        self.button.apply_content_action(decision.button);
-        if let Some(next) = next_activations {
-            self.activations = next;
-        }
-    }
-}
-impl Component for ButtonContent {
-    fn set_clip_region(&mut self, region: Option<tekes_ui_scene::ClipRegion>) { self.button.set_clip_region(region); }
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Local }
-    fn table_transaction_compatibility(&self)->TableTransactionCompatibility { TableTransactionCompatibility::StableHooks }
-    fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError> { PreparedEffects::local_work(n) }
-    fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError> { Ok(PreparedEffects::local(self,hooks)) }
-
-
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        let owned = action_preparation::OwnedActionRequest::read(request);
-        if self
-            .decide_action(&owned)
-            .is_some_and(|decision| decision.response.activated && self.activations == usize::MAX)
-        {
-            return action_preparation::rejected();
-        }
-        action_preparation::prepare_original(
-            self,
-            request,
-            Self::decide_action,
-            Self::apply_action,
-            |decision| (decision.response, decision.focus),
-        )
-    }
-
-    fn focus_decoration_above_siblings(&self) -> bool {
-        self.button.frame_policy == crate::ButtonFramePolicy::Exact
-            && self.button.state.focused
-            && self.button.state.focus_visible
-            && !self.button.state.disabled
-            && !self.button.state.loading
-    }
-    fn accessibility_action(
-        &mut self,
-        part: Option<usize>,
-        action: &AccessibilityAction,
-    ) -> ContentResponse {
-        if part.is_some() || !matches!(action, AccessibilityAction::Press) || !self.focusable() {
-            return ContentResponse::default();
-        }
-        self.button.pointer_down();
-        let activated = self.button.pointer_up(true);
-        if activated {
-            self.activations += 1;
-        }
-        ContentResponse {
-            consumed: activated,
-            changed: activated,
-            activated,
-            ..Default::default()
-        }
-    }
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        MeasuredChild::new(Button::measure(
-            &mut TextAdapter(text),
-            &self.label,
-            available.width,
-            ButtonSize::Body,
-            proposal::TextRole::UiBody,
-        ))
-    }
-    fn paint(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        clip: Rect,
-        theme: ContentTheme,
-    ) {
-        self.button.render(
-            scene,
-            &mut TextAdapter(text),
-            &self.label,
-            frame,
-            Some(clip),
-            theme.palette,
-            self.variant,
-            ButtonSize::Body,
-            proposal::TextRole::UiBody,
-            ButtonTextAlign::default(),
-        );
-    }
-    fn focusable(&self) -> bool {
-        !self.button.state.disabled && !self.button.state.loading
-    }
-    fn set_focus(&mut self, focused: bool, visible: bool) {
-        if focused {
-            self.button.state.focused = true;
-            self.button.state.focus_visible = visible
-        } else {
-            self.button.blur()
-        }
-    }
-    fn event(&mut self, event: &ContentEvent) -> ContentResponse {
-        let mut r = ContentResponse::default();
-        match event {
-            ContentEvent::PointerMove(p) => {
-                self.button.pointer_move_at(*p);
-                r.changed = true
-            }
-            ContentEvent::PointerDown(p) => {
-                r.consumed = self.button.pointer_down_at(*p);
-                r.capture_pointer = r.consumed;
-                r.activated = r.consumed
-                    && self.pointer_activation_phase == ButtonActivationPhase::Press
-                    && self.button.activate_pointer_press();
-                r.changed = r.consumed
-            }
-            ContentEvent::PointerUp(p) => {
-                r.activated = self.button.pointer_up_at(*p);
-                r.consumed = true;
-                r.changed = true
-            }
-            ContentEvent::TextCommand(command)
-                if matches!(command.as_str(), "insertNewline:" | "insertLineBreak:") =>
-            {
-                r.activated = self.button.key(ControlKey::Enter, true);
-                r.consumed = true;
-                r.changed = true;
-            }
-            ContentEvent::Key { key, down } => {
-                r.activated = self.button.key(*key, *down);
-                r.consumed = matches!(key, ControlKey::Space | ControlKey::Enter);
-                r.changed = r.consumed
-            }
-            ContentEvent::Cancel => self.button.cancel(),
-            _ => {}
-        }
-        if r.activated {
-            self.activations += 1
-        }
-        r
-    }
-    fn semantics(&self) -> ContentSemantics {
-        let mut s = ContentSemantics::new(ContentRole::Button, &self.label);
-        s.disabled = self.button.state.disabled || self.button.state.loading;
-        s.selected = self.button.state.selected;
-        s
-    }
-}
 #[derive(Debug)]
 pub struct TextContent {
     pub text: String,
@@ -3434,223 +3245,6 @@ fn clean_rect(r: Rect) -> Rect {
         return Rect::default();
     }
     Rect::from_origin_size(r.origin, clean_size(r.size))
-}
-
-/// One production Button action with an arbitrary decorative component subtree.
-/// The accessible name is explicit; child names are not concatenated or exported
-/// as independent accessibility nodes. Interactive descendants are diagnosed by
-/// ContentHost before mounting, painting or dispatching input.
-#[derive(Debug)]
-pub struct CompoundButton {
-    pub action: ButtonContent,
-    content: Vec<Content>,
-    measured: Size,
-}
-#[derive(Clone, Debug, PartialEq)]
-struct CompoundButtonActionDecision {
-    action: ButtonContentActionDecision,
-}
-impl action_preparation::OriginalActionDecision for CompoundButtonActionDecision {}
-impl CompoundButton {
-    pub fn new(
-        accessible_name: impl Into<String>,
-        content: Content,
-    ) -> Result<Self, CompositionError> {
-        let name = accessible_name.into();
-        if name.trim().is_empty() {
-            return Err(CompositionError::EmptyAccessibleName);
-        }
-        Ok(Self {
-            action: ButtonContent::new(name),
-            content: vec![content],
-            measured: Size::default(),
-        })
-    }
-    fn resolve(
-        &self,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        clip: Rect,
-    ) -> crate::ButtonLayout {
-        resolve_action_slot(&self.action, self.measured, frame, clip, text)
-    }
-    fn decide_action(
-        &self,
-        request: &action_preparation::OwnedActionRequest,
-    ) -> Option<CompoundButtonActionDecision> {
-        self.action
-            .decide_action(request)
-            .map(|action| CompoundButtonActionDecision { action })
-    }
-    fn apply_action(&mut self, decision: CompoundButtonActionDecision) {
-        self.action.apply_action(decision.action);
-    }
-}
-impl Component for CompoundButton {
-    fn set_clip_region(&mut self, region: Option<tekes_ui_scene::ClipRegion>) { self.action.set_clip_region(region); }
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
-
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::prepare_original(
-            self,
-            request,
-            Self::decide_action,
-            Self::apply_action,
-            |decision| (decision.action.response, decision.action.focus),
-        )
-    }
-
-    fn focus_decoration_above_siblings(&self) -> bool {
-        self.action.focus_decoration_above_siblings()
-    }
-    fn accessibility_action(
-        &mut self,
-        part: Option<usize>,
-        action: &AccessibilityAction,
-    ) -> ContentResponse {
-        self.action.accessibility_action(part, action)
-    }
-
-    fn fixed_slots(&self) -> bool {
-        true
-    }
-    fn validate(&self) -> Result<(), CompositionError> {
-        if self.content.len() != 1 {
-            return Err(CompositionError::InvalidSlotCount);
-        }
-        if self.action.label.trim().is_empty() {
-            return Err(CompositionError::EmptyAccessibleName);
-        }
-        Ok(())
-    }
-    fn children(&self) -> &[Content] {
-        &self.content
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.content)
-    }
-    fn child_theme(&self, theme: ContentTheme) -> ContentTheme {
-        action_child_theme(&self.action, theme)
-    }
-    // A Button has one fixed content slot, so arbitrary sibling insertion is
-    // intentionally unavailable. Its subtree can use normal container slots.
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        measure_action_slot(
-            &self.action,
-            &mut self.content[0],
-            &mut self.measured,
-            text,
-            available,
-        )
-    }
-    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        self.measure(text, frame.size);
-        let layout = self.resolve(text, frame, clip);
-        let child_clip = layout.content.intersection(&clip).unwrap_or_default();
-        self.content[0].arrange(text, layout.content, child_clip);
-    }
-    fn paint(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        clip: Rect,
-        theme: ContentTheme,
-    ) {
-        self.action.button.render_content_frame(
-            scene,
-            &mut TextAdapter(text),
-            self.measured,
-            frame,
-            Some(clip),
-            theme.palette,
-            self.action.variant,
-        );
-    }
-    fn focusable(&self) -> bool {
-        self.action.focusable()
-    }
-    fn set_focus(&mut self, f: bool, v: bool) {
-        self.action.set_focus(f, v)
-    }
-    fn event(&mut self, e: &ContentEvent) -> ContentResponse {
-        self.action.event(e)
-    }
-    fn semantics(&self) -> ContentSemantics {
-        self.action.semantics()
-    }
-}
-
-fn resolve_action_slot(
-    action: &ButtonContent,
-    measured: Size,
-    frame: Rect,
-    clip: Rect,
-    text: &mut dyn ButtonTextRenderer,
-) -> crate::ButtonLayout {
-    crate::ButtonLayout::resolve_with_text(
-        text,
-        frame,
-        Some(clip),
-        measured,
-        ButtonSize::Body,
-        proposal::TextRole::UiBody,
-        ButtonTextAlign::Leading,
-        action.button.frame_policy,
-    )
-}
-fn measure_action_slot(
-    action: &ButtonContent,
-    content: &mut Content,
-    measured: &mut Size,
-    text: &mut dyn ButtonTextRenderer,
-    available: Size,
-) -> MeasuredChild {
-    if action.button.frame_policy == crate::ButtonFramePolicy::Exact {
-        *measured = content.measure(text, available).size;
-        return MeasuredChild::new(*measured);
-    }
-    let frame = Rect::from_origin_size(Point::default(), available);
-    let empty = crate::ButtonLayout::resolve_with_text(
-        text,
-        frame,
-        None,
-        Size::default(),
-        ButtonSize::Body,
-        proposal::TextRole::UiBody,
-        ButtonTextAlign::Leading,
-        crate::ButtonFramePolicy::Minimum,
-    );
-    *measured = content
-        .measure(text, Size::new(empty.content.size.width, available.height))
-        .size;
-    let layout = resolve_action_slot(
-        action,
-        *measured,
-        Rect::new(0., 0., available.width, 0.),
-        frame,
-        text,
-    );
-    MeasuredChild::new(Size::new(
-        (measured.width + available.width - empty.content.size.width).min(available.width),
-        layout.frame.size.height,
-    ))
-}
-fn action_child_theme(action: &ButtonContent, theme: ContentTheme) -> ContentTheme {
-    let role = if action.button.state.disabled {
-        "tertiary-text"
-    } else if action.variant == ButtonVariant::Primary {
-        "action-primary-foreground"
-    } else {
-        "primary-text"
-    };
-    ContentTheme {
-        foreground: theme.palette.color(role),
-        ..theme
-    }
 }
 
 impl std::fmt::Display for CompositionError {

@@ -54,9 +54,9 @@ impl ReadingFixture {
                             },
                             flexible_child: None,
                             children: vec![
-                                Content::new(EARLIER, ButtonContent::new("加载更早")),
-                                Content::new(APPEND, ButtonContent::new("追加一段")),
-                                Content::new(LATEST, ButtonContent::new("回到最新"))
+                                Content::new(EARLIER, Button::new("加载更早")),
+                                Content::new(APPEND, Button::new("追加一段")),
+                                Content::new(LATEST, Button::new("回到最新"))
                                     .preserving_focus(),
                             ],
                         },
@@ -123,7 +123,7 @@ impl ReadingFixture {
             self.controls
                 .get(id)
                 .unwrap()
-                .component::<ButtonContent>()
+                .component::<Button>()
                 .unwrap()
                 .activations
         });

@@ -6,7 +6,7 @@ use std::{
     collections::{HashMap, VecDeque},
     time::Duration,
 };
-use tekes_ui_controls::Button;
+use tekes_ui_controls::ButtonModel;
 use tekes_ui_motion::apple_defaults::{AppleDefault, Parameters as AppleParameters};
 use tekes_ui_motion::{
     Animated, CancelBehavior, CancelReason, EventKind, Motion, MotionError, MotionOptions,
@@ -257,7 +257,7 @@ pub struct MotionPreview {
     pub hovered: Option<usize>,
     pub pressed: Option<usize>,
     /// Shared production Button models, keyed by stable Motion action ids.
-    pub button_models: HashMap<u64, Button>,
+    pub button_models: HashMap<u64, ButtonModel>,
     /// Final geometry from the most recent Gallery layout/render pass. Pointer
     /// handling consumes this snapshot so it cannot drift from painted frames.
     pub placement: Option<MotionPlacement>,

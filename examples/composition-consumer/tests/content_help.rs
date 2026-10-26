@@ -316,7 +316,7 @@ fn original_pointer_keyboard_and_ax_actions_remain_once_and_close_help() {
     assert_eq!(
         h.get(FIRST)
             .unwrap()
-            .component::<ButtonContent>()
+            .component::<Button>()
             .unwrap()
             .activations,
         3
@@ -561,14 +561,14 @@ fn modal_owns_help_without_exposing_background_or_stealing_focus() {
     let mut h = ContentHost::new(Content::new(
         ROOT,
         Layers(vec![
-            Content::new(FIRST, ButtonContent::new("Background")).with_help("background help"),
+            Content::new(FIRST, Button::new("Background")).with_help("background help"),
             Content::new(
                 modal,
                 DialogContent::new(
                     "Modal",
-                    Content::new(ComponentId(16201), ButtonContent::new("Header")),
-                    Content::new(inside, ButtonContent::new("Inside")).with_help("modal help"),
-                    Content::new(ComponentId(16203), ButtonContent::new("Done")),
+                    Content::new(ComponentId(16201), Button::new("Header")),
+                    Content::new(inside, Button::new("Inside")).with_help("modal help"),
+                    Content::new(ComponentId(16203), Button::new("Done")),
                 ),
             ),
         ]),

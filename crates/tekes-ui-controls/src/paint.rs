@@ -414,6 +414,8 @@ pub enum ButtonVariant {
     Primary,
     /// Quiet action whose resting surface inherits its parent panel.
     Panel,
+    /// Quiet action on the existing window toolbar Surface.
+    Toolbar,
 }
 pub fn button_variant(
     scene: &mut Scene,

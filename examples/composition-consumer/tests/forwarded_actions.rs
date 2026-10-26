@@ -78,7 +78,7 @@ fn public_paint_declaration_forwards_original_button_without_state_predicates() 
             assert!(wrapper.focus_decoration_above_siblings());
         }
         for state in 0..3 {
-            let b = &mut action_mut(&mut h, id).action.button;
+            let b = &mut action_mut(&mut h, id).button;
             b.state.disabled = state == 0;
             b.state.loading = state == 1;
             b.frame_policy = if state == 2 {
@@ -88,14 +88,14 @@ fn public_paint_declaration_forwards_original_button_without_state_predicates() 
             };
             assert!(!action(&h, id).focus_decoration_above_siblings());
         }
-        let b = &mut action_mut(&mut h, id).action.button;
+        let b = &mut action_mut(&mut h, id).button;
         b.state.disabled = false;
         b.state.loading = false;
         b.frame_policy = ButtonFramePolicy::Exact;
         h.focus(Some(id), false);
         assert!(!action(&h, id).focus_decoration_above_siblings());
     }
-    let normal = h.get(NORMAL).unwrap().component::<ButtonContent>().unwrap();
+    let normal = h.get(NORMAL).unwrap().component::<Button>().unwrap();
     assert_eq!(normal.button.frame_policy, ButtonFramePolicy::Minimum);
 }
 #[test]
@@ -130,7 +130,7 @@ fn half_open_rows_and_original_geometry_are_unchanged() {
     let p = Point::new(f.center().x, f.max_y());
     assert!(
         !action(&h, WRAPPED_RELEASE)
-            .action
+
             .button
             .layout()
             .unwrap()
@@ -138,7 +138,7 @@ fn half_open_rows_and_original_geometry_are_unchanged() {
     );
     assert!(
         action(&h, WRAPPED_PRESS)
-            .action
+
             .button
             .layout()
             .unwrap()
@@ -171,8 +171,8 @@ fn original_cancel_disabled_loading_and_unmount_keep_input_ownership() {
                 0 => {
                     event(&mut h, ContentEvent::Cancel);
                 }
-                1 => action_mut(&mut h, id).action.button.state.disabled = true,
-                2 => action_mut(&mut h, id).action.button.state.loading = true,
+                1 => action_mut(&mut h, id).button.state.disabled = true,
+                2 => action_mut(&mut h, id).button.state.loading = true,
                 _ => {
                     h.remove(id).unwrap();
                 }

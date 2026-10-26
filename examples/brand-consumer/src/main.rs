@@ -1,7 +1,7 @@
 //! Consumer-owned app. Public crates only; no Gallery imports or runtime JSON input.
 use std::{fs, path::PathBuf};
 use tekes_ui_controls::{
-    Button, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlState, paint,
+    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlState, paint,
 };
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{GlyphAtlas, Point, Primitive, Rect, Scene, Size};
@@ -155,7 +155,7 @@ fn main() {
                     .into_iter()
                     .enumerate()
                 {
-                    let mut button = Button::default();
+                    let mut button = ButtonModel::default();
                     button.state = ControlState {
                         hovered: column == 1,
                         pressed: column == 2,

@@ -1535,7 +1535,7 @@ mod tests {
             let footer = ["Append paragraph", "Return to latest"]
                 .into_iter()
                 .map(|label| {
-                    tekes_ui_controls::Button::measure(
+                    tekes_ui_controls::ButtonModel::measure(
                         &mut text,
                         label,
                         (width - crate::gallery::layout::PAGE_CONTENT.min_x()) * 0.5

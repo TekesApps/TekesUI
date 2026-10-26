@@ -365,8 +365,8 @@ fn malformed_slots_metadata_and_surface_fail_closed() {
         let children = c.children_mut().unwrap();
         match kind {
             0 => children.clear(),
-            1 => children.push(Content::new(ComponentId(99), ButtonContent::new("Foreign"))),
-            2 => children[0] = Content::new(A, ButtonContent::new("Wrong type")),
+            1 => children.push(Content::new(ComponentId(99), Button::new("Foreign"))),
+            2 => children[0] = Content::new(A, Button::new("Wrong type")),
             _ => {
                 let mut other =
                     ToastContent::new("Other", Toast::new("Other", NoticeTone::Info, 1000), A)

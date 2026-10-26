@@ -3,7 +3,7 @@
 //! they do not paint another stepper or implement another activation machine.
 use std::{cell::RefCell, rc::Rc};
 use tekes_ui_controls::{
-    Button, ButtonSize, ButtonTextRenderer, ControlKey, NumberField,
+    ButtonModel, ButtonSize, ButtonTextRenderer, ControlKey, NumberField,
     composition::*,
     extended::{Axis, Stack},
     feedback_view::{NumberFieldEvent, NumberFieldView},
@@ -42,7 +42,7 @@ struct NumberContent {
 impl Component for NumberContent {
     fn measure(&mut self, mut text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let role = proposal::TextRole::UiBody;
-        let action = Button::measure(&mut text, "+", 48., ButtonSize::Body, role);
+        let action = ButtonModel::measure(&mut text, "+", 48., ButtonSize::Body, role);
         let number = text.measure("4", proposal::TextRole::UiHeading, 80.);
         MeasuredChild::new(Size::new(
             198_f32.min(available.width),
@@ -314,7 +314,7 @@ pub fn build() -> Result<ContentHost, CompositionError> {
                     2.,
                     true,
                 ),
-                Content::new(AFTER, ButtonContent::new("After number")),
+                Content::new(AFTER, Button::new("After number")),
             ],
         },
     ))

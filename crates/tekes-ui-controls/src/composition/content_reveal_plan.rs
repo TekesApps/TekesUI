@@ -1601,8 +1601,8 @@ mod counter_commit_tests {
                 },
                 flexible_child: None,
                 children: vec![
-                    Content::new(a, ButtonContent::new("a")),
-                    Content::new(b, ButtonContent::new("b")),
+                    Content::new(a, Button::new("a")),
+                    Content::new(b, Button::new("b")),
                 ],
             },
         ))

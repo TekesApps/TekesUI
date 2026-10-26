@@ -15,7 +15,7 @@ use std::{
 };
 
 use tekes_ui_controls::{
-    Button, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlMotionContext,
+    ButtonModel, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlMotionContext,
     TextSurfaceTextRenderer,
 };
 use tekes_ui_render::{RenderError, Renderer};
@@ -365,7 +365,7 @@ impl TextEngine {
         size: ButtonSize,
         role: proposal::TextRole,
     ) -> Size {
-        Button::measure(self, label, max_width, size, role)
+        ButtonModel::measure(self, label, max_width, size, role)
     }
 
     /// Render the shared production Button through Gallery's CoreText adapter.
@@ -373,7 +373,7 @@ impl TextEngine {
     pub fn render_button(
         &mut self,
         scene: &mut Scene,
-        button: &mut Button,
+        button: &mut ButtonModel,
         label: &str,
         frame: Rect,
         clip: Option<Rect>,
@@ -930,7 +930,7 @@ mod tests {
 
     #[test]
     fn shared_button_measure_and_render_keep_wrapped_labels_in_the_same_geometry() {
-        use tekes_ui_controls::{Button, ButtonSize, ButtonTextAlign, paint};
+        use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, paint};
         use tekes_ui_scene::Primitive;
 
         let labels = [
@@ -949,7 +949,7 @@ mod tests {
                         ButtonSize::Md,
                         proposal::TextRole::UiBody,
                     );
-                    let mut button = Button::default();
+                    let mut button = ButtonModel::default();
                     let mut scene = Scene::new();
                     let layout = text.render_button(
                         &mut scene,
@@ -1067,12 +1067,12 @@ mod tests {
 
     #[test]
     fn shared_button_single_line_cache_survives_animated_frame_widths() {
-        use tekes_ui_controls::{Button, ButtonSize, ButtonTextAlign, paint};
+        use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, paint};
 
         let mut text = TextEngine::new();
         text.set_type_scale(1.5);
         let label = "Smooth motion preview";
-        let mut button = Button::default();
+        let mut button = ButtonModel::default();
         let palette = tekes_ui_tokens::Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let mut scene = Scene::new();
         let mut first_shapes = None;
@@ -1147,7 +1147,7 @@ mod tests {
 #[cfg(test)]
 mod gold7_focus_raster {
     use super::*;
-    use tekes_ui_controls::{Button, ButtonSize, ButtonTextAlign, paint::ButtonVariant};
+    use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, paint::ButtonVariant};
     use tekes_ui_render::Renderer;
     use tekes_ui_scene::{Rect, Scene};
 
@@ -1168,7 +1168,7 @@ mod gold7_focus_raster {
                 let render = |focused: bool, text: &mut TextEngine, renderer: &mut Renderer| {
                     text.begin_frame();
                     let mut scene = Scene::new();
-                    let mut button = Button::default();
+                    let mut button = ButtonModel::default();
                     button.state.error = true;
                     button.state.focused = focused;
                     button.state.focus_visible = focused;
@@ -1282,7 +1282,7 @@ mod label_content_tests {
         let mut node = match kind {
             0 => label(1),
             1 => {
-                let node = Content::new(ComponentId(1), ButtonContent::new(source));
+                let node = Content::new(ComponentId(1), Button::new(source));
                 if original {
                     node.with_label_layout(LabelOptions::single_line(LabelOverflow::TailEllipsis))
                         .unwrap()
@@ -1292,14 +1292,11 @@ mod label_content_tests {
             }
             _ => Content::new(
                 ComponentId(1),
-                CompoundButton::new(source, label(2)).unwrap(),
+                Button::new(label(2)).with_accessible_name(source),
             ),
         };
-        if let Some(button) = node.component_mut::<ButtonContent>() {
+        if let Some(button) = node.component_mut::<Button>() {
             button.button.state = state;
-        }
-        if let Some(button) = node.component_mut::<CompoundButton>() {
-            button.action.button.state = state;
         }
         node
     }

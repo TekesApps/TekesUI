@@ -293,7 +293,7 @@ fn one_native_vertical_chain_does_not_repeat_and_replacement_cancels_button_fall
         root,
         ListContent::new(
             "root",
-            vec![Content::new(button, ButtonContent::new("old"))],
+            vec![Content::new(button, Button::new("old"))],
         ),
     ))
     .unwrap();
@@ -319,7 +319,7 @@ fn one_native_vertical_chain_does_not_repeat_and_replacement_cancels_button_fall
         .component_mut::<ListContent>()
         .unwrap()
         .rows
-        .children[0] = Content::new(button, ButtonContent::new("replacement"));
+        .children[0] = Content::new(button, Button::new("replacement"));
     h.focus(Some(button), true);
     let r = h.event(&ContentEvent::TextKeyEnd {
         id: 1,

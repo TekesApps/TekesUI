@@ -344,7 +344,7 @@ fn real_coretext_button_consumer_uses_shared_default_without_changing_action_pol
         for brand in 0..3 {
             for width in [180., 420.] {
                 for unavailable in [None, Some(false), Some(true)] {
-                    let mut button = ButtonContent::new("Apply · 确认 A😀B");
+                    let mut button = Button::new("Apply · 确认 A😀B");
                     button.button.state.disabled = unavailable == Some(false);
                     button.button.state.loading = unavailable == Some(true);
                     let mut host =
@@ -378,7 +378,7 @@ fn real_coretext_button_consumer_uses_shared_default_without_changing_action_pol
                     assert_eq!(
                         host.get(ComponentId(9701))
                             .unwrap()
-                            .component::<ButtonContent>()
+                            .component::<Button>()
                             .unwrap()
                             .activations,
                         usize::from(unavailable.is_none())
@@ -386,7 +386,7 @@ fn real_coretext_button_consumer_uses_shared_default_without_changing_action_pol
                     let semantics = host
                         .get(ComponentId(9701))
                         .unwrap()
-                        .component::<ButtonContent>()
+                        .component::<Button>()
                         .unwrap()
                         .semantics();
                     assert_eq!(semantics.name, "Apply · 确认 A😀B");
@@ -700,7 +700,7 @@ fn consumer_defined_popover_owns_one_real_tree_with_layout_edit_focus_and_exit()
                         .host
                         .get(p::OTHER)
                         .unwrap()
-                        .component::<ButtonContent>()
+                        .component::<Button>()
                         .unwrap()
                         .activations,
                     0
@@ -833,7 +833,7 @@ fn consumer_defined_popover_owns_one_real_tree_with_layout_edit_focus_and_exit()
                     .host
                     .insert(
                         p::ROOT,
-                        Content::new(p::CALLER, ButtonContent::new("Replacement caller")),
+                        Content::new(p::CALLER, Button::new("Replacement caller")),
                     )
                     .unwrap();
                 fixture.escape();
@@ -1853,7 +1853,7 @@ fn composed_reading_policy_keeps_history_and_keyboard_latest_does_not_steal_focu
     field.reading = Some(tekes_ui_controls::ReadingController::default());
     host.get_mut(ids::DIALOG_SAVE)
         .unwrap()
-        .component_mut::<ButtonContent>()
+        .component_mut::<Button>()
         .unwrap()
         .label = "Return to latest".into();
     host.show_dialog(ids::DIALOG).unwrap();
@@ -2137,39 +2137,26 @@ fn rejected_root_removal_keeps_rich_dialog_real_input_preedit_and_focus() {
 #[test]
 fn native_text_backend_action_views_honor_model_changes_between_host_events() {
     use tekes_ui_controls::{
-        extended::{IconButton, Link, SegmentedControl},
-        layout_view::{IconButtonView, LinkView, SegmentedControlView},
+        Button,
+        extended::{Link, SegmentedControl},
+        layout_view::{LinkView, SegmentedControlView},
     };
     let mut text = HostText::default();
     let palette = Palette::from(Theme::LIGHT);
-    let mut icon = IconButton::new("Create item").unwrap();
-    let mut icon_view = IconButtonView::new();
+    let mut icon = Button::new(tekes_ui_scene::ImageId(1)).with_accessible_name("Create item");
     let icon_frame = Rect::new(0., 0., 40., 40.);
-    icon_view.render(
-        &mut Scene::new(),
-        &mut text,
-        &mut icon,
-        icon_frame,
-        None,
-        palette,
-    );
-    assert!(icon_view.pointer_down(icon_frame.center()));
+    icon.arrange(&mut text, icon_frame, icon_frame);
+    icon.paint(&mut Scene::new(), &mut text, icon_frame, icon_frame, palette.into());
+    assert!(icon.event(&ContentEvent::PointerDown(icon_frame.center())).consumed);
     // Controlled application state arrives between pointer down and release.
     icon.button.state.loading = true;
-    assert!(!icon_view.pointer_up(icon_frame.center(), &mut icon));
+    assert!(!icon.event(&ContentEvent::PointerUp(icon_frame.center())).activated);
     assert!(icon.button.state.loading);
     icon.button.state.loading = false;
-    icon_view.render(
-        &mut Scene::new(),
-        &mut text,
-        &mut icon,
-        icon_frame,
-        None,
-        palette,
-    );
-    assert!(!icon_view.pointer_up(icon_frame.center(), &mut icon));
-    assert!(icon_view.pointer_down(icon_frame.center()));
-    assert!(icon_view.pointer_up(icon_frame.center(), &mut icon));
+    icon.paint(&mut Scene::new(), &mut text, icon_frame, icon_frame, palette.into());
+    assert!(!icon.event(&ContentEvent::PointerUp(icon_frame.center())).activated);
+    assert!(icon.event(&ContentEvent::PointerDown(icon_frame.center())).consumed);
+    assert!(icon.event(&ContentEvent::PointerUp(icon_frame.center())).activated);
     let mut link = Link::default();
     let mut link_view = LinkView::default();
     let link_frame = Rect::new(60., 0., 240., 40.);
@@ -2296,57 +2283,35 @@ fn native_text_segment_group_availability_preserves_caller_choices() {
 
 #[test]
 fn native_text_icon_defaults_resolve_shared_tokens_and_preserve_explicit_layout() {
-    use tekes_ui_controls::{
-        extended::IconButton,
-        layout_view::{IconButtonView, IconRenderer},
-    };
-    #[derive(Default)]
-    struct Assets(Vec<Rect>);
-    impl IconRenderer for Assets {
-        fn draw_icon(&mut self, _: &mut Scene, _: &str, frame: Rect, _: Rgba) {
-            self.0.push(frame);
+    use tekes_ui_controls::Button;
+    // The approved shared DS rule replaces compact/default presets and a
+    // caller-supplied20px artwork size; explicit allocation remains supported.
+    for scale in [1., 1.5] {
+        let mut text = HostText { type_scale: scale, ..HostText::default() };
+        let mut model = Button::new(tekes_ui_scene::ImageId(1)).with_accessible_name("Create item");
+        let natural = model.measure(&mut text, Size::new(f32::MAX, f32::MAX)).size;
+        let side = proposal::metric("size", "size-icon-standard").unwrap() * scale;
+        let inset = proposal::metric("spacing", "space-relaxed").unwrap() * scale;
+        let minimum = proposal::metric("size", "size-action-button").unwrap() * scale;
+        assert_eq!(natural, Size::new(side + inset * 2., minimum));
+        for frame in [
+            Rect::new(4., 6., natural.width, natural.height),
+            Rect::new(0., 0., 56. * scale, 48. * scale),
+        ] {
+            model.arrange(&mut text, frame, frame);
+            let mut scene = Scene::new();
+            model.paint(&mut scene, &mut text, frame, frame, Palette::from(Theme::LIGHT).into());
+            assert_eq!(model.button.layout().unwrap().frame, frame);
+            let icon = scene.primitives().iter().find_map(|p| match p {
+                tekes_ui_scene::Primitive::Image(image) if image.image == tekes_ui_scene::ImageId(1) => Some(image.rect),
+                _ => None,
+            }).expect("real image Button must retain its artwork");
+            assert_eq!(icon.size, Size::new(side, side));
+            assert_eq!(icon.center(), frame.center());
+            assert!(model.event(&ContentEvent::PointerDown(frame.center())).consumed);
+            assert!(model.event(&ContentEvent::PointerUp(frame.center())).activated);
         }
     }
-    let mut text = HostText::default();
-    let mut assets = Assets::default();
-    let mut model = IconButton::new("Create item").unwrap();
-    let mut view = IconButtonView::new();
-    for compact in [false, true] {
-        let natural = IconButtonView::measure(compact);
-        let frame = Rect::new(4., 6., natural.width, natural.height);
-        let layout = view.render_with_icon(
-            &mut Scene::new(),
-            &mut text,
-            &mut assets,
-            "plus",
-            &mut model,
-            frame,
-            None,
-            Theme::LIGHT.into(),
-            0.,
-        );
-        assert_eq!(layout.frame, frame);
-        let icon = *assets.0.last().unwrap();
-        let side = proposal::metric("size", "size-icon-standard").unwrap();
-        assert_eq!(icon.size, Size::new(side, side));
-        assert_eq!(icon.center(), frame.center());
-        assert!(view.pointer_down(frame.center()));
-        assert!(view.pointer_up(frame.center(), &mut model));
-    }
-    let frame = Rect::new(0., 0., 56., 48.);
-    view.render_with_icon(
-        &mut Scene::new(),
-        &mut text,
-        &mut assets,
-        "plus",
-        &mut model,
-        frame,
-        None,
-        Theme::LIGHT.into(),
-        20.,
-    );
-    assert_eq!(view.layout().frame, frame);
-    assert_eq!(assets.0.last().unwrap().size, Size::new(20., 20.));
 }
 
 #[test]
@@ -3013,7 +2978,7 @@ fn rich_dialog_restores_only_the_original_mounted_invoker() {
                 2 => {
                     host.get_mut(ids::DIALOG_INVOKER)
                         .unwrap()
-                        .component_mut::<ButtonContent>()
+                        .component_mut::<Button>()
                         .unwrap()
                         .button
                         .state
@@ -3028,7 +2993,7 @@ fn rich_dialog_restores_only_the_original_mounted_invoker() {
                         ids::DIALOG_SCREEN,
                         Content::new(
                             ids::DIALOG_INVOKER,
-                            ButtonContent::new("Replacement invoker"),
+                            Button::new("Replacement invoker"),
                         ),
                     )
                     .unwrap();
@@ -3113,7 +3078,7 @@ fn consumer_popover_dismiss_owns_space_down_without_activating_another_control()
             .host
             .get(p::OTHER)
             .unwrap()
-            .component::<ButtonContent>()
+            .component::<Button>()
             .unwrap()
             .activations,
         0
@@ -3733,7 +3698,7 @@ fn real_mixed_documents_restore_a_b_a_intent_and_reject_old_callbacks_without_bl
             flexible_child: None,
             children: vec![
                 Content::new(ComponentId(12001), TextContent::new("Document B panel")),
-                Content::new(ComponentId(12002), ButtonContent::new("Open details")),
+                Content::new(ComponentId(12002), Button::new("Open details")),
                 Content::new(ComponentId(12003), SwitchContent::new("Keep details", true)),
             ],
         },

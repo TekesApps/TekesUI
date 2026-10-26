@@ -282,7 +282,7 @@ mod issue102_original_allocator_tests {
     fn stack(n:u64,children:Vec<Content>)->Content{Content::new(id(n),StackContent{model:Stack{axis:Axis::Vertical,gap:0.},flexible_child:None,children})}
     fn split(leading:Content,trailing:Content)->Content{Content::new(id(1),SplitViewContent::try_new(SplitViewConstruction{config:SplitViewConfig::default(),slots:SplitViewSlotIds{leading:id(2),trailing:id(3),divider:id(4)},leading,trailing,budget:BUDGET}).unwrap())}
     fn fixture()->ContentHost {
-        let mut host=ContentHost::try_new_prepared(split(Content::new(id(10),ScrollContent::new(ScrollArea::default(),Content::new(id(11),TextContent::new("History")))),Content::new(id(20),ButtonContent::new("B"))),BUDGET).unwrap();
+        let mut host=ContentHost::try_new_prepared(split(Content::new(id(10),ScrollContent::new(ScrollArea::default(),Content::new(id(11),TextContent::new("History")))),Content::new(id(20),Button::new("B"))),BUDGET).unwrap();
         host.set_scroll_reading_document(id(10),"history",7,vec![id(11)],|_|()).unwrap();host
     }
     fn req(host:&ContentHost,replacement:Content)->SplitViewReplacement{SplitViewReplacement{owner:id(1),expected:host.split_view_expected(id(1)).unwrap(),pane:Pane::Leading,replacement,budget:BUDGET}}
@@ -291,7 +291,7 @@ mod issue102_original_allocator_tests {
         if !issue102_counter_process("composition::actions::issue102_original_allocator_tests::issue102_real_global_hidden_reader_max_refuses_and_returns_whole_input"){return;}
         let globals=Globals::save();let mut host=fixture();let expected=host.split_view_expected(id(1)).unwrap();let mut config=host.get(id(1)).unwrap().component::<SplitViewContent>().unwrap().config().unwrap();config.collapsed=Some(Pane::Leading);
         host.update_split_view(id(1),expected,config,BUDGET).unwrap();
-        let input=req(&host,Content::new(id(30),ButtonContent::new("new")));let input_mount=input.replacement.mount;
+        let input=req(&host,Content::new(id(30),Button::new("new")));let input_mount=input.replacement.mount;
         let before=format!("{host:?}");let mount=NEXT_MOUNT.load(Ordering::Relaxed);
         crate::reading::test_attachment_counter(Some(u64::MAX));
         let rejected=host.replace_split_view_pane(input).unwrap_err();assert_eq!(rejected.error,SplitViewError::ResourceCapacity);assert_eq!(rejected.input.replacement.mount,input_mount);assert_eq!(format!("{host:?}"),before);assert_eq!(NEXT_MOUNT.load(Ordering::Relaxed),mount);assert_eq!(crate::reading::test_attachment_counter(None),u64::MAX);
@@ -302,8 +302,8 @@ mod issue102_original_allocator_tests {
     fn issue102_original_reader_hole_then_success_never_publishes_or_reuses_hole(){
         if !issue102_counter_process("composition::actions::issue102_original_allocator_tests::issue102_original_reader_hole_then_success_never_publishes_or_reuses_hole"){return;}
         let globals=Globals::save();let mut host=fixture();
-        let large=stack(30,(31..45).map(|n|Content::new(id(n),ButtonContent::new("large"))).collect());
-        let small=Content::new(id(50),ButtonContent::new("small"));let input=req(&host,large);
+        let large=stack(30,(31..45).map(|n|Content::new(id(n),Button::new("large"))).collect());
+        let small=Content::new(id(50),Button::new("small"));let input=req(&host,large);
         let before=format!("{host:?}");let start=crate::reading::test_attachment_counter(None);NEXT_MOUNT.store(u64::MAX-10,Ordering::Relaxed);
         let rejected=host.replace_split_view_pane(input).unwrap_err();assert_eq!(rejected.error,SplitViewError::ResourceCapacity);assert_eq!(format!("{host:?}"),before);assert_eq!(NEXT_MOUNT.load(Ordering::Relaxed),u64::MAX-10);assert_eq!(crate::reading::test_attachment_counter(None),start+1);
         // No reset between observations: a smaller preconstructed request fits.
@@ -317,7 +317,7 @@ mod issue102_original_allocator_tests {
         let globals=Globals::save();let mut host=fixture();let expected=host.split_view_expected(id(1)).unwrap();let config=host.get(id(1)).unwrap().component::<SplitViewContent>().unwrap().config().unwrap();
         NEXT_MOUNT.store(u64::MAX,Ordering::Relaxed);crate::reading::test_attachment_counter(Some(u64::MAX));let before=format!("{host:?}");assert!(!host.update_split_view(id(1),expected,config,BUDGET).unwrap());assert_eq!(format!("{host:?}"),before);assert_eq!(NEXT_MOUNT.load(Ordering::Relaxed),u64::MAX);assert_eq!(crate::reading::test_attachment_counter(None),u64::MAX);
         globals.restore();drop(host);
-        let leading=Content::new(id(100),ButtonContent::new("A"));let trailing=Content::new(id(101),ButtonContent::new("B"));let input=SplitViewConstruction{config:SplitViewConfig::default(),slots:SplitViewSlotIds{leading:id(102),trailing:id(103),divider:id(104)},leading,trailing,budget:BUDGET};
+        let leading=Content::new(id(100),Button::new("A"));let trailing=Content::new(id(101),Button::new("B"));let input=SplitViewConstruction{config:SplitViewConfig::default(),slots:SplitViewSlotIds{leading:id(102),trailing:id(103),divider:id(104)},leading,trailing,budget:BUDGET};
         NEXT_MOUNT.store(u64::MAX-2,Ordering::Relaxed);let rejected=SplitViewContent::try_new(input).unwrap_err();assert_eq!(NEXT_MOUNT.load(Ordering::Relaxed),u64::MAX-2);
         NEXT_MOUNT.store(u64::MAX-3,Ordering::Relaxed);let split=SplitViewContent::try_new(*rejected.input).unwrap();assert_eq!(NEXT_MOUNT.load(Ordering::Relaxed),u64::MAX);globals.restore();
         let root=Content::new(id(105),split);let count=super::super::prepared::count(&root).unwrap();NEXT_MOUNT.store(u64::MAX-(count as u64-1),Ordering::Relaxed);let before=NEXT_MOUNT.load(Ordering::Relaxed);let rejected=ContentHost::try_new_prepared(root,BUDGET).unwrap_err();assert_eq!(NEXT_MOUNT.load(Ordering::Relaxed),before);
@@ -402,7 +402,7 @@ mod issue102_original_allocator_tests {
             fn measure(&mut self,_:&str,_:tekes_ui_tokens::proposal::TextRole,_:f32)->Size{Size::new(20.,20.)}
             fn draw(&mut self,_:&mut Scene,_:&str,_:tekes_ui_tokens::proposal::TextRole,_:Rect,_:crate::ButtonTextAlign,_:tekes_ui_tokens::Rgba){}
         }
-        let mut host=ContentHost::try_new_prepared(split(Content::new(id(10),ButtonContent::new("A")),Content::new(id(20),ButtonContent::new("B"))),BUDGET).unwrap();
+        let mut host=ContentHost::try_new_prepared(split(Content::new(id(10),Button::new("A")),Content::new(id(20),Button::new("B"))),BUDGET).unwrap();
         let frame=Rect::new(0.,0.,600.,300.);host.render_checked(&mut Scene::new(),&mut Text,frame,frame,tekes_ui_tokens::Theme::LIGHT.into()).unwrap();
         let point=host.get(id(1)).unwrap().component::<SplitViewContent>().unwrap().layout().unwrap().divider.frame().center();
         host.capture_epoch=u64::MAX;let before=format!("{:?}",host.root);let focus=host.focus_epoch;let response=host.event(&ContentEvent::PointerDown(point));
@@ -413,7 +413,7 @@ mod issue102_original_allocator_tests {
         host.cancel_pointer_capture();assert_eq!(host.capture_epoch,u64::MAX);
         let expected=host.split_view_expected(id(1)).unwrap();let mut config=expected.config;config.ratio=0.3;
         host.update_split_view(id(1),expected,config,BUDGET).unwrap();assert_eq!(host.capture_epoch,u64::MAX);
-        let replacement=req(&host,Content::new(id(30),ButtonContent::new("new")));host.replace_split_view_pane(replacement).unwrap();assert_eq!(host.capture_epoch,u64::MAX);
+        let replacement=req(&host,Content::new(id(30),Button::new("new")));host.replace_split_view_pane(replacement).unwrap();assert_eq!(host.capture_epoch,u64::MAX);
     }
 
 }

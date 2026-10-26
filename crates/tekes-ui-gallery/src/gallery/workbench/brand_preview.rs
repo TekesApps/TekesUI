@@ -1,7 +1,7 @@
 use super::super::{PageCtx, text_demo::TextDemo};
 use std::collections::{HashMap, HashSet};
 use tekes_ui_controls::{
-    Button, ButtonSize, ButtonTextAlign, ControlKey, DialogEvent, DialogView, paint,
+    ButtonModel, ButtonSize, ButtonTextAlign, ControlKey, DialogEvent, DialogView, paint,
 };
 use tekes_ui_platform_macos::{Event, KeyEventKind, MouseButton, MouseEventKind};
 use tekes_ui_scene::{Point, Quad, Rect, Scene};
@@ -28,7 +28,7 @@ pub(super) struct BrandPreview {
     direction: Option<String>,
     candidate: Option<usize>,
     input: TextDemo,
-    buttons: HashMap<usize, Button>,
+    buttons: HashMap<usize, ButtonModel>,
     hits: Vec<(usize, Rect)>,
     focus_frames: Vec<(usize, Rect)>,
     focus: Option<usize>,

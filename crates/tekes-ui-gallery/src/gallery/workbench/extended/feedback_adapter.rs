@@ -3,7 +3,7 @@
 //! The story keeps its deterministic fixture models; these runtimes own their
 //! component geometry, clipping, transient pointer state and presentation.
 use tekes_ui_controls::{
-    Button, ButtonTextRenderer, ControlKey,
+    ButtonModel, ButtonTextRenderer, ControlKey,
     extended::{Banner, EmptyState, Popover, Progress, StatusBadge, Toast, Tooltip},
     feedback_view::{
         BannerView, EmptyStateView, OverlayEvent, OverlayLayout, ProgressView, StatusBadgeView,
@@ -345,7 +345,7 @@ fn matrix_button(
     label: &str,
     focused: bool,
 ) {
-    let mut button = Button::default();
+    let mut button = ButtonModel::default();
     button.state.focused = focused;
     button.state.focus_visible = focused;
     button.render(
@@ -378,7 +378,7 @@ fn matrix_tooltip(
         ("Escape · dismissed until leave", 3),
     ] {
         *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
-        let button_size = Button::measure(
+        let button_size = ButtonModel::measure(
             ctx.text,
             "Hover or focus me",
             width.min(190.0),
@@ -467,7 +467,7 @@ fn matrix_popover(
         ("Open · dismiss action focus-visible", true, true),
     ] {
         *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
-        let button_size = Button::measure(
+        let button_size = ButtonModel::measure(
             ctx.text,
             "More options",
             180.0_f32.min(width),

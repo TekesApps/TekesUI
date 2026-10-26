@@ -21,7 +21,7 @@ use std::{
     time::Duration,
 };
 use tekes_ui_controls::{
-    Button, ButtonSize, ButtonTextAlign, ButtonTextRenderer, CheckState, Checkbox, ControlKey,
+    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, CheckState, Checkbox, ControlKey,
     ControlState, DialogEvent, DialogView, Field, MenuEvent, MenuLayout, MenuView, MenuWheelEvent,
     MenuWheelInput, NumberField, Select, TabsLayout, TabsView,
     extended::{Axis, ControlFrame},
@@ -209,7 +209,7 @@ pub struct StoryState {
     menu_layout: Option<MenuLayout>,
     select_menu_layout: Option<MenuLayout>,
     dialog_layout: Option<tekes_ui_controls::DialogLayout>,
-    buttons: HashMap<usize, Button>,
+    buttons: HashMap<usize, ButtonModel>,
     button_labels: HashMap<usize, String>,
     log: VecDeque<String>,
     phase_frame: Option<Rect>,
@@ -410,7 +410,7 @@ impl StoryState {
                     .get(id - 40)?
                     .frame
             }
-            _ => self.buttons.get(&id).and_then(Button::layout)?.frame,
+            _ => self.buttons.get(&id).and_then(ButtonModel::layout)?.frame,
         };
         Some(frame)
     }
@@ -449,7 +449,7 @@ impl StoryState {
             if self.button_hits.contains(id) {
                 self.buttons
                     .get(id)
-                    .and_then(Button::layout)
+                    .and_then(ButtonModel::layout)
                     .is_some_and(|layout| layout.hit_test(point) && rect.contains(point))
                     .then_some(*id)
             } else {
@@ -1783,9 +1783,6 @@ impl Workbench {
         }
         if extended::supports(renderer) {
             state.extended.host_focus_changed(renderer, target, true);
-            if renderer == "icon-button" {
-                state.extended.icon_button.button.state.focused = true;
-            }
             if renderer == "link" {
                 state.extended.link.button.state.focused = true;
             }
@@ -3033,7 +3030,7 @@ impl Workbench {
                 }
                 input.build_search_clipped(ctx, r, Some(c), scene);
             } else if checkbox {
-                let mut button = Button::default();
+                let mut button = ButtonModel::default();
                 button.state = state;
                 let mut control = Checkbox {
                     button,
@@ -3049,7 +3046,7 @@ impl Workbench {
                     proposal::TextRole::UiBody,
                 );
             } else {
-                let mut fixture = Button::default();
+                let mut fixture = ButtonModel::default();
                 fixture.state = state;
                 let title = if state.loading {
                     "Loading…"
@@ -3276,7 +3273,7 @@ impl Workbench {
             .enumerate()
             {
                 let r = Rect::new(c.min_x(), row_y, c.size.width.min(200.), height);
-                let mut button = Button::default();
+                let mut button = ButtonModel::default();
                 ctx.text.render_button(
                     scene,
                     &mut button,
@@ -3299,7 +3296,7 @@ impl Workbench {
                 } else {
                     Rect::new(r.min_x(), primary_bottom + 12., r.size.width, r.size.height)
                 };
-                let mut quiet_button = Button::default();
+                let mut quiet_button = ButtonModel::default();
                 ctx.text.render_button(
                     scene,
                     &mut quiet_button,
@@ -4081,7 +4078,7 @@ impl Workbench {
         let trigger = s
             .buttons
             .get(&20)
-            .and_then(Button::layout)
+            .and_then(ButtonModel::layout)
             .map(|layout| layout.frame);
         if (s.menu_view.is_open() || s.menu_view.is_presented())
             && let Some(trigger) = trigger
@@ -4161,7 +4158,7 @@ impl Workbench {
                 "Resolve fixture",
                 (false, false),
             );
-            if let Some(button) = s.buttons.get(&21).and_then(Button::layout) {
+            if let Some(button) = s.buttons.get(&21).and_then(ButtonModel::layout) {
                 let left = occupied.min_x().min(button.frame.min_x());
                 let top = occupied.min_y().min(button.frame.min_y());
                 let right = occupied.max_x().max(button.frame.max_x());
@@ -4946,9 +4943,6 @@ impl Workbench {
                         }
                         if extended::supports(renderer) {
                             s.extended.host_focus_changed(renderer, ids[n], true);
-                            if renderer == "icon-button" {
-                                s.extended.icon_button.button.state.focused = true;
-                            }
                             if renderer == "link" {
                                 s.extended.link.button.state.focused = true;
                             }
@@ -5389,7 +5383,7 @@ impl Workbench {
                         if extended::supports(renderer) {
                             s.extended.focused = Some(id);
                             if renderer == "icon-button" {
-                                s.extended.icon_button.button.state.focused = true;
+                                s.extended.icon_button_view.focus(false);
                             }
                             if renderer == "link" {
                                 s.extended.link.button.state.focused = true;
@@ -5718,7 +5712,7 @@ mod tests {
 
         let state = workbench.state(i);
         let tab_frames: Vec<_> = (0..=6)
-            .filter_map(|id| state.buttons.get(&id).and_then(Button::layout))
+            .filter_map(|id| state.buttons.get(&id).and_then(ButtonModel::layout))
             .map(|layout| layout.frame)
             .collect();
         assert!(!tab_frames.is_empty());
@@ -9610,7 +9604,7 @@ mod interaction_tests {
             let viewport = Rect::new(0., 0., width, 1600.);
             build_in(&mut w, i, &mut text, viewport);
             let trigger = w.state(i).extended.command_view.trigger_layout().unwrap();
-            let expected = Button::measure(
+            let expected = ButtonModel::measure(
                 &mut text,
                 "Open command palette",
                 trigger.frame.size.width,

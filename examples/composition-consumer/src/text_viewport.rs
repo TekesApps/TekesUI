@@ -51,7 +51,7 @@ impl ViewportFixture {
                 children: vec![
                     Content::new(TRANSCRIPT, transcript),
                     Content::new(COMPOSER, composer),
-                    Content::new(SEND, ButtonContent::new("发送")),
+                    Content::new(SEND, Button::new("发送")),
                 ],
             },
         ))

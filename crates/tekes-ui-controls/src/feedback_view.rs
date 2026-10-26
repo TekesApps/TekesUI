@@ -6,7 +6,7 @@ use crate::extended::{
     Banner, EmptyState, NoticeTone, Popover, Progress, StatusBadge, Toast, Tooltip,
 };
 use crate::{
-    Button, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout, ControlKey, Field,
+    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout, ControlKey, Field,
     Insets, NumberField, Toolbar, paint,
 };
 use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
@@ -249,10 +249,10 @@ impl SurfaceView {
     }
 }
 
-/// Toolbar owns the equal-width action layout and each production Button.
+/// Toolbar owns the equal-width action layout and each production ButtonModel.
 #[derive(Clone, Debug, Default)]
 pub struct ToolbarView {
-    buttons: Vec<Button>,
+    buttons: Vec<ButtonModel>,
     layout: Vec<crate::ButtonLayout>,
     focus: Option<usize>,
     disabled: bool,
@@ -261,7 +261,7 @@ pub struct ToolbarView {
 impl ToolbarView {
     pub fn new(count: usize, gap: f32) -> Self {
         Self {
-            buttons: vec![Button::default(); count],
+            buttons: vec![ButtonModel::default(); count],
             layout: Vec::new(),
             focus: None,
             disabled: false,
@@ -298,7 +298,7 @@ impl ToolbarView {
         palette: Palette,
         role: proposal::TextRole,
     ) -> Vec<crate::ButtonLayout> {
-        self.buttons.resize_with(labels.len(), Button::default);
+        self.buttons.resize_with(labels.len(), ButtonModel::default);
         self.focus = self.focus.filter(|i| *i < labels.len());
         let rects = Toolbar::layout(frame, labels.len(), self.gap);
         self.layout.clear();
@@ -573,8 +573,8 @@ impl FieldView {
 /// editing or locale parsing.
 #[derive(Clone, Debug, Default)]
 pub struct NumberFieldView {
-    minus: Button,
-    plus: Button,
+    minus: ButtonModel,
+    plus: ButtonModel,
     layout: NumberFieldLayout,
     disabled: bool,
     focused: Option<bool>,
@@ -694,7 +694,7 @@ impl NumberFieldView {
         self.minus.state.focused = self.focused == Some(false);
         self.plus.state.focused = self.focused == Some(true);
         // The stepper owns these allocated hit slots, including narrow widths.
-        // Do not apply Button's minimum/insets again after typography scales.
+        // Do not apply ButtonModel's minimum/insets again after typography scales.
         self.minus.frame_policy = crate::ButtonFramePolicy::Exact;
         self.plus.frame_policy = crate::ButtonFramePolicy::Exact;
         let d = self.minus.render(
@@ -1020,7 +1020,7 @@ pub struct PopoverView {
     presence: OverlayPresence,
     layout: OverlayLayout,
     disabled: bool,
-    dismiss: Button,
+    dismiss: ButtonModel,
     dismiss_layout: Option<crate::ButtonLayout>,
     logical_dismiss_frame: Option<Rect>,
     outside_armed: bool,
@@ -1032,7 +1032,7 @@ impl Default for PopoverView {
             presence: OverlayPresence::default(),
             layout: OverlayLayout::default(),
             disabled: false,
-            dismiss: Button::default(),
+            dismiss: ButtonModel::default(),
             dismiss_layout: None,
             logical_dismiss_frame: None,
             outside_armed: false,
@@ -1086,7 +1086,7 @@ impl PopoverView {
         role: proposal::TextRole,
     ) -> Size {
         let spacing = popover_spacing();
-        let dismiss = Button::measure(text, "Dismiss", spacing.action_width, ButtonSize::Md, role);
+        let dismiss = ButtonModel::measure(text, "Dismiss", spacing.action_width, ButtonSize::Md, role);
         Size::new(
             (content.width + spacing.content_inset_x * 2.)
                 .max(spacing.action_width + spacing.action_inset_x * 2.)
@@ -1142,7 +1142,7 @@ impl PopoverView {
         let dismiss_w = spacing
             .action_width
             .min((frame.size.width - spacing.action_inset_x * 2.).max(0.));
-        let dismiss_h = Button::measure(text, "Dismiss", dismiss_w, ButtonSize::Md, role)
+        let dismiss_h = ButtonModel::measure(text, "Dismiss", dismiss_w, ButtonSize::Md, role)
             .height
             .min((frame.size.height - spacing.content_inset_y).max(0.));
         let dismiss_top = frame.max_y() - spacing.content_inset_y - dismiss_h;
@@ -1530,7 +1530,7 @@ fn notice_usage(tone:NoticeTone,toast:bool)->&'static str {match tone {
 #[derive(Clone, Debug, Default)]
 pub struct ToastView {
     layout: ViewLayout,
-    dismiss: Button,
+    dismiss: ButtonModel,
     dismiss_layout: Option<crate::ButtonLayout>,
     logical_dismiss_frame: Option<Rect>,
     inactive: bool,
@@ -1560,7 +1560,7 @@ impl ToastView {
         } else {
             (width - leading_inset - gap - right_inset).max(0.0)
         };
-        let natural_action = Button::measure(
+        let natural_action = ButtonModel::measure(
             text,
             "Dismiss",
             available_action_width,
@@ -1568,7 +1568,7 @@ impl ToastView {
             role,
         );
         let action_width = natural_action.width.max(90.0).min(available_action_width);
-        let action_height = Button::measure(text, "Dismiss", action_width, ButtonSize::Body, role)
+        let action_height = ButtonModel::measure(text, "Dismiss", action_width, ButtonSize::Body, role)
             .height
             .max(34.0);
         let content_width = if stacked {
@@ -1598,7 +1598,7 @@ impl ToastView {
         } else {
             (frame.size.width - leading_inset - gap - right_inset).max(0.0)
         };
-        let natural_action = Button::measure(
+        let natural_action = ButtonModel::measure(
             text,
             "Dismiss",
             available_action_width,
@@ -1606,7 +1606,7 @@ impl ToastView {
             role,
         );
         let dismiss_w = natural_action.width.max(90.0).min(available_action_width);
-        let dismiss_h = Button::measure(text, "Dismiss", dismiss_w, ButtonSize::Body, role)
+        let dismiss_h = ButtonModel::measure(text, "Dismiss", dismiss_w, ButtonSize::Body, role)
             .height
             .max(34.0);
         let dismiss_x = if stacked {
@@ -1768,7 +1768,7 @@ impl ToastView {
 #[derive(Clone, Debug, Default)]
 pub struct BannerView {
     layout: ViewLayout,
-    dismiss_button: Button,
+    dismiss_button: ButtonModel,
     dismiss_layout: Option<crate::ButtonLayout>,
     logical_dismiss_frame: Option<Rect>,
     inactive: bool,
@@ -1796,7 +1796,7 @@ impl BannerView {
             let message_height = text.measure(message, role, message_width).height.max(54.0);
             let action_width = (width - 46.0).clamp(0.0, 180.0);
             let action_height =
-                Button::measure(text, "Dismiss", action_width, ButtonSize::Body, role)
+                ButtonModel::measure(text, "Dismiss", action_width, ButtonSize::Body, role)
                     .height
                     .max(34.0);
             Size::new(width, 6.0 + message_height + 8.0 + action_height + 10.0)
@@ -1837,7 +1837,7 @@ impl BannerView {
         } else {
             frame.size.width.min(92.)
         };
-        let dismiss_h = Button::measure(text, "Dismiss", dismiss_w, ButtonSize::Body, role)
+        let dismiss_h = ButtonModel::measure(text, "Dismiss", dismiss_w, ButtonSize::Body, role)
             .height
             .max(34.)
             .min((frame.size.height - 16.).max(0.));
@@ -2092,7 +2092,7 @@ impl ProgressView {
 #[derive(Clone, Debug, Default)]
 pub struct EmptyStateView {
     layout: ViewLayout,
-    action: Button,
+    action: ButtonModel,
     action_layout: Option<crate::ButtonLayout>,
     logical_action_frame: Option<Rect>,
     disabled: bool,
@@ -2168,7 +2168,7 @@ impl EmptyStateView {
         let detail = Rect::new(4., detail_y, detail_width, detail_h);
         let action = model.action.as_ref().map(|label| {
             let width = content_width.min(150.);
-            let height = Button::measure(text, label, width, ButtonSize::Body, role)
+            let height = ButtonModel::measure(text, label, width, ButtonSize::Body, role)
                 .height
                 .max(34.);
             Rect::new(4., detail.max_y().max(100.), width, height)
@@ -3237,7 +3237,7 @@ mod tests {
         }
         assert!(
             violations.is_empty(),
-            "owned actions bypassed shared Button default: {violations:?}"
+            "owned actions bypassed shared ButtonModel default: {violations:?}"
         );
     }
 

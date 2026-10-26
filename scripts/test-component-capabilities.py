@@ -189,14 +189,14 @@ class CapabilityTests(unittest.TestCase):
 
     def test_public_reexports_and_aliases_resolve_to_the_actual_source(self):
         self.assertEqual(capabilities.resolve_api('tekes_ui_controls::Button'),
-                         ('crates/tekes-ui-controls/src/widgets.rs', 'Button'))
+                         ('crates/tekes-ui-controls/src/composition/button.rs', 'Button'))
         self.assertEqual(capabilities.resolve_api('tekes_ui_controls::ScrollArea'),
                          ('crates/tekes-ui-controls/src/scroll_view.rs', 'ScrollView'))
         self.assertEqual(capabilities.resolve_api('tekes_ui_controls::layout_view::IconView'),
                          ('crates/tekes-ui-controls/src/layout_view.rs', 'IconView'))
 
     def test_a_same_named_declaration_does_not_prove_a_public_path(self):
-        for api in ['tekes_ui_controls::widgets::Button',
+        for api in ['tekes_ui_controls::widgets::ButtonModel',
                     'tekes_ui_controls::extended::Button',
                     'tekes_ui_controls::MissingComponent',
                     'tekes_ui_controls::scroll_view::ScrollView']:
@@ -268,16 +268,18 @@ class CapabilityTests(unittest.TestCase):
         self.assertEqual(len({e['api'] for e in surface}), len(surface))
         self.assertEqual({e['category'] for e in surface},
                          {'component', 'component-support', 'component-alias', 'component-adapter', 'composition', 'shared-support'})
-        compound = next(e for e in surface if e['api'].endswith('::CompoundButton'))
-        self.assertEqual(compound['components'], ['tui.button'])
-        self.assertEqual(compound['category'], 'component-adapter')
+        button = next(e for e in surface if e['api'] == 'tekes_ui_controls::composition::Button')
+        self.assertEqual(button['components'], ['tui.button', 'tui.icon-button'])
+        self.assertEqual(button['category'], 'component-adapter')
+        removed = {'ButtonContent', 'CompoundButton', 'IconButton', 'IconButtonView'}
+        self.assertFalse(any(e['api'].split('::')[-1] in removed for e in surface))
         self.assertEqual(self.data['counts']['components'], 45)
 
     def test_new_public_types_and_reexport_aliases_report_the_exact_missing_path(self):
         for file, declaration, missing in [
             ('lib.rs', 'pub struct UnregisteredControl;', 'tekes_ui_controls::UnregisteredControl'),
             ('layout_view.rs', 'pub struct UnregisteredView;', 'tekes_ui_controls::layout_view::UnregisteredView'),
-            ('lib.rs', 'pub use widgets::Button as AlternateButton;', 'tekes_ui_controls::AlternateButton')]:
+            ('lib.rs', 'pub use widgets::ButtonModel as AlternateButton;', 'tekes_ui_controls::AlternateButton')]:
             with self.source_fixture() as root:
                 path = root / 'crates/tekes-ui-controls/src' / file
                 path.write_text(path.read_text() + '\n' + declaration + '\n')
@@ -302,7 +304,7 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
 
     def test_unsupported_export_forms_fail_closed(self):
         for declaration in ['pub mod inline { pub struct Missed; }',
-                            'pub use widgets::*;', 'pub use {widgets::Button};',
+                            'pub use widgets::*;', 'pub use {widgets::ButtonModel};',
                             'expose_types!();', 'macro_rules! expose { () => { pub struct Hidden; } }']:
             with self.source_fixture() as root:
                 path = root / 'crates/tekes-ui-controls/src/lib.rs'

@@ -3,7 +3,7 @@
 use crate::content_status::{Feedback, Status};
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
-    Button, ButtonSize, ButtonTextRenderer, ControlKey, MenuEvent, Select,
+    ButtonModel, ButtonSize, ButtonTextRenderer, ControlKey, MenuEvent, Select,
     composition::*,
     extended::{Axis, Stack},
     layout::MeasuredChild,
@@ -78,7 +78,7 @@ impl Component for Choice {
             .get(self.model.selected)
             .map(String::as_str)
             .unwrap_or("");
-        MeasuredChild::new(Button::measure(
+        MeasuredChild::new(ButtonModel::measure(
             &mut text,
             title,
             available.width,

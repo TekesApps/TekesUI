@@ -3,7 +3,7 @@ mod text;
 use anyhow::Result;
 use tekes_ui_app_protocol::{InputKind, Request, ToolbarItem};
 use tekes_ui_controls::{
-    Button, ButtonSize, ButtonTextAlign,
+    ButtonModel, ButtonSize, ButtonTextAlign,
     composition::{Component, ContentEvent, TextContent, TextFieldContent},
     paint::ButtonVariant,
 };
@@ -16,7 +16,7 @@ const ENGLISH: &str = "English prose · A small observatory\n\nAt sunset, the ob
 const MIXED: &str = "混排 / Unicode · 开发笔记\n\nTekesUI 的 Text 组件处理中文、English words 与数字 12345。版本 v0.1.0，路径 /projects/notes/readme.md，邮件 hello@example.com。\n\nEmoji：😀 🌍 🚀 👨‍👩‍👧‍👦 👍🏽；组合字符：café / cafe\u{301}；日本語：今日は良い天気です。한국어: 반갑습니다.\n\nRTL: العربية مرحبًا بالعالم — עברית שלום עולם\n\n长连续内容用于观察边界处理：abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ。最后回到普通中文，检查字体回退和基线是否自然。\n\n";
 struct Demo {
     identity: u32,
-    button: Button,
+    button: ButtonModel,
     count: u64,
     fonts: Fonts,
     body: TextFieldContent,
@@ -27,7 +27,7 @@ impl Demo {
         let passage = [CHINESE, ENGLISH, MIXED][identity as usize].repeat(4);
         Self {
             identity,
-            button: Button::default(),
+            button: ButtonModel::default(),
             count: 0,
             fonts: Fonts::new(),
             body: TextFieldContent::read_only_content(

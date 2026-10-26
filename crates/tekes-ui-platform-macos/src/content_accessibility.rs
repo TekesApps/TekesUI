@@ -242,7 +242,7 @@ pub fn content_action(
 mod tests {
     use super::*;
     use tekes_ui_controls::{
-        composition::{ButtonContent, Content, StackContent, TextFieldContent},
+        composition::{Button, Content, StackContent, TextFieldContent},
         extended::{Axis, Stack},
     };
 
@@ -257,7 +257,7 @@ mod tests {
                     axis: Axis::Vertical,
                     gap: 0.,
                 },
-                children: vec![Content::new(CHILD, ButtonContent::new("Run"))],
+                children: vec![Content::new(CHILD, Button::new("Run"))],
                 flexible_child: None,
             },
         ))
@@ -278,7 +278,7 @@ mod tests {
         assert_eq!(
             host.get(CHILD)
                 .unwrap()
-                .component::<ButtonContent>()
+                .component::<Button>()
                 .unwrap()
                 .activations,
             1
@@ -290,7 +290,7 @@ mod tests {
         let mut host = button_host();
         let old_key = content_key(&host, CHILD, None).unwrap();
         host.remove(CHILD).unwrap();
-        host.insert(ROOT, Content::new(CHILD, ButtonContent::new("Replacement")))
+        host.insert(ROOT, Content::new(CHILD, Button::new("Replacement")))
             .unwrap();
         let new_key = content_key(&host, CHILD, None).unwrap();
         assert_ne!(old_key, new_key);
@@ -301,7 +301,7 @@ mod tests {
         assert_eq!(
             host.get(CHILD)
                 .unwrap()
-                .component::<ButtonContent>()
+                .component::<Button>()
                 .unwrap()
                 .activations,
             0

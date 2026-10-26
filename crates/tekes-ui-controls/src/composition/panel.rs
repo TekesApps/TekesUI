@@ -606,7 +606,7 @@ impl ContentHost {
 #[cfg(test)]
 mod frozen_generation_tests {
     use super::*;
-    use super::ButtonContent;
+    use super::Button;
     use crate::{ButtonTextAlign, ButtonTextRenderer};
 
     fn frozen_shape() -> ClipShape {
@@ -644,7 +644,7 @@ mod frozen_generation_tests {
             ComponentId(9900),
             PanelContent::new(Content::new(
                 ComponentId(9901),
-                ButtonContent::new("generation test"),
+                Button::new("generation test"),
             ))
             .unwrap(),
         )
@@ -673,7 +673,7 @@ mod frozen_generation_tests {
     }
 
     fn rendered_button_host() -> (ContentHost, Scene, TestText) {
-        let button = Content::new(ComponentId(9911), ButtonContent::new("press"));
+        let button = Content::new(ComponentId(9911), Button::new("press"));
         let root = Content::new(
             ComponentId(9910),
             PanelContent::new(Content::new(ComponentId(9912), StackContent {
@@ -758,7 +758,7 @@ mod frozen_generation_tests {
                         gap: 0.,
                     },
                     flexible_child: None,
-                    children: vec![Content::new(child_id, ButtonContent::new("scoped child"))],
+                    children: vec![Content::new(child_id, Button::new("scoped child"))],
                 },
             ))
             .unwrap(),
@@ -824,7 +824,7 @@ mod frozen_generation_tests {
         let up = host.event(&ContentEvent::PointerUp(point));
         assert!(up.activated);
         assert_eq!(host.get(ComponentId(9911)).unwrap()
-            .component::<ButtonContent>().unwrap().activations, 1);
+            .component::<Button>().unwrap().activations, 1);
     }
 
     #[test]
@@ -833,7 +833,7 @@ mod frozen_generation_tests {
         let response = host.event(&ContentEvent::PointerDown(Point::new(1., 1.)));
         assert!(!response.consumed);
         assert_eq!(host.get(ComponentId(9911)).unwrap()
-            .component::<ButtonContent>().unwrap().activations, 0);
+            .component::<Button>().unwrap().activations, 0);
     }
 
     #[test]
@@ -847,7 +847,7 @@ mod frozen_generation_tests {
         assert!(response.consumed && response.activated);
         assert_eq!(host.focused(), Some(ComponentId(9911)));
         assert_eq!(host.get(ComponentId(9911)).unwrap()
-            .component::<ButtonContent>().unwrap().activations, 1);
+            .component::<Button>().unwrap().activations, 1);
     }
 
     #[test]
@@ -856,11 +856,11 @@ mod frozen_generation_tests {
         let frame = host.get(ComponentId(9911)).unwrap().frame();
         let point = frame.center();
         let button = host.get_mut(ComponentId(9911)).unwrap();
-        button.component_mut::<ButtonContent>().unwrap().button.state.disabled = true;
+        button.component_mut::<Button>().unwrap().button.state.disabled = true;
         let response = host.event(&ContentEvent::PointerDown(point));
         assert!(!response.consumed);
         assert_eq!(host.get(ComponentId(9911)).unwrap()
-            .component::<ButtonContent>().unwrap().activations, 0);
+            .component::<Button>().unwrap().activations, 0);
     }
 
     #[test]
@@ -955,7 +955,7 @@ mod frozen_generation_tests {
             let target_row = Content::new(ComponentId(9950), StackContent {
                 model: Stack { axis: Axis::Horizontal, gap: 0. }, flexible_child: Some(TARGET),
                 children: vec![Content::new(ComponentId(9951), TextContent::new("pad")),
-                    Content::new(TARGET, ButtonContent::new("target")),
+                    Content::new(TARGET, Button::new("target")),
                     Content::new(ComponentId(9952), TextContent::new("pad"))],
             });
             let mut rows: Vec<_> = (9960..9968).map(|id| Content::new(ComponentId(id), TextContent::new("row"))).collect();

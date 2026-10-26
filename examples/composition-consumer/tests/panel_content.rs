@@ -108,7 +108,7 @@ fn original_route_gap_capture_identity_and_atomic_fragment() {
     let mut h = ContentHost::new(Content::new(
         ROOT,
         panel(
-            Content::new(CHILD, ButtonContent::new("real button"))
+            Content::new(CHILD, Button::new("real button"))
                 .preserving_focus()
                 .bubbling_handled_events(true),
             true,
@@ -164,7 +164,7 @@ fn original_route_gap_capture_identity_and_atomic_fragment() {
     assert!(
         !h.get(CHILD)
             .unwrap()
-            .component::<ButtonContent>()
+            .component::<Button>()
             .unwrap()
             .button
             .state
@@ -177,7 +177,7 @@ fn original_route_gap_capture_identity_and_atomic_fragment() {
     assert_eq!(
         h.get(CHILD)
             .unwrap()
-            .component::<ButtonContent>()
+            .component::<Button>()
             .unwrap()
             .activations,
         0
@@ -277,7 +277,7 @@ fn real_original_editor_marked_selection_survives_full_clip() {
 fn strict_curve_never_downgrades_before_layout_or_after_geometry_mutation() {
     let mut h = ContentHost::new(Content::new(
         ROOT,
-        panel(Content::new(CHILD, ButtonContent::new("button")), false),
+        panel(Content::new(CHILD, Button::new("button")), false),
     ))
     .unwrap();
     assert!(!h.focus(Some(CHILD), true));
@@ -455,7 +455,7 @@ fn one_original_tree_keeps_composer_and_reading_owners_through_streaming_and_rev
             flexible_child: None,
             children: vec![
                 Content::new(text, TextContent::new("original text")),
-                Content::new(button, ButtonContent::new("original action")),
+                Content::new(button, Button::new("original action")),
                 Content::new(editor, composer),
                 Content::new(scroll, reading),
             ],

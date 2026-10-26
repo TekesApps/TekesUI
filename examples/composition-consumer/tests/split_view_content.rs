@@ -122,7 +122,7 @@ fn genuine_editor_composer_button_scroll_and_owned_replacement() {
                         gap: 6.,
                     },
                     flexible_child: None,
-                    children: vec![composer(22), Content::new(id(23), ButtonContent::new("Send"))],
+                    children: vec![composer(22), Content::new(id(23), Button::new("Send"))],
                 },
             ),
         ),
@@ -207,7 +207,7 @@ fn genuine_editor_composer_button_scroll_and_owned_replacement() {
     let input = request(
         &host,
         Pane::Leading,
-        Content::new(id(10), ButtonContent::new("Replaced")),
+        Content::new(id(10), Button::new("Replaced")),
     );
     let old = host.replace_split_view_pane(input).unwrap();
     assert!(old.component::<TextFieldContent>().is_some());
@@ -447,8 +447,8 @@ fn zero_allocation_preserves_marked_binding_and_restores_new_geometry() {
 fn authoritative_ratio_and_original_drag_resize_and_invalid_raw_refusal() {
     let mut host = ContentHost::try_new_prepared(
         split(
-            Content::new(id(10), ButtonContent::new("A")),
-            Content::new(id(20), ButtonContent::new("B")),
+            Content::new(id(10), Button::new("A")),
+            Content::new(id(20), Button::new("B")),
         ),
         BUDGET,
     )
@@ -544,8 +544,8 @@ fn preceding_unknown_getter_untouched_on_actual_success_and_refusal() {
     let mut host = ContentHost::new(row(vec![
         Content::new(id(101), UnknownProbe(probe.clone())),
         split(
-            Content::new(id(10), ButtonContent::new("A")),
-            Content::new(id(20), ButtonContent::new("B")),
+            Content::new(id(10), Button::new("A")),
+            Content::new(id(20), Button::new("B")),
         ),
     ]))
     .unwrap();
@@ -554,7 +554,7 @@ fn preceding_unknown_getter_untouched_on_actual_success_and_refusal() {
     let input = request(
         &host,
         Pane::Leading,
-        Content::new(id(30), ButtonContent::new("new")),
+        Content::new(id(30), Button::new("new")),
     );
     let old = host.replace_split_view_pane(input).unwrap();
     assert_eq!(probe.get(), 0);
@@ -562,7 +562,7 @@ fn preceding_unknown_getter_untouched_on_actual_success_and_refusal() {
     let mut input = request(
         &host,
         Pane::Leading,
-        Content::new(id(20), ButtonContent::new("duplicate")),
+        Content::new(id(20), Button::new("duplicate")),
     );
     let original = input.replacement.mount_identity();
     input.budget = BUDGET;
@@ -594,8 +594,8 @@ impl Component for CrossOwner {
 fn stable_cross_owner_effect_without_preparation_is_refused_before_callback() {
     let mut host = ContentHost::try_new_prepared(
         split(
-            Content::new(id(10), ButtonContent::new("A")),
-            Content::new(id(20), ButtonContent::new("B")),
+            Content::new(id(10), Button::new("A")),
+            Content::new(id(20), Button::new("B")),
         ),
         BUDGET,
     )
@@ -622,15 +622,15 @@ fn dialog() -> Content {
         DialogContent::new(
             "Modal",
             Content::new(id(11), TextContent::new("Heading")),
-            Content::new(id(12), ButtonContent::new("Body")),
-            Content::new(id(13), ButtonContent::new("Close")),
+            Content::new(id(12), Button::new("Body")),
+            Content::new(id(13), Button::new("Close")),
         ),
     )
 }
 #[test]
 fn actual_modal_close_full_cancel_unmount_positive_and_unknown_early_refusal() {
     let mut host = ContentHost::try_new_prepared(
-        split(dialog(), Content::new(id(20), ButtonContent::new("retained"))),
+        split(dialog(), Content::new(id(20), Button::new("retained"))),
         BUDGET,
     )
     .unwrap();
@@ -641,7 +641,7 @@ fn actual_modal_close_full_cancel_unmount_positive_and_unknown_early_refusal() {
     let input = request(
         &host,
         Pane::Leading,
-        Content::new(id(30), ButtonContent::new("next")),
+        Content::new(id(30), Button::new("next")),
     );
     let old = host.replace_split_view_pane(input).unwrap();
     assert!(!old.component::<DialogContent>().unwrap().is_open());
@@ -650,7 +650,7 @@ fn actual_modal_close_full_cancel_unmount_positive_and_unknown_early_refusal() {
     let probe = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut host = ContentHost::new(row(vec![
         Content::new(id(101), UnknownProbe(probe.clone())),
-        split(dialog(), Content::new(id(20), ButtonContent::new("retained"))),
+        split(dialog(), Content::new(id(20), Button::new("retained"))),
     ]))
     .unwrap();
     render(&mut host, 600., 400.);
@@ -662,7 +662,7 @@ fn actual_modal_close_full_cancel_unmount_positive_and_unknown_early_refusal() {
     let input = request(
         &host,
         Pane::Leading,
-        Content::new(id(30), ButtonContent::new("next")),
+        Content::new(id(30), Button::new("next")),
     );
     let rejected = host.replace_split_view_pane(input).unwrap_err();
     assert_eq!(
@@ -695,8 +695,8 @@ fn same_original_layout_matrix_and_structural_tamper_never_self_heals() {
                         trailing: id(3),
                         divider: id(4),
                     },
-                    leading: Content::new(id(10), ButtonContent::new("A")),
-                    trailing: Content::new(id(20), ButtonContent::new("B")),
+                    leading: Content::new(id(10), Button::new("A")),
+                    trailing: Content::new(id(20), Button::new("B")),
                     budget: BUDGET,
                 })
                 .unwrap(),
@@ -723,8 +723,8 @@ fn same_original_layout_matrix_and_structural_tamper_never_self_heals() {
     }
     let mut host = ContentHost::try_new_prepared(
         split(
-            Content::new(id(10), ButtonContent::new("A")),
-            Content::new(id(20), ButtonContent::new("B")),
+            Content::new(id(10), Button::new("A")),
+            Content::new(id(20), Button::new("B")),
         ),
         BUDGET,
     )
@@ -778,7 +778,7 @@ fn original_reveal_moves_offscreen_composer_inside_the_actual_split_pane_clip() 
         ),
     );
     let mut host = ContentHost::try_new_prepared(
-        split(Content::new(id(10), ButtonContent::new("A")), reader),
+        split(Content::new(id(10), Button::new("A")), reader),
         BUDGET,
     )
     .unwrap();
@@ -814,8 +814,8 @@ fn original_reveal_moves_offscreen_composer_inside_the_actual_split_pane_clip() 
 fn actual_tab_order_reaches_divider_then_wraps_and_old_actions_cannot_replay() {
     let mut host = ContentHost::try_new_prepared(
         split(
-            Content::new(id(10), ButtonContent::new("A")),
-            Content::new(id(20), ButtonContent::new("B")),
+            Content::new(id(10), Button::new("A")),
+            Content::new(id(20), Button::new("B")),
         ),
         BUDGET,
     )
@@ -842,7 +842,7 @@ fn actual_tab_order_reaches_divider_then_wraps_and_old_actions_cannot_replay() {
     let input = request(
         &host,
         Pane::Leading,
-        Content::new(id(10), ButtonContent::new("new same ID")),
+        Content::new(id(10), Button::new("new same ID")),
     );
     let old = host.replace_split_view_pane(input).unwrap();
     assert!(host.drain_action_records().is_empty());
@@ -906,8 +906,8 @@ fn original_view_and_adapter_share_primary_secondary_doubleclick_and_keyboard_re
     use tekes_ui_scene::Point;
     let mut host = ContentHost::try_new_prepared(
         split(
-            Content::new(id(10), ButtonContent::new("A")),
-            Content::new(id(20), ButtonContent::new("B")),
+            Content::new(id(10), Button::new("A")),
+            Content::new(id(20), Button::new("B")),
         ),
         BUDGET,
     )
@@ -1048,8 +1048,8 @@ fn activity_preparation_counts_actual_notifications_not_noop_framework_updates()
     let retained = original.remove(id(30)).unwrap();
     let mut host = ContentHost::try_new_prepared(
         split(
-            Content::new(id(10), ButtonContent::new("A")),
-            Content::new(id(20), ButtonContent::new("B")),
+            Content::new(id(10), Button::new("A")),
+            Content::new(id(20), Button::new("B")),
         ),
         BUDGET,
     )
@@ -1073,8 +1073,8 @@ fn activity_preparation_counts_actual_notifications_not_noop_framework_updates()
     assert_eq!(active_calls.get(), 0);
     let active_retained = active_original.remove(id(30)).unwrap();
     let mut active_host = ContentHost::try_new_prepared(
-        split(Content::new(id(10), ButtonContent::new("A")),
-              Content::new(id(20), ButtonContent::new("B"))), BUDGET,
+        split(Content::new(id(10), Button::new("A")),
+              Content::new(id(20), Button::new("B"))), BUDGET,
     ).unwrap();
     let input = request(&active_host, Pane::Leading, active_retained);
     active_host.replace_split_view_pane(input).unwrap();
@@ -1083,7 +1083,7 @@ fn activity_preparation_counts_actual_notifications_not_noop_framework_updates()
 #[test]
 fn checked_render_refuses_a_broken_split_without_blurring_original_marked_owner() {
     let mut host = ContentHost::try_new_prepared(
-        split(composer(10), Content::new(id(20), ButtonContent::new("B"))),
+        split(composer(10), Content::new(id(20), Button::new("B"))),
         BUDGET,
     )
     .unwrap();
@@ -1136,8 +1136,8 @@ fn checked_render_refuses_a_broken_split_without_blurring_original_marked_owner(
 fn doubleclick_terminates_the_original_host_capture_even_without_an_intervening_up() {
     let mut host = ContentHost::try_new_prepared(
         split(
-            Content::new(id(10), ButtonContent::new("A")),
-            Content::new(id(20), ButtonContent::new("B")),
+            Content::new(id(10), Button::new("A")),
+            Content::new(id(20), Button::new("B")),
         ),
         BUDGET,
     )
@@ -1177,7 +1177,7 @@ fn doubleclick_terminates_the_original_host_capture_even_without_an_intervening_
 
 #[derive(Debug)]
 struct RecordedButton {
-    button: ButtonContent,
+    button: Button,
     name: &'static str,
     log: std::rc::Rc<std::cell::RefCell<Vec<String>>>,
 }
@@ -1232,7 +1232,7 @@ fn real_modal_replacement_restores_retained_target_in_original_order_before_unmo
         Content::new(
             id(n),
             RecordedButton {
-                button: ButtonContent::new(name),
+                button: Button::new(name),
                 name,
                 log: log.clone(),
             },
@@ -1244,7 +1244,7 @@ fn real_modal_replacement_restores_retained_target_in_original_order_before_unmo
             "Modal",
             Content::new(id(11), TextContent::new("Title")),
             recorded(12, "body"),
-            Content::new(id(13), ButtonContent::new("Close")),
+            Content::new(id(13), Button::new("Close")),
         ),
     );
     let mut host =
@@ -1261,7 +1261,7 @@ fn real_modal_replacement_restores_retained_target_in_original_order_before_unmo
     let input = request(
         &host,
         Pane::Leading,
-        Content::new(id(30), ButtonContent::new("new")),
+        Content::new(id(30), Button::new("new")),
     );
     let old = host.replace_split_view_pane(input).unwrap();
     assert_eq!(host.focused(), Some(id(20)));
@@ -1339,7 +1339,7 @@ fn real_modal_replacement_uses_original_pure_reveal_for_offscreen_retained_compo
         .replace_split_view_pane(request(
             &host,
             Pane::Leading,
-            Content::new(id(70), ButtonContent::new("new")),
+            Content::new(id(70), Button::new("new")),
         ))
         .unwrap();
     assert!(!old.component::<DialogContent>().unwrap().is_open());
@@ -1361,7 +1361,7 @@ fn real_modal_replacement_uses_original_pure_reveal_for_offscreen_retained_compo
 #[test]
 fn same_id_replacement_and_remount_reject_old_focus_leases_and_accept_new_identity() {
     let mut host = ContentHost::try_new_prepared(
-        split(composer(10), Content::new(id(20), ButtonContent::new("retained"))),
+        split(composer(10), Content::new(id(20), Button::new("retained"))),
         BUDGET,
     )
     .unwrap();
@@ -1412,7 +1412,7 @@ fn real_modal_return_lease_cannot_authorize_a_same_id_replacement_but_new_lease_
         .replace_split_view_pane(request(
             &host,
             Pane::Leading,
-            Content::new(id(70), ButtonContent::new("new")),
+            Content::new(id(70), Button::new("new")),
         ))
         .unwrap();
     assert_eq!(host.focused(), None);
@@ -1431,7 +1431,7 @@ fn a_valid_return_target_inside_the_retiring_pane_is_refused_instead_of_silently
     let mut host = ContentHost::try_new_prepared(
         split(
             row(vec![composer(15), dialog()]),
-            Content::new(id(20), ButtonContent::new("retained")),
+            Content::new(id(20), Button::new("retained")),
         ),
         BUDGET,
     )
@@ -1443,7 +1443,7 @@ fn a_valid_return_target_inside_the_retiring_pane_is_refused_instead_of_silently
     let input = request(
         &host,
         Pane::Leading,
-        Content::new(id(70), ButtonContent::new("new")),
+        Content::new(id(70), Button::new("new")),
     );
     let mount = input.replacement.mount_identity();
     let before = format!("{host:?}");

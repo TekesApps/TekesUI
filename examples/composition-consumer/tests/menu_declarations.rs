@@ -356,7 +356,7 @@ fn interactive_trigger_body_uses_existing_action_owner_validation() {
     let m = MenuContent::new("Options", Vec::new())
         .with_trigger_content(
             "Options",
-            Content::new(ComponentId(18290), ButtonContent::new("Nested action")),
+            Content::new(ComponentId(18290), Button::new("Nested action")),
         )
         .unwrap();
     assert!(ContentHost::new(Content::new(MENU, m)).is_err());

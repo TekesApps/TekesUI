@@ -119,7 +119,7 @@ struct MenuPanel {
 /// Its popup is painted/routed in the host overlay pass, above later siblings.
 #[derive(Debug)]
 pub struct MenuContent {
-    pub trigger: ButtonContent,
+    pub trigger: Button,
     pub menu: MenuView,
     pub labels: Vec<String>,
     pub selected: Option<usize>,
@@ -191,7 +191,7 @@ impl MenuContent {
         let mut menu = MenuView::new(labels.len());
         menu.content_state = Some(MenuContentState::new(&labels));
         Self {
-            trigger: ButtonContent::new(label),
+            trigger: Button::new(label.into()),
             menu,
             labels,
             selected: None,

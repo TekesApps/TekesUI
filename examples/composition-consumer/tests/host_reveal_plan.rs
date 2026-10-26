@@ -105,7 +105,7 @@ fn setup() -> (ContentHost, Text) {
         ITEMS,
         (0..20)
             .map(|i| Content::new(ComponentId(9850 + i), TextContent::new(format!("row {i}"))))
-            .chain([Content::new(TARGET, ButtonContent::new("Target"))])
+            .chain([Content::new(TARGET, Button::new("Target"))])
             .collect(),
     );
     let mut scroll = ScrollContent::new(ScrollArea::default(), rows);
@@ -213,7 +213,7 @@ fn stale_input_geometry_mount_version_offset_and_foreign_host_reject_atomically(
             1 => paint(&mut h, &mut t),
             2 => {
                 let _ = h.remove(TARGET).unwrap();
-                h.insert(ITEMS, Content::new(TARGET, ButtonContent::new("replacement")))
+                h.insert(ITEMS, Content::new(TARGET, Button::new("replacement")))
                     .unwrap();
             }
             3 => {
@@ -334,7 +334,7 @@ fn nested_original_scrolls_plan_without_layout_or_trial_mutation() {
                         TextContent::new(format!("inner {i}")),
                     )
                 })
-                .chain([Content::new(TARGET, ButtonContent::new("Nested target"))])
+                .chain([Content::new(TARGET, Button::new("Nested target"))])
                 .collect(),
         ),
     );
@@ -514,7 +514,7 @@ fn structural_curve_requirement_cannot_fall_into_legacy_focus_even_before_layout
     let mut h = ContentHost::new(Content::new(
         ROOT,
         DeclaredCurve {
-            children: vec![Content::new(TARGET, ButtonContent::new("target"))],
+            children: vec![Content::new(TARGET, Button::new("target"))],
         },
     ))
     .unwrap();
@@ -570,7 +570,7 @@ fn opaque_custom_reveal_is_never_invoked_as_a_readonly_probe_or_error_fallback()
         ITEMS,
         (0..20)
             .map(|i| Content::new(ComponentId(9850 + i), TextContent::new("original row")))
-            .chain([Content::new(TARGET, ButtonContent::new("Target"))])
+            .chain([Content::new(TARGET, Button::new("Target"))])
             .collect(),
     );
     let opaque = Content::new(
@@ -774,7 +774,7 @@ fn nested_scroll_commit_ignores_unplanned_mutable_getter_between_owners() {
             ITEMS,
             (0..15)
                 .map(|i| Content::new(ComponentId(9900 + i), TextContent::new("inner row")))
-                .chain([Content::new(TARGET, ButtonContent::new("Nested target"))])
+                .chain([Content::new(TARGET, Button::new("Nested target"))])
                 .collect(),
         ),
     );
@@ -813,7 +813,7 @@ fn nested_scroll_commit_ignores_unplanned_mutable_getter_between_owners() {
 fn focus_old_and_new_owner_paths_ignore_unplanned_mutable_getter_siblings() {
     for before_old in [true, false] {
         let (probe, armed, calls) = getter_probe();
-        let target = Content::new(TARGET, ButtonContent::new("New owner"));
+        let target = Content::new(TARGET, Button::new("New owner"));
         let editor = Content::new(
             FIELD,
             TextFieldContent::new("Old owner", "kept original draft"),

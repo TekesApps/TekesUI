@@ -24,7 +24,7 @@ pub fn build() -> Result<ContentHost, CompositionError> {
                     SliderContent::new("Volume", Slider::new(50., 0., 100., 5.).unwrap()),
                 ),
                 Content::new(EDITOR, TextFieldContent::new("Draft", "Keep this draft")),
-                Content::new(ACTION, ButtonContent::new("Continue")),
+                Content::new(ACTION, Button::new("Continue")),
             ],
         },
     ))

@@ -7,7 +7,7 @@
 use crate::control_motion::{ProgressTransition, motion_for};
 use crate::layout::{AlignmentOverride, MeasuredChild, layout_measured_children};
 use crate::{
-    Button, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey,
+    ButtonModel, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey,
     composite::{MenuEvent, MenuLayout, MenuView},
     extended::{
         Axis, Breadcrumb, ComboBox, CommandPalette, ControlFrame, Disclosure, Grid, Link,
@@ -706,7 +706,7 @@ pub struct ButtonComponentLayout {
 }
 #[derive(Clone, Debug)]
 struct ButtonRuntime {
-    button: Button,
+    button: ButtonModel,
     layout: ButtonComponentLayout,
     focused: bool,
     window_active: bool,
@@ -715,7 +715,7 @@ struct ButtonRuntime {
 impl Default for ButtonRuntime {
     fn default() -> Self {
         Self {
-            button: Button::default(),
+            button: ButtonModel::default(),
             layout: ButtonComponentLayout::default(),
             focused: false,
             window_active: true,
@@ -724,6 +724,7 @@ impl Default for ButtonRuntime {
     }
 }
 impl ButtonRuntime {
+    #[cfg(test)]
     #[allow(clippy::too_many_arguments)]
     fn render(
         &mut self,
@@ -1156,181 +1157,8 @@ impl DisclosureView {
 }
 
 #[derive(Clone, Debug)]
-pub struct IconButtonView {
-    runtime: ButtonRuntime,
-    icon: IconView,
-}
-impl IconButtonView {
-    fn sync_model(&mut self, model: &crate::extended::IconButton) {
-        self.runtime.button.state.disabled = model.button.state.disabled;
-        self.runtime.button.state.loading = model.button.state.loading;
-        self.runtime.button.state.selected = model.button.state.selected;
-        if model.button.state.disabled || model.button.state.loading {
-            self.runtime.cancel();
-        }
-    }
-    pub fn new() -> Self {
-        Self {
-            runtime: ButtonRuntime::default(),
-            icon: IconView::default(),
-        }
-    }
-    /// Natural square hit size from the existing IconButton contract. Hosts
-    /// may use a larger explicit frame; render never silently resizes it.
-    pub fn measure(compact: bool) -> Size {
-        let token = if compact {
-            "size-icon-button-compact"
-        } else {
-            "size-icon-button"
-        };
-        let side = proposal::metric("size", token).expect("IconButton hit size token");
-        Size::new(side, side)
-    }
-    pub fn render(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut impl ButtonTextRenderer,
-        model: &mut crate::extended::IconButton,
-        frame: Rect,
-        clip: Option<Rect>,
-        palette: Palette,
-    ) -> ButtonComponentLayout {
-        self.sync_model(model);
-        let l = self.runtime.render(
-            scene,
-            text,
-            "",
-            frame,
-            clip,
-            palette,
-            proposal::TextRole::UiBody,
-            ButtonVariant::Quiet,
-            Some(proposal::metric("radius", "radius-control").expect("IconButton radius token")),
-        );
-        model.button.state = self.runtime.button.state;
-        l
-    }
-    /// Render the icon as part of the component's resolved frame. The Gallery
-    /// supplies only its existing asset backend; centering and clipping stay
-    /// with this view.
-    #[allow(clippy::too_many_arguments)]
-    pub fn render_with_icon(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut impl ButtonTextRenderer,
-        renderer: &mut impl IconRenderer,
-        canonical_name: &str,
-        model: &mut crate::extended::IconButton,
-        frame: Rect,
-        clip: Option<Rect>,
-        palette: Palette,
-        icon_size: f32,
-    ) -> ButtonComponentLayout {
-        let layout = self.render(scene, text, model, frame, clip, palette);
-        self.render_icon(scene, renderer, canonical_name, clip, palette, icon_size);
-        layout
-    }
-    /// Paint the icon after the host has released its text adapter borrow.
-    /// Geometry still comes from the latest component-owned button layout.
-    /// A non-positive/non-finite icon_size uses size-icon-standard; a positive
-    /// explicit size remains supported and is fitted by the existing IconView.
-    pub fn render_icon(
-        &mut self,
-        scene: &mut Scene,
-        renderer: &mut impl IconRenderer,
-        canonical_name: &str,
-        clip: Option<Rect>,
-        palette: Palette,
-        icon_size: f32,
-    ) -> IconLayout {
-        let icon_size = if icon_size.is_finite() && icon_size > 0. {
-            icon_size
-        } else {
-            proposal::metric("size", "size-icon-standard").expect("IconButton icon size token")
-        };
-        self.icon.render_tinted(
-            scene,
-            renderer,
-            canonical_name,
-            self.runtime.layout.frame,
-            icon_size,
-            clip,
-            palette,
-            icon_foreground(palette, self.runtime.button.state, ButtonVariant::Quiet),
-        )
-    }
-    pub fn icon_layout(&self) -> IconLayout {
-        self.icon.layout()
-    }
-    pub fn pointer_move(&mut self, p: Point) {
-        self.runtime.pointer_move(p)
-    }
-    pub fn pointer_down(&mut self, p: Point) -> bool {
-        self.runtime.pointer_down(p)
-    }
-    pub fn pointer_up(&mut self, p: Point, model: &mut crate::extended::IconButton) -> bool {
-        self.sync_model(model);
-        let a = self.runtime.pointer_up(p);
-        model.button.state = self.runtime.button.state;
-        a
-    }
-    pub fn key(
-        &mut self,
-        k: ControlKey,
-        down: bool,
-        model: &mut crate::extended::IconButton,
-    ) -> bool {
-        self.key_event(k, down, model).changed
-    }
-    pub fn key_event(
-        &mut self,
-        k: ControlKey,
-        down: bool,
-        model: &mut crate::extended::IconButton,
-    ) -> ComponentEvent {
-        self.sync_model(model);
-        let consumed = matches!(k, ControlKey::Enter | ControlKey::Space)
-            && self.runtime.window_active
-            && self.runtime.focused
-            && !model.button.state.disabled
-            && !model.button.state.loading;
-        let changed = self.runtime.key(k, down);
-        model.button.state = self.runtime.button.state;
-        ComponentEvent { consumed, changed }
-    }
-    pub fn activate(&mut self, model: &mut crate::extended::IconButton) -> bool {
-        self.sync_model(model);
-        if model.button.state.disabled || model.button.state.loading {
-            return false;
-        }
-        self.runtime.focus(false);
-        self.key(ControlKey::Enter, true, model)
-    }
-    pub fn focus(&mut self, v: bool) {
-        self.runtime.focus(v)
-    }
-    pub fn blur(&mut self) {
-        self.runtime.blur()
-    }
-    pub fn layout(&self) -> ButtonComponentLayout {
-        self.runtime.layout
-    }
-    pub fn cancel(&mut self) -> bool {
-        self.runtime.cancel()
-    }
-    pub fn set_window_active(&mut self, v: bool) {
-        self.runtime.active(v)
-    }
-}
-impl Default for IconButtonView {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Clone, Debug)]
 pub struct LinkView {
-    button: Button,
+    button: ButtonModel,
     layout: ButtonComponentLayout,
     focused: bool,
     focus_visible: bool,
@@ -1486,7 +1314,7 @@ impl LinkView {
 impl Default for LinkView {
     fn default() -> Self {
         Self {
-            button: Button::default(),
+            button: ButtonModel::default(),
             layout: ButtonComponentLayout::default(),
             focused: false,
             focus_visible: false,
@@ -1505,7 +1333,7 @@ pub struct SegmentedLayout {
 }
 #[derive(Clone, Debug)]
 pub struct SegmentedControlView {
-    buttons: Vec<Button>,
+    buttons: Vec<ButtonModel>,
     layout: SegmentedLayout,
     focused: Option<usize>,
     focus_visible: bool,
@@ -1518,7 +1346,7 @@ pub struct SegmentedControlView {
 impl SegmentedControlView {
     pub fn new(count: usize) -> Self {
         Self {
-            buttons: vec![Button::default(); count],
+            buttons: vec![ButtonModel::default(); count],
             layout: SegmentedLayout::default(),
             focused: None,
             focus_visible: false,
@@ -1576,7 +1404,7 @@ impl SegmentedControlView {
                 && model.is_enabled(index)
         });
         // Keep hit/layout slots in model order, while keyboard focus paints
-        // above adjacent opaque segments using the existing Button painter.
+        // above adjacent opaque segments using the existing ButtonModel painter.
         for i in (0..count)
             .filter(|i| Some(*i) != focus_last)
             .chain(focus_last)
@@ -1800,7 +1628,7 @@ pub struct BreadcrumbLayout {
 #[derive(Clone, Debug)]
 pub struct BreadcrumbView {
     layout: BreadcrumbLayout,
-    buttons: Vec<Button>,
+    buttons: Vec<ButtonModel>,
     focused: Option<usize>,
     focus_visible: bool,
     hovered: Option<usize>,
@@ -1839,11 +1667,11 @@ impl BreadcrumbView {
         if self.hovered.is_some_and(|i| i + 1 >= n) {
             self.hovered = None;
         }
-        self.buttons.resize_with(n, Button::default);
+        self.buttons.resize_with(n, ButtonModel::default);
         let mut cells = Vec::new();
         let mut x = frame.min_x();
         for (i, label) in labels.iter().take(n).enumerate() {
-            let size = Button::measure(
+            let size = ButtonModel::measure(
                 text,
                 label,
                 (frame.max_x() - x).max(0.),
@@ -2295,7 +2123,7 @@ impl Default for SelectLayout {
 }
 #[derive(Debug)]
 pub struct SelectView {
-    trigger: Button,
+    trigger: ButtonModel,
     menu: MenuView,
     layout: SelectLayout,
     window_active: bool,
@@ -2318,7 +2146,7 @@ impl SelectView {
     }
     pub fn new(_count: usize) -> Self {
         Self {
-            trigger: Button::default(),
+            trigger: ButtonModel::default(),
             menu: MenuView::new_external(),
             layout: SelectLayout::default(),
             window_active: true,
@@ -2766,7 +2594,7 @@ impl ComboBoxView {
 #[derive(Debug)]
 pub struct CommandPaletteView {
     pub options: FilteredMenuView,
-    trigger: Button,
+    trigger: ButtonModel,
     trigger_layout: Option<ButtonLayout>,
     window_active: bool,
     return_focus: Option<usize>,
@@ -3061,7 +2889,7 @@ impl Default for CommandPaletteView {
     fn default() -> Self {
         Self {
             options: FilteredMenuView::default(),
-            trigger: Button::default(),
+            trigger: ButtonModel::default(),
             trigger_layout: None,
             window_active: true,
             return_focus: None,
@@ -4133,23 +3961,20 @@ mod tests {
         let palette = Palette::from(Theme::LIGHT);
         let frame = Rect::new(20., 20., 160., 40.);
         let invalid = Rect::new(f32::NAN, 20., 160., 40.);
-        let mut icon = IconButtonView::new();
-        let mut icon_model = crate::extended::IconButton::new("Action").unwrap();
-        icon.render(&mut scene, &mut text, &mut icon_model, frame, None, palette);
-        assert!(icon.pointer_down(frame.center()));
-        icon.render(
-            &mut scene,
-            &mut text,
-            &mut icon_model,
-            invalid,
-            None,
-            palette,
-        );
-        assert!(!icon.pointer_up(frame.center(), &mut icon_model));
-        assert!(!icon.pointer_down(frame.center()));
-        icon.focus(true);
+        use crate::composition::{Component, ContentEvent};
+        let mut icon = crate::composition::Button::new(tekes_ui_scene::ImageId(1))
+            .with_accessible_name("Action");
+        let clip = Rect::new(0., 0., 400., 300.);
+        icon.arrange(&mut text, frame, clip);
+        icon.paint(&mut scene, &mut text, frame, clip, palette.into());
+        assert!(icon.event(&ContentEvent::PointerDown(frame.center())).consumed);
+        icon.arrange(&mut text, invalid, clip);
+        icon.paint(&mut scene, &mut text, invalid, clip, palette.into());
+        assert!(!icon.event(&ContentEvent::PointerUp(frame.center())).activated);
+        assert!(!icon.event(&ContentEvent::PointerDown(frame.center())).consumed);
+        icon.set_focus(true, true);
         // A hidden invalidated button must not retain an old pointer placement.
-        assert!(icon.runtime.button.layout().is_none());
+        assert!(icon.button.layout().is_none());
 
         let mut select = SelectView::new(2);
         let mut model = crate::Select::new(2);
@@ -4233,25 +4058,20 @@ mod tests {
 
     #[test]
     fn icon_button_preserves_model_loading_and_selected_state() {
-        let mut view = IconButtonView::new();
-        let mut model = crate::extended::IconButton::new("Action").unwrap();
-        model.button.state.loading = true;
-        model.button.state.selected = true;
+        use crate::composition::{Component, ContentEvent, ContentResponse};
+        let mut button = crate::composition::Button::new(tekes_ui_scene::ImageId(1))
+            .with_accessible_name("Action");
+        button.button.state.loading = true;
+        button.button.state.selected = true;
         let frame = Rect::new(0., 0., 40., 40.);
-        view.render(
-            &mut Scene::new(),
-            &mut FixedText,
-            &mut model,
-            frame,
-            None,
-            Palette::from(Theme::LIGHT),
-        );
-        assert!(model.button.state.loading && model.button.state.selected);
-        assert!(!view.pointer_down(frame.center()));
-        view.focus(true);
+        button.arrange(&mut FixedText, frame, frame);
+        button.paint(&mut Scene::new(), &mut FixedText, frame, frame, Palette::from(Theme::LIGHT).into());
+        assert!(button.button.state.loading && button.button.state.selected);
+        assert!(!button.event(&ContentEvent::PointerDown(frame.center())).consumed);
+        button.set_focus(true, true);
         assert_eq!(
-            view.key_event(ControlKey::Enter, true, &mut model),
-            ComponentEvent::default()
+            button.event(&ContentEvent::Key { key: ControlKey::Enter, down: true }),
+            ContentResponse::default()
         );
     }
 

@@ -14,7 +14,7 @@ pub fn build() -> Result<ContentHost, CompositionError> {
         .map(|i| {
             Content::new(
                 ComponentId(FIRST.0 + i),
-                ButtonContent::new(format!("Session {} · 会话", i + 1)),
+                Button::new(format!("Session {} · 会话", i + 1)),
             )
             .with_help(format!("query A · 第{}项搜索摘要 /folder/{}", i + 1, i + 1))
         })

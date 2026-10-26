@@ -1,6 +1,6 @@
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, ControlState,
-    composition::{ButtonContent, Component, ComponentId, Content, ContentHost, TextContent},
+    composition::{Button, Component, ComponentId, Content, ContentHost, TextContent},
 };
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
@@ -56,7 +56,7 @@ fn ordinary_composed_button_uses_design_default_in_every_existing_state() {
         for brand in 0..3 {
             for width in [120., 400.] {
                 for state in states {
-                    let mut button = ButtonContent::new("Apply");
+                    let mut button = Button::new("Apply");
                     button.button.state = state;
                     let mut host = ContentHost::new(Content::new(ComponentId(1), button)).unwrap();
                     let mut text = Text::default();
@@ -80,7 +80,7 @@ fn ordinary_composed_button_uses_design_default_in_every_existing_state() {
                     assert_eq!(
                         host.get(ComponentId(1))
                             .unwrap()
-                            .component::<ButtonContent>()
+                            .component::<Button>()
                             .unwrap()
                             .activations,
                         0
@@ -134,7 +134,7 @@ fn public_button_rendered_text_and_background_meet_declared_contrast() {
                 ButtonVariant::Panel,
             ] {
                 for (hovered, pressed) in [(false, false), (true, false), (true, true)] {
-                    let mut button = ButtonContent::new("Apply");
+                    let mut button = Button::new("Apply");
                     button.variant = variant;
                     button.button.state.hovered = hovered;
                     button.button.state.pressed = pressed;

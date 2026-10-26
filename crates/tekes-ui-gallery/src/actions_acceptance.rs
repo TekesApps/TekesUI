@@ -18,7 +18,7 @@ pub(crate) fn try_run() -> bool {
         .host
         .get_mut(SECOND)
         .unwrap()
-        .component_mut::<tekes_ui_controls::composition::ButtonContent>()
+        .component_mut::<tekes_ui_controls::composition::Button>()
         .unwrap()
         .button
         .state

@@ -2,6 +2,7 @@
 pub mod collections_view;
 mod composite;
 pub mod composition;
+pub use composition::{Button, ButtonContents, ButtonImagePosition, ButtonActivationPhase};
 mod control_motion;
 mod draft;
 pub mod feedback_view;
@@ -42,7 +43,7 @@ pub use text_surface::{
 pub use toolbar::{ToolbarAction, ToolbarControl, ToolbarIconAction};
 mod widgets;
 pub use widgets::{
-    Button, ButtonFramePolicy, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer,
+    ButtonModel, ButtonFramePolicy, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer,
     CheckState, Checkbox, CheckboxLayout, ControlKey, ControlMotionContext, ControlState, Dialog,
     Field, Menu, NumberField, Select, Tabs,
 };

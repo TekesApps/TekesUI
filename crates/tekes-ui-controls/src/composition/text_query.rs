@@ -186,7 +186,7 @@ mod tests {
         let split = SplitViewContent::try_new(SplitViewConstruction {
             config: SplitViewConfig::default(),
             slots: SplitViewSlotIds { leading: ComponentId(82910), trailing: ComponentId(82911), divider: ComponentId(82912) },
-            leading: field(), trailing: Content::new(ComponentId(82913), ButtonContent::new("other")),
+            leading: field(), trailing: Content::new(ComponentId(82913), Button::new("other")),
             budget: 64 * 1024 * 1024,
         }).unwrap();
         let mut host = ContentHost::try_new_prepared(Content::new(ROOT, split), 64 * 1024 * 1024).unwrap();

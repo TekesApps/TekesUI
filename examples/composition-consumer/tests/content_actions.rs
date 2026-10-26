@@ -67,11 +67,11 @@ fn paint(f: &mut ActionFixture) {
         )
         .unwrap();
 }
-fn button(f: &ActionFixture, id: ComponentId) -> &ButtonContent {
+fn button(f: &ActionFixture, id: ComponentId) -> &Button {
     f.host
         .get(id)
         .unwrap()
-        .component::<ButtonContent>()
+        .component::<Button>()
         .unwrap()
 }
 #[test]
@@ -126,7 +126,7 @@ fn disabled_controls_never_emit_and_focus_or_render_never_replays_counters() {
     f.host
         .get_mut(FIRST)
         .unwrap()
-        .component_mut::<ButtonContent>()
+        .component_mut::<Button>()
         .unwrap()
         .button
         .state
@@ -158,7 +158,7 @@ fn undrained_actions_are_not_retargeted_to_new_or_retained_remounts() {
         .accessibility_action(FIRST, None, AccessibilityAction::Press);
     f.host.remove(FIRST).unwrap();
     f.host
-        .insert(ROOT, Content::new(FIRST, ButtonContent::new("new")))
+        .insert(ROOT, Content::new(FIRST, Button::new("new")))
         .unwrap();
     assert!(f.host.drain_actions().is_empty());
     f.host
@@ -367,7 +367,7 @@ fn editor_submit_is_typed_and_composition_barriers_do_not_emit_actions() {
     f.host
         .get_mut(FIRST)
         .unwrap()
-        .component_mut::<ButtonContent>()
+        .component_mut::<Button>()
         .unwrap()
         .activations = 100;
     f.host.focus(Some(FIRST), true);
@@ -438,7 +438,7 @@ fn a_successful_action_survives_hiding_but_not_a_same_id_public_child_replacemen
         .unwrap()
         .children;
     let index = children.iter().position(|c| c.id() == FIRST).unwrap();
-    children[index] = Content::new(FIRST, ButtonContent::new("replacement"));
+    children[index] = Content::new(FIRST, Button::new("replacement"));
     assert!(f.host.drain_actions().is_empty());
 }
 #[test]
@@ -479,7 +479,7 @@ fn typed_delivery_reuses_original_button_input_tokens_for_all_sources_and_themes
                     f.host
                         .get_mut(FIRST)
                         .unwrap()
-                        .component_mut::<ButtonContent>()
+                        .component_mut::<Button>()
                         .unwrap()
                         .button
                         .state
@@ -576,7 +576,7 @@ fn public_bubbling_contract_keeps_original_button_and_once_only_action_queue() {
     for bubble in [false, true] {
         let id = ComponentId(87801);
         let mut host = ContentHost::new(
-            Content::new(id, ButtonContent::new("Toolbar action")).bubbling_handled_events(bubble),
+            Content::new(id, Button::new("Toolbar action")).bubbling_handled_events(bubble),
         )
         .unwrap();
         host.set_action_events(true);
@@ -601,7 +601,7 @@ fn public_bubbling_contract_keeps_original_button_and_once_only_action_queue() {
         assert_eq!(
             host.get(id)
                 .unwrap()
-                .component::<ButtonContent>()
+                .component::<Button>()
                 .unwrap()
                 .activations,
             1

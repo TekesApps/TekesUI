@@ -42,7 +42,7 @@ impl Default for SplitToolbar {
                 ComponentId(20207),
                 ToolbarGroup::new(
                     ToolbarPlacement::PrimaryAction,
-                    vec![Content::new(LEFT_ACTION, ButtonContent::new("Action"))],
+                    vec![Content::new(LEFT_ACTION, Button::new("Action"))],
                 ),
             ),
         ]);
@@ -101,7 +101,7 @@ fn toolbar_regions(node: &Content, regions: &mut Vec<Rect>) {
     let clip = node.visible().unwrap_or_default();
     if let Some(toolbar) = node.component::<ToolbarControl>() {
         regions.extend(toolbar.pointer_regions(node.frame(), clip));
-    } else if let Some(button) = node.component::<ButtonContent>() {
+    } else if let Some(button) = node.component::<Button>() {
         regions.extend(button.pointer_regions(node.frame(), clip));
     } else if let Some(toolbar) = node.component::<ToolbarContent>() {
         for child in &toolbar.children {

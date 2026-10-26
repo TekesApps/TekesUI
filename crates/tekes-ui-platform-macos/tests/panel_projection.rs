@@ -111,7 +111,7 @@ fn actual_native_projection_uses_exact_points_same_mount_generation_and_stales()
     let mut h = ContentHost::new(Content::new(
         ROOT,
         panel(
-            Content::new(CHILD, ButtonContent::new("button")).preserving_focus(),
+            Content::new(CHILD, Button::new("button")).preserving_focus(),
             true,
         ),
     ))
@@ -166,8 +166,8 @@ fn actual_fully_clipped_editor_keeps_native_key_value_and_selection_interfaces()
 fn window_batch_keeps_three_original_owners_text_geometry_and_direct_dispatch() {
     use tekes_ui_platform_macos::{AccessibilityAction as A,content_accessibility::*};
     use tekes_ui_platform_macos::Point as P;
-    let mut toolbar=ContentHost::new(Content::new(ComponentId(91),ButtonContent::new("Toolbar"))).unwrap();
-    let mut plain=ContentHost::new(Content::new(ComponentId(92),ButtonContent::new("Other"))).unwrap();
+    let mut toolbar=ContentHost::new(Content::new(ComponentId(91),Button::new("Toolbar"))).unwrap();
+    let mut plain=ContentHost::new(Content::new(ComponentId(92),Button::new("Other"))).unwrap();
     let mut curve=ContentHost::new(Content::new(ROOT,panel(Content::new(FIELD,TextFieldContent::new("Composer","draft")),false))).unwrap();
     let mut text=Text::new(true);
     for (h,x,y) in [(&mut plain,120.,40.),(&mut curve,0.,40.),(&mut toolbar,0.,0.)] {
@@ -210,7 +210,7 @@ fn window_batch_keeps_three_original_owners_text_geometry_and_direct_dispatch() 
 #[test]
 fn duplicate_or_missing_native_parent_rejects_whole_batch_and_revokes_saved_authority() {
     use tekes_ui_platform_macos::content_accessibility::*;
-    let mut host=ContentHost::new(Content::new(ROOT,panel(Content::new(CHILD,ButtonContent::new("button")),true))).unwrap();
+    let mut host=ContentHost::new(Content::new(ROOT,panel(Content::new(CHILD,Button::new("button")),true))).unwrap();
     render(&mut host,&mut Text::new(true),Rect::new(0.,0.,100.,100.));
     let snapshot=ContentAccessibilitySnapshot::from_host(&host).unwrap();
     let publication=WindowAccessibilityPublication::prepare(vec![(ContentAccessibilityOwner(1),snapshot.clone())]).unwrap();

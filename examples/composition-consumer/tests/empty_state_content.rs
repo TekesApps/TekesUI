@@ -316,8 +316,8 @@ fn children_mut_damage_is_fail_closed_without_panics_or_actions() {
             .unwrap();
         match kind {
             0 => c.clear(),
-            1 => c.push(Content::new(ComponentId(99), ButtonContent::new("Foreign"))),
-            2 => c[0] = Content::new(ACTION, ButtonContent::new("Replaced")),
+            1 => c.push(Content::new(ComponentId(99), Button::new("Foreign"))),
+            2 => c[0] = Content::new(ACTION, Button::new("Replaced")),
             _ => {
                 let mut other =
                     EmptyStateContent::new("Other", fixture::model(Some("Other")), ACTION).unwrap();

@@ -121,7 +121,7 @@ impl Fixture {
         }
         inner.push(Content::new(
             TARGET,
-            ButtonContent::new("Inspect retained item · 检查"),
+            Button::new("Inspect retained item · 检查"),
         ));
         for index in 12..24 {
             inner.push(text(
@@ -170,7 +170,7 @@ impl Fixture {
         }
         rows.push(Content::new(
             LAST,
-            ButtonContent::new("Last item · 最后一项"),
+            Button::new("Last item · 最后一项"),
         ));
         let items = rows
             .iter()
@@ -210,7 +210,7 @@ impl Fixture {
                         ]
                         .into_iter()
                         .map(|(id, label)| {
-                            Content::new(id, ButtonContent::new(label)).preserving_focus()
+                            Content::new(id, Button::new(label)).preserving_focus()
                         })
                         .collect(),
                     },

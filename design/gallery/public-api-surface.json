@@ -23,9 +23,22 @@
       "api": "tekes_ui_controls::Button",
       "category": "component",
       "components": [
-        "tui.button"
+        "tui.button",
+        "tui.icon-button"
       ],
-      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+      "reason": "The single public Button component; image-only is a content form using the same component, not a separate control."
+    },
+    {
+      "api": "tekes_ui_controls::ButtonActivationPhase",
+      "category": "composition",
+      "components": [],
+      "reason": "Pointer activation timing for original content-driven Button state and mount-bound typed actions; no new input state machine."
+    },
+    {
+      "api": "tekes_ui_controls::ButtonContents",
+      "category": "composition",
+      "components": [],
+      "reason": "Input presentation values for the one public Button; does not own interactions or accessibility."
     },
     {
       "api": "tekes_ui_controls::ButtonFramePolicy",
@@ -33,7 +46,13 @@
       "components": [
         "tui.button"
       ],
-      "reason": "Explicit caller-arranged compact geometry policy for existing Button/CompoundButton; default token minimum unchanged,not a new component."
+      "reason": "Explicit caller-arranged geometry policy on shared ButtonModel and the unified Button; no separate control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::ButtonImagePosition",
+      "category": "composition",
+      "components": [],
+      "reason": "Relative image/text arrangement on the same Button, using existing DS measurement."
     },
     {
       "api": "tekes_ui_controls::ButtonLayout",
@@ -42,6 +61,15 @@
         "tui.button"
       ],
       "reason": "Button layout result and presentation configuration; no standalone control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::ButtonModel",
+      "category": "component-support",
+      "components": [
+        "tui.button",
+        "tui.icon-button"
+      ],
+      "reason": "Underlying shared action state/painter for framework controls; not a separate content component."
     },
     {
       "api": "tekes_ui_controls::ButtonSize",
@@ -763,18 +791,31 @@
       "reason": "Public Content adapter retains the original Notice model/View, action owner and registered identity; no new queue or component."
     },
     {
+      "api": "tekes_ui_controls::composition::Button",
+      "category": "component-adapter",
+      "components": [
+        "tui.button",
+        "tui.icon-button"
+      ],
+      "reason": "The same root public Button component, accessible through composition."
+    },
+    {
       "api": "tekes_ui_controls::composition::ButtonActivationPhase",
       "category": "composition",
       "components": [],
-      "reason": "Pointer activation timing for original ButtonContent/CompoundButton state and mount-bound typed actions; no new input state machine."
+      "reason": "Pointer activation timing for original content-driven Button state and mount-bound typed actions; no new input state machine."
     },
     {
-      "api": "tekes_ui_controls::composition::ButtonContent",
-      "category": "component-adapter",
-      "components": [
-        "tui.button"
-      ],
-      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+      "api": "tekes_ui_controls::composition::ButtonContents",
+      "category": "composition",
+      "components": [],
+      "reason": "Input presentation values for the one public Button; does not own interactions or accessibility."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ButtonImagePosition",
+      "category": "composition",
+      "components": [],
+      "reason": "Relative image/text arrangement on the same Button, using existing DS measurement."
     },
     {
       "api": "tekes_ui_controls::composition::Component",
@@ -802,14 +843,6 @@
       "category": "composition",
       "components": [],
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
-    },
-    {
-      "api": "tekes_ui_controls::composition::CompoundButton",
-      "category": "component-adapter",
-      "components": [
-        "tui.button"
-      ],
-      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
     },
     {
       "api": "tekes_ui_controls::composition::Content",
@@ -1579,14 +1612,6 @@
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
     },
     {
-      "api": "tekes_ui_controls::extended::IconButton",
-      "category": "component",
-      "components": [
-        "tui.icon-button"
-      ],
-      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
-    },
-    {
       "api": "tekes_ui_controls::extended::Link",
       "category": "component",
       "components": [
@@ -2033,14 +2058,6 @@
       "category": "component",
       "components": [
         "tui.grid"
-      ],
-      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
-    },
-    {
-      "api": "tekes_ui_controls::layout_view::IconButtonView",
-      "category": "component",
-      "components": [
-        "tui.icon-button"
       ],
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
     },

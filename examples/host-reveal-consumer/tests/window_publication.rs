@@ -11,10 +11,10 @@ impl ButtonTextRenderer for Text {
 fn render(h:&mut ContentHost,x:f32) {h.render(&mut Scene::new(),&mut Text,Rect::new(x,0.,100.,100.),Rect::new(0.,0.,300.,100.),Theme::LIGHT.into()).unwrap();}
 #[test]
 fn independent_window_publication_preserves_original_leases_aliases_and_exact_owner() {
- let mut p=PanelContent::new(Content::new(ComponentId(2),ButtonContent::new("curve")).preserving_focus()).unwrap();
+ let mut p=PanelContent::new(Content::new(ComponentId(2),Button::new("curve")).preserving_focus()).unwrap();
  p.set_padding(Some(Insets::new(12.,12.,12.,12.))).unwrap();
  let mut curve=ContentHost::new(Content::new(ComponentId(1),p)).unwrap();
- let mut plain=ContentHost::new(Content::new(ComponentId(3),ButtonContent::new("plain")).preserving_focus()).unwrap();
+ let mut plain=ContentHost::new(Content::new(ComponentId(3),Button::new("plain")).preserving_focus()).unwrap();
  render(&mut curve,0.);render(&mut plain,120.);
  let a=ContentAccessibilitySnapshot::from_host(&curve).unwrap();
  let b=ContentAccessibilitySnapshot::from_host(&plain).unwrap();
@@ -41,7 +41,7 @@ fn checked_split_mutations_revoke_the_original_window_publication_only_on_commit
  let budget=64*1024*1024;
  let root=Content::new(ComponentId(100),SplitViewContent::try_new(SplitViewConstruction{
   config:SplitViewConfig::default(),slots:SplitViewSlotIds{leading:ComponentId(101),trailing:ComponentId(102),divider:ComponentId(103)},
-  leading:Content::new(ComponentId(110),ButtonContent::new("leading")),trailing:Content::new(ComponentId(120),ButtonContent::new("trailing")),budget,
+  leading:Content::new(ComponentId(110),Button::new("leading")),trailing:Content::new(ComponentId(120),Button::new("trailing")),budget,
  }).unwrap());
  let mut host=ContentHost::try_new_prepared(root,budget).unwrap();
  let paint=|h:&mut ContentHost|{let rect=Rect::new(0.,0.,640.,240.);h.render_checked(&mut Scene::new(),&mut Text,rect,rect,Theme::LIGHT.into()).unwrap();};
@@ -61,7 +61,7 @@ fn checked_split_mutations_revoke_the_original_window_publication_only_on_commit
  paint(&mut host);let before_replace=publish(&host);
  let expected=host.split_view_expected(ComponentId(100)).unwrap();
  host.replace_split_view_pane(SplitViewReplacement{owner:ComponentId(100),expected,pane:Pane::Trailing,
-  replacement:Content::new(ComponentId(130),ButtonContent::new("replacement")),budget}).unwrap();
+  replacement:Content::new(ComponentId(130),Button::new("replacement")),budget}).unwrap();
  assert!(!before_replace.is_current());assert!(before_replace.owner(content_key(&host,ComponentId(110),None).unwrap()).is_none());
  assert!(ContentAccessibilitySnapshot::from_host(&host).is_none());
  paint(&mut host);let recovery=publish(&host);

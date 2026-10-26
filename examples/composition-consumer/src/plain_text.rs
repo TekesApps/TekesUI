@@ -122,7 +122,7 @@ impl Scenario {
                 flexible_child: None,
                 children: vec![
                     Content::new(BODY, body),
-                    Content::new(APPEND, ButtonContent::new("Append content")),
+                    Content::new(APPEND, Button::new("Append content")),
                     Content::new(
                         FOOTNOTE,
                         TextContent {

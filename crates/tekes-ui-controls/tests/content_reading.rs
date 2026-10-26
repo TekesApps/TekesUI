@@ -62,7 +62,7 @@ fn fixture() -> (ContentHost, Vec<ComponentId>) {
                         ),
                     ),
                 ),
-                Content::new(EDITOR, ButtonContent::new("Independent action")),
+                Content::new(EDITOR, Button::new("Independent action")),
             ],
         },
     ))

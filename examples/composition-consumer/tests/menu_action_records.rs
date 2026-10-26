@@ -238,7 +238,7 @@ fn rebinding_model_cancels_held_pointer_and_identical_binding_keeps_revision() {
 #[test]
 fn legacy_public_menu_literal_still_compiles_and_selects_original_item() {
     let original = MenuContent {
-        trigger: ButtonContent::new("Legacy"),
+        trigger: Button::new("Legacy"),
         menu: tekes_ui_controls::MenuView::new(2),
         labels: vec!["Open".into(), "Archive".into()],
         selected: None,

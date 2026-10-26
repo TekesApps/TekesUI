@@ -53,8 +53,8 @@ fn fixed_dialog_slots_are_protected_and_closed_content_is_not_semantically_expos
                     role: proposal::TextRole::UiHeading,
                 },
             ),
-            Content::new(ComponentId(3), ButtonContent::new("Body action")),
-            Content::new(ComponentId(4), ButtonContent::new("Close")),
+            Content::new(ComponentId(3), Button::new("Body action")),
+            Content::new(ComponentId(4), Button::new("Close")),
         ),
     ))
     .unwrap();
@@ -64,7 +64,7 @@ fn fixed_dialog_slots_are_protected_and_closed_content_is_not_semantically_expos
     assert_eq!(
         host.insert(
             ComponentId(1),
-            Content::new(ComponentId(5), ButtonContent::new("Wrong slot"))
+            Content::new(ComponentId(5), Button::new("Wrong slot"))
         ),
         Err(CompositionError::NotContainer(ComponentId(1)))
     );
@@ -173,8 +173,8 @@ fn active_modal_paints_after_later_background_siblings() {
                     role: proposal::TextRole::UiHeading,
                 },
             ),
-            Content::new(ComponentId(4), ButtonContent::new("Body")),
-            Content::new(ComponentId(5), ButtonContent::new("Close")),
+            Content::new(ComponentId(4), Button::new("Body")),
+            Content::new(ComponentId(5), Button::new("Close")),
         ),
     );
     let mut host = ContentHost::new(Content::new(
@@ -335,7 +335,7 @@ fn dialog_host() -> ContentHost {
     ContentHost::new(Content::new(
         ComponentId(1),
         Siblings(vec![
-            Content::new(ComponentId(10), ButtonContent::new("Open")),
+            Content::new(ComponentId(10), Button::new("Open")),
             Content::new(
                 ComponentId(2),
                 DialogContent::new(
@@ -347,8 +347,8 @@ fn dialog_host() -> ContentHost {
                             role: proposal::TextRole::UiHeading,
                         },
                     ),
-                    Content::new(ComponentId(4), ButtonContent::new("Body")),
-                    Content::new(ComponentId(5), ButtonContent::new("Close")),
+                    Content::new(ComponentId(4), Button::new("Body")),
+                    Content::new(ComponentId(5), Button::new("Close")),
                 ),
             ),
         ]),
@@ -418,7 +418,7 @@ fn dialog_exit_retains_only_fresh_paint_and_restores_focus_once() {
     assert_eq!(
         h.get(ComponentId(4))
             .unwrap()
-            .component::<ButtonContent>()
+            .component::<Button>()
             .unwrap()
             .activations,
         0
