@@ -741,7 +741,7 @@
       "component": "tui.progress",
       "renderer": "progress",
       "slug": "component-progress",
-      "docs": "Displays a bounded 0–100% value and advances by 10% per action. Indeterminate progress is not shown in this story.",
+      "docs": "Displays determinate progress from 0–100% and a static indeterminate segment. The playground advances determinate progress by 10% per action; Variants compares 0%, 45%, 100% and indeterminate.",
       "keywords": "progress default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
       "api": "tekes_ui_controls::extended::Progress",
