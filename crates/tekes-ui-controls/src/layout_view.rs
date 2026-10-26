@@ -2477,7 +2477,13 @@ impl SelectView {
             self.cancel(model);
             return;
         }
-        if !self.window_active || self.disabled {
+        if !self.window_active {
+            return;
+        }
+        if self.disabled {
+            // Preserve the latest pointer position while disabled so re-enabling
+            // cannot revive hover from the location observed before disabling.
+            self.trigger.pointer_move_at(p);
             return;
         }
         self.trigger.pointer_move_at(p);
@@ -2635,6 +2641,7 @@ impl SelectView {
             .menu
             .set_window_active_with_model(&mut model.menu, active);
         if !active {
+            self.trigger.blur();
             self.cancel(model);
         }
     }
@@ -3014,6 +3021,13 @@ impl CommandPaletteView {
     }
     pub fn pointer_move(&mut self, p: Point, model: &mut CommandPalette) {
         if !self.sync_trigger_availability(model) {
+            if self.window_active {
+                // sync_trigger_availability has applied the live disabled
+                // state; update the saved pointer before the next paint.
+                self.trigger.pointer_move_at(p);
+            } else {
+                self.trigger.blur();
+            }
             return;
         }
         self.trigger.pointer_move_at(p);

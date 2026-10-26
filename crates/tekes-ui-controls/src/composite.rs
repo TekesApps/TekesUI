@@ -1503,6 +1503,7 @@ impl MenuRuntime {
 
     fn deactivate_model(&mut self, model: &mut Menu) -> MenuEvent {
         self.cancel_buttons();
+        self.clear_button_pointer_positions();
         if model.open {
             self.dismiss_model(model)
         } else {
@@ -1596,6 +1597,13 @@ impl MenuRuntime {
         self.cancel_buttons();
         self.placement = MenuLayout::default();
         self.focus_visible = false;
+    }
+
+    /// A deactivated menu no longer owns the pointer's previous location.
+    fn clear_button_pointer_positions(&mut self) {
+        for button in &mut self.buttons {
+            button.blur();
+        }
     }
 }
 
