@@ -1,6 +1,7 @@
 //! ProcessComponent service messages. No View/Panel/GPU identity is required.
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+pub mod curve;
 pub const VERSION: u32 = 2;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -31,6 +32,8 @@ pub struct Session {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "data")]
 pub enum RequestBody {
+    /// Curve V1 wire envelope. The current receiver is reject-only; it never grants capabilities.
+    CurveV1(curve::Envelope),
     Message {
         topic: String,
         payload: Value,
@@ -101,6 +104,12 @@ pub enum ComponentEvent {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "data")]
 pub enum Output {
+    /// Typed fail-closed reply, correlated to the original service request and attached View.
+    CurveReplyV1 {
+        request: u64,
+        view: u64,
+        reply: curve::CurveReply,
+    },
     ReadyView {
         pid: u32,
         capabilities: Capabilities,

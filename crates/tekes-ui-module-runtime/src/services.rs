@@ -2,10 +2,8 @@
 use crate::{component::*, pipes};
 use anyhow::{Result, bail, ensure};
 use serde_json::Value;
-#[cfg(target_os = "macos")]
-use std::collections::HashMap;
 use std::{
-    collections::{HashSet, VecDeque},
+    collections::{HashMap, HashSet, VecDeque},
     io::{BufReader, Write},
     sync::{
         Arc, Condvar, Mutex,
@@ -303,6 +301,12 @@ pub fn run_component_worker_from_args(
             })?;
             return Ok(true);
         }
+        if let RequestBody::CurveV1(envelope) = &body {
+            emitter.output(crate::component::curve::rejection_output(
+                id, envelope, None,
+            ))?;
+            continue;
+        }
         ensure!(
             !matches!(body, RequestBody::Render { .. }),
             "View not negotiated"
@@ -391,6 +395,65 @@ pub enum ProcessStatus {
         message: String,
     },
 }
+#[derive(Clone, Copy)]
+struct CurvePending {
+    attached_view: u64,
+    transaction_id: u64,
+}
+fn validate_server_identity(
+    packet: &ServerMessage,
+    session: &Session,
+    previous_serial: u64,
+) -> Result<()> {
+    ensure!(
+        packet.version == VERSION && packet.session == *session && packet.serial > previous_serial,
+        "stale server identity/serial"
+    );
+    Ok(())
+}
+fn consume_generic_response_pending(
+    pending: &mut HashSet<u64>,
+    curve_pending: &HashMap<u64, CurvePending>,
+    request: u64,
+) -> Result<()> {
+    ensure!(
+        !curve_pending.contains_key(&request),
+        "Curve request returned an untyped response"
+    );
+    ensure!(pending.remove(&request), "unknown response");
+    Ok(())
+}
+fn consume_curve_rejection(
+    pending: &mut HashSet<u64>,
+    curve_pending: &mut HashMap<u64, CurvePending>,
+    request: u64,
+    view: u64,
+    reply: &crate::component::curve::CurveReply,
+) -> Result<()> {
+    let expected = curve_pending
+        .get(&request)
+        .copied()
+        .ok_or_else(|| anyhow::anyhow!("Curve reply for non-Curve request"))?;
+    ensure!(expected.attached_view == view, "Curve reply View mismatch");
+    match reply {
+        crate::component::curve::CurveReply::Rejected { transaction_id, .. } => {
+            ensure!(
+                expected.transaction_id == *transaction_id,
+                "Curve reply transaction mismatch"
+            );
+        }
+        crate::component::curve::CurveReply::Negotiated { .. } => {
+            bail!("Curve negotiation acknowledgement is not implemented");
+        }
+    }
+    ensure!(
+        pending.contains(&request),
+        "Curve reply has no pending outer request"
+    );
+    pending.remove(&request);
+    curve_pending.remove(&request);
+    Ok(())
+}
 struct State {
     status: ProcessStatus,
     abort: bool,
@@ -399,12 +462,14 @@ struct State {
     outgoing: VecDeque<(u64, RequestBody)>,
     incoming: VecDeque<ServerMessage>,
     pending: HashSet<u64>,
+    curve_pending: HashMap<u64, CurvePending>,
     toolbar: Vec<ToolbarAction>,
     toolbar_revision: u64,
     toolbar_window: u64,
     toolbar_declaration: Option<ServerMessage>,
     view_revision: u64,
     native: Option<ViewCapabilities>,
+    expected_view: Option<u64>,
     stop_id: Option<u64>,
     #[cfg(target_os = "macos")]
     renders: HashMap<u64, (tekes_ui_app_protocol::Request, crate::view::Lease)>,
@@ -434,6 +499,7 @@ impl Shared {
             s.outgoing.clear();
             s.incoming.clear();
             s.pending.clear();
+            s.curve_pending.clear();
             s.toolbar.clear();
             s.toolbar_declaration = None;
             #[cfg(target_os = "macos")]
@@ -509,6 +575,7 @@ impl ProcessComponent {
             instance,
             host_epoch: options.host_epoch,
         };
+        let expected_view = options.view.as_ref().map(|view| view.view);
         let shared = Arc::new(Shared {
             state: Mutex::new(State {
                 status: ProcessStatus::Starting,
@@ -518,12 +585,14 @@ impl ProcessComponent {
                 outgoing: VecDeque::new(),
                 incoming: VecDeque::new(),
                 pending: HashSet::new(),
+                curve_pending: HashMap::new(),
                 toolbar: Vec::new(),
                 toolbar_revision: 0,
                 toolbar_window: 0,
                 toolbar_declaration: None,
                 view_revision: 0,
                 native: None,
+                expected_view,
                 stop_id: None,
                 #[cfg(target_os = "macos")]
                 renders: HashMap::new(),
@@ -572,6 +641,7 @@ impl ProcessComponent {
                     state.toolbar.clear();
                     state.toolbar_declaration = None;
                     state.pending.clear();
+                    state.curve_pending.clear();
                     #[cfg(target_os = "macos")]
                     state.renders.clear();
                 }
@@ -755,6 +825,16 @@ impl ProcessComponent {
             state.stop_id = Some(id);
         }
         state.pending.insert(id);
+        if let RequestBody::CurveV1(envelope) = &body {
+            let attached_view = state.expected_view.unwrap_or(0);
+            state.curve_pending.insert(
+                id,
+                CurvePending {
+                    attached_view,
+                    transaction_id: envelope.transaction_id,
+                },
+            );
+        }
         state.outgoing.push_back((id, body));
         drop(state);
         shared.changed.notify_all();
@@ -791,6 +871,7 @@ impl ProcessComponent {
             state.outgoing.clear();
             state.incoming.clear();
             state.pending.clear();
+            state.curve_pending.clear();
             state.toolbar.clear();
             state.toolbar_declaration = None;
         }
@@ -926,10 +1007,7 @@ fn connection(
     let mut stopped = false;
     while let Some(bytes) = pipes::read_packet(&mut output)? {
         let packet: ServerMessage = serde_json::from_slice(&bytes)?;
-        ensure!(
-            packet.version == VERSION && packet.session == *session && packet.serial > serial,
-            "stale server identity/serial"
-        );
+        validate_server_identity(&packet, session, serial)?;
         serial = packet.serial;
         #[cfg(target_os = "macos")]
         if let Output::Frame {
@@ -1063,7 +1141,12 @@ fn connection(
                         }
                     }
                     Output::Response { request, result } => {
-                        ensure!(state.pending.remove(request), "unknown response");
+                        let State {
+                            pending,
+                            curve_pending,
+                            ..
+                        } = &mut *state;
+                        consume_generic_response_pending(pending, curve_pending, *request)?;
                         #[cfg(target_os = "macos")]
                         ensure!(
                             !state.renders.contains_key(request),
@@ -1073,6 +1156,18 @@ fn connection(
                             ensure!(result.is_ok(), "Stop rejected");
                             stopped = true;
                         }
+                    }
+                    Output::CurveReplyV1 {
+                        request,
+                        view,
+                        reply,
+                    } => {
+                        let State {
+                            pending,
+                            curve_pending,
+                            ..
+                        } = &mut *state;
+                        consume_curve_rejection(pending, curve_pending, *request, *view, reply)?;
                     }
                     Output::Fatal { message } => bail!("worker fatal: {message}"),
                     _ => bail!("unnegotiated output"),
@@ -1114,6 +1209,173 @@ fn connection(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::component::curve::{CurveErrorCode, CurveReply};
+
+    fn rejected(tx: u64) -> CurveReply {
+        CurveReply::Rejected {
+            transaction_id: tx,
+            code: CurveErrorCode::UnsupportedFeature,
+        }
+    }
+    #[test]
+    fn actual_curve_json_bytes_use_the_existing_exclusive_pipe_packet_limit() {
+        use std::io::Cursor;
+        let packet = ClientMessage::Request {
+            version: VERSION,
+            session: Session {
+                module: "fixture".into(),
+                instance: 7,
+                host_epoch: 9,
+            },
+            id: 11,
+            body: RequestBody::CurveV1(crate::component::curve::Envelope {
+                protocol_major: 1,
+                wire_revision: 1,
+                view: 23,
+                transaction_id: 29,
+                ttl_ms: 0,
+                body: crate::component::curve::RequestBodyV1::TransactionStatus,
+            }),
+        };
+        let mut actual = serde_json::to_vec(&packet).unwrap();
+        assert!(actual.len() < crate::pipes::MAX_PACKET - 1);
+        actual.resize(crate::pipes::MAX_PACKET - 1, b' ');
+        let mut framed = Vec::new();
+        crate::pipes::write_packet(&mut framed, &actual).unwrap();
+        let mut reader = Cursor::new(framed);
+        let read = crate::pipes::read_packet(&mut reader).unwrap().unwrap();
+        assert_eq!(read.len(), crate::pipes::MAX_PACKET - 1);
+        assert!(matches!(
+            serde_json::from_slice::<ClientMessage>(&read).unwrap(),
+            ClientMessage::Request {
+                body: RequestBody::CurveV1(_),
+                ..
+            }
+        ));
+
+        actual.push(b' ');
+        assert_eq!(actual.len(), crate::pipes::MAX_PACKET);
+        assert!(crate::pipes::write_packet(&mut Vec::new(), &actual).is_err());
+        let mut oversized_frame = actual;
+        oversized_frame.push(b'\n');
+        assert!(crate::pipes::read_packet(&mut Cursor::new(oversized_frame)).is_err());
+    }
+    #[test]
+    fn outer_session_and_serial_guard_precedes_curve_reply_routing() {
+        let expected = Session {
+            module: "fixture".into(),
+            instance: 7,
+            host_epoch: 9,
+        };
+        let packet = ServerMessage {
+            version: VERSION,
+            session: expected.clone(),
+            serial: 3,
+            output: Output::CurveReplyV1 {
+                request: 7,
+                view: 23,
+                reply: rejected(29),
+            },
+        };
+        assert!(validate_server_identity(&packet, &expected, 2).is_ok());
+        assert!(validate_server_identity(&packet, &expected, 3).is_err());
+        let other = Session {
+            host_epoch: 10,
+            ..expected.clone()
+        };
+        assert!(validate_server_identity(&packet, &other, 2).is_err());
+        let wrong_version = ServerMessage {
+            version: VERSION + 1,
+            ..packet
+        };
+        assert!(validate_server_identity(&wrong_version, &expected, 2).is_err());
+    }
+    #[test]
+    fn curve_reply_consumes_only_the_exact_existing_request_slot() {
+        let mut pending = HashSet::from([7, 8]);
+        let mut curve_pending = HashMap::from([(
+            7,
+            CurvePending {
+                attached_view: 23,
+                transaction_id: 29,
+            },
+        )]);
+        assert!(
+            consume_curve_rejection(&mut pending, &mut curve_pending, 7, 23, &rejected(29)).is_ok()
+        );
+        assert!(!pending.contains(&7));
+        assert!(!curve_pending.contains_key(&7));
+        assert!(pending.contains(&8));
+        assert!(
+            consume_curve_rejection(&mut pending, &mut curve_pending, 7, 23, &rejected(29))
+                .is_err()
+        );
+        assert!(pending.contains(&8));
+    }
+    #[test]
+    fn curve_mismatches_and_negotiated_reply_fail_without_consuming_an_unrelated_pending() {
+        let capability = crate::component::curve::CapabilityWire {
+            protocol_major: 1,
+            wire_revision: 1,
+            clip_geometry_revision: 1,
+            coverage_aa_revision: 1,
+            features: crate::component::curve::REQUIRED_FEATURES,
+            limits: crate::component::curve::LimitsWire {
+                packet_bytes_exclusive: 4096,
+                records: 4,
+                depth: 2,
+                validation_steps: 12,
+                target_axis_px: 64,
+                ttl_ms: 10,
+            },
+        };
+        let mut generic_pending = HashSet::from([7, 8]);
+        let generic_curve_pending = HashMap::from([(
+            7,
+            CurvePending {
+                attached_view: 23,
+                transaction_id: 29,
+            },
+        )]);
+        assert!(
+            consume_generic_response_pending(&mut generic_pending, &generic_curve_pending, 7)
+                .is_err()
+        );
+        assert!(generic_pending.contains(&7));
+        assert!(
+            consume_generic_response_pending(&mut generic_pending, &generic_curve_pending, 8)
+                .is_ok()
+        );
+        assert!(!generic_pending.contains(&8));
+        for (request, view, reply) in [
+            (9, 23, rejected(29)),
+            (8, 23, rejected(29)),
+            (7, 24, rejected(29)),
+            (7, 23, rejected(30)),
+            (
+                7,
+                23,
+                CurveReply::Negotiated {
+                    capability: capability.clone(),
+                },
+            ),
+        ] {
+            let mut pending = HashSet::from([7, 8]);
+            let mut curve_pending = HashMap::from([(
+                7,
+                CurvePending {
+                    attached_view: 23,
+                    transaction_id: 29,
+                },
+            )]);
+            assert!(
+                consume_curve_rejection(&mut pending, &mut curve_pending, request, view, &reply)
+                    .is_err()
+            );
+            assert!(pending.contains(&7) && pending.contains(&8));
+            assert!(curve_pending.contains_key(&7));
+        }
+    }
     fn action(id: u64) -> ToolbarAction {
         ToolbarAction {
             command: tekes_ui_app_protocol::ToolbarItem {
