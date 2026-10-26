@@ -757,3 +757,216 @@ fn changed_help_does_not_cancel_an_existing_escape_or_click_dismissal() {
         assert_eq!(h.help_tooltip().unwrap().1, "new query after dismissal");
     }
 }
+
+const HELP_BAR_ROOT: ComponentId = ComponentId(26000);
+const HELP_BAR: ComponentId = ComponentId(26001);
+fn toolbar_help_fixture(deferred: bool) -> (ContentHost, Clock) {
+    let mut bar = tekes_ui_controls::ToolbarControl::window();
+    bar.set_actions(vec![
+        tekes_ui_controls::ToolbarAction {
+            id: 1,
+            title: "One".into(),
+            enabled: true,
+        },
+        tekes_ui_controls::ToolbarAction {
+            id: 2,
+            title: "Two".into(),
+            enabled: false,
+        },
+    ]);
+    assert!(bar.set_action_help(1, Some("Help for One".into())));
+    assert!(bar.set_action_help(2, Some("Help for unavailable Two".into())));
+    let mut host = ContentHost::new(Content::new(
+        HELP_BAR_ROOT,
+        ListContent::new("Commands", vec![Content::new(HELP_BAR, bar)]),
+    ))
+    .unwrap();
+    host.set_action_events(true);
+    host.set_help_overlay_deferred(deferred);
+    let mut clock = Clock::default();
+    draw_toolbar_help(&mut host, &mut clock, false);
+    (host, clock)
+}
+fn draw_toolbar_help(h: &mut ContentHost, t: &mut Clock, overlay: bool) {
+    let row = Rect::new(0., 0., 400., 42.);
+    let viewport = Rect::new(0., 0., 400., 260.);
+    h.render(&mut Scene::new(), t, row, viewport, Theme::LIGHT.into())
+        .unwrap();
+    if overlay {
+        h.paint_help_overlay(&mut Scene::new(), t, viewport, Theme::LIGHT.into());
+    }
+}
+fn help_part(h: &ContentHost, name: &str) -> SemanticPart {
+    h.semantics()
+        .into_iter()
+        .find(|n| n.id == HELP_BAR)
+        .unwrap()
+        .parts
+        .into_iter()
+        .find(|p| p.semantics.name == name)
+        .unwrap()
+}
+#[test]
+fn toolbar_action_hints_reuse_dwell_and_disabled_semantics_without_new_owner() {
+    let (mut h, mut t) = toolbar_help_fixture(false);
+    let before = h.semantics();
+    let first = help_part(&h, "One");
+    let second = help_part(&h, "Two");
+    assert_eq!(first.semantics.description.as_deref(), Some("Help for One"));
+    assert!(second.semantics.disabled);
+    h.event(&ContentEvent::PointerMove(first.frame.center()));
+    draw_toolbar_help(&mut h, &mut t, false);
+    assert!(h.help_tooltip().is_none());
+    t.now = 500;
+    draw_toolbar_help(&mut h, &mut t, false);
+    assert_eq!(h.help_tooltip().unwrap().1, "Help for One");
+    assert!(h.help_tooltip().unwrap().2.visible.unwrap().max_y() > 42.);
+    h.event(&ContentEvent::PointerMove(second.frame.center()));
+    draw_toolbar_help(&mut h, &mut t, false);
+    assert!(
+        h.help_tooltip().is_none(),
+        "moving to another part must restart dwell"
+    );
+    t.now = 1000;
+    draw_toolbar_help(&mut h, &mut t, false);
+    assert_eq!(h.help_tooltip().unwrap().1, "Help for unavailable Two");
+    assert_eq!(h.focused(), None);
+    assert_eq!(h.semantics(), before);
+    click(&mut h, second.frame.center());
+    assert!(h.drain_actions().is_empty());
+    click(&mut h, first.frame.center());
+    assert_eq!(h.drain_actions().len(), 1);
+    assert!(h.help_tooltip().is_none());
+}
+#[test]
+fn toolbar_help_revisions_clear_and_unmount_cannot_replay_old_parts() {
+    let (mut h, mut t) = toolbar_help_fixture(false);
+    let first = help_part(&h, "One").frame.center();
+    h.event(&ContentEvent::PointerMove(first));
+    draw_toolbar_help(&mut h, &mut t, false);
+    t.now = 500;
+    draw_toolbar_help(&mut h, &mut t, false);
+    assert!(h.help_tooltip().is_some());
+    let bar = h
+        .get_mut(HELP_BAR)
+        .unwrap()
+        .component_mut::<tekes_ui_controls::ToolbarControl>()
+        .unwrap();
+    assert!(!bar.set_action_help(1, Some("Help for One".into())));
+    assert!(!bar.set_action_help(999, Some("unknown".into())));
+    assert!(h.help_tooltip().is_some());
+    assert!(
+        h.get_mut(HELP_BAR)
+            .unwrap()
+            .component_mut::<tekes_ui_controls::ToolbarControl>()
+            .unwrap()
+            .set_action_help(2, Some("Updated other action".into()))
+    );
+    assert!(
+        h.help_tooltip().is_some(),
+        "another action's metadata must not dismiss this hint"
+    );
+    assert!(
+        h.get_mut(HELP_BAR)
+            .unwrap()
+            .component_mut::<tekes_ui_controls::ToolbarControl>()
+            .unwrap()
+            .set_action_help(1, Some("Changed help".into()))
+    );
+    assert!(h.help_tooltip().is_none());
+    draw_toolbar_help(&mut h, &mut t, false);
+    t.now = 1000;
+    draw_toolbar_help(&mut h, &mut t, false);
+    assert_eq!(h.help_tooltip().unwrap().1, "Changed help");
+    let retained = h.remove(HELP_BAR).unwrap();
+    assert!(h.help_tooltip().is_none());
+    h.insert(HELP_BAR_ROOT, retained).unwrap();
+    draw_toolbar_help(&mut h, &mut t, false);
+    h.event(&ContentEvent::PointerMove(
+        help_part(&h, "One").frame.center(),
+    ));
+    draw_toolbar_help(&mut h, &mut t, false);
+    t.now = 2000;
+    draw_toolbar_help(&mut h, &mut t, false);
+    assert!(
+        h.help_tooltip().is_none(),
+        "retained owner must explicitly rebind its help"
+    );
+}
+#[test]
+fn deferred_toolbar_help_paints_once_after_content_without_replaying_buttons() {
+    let (mut h, mut t) = toolbar_help_fixture(true);
+    let first = help_part(&h, "One").frame.center();
+    h.event(&ContentEvent::PointerMove(first));
+    draw_toolbar_help(&mut h, &mut t, false);
+    assert!(!t.requested);
+    let viewport = Rect::new(0., 0., 400., 260.);
+    h.paint_help_overlay(&mut Scene::new(), &mut t, viewport, Theme::LIGHT.into());
+    assert!(t.requested);
+    assert!(h.needs_render());
+    t.now = 500;
+    draw_toolbar_help(&mut h, &mut t, false);
+    t.drawn.clear();
+    t.requested = false;
+    h.paint_help_overlay(&mut Scene::new(), &mut t, viewport, Theme::LIGHT.into());
+    assert_eq!(h.help_tooltip().unwrap().1, "Help for One");
+    assert!(t.drawn.iter().all(|s| s != "One" && s != "Two"));
+    assert!(!t.requested);
+    assert!(!h.needs_render());
+    assert!(h.drain_actions().is_empty());
+    h.event(&ContentEvent::Key {
+        key: ControlKey::Escape,
+        down: true,
+    });
+    assert!(h.help_tooltip().is_none());
+    t.now = 2000;
+    draw_toolbar_help(&mut h, &mut t, true);
+    assert!(h.help_tooltip().is_none());
+}
+
+#[test]
+fn deferred_toolbar_help_requires_current_layout_and_active_window() {
+    let (mut h, mut t) = toolbar_help_fixture(true);
+    let first = help_part(&h, "One").frame.center();
+    let viewport = Rect::new(0., 0., 400., 260.);
+    h.event(&ContentEvent::PointerMove(first));
+    draw_toolbar_help(&mut h, &mut t, true);
+    t.now = 500;
+    draw_toolbar_help(&mut h, &mut t, true);
+    assert_eq!(h.help_tooltip().unwrap().1, "Help for One");
+    assert!(h.geometry_snapshot().is_some());
+
+    // The original tree mutation invalidates layout without rendering. Its old
+    // retained anchor must not authorize a separate late help paint pass.
+    h.reorder(HELP_BAR_ROOT, &[HELP_BAR]).unwrap();
+    assert!(h.geometry_snapshot().is_none());
+    t.drawn.clear();
+    t.requested = false;
+    let mut stale = Scene::new();
+    h.paint_help_overlay(&mut stale, &mut t, viewport, Theme::LIGHT.into());
+    assert!(stale.primitives().is_empty());
+    assert!(t.drawn.is_empty());
+    assert!(!t.requested);
+
+    draw_toolbar_help(&mut h, &mut t, true);
+    assert!(h.geometry_snapshot().is_some());
+    assert_eq!(h.help_tooltip().unwrap().1, "Help for One");
+    h.set_window_active(false);
+    t.drawn.clear();
+    t.requested = false;
+    let mut inactive = Scene::new();
+    h.paint_help_overlay(&mut inactive, &mut t, viewport, Theme::LIGHT.into());
+    assert!(inactive.primitives().is_empty());
+    assert!(t.drawn.is_empty());
+    assert!(!t.requested);
+    assert!(h.help_tooltip().is_none());
+
+    h.set_window_active(true);
+    draw_toolbar_help(&mut h, &mut t, true);
+    h.event(&ContentEvent::PointerMove(first));
+    draw_toolbar_help(&mut h, &mut t, true);
+    t.now = 1000;
+    draw_toolbar_help(&mut h, &mut t, true);
+    assert_eq!(h.help_tooltip().unwrap().1, "Help for One");
+    assert!(h.drain_actions().is_empty());
+}

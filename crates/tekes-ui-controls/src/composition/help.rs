@@ -154,6 +154,31 @@ impl HelpState {
     }
 }
 impl ContentHost {
+    /// Hosts with separate content/toolbar paint passes can defer only help,
+    /// then paint it once after ordinary content. The original owner/state and
+    /// clock remain unchanged; menus/capture/modal barriers still apply.
+    pub fn set_help_overlay_deferred(&mut self, deferred: bool) {
+        if self.help_overlay_deferred != deferred {
+            self.help_overlay_deferred = deferred;
+            self.dirty = true;
+        }
+    }
+    /// Paint/tick deferred help using the caller's real window viewport. Call
+    /// after rendering this ContentHost, without replaying its content or input.
+    /// This is a no-op unless deferred mode is enabled and layout is current.
+    pub fn paint_help_overlay(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        viewport: Rect,
+        palette: Palette,
+    ) {
+        if self.help_overlay_deferred && self.window_active && !self.reading_transaction
+            && !self.reveal_clock.pending && self.last_layout.is_some()
+        {
+            self.render_help(scene, text, viewport, viewport, palette);
+        }
+    }
     fn help_request(
         &self,
         id: ComponentId,

@@ -1435,6 +1435,7 @@ pub struct ContentHost {
     item_reveal: Option<content_reveal::ItemReveal>,
     reading_scroll_source: Option<(ComponentId, u64)>,
     help: help::HelpState,
+    help_overlay_deferred: bool,
     event_bubbled: Option<bool>,
 }
 impl ContentHost {
@@ -1469,6 +1470,7 @@ impl ContentHost {
             item_reveal: None,
             reading_scroll_source: None,
             help: Default::default(),
+            help_overlay_deferred: false,
             event_bubbled: None,
         }
     }
@@ -1774,7 +1776,9 @@ impl ContentHost {
             self.cancel();
             return Err(CompositionError::MissingLabelServices(id));
         }
-        self.render_help(scene, text, frame, clip, palette);
+        if !self.help_overlay_deferred {
+            self.render_help(scene, text, frame, clip, palette);
+        }
         if let Some(error) = scene.composition_error() {
             return Err(CompositionError::SceneFragment(error));
         }
