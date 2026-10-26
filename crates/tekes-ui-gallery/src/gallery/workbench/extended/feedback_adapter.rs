@@ -1108,7 +1108,11 @@ pub(super) fn build(
             let frame = Rect::new(x, y + 26.0, width.min(500.0), 12.0);
             ext.feedback_views
                 .render_progress(scene, ext.progress, frame, Some(clip), palette);
-            let percentage = format!("{:.0}%", ext.progress.value() * 100.0);
+            let percentage = if ext.progress.indeterminate {
+                "Indeterminate".to_owned()
+            } else {
+                format!("{:.0}%", ext.progress.value() * 100.0)
+            };
             let (button_frame, percentage_frame) =
                 progress_fixture_layout(ctx, x, y, width, &percentage, state.density);
             action(
@@ -2826,4 +2830,83 @@ mod layout_tests {
             }
         }
     }
+    #[test]
+    fn progress_original_page_and_variants_preserve_selected_brand_packet() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::surface_palette::resolve_surface;
+        let entry = crate::gallery::workbench::entries()
+            .iter()
+            .find(|e| e.renderer() == "progress")
+            .unwrap();
+        for theme in tekes_ui_tokens::Theme::ALL {
+            for brand in [0, 1, 2] {
+                for (value, unknown) in [(0., false), (0.45, false), (1., false), (0.45, true)] {
+                    let mut model = Progress::new(value);
+                    model.indeterminate = unknown;
+                    let mut ext = ExtendedStory {
+                        progress: model,
+                        ..Default::default()
+                    };
+                    let mut state = StoryState::for_entry(entry);
+                    state.brand = brand;
+                    let mut text = TextEngine::new();
+                    let mut static_text = StaticText::new(None);
+                    let mut ctx = context(&mut text, &mut static_text);
+                    ctx.theme = theme;
+                    let palette = Palette::new(theme, brand).unwrap();
+                    let packet = resolve_surface(palette, "canvas", "progress-track", "rest").unwrap();
+                    let mut scene = Scene::new();
+                    let body = Rect::new(24., 100., 220., 32.);
+                    let clip = Rect::new(0., 0., 720., 640.);
+                    assert!(build(
+                        &mut ext, entry, &mut state, &mut ctx, &mut scene, body, clip, palette
+                    ));
+                    let frame = ext.feedback_views.progress.layout().frame;
+                    let q = scene
+                        .primitives()
+                        .iter()
+                        .filter_map(|p| {
+                            if let Primitive::Quad(q) = p {
+                                Some(q)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<_>>();
+                    assert!(
+                        q.iter()
+                            .any(|q| q.rect == frame && q.fill == packet.background)
+                    );
+                    assert!(q.iter().any(|q| q.rect == frame
+                        && q.border_color == packet.boundary.unwrap()
+                        && q.border_width > 0.));
+                    assert!(q.iter().any(|q| q.fill == packet.marker.unwrap()
+                        && q.rect.min_y() == frame.min_y()
+                        && q.rect.size.width == frame.size.width * if unknown { 0.3 } else { value }));
+                    assert!(state.buttons.contains_key(&20));
+                    let mut scene = Scene::new();
+                    let mut y = 10.;
+                    matrix_progress_variants(
+                        &mut ctx,
+                        &mut scene,
+                        Rect::new(10., 10., 220., 500.),
+                        &mut y,
+                        palette,
+                    );
+                    let fills = scene
+                        .primitives()
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Quad(q) if q.fill == packet.marker.unwrap() => {
+                                Some(q.rect.size.width)
+                            }
+                            _ => None,
+                        })
+                        .collect::<Vec<_>>();
+                    assert_eq!(fills, vec![0., 220. * 0.45, 220., 220. * 0.3]);
+                }
+            }
+        }
+    }
+
 }

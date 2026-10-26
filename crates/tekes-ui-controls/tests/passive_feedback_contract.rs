@@ -133,9 +133,23 @@ fn public_feedback_paint_preserves_progress_and_outcome_semantic_separation() {
                     Some(clip)
                 );
                 let q = quads(&scene);
-                assert_eq!(q.len(), 2);
-                assert_eq!(q[0].fill, palette.color("surface-2").unwrap());
-                assert_eq!(q[1].fill, palette.color("c-progress-active").unwrap());
+                let packet = tekes_ui_tokens::surface_palette::resolve_surface(
+                    palette,
+                    "canvas",
+                    "progress-track",
+                    "rest",
+                )
+                .expect("registered Progress packet");
+                assert_eq!(q.len(), 3);
+                assert_eq!(q[0].fill, packet.background);
+                assert_eq!(q[1].fill, packet.marker.expect("Progress marker"));
+                assert_eq!(q[2].rect, frame);
+                assert_eq!(q[2].fill, tekes_ui_tokens::Rgba::new(0., 0., 0., 0.));
+                assert_eq!(q[2].border_color, packet.boundary.expect("necessary boundary"));
+                assert_eq!(
+                    q[2].border_width,
+                    tekes_ui_tokens::proposal::metric("stroke", "stroke-rule").unwrap()
+                );
                 assert_eq!(q[1].rect.size.width, value * frame.size.width);
                 assert_eq!(model.value(), value);
             }

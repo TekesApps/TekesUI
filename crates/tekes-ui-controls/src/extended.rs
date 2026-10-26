@@ -1868,29 +1868,46 @@ pub fn link_underline(
     ));
     ink
 }
+/// Compatibility entry point using the original canvas context.
 pub fn progress(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, model: Progress) {
-    let theme = theme.into();
+    progress_on_surface(scene, rect, theme.into(), model, "canvas")
+        .expect("generated Progress canvas packet");
+}
+/// Resolve the complete shared packet before writing any scene primitives.
+/// Progress retains its original finite scalar and static unknown geometry.
+pub fn progress_on_surface(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    model: Progress,
+    surface: &str,
+) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    use tekes_ui_tokens::surface_palette::{SurfaceError, resolve_surface};
+    let colors = resolve_surface(palette, surface, "progress-track", "rest")?;
+    let marker = colors.marker.ok_or(SurfaceError::UnknownRole)?;
     let width = rect.size.width.max(0.);
     let height = rect.size.height.max(0.);
-    scene.push_quad(
-        Quad::new(
-            Rect::new(rect.min_x(), rect.min_y(), width, height),
-            paint_color(theme, "surface-2"),
-        )
-        .with_corner_radius(height * 0.5),
-    );
+    let track = Rect::new(rect.min_x(), rect.min_y(), width, height);
+    scene.push_quad(Quad::new(track, colors.background).with_corner_radius(height * 0.5));
     let active = if model.indeterminate {
         width.min(width * 0.3)
     } else {
         width * model.value
     };
     scene.push_quad(
-        Quad::new(
-            Rect::new(rect.min_x(), rect.min_y(), active, height),
-            paint_color(theme, "c-progress-active"),
-        )
-        .with_corner_radius(height * 0.5),
+        Quad::new(Rect::new(rect.min_x(), rect.min_y(), active, height), marker)
+            .with_corner_radius(height * 0.5),
     );
+    // Keep the shared necessary boundary visible even at 100%. The fill and
+    // rounded geometry remain the original model's full allocation.
+    if let Some(boundary) = colors.boundary {
+        scene.push_quad(
+            Quad::new(track, Rgba::new(0., 0., 0., 0.))
+                .with_corner_radius(height * 0.5)
+                .with_border(proposal::metric("stroke", "stroke-rule").expect("Progress boundary stroke"), boundary),
+        );
+    }
+    Ok(())
 }
 pub fn status_badge(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, status: StatusBadge) {
     let theme = theme.into();

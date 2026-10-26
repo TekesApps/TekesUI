@@ -9,6 +9,8 @@ mod actions;
 mod adapters;
 mod content_reading;
 mod content_reveal;
+mod progress;
+pub use progress::ProgressContent;
 mod help;
 mod key;
 mod label;
@@ -19,6 +21,7 @@ pub use number::{
     NumberParseError, NumberValidation, NumberValueChange, NumberValueError,
 };
 mod pointer;
+mod text_query;
 mod toolbar_content;
 use crate::extended::{Axis, Grid, Stack};
 use crate::layout::{AlignmentOverride, MeasuredChild, layout_measured_children};
@@ -45,6 +48,7 @@ pub use pointer::{InputModifiers, PointerButton, PointerEvent, PointerModifiers,
 use std::{any::Any, collections::BTreeSet, fmt::Debug, ops::Range};
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Rgba, proposal};
+pub use text_query::ContentTextInput;
 pub use toolbar_content::{ToolbarContent, ToolbarGroup, ToolbarPlacement};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1879,6 +1883,26 @@ impl ContentHost {
     /// Current UTF-16 editing/geometry source for a platform's text query bridge.
     pub fn focused_text(&self) -> Option<&crate::TextSurface> {
         self.focused.and_then(|id| self.text_surface(id))
+    }
+    /// Existing editor/document binding, unchanged by ordinary edits or selection.
+    pub fn focused_text_binding(&self) -> Option<(u64, u64)> {
+        self.focused_text()
+            .map(|surface| surface.input.controlled_binding())
+    }
+    /// Read the original focused text owner without editing or reshaping it.
+    pub fn text_input_snapshot(&self) -> Option<ContentTextInput> {
+        self.semantic_text_input_snapshot(self.focused?)
+    }
+    /// Read the original semantic owner's text and visible caret geometry.
+    pub fn semantic_text_input_snapshot(&self, id: ComponentId) -> Option<ContentTextInput> {
+        let owner = self.scope().find_active(id)?;
+        if owner.component.semantics().disabled {
+            return None;
+        }
+        owner
+            .component
+            .text_surface()
+            .map(ContentTextInput::from_surface)
     }
     /// Published text queries for active semantic owners, including unfocused
     /// fields. Closed or background modal subtrees cannot expose editable text.

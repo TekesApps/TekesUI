@@ -259,3 +259,5 @@ pub mod toolbar_groups;
 pub mod split_toolbar;
 
 pub mod editable_number;
+
+pub mod progress_content;

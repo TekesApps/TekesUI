@@ -10,6 +10,15 @@ rust-version.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = []
+# Data-only adapter; the base platform crate remains independent of controls.
+content-accessibility = ["dep:tekes-ui-controls", "dep:tekes-ui-scene"]
+
+[dependencies]
+tekes-ui-controls = { path = "../tekes-ui-controls", optional = true }
+tekes-ui-scene = { workspace = true, optional = true }
+
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2.workspace = true
 objc2-foundation = { workspace = true, features = ["NSObject", "NSString", "NSGeometry", "NSNotification", "NSProcessInfo", "NSArray", "NSEnumerator", "NSThread", "NSRunLoop", "NSDictionary", "NSValue", "NSRange", "NSAttributedString"] }

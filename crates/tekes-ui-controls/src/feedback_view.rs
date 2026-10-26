@@ -2046,8 +2046,17 @@ impl StatusBadgeView {
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ProgressView {
     layout: ViewLayout,
+    surface: Option<&'static str>,
 }
 impl ProgressView {
+    /// Reject unknown context before replacing the retained Surface.
+    pub fn set_surface(&mut self, name: &str) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);
+        Ok(())
+    }
+    pub fn surface(&self) -> &'static str {
+        self.surface.unwrap_or("canvas")
+    }
     pub fn render(
         &mut self,
         scene: &mut Scene,
@@ -2064,7 +2073,8 @@ impl ProgressView {
         };
         if let Some(v) = visible {
             scene.push_clip(v);
-            crate::extended::progress(scene, frame, palette, model);
+            crate::extended::progress_on_surface(scene, frame, palette, model, self.surface())
+                .expect("generated Progress Surface packet");
             scene.pop_clip();
         }
         self.layout

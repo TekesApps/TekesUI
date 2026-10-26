@@ -889,6 +889,12 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::ContentTextInput",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Read-only snapshot of original Content text owner binding, text and visible caret geometry; no independent editor or component."
+    },
+    {
       "api": "tekes_ui_controls::composition::ContentTheme",
       "category": "composition",
       "components": [],
@@ -1065,6 +1071,14 @@
       "category": "composition",
       "components": [],
       "reason": "Lossless pointer input at the existing Component/ContentHost boundary, with legacy primary-pointer compatibility; data only, not a new component or selection engine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ProgressContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.progress"
+      ],
+      "reason": "Ordinary Content adapter consumes the existing Progress model and shared Surface packet; retains the registered Progress identity."
     },
     {
       "api": "tekes_ui_controls::composition::ScrollContent",
