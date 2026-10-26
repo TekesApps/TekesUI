@@ -278,14 +278,29 @@ impl BarChart {
         value_line_height: f32,
         category_line_height: f32,
     ) -> ChartGeometry {
+        self.layout_with_label_budget(bounds, value_line_height, category_line_height)
+            .0
+    }
+
+    /// Original #115 geometry plus its reserved label-only vertical budget.
+    /// The chart coordinates and calculations below are unchanged.
+    pub(crate) fn layout_with_label_budget(
+        &self,
+        bounds: Rect,
+        value_line_height: f32,
+        category_line_height: f32,
+    ) -> (ChartGeometry, Option<f32>) {
         let Some(bounds) = finite_bounds(bounds) else {
-            return ChartGeometry::default();
+            return (ChartGeometry::default(), None);
         };
         if self.data.is_empty() || bounds.is_empty() {
-            return ChartGeometry {
-                bounds,
-                ..ChartGeometry::default()
-            };
+            return (
+                ChartGeometry {
+                    bounds,
+                    ..ChartGeometry::default()
+                },
+                Some(0.0),
+            );
         }
         let outer = token_metric("spacing", "space-regular");
         let gap = token_metric("spacing", "space-tight");
@@ -326,11 +341,14 @@ impl BarChart {
                 plot_height,
             );
             if plot.is_empty() {
-                return ChartGeometry {
-                    bounds,
-                    plot,
-                    ..ChartGeometry::default()
-                };
+                return (
+                    ChartGeometry {
+                        bounds,
+                        plot,
+                        ..ChartGeometry::default()
+                    },
+                    Some(outer * 2.0 + reserved),
+                );
             }
             let max_abs = self
                 .data
@@ -406,15 +424,18 @@ impl BarChart {
                 bottom = value_height;
                 continue;
             }
-            return finalize_category_row(
-                ChartGeometry {
-                    bounds,
-                    plot,
-                    baseline,
-                    bars,
-                    invalid_count: self.data.iter().filter(|d| !d.value.is_finite()).count(),
-                },
-                gap,
+            return (
+                finalize_category_row(
+                    ChartGeometry {
+                        bounds,
+                        plot,
+                        baseline,
+                        bars,
+                        invalid_count: self.data.iter().filter(|d| !d.value.is_finite()).count(),
+                    },
+                    gap,
+                ),
+                Some(outer * 2.0 + reserved),
             );
         }
         unreachable!("one bottom-row promotion is sufficient")
@@ -598,20 +619,54 @@ fn paint_chart_geometry(
     if geometry.plot.is_empty() || geometry.bars.is_empty() {
         return geometry;
     }
-    let baseline_color = theme
-        .color("separator")
-        .expect("chart baseline semantic token");
-    let series_color = theme
-        .color("c-chart-series-1")
-        .expect("chart series semantic token");
-    let selection_color = theme
-        .color("row-selection")
-        .expect("chart selection semantic token");
-    let border_color = theme
-        .color("border-focused")
-        .expect("chart focus semantic token");
-    let border_width = proposal::metric("stroke", "stroke-rule").expect("chart stroke token");
+    let inks = ChartInk {
+        baseline: theme.color("separator").expect("chart baseline semantic token"),
+        series: theme.color("c-chart-series-1").expect("chart series semantic token"),
+        selection: theme.color("row-selection").expect("chart selection semantic token"),
+        focus: theme.color("border-focused").expect("chart focus semantic token"),
+    };
+    paint_chart_geometry_with_inks(scene, chart, geometry, true, inks)
+}
 
+#[derive(Clone, Copy)]
+struct ChartInk {
+    baseline: tekes_ui_tokens::Rgba,
+    series: tekes_ui_tokens::Rgba,
+    selection: tekes_ui_tokens::Rgba,
+    focus: tekes_ui_tokens::Rgba,
+}
+
+pub(crate) fn paint_chart_geometry_on_surface(
+    scene: &mut Scene,
+    chart: &BarChart,
+    geometry: ChartGeometry,
+    colors: tekes_ui_tokens::surface_palette::DataPlotSurfaceColors,
+) -> ChartGeometry {
+    paint_chart_geometry_with_inks(
+        scene,
+        chart,
+        geometry,
+        false,
+        ChartInk {
+            baseline: colors.plot.boundary.expect("validated data boundary"),
+            series: colors.plot.marker.expect("validated data marker"),
+            selection: colors.selection.background,
+            focus: colors.plot.focus.expect("validated owner focus"),
+        },
+    )
+}
+
+fn paint_chart_geometry_with_inks(
+    scene: &mut Scene,
+    chart: &BarChart,
+    geometry: ChartGeometry,
+    bar_focus: bool,
+    inks: ChartInk,
+) -> ChartGeometry {
+    if geometry.plot.is_empty() || geometry.bars.is_empty() {
+        return geometry;
+    }
+    let border_width = proposal::metric("stroke", "stroke-rule").expect("chart stroke token");
     for bar in &geometry.bars {
         let slot = Rect::new(
             bar.category_label.min_x(),
@@ -620,14 +675,16 @@ fn paint_chart_geometry(
             geometry.plot.size.height,
         );
         if bar.selected {
-            scene.push_quad(Quad::new(slot, selection_color));
+            scene.push_quad(Quad::new(slot, inks.selection));
         }
         if !bar.rect.is_empty() {
-            let mut quad = Quad::new(bar.rect, series_color);
+            let mut quad = Quad::new(bar.rect, inks.series);
             if bar.focus_visible {
-                quad = quad.with_border(border_width.max(1.0), border_color);
+                if bar_focus {
+                    quad = quad.with_border(border_width.max(1.0), inks.focus);
+                }
             } else if bar.hovered || (bar.focused && chart.is_focused()) {
-                quad = quad.with_border(border_width, baseline_color);
+                quad = quad.with_border(border_width, inks.baseline);
             }
             scene.push_quad(quad);
         }
@@ -638,7 +695,7 @@ fn paint_chart_geometry(
         geometry.plot.size.width,
         border_width,
     );
-    scene.push_quad(Quad::new(baseline, baseline_color));
+    scene.push_quad(Quad::new(baseline, inks.baseline));
     geometry
 }
 

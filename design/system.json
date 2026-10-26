@@ -294,7 +294,7 @@
     "version_policy": {
       "theme_definition_schema": "2.0.0",
       "surface_schema": "1.3.0",
-      "generation_rules": "1.9.0",
+      "generation_rules": "1.10.0",
       "instance_format": "tekesui.theme-instances/2",
       "provenance": "Each generated instance retains its definition version, internal modes, rules/schema versions and exact input SHA256. These are not package SemVer or published Git revisions."
     },
@@ -306,7 +306,7 @@
       "definition_schema_version": "2.0.0",
       "instance_format": "tekesui.theme-instances/2",
       "surface_schema_version": "1.3.0",
-      "rules_version": "1.9.0",
+      "rules_version": "1.10.0",
       "supported_modes": [
         "light",
         "dark",
@@ -325,13 +325,14 @@
         "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py": "f48e97e00a0f8da9d0b373d4636da251c35cbdc667b33a03b9679e00460e1acc",
         "design/source/base.tokens.json": "16215625e85017b393a096046c37849315d7c473d87e8c15c52fe8db887abf87",
         "design/source/token-metadata.json": "53db464280f6d381cf108cb78c1f894a1dd31d780a5045145d31e6bd925e637b",
-        "design/system.schema.json": "6d0d92288d90aeac812fa9592d293237c32750a4c3427d3913a58318c60b9cff",
+        "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
         "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
-        "design/theme/rules.json": "0d6769f8a33ad4a0ebfb53358a9d392b956e7076d6698b8f3a654711965f3896",
+        "design/theme/rules.json": "3e353c9b5cf35e92c79dd64020b195bfd85fb8e41e51b1d5cb1ed4b1dba423f0",
         "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
         "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
-        "scripts/generate-theme-system.py": "163af0aa8ccb7730ed87d9b8a0ea9ec5e8f5a3a02933ad54a90dab4e1ac7b88e",
-        "scripts/merge-design-system.py": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2"
+        "scripts/generate-theme-system.py": "cabc0172733b41835740c266f5a13d6ffedacc3768ef0dca19e95e0c357f7a69",
+        "scripts/merge-design-system.py": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2",
+        "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7"
       },
       "neutral_base_allowed_roles": [
         "p-border",

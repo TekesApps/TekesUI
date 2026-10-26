@@ -27,6 +27,8 @@ for _use in ['range-track','range-thumb']:
     USES[_use] = STATES[:4]
 USES['surface-frame'] = ['rest','disabled']
 USES['progress-track'] = ['rest']
+USES['data-plot'] = ['rest']
+USES['data-category-label'] = ['rest']
 STATUS_CONTENT_USES = {'content-status-' + tone for tone in ['info','running','succeeded','failed']}
 for _use in STATUS_CONTENT_USES: USES[_use] = ['rest','disabled']
 BADGE_USES = {'status-badge-' + tone for tone in ['info','running','succeeded','failed']}
@@ -34,10 +36,14 @@ PASSIVE_USES = BADGE_USES | {'skeleton'}
 for _use in PASSIVE_USES: USES[_use] = ['rest']
 NOTICE_MARKERS = {'notice-marker-info': 'status-info', 'notice-marker-success': 'status-succeeded', 'notice-marker-error': 'status-failed', 'notice-marker-toast-warning': 'status-failed', 'notice-marker-banner-warning': 'status-running'}
 for _use in NOTICE_MARKERS: USES[_use] = ['rest']
-FOCUS_FREE_USES = set(NOTICE_MARKERS) | PASSIVE_USES | STATUS_CONTENT_USES | {'content','text-selection','control-label','toggle-thumb','range-track','surface-frame','progress-track'}
+FOCUS_FREE_USES = set(NOTICE_MARKERS) | PASSIVE_USES | STATUS_CONTENT_USES | {'content','text-selection','control-label','toggle-thumb','range-track','surface-frame','progress-track','data-category-label'}
 
 
 def validate_use_channels(usage, state, pair):
+    if usage == 'data-plot' and (pair['background'] != '$surface' or any(pair[k] is None for k in ['boundary','focus','marker']) or pair['helper'] is not None):
+        raise ValueError('invalid data plot anatomy')
+    if usage == 'data-category-label' and (pair['background'] != '$surface' or any(pair[k] is not None for k in ['boundary','focus','marker','helper'])):
+        raise ValueError('invalid data category anatomy')
     if usage in NOTICE_MARKERS:
         expected = dict(background='$surface',text='primary-text',icon='primary-text',boundary=None,focus=None,marker=NOTICE_MARKERS[usage],helper=None)
         if state != 'rest' or pair != expected:
@@ -87,7 +93,7 @@ def expand_profiles(rules):
 def validate(rules):
     import jsonschema
     jsonschema.validate(rules, merge.load(ROOT / 'design/theme/rules.schema.json'))
-    if rules['rules_version'] != '1.9.0': raise ValueError('unsupported generation rules version')
+    if rules['rules_version'] != '1.10.0': raise ValueError('unsupported generation rules version')
     profiles = expand_profiles(rules)
     if not {'canvas','code','hint','panel','popover','sidebar','toolbar'} <= set(rules['surfaces']): raise ValueError('missing required Surface')
     for surface, definition in rules['surfaces'].items():
@@ -187,6 +193,39 @@ def verify_passive_status_contrast(usage, mode, colors, parent):
                 raise ValueError('insufficient skeleton boundary-' + side + ' contrast: ' + mode)
 
 
+
+def data_plot_contract():
+    contract = merge.load(ROOT / 'design/theme/data-plot-pairs.json')
+    expected = {'V:P':('plot.text','parent'), 'V:S':('plot.text','selection.background'), 'C:P':('category.text','parent'), 'M:P':('plot.marker','parent'), 'M:S':('plot.marker','selection.background'), 'F:P':('plot.focus','parent'), 'F:S':('plot.focus','selection.background'), 'F:M':('plot.focus','plot.marker')}
+    if set(contract) != {'format','pairs'} or contract['format'] != 'tekesui.data-plot-pairs/1': raise ValueError('invalid data plot pair contract')
+    pairs=contract['pairs']
+    if len(pairs)!=len(expected) or {p['id'] for p in pairs}!=set(expected): raise ValueError('incomplete data plot pairs')
+    for p in pairs:
+        text=p['id'][0] in 'VC'
+        if set(p)!={'id','ink','ground','normal','increased','applicability'} or (p['ink'],p['ground'])!=expected[p['id']] or p['normal']!=(4.5 if text else 3.0) or p['increased']!=(7.0 if text else 3.0) or p['applicability']!=('actual-contact' if p['id'] in ['F:S','F:M'] else 'owner-band'): raise ValueError('invalid data plot pair semantics')
+    return contract
+
+
+def verify_data_plot_contrast(rules, bundle, contract):
+    profiles=expand_profiles(rules)
+    for surface, definition in rules['surfaces'].items():
+        packets={name:profiles[definition['usages'][usage]][state] for name,usage,state in [('plot','data-plot','rest'),('category','data-category-label','rest'),('selection','selection','selected')]}
+        for mode in MODES:
+            def color(selector):
+                if selector=='parent': role=definition['background']
+                else:
+                    packet,channel=selector.split('.')
+                    role=packets[packet][channel]
+                    if role=='$surface': role=definition['background']
+                if role is None: raise ValueError('missing data plot ink: '+selector)
+                return merge.token_value(bundle,'color',role,mode)
+            for pair in contract['pairs']:
+                if pair['applicability']!='owner-band': continue
+                minimum=pair['increased' if mode.endswith('-ic') else 'normal']
+                if contrast(color(pair['ink']),color(pair['ground'])) < minimum:
+                    raise ValueError('insufficient data plot contrast: '+mode+'/'+surface+'/'+pair['id'])
+
+
 def theme_input_contract(rules):
     import jsonschema
     system = merge.load(ROOT / 'design/system.json')
@@ -204,7 +243,7 @@ def theme_input_contract(rules):
         if contract.get(field) != value: raise ValueError('stale or unsupported Theme input contract field: ' + field)
     if contract.get('supported_modes') != MODES or rules.get('modes') != MODES: raise ValueError('unsupported Theme input modes')
     required_pins = {'design/source/base.tokens.json','design/source/token-metadata.json','design/brand/policy.json',
-                     'design/theme/rules.json','design/theme/rules.schema.json','design/theme/theme.schema.json','design/system.schema.json',ARTIFACT_LOCK_SCHEMA,
+                     'design/theme/data-plot-pairs.json','design/theme/rules.json','design/theme/rules.schema.json','design/theme/theme.schema.json','design/system.schema.json',ARTIFACT_LOCK_SCHEMA,
                      'scripts/generate-theme-system.py','scripts/merge-design-system.py', str(merge.UPSTREAM / 'requirements.txt'),
                      str(merge.UPSTREAM / 'tools/brand.py'), str(merge.UPSTREAM / 'tools/brand_color.py'), str(merge.UPSTREAM / 'tools/validate.py'),
                      str(merge.UPSTREAM / 'design/tokens/tokens.schema.json'), str(merge.UPSTREAM / 'design/brand/brand.schema.json'),
@@ -269,6 +308,7 @@ def generate():
         effective = effective_base(base, metadata, contract, definition['inputs']['overrides'])
         bundle, _ = brand.compile_config(config, base=effective, policy=policy, metadata=metadata)
         verify_profile_color_references(expand_profiles(rules), bundle)
+        verify_data_plot_contrast(rules, bundle, data_plot_contract())
         verify_solid_status_foregrounds(bundle)
         # Check geometry constraints before overlapping Surface/track guards.
         for mode in MODES:

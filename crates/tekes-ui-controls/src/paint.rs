@@ -126,14 +126,16 @@ pub fn decorative_border(theme: impl Into<Palette>, backing_scale: f32) -> (f32,
 /// inward, so expand by offset + width to retain the full visible gap. Hosts
 /// keep their ancestor viewport clip; this never changes layout or hit targets.
 pub fn focus_ring(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, radius: f32) {
-    let theme = theme.into();
-    let width = proposal::metric("stroke", "c-focus-width").expect("focus width");
-    let gap = proposal::metric("spacing", "c-focus-offset").expect("focus offset");
-    let outset = gap + width;
+    focus_ring_with_color(scene, rect, color(theme, "border-focused"), radius);
+}
+
+pub(crate) fn focus_ring_with_color(scene: &mut Scene, rect: Rect, ink: Rgba, radius: f32) {
+    let metrics = crate::extended::FocusRingMetrics::new(1.0);
+    let outset = metrics.outset();
     scene.push_quad(
         Quad::new(rect.inset(-outset), Rgba::new(0., 0., 0., 0.))
             .with_corner_radius(radius + outset)
-            .with_border(width, color(theme, "border-focused")),
+            .with_border(metrics.width, ink),
     );
 }
 

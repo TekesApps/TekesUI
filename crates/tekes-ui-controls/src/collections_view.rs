@@ -1464,6 +1464,9 @@ impl DataTableView {
     }
 }
 
+mod chart_owner;
+pub use chart_owner::{ChartOwnerCapacity, ChartOwnerFocusSpace, ChartOwnerMeasurement};
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ChartViewLayout {
     pub frame: Rect,
@@ -1473,6 +1476,7 @@ pub struct ChartViewLayout {
 #[derive(Clone, Debug)]
 pub struct ChartView {
     layout: ChartViewLayout,
+    owner_band: Option<chart_owner::OwnerBand>,
     hovered: Option<usize>,
     focused: bool,
     focus_visible: bool,
@@ -1482,6 +1486,7 @@ impl Default for ChartView {
     fn default() -> Self {
         Self {
             layout: ChartViewLayout::default(),
+            owner_band: None,
             hovered: None,
             focused: false,
             focus_visible: false,
@@ -1528,6 +1533,7 @@ impl ChartView {
         palette: Palette,
         text_scale: f32,
     ) -> ChartViewLayout {
+        self.owner_band = None;
         let own_clip = own_clip(frame, clip);
         if own_clip.is_none() && !mounted_bounds(frame, clip) {
             self.focused = false;
@@ -1579,39 +1585,12 @@ impl ChartView {
         } else {
             model.layout_with_label_metrics(frame, value_line_height, category_line_height)
         };
-        let text_alignment = tekes_ui_tokens::proposal::layout::CHART_LABEL.text_alignment;
         if let Some(clip) = own_clip {
             scene.push_clip(clip);
             for primitive in local.primitives() {
                 scene.push(primitive.clone());
             }
-            for bar in &geometry.bars {
-                let value = bar.value.to_string();
-                let (value_rect, value_align) =
-                    chart_text_frame(text, &value, bar.value_label, text_alignment);
-                text.draw(
-                    scene,
-                    &value,
-                    proposal::TextRole::UiCaption,
-                    value_rect,
-                    value_align,
-                    palette
-                        .color("primary-text")
-                        .expect("DS primary text token"),
-                );
-                let (category_rect, category_align) =
-                    chart_text_frame(text, &bar.label, bar.category_label, text_alignment);
-                text.draw(
-                    scene,
-                    &bar.label,
-                    proposal::TextRole::UiCaption,
-                    category_rect,
-                    category_align,
-                    palette
-                        .color("secondary-text")
-                        .expect("DS secondary text token"),
-                );
-            }
+            draw_chart_labels(scene, text, &geometry, palette);
             scene.pop_clip();
         }
         self.layout = ChartViewLayout {
@@ -1622,6 +1601,9 @@ impl ChartView {
         self.layout.clone()
     }
     pub fn pointer_move(&mut self, point: Point, model: &mut BarChart) -> bool {
+        if !self.owner_data_current(model) {
+            return false;
+        }
         if !self.window_active || self.layout.visible.is_none() {
             let changed = self.hovered.take().is_some();
             model.set_hovered(None);
@@ -1642,6 +1624,15 @@ impl ChartView {
         changed
     }
     pub fn pointer_down(&mut self, point: Point, model: &mut BarChart) -> CollectionEvent {
+        if !self.owner_data_current(model) {
+            return CollectionEvent::Ignored;
+        }
+        if self.owner_band.is_some()
+            && !self.focused
+            && !matches!(self.owner_focus_space(model), ChartOwnerFocusSpace::Visible { .. })
+        {
+            return CollectionEvent::Ignored;
+        }
         if !self.window_active || self.layout.visible.is_none_or(|r| !r.contains(point)) {
             return CollectionEvent::Ignored;
         }
@@ -1678,8 +1669,91 @@ impl ChartView {
     }
 }
 
-fn chart_text_frame(
+fn chart_label_metrics(
     text: &mut impl ButtonTextRenderer,
+    model: &BarChart,
+    frame: Rect,
+) -> (f32, f32, bool) {
+    let mut measured = true;
+    let mut value_line_height: f32 = 16.0;
+    let mut category_line_height: f32 = 16.0;
+    if let Some((value_width, category_width)) = model.label_widths(frame) {
+        for datum in model.data().iter().filter(|datum| datum.value.is_finite()) {
+            let value_size = text.measure(
+                &datum.value.to_string(),
+                proposal::TextRole::UiCaption,
+                value_width,
+            );
+            let category_size = text.measure(
+                &datum.label,
+                proposal::TextRole::UiCaption,
+                category_width,
+            );
+            measured &= [
+                value_size.width,
+                value_size.height,
+                category_size.width,
+                category_size.height,
+            ]
+            .into_iter()
+            .all(|extent| extent.is_finite() && extent >= 0.0);
+            value_line_height = value_line_height.max(value_size.height);
+            category_line_height = category_line_height.max(category_size.height);
+        }
+    }
+    let widths_available = model.data().is_empty() || model.label_widths(frame).is_some();
+    (value_line_height, category_line_height, measured && widths_available)
+}
+
+fn draw_chart_labels(
+    scene: &mut Scene,
+    text: &mut impl ButtonTextRenderer,
+    geometry: &ChartGeometry,
+    palette: Palette,
+) {
+    draw_chart_labels_with_inks(scene, text, geometry, |category| {
+        if category {
+            palette.color("secondary-text").expect("DS secondary text token")
+        } else {
+            palette.color("primary-text").expect("DS primary text token")
+        }
+    });
+}
+
+fn draw_chart_labels_with_inks(
+    scene: &mut Scene,
+    text: &mut (impl ButtonTextRenderer + ?Sized),
+    geometry: &ChartGeometry,
+    mut ink: impl FnMut(bool) -> tekes_ui_tokens::Rgba,
+) {
+    let text_alignment = tekes_ui_tokens::proposal::layout::CHART_LABEL.text_alignment;
+    for bar in &geometry.bars {
+        let value = bar.value.to_string();
+        let (value_rect, value_align) =
+            chart_text_frame(text, &value, bar.value_label, text_alignment);
+        text.draw(
+            scene,
+            &value,
+            proposal::TextRole::UiCaption,
+            value_rect,
+            value_align,
+            ink(false),
+        );
+        let (category_rect, category_align) =
+            chart_text_frame(text, &bar.label, bar.category_label, text_alignment);
+        text.draw(
+            scene,
+            &bar.label,
+            proposal::TextRole::UiCaption,
+            category_rect,
+            category_align,
+            ink(true),
+        );
+    }
+}
+
+fn chart_text_frame(
+    text: &mut (impl ButtonTextRenderer + ?Sized),
     value: &str,
     slot: Rect,
     alignment: tekes_ui_tokens::proposal::layout::TextAlignment,
@@ -1689,8 +1763,6 @@ fn chart_text_frame(
         TextAlignment::Center => (slot, ButtonTextAlign::Center),
         TextAlignment::Leading => (slot, ButtonTextAlign::Leading),
         TextAlignment::Trailing => {
-            // The renderer supports leading/center alignment. Anchor a
-            // measured-width frame at the trailing edge, then draw it leading.
             let width = text
                 .measure(value, proposal::TextRole::UiCaption, slot.size.width)
                 .width

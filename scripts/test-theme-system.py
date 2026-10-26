@@ -16,9 +16,61 @@ spec.loader.exec_module(g)
 
 class ThemeSystemTests(unittest.TestCase):
     def rules(self): return g.merge.load(ROOT / 'design/theme/rules.json')
+    def test_data_packets_rest_only_and_extra_surface_complete(self):
+        r=self.rules();self.assertEqual(len(g.USES),44)
+        r['surfaces']['inspector']=copy.deepcopy(r['surfaces']['panel']);g.bindings(r)
+        for usage in ['data-plot','data-category-label']:
+            self.assertEqual(g.USES[usage],['rest'])
+            for state in g.STATES[1:]:
+                bad=copy.deepcopy(r);bad['profiles'][usage][state]=copy.deepcopy(bad['profiles'][usage]['rest'])
+                with self.assertRaises(Exception):g.bindings(bad)
+            bad=copy.deepcopy(r);del bad['surfaces']['inspector']['usages'][usage]
+            with self.assertRaises(Exception):g.bindings(bad)
+            for channel in g.CHANNELS:
+                bad=copy.deepcopy(r);del bad['profiles'][usage]['rest'][channel]
+                with self.assertRaises(Exception):g.bindings(bad)
+        for usage,channels in [('data-plot',['boundary','focus','marker']),('data-category-label',['text','icon'])]:
+            for channel in channels:
+                bad=copy.deepcopy(r);bad['profiles'][usage]['rest'][channel]=None
+                with self.assertRaises(Exception):g.bindings(bad)
+        for channel in ['boundary','focus','marker','helper']:
+            bad=copy.deepcopy(r);bad['profiles']['data-category-label']['rest'][channel]='primary-text'
+            with self.assertRaises(Exception):g.bindings(bad)
+
+    def data_fixture(self):
+        r={'profiles':{'p':{'rest':{'text':'v','marker':'m','focus':'f'}},'c':{'rest':{'text':'c'}},'s':{'selected':{'background':'s'}}},'surfaces':{'inspector':{'background':'p','usages':{'data-plot':'p','data-category-label':'c','selection':'s'}}}}
+        b={'color':{'tokens':[{'name':name,'value':{mode:('#FFFFFF' if name in ['p','s'] else '#000000') for mode in g.MODES}} for name in ['p','s','v','c','m','f']]}}
+        return r,b
+
+    def test_data_each_required_ground_is_independent_and_contact_pairs_retained(self):
+        contract=g.data_plot_contract();self.assertEqual(len(contract['pairs']),8)
+        self.assertEqual([p['id'] for p in contract['pairs'] if p['applicability']=='actual-contact'],['F:S','F:M'])
+        for pair in contract['pairs']:
+            if pair['applicability']!='owner-band':continue
+            r,b=self.data_fixture();single={'pairs':[pair]};g.verify_data_plot_contrast(r,b,single)
+            role={'plot.text':'v','category.text':'c','plot.marker':'m','plot.focus':'f'}[pair['ink']]
+            next(t for t in b['color']['tokens'] if t['name']==role)['value']['light']='#FFFFFF'
+            with self.assertRaisesRegex(ValueError,pair['id']):g.verify_data_plot_contrast(r,b,single)
+
+    def test_data_ic_and_full_precision_mark_boundary(self):
+        contract=g.data_plot_contract();r,b=self.data_fixture()
+        token=next(t for t in b['color']['tokens'] if t['name']=='v');token['value']['light']='#767676'
+        single={'pairs':[contract['pairs'][0]]};g.verify_data_plot_contrast(r,b,single)
+        token['value']['light-ic']='#767676'
+        with self.assertRaisesRegex(ValueError,'light-ic/inspector/V:P'):g.verify_data_plot_contrast(r,b,single)
+        r,b=self.data_fixture();single={'pairs':[contract['pairs'][3]]};token=next(t for t in b['color']['tokens'] if t['name']=='m');token['value']['light']='#949494';g.verify_data_plot_contrast(r,b,single);token['value']['light']='#959595'
+        with self.assertRaisesRegex(ValueError,'M:P'):g.verify_data_plot_contrast(r,b,single)
+
+    def test_data_contract_cannot_drop_pair_or_weaken_threshold(self):
+        original=g.merge.load;contract=g.data_plot_contract()
+        for mutate in [lambda c:c['pairs'].pop(),lambda c:c['pairs'][0].update(increased=4.5),lambda c:c['pairs'][1].update(ground='parent')]:
+            bad=copy.deepcopy(contract);mutate(bad)
+            with patch.object(g.merge,'load',side_effect=lambda path:bad if path==ROOT/'design/theme/data-plot-pairs.json' else original(path)):
+                with self.assertRaises(ValueError):g.data_plot_contract()
+
     def test_notice_exact_bindings_channels_states_and_warning_distinction(self):
         r=self.rules(); profiles=g.validate(r)
-        self.assertEqual(len(g.USES),42)
+        self.assertEqual(len(g.USES),44)
         for u,marker in g.NOTICE_MARKERS.items():
             expected=dict(background='$surface',text='primary-text',icon='primary-text',boundary=None,focus=None,marker=marker,helper=None)
             self.assertEqual(profiles[u],{'rest':expected})
@@ -49,7 +101,7 @@ class ThemeSystemTests(unittest.TestCase):
         r=self.rules(); profiles=g.validate(r)
         expected={'status-badge-'+t:dict(background='status-'+t,text='c-status-badge-foreground',icon='c-status-badge-foreground',boundary=None,focus=None,marker=None,helper=None) for t in ['info','running','succeeded','failed']}
         expected['skeleton']=dict(background='surface-2',text='primary-text',icon='primary-text',boundary='border',focus=None,marker=None,helper=None)
-        self.assertEqual(len(g.USES),42)
+        self.assertEqual(len(g.USES),44)
         for usage, packet in expected.items():
             self.assertEqual(profiles[usage],{'rest':packet})
             for surface in r['surfaces'].values(): self.assertEqual(surface['usages'][usage],usage)
@@ -93,7 +145,7 @@ class ThemeSystemTests(unittest.TestCase):
             r=self.rules();r['profiles']['progress-track'][state]=copy.deepcopy(r['profiles']['progress-track']['rest'])
             with self.assertRaises(Exception):g.bindings(r)
     def test_rest_only_cannot_downgrade_any_previous_use_directly_or_indirectly(self):
-        for usage in set(g.USES)-g.PASSIVE_USES-set(g.NOTICE_MARKERS)-{'progress-track'}:
+        for usage in set(g.USES)-g.PASSIVE_USES-set(g.NOTICE_MARKERS)-{'progress-track','data-plot','data-category-label'}:
             for indirect in [False,True]:
                 r=self.rules()
                 r['profiles']['passive-alias']={'extends':'progress-track'}
@@ -221,7 +273,7 @@ class ThemeSystemTests(unittest.TestCase):
             current=next(i for i in instances if i['id']==record['theme_id'])['modes'][record['mode']]
             # The frozen v1.6.1 baseline covers the original 31 uses. New passive
             # progress packets are checked separately; never rewrite the old fixture.
-            packet={surface:{usage:states for usage,states in uses.items() if usage not in g.PASSIVE_USES | set(g.NOTICE_MARKERS) | {'progress-track'}} for surface,uses in current.items()}
+            packet={surface:{usage:states for usage,states in uses.items() if usage not in g.PASSIVE_USES | set(g.NOTICE_MARKERS) | {'progress-track','data-plot','data-category-label'}} for surface,uses in current.items()}
             self.assertEqual(sum(len(states) for uses in packet.values() for states in uses.values()),record['surface_packet_count'])
             self.assertEqual(hashlib.sha256(canonical(packet)).hexdigest(),record['canonical_sha256'],(record['theme_id'],record['mode']))
         for mode in g.MODES:

@@ -922,9 +922,31 @@
         "marker": "status-running",
         "helper": null
       }
+    },
+    "data-plot": {
+      "rest": {
+        "background": "$surface",
+        "text": "primary-text",
+        "icon": "primary-text",
+        "boundary": "separator",
+        "focus": "border-focused",
+        "marker": "c-chart-series-1",
+        "helper": null
+      }
+    },
+    "data-category-label": {
+      "rest": {
+        "background": "$surface",
+        "text": "secondary-text",
+        "icon": "secondary-text",
+        "boundary": null,
+        "focus": null,
+        "marker": null,
+        "helper": null
+      }
     }
   },
-  "rules_version": "1.9.0",
+  "rules_version": "1.10.0",
   "schema_version": "1.3.0",
   "surfaces": {
     "canvas": {
@@ -971,7 +993,9 @@
         "notice-marker-success": "notice-marker-success",
         "notice-marker-error": "notice-marker-error",
         "notice-marker-toast-warning": "notice-marker-toast-warning",
-        "notice-marker-banner-warning": "notice-marker-banner-warning"
+        "notice-marker-banner-warning": "notice-marker-banner-warning",
+        "data-plot": "data-plot",
+        "data-category-label": "data-category-label"
       }
     },
     "code": {
@@ -1018,7 +1042,9 @@
         "notice-marker-success": "notice-marker-success",
         "notice-marker-error": "notice-marker-error",
         "notice-marker-toast-warning": "notice-marker-toast-warning",
-        "notice-marker-banner-warning": "notice-marker-banner-warning"
+        "notice-marker-banner-warning": "notice-marker-banner-warning",
+        "data-plot": "data-plot",
+        "data-category-label": "data-category-label"
       }
     },
     "hint": {
@@ -1065,7 +1091,9 @@
         "notice-marker-success": "notice-marker-success",
         "notice-marker-error": "notice-marker-error",
         "notice-marker-toast-warning": "notice-marker-toast-warning",
-        "notice-marker-banner-warning": "notice-marker-banner-warning"
+        "notice-marker-banner-warning": "notice-marker-banner-warning",
+        "data-plot": "data-plot",
+        "data-category-label": "data-category-label"
       }
     },
     "panel": {
@@ -1112,7 +1140,9 @@
         "notice-marker-success": "notice-marker-success",
         "notice-marker-error": "notice-marker-error",
         "notice-marker-toast-warning": "notice-marker-toast-warning",
-        "notice-marker-banner-warning": "notice-marker-banner-warning"
+        "notice-marker-banner-warning": "notice-marker-banner-warning",
+        "data-plot": "data-plot",
+        "data-category-label": "data-category-label"
       }
     },
     "popover": {
@@ -1159,7 +1189,9 @@
         "notice-marker-success": "notice-marker-success",
         "notice-marker-error": "notice-marker-error",
         "notice-marker-toast-warning": "notice-marker-toast-warning",
-        "notice-marker-banner-warning": "notice-marker-banner-warning"
+        "notice-marker-banner-warning": "notice-marker-banner-warning",
+        "data-plot": "data-plot",
+        "data-category-label": "data-category-label"
       }
     },
     "sidebar": {
@@ -1206,7 +1238,9 @@
         "notice-marker-success": "notice-marker-success",
         "notice-marker-error": "notice-marker-error",
         "notice-marker-toast-warning": "notice-marker-toast-warning",
-        "notice-marker-banner-warning": "notice-marker-banner-warning"
+        "notice-marker-banner-warning": "notice-marker-banner-warning",
+        "data-plot": "data-plot",
+        "data-category-label": "data-category-label"
       }
     },
     "toolbar": {
@@ -1253,7 +1287,9 @@
         "notice-marker-success": "notice-marker-success",
         "notice-marker-error": "notice-marker-error",
         "notice-marker-toast-warning": "notice-marker-toast-warning",
-        "notice-marker-banner-warning": "notice-marker-banner-warning"
+        "notice-marker-banner-warning": "notice-marker-banner-warning",
+        "data-plot": "data-plot",
+        "data-category-label": "data-category-label"
       }
     }
   }

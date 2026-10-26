@@ -25,7 +25,7 @@ const STATES: [&str; 8] = [
     "selected-pressed",
     "selected-disabled",
 ];
-const USES: [&str; 42] = [
+const USES: [&str; 44] = [
     "content",
     "content-selectable",
     "action-quiet",
@@ -58,6 +58,8 @@ const USES: [&str; 42] = [
     "content-status-succeeded",
     "content-status-failed",
     "progress-track",
+    "data-plot",
+    "data-category-label",
     "status-badge-info",
     "status-badge-running",
     "status-badge-succeeded",
@@ -82,6 +84,23 @@ fn notice_marker_role(usage: &str) -> Option<&'static str> {
 }
 
 fn validate_use_channels(usage: &str, state: &str, pair: &Value) -> Result<(), String> {
+    if usage == "data-plot"
+        && (pair["background"] != "$surface"
+            || ["boundary", "focus", "marker"]
+                .iter()
+                .any(|k| pair[*k].is_null())
+            || !pair["helper"].is_null())
+    {
+        return Err("invalid data plot anatomy".into());
+    }
+    if usage == "data-category-label"
+        && (pair["background"] != "$surface"
+            || ["boundary", "focus", "marker", "helper"]
+                .iter()
+                .any(|k| !pair[*k].is_null()))
+    {
+        return Err("invalid data category anatomy".into());
+    }
     if let Some(marker) = notice_marker_role(usage) {
         let expected = serde_json::json!({"background":"$surface","text":"primary-text","icon":"primary-text","boundary":null,"focus":null,"marker":marker,"helper":null});
         if state != "rest" || *pair != expected {
@@ -136,6 +155,7 @@ fn validate_use_channels(usage: &str, state: &str, pair: &Value) -> Result<(), S
             "range-track",
             "surface-frame",
             "progress-track",
+            "data-category-label",
         ]
         .contains(&usage);
     let needs_focus = !focus_free && !state.contains("disabled");
@@ -264,6 +284,7 @@ fn theme_input_contract(root: &Path, rules: &Value) -> Result<Value, String> {
         "design/source/token-metadata.json",
         "design/system.schema.json",
         "design/theme/artifact-lock.schema.json",
+        "design/theme/data-plot-pairs.json",
         "design/theme/rules.json",
         "design/theme/rules.schema.json",
         "design/theme/theme.schema.json",
@@ -735,7 +756,7 @@ pub fn compile_surface_rules(rules: &Value) -> Result<String, String> {
     )?;
     if rules["format"] != "tekesui.theme-rules/1"
         || rules["schema_version"] != "1.3.0"
-        || rules["rules_version"] != "1.9.0"
+        || rules["rules_version"] != "1.10.0"
         || rules["modes"] != serde_json::json!(["light", "dark", "light-ic", "dark-ic"])
     {
         return Err("unsupported Theme schema/rules/modes".into());
@@ -817,7 +838,9 @@ pub fn compile_surface_rules(rules: &Value) -> Result<String, String> {
                 | "content-status-running"
                 | "content-status-succeeded"
                 | "content-status-failed" => &["rest", "disabled"],
-                "progress-track"
+                "data-plot"
+                | "data-category-label"
+                | "progress-track"
                 | "status-badge-info"
                 | "status-badge-running"
                 | "status-badge-succeeded"
@@ -943,6 +966,7 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
         .ok_or("missing Theme input hashes")?;
     let mut paths = vec![root.join(output), root.join(manifest)];
     for required in [
+        "design/theme/data-plot-pairs.json",
         "design/theme/rules.json",
         "design/theme/rules.schema.json",
         "design/theme/theme.schema.json",
@@ -1008,6 +1032,8 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
         }
     }
     // Check the actual selected palette too, including explicit offline consumer artifacts.
+    let data_contract = data_plot_contract(root)?;
+    verify_data_plot_contrast(&rules, &tokens["proposal"]["tokens"], &data_contract)?;
     verify_notice_marker_contrast(&rules, &tokens["proposal"]["tokens"])?;
     verify_passive_status_contrast(&rules, &tokens["proposal"]["tokens"])?;
     verify_track_boundaries(&rules, &tokens["proposal"]["tokens"])?;
@@ -1018,6 +1044,11 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
         .as_array()
         .ok_or("missing Gallery palettes")?
     {
+        verify_data_plot_contrast(
+            &rules,
+            &serde_json::json!({"color": preset["color"]}),
+            &data_contract,
+        )?;
         verify_notice_marker_contrast(&rules, &serde_json::json!({"color": preset["color"]}))?;
         verify_passive_status_contrast(&rules, &serde_json::json!({"color": preset["color"]}))?;
         verify_track_boundaries(&rules, &serde_json::json!({"color": preset["color"]}))?;
@@ -1293,6 +1324,129 @@ fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), Stri
     Ok(())
 }
 
+/// Validate the finite data-pair contract bound by normal source input pins.
+fn data_plot_contract(root: &Path) -> Result<Value, String> {
+    let contract: Value =
+        serde_json::from_slice(&read_safe_file(root, "design/theme/data-plot-pairs.json")?)
+            .map_err(|e| e.to_string())?;
+    object(&contract, &["format", "pairs"])?;
+    if contract["format"] != "tekesui.data-plot-pairs/1" {
+        return Err("invalid data plot pair contract".into());
+    }
+    let pairs = contract["pairs"]
+        .as_array()
+        .ok_or("missing data plot pairs")?;
+    let expected = [
+        ("V:P", "plot.text", "parent"),
+        ("V:S", "plot.text", "selection.background"),
+        ("C:P", "category.text", "parent"),
+        ("M:P", "plot.marker", "parent"),
+        ("M:S", "plot.marker", "selection.background"),
+        ("F:P", "plot.focus", "parent"),
+        ("F:S", "plot.focus", "selection.background"),
+        ("F:M", "plot.focus", "plot.marker"),
+    ];
+    if pairs.len() != expected.len() {
+        return Err("incomplete data plot pairs".into());
+    }
+    for (id, ink, ground) in expected {
+        let found: Vec<_> = pairs.iter().filter(|p| p["id"] == id).collect();
+        if found.len() != 1 {
+            return Err("incomplete data plot pairs".into());
+        }
+        let p = found[0];
+        object(
+            p,
+            &[
+                "id",
+                "ink",
+                "ground",
+                "normal",
+                "increased",
+                "applicability",
+            ],
+        )?;
+        let text = id.starts_with('V') || id.starts_with('C');
+        if p["ink"] != ink
+            || p["ground"] != ground
+            || p["normal"].as_f64() != Some(if text { 4.5 } else { 3.0 })
+            || p["increased"].as_f64() != Some(if text { 7.0 } else { 3.0 })
+            || p["applicability"]
+                != if matches!(id, "F:S" | "F:M") {
+                    "actual-contact"
+                } else {
+                    "owner-band"
+                }
+        {
+            return Err("invalid data plot pair semantics".into());
+        }
+    }
+    Ok(contract)
+}
+
+fn verify_data_plot_contrast(
+    rules: &Value,
+    palette: &Value,
+    contract: &Value,
+) -> Result<(), String> {
+    let profiles = expanded_profiles(rules)?;
+    for (surface, definition) in rules["surfaces"].as_object().ok_or("missing surfaces")? {
+        let usages = &definition["usages"];
+        for mode in ["light", "dark", "light-ic", "dark-ic"] {
+            let color = |selector: &str| -> Result<f64, String> {
+                let role = if selector == "parent" {
+                    definition["background"]
+                        .as_str()
+                        .ok_or("missing parent ground")?
+                } else {
+                    let (packet, channel) =
+                        selector.split_once('.').ok_or("invalid data selector")?;
+                    let (usage, state) = match packet {
+                        "plot" => ("data-plot", "rest"),
+                        "category" => ("data-category-label", "rest"),
+                        "selection" => ("selection", "selected"),
+                        _ => return Err("invalid data packet".into()),
+                    };
+                    let profile = usages[usage].as_str().ok_or("missing data usage")?;
+                    let role = profiles[profile][state][channel]
+                        .as_str()
+                        .ok_or("missing data ink")?;
+                    if role == "$surface" {
+                        definition["background"]
+                            .as_str()
+                            .ok_or("missing parent ground")?
+                    } else {
+                        role
+                    }
+                };
+                color_luminance(&resolved(palette, role, mode, 0)?)
+            };
+            for pair in contract["pairs"].as_array().ok_or("missing data pairs")? {
+                if pair["applicability"] != "owner-band" {
+                    continue;
+                }
+                let ink = color(pair["ink"].as_str().ok_or("missing ink selector")?)?;
+                let ground = color(pair["ground"].as_str().ok_or("missing ground selector")?)?;
+                let minimum = pair[if mode.ends_with("-ic") {
+                    "increased"
+                } else {
+                    "normal"
+                }]
+                .as_f64()
+                .ok_or("missing data threshold")?;
+                if (ink.max(ground) + 0.05) / (ink.min(ground) + 0.05) < minimum {
+                    return Err(format!(
+                        "insufficient data plot contrast: {mode}/{surface}/{}",
+                        pair["id"].as_str().unwrap()
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+
 /// Notice marker ink must contrast with the actual Surface parent, never a badge fill.
 fn verify_notice_marker_contrast(rules: &Value, palette: &Value) -> Result<(), String> {
     let profiles = expanded_profiles(rules)?;
@@ -1463,6 +1617,7 @@ fn verify_instances(
     let mut expected_input_paths = [
         "design/system.json",
         "design/system.schema.json",
+        "design/theme/data-plot-pairs.json",
         "design/brand/config.json",
         "scripts/merge-design-system.py",
         "design/theme/rules.json",
@@ -1598,6 +1753,7 @@ fn verify_instances(
             effective_tokens.push(serde_json::json!({"name":name,"value":values}));
         }
         let effective_roles = serde_json::json!({"color":{"tokens":effective_tokens}});
+        verify_data_plot_contrast(rules, &effective_roles, &data_plot_contract(root)?)?;
         verify_notice_marker_contrast(rules, &effective_roles)?;
         verify_passive_status_contrast(rules, &effective_roles)?;
         verify_track_boundaries(rules, &effective_roles)?;
@@ -2255,7 +2411,12 @@ mod progress_tests {
             1
         );
         for usage in USES.into_iter().filter(|u| {
-            *u != "progress-track" && !u.starts_with("status-badge-") && *u != "skeleton" && notice_marker_role(u).is_none()
+            *u != "progress-track"
+                && *u != "data-plot"
+                && *u != "data-category-label"
+                && !u.starts_with("status-badge-")
+                && *u != "skeleton"
+                && notice_marker_role(u).is_none()
         }) {
             for indirect in [false, true] {
                 let mut r = rules();
@@ -2545,5 +2706,121 @@ mod notice_marker_tests {
             assert!(verify_notice_marker_contrast(&r,&palette("#000000")).is_ok());
             assert!(verify_notice_marker_contrast(&r,&palette("#FFFFFF")).unwrap_err().contains("notice marker-parent"));
         }
+    }
+}
+
+#[cfg(test)]
+mod data_plot_tests {
+    use super::*;
+    fn contract() -> Value {
+        data_plot_contract(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")).unwrap()
+    }
+    fn fixture() -> (Value, Value) {
+        let rules = serde_json::json!({"profiles":{"p":{"rest":{"text":"v","marker":"m","focus":"f"}},"c":{"rest":{"text":"c"}},"s":{"selected":{"background":"s"}}},"surfaces":{"inspector":{"background":"p","usages":{"data-plot":"p","data-category-label":"c","selection":"s"}}}});
+        let tokens = ["p", "s", "v", "c", "m", "f"]
+            .into_iter()
+            .map(|name| {
+                let value = ["light", "dark", "light-ic", "dark-ic"]
+                    .into_iter()
+                    .map(|mode| {
+                        (
+                            mode,
+                            if matches!(name, "p" | "s") {
+                                "#FFFFFF"
+                            } else {
+                                "#000000"
+                            },
+                        )
+                    })
+                    .collect::<std::collections::BTreeMap<_, _>>();
+                serde_json::json!({"name":name,"value":value})
+            })
+            .collect::<Vec<_>>();
+        (rules, serde_json::json!({"color":{"tokens":tokens}}))
+    }
+    #[test]
+    fn original_compiler_accepts_two_complete_rest_purposes_and_extra_surface() {
+        let mut r: Value =
+            serde_json::from_str(include_str!("../../../design/theme/rules.json")).unwrap();
+        r["surfaces"]["inspector"] = r["surfaces"]["panel"].clone();
+        assert!(compile_surface_rules(&r).is_ok());
+        for usage in ["data-plot", "data-category-label"] {
+            let mut bad = r.clone();
+            bad["surfaces"]["inspector"]["usages"]
+                .as_object_mut()
+                .unwrap()
+                .remove(usage);
+            assert!(compile_surface_rules(&bad).is_err());
+            for state in ["hover", "disabled", "selected"] {
+                let mut bad = r.clone();
+                bad["profiles"][usage][state] = bad["profiles"][usage]["rest"].clone();
+                assert!(compile_surface_rules(&bad).is_err());
+            }
+            for channel in CHANNELS {
+                let mut bad = r.clone();
+                bad["profiles"][usage]["rest"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove(channel);
+                assert!(compile_surface_rules(&bad).is_err());
+            }
+        }
+    }
+    #[test]
+    fn every_required_pair_uses_its_own_ground_and_contract_keeps_contact_pairs() {
+        let all = contract();
+        assert_eq!(all["pairs"].as_array().unwrap().len(), 8);
+        for pair in all["pairs"].as_array().unwrap() {
+            if pair["applicability"] != "owner-band" {
+                assert!(matches!(pair["id"].as_str().unwrap(), "F:S" | "F:M"));
+                continue;
+            }
+            let (rules, mut palette) = fixture();
+            let one = serde_json::json!({"pairs":[pair]});
+            assert!(verify_data_plot_contrast(&rules, &palette, &one).is_ok());
+            let role = match pair["ink"].as_str().unwrap() {
+                "plot.text" => "v",
+                "category.text" => "c",
+                "plot.marker" => "m",
+                "plot.focus" => "f",
+                _ => unreachable!(),
+            };
+            let token = palette["color"]["tokens"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|t| t["name"] == role)
+                .unwrap();
+            token["value"]["light"] = "#FFFFFF".into();
+            assert!(
+                verify_data_plot_contrast(&rules, &palette, &one)
+                    .unwrap_err()
+                    .contains(pair["id"].as_str().unwrap())
+            );
+        }
+    }
+    #[test]
+    fn ic_requires_seven_and_marker_boundary_does_not_round_to_three() {
+        let all = contract();
+        let (rules, mut palette) = fixture();
+        let one = serde_json::json!({"pairs":[all["pairs"][0]]});
+        palette["color"]["tokens"][2]["value"]["light"] = "#767676".into();
+        assert!(verify_data_plot_contrast(&rules, &palette, &one).is_ok());
+        palette["color"]["tokens"][2]["value"]["light-ic"] = "#767676".into();
+        assert!(
+            verify_data_plot_contrast(&rules, &palette, &one)
+                .unwrap_err()
+                .contains("light-ic/inspector/V:P")
+        );
+        let (rules, mut palette) = fixture();
+        let one = serde_json::json!({"pairs":[all["pairs"][3]]});
+        palette["color"]["tokens"][4]["value"]["light"] = "#949494".into();
+        assert!(verify_data_plot_contrast(&rules, &palette, &one).is_ok());
+        palette["color"]["tokens"][4]["value"]["light"] = "#959595".into();
+        assert!(
+            verify_data_plot_contrast(&rules, &palette, &one)
+                .unwrap_err()
+                .contains("M:P")
+        );
     }
 }

@@ -11,7 +11,7 @@ pub struct SurfaceColors {
     pub boundary: Option<Rgba>,
     /// Independent keyboard focus, painted only when focus-visible is true.
     pub focus: Option<Rgba>,
-    /// Interior check/mixed/selection marker, separate from the surrounding label.
+    /// Interior check/mixed/selection, interval fill or single data mark; separate from labels.
     pub marker: Option<Rgba>,
     /// Input helper/error text, independent of keyboard focus and label text.
     pub helper: Option<Rgba>,
@@ -116,6 +116,25 @@ pub fn resolve_toggle_surface(
         track: resolve_surface_with_options(palette, surface, "toggle-track", state, options)?,
         thumb: resolve_surface(palette, surface, "toggle-thumb", state)?,
         label: resolve_surface(palette, surface, "control-label", state)?,
+    })
+}
+
+/// Complete single-series data anatomy; selection remains the original slot state.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DataPlotSurfaceColors {
+    pub plot: SurfaceColors,
+    pub category: SurfaceColors,
+    pub selection: SurfaceColors,
+}
+/// Resolve the complete packet before any Chart scene/model effects.
+pub fn resolve_data_plot_surface(
+    palette: Palette,
+    surface: &str,
+) -> Result<DataPlotSurfaceColors, SurfaceError> {
+    Ok(DataPlotSurfaceColors {
+        plot: resolve_surface(palette, surface, "data-plot", "rest")?,
+        category: resolve_surface(palette, surface, "data-category-label", "rest")?,
+        selection: resolve_surface(palette, surface, "selection", "selected")?,
     })
 }
 

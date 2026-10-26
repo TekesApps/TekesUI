@@ -125,6 +125,39 @@ pub enum Pane {
     Trailing,
 }
 
+/// Shared focus stroke, gap and one backing-pixel coverage guard.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FocusRingMetrics {
+    pub width: f32,
+    pub gap: f32,
+    pub antialias_guard: f32,
+}
+impl FocusRingMetrics {
+    pub fn new(backing_scale: f32) -> Self {
+        let scale = if backing_scale.is_finite() && backing_scale > 0.0 {
+            backing_scale
+        } else {
+            1.0
+        };
+        Self {
+            width: proposal::metric("stroke", "c-focus-width").expect("focus width token"),
+            gap: proposal::metric("spacing", "c-focus-offset").expect("focus offset token"),
+            antialias_guard: proposal::FOCUS_ANTIALIAS_GUARD_PHYSICAL_PIXELS / scale,
+        }
+    }
+    pub fn outset(self) -> f32 {
+        self.width + self.gap
+    }
+
+    pub fn reserved_band(self) -> f32 {
+        self.outset() + self.antialias_guard
+    }
+
+    pub fn bounds(self, frame: Rect) -> Rect {
+        frame.inset(-self.reserved_band())
+    }
+}
+
 /// Geometry shared by an existing control's drawing and pointer hit target.
 /// `frame` remains the normalized component frame; `visible_frame` is the
 /// portion that survives clipping by the owning container.
@@ -151,16 +184,7 @@ impl ControlFrame {
     /// Full document-space bounds needed to display the focus ring without
     /// clipping, including one backing pixel for antialiasing.
     pub fn focus_bounds(self, backing_scale: f32) -> Rect {
-        let ring_width = proposal::metric("stroke", "c-focus-width").expect("focus width token");
-        let ring_gap = proposal::metric("spacing", "c-focus-offset").expect("focus offset token");
-        let scale = if backing_scale.is_finite() && backing_scale > 0.0 {
-            backing_scale
-        } else {
-            1.0
-        };
-        self.frame().inset(
-            -(ring_width + ring_gap + proposal::FOCUS_ANTIALIAS_GUARD_PHYSICAL_PIXELS / scale),
-        )
+        FocusRingMetrics::new(backing_scale).bounds(self.frame())
     }
 
     pub fn contains(self, point: tekes_ui_scene::Point) -> bool {
