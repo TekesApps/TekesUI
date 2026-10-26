@@ -1101,6 +1101,14 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::SkeletonContent",
+      "category": "component",
+      "components": [
+        "tui.skeleton"
+      ],
+      "reason": "Static passive Content adapter for the existing SkeletonView; named/decorative semantics do not create a new registered component."
+    },
+    {
       "api": "tekes_ui_controls::composition::SliderContent",
       "category": "component-adapter",
       "components": [

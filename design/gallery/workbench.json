@@ -773,12 +773,13 @@
       "component": "tui.skeleton",
       "renderer": "skeleton",
       "slug": "component-skeleton",
-      "docs": "A static loading placeholder with semantic surface tokens; no uncontrolled shimmer.",
+      "docs": "A static loading placeholder using shared Surface semantics; public SkeletonContent mounts the original View without adding a ticker or intrinsic size.",
       "keywords": "",
       "status": "experimental",
       "api": "tekes_ui_controls::feedback_view::SkeletonView",
       "api_bindings": [
-        "tekes_ui_controls::feedback_view::SkeletonView"
+        "tekes_ui_controls::feedback_view::SkeletonView",
+        "tekes_ui_controls::composition::SkeletonContent"
       ]
     },
     {

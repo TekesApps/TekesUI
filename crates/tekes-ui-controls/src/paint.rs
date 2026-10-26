@@ -265,7 +265,29 @@ pub fn checkbox(
     ink
 }
 pub fn skeleton(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>) {
-    scene.push_quad(Quad::new(rect, color(theme, "surface-2")).with_corner_radius(4.));
+    skeleton_on_surface(scene, rect, theme.into(), "canvas")
+        .expect("generated Skeleton canvas packet");
+}
+/// Resolve the complete shared packet before changing the scene. Geometry and
+/// surface-2 fill are the original Skeleton; its necessary border stays inside
+/// the same frame. No intrinsic extent, animation phase or state is introduced.
+pub fn skeleton_on_surface(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    surface: &str,
+) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    use tekes_ui_tokens::surface_palette::{SurfaceError, resolve_surface};
+    let colors = resolve_surface(palette, surface, "skeleton", "rest")?;
+    let boundary = colors.boundary.ok_or(SurfaceError::UnknownRole)?;
+    let stroke = proposal::metric("stroke", "stroke-rule").expect("Skeleton boundary stroke");
+    scene.push_quad(Quad::new(rect, colors.background).with_corner_radius(4.));
+    scene.push_quad(
+        Quad::new(rect, Rgba::new(0., 0., 0., 0.))
+            .with_corner_radius(4.)
+            .with_border(stroke, boundary),
+    );
+    Ok(())
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ButtonVariant {

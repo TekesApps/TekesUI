@@ -11,6 +11,8 @@ mod content_reading;
 mod content_reveal;
 mod status_badge;
 pub use status_badge::StatusBadgeContent;
+mod skeleton;
+pub use skeleton::SkeletonContent;
 mod progress;
 pub use progress::ProgressContent;
 mod help;

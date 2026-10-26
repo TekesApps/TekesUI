@@ -10156,3 +10156,30 @@ mod scene3d_contract {
         assert!(!workbench.take_scene3d_reset(i));
     }
 }
+
+#[cfg(test)]
+mod skeleton_gpu_acceptance {
+    use super::*;
+    #[test]
+    #[ignore = "explicit Gallery GPU acceptance requires a fresh SSD output directory"]
+    fn skeleton_original_gallery_route_gpu() {
+        let out=std::path::PathBuf::from(std::env::var_os("TEKESUI_SKELETON_GALLERY_OUT").expect("fresh GPU output"));std::fs::create_dir(&out).unwrap();
+        let mut gpu=tekes_ui_render::Renderer::new_headless().unwrap();let mut cases=vec![];
+        let i=entries().iter().position(|e|e.renderer()=="skeleton").unwrap();
+        for (mode,theme) in tekes_ui_tokens::Theme::ALL.into_iter().enumerate(){for brand in [0,1,2]{for scale in [1_u32,2]{for (width,height)in [(1440_u32,960_u32),(720,480)]{
+            let mut g=super::super::Gallery::new();g.set_system_theme(theme);g.text.set_scale(scale as f32);g.set_reduced_motion(true);g.workbench.brand=brand;assert!(g.open_route("component-skeleton/playground"));g.set_view_size(width as f32,height as f32);
+            let mut scene=Scene::new();g.build_scene(&mut scene);
+            let f=g.workbench.state(i).skeleton_view.layout().frame;assert_eq!(f.size.height,18.);
+            let p=tekes_ui_tokens::Palette::new(theme,brand).unwrap();let packet=tekes_ui_tokens::surface_palette::resolve_surface(p,"canvas","skeleton","rest").unwrap();
+            assert!(scene.primitives().iter().any(|p|matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==f&&q.fill==packet.background)));
+            assert!(scene.primitives().iter().any(|p|matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==f&&q.border_color==packet.boundary.unwrap()&&q.border_width>0.)));
+            let size=(width*scale,height*scale);let rgba=gpu.render_to_rgba8(&scene,g.atlas_mut(),size,scale as f32,super::super::Gallery::background(theme)).unwrap();
+            let key=format!("mode{mode}-brand{brand}-{width}x{height}@{scale}x");let file=format!("{key}.png");let mut png=png::Encoder::new(std::fs::File::create(out.join(&file)).unwrap(),size.0,size.1);png.set_color(png::ColorType::Rgba);png.set_depth(png::BitDepth::Eight);png.write_header().unwrap().write_image_data(&rgba).unwrap();
+            // Count ink variation on the final original 18pt fixture row. It
+            // must contain actual boundary/fill pixels, not just page chrome.
+            let mut colors=std::collections::BTreeSet::new();for y in ((f.min_y()*scale as f32).ceil() as u32)..((f.max_y()*scale as f32).floor() as u32).min(size.1){for x in ((f.min_x()*scale as f32).ceil() as u32)..((f.max_x()*scale as f32).floor() as u32).min(size.0){let off=((y*size.0+x)*4)as usize;colors.insert(rgba[off..off+4].to_vec());}}
+            assert!(colors.len()>1,"original row missing visible boundary");cases.push(serde_json::json!({"case":key,"file":file,"row_distinct_colors":colors.len(),"original_gallery_route":true,"actual_GPU":true,"fixture_height":18,"SDK_default_height":false}));
+        }}}}
+        std::fs::write(out.join("receipt.json"),serde_json::to_vec_pretty(&serde_json::json!({"cases":cases,"native_window":false})).unwrap()).unwrap();
+    }
+}

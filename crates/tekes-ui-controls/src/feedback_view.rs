@@ -2355,8 +2355,17 @@ impl EmptyStateView {
 #[derive(Clone, Copy, Debug, Default)]
 pub struct SkeletonView {
     layout: ViewLayout,
+    surface: Option<&'static str>,
 }
 impl SkeletonView {
+    /// Validate before replacing the retained context.
+    pub fn set_surface(&mut self, name: &str) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);
+        Ok(())
+    }
+    pub fn surface(&self) -> &'static str {
+        self.surface.unwrap_or("canvas")
+    }
     pub fn render(
         &mut self,
         scene: &mut Scene,
@@ -2370,10 +2379,14 @@ impl SkeletonView {
             content: frame,
             visible,
         };
-        if let Some(v) = visible {
-            scene.push_clip(v);
-            paint::skeleton(scene, frame, palette);
-            scene.pop_clip();
+        if visible.is_some() {
+            // Geometry already bounds its own ink. Quantizing the leaf frame
+            // into a second scissor can erase fractional narrow allocations.
+            // Keep the ancestor clip as the sole rectangular clip owner.
+            if let Some(clip) = clip { scene.push_clip(clip); }
+            paint::skeleton_on_surface(scene, frame, palette, self.surface())
+                .expect("generated Skeleton Surface packet");
+            if clip.is_some() { scene.pop_clip(); }
         }
         self.layout
     }

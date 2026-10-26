@@ -475,6 +475,12 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-skeleton",
         "tekes_ui_controls::feedback_view::SkeletonView",
     );
+    bind::<tekes_ui_controls::composition::SkeletonContent>(
+        &mut actual,
+        "tui.skeleton",
+        "component-skeleton",
+        "tekes_ui_controls::composition::SkeletonContent",
+    );
     bind::<tekes_ui_controls::extended::Markdown>(
         &mut actual,
         "tui.markdown",
@@ -1018,6 +1024,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::SemanticPart",
     );
+    public_type::<tekes_ui_controls::composition::SkeletonContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::SkeletonContent",
+    );
     public_type::<tekes_ui_controls::composition::SliderContent>(
         &mut actual,
         "tekes_ui_controls::composition::SliderContent",
@@ -1383,7 +1393,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_238<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_239<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

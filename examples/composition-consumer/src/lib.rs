@@ -263,3 +263,5 @@ pub mod editable_number;
 pub mod progress_content;
 
 pub mod status_badge_content;
+
+pub mod skeleton_content;

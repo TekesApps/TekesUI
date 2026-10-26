@@ -3166,35 +3166,31 @@
       "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
-        "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
-        "scope": "#83 accepted shared Theme rules only for tui.skeleton; no component-consumption claim.",
+        "baseline_commit": "23447d238d4cedafd69986ee3b22106be7631e7e",
+        "scope": "Local main baseline plus exact Skeleton integration delta: original static painter/View, passive Content, mixed Host, default/external GPU and original Gallery route. Not full native acceptance.",
         "claims": [
-          "One rest-only Skeleton Surface purpose, with the accepted boundary contrast and null-channel rules.",
-          "The accepted packet expansion is five shared purposes total, preserving the prior packet identities."
+          "Shared skeleton/rest packet preserves original fill/frame/radius and adds its accepted necessary boundary",
+          "Ancestor-only clipping preserves fractional narrow allocations; zero and fully clipped allocations remain separate cases",
+          "Default-decorative/optional named Group, atomic invalid-input rejection and mixed Composer/reading preservation passed",
+          "Actual default/external GPU View/Content parity and 48 original Gallery route captures passed"
         ],
         "exceptions": [
-          "The shared rules/handoff acceptance is distinct from implementation by the named component adapter."
+          "Parent owns finite dimensions; original radius4 geometry retained",
+          "No ticker/shimmer or intrinsic extent introduced"
         ],
         "gaps": [
-          "Actual Skeleton #77 Content/View/Gallery/GPU consumption remains owned by its adapter issue.",
-          "Native/GPU/performance/publication.",
-          "Whole Design System or all 52 roots."
+          "Native window/VoiceOver/physical IME/performance/release",
+          "Full Design System/all52 acceptance; no shimmer/ticker added"
         ],
         "source_identity": {
-          "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+          "scope": "Exact production inputs of the received Skeleton batch; full runtime manifests retained on SSD.",
           "sha256": {
-            "design/theme/rules.json": "e9bc8fd9c3f9d354b66efba7081c1fea228237e00f08fc6f1f7ad72ffb01c113",
-            "scripts/generate-theme-system.py": "015a9e459db44d87ba7fb1e1784507a943dea0db979ea822d31d8951d1cf22d4",
-            "scripts/test-theme-system.py": "6fec51db4edc81f018da28040059955b8e0f3d70713ced486439f044a248772e",
-            "crates/tekes-ui-design-export/src/theme_system.rs": "cae05956335d3d8a24395c93ebec986fe57e81df17874d5e9064526c05651006",
-            "crates/tekes-ui-tokens/src/surface_palette.rs": "cec82e44119f03c56bb6e2437bd484a08d74778f663064a0a1ad15cd66777657",
-            "design/system.json": "f6b141abf83113616a14abc72e77b35afb8433d38b3f2b1b0fea76eaf3cf192b",
-            "design/system.schema.json": "f2af7574156d741a1f89cb3bcfabc27e68520df801b754f0cd5cf547c67dfe89",
-            "design/reviews/passive-status-theme-implementation-20261024/api-v1.8.0.md": "e3bb1dbb7ed6facd9715a1e6d87867819836a8ca0d0a4ff6c51f51d9d7013c25",
-            "design/reviews/progress-shared-purpose-20261024/api-v1.7.0.md": "e8965ac0231b3559f8ccbea7848b2018d94bc2b4a87016cd770a0f5be3503471",
-            "design/theme/generated/instances.json": "a12db1ea6433281acdef7bf4d01177dbc900fadfe1ad9d62a1d24501cc590aef",
-            "design/theme/generated/surface_rules.rs": "b483e31843ca53aaa7701afd0717cee6f6c56b7d42c0488fab0429b28ce99029",
-            "design/theme/artifact.lock.json": "684c8b825868b8ccb24b0aa2f494b22447bc08d35201be831d542ee5dd580190"
+            "crates/tekes-ui-controls/src/composition.rs": "7ec8de2f5059f633870cc6982fb5e0ea34a331e982fe037b65d179bfba9bdd2d",
+            "crates/tekes-ui-controls/src/composition/skeleton.rs": "09e9ce19503a171b625b2ca963729b3cddf56ad43e3b95984201f1c10184fa0a",
+            "crates/tekes-ui-controls/src/paint.rs": "28292051ab705f5eefb3d4344470456ed2332f05a8161d727e08e9e5763cf41c",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "bb40892004a0b49b09361c4f62db2fafdd304e73fcf4a8cadb2e487c4a7b6df3",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "21256c6bea0449670bd1ad1743a3fd3d2c82bfc6209c0d9d3a225cce5eaa711d",
+            "examples/composition-consumer/src/skeleton_content.rs": "80d44ba5650da213609eeb1a778bed69237550d17e6c5fed2ac91be16eaa6932"
           }
         },
         "evidence": [
@@ -3221,6 +3217,14 @@
             "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-rust-20261026-01/root-artifact-audit.json",
             "sha256": "3c085fbc3d52f67ba3be9653cbf21e9094809db6943c6531d4aff8d4c2917280",
             "scope": "Six local Rust/design-export/token/consumer commands passed for shared theme rules; component/GPU use excluded."
+          },
+          {
+            "issue": "#77",
+            "component": "tui.skeleton",
+            "commit": "23447d238d4cedafd69986ee3b22106be7631e7e",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/skeleton77-main23447d2-intake/root-review.json",
+            "sha256": "e77948311d07813d28205cf258f9cff470d7a77a0980daf2a79bbe522a2ccb04",
+            "scope": "Baseline 23447d2 plus frozen delta; actual public/default/external/Gallery/strict/GPU evidence, historical R results not promoted."
           }
         ]
       }
