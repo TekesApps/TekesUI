@@ -46,6 +46,10 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 
 验收条款见 [Theme foundation 的现行审计契约](theme-foundation-main-intake-20261026.md)。每根只补消费、状态和实际集成差异；Palette是合格语义入口，不强制为统一形式而迁移Surface。未知状态标待核对；不把没有登记例外当作已证明零硬编码。无障碍/原生及完整产品能力仍归原票，不由审计简化自动通过。
 
+### #114 机器投影的历史观察规则（本候选）
+
+现有 `capabilities.json` 继续消费 Workbench、coverage、公开 API surface 与来源 SHA；不新增登记表。Runtime observation 的 artifact、原 `inputs_sha256`、cases、tokens 与范围说明原样保留。若当前源码哈希与历史观察不一致，context 只显示 `historical-stale`、原/当前 SHA 差异及受影响状态；这些状态的当前 `public_api_verified` 置空，原历史声明放在 `historical_public_api_verified`，maturity 不变。该身份过期只表示旧观察不能证明当前源码状态，不表示组件功能失败，也不要求把所有旧探针重跑；新的 Button/Chart 证据继续按各自真实范围独立投影。`--context` 生成临时当前投影并注明与落盘清单是否一致，不写文件；`--check` 仍对落盘清单严格失败，等待本候选被接收后由唯一负责人生成。损坏的观察格式、身份哈希、路径、缺失来源、跨组件用例或状态记录仍拒绝，不把它们降级成 stale。
+
 证据简写：候选89位于SSD `artifacts/issue-113/button-layout-producer89-20261026-01`；其他main批次见相关设计文档与原Issue收据。此表是现有registry的人工验收说明，不是第二套ID或机器登记。#114机器投影尚待实现/验收，不把本表写入等同该票完成。
 
 | 登记根 | 公开入口/主题消费 | 已验状态与身份 | 合理例外 | 未完成项 | 证据/Issue |
@@ -102,3 +106,16 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 | `pattern-danger` | `danger`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
 | `example-settings` | `settings`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
 | `component-scene3d` | `scene3d`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+
+### 已接收的有限实证投影
+
+现有 `component-coverage.json` 对 `tui.button`、`tui.chart` 和 `tui.progress` 增加了 `practical_intake`，生成器将其投影到各自的 `state_coverage.practical_intake`。它记录原 Issue、接受提交、证据文件 SHA-256、明确范围、未声明范围，以及本次冻结基线下可核对的有限源码路径哈希。Chart 项明确标注这是 V5 21 文件收据中的 producer 子集；完整运行身份仍由原不可变收据约束。它只提供已接收证据的定位，不替代原状态矩阵、根验收或 maturity。
+
+- Button 当前投影包括 #113 的 72 组公共 ink/fill 对比和实际 Gallery theme/brand 切换代表状态回归；GPU、原生/VoiceOver、完整 #60 Host/content 与全部 52 根仍未由这些记录证明。
+- Chart 当前投影包括 #104 的有限 Theme/Surface 与 focus GPU 门禁；#92 Host/reveal/paired、#112 `/2` sidecar、native/IME/AX 和发布仍明确未证明。
+- 证据 commit、receipt 和原始哈希保持原身份。源码哈希匹配只说明该有限证据输入仍对应当前投影源码；不把旧 18 组观察改签为当前证据，也不将 16 个输入差异解释成功能失败。
+- 若投影源码发生变化，`practical_intake.status` 会变成 `accepted-source-subset-stale` 并给出逐路径差异；旧证据保留，但不再称为当前源码身份匹配。损坏的状态、路径、哈希或跨组件证据会被拒绝。
+
+- Progress 当前投影引用本地 `3f13a1e` 的原公共组件/Gallery/实际GPU及严格检查，必要共享查询与平台投影已接收；专用原生role、VoiceOver、全Gold7及Gallery文案/窄宽布局仍未声明完成。
+- 生成器核对源码子集哈希和字段结构；receipt字段是保留的不可变引用，不声称自动认证其内容。本次主协调另核实了全部五份receipt字节与记录SHA一致，记录在SSD `artifacts/issue-114/main3f13-intake/receipt-reference-check.json`。
+- 当前main实际验证：48项Python测试、生成器一致性、公开API编译绑定与strict；Button/Chart/Progress机器入口查询。未重跑生产Rust/GPU；未把其余49根标complete。Dialog有限Surface继承等其他已接收批次的实证投影尚待补录，pattern/example继续保留原registry状态；#114本批是有限接收，非所有范围完成。

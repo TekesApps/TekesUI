@@ -477,7 +477,49 @@
           "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "63214beacbd3461d7c46cb70a1ca31df645b9bf4",
+        "scope": "Two accepted Button deliveries: actual public text/background contrast in 72 representative combinations, and real Gallery theme/brand switch rendering with representative states. This is scoped implementation evidence, not complete Button root or Design System acceptance.",
+        "claims": [
+          "public Button ink/fill contrast at 72 representative combinations",
+          "real Gallery Button theme/brand switch and representative state regression"
+        ],
+        "source_identity": {
+          "sha256": {
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "0b3758ee22cc28c0ae0504c1e1fe0642d7d3bafa908a89b4b944c0f7ef4cabf1",
+            "crates/tekes-ui-controls/tests/composition_button_alignment.rs": "37c640ce78bd2b1457dce070c1be6604f298335b1d38cde2aec6d03e9e84c723"
+          },
+          "scope": "Both receipt-bound test source files match this frozen repository source snapshot. The receipts separately identify their original commits; unchanged producer inputs were explicitly recorded in each delivery receipt."
+        },
+        "evidence": [
+          {
+            "issue": "#113",
+            "commit": "cef7b7f9a0ab75937de4a63d9f0ecf7067805534",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-113/button-public-contrast-main2a-20261026-01/run-20261026T135103.526780Z/run-receipt.json",
+            "sha256": "22f3d69c19516775c72567c08bc1b4f259d679bcab60947d1880f60d6763c73d",
+            "scope": "72 representative public Button ink/fill contrast combinations; 3 tests and targeted strict passed",
+            "component": "tui.button"
+          },
+          {
+            "issue": "#113",
+            "commit": "33c2d61336c9a1895128c640c8b7a6c7c5f2bf3e",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-113/button-gallery-main-cef-20261026-01/run-20261026T135931.084134Z/run-receipt.json",
+            "sha256": "bfd35999226ed335ae8b106b30b2f2f462448269d19bfb395d97c8ece545d858",
+            "scope": "real Gallery Button theme/brand switch and representative state regression; 3 tests and Gallery strict passed",
+            "component": "tui.button"
+          }
+        ],
+        "exceptions": [
+          "The recorded results cover only the listed bounded public/Gallery tests and their stated source identities."
+        ],
+        "gaps": [
+          "GPU/native/VoiceOver acceptance",
+          "full #60 content/Host delivery",
+          "all 52 component roots"
+        ]
+      }
     },
     {
       "id": "tui.icon-button",
@@ -2425,7 +2467,52 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "63214beacbd3461d7c46cb70a1ca31df645b9bf4",
+        "scope": "Accepted #104 Chart surface/focus work with exact V5 GPU pixel gate and its recorded producer/source identity. Does not imply ChartContent Host integration or paired #92 acceptance.",
+        "claims": [
+          "#104 Chart owner surface and focus behavior within the accepted 4-theme/7-surface/1x-2x bounded matrix",
+          "V5 view-only pixel gate passed for 112 matrix rows, 10 structural rows and 2 clip-negative rows"
+        ],
+        "source_identity": {
+          "sha256": {
+            "crates/tekes-ui-controls/src/chart.rs": "dd80e7f914a39e662399a8d0945443c91589caa6dffc4c551caa1fd2cdf3e8c7",
+            "crates/tekes-ui-controls/src/collections_view.rs": "449a98399c102e0568aee9dc3d7dc38b40ae85d9d45174c7525a38bab35f7e08",
+            "crates/tekes-ui-controls/src/collections_view/chart_owner.rs": "5b338d53b75e4f06d15cd44e46331fad15a363d7727fba6f5ead41257f32a411",
+            "crates/tekes-ui-controls/src/paint.rs": "19a39cc5ff189ac0ce6775bd47b2cdf7b05253d5d21bc0fd06c51beed6ae1597"
+          },
+          "scope": "Four available Chart producer paths from the 21-file V5 receipt are hash-checked in this projection. The immutable root acceptance and V5 source receipt retain the full 21-file run identity; untracked/absent source snapshot paths are not claimed as rechecked here."
+        },
+        "evidence": [
+          {
+            "issue": "#104",
+            "commit": "3bd9f00ddb7e1e5c004b18fa44f62d3bc197b322",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart104-main-intake-20261026-01/root-final-acceptance.json",
+            "sha256": "5fc8335fe1669eb6e6e3867bcf0473ec133d945fd698ad301d982e08df681bfe",
+            "scope": "source receipt identity and offline pixel gate passed; exact scope and excluded follow-ups recorded in acceptance receipt",
+            "component": "tui.chart"
+          },
+          {
+            "issue": "#104",
+            "commit": "3bd9f00ddb7e1e5c004b18fa44f62d3bc197b322",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart104-main-intake-20261026-01/gpu21-v5-source-receipt.json",
+            "sha256": "f324eba851d17235b7d7e85ff24bebcf9a1124170c38b9eb1d33ad77134d2d6f",
+            "scope": "exact V5 source identity for bounded default/external GPU capture; 112 matrix + 10 structural + 2 negatives",
+            "component": "tui.chart"
+          }
+        ],
+        "exceptions": [
+          "The recorded results cover only the listed bounded public/Gallery tests and their stated source identities."
+        ],
+        "gaps": [
+          "#92 Host/reveal/paired gate",
+          "#112 /2 sidecar",
+          "native/IME/AX",
+          "public release"
+        ]
+      }
     },
     {
       "id": "tui.menu",
@@ -2743,7 +2830,48 @@
           "note": "Actual public passive paint API, asserted geometry and runtime token reads across4themes/3brands/ancestor clip. Existing Progress loading consumer and StatusBadge shaped-label Gallery checks verified separately. Host composition, native, VoiceOver and matched ClientKit/Gold7 remain unverified; no maturity promotion."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "3f13a1e1cccfa0afc82a89b580fdc26d64715311",
+        "scope": "Original Progress painter/View/Content and Gallery consume shared Surface packets; representative public, platform projection and GPU acceptance on local main. Not full native or whole-library acceptance.",
+        "claims": [
+          "Surface inheritance, override/clear and unknown rejection preserve the original model and Composer state",
+          "128 default and 256 external-theme actual GPU readbacks; View/Content parity, boundary and clip assertions",
+          "48 actual Gallery captures; public consumer, platform projection and strict checks passed"
+        ],
+        "source_identity": {
+          "scope": "Accepted production Rust inputs for the Progress and necessary shared query/semantic bridge batch; runtime rounds retain their own complete source manifests. Final GPU test-only cleanup did not change these production files.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "6916505ba36966172bcb1d543c4a2d17acd10fb34a6bc5f0940e3aff1d191270",
+            "crates/tekes-ui-controls/src/extended.rs": "415316c8f6d5fb0b93af0836bb4282975ff754abf334cadcb89d1fed4278b724",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "1f3d85286ce3e6145d959e12719d5316984a5802db8a84a21ef9a2f0ed74ae0c",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "2ac2b8dd44b7d887a66a9259171500a9d3ebb7972a675f6b1312bbf7a5df2558",
+            "crates/tekes-ui-platform-macos/src/lib.rs": "0fec47c5594731eb304781f3781902b658828ef9fe7c9b1693ee658543c93ab7",
+            "crates/tekes-ui-controls/src/composition/progress.rs": "69c0421f93daef763b79794842e16ef55645c8557b8728535e25cfe3a48d7cdb",
+            "crates/tekes-ui-controls/src/composition/text_query.rs": "627c805d16073bdb5f3f9886c00baf6227cdb0a1db32873144ece32520caf763",
+            "crates/tekes-ui-platform-macos/src/content_accessibility.rs": "c1f6c6d8a04918e69eed664f8da03e4b37ebc0c158f797b4cfd8e015e2a4347d"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#72",
+            "component": "tui.progress",
+            "commit": "3f13a1e1cccfa0afc82a89b580fdc26d64715311",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/progress72-main-63214be-intake/commit-receipt.json",
+            "sha256": "a3a94692a5b2e7bf6c7972fe5070a5d6fbe996fcdf11a16e16f1e21a4ff12802",
+            "scope": "Root intake receipt indexes actual public/platform/Gallery/GPU/strict rounds and explicit unverified scope."
+          }
+        ],
+        "exceptions": [
+          "Parent supplies finite bar size; indeterminate remains the original static segment."
+        ],
+        "gaps": [
+          "Dedicated native ProgressIndicator role, native window/VoiceOver/physical IME and performance unverified",
+          "Gallery narrow navigation wrapping and outdated description remain #12",
+          "Full Design System and all52 component acceptance not claimed"
+        ]
+      }
     },
     {
       "id": "tui.empty-state",

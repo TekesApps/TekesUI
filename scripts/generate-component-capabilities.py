@@ -494,38 +494,92 @@ def _observation_document(raw: bytes) -> dict:
     return json.loads(raw)
 
 
+def _safe_repository_file(raw: object, owner: str, description: str) -> tuple[str, Path]:
+    if not isinstance(raw, str) or not raw:
+        raise ValueError(f'{owner}: invalid {description} path')
+    relative = Path(raw)
+    if relative.is_absolute() or relative.as_posix() != raw or '..' in relative.parts or '.' in relative.parts:
+        raise ValueError(f'{owner}: invalid {description} path: {raw!r}')
+    root = ROOT.resolve()
+    resolved = (ROOT / relative).resolve()
+    try:
+        resolved.relative_to(root)
+    except ValueError as error:
+        raise ValueError(f'{owner}: {description} path escapes repository: {raw!r}') from error
+    return relative.as_posix(), resolved
+
+
 def runtime_observation(row: dict) -> dict | None:
     path = row.get('runtime_token_observation')
     if path is None:
         return None
-    if not isinstance(path, str) or not path.startswith('design/reviews/') or '..' in Path(path).parts:
-        raise ValueError(f'{row["id"]}: invalid runtime observation path')
-    data = _observation_document((ROOT / path).read_bytes())
-    if data.get('format') != 'tekesui-runtime-token-observation/1' or data.get('complete') is not False or not data.get('scope') or not data.get('inputs_sha256'):
-        raise ValueError(f'{row["id"]}: runtime observation must carry scope, incomplete boundary and source identity')
-    for source, expected in data['inputs_sha256'].items():
-        if Path(source).is_absolute() or '..' in Path(source).parts or not (ROOT / source).is_file() or digest((ROOT / source).read_bytes()) != expected:
-            raise ValueError(f'{row["id"]}: stale runtime token observation: {source}; rerun the public API probe')
-    cases = [case for case in data['cases'] if case['component'] == row['id']]
-    if not cases:
-        raise ValueError(f'{row["id"]}: missing actual runtime lookup cases')
-    for case in cases:
+    identity = row.get('id')
+    artifact, artifact_path = _safe_repository_file(path, str(identity), 'runtime observation')
+    if not artifact.startswith('design/reviews/'):
+        raise ValueError(f'{identity}: invalid runtime observation path: {artifact}')
+    data = _observation_document(artifact_path.read_bytes())
+    if not isinstance(data, dict):
+        raise ValueError(f'{identity}: malformed runtime observation document')
+    inputs = data.get('inputs_sha256')
+    cases_document = data.get('cases')
+    excluded = data.get('excluded')
+    valid_excluded = ((isinstance(excluded, str) and bool(excluded.strip()))
+                      or (isinstance(excluded, list) and bool(excluded)
+                          and all(isinstance(item, str) and item for item in excluded)))
+    if (data.get('format') != 'tekesui-runtime-token-observation/1'
+            or data.get('complete') is not False
+            or not isinstance(data.get('scope'), str) or not data['scope'].strip()
+            or not isinstance(inputs, dict) or not inputs
+            or not isinstance(cases_document, list) or not cases_document
+            or not valid_excluded):
+        raise ValueError(f'{identity}: runtime observation must carry scope, incomplete boundary, source identity and cases')
+    differences = []
+    normalized_inputs = {}
+    for source, expected in sorted(inputs.items()):
+        source_path, resolved = _safe_repository_file(source, str(identity), 'runtime observation source')
+        if not isinstance(expected, str) or not re.fullmatch(r'[0-9a-f]{64}', expected):
+            raise ValueError(f'{identity}: malformed runtime observation identity for {source_path}')
+        if not resolved.is_file():
+            raise ValueError(f'{identity}: missing runtime observation source path: {source_path}')
+        actual = digest(resolved.read_bytes())
+        normalized_inputs[source_path] = expected
+        if actual != expected:
+            differences.append({'path': source_path, 'expected_sha256': expected, 'actual_sha256': actual})
+    cases = []
+    for case in cases_document:
+        theme = case.get('theme') if isinstance(case, dict) else None
+        valid_theme = (isinstance(theme, str) and bool(theme)) or (type(theme) is int and 0 <= theme <= 3)
+        if not isinstance(case, dict) or not isinstance(case.get('component'), str) or not case['component'] or not valid_theme:
+            raise ValueError(f'{identity}: malformed runtime observation case identity')
         reads = case.get('lookups')
         if not isinstance(reads, list) or any(
             not isinstance(pair, list) or len(pair) != 2
             or any(not isinstance(value, str) or not value for value in pair)
             for pair in reads
         ):
-            raise ValueError(f'{row["id"]}: malformed actual runtime lookup set')
+            raise ValueError(f'{identity}: malformed actual runtime lookup set')
         if not reads:
             reason = case.get('zero_lookup_reason')
             if (case.get('no_dynamic_lookups') is not True
                     or case.get('state_asserted') is not True
                     or not isinstance(reason, str) or not reason.strip()):
-                raise ValueError(f'{row["id"]}: empty runtime lookup set needs asserted no-op evidence and reason')
+                raise ValueError(f'{identity}: empty runtime lookup set needs asserted no-op evidence and reason')
         elif case.get('no_dynamic_lookups') is True:
-            raise ValueError(f'{row["id"]}: contradictory nonempty runtime lookup set marked empty')
-    return {'artifact': path, 'cases': cases, 'scope': data['scope'], 'excluded': data['excluded'], 'complete': False}
+            raise ValueError(f'{identity}: contradictory nonempty runtime lookup set marked empty')
+        cases.append(case)
+    selected = [case for case in cases if case['component'] == identity]
+    if not selected:
+        raise ValueError(f'{identity}: missing actual runtime lookup cases for this component identity')
+    return {
+        'artifact': artifact,
+        'cases': selected,
+        'scope': data['scope'],
+        'excluded': excluded,
+        'complete': False,
+        'status': 'historical-stale' if differences else 'current',
+        'inputs_sha256': normalized_inputs,
+        'identity_differences': differences,
+    }
 
 
 def state_observed(state: str, case: dict) -> bool:
@@ -557,6 +611,76 @@ def state_observed(state: str, case: dict) -> bool:
         'mixed': lambda: case['value'] == 2,
         'error': lambda: case['error'],
     }.get(state, lambda: False)()
+
+
+def practical_intake(row: dict) -> dict | None:
+    """Project bounded, accepted implementation receipts without promoting roots."""
+    intake = row.get('practical_intake')
+    if intake is None:
+        return None
+    if not isinstance(intake, dict) or intake.get('status') != 'accepted-bounded-evidence':
+        raise ValueError(f'{row.get("id")}: invalid practical intake status')
+    if not re.fullmatch(r'[0-9a-f]{40}', str(intake.get('baseline_commit', ''))):
+        raise ValueError(f'{row.get("id")}: invalid practical intake baseline identity')
+    scope = intake.get('scope')
+    if not isinstance(scope, str) or not scope.strip():
+        raise ValueError(f'{row.get("id")}: practical intake scope missing')
+    for key in ('claims', 'exceptions', 'gaps'):
+        values = intake.get(key)
+        if not isinstance(values, list) or not values or not all(isinstance(value, str) and value.strip() for value in values):
+            raise ValueError(f'{row.get("id")}: practical intake {key} missing or malformed')
+    sources = intake.get('source_identity')
+    if (not isinstance(sources, dict) or not isinstance(sources.get('sha256'), dict)
+            or not sources['sha256'] or not isinstance(sources.get('scope'), str)
+            or not sources['scope'].strip()):
+        raise ValueError(f'{row.get("id")}: practical intake source identity missing')
+    differences = {}
+    for source, expected in sources['sha256'].items():
+        if not isinstance(source, str) or Path(source).is_absolute() or '..' in Path(source).parts or '.' in Path(source).parts:
+            raise ValueError(f'{row.get("id")}: unsafe practical intake source path {source!r}')
+        if not isinstance(expected, str) or not re.fullmatch(r'[0-9a-f]{64}', expected):
+            raise ValueError(f'{row.get("id")}: malformed practical intake source hash for {source}')
+        _, path = _safe_repository_file(source, str(row.get('id')), 'practical intake source')
+        if not path.is_file():
+            raise ValueError(f'{row.get("id")}: missing practical intake source {source}')
+        actual = digest(path.read_bytes())
+        if actual != expected:
+            differences[source] = {'expected': expected, 'actual': actual}
+    evidence = intake.get('evidence')
+    if not isinstance(evidence, list) or not evidence:
+        raise ValueError(f'{row.get("id")}: practical intake evidence missing')
+    projected_evidence = []
+    for item in evidence:
+        if not isinstance(item, dict) or not isinstance(item.get('issue'), str) or not re.fullmatch(r'#[1-9][0-9]*', item['issue']):
+            raise ValueError(f'{row.get("id")}: malformed practical intake issue evidence')
+        if item.get('component') != row.get('id'):
+            raise ValueError(f'{row.get("id")}: cross-component practical intake evidence')
+        if not re.fullmatch(r'[0-9a-f]{40}', str(item.get('commit', ''))):
+            raise ValueError(f'{row.get("id")}: malformed practical intake evidence commit')
+        artifact = item.get('artifact')
+        if not isinstance(artifact, str) or not artifact.startswith('/Volumes/HP P900/DEV/TekesUI/artifacts/'):
+            raise ValueError(f'{row.get("id")}: unsafe practical intake artifact path')
+        if not re.fullmatch(r'[0-9a-f]{64}', str(item.get('sha256', ''))):
+            raise ValueError(f'{row.get("id")}: malformed practical intake artifact hash')
+        if not isinstance(item.get('scope'), str) or not item['scope'].strip():
+            raise ValueError(f'{row.get("id")}: practical intake evidence scope missing')
+        projected_evidence.append({key: item[key] for key in ('issue', 'component', 'commit', 'artifact', 'sha256', 'scope')})
+    return {
+        'status': 'accepted-source-subset-matched' if not differences else 'accepted-source-subset-stale',
+        'baseline_commit': intake['baseline_commit'],
+        'scope': scope,
+        'claims': intake['claims'],
+        'exceptions': intake['exceptions'],
+        'gaps': intake['gaps'],
+        'consumer_entry': {
+            'script': 'scripts/component-context.py',
+            'invocation': f'--component {row["id"]}',
+            'projection_path': 'component.state_coverage.practical_intake',
+        },
+        'source_identity': {'scope': sources['scope'], 'sha256': sources['sha256'], 'differences': differences},
+        'evidence': projected_evidence,
+        'evidence_policy': 'Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.',
+    }
 
 
 def component_coverage(registry: dict) -> dict:
@@ -609,14 +733,36 @@ def component_coverage(registry: dict) -> dict:
                     raise ValueError(f'{component["slug"]}/{state}: fixture source/anchor/story/review note missing')
             elif review.get('fixture') != 'unverified' or not review.get('note'):
                 raise ValueError(f'{component["slug"]}/{state}: explicit fixture review status/note required')
+        projected_reviews = reviews
+        historical_public_api_verified = [e['state'] for e in reviews if e['runtime'] == 'public-api-verified']
+        current_public_api_verified = historical_public_api_verified
+        projection = {}
+        if observation and observation['status'] == 'historical-stale':
+            current_public_api_verified = []
+            projected_reviews = []
+            for review in reviews:
+                projected = dict(review)
+                if review['runtime'] == 'public-api-verified':
+                    projected['historical_runtime'] = review['runtime']
+                    projected['runtime'] = 'unverified'
+                    projected['runtime_evidence_status'] = 'stale-historical'
+                    projected['runtime_identity_differences'] = observation['identity_differences']
+                projected_reviews.append(projected)
+            projection = {
+                'runtime_observation_status': 'historical-stale',
+                'historical_public_api_verified': historical_public_api_verified,
+                'runtime_identity_differences': observation['identity_differences'],
+            }
         result[identity] = {
             'status': 'required-states-accounted; runtime-evidence-scoped; experience-unverified',
             'source': COVERAGE.as_posix(), 'profile_source': STATE_PROFILES.as_posix(),
             'profile': profile, 'required': required,
             'profile_exceptions': row.get('profile_exceptions', {}),
-            'reviews': reviews,
-            'public_api_verified': [e['state'] for e in reviews if e['runtime'] == 'public-api-verified'],
+            'reviews': projected_reviews,
+            'public_api_verified': current_public_api_verified,
             'fixture_unverified': [e['state'] for e in reviews if e['fixture'] == 'unverified'],
+            **({'practical_intake': practical_intake(row)} if row.get('practical_intake') is not None else {}),
+            **projection,
         }
     return result
 
@@ -867,7 +1013,8 @@ def main() -> int:
         BINDING_OUTPUT.write_bytes(binding)
     expected = (json.dumps(data, indent=2, ensure_ascii=False, sort_keys=True) + '\n').encode()
     if read_only:
-        if not OUTPUT.is_file() or OUTPUT.read_bytes() != expected:
+        inventory_matches = OUTPUT.is_file() and OUTPUT.read_bytes() == expected
+        if args.check and not inventory_matches:
             print('Stale capability inventory: run scripts/generate-component-capabilities.py', file=sys.stderr)
             return 1
         if args.context:
@@ -877,8 +1024,16 @@ def main() -> int:
                     print('Unknown current component: ' + args.component, file=sys.stderr)
                     return 1
                 data = {'format': 'tekesui-component-context/1', 'inventory': OUTPUT.as_posix(),
-                        'inventory_sha256': digest(expected), 'component': selected[0],
-                        'coverage_limits': data['coverage_limits']}
+                        'inventory_sha256': digest(expected), 'checked_in_inventory_matches': inventory_matches,
+                        'projection_status': 'current-input-projection' if inventory_matches else 'current-input-projection-differs-from-checked-in',
+                        'component': selected[0], 'coverage_limits': data['coverage_limits']}
+            elif not inventory_matches:
+                data['context_projection'] = {
+                    'status': 'current-input-projection-differs-from-checked-in',
+                    'generated_projection_sha256': digest(expected),
+                    'checked_in_projection_sha256': digest(OUTPUT.read_bytes()) if OUTPUT.is_file() else None,
+                    'persisted': False,
+                }
             print(json.dumps(data, indent=2, ensure_ascii=False, sort_keys=True))
         else:
             print('Current capability inventory and public binding test match registry, history, evidence and Rust inputs; run cargo test to compile bindings.')
