@@ -85,11 +85,11 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 | `tui.menu` | `tekes_ui_controls::Menu`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
 | `tui.tooltip` | `tekes_ui_controls::extended::Tooltip`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
 | `tui.popover` | `tekes_ui_controls::extended::Popover`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
-| `tui.dialog` | `tekes_ui_controls::Dialog`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.dialog` | retained Dialog → ContentTheme.surface；继承祖先/Host Surface，支持显式覆盖与清除 | 有限继承与公开场景回归已入本地main `8e4c01d`；不等于完整Dialog主题/原生验收 | 无新增豁免；普通几何/索引数字不要求token化 | 补核Dialog自身状态/切换/对比及原票剩余项，不重跑输入未变的继承回归 | #62/#97；SSD `artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/commit-receipt.json`；#123 |
 | `tui.toast` | `tekes_ui_controls::extended::Toast`；语义消费入口待逐项核对 | 共享规则#93已入main `3e989f1`；不等于Content接入通过 | 无新增豁免；普通几何/索引数字不要求token化 | 接收#79现有Content/Gallery候选及必要依赖；只补实际缺口 | #93/#79原收据；本篇Theme foundation链接；#125 |
 | `tui.banner` | `tekes_ui_controls::extended::Banner`；语义消费入口待逐项核对 | 共享规则#93已入main `3e989f1`；不等于Content接入通过 | 无新增豁免；普通几何/索引数字不要求token化 | 接收#79现有Content/Gallery候选及必要依赖；只补实际缺口 | #93/#79原收据；本篇Theme foundation链接；#125 |
 | `tui.status-badge` | `tekes_ui_controls::extended::StatusBadge`；语义消费入口待逐项核对 | 共享规则#83已入main `8fb1909`；不等于Content接入通过 | 无新增豁免；普通几何/索引数字不要求token化 | 接收#76现有Content/Gallery候选及必要依赖；只补实际缺口 | #83/#76原收据；本篇Theme foundation链接；#125 |
-| `tui.progress` | `tekes_ui_controls::extended::Progress`；语义消费入口待逐项核对 | 共享规则#71已入main `dc7283f9`；不等于Content接入通过 | 无新增豁免；普通几何/索引数字不要求token化 | 接收#72现有Content/Gallery候选及必要依赖；只补实际缺口 | #71/#72原收据；本篇Theme foundation链接；#125 |
+| `tui.progress` | 共享progress-track/rest规则已接收；ProgressContent消费候选尚未接收 | 共享规则#71已入main `dc7283f9`；#72公共消费者在当前main缺共享接口而编译失败，不能转签Root证据 | 无新增豁免；普通几何/索引数字不要求token化 | 先接收#5共享Content文本binding/完整carets快照与真实macOS语义投影，再接收#72候选并验证 | #71/#72原收据；SSD `artifacts/issue-136/progress72-surface62-main-bcea-20261026-01/dependency-map-text-and-platform.md`；#125 |
 | `tui.empty-state` | `tekes_ui_controls::extended::EmptyState`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
 | `tui.skeleton` | `tekes_ui_controls::feedback_view::SkeletonView`；语义消费入口待逐项核对 | 共享规则#83已入main `8fb1909`；不等于Content接入通过 | 无新增豁免；普通几何/索引数字不要求token化 | 接收#77现有Content/Gallery候选及必要依赖；只补实际缺口 | #83/#77原收据；本篇Theme foundation链接；#125 |
 | `tui.markdown` | `tekes_ui_controls::extended::Markdown`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
