@@ -46,11 +46,11 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 
 验收条款见 [Theme foundation 的现行审计契约](theme-foundation-main-intake-20261026.md)。每根只补消费、状态和实际集成差异；Palette是合格语义入口，不强制为统一形式而迁移Surface。未知状态标待核对；不把没有登记例外当作已证明零硬编码。无障碍/原生及完整产品能力仍归原票，不由审计简化自动通过。
 
-### #114 机器投影的历史观察规则（本候选）
+### #114 机器投影的历史观察规则（已接收）
 
-现有 `capabilities.json` 继续消费 Workbench、coverage、公开 API surface 与来源 SHA；不新增登记表。Runtime observation 的 artifact、原 `inputs_sha256`、cases、tokens 与范围说明原样保留。若当前源码哈希与历史观察不一致，context 只显示 `historical-stale`、原/当前 SHA 差异及受影响状态；这些状态的当前 `public_api_verified` 置空，原历史声明放在 `historical_public_api_verified`，maturity 不变。该身份过期只表示旧观察不能证明当前源码状态，不表示组件功能失败，也不要求把所有旧探针重跑；新的 Button/Chart 证据继续按各自真实范围独立投影。`--context` 生成临时当前投影并注明与落盘清单是否一致，不写文件；`--check` 仍对落盘清单严格失败，等待本候选被接收后由唯一负责人生成。损坏的观察格式、身份哈希、路径、缺失来源、跨组件用例或状态记录仍拒绝，不把它们降级成 stale。
+现有 `capabilities.json` 继续消费 Workbench、coverage、公开 API surface 与来源 SHA；不新增登记表。Runtime observation 的 artifact、原 `inputs_sha256`、cases、tokens 与范围说明原样保留。若当前源码哈希与历史观察不一致，context 只显示 `historical-stale`、原/当前 SHA 差异及受影响状态；这些状态的当前 `public_api_verified` 置空，原历史声明放在 `historical_public_api_verified`，maturity 不变。该身份过期只表示旧观察不能证明当前源码状态，不表示组件功能失败，也不要求把所有旧探针重跑；新的 Button/Chart 证据继续按各自真实范围独立投影。`--context` 生成临时当前投影并注明与落盘清单是否一致，不写文件；`--check` 继续严格检查落盘清单；投影已由唯一负责人生成并在 `71c3d21`、`a7aae42` 接收。损坏的观察格式、身份哈希、路径、缺失来源、跨组件用例或状态记录仍拒绝，不把它们降级成 stale。
 
-证据简写：候选89位于SSD `artifacts/issue-113/button-layout-producer89-20261026-01`；其他main批次见相关设计文档与原Issue收据。此表是现有registry的人工验收说明，不是第二套ID或机器登记。#114机器投影尚待实现/验收，不把本表写入等同该票完成。
+证据简写：候选89位于SSD `artifacts/issue-113/button-layout-producer89-20261026-01`；其他main批次见相关设计文档与原Issue收据。此表是现有registry的人工验收说明，不是第二套ID或机器登记。#114机器投影已按简化 AC 验收并关闭，具体接收范围见下文；本表中其余组件的未完成项不因此消失。
 
 | 登记根 | 公开入口/主题消费 | 已验状态与身份 | 合理例外 | 未完成项 | 证据/Issue |
 |---|---|---|---|---|---|
