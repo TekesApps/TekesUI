@@ -74,6 +74,8 @@ struct ProvidedFrame {
 }
 
 struct QueuedEvent {
+    #[cfg(feature="content-accessibility")]
+    accessibility_authority: Option<crate::content_accessibility::WindowAccessibilityPublication>,
     event: Event,
     drawable: Option<ProvidedFrame>,
 }
@@ -84,6 +86,8 @@ pub(crate) struct Shared {
     pub caret_scheduled: Cell<bool>,
     pub text_input: RefCell<Option<crate::event::TextInputState>>,
     pub accessibility_nodes: RefCell<Vec<crate::accessibility::AccessibilityNode>>,
+    #[cfg(feature="content-accessibility")]
+    pub content_geometry: RefCell<Option<crate::content_accessibility::WindowAccessibilityPublication>>,
     pub accessibility_text_layouts: RefCell<
         HashMap<
             crate::accessibility::AccessibilityKey,
@@ -150,6 +154,8 @@ impl Shared {
             caret_scheduled: Cell::new(false),
             text_input: RefCell::new(None),
             accessibility_nodes: RefCell::new(Vec::new()),
+            #[cfg(feature="content-accessibility")]
+            content_geometry: RefCell::new(None),
             accessibility_text_layouts: RefCell::new(HashMap::new()),
             accessibility_elements: RefCell::new(HashMap::new()),
             mtm,
@@ -192,6 +198,8 @@ impl Shared {
                 .set(self.metal_reentrant_queued.get() + 1);
         }
         self.enqueue(QueuedEvent {
+            #[cfg(feature="content-accessibility")]
+            accessibility_authority: None,
             event: Event::AnimationFrame(frame),
             drawable: Some(ProvidedFrame { layer, drawable }),
         });
@@ -218,7 +226,11 @@ impl Shared {
             self.titlebar_drag_origin.borrow_mut().take();
             self.pending_titlebar_zoom.set(false);
         }
+        #[cfg(feature="content-accessibility")]
+        let accessibility_authority=if matches!(event,Event::Accessibility{..}){self.content_geometry.borrow().clone()}else{None};
         self.enqueue(QueuedEvent {
+            #[cfg(feature="content-accessibility")]
+            accessibility_authority,
             event,
             drawable: None,
         });
@@ -251,12 +263,24 @@ impl Shared {
         loop {
             let next = self.queue.borrow_mut().pop_front();
             let Some(QueuedEvent {
+                #[cfg(feature="content-accessibility")]
+                accessibility_authority,
                 mut event,
                 drawable,
             }) = next
             else {
                 break;
             };
+            #[cfg(feature="content-accessibility")]
+            if let Event::Accessibility{target,..}=&event {
+                // Queued/reentrant native actions retain their original whole-batch
+                // lease. A replacement cannot authorize an event from the old batch.
+                let authorized=match accessibility_authority.as_ref() {
+                    Some(p)=>p.owner(*target).is_some(),
+                    None=>self.content_geometry.borrow().is_none(),
+                };
+                if !authorized {continue;}
+            }
             if drawable.is_some() && (self.closed.get() || !self.animating.get()) {
                 continue;
             }
@@ -402,6 +426,8 @@ impl Shared {
     pub fn finish(&self) {
         crate::wake::native::unregister(&self.wake_state);
         self.closed.set(true);
+        #[cfg(feature="content-accessibility")]
+        if let Some(p)=self.content_geometry.borrow().as_ref(){p.revoke();}
         self.titlebar_drag_origin.borrow_mut().take();
         self.animating.set(false);
         self.discard_metal_frames();
@@ -541,7 +567,37 @@ impl Window {
     }
     /// Publish the host-owned accessibility tree. Node data stays in the host
     /// snapshot; native AX elements only expose it and route requested actions.
+    #[cfg(feature="content-accessibility")]
+    pub fn set_content_accessibility_snapshot(&self,snapshot:crate::content_accessibility::ContentAccessibilitySnapshot)->bool {
+        use crate::content_accessibility::{ContentAccessibilityOwner,WindowAccessibilityPublication};
+        self.set_content_accessibility_publication(WindowAccessibilityPublication::prepare(vec![(ContentAccessibilityOwner(0),snapshot)]))
+    }
+    /// Commit one complete prepared batch, or revoke the entire previous publication.
+    /// No borrowed store survives notification or host/native callbacks.
+    #[cfg(feature="content-accessibility")]
+    pub fn set_content_accessibility_publication(&self,publication:Option<crate::content_accessibility::WindowAccessibilityPublication>)->bool {
+        use crate::content_accessibility::WindowAccessibilityPublication;
+        let publication=if self.shared.closed.get(){None}else{publication};
+        // This performs the final whole-lease check and revokes old saved handles.
+        let accepted=WindowAccessibilityPublication::commit(&mut self.shared.content_geometry.borrow_mut(),publication);
+        let (nodes,layouts)={
+            let store=self.shared.content_geometry.borrow();let p=store.as_ref().unwrap();
+            (p.nodes().to_vec(),p.text_layouts().cloned().unwrap_or_default())
+        };
+        let previous=self.shared.accessibility_nodes.replace(nodes);
+        self.shared.accessibility_text_layouts.replace(layouts);
+        self.shared.accessibility_elements.borrow_mut().clear();
+        self.view.accessibility_nodes_changed(&previous);
+        accepted
+    }
+    #[cfg(feature="content-accessibility")]
+    pub fn content_accessibility_publication(&self)->Option<crate::content_accessibility::WindowAccessibilityPublication> {
+        if self.shared.closed.get(){return None;}
+        self.shared.content_geometry.borrow().as_ref().filter(|p|p.is_current()).cloned()
+    }
     pub fn set_accessibility_nodes(&self, nodes: Vec<crate::accessibility::AccessibilityNode>) {
+        #[cfg(feature="content-accessibility")]
+        if self.shared.content_geometry.borrow().is_some() { return; }
         if self.shared.closed.get() {
             return;
         }
@@ -570,6 +626,8 @@ impl Window {
         if self.shared.closed.get() {
             return;
         }
+        #[cfg(feature="content-accessibility")]
+        if self.shared.content_geometry.borrow().is_some() { return; }
         let mut accepted = HashMap::new();
         for (key, layout) in layouts {
             if !layout.is_valid() || accepted.insert(key, layout).is_some() {
@@ -586,6 +644,8 @@ impl Window {
         if self.shared.closed.get() {
             return Vec::new();
         }
+        #[cfg(feature="content-accessibility")]
+        if let Some(p)=self.shared.content_geometry.borrow().as_ref(){return p.nodes().to_vec();}
         self.shared.accessibility_nodes.borrow().clone()
     }
 

@@ -167,6 +167,21 @@ mod tests {
     }
 
     #[test]
+    fn disabled_text_keeps_readonly_layout_but_not_input_authority() {
+        let mut host = ContentHost::new(field()).unwrap();
+        render(&mut host, 280., 80.);
+        let before = host.semantic_text_layout_snapshot(FIELD, None).unwrap();
+        host.get_mut(FIELD).unwrap().component_mut::<TextFieldContent>().unwrap().surface.input.disabled = true;
+        assert_eq!(host.semantic_text_layout_snapshot(FIELD, None), Some(before));
+        assert_eq!(host.semantic_text_input_snapshot(FIELD), None);
+        assert!(!host.accessibility_action(FIELD, None, AccessibilityAction::SetSelection(1..3)).consumed);
+        assert!(host.is_window_active());
+        host.set_window_active(false);
+        assert!(!host.is_window_active());
+        assert_eq!(host.semantic_text_layout_snapshot(FIELD, None), None);
+    }
+
+    #[test]
     fn zero_split_pane_cannot_publish_retained_text_layout() {
         let split = SplitViewContent::try_new(SplitViewConstruction {
             config: SplitViewConfig::default(),

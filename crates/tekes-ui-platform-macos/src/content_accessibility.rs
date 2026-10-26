@@ -7,12 +7,14 @@
 
 use crate::{
     AccessibilityAction, AccessibilityKey, AccessibilityNode, AccessibilityRange,
-    AccessibilityRole, Point, Rect, Size,
+    AccessibilityRole, AccessibilityTextLayout, Point, Rect, Size, TextInputState,
 };
 use tekes_ui_controls::composition::{
     AccessibilityAction as ContentAction, ComponentId, ContentHost, ContentResponse, ContentRole,
-    ContentSemantics,
+    ContentSemantics, ContentTextLayout,
 };
+
+use std::collections::HashMap;
 
 pub fn content_key(
     host: &ContentHost,
@@ -23,53 +25,124 @@ pub fn content_key(
         .map(|component| AccessibilityKey { component, part })
 }
 
+fn text_layout(layout: ContentTextLayout) -> AccessibilityTextLayout {
+    let caret = layout.input.caret.unwrap_or_default();
+    let convert = |r: tekes_ui_scene::Rect| {
+        (
+            Point {
+                x: r.min_x() as f64,
+                y: r.min_y() as f64,
+            },
+            Size {
+                width: r.size.width as f64,
+                height: r.size.height as f64,
+            },
+        )
+    };
+    let (caret_origin, caret_size) = convert(caret);
+    AccessibilityTextLayout {
+        state: TextInputState {
+            text: layout.input.text,
+            caret_index: layout.input.caret_index,
+            selection: layout.input.selection,
+            marked: layout.input.marked,
+            read_only: layout.input.read_only,
+            caret_origin,
+            caret_size,
+            carets: layout
+                .carets
+                .into_iter()
+                .map(|(i, r)| {
+                    let (p, s) = convert(r);
+                    (i, p, s)
+                })
+                .collect(),
+        },
+        lines: layout.lines,
+    }
+}
+fn enrich(host: &ContentHost, id: ComponentId, part: Option<usize>, semantics: &ContentSemantics, node: &mut AccessibilityNode) {
+    if part.is_none() {
+        add_slider_range(host, id, semantics, node);
+        // Preserve the existing value/selection contract before shaping. Complete
+        // geometry is still published only from the original shaped layout below.
+        if semantics.role == ContentRole::TextInput
+            && let Some(input) = host.semantic_text_input_snapshot(id)
+        {
+            if host.text_surface(id).is_some_and(|surface| surface.input.multiline) {
+                node.role = AccessibilityRole::TextArea;
+            }
+            node.value = Some(input.text);
+            node.text_selection = Some(input.selection);
+            node.read_only = input.read_only;
+        }
+    }
+    if let Some(layout) = host.semantic_text_layout_snapshot(id, part) {
+        if layout.multiline { node.role = AccessibilityRole::TextArea; }
+        node.value = Some(layout.input.text.clone());
+        node.text_selection = Some(layout.input.selection);
+        node.read_only = layout.input.read_only;
+    }
+}
 pub fn content_nodes(host: &ContentHost) -> Vec<AccessibilityNode> {
-    // This legacy Rect-only adapter cannot carry curve point authority.
-    if host.requires_curve_geometry() {
+    if host.requires_curve_geometry(){return Vec::new();}
+    project_content_nodes(host)
+}
+fn project_content_nodes(host:&ContentHost)->Vec<AccessibilityNode> {
+    if !host.is_window_active() {
         return Vec::new();
     }
-    let mut out = Vec::new();
-    for node in host.semantics() {
-        let Some(key) = content_key(host, node.id, None) else {
+    let mut nodes = Vec::new();
+    for n in host.semantics() {
+        let Some(key) = content_key(host, n.id, None) else {
             continue;
         };
-        let parent = node.parent.and_then(|id| content_key(host, id, None));
-        let mut projected = project(key, parent, node.frame, node.focused, &node.semantics);
-        add_slider_range(host, node.id, &node.semantics, &mut projected);
-        if matches!(node.semantics.role, ContentRole::TextInput)
-            && let Some(input) = host.semantic_text_input_snapshot(node.id)
-        {
-            if host
-                .text_surface(node.id)
-                .is_some_and(|surface| surface.input.multiline)
-            {
-                projected.role = AccessibilityRole::TextArea;
-            }
-            projected.value = Some(input.text);
-            projected.text_selection = Some(input.selection);
-            projected.read_only = input.read_only;
-        }
-        out.push(projected);
-
-        for part in node.parts {
-            let part_key = AccessibilityKey {
+        let mut owner = project(
+            key,
+            n.parent.and_then(|p| content_key(host, p, None)),
+            n.frame,
+            n.focused && !n.parts.iter().any(|p| p.focused),
+            &n.semantics,
+        );
+        enrich(host, n.id, None, &n.semantics, &mut owner);
+        nodes.push(owner);
+        for part in n.parts {
+            let key = AccessibilityKey {
                 part: Some(part.index),
                 ..key
             };
-            let parent = host
-                .semantic_part_parent(node.id, part.index)
-                .map(|index| AccessibilityKey {
-                    part: Some(index),
-                    ..key
-                })
-                .or(Some(key));
-            let projected = project(part_key, parent, part.frame, part.focused, &part.semantics);
-            out.push(projected);
+            let parent = content_key(host, n.id, host.semantic_part_parent(n.id, part.index));
+            let mut node = project(key, parent, part.frame, part.focused, &part.semantics);
+            enrich(host, n.id, Some(part.index), &part.semantics, &mut node);
+            nodes.push(node);
         }
     }
-    out
+    nodes
 }
-
+/// Complete original shaped lines for every active text owner, including
+/// unfocused/readonly child editors. Invalid or absent geometry is not guessed.
+pub fn content_text_layouts(
+    host: &ContentHost,
+) -> HashMap<AccessibilityKey, AccessibilityTextLayout> {
+    let mut result = HashMap::new();
+    for node in project_content_nodes(host) {
+        let Some(id) = host
+            .semantics()
+            .iter()
+            .find(|n| host.semantic_mount(n.id) == Some(node.key.component))
+            .map(|n| n.id)
+        else {
+            continue;
+        };
+        if let Some(layout) = host.semantic_text_layout_snapshot(id, node.key.part) {
+            let layout = text_layout(layout);
+            if layout.is_valid() {
+                result.insert(node.key, layout);
+            }
+        }
+    }
+    result
+}
 fn add_slider_range(
     host: &ContentHost,
     id: ComponentId,
@@ -147,9 +220,6 @@ pub fn content_action(
     target: AccessibilityKey,
     action: AccessibilityAction,
 ) -> ContentResponse {
-    if host.requires_curve_geometry() {
-        return ContentResponse::default();
-    }
     let Some(id) = host.semantics().into_iter().find_map(|node| {
         (host.semantic_mount(node.id) == Some(target.component)).then_some(node.id)
     }) else {
@@ -251,3 +321,69 @@ mod tests {
         assert!(projected.read_only);
     }
 }
+
+/// One immutable original Host publication: nodes, shaped text and exact point authority.
+#[derive(Clone,Debug)]
+pub struct ContentAccessibilitySnapshot {
+    pub(crate) nodes: Vec<AccessibilityNode>,
+    pub(crate) text_layouts: HashMap<AccessibilityKey, AccessibilityTextLayout>,
+    geometry: tekes_ui_controls::composition::ContentGeometrySnapshot,
+    identities: HashMap<AccessibilityKey, (ComponentId, Option<usize>)>,
+    pub(crate) structural_only: std::collections::HashSet<AccessibilityKey>,
+}
+impl ContentAccessibilitySnapshot {
+    pub fn nodes(&self)->&[AccessibilityNode] {&self.nodes}
+    pub fn text_layouts(&self)->&HashMap<AccessibilityKey, AccessibilityTextLayout> {&self.text_layouts}
+    pub fn from_host(host:&ContentHost)->Option<Self> {
+        if !host.is_window_active() { return None; }
+        let geometry=host.geometry_snapshot()?; let mut nodes=project_content_nodes(host);
+        let text_layouts=content_text_layouts(host);let semantics=host.semantics();let mut identities=HashMap::new();let mut structural_only=std::collections::HashSet::new();
+        for node in &mut nodes {
+            let id=semantics.iter().find(|n|host.semantic_mount(n.id)==Some(node.key.component))?.id;
+            if geometry.identity(id,node.key.part)!=Some(node.key.component){return None;}
+            identities.insert(node.key,(id,node.key.part));
+            let frame=tekes_ui_scene::Rect::new(node.frame.origin.x as f32,node.frame.origin.y as f32,node.frame.size.width as f32,node.frame.size.height as f32);
+            node.frame=match geometry.bounds(id,node.key.part,frame).ok()? {
+                Some(b)=>crate::placement::Rect{origin:Point{x:b.min_x() as f64,y:b.min_y() as f64},size:Size{width:b.size.width as f64,height:b.size.height as f64}},
+                None=>{ if matches!(node.role,AccessibilityRole::Group) && !text_layouts.contains_key(&node.key) {structural_only.insert(node.key);} crate::placement::Rect{origin:Point{x:0.,y:0.},size:Size{width:0.,height:0.}} }
+            };
+        }
+        let snapshot=Self{nodes,text_layouts,geometry,identities,structural_only};if snapshot.is_valid(){Some(snapshot)}else{None}
+    }
+    /// Remap only explicit original keys into a window adapter's native namespace.
+    /// Geometry and its original lease are retained unchanged; missing parents fail validation.
+    pub fn with_native_keys(mut self, keys: &HashMap<AccessibilityKey, AccessibilityKey>) -> Option<Self> {
+        let original = self.nodes.iter().map(|n|n.key).collect::<std::collections::HashSet<_>>();
+        if keys.keys().any(|k|!original.contains(k)) { return None; }
+        self.nodes.retain(|n|keys.contains_key(&n.key));
+        for n in &mut self.nodes {
+            n.key = *keys.get(&n.key)?;
+            n.parent = match n.parent { Some(p)=>Some(*keys.get(&p)?),None=>None };
+        }
+        self.text_layouts = self.text_layouts.into_iter().filter_map(|(k,v)|keys.get(&k).map(|k|(*k,v))).collect();
+        self.identities = self.identities.into_iter().filter_map(|(k,v)|keys.get(&k).map(|k|(*k,v))).collect();
+        self.structural_only = self.structural_only.into_iter().filter_map(|k|keys.get(&k).copied()).collect();
+        self.is_valid().then_some(self)
+    }
+    pub fn generation(&self)->u64 {self.geometry.generation}
+    pub fn is_current(&self)->bool {self.geometry.is_current()}
+    pub fn is_valid(&self)->bool {
+        self.is_current() && crate::accessibility::validate_accessibility_nodes_with_geometry(&self.nodes,&self.identities.keys().copied().collect())
+            && self.text_layouts.iter().all(|(key,layout)| self.identities.contains_key(key)&&layout.is_valid())
+    }
+    pub fn hit_test(&self,point:Point)->Option<AccessibilityKey> {
+        let (id,mount,part)=self.geometry.hit_test(tekes_ui_scene::Point::new(point.x as f32,point.y as f32))?;
+        let key=*self.identities.iter().find(|(_,v)|**v==(id,part)).map(|(k,_)|k)?;
+        (self.geometry.identity(id,part)==Some(mount)&&!self.structural_only.contains(&key)).then_some(key)
+    }
+    pub fn contains(&self,key:AccessibilityKey,point:Point)->bool {self.hit_test(point)==Some(key)}
+    pub fn frame_for_range(&self,key:AccessibilityKey,range:std::ops::Range<usize>)->Option<crate::placement::Rect> {
+        let (id,part)=*self.identities.get(&key)?;let rect=self.text_layouts.get(&key)?.frame_for_range(range)?;
+        let r=tekes_ui_scene::Rect::new(rect.origin.x as f32,rect.origin.y as f32,rect.size.width as f32,rect.size.height as f32);
+        let b=self.geometry.bounds(id,part,r).ok()??;
+        Some(crate::placement::Rect{origin:Point{x:b.min_x() as f64,y:b.min_y() as f64},size:Size{width:b.size.width as f64,height:b.size.height as f64}})
+    }
+}
+
+mod publication;
+pub use publication::{ContentAccessibilityOwner, WindowAccessibilityPublication};

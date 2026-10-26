@@ -2302,9 +2302,10 @@ impl ContentHost {
     pub fn semantic_text_layout_snapshot(&self, id: ComponentId, part: Option<usize>) -> Option<ContentTextLayout> {
         if !self.window_active || self.split_text_geometry_hidden(id) { return None; }
         let owner = self.scope().find_active(id)?;
-        if owner.component.semantics().disabled { return None; }
+        // Disabled controls remain readable to accessibility. This query grants
+        // no input authority; accessibility_action retains the disabled guard.
         if let Some(part) = part {
-            if !owner.component.semantic_parts().iter().any(|p| p.index == part && !p.semantics.disabled) { return None; }
+            if !owner.component.semantic_parts().iter().any(|p| p.index == part) { return None; }
             owner.component.semantic_part_text_layout(part)
         } else {
             owner.component.semantic_text_layout()
@@ -2340,6 +2341,8 @@ impl ContentHost {
             .is_some_and(|node| node.component.composing())
             || self.focused_text().is_some_and(|s| s.input.marked.is_some())
     }
+    /// Original window activity for platform publication admission.
+    pub fn is_window_active(&self) -> bool { self.window_active }
     /// Revoke adapter authorization recursively, including hidden descendants.
     pub fn set_window_active(&mut self, active: bool) {
         if self.window_active == active { return; }
