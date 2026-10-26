@@ -1604,6 +1604,147 @@ mod tests {
     }
 
     #[test]
+    fn button_theme_and_palette_source_changes_snap_transitions_and_repaint_from_new_palette() {
+        let light = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
+        let dark = Palette::new(Theme::DARK, 0).expect("registered Gallery brand");
+        let alternate_brand = Palette::new(Theme::DARK, 1).expect("registered Gallery brand");
+        let frame = Rect::new(0., 0., 120., 40.);
+        let point = Point::new(60., 20.);
+        let mut button = Button::default();
+        let mut text = MotionText {
+            context: Some(ControlMotionContext {
+                now: Duration::ZERO,
+                reduced_motion: false,
+            }),
+            ..Default::default()
+        };
+        let mut scene = Scene::new();
+
+        button.render(
+            &mut scene,
+            &mut text,
+            "Run",
+            frame,
+            None,
+            light,
+            crate::paint::ButtonVariant::Quiet,
+            ButtonSize::Md,
+            proposal::TextRole::UiBody,
+            ButtonTextAlign::Center,
+        );
+        button.pointer_move_at(point);
+        text.context = Some(ControlMotionContext {
+            now: Duration::from_millis(1),
+            reduced_motion: false,
+        });
+        scene.clear();
+        button.render(
+            &mut scene,
+            &mut text,
+            "Run",
+            frame,
+            None,
+            light,
+            crate::paint::ButtonVariant::Quiet,
+            ButtonSize::Md,
+            proposal::TextRole::UiBody,
+            ButtonTextAlign::Center,
+        );
+        button.tick(Duration::from_millis(100));
+        assert!(button.hover_transition.value() > 0.0);
+        assert!(button.hover_transition.value() < 1.0);
+
+        text.context = Some(ControlMotionContext {
+            now: Duration::from_millis(101),
+            reduced_motion: false,
+        });
+        scene.clear();
+        button.render(
+            &mut scene,
+            &mut text,
+            "Run",
+            frame,
+            None,
+            dark,
+            crate::paint::ButtonVariant::Quiet,
+            ButtonSize::Md,
+            proposal::TextRole::UiBody,
+            ButtonTextAlign::Center,
+        );
+        assert_eq!(button.hover_transition.value(), 1.0);
+        let hover = scene
+            .primitives()
+            .iter()
+            .find_map(|primitive| match primitive {
+                Primitive::Quad(quad) => Some(quad),
+                _ => None,
+            })
+            .expect("button background");
+        assert!(!button.needs_animation());
+        assert_eq!(hover.fill, dark.color("button-hover").expect("hover role"));
+
+        assert!(button.pointer_down_at(point));
+        text.context = Some(ControlMotionContext {
+            now: Duration::from_millis(102),
+            reduced_motion: false,
+        });
+        scene.clear();
+        button.render(
+            &mut scene,
+            &mut text,
+            "Run",
+            frame,
+            None,
+            dark,
+            crate::paint::ButtonVariant::Quiet,
+            ButtonSize::Md,
+            proposal::TextRole::UiBody,
+            ButtonTextAlign::Center,
+        );
+        button.tick(Duration::from_millis(130));
+        assert!(button.press_transition.value() > 0.0);
+        assert!(button.press_transition.value() < 1.0);
+
+        text.context = Some(ControlMotionContext {
+            now: Duration::from_millis(131),
+            reduced_motion: false,
+        });
+        scene.clear();
+        button.render(
+            &mut scene,
+            &mut text,
+            "Run",
+            frame,
+            None,
+            alternate_brand,
+            crate::paint::ButtonVariant::Quiet,
+            ButtonSize::Md,
+            proposal::TextRole::UiBody,
+            ButtonTextAlign::Center,
+        );
+        assert_eq!(button.press_transition.value(), 1.0);
+        assert_eq!(
+            button.motion_palette,
+            Some((Theme::DARK, alternate_brand.source()))
+        );
+        let pressed = scene
+            .primitives()
+            .iter()
+            .find_map(|primitive| match primitive {
+                Primitive::Quad(quad) => Some(quad),
+                _ => None,
+            })
+            .expect("button background");
+        assert!(!button.needs_animation());
+        assert_eq!(
+            pressed.fill,
+            alternate_brand
+                .color("button-pressed")
+                .expect("pressed role"),
+        );
+    }
+
+    #[test]
     fn invalid_button_layout_cannot_keep_keyboard_activation_or_motion() {
         let mut button = Button::default();
         button.state.focused = true;

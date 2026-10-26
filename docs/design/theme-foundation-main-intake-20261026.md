@@ -14,8 +14,41 @@ The independent public consumer selects blue/clay/default in all four appearance
 
 The final local-main checks cover generator freshness, complete Theme rules and negative cases, normal tokens/design-export tests, the necessary Palette call-site builds/regressions/strict checks, and real independent public consumption of valid external input, rejected missing/stale/tampered input or lock, and valid recovery. Evidence is stored on SSD under `artifacts/issue-62/main-361-theme-foundation-r1` with source/program/depinfo/OUT_DIR identities and separate failed rounds.
 
-This dependency slice does not re-accept all #62 ContentTheme inheritance/override/clear, Button/Text/TextField mounting or visual migration. #104 Chart usages/focus have now completed local-main acceptance on base `3e989f1` plus the exact source receipt; see [Chart design and current evidence](chart-content-20261024.md). The original #115 geometry formulas and bare-reference records are preserved. #92 ContentHost remains a separate intake requiring action-preparation/reveal dependencies. Historical Root evidence retains its original identity. #113's first Button root and all52 requirement remain pending under their own acceptance chain; this foundation does not mark any root complete. Native windows, physical IME, VoiceOver, whole-library Gold7 and public release are not claimed here.
+This dependency slice does not re-accept all #62 ContentTheme inheritance/override/clear, Button/Text/TextField mounting or visual migration. #104 Chart usages/focus have now completed local-main acceptance on base `3e989f1` plus the exact source receipt; see [Chart design and current evidence](chart-content-20261024.md). The original #115 geometry formulas and bare-reference records are preserved. #92 ContentHost remains a separate intake requiring action-preparation/reveal dependencies. Historical Root evidence retains its original identity. #113 now uses the practical theme-consumption acceptance contract below; all52 status coverage remains required, but complete source-closure certificates do not gate component delivery. This foundation alone does not mark any root complete. Native windows, physical IME, VoiceOver, whole-library Gold7 and public release are not claimed here.
 
 ## Shared rules versus component intake (2026-10-26)
 
 #71 Progress rules (`dc7283f9`), #83 StatusBadge/Skeleton rules (`8fb1909`) and #93 Notice rules (`3e989f1`) are accepted on local main. Their actual public Content/Gallery migrations remain the existing #72/#76/#77/#79 deliveries to receive; original Gallery Root proofs are not transferred to main. #104 now connects its two shared purposes to the actual public ChartView and independent default/external consumer. It does not receive #92 ChartContent. Receive each complete component slice with its actual dependencies, without waiting for every shared rule or redevelopment of accepted parts.
+
+## 当前验收范围（2026-10-26，用户明确授权替换审计 AC）
+
+本次调整审计机制，不削减组件功能、主题支持、Gold7 或无障碍等产品承诺。旧证据保留原源码身份；新范围通过不表示旧闭包 AC 通过。
+
+| 旧要求 | 处理决定与理由 | 新验收 |
+|---|---|---|
+| 全库递归图、完整 owned-reference closure、逐路径无未知边 | 取消强制；非统一设计值与组件消费的必要前提 | 审核公共语义消费入口、受管设计值及具体状态差异 |
+| 标准库、第三方内部、原生 ABI 全面证明 | 取消强制；超出本次产品目标 | 具体边界出现产品风险时定向验证 |
+| 每根来源证书、完整事件依赖图、条件全排列 | 取消强制；共享结果可复用 | 真实公共组件/Gallery 代表性路径、必要状态与对比、功能回归 |
+| 通用解析器、图引擎、证明框架扩建 | 停止本轮新增；已有成果后置可选 | 复用现有生成器、registry 和稳定验收入口 |
+| 契约有效性、实际主题消费与全52根覆盖 | 保留 | 以下实用 AC；未验/缺陷如实记录 |
+
+1. **契约正确**：Schema、类型、必要字段、引用、默认值有效；生成输出匹配当前输入，正常构建拒绝明确损坏/过期输入。复用已有生成器及有效正负例。
+2. **消费正确**：Theme/Palette/Surface 或等价公共语义接口管理颜色、字号、间距、圆角等设计值；普通布局、索引、几何数字无需全 token 化，合理例外说明原因。
+3. **行为正确**：真实公共组件与适用 Gallery 路径验证主题切换、必要普通/悬停/按下/禁用/焦点等状态、必要文字/背景对比和原功能回归；代表性组合覆盖不同实现路径，不重复无独立风险的全排列。
+4. **覆盖明确**：复用 `design/gallery/workbench.json` 的52个登记根；在已有 `docs/design/component-registry-public-api-20261017.md` 维护一份消费入口、已验状态、例外、缺口、证据与 Issue 清单，不另建登记系统，不要求52份闭包证书。
+
+共享生成器、规则、文字/渲染基础能力只在输入变化或新增具体风险时补验。每次新增检查注明 AC/风险，重跑注明失效输入；仅服务于取消证明目标的门禁明确退出强制验收，不静默跳过后称旧 AC 已通过。历史生成、源码及失败记录完整保留。
+
+## 执行与退出条件
+
+唯一协调/接收负责人：root；共享 schema、生成器、规则仍由 root 单点维护。组件实施按实际缺口在私有候选交可整合差量；主工作树仅 root 整合。通过范围必须区分私有候选、Gallery Root、本地 main 与远端；partial 不标 complete。
+
+构建沿原共享锁、SSD 和占用保护；不改源码/mtime/flags 强迫重编，不创建新 target、不清空缓存、不打断任务。只暂存明确归属文件/hunks，本地必要验证后提交；不 push/远端合并/发布。原功能、原生/a11y及公开版本交付的未完项保留在对应原票，不附加为任意单项 Theme 票的关闭前提。
+
+## First practical Button intake (2026-10-26)
+
+Base `3d7ff9e` plus one test-only widgets.rs hunk; no production API or behavior change. Existing ButtonContent -> Button::render -> button_variant_with_interaction -> Palette is a valid semantic consumption chain. Animation interpolation bounds 0/1 are algorithmic constants; no forced Surface packet migration is required.
+
+On final local-main source under the original shared lock and SSD cache: 20 Button lib regressions, one cross-theme emphasis test, one focus-ring test, two public composition tests and Controls lib strict check passed. The new test checks actual Scene fill and transition snap when Theme/PaletteSource changes during hover/press animation. Receipt: SSD `artifacts/issue-113/practical-theme-audit-scope-20261026/run-20261026T133948.070000Z/run-receipt.json`. Generator/config/GPU inputs did not change and their checks were not rerun. Candidate89 evidence retains its own source identity.
+
+Still pending: applicable real Gallery theme-switch/state evidence, necessary contrast evidence and remaining #60 product obligations. This does not establish native acceptance or the superseded closure AC; #113 remains open. Single-file format check reports two pre-existing differences outside this hunk (motion_palette type and checkbox test); no unrelated formatting was applied.

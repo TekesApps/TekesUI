@@ -39,3 +39,66 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 #8 仍为部分完成：编译绑定、45 项主 API 补齐与完整历史身份说明已交付；全体 public/helper 类型的反向分类、每个组件必需状态的覆盖，以及完整 token 依赖映射仍未闭合。新增未登记类型仍需这一反向清单才能精确指出缺项，不能声称本批已经解决全部公开面治理。所有组件继续 experimental，体验状态未自动改为 pass。
 
 后续继续原 Issue 的反向类型分类和状态/token 审计；#7 消费方品牌入口、#10 公共阅读控制器、#11 草稿协议仍按现有 WIP 补公共边界，不重做已有 Gallery 实现。#5/#12 的候选窗和 VoiceOver 验收也继续保留。未自动提交、推送、打 tag、关闭 Issue 或发布，原 WIP 与历史证据保持保护。
+
+## 2026-10-26 实用 Theme 覆盖清单（现行审计范围）
+
+本节对应 #113/#114 及 #121–#125，取自现有 `design/gallery/workbench.json` 的52根，登记仍以该文件为唯一来源。上文2026-10-17的45项测试与历史统计保持原身份，不是当前52根全量通过。基线为本地 main `3d7ff9eade945390131028a22a915603d5a8829b`；本次仅核对已知接收范围，不重新全面审计或为未知项补造通过。
+
+验收条款见 [Theme foundation 的现行审计契约](theme-foundation-main-intake-20261026.md)。每根只补消费、状态和实际集成差异；Palette是合格语义入口，不强制为统一形式而迁移Surface。未知状态标待核对；不把没有登记例外当作已证明零硬编码。无障碍/原生及完整产品能力仍归原票，不由审计简化自动通过。
+
+证据简写：候选89位于SSD `artifacts/issue-113/button-layout-producer89-20261026-01`；其他main批次见相关设计文档与原Issue收据。此表是现有registry的人工验收说明，不是第二套ID或机器登记。#114机器投影尚待实现/验收，不把本表写入等同该票完成。
+
+| 登记根 | 公开入口/主题消费 | 已验状态与身份 | 合理例外 | 未完成项 | 证据/Issue |
+|---|---|---|---|---|---|
+| `tui.stack` | `tekes_ui_controls::extended::Stack`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.grid` | `tekes_ui_controls::extended::Grid`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.separator` | `tekes_ui_controls::extended::Separator`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.split-view` | `tekes_ui_controls::extended::SplitView`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.scroll-area` | `tekes_ui_controls::ScrollArea`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.disclosure` | `tekes_ui_controls::extended::Disclosure`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.surface` | `tekes_ui_controls::feedback_view::SurfaceView`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.toolbar` | `tekes_ui_controls::Toolbar`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.text` | `tekes_ui_controls::TextSurface`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.icon` | `tekes_ui_controls::layout_view::IconView`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.button` | `ButtonContent → Button::render → paint::button_variant_with_interaction → Palette` | main: 24 Button/state/focus/public-composition tests passed, including Theme/PaletteSource transition regression; candidate89 witness remains separate | 无新增豁免；普通几何/索引数字不要求token化 | Gallery theme switching, applicable states and contrast evidence pending; remaining #60 functionality retained | 候选89 actual-witness/receipt.json；#113/#60；#113 |
+| `tui.icon-button` | `tekes_ui_controls::extended::IconButton`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.link` | `tekes_ui_controls::extended::Link`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.text-field` | `tekes_ui_controls::TextSurface`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.text-area` | `tekes_ui_controls::TextSurface`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.search-field` | `tekes_ui_controls::TextSurface`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.combo-box` | `tekes_ui_controls::extended::ComboBox`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.slider` | `tekes_ui_controls::extended::Slider`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.checkbox` | `tekes_ui_controls::Checkbox`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.radio-group` | `tekes_ui_controls::extended::RadioGroup`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.switch` | `tekes_ui_controls::extended::Switch`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.segmented-control` | `tekes_ui_controls::extended::SegmentedControl`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.field` | `tekes_ui_controls::Field`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.select` | `tekes_ui_controls::Select`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.number-field` | `tekes_ui_controls::NumberField`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.tabs` | `tekes_ui_controls::Tabs`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.breadcrumb` | `tekes_ui_controls::extended::Breadcrumb`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.command-palette` | `tekes_ui_controls::extended::CommandPalette`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.list` | `tekes_ui_controls::extended::List`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
+| `tui.tree` | `tekes_ui_controls::extended::Tree`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
+| `tui.data-table` | `tekes_ui_controls::extended::DataTable`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
+| `tui.chart` | ChartView → Theme/Palette/Surface；ChartContent另属#92 | ChartView有限CPU/strict/外部consumer/GPU已入main `3bd9f00` | 无新增豁免；普通几何/索引数字不要求token化 | ChartContent及必要Host/Scene依赖接收；不转签View验证 | chart-content-20261024.md；#104/#92；#124 |
+| `tui.menu` | `tekes_ui_controls::Menu`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.tooltip` | `tekes_ui_controls::extended::Tooltip`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.popover` | `tekes_ui_controls::extended::Popover`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.dialog` | `tekes_ui_controls::Dialog`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.toast` | `tekes_ui_controls::extended::Toast`；语义消费入口待逐项核对 | 共享规则#93已入main `3e989f1`；不等于Content接入通过 | 无新增豁免；普通几何/索引数字不要求token化 | 接收#79现有Content/Gallery候选及必要依赖；只补实际缺口 | #93/#79原收据；本篇Theme foundation链接；#125 |
+| `tui.banner` | `tekes_ui_controls::extended::Banner`；语义消费入口待逐项核对 | 共享规则#93已入main `3e989f1`；不等于Content接入通过 | 无新增豁免；普通几何/索引数字不要求token化 | 接收#79现有Content/Gallery候选及必要依赖；只补实际缺口 | #93/#79原收据；本篇Theme foundation链接；#125 |
+| `tui.status-badge` | `tekes_ui_controls::extended::StatusBadge`；语义消费入口待逐项核对 | 共享规则#83已入main `8fb1909`；不等于Content接入通过 | 无新增豁免；普通几何/索引数字不要求token化 | 接收#76现有Content/Gallery候选及必要依赖；只补实际缺口 | #83/#76原收据；本篇Theme foundation链接；#125 |
+| `tui.progress` | `tekes_ui_controls::extended::Progress`；语义消费入口待逐项核对 | 共享规则#71已入main `dc7283f9`；不等于Content接入通过 | 无新增豁免；普通几何/索引数字不要求token化 | 接收#72现有Content/Gallery候选及必要依赖；只补实际缺口 | #71/#72原收据；本篇Theme foundation链接；#125 |
+| `tui.empty-state` | `tekes_ui_controls::extended::EmptyState`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `tui.skeleton` | `tekes_ui_controls::feedback_view::SkeletonView`；语义消费入口待逐项核对 | 共享规则#83已入main `8fb1909`；不等于Content接入通过 | 无新增豁免；普通几何/索引数字不要求token化 | 接收#77现有Content/Gallery候选及必要依赖；只补实际缺口 | #83/#77原收据；本篇Theme foundation链接；#125 |
+| `tui.markdown` | `tekes_ui_controls::extended::Markdown`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
+| `tui.code-block` | `tekes_ui_controls::extended::CodeBlock`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
+| `tui.diff-view` | `tekes_ui_controls::extended::DiffView`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
+| `pattern-form` | `form`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `pattern-filter` | `filter`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `pattern-master` | `master`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `pattern-async` | `async`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `pattern-danger` | `danger`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `example-settings` | `settings`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `component-scene3d` | `scene3d`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
