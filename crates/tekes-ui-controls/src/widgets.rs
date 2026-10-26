@@ -407,7 +407,7 @@ pub struct Button {
     last_pointer: Option<Point>,
     hover_transition: ProgressTransition,
     press_transition: ProgressTransition,
-    motion_palette: Option<(tekes_ui_tokens::Theme, usize)>,
+    motion_palette: Option<(tekes_ui_tokens::Theme, tekes_ui_tokens::palette::PaletteSource)>,
     motion_now: Duration,
     motion_suspended: bool,
 }
@@ -651,7 +651,7 @@ impl Button {
 
         let transition_progress = if let Some(context) = context {
             self.motion_now = context.now;
-            let palette_key = (palette.theme, palette.brand);
+            let palette_key = (palette.theme, palette.source());
             let palette_changed = self
                 .motion_palette
                 .is_some_and(|previous| previous != palette_key);
@@ -1500,10 +1500,7 @@ mod tests {
 
     #[test]
     fn button_component_transitions_are_interactive_interruptible_and_reduced_motion_aware() {
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let frame = Rect::new(0., 0., 120., 40.);
         let point = Point::new(60., 20.);
         let mut button = Button::default();
@@ -2579,7 +2576,7 @@ mod tests {
 
         for theme in Theme::ALL {
             for brand in palettes {
-                let palette = tekes_ui_tokens::Palette { theme, brand };
+                let palette = tekes_ui_tokens::Palette::new(theme, brand).expect("registered Gallery brand");
                 for (checked, state) in states {
                     let mut checkbox = Checkbox {
                         button: Button {

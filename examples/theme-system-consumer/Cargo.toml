@@ -1,0 +1,11 @@
+[package]
+name = "tekes-ui-theme-system-consumer"
+version = "0.0.0"
+edition = "2024"
+publish = false
+[workspace]
+[dependencies]
+tekes-ui-tokens = { path = "../../crates/tekes-ui-tokens" }
+tekes-ui-design-export = { path = "../../crates/tekes-ui-design-export" }
+serde_json = "1"
+sha2 = "0.11"

@@ -356,7 +356,7 @@ fn real_coretext_button_consumer_uses_shared_default_without_changing_action_pol
                         &mut text,
                         frame,
                         frame,
-                        Palette { theme, brand },
+                        Palette::new(theme, brand).expect("registered Gallery brand"),
                     )
                     .unwrap();
                     assert_eq!(text.label_draws.len(), 1);
@@ -418,7 +418,7 @@ fn direct_link_and_real_view_share_disabled_observation_without_render_boundarie
                         let mut direct = Link::default();
                         let mut model = Link::default();
                         let mut view = LinkView::default();
-                        let palette = Palette { theme, brand };
+                        let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                         let label = "Read · 阅读 A😀B";
                         let measured = text.measure(label, proposal::TextRole::UiBody, width);
                         assert!(measured.width > 0. && measured.height > 0.);
@@ -650,7 +650,7 @@ fn consumer_defined_popover_owns_one_real_tree_with_layout_edit_focus_and_exit()
                 let mut text = HostText::default();
                 text.enable_clock(false);
                 let frame = Rect::new(0., 0., width, 640.);
-                let palette = Palette { theme, brand };
+                let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                 fixture
                     .host
                     .render(&mut Scene::new(), &mut text, frame, frame, palette)
@@ -875,7 +875,7 @@ fn heterogeneous_menu_reconciles_trigger_availability_and_retained_unmount() {
                     let mut text = HostText::default();
                     text.enable_clock(false);
                     let frame = Rect::new(0., 0., width, 640.);
-                    let palette = Palette { theme, brand };
+                    let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                     host.render(&mut Scene::new(), &mut text, frame, frame, palette)
                         .unwrap();
                     host.accessibility_action(
@@ -2909,7 +2909,7 @@ fn real_segmented_consumer_skips_disabled_boundaries_and_keeps_navigation_owned(
                         &labels,
                         Rect::new(8., 12., 600., 48.),
                         None,
-                        Palette { theme, brand },
+                        Palette::new(theme, brand).expect("registered Gallery brand"),
                         proposal::TextRole::UiBody,
                         compact,
                     );
@@ -2931,7 +2931,7 @@ fn real_segmented_consumer_skips_disabled_boundaries_and_keeps_navigation_owned(
                             &labels,
                             Rect::new(8., 12., 600., 48.),
                             None,
-                            Palette { theme, brand },
+                            Palette::new(theme, brand).expect("registered Gallery brand"),
                             proposal::TextRole::UiBody,
                             compact,
                         );
@@ -3860,7 +3860,7 @@ fn feedback_outcome_consumer_keeps_measurement_independent_from_result_and_seman
         for brand in 0..3 {
             for width in [180., 480.] {
                 for type_scale in [1., 1.5] {
-                    let palette = Palette { theme, brand };
+                    let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                     let mut scenario = Scenario::new().unwrap();
                     let mut text = HostText {
                         type_scale,

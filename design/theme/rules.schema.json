@@ -1,0 +1,991 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "tekesui.theme-rules/1"
+    },
+    "modes": {
+      "const": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ]
+    },
+    "profiles": {
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "disabled": {
+                "additionalProperties": false,
+                "properties": {
+                  "background": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boundary": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "focus": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "helper": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "icon": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "marker": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "text": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "background",
+                  "text",
+                  "icon",
+                  "boundary",
+                  "focus",
+                  "marker",
+                  "helper"
+                ],
+                "type": "object"
+              },
+              "hover": {
+                "additionalProperties": false,
+                "properties": {
+                  "background": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boundary": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "focus": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "helper": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "icon": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "marker": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "text": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "background",
+                  "text",
+                  "icon",
+                  "boundary",
+                  "focus",
+                  "marker",
+                  "helper"
+                ],
+                "type": "object"
+              },
+              "pressed": {
+                "additionalProperties": false,
+                "properties": {
+                  "background": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boundary": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "focus": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "helper": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "icon": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "marker": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "text": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "background",
+                  "text",
+                  "icon",
+                  "boundary",
+                  "focus",
+                  "marker",
+                  "helper"
+                ],
+                "type": "object"
+              },
+              "rest": {
+                "additionalProperties": false,
+                "properties": {
+                  "background": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boundary": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "focus": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "helper": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "icon": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "marker": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "text": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "background",
+                  "text",
+                  "icon",
+                  "boundary",
+                  "focus",
+                  "marker",
+                  "helper"
+                ],
+                "type": "object"
+              },
+              "selected": {
+                "additionalProperties": false,
+                "properties": {
+                  "background": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boundary": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "focus": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "helper": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "icon": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "marker": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "text": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "background",
+                  "text",
+                  "icon",
+                  "boundary",
+                  "focus",
+                  "marker",
+                  "helper"
+                ],
+                "type": "object"
+              },
+              "selected-disabled": {
+                "additionalProperties": false,
+                "properties": {
+                  "background": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boundary": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "focus": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "helper": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "icon": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "marker": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "text": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "background",
+                  "text",
+                  "icon",
+                  "boundary",
+                  "focus",
+                  "marker",
+                  "helper"
+                ],
+                "type": "object"
+              },
+              "selected-hover": {
+                "additionalProperties": false,
+                "properties": {
+                  "background": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boundary": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "focus": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "helper": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "icon": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "marker": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "text": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "background",
+                  "text",
+                  "icon",
+                  "boundary",
+                  "focus",
+                  "marker",
+                  "helper"
+                ],
+                "type": "object"
+              },
+              "selected-pressed": {
+                "additionalProperties": false,
+                "properties": {
+                  "background": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boundary": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "focus": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "helper": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "icon": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "marker": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "text": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "background",
+                  "text",
+                  "icon",
+                  "boundary",
+                  "focus",
+                  "marker",
+                  "helper"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "rest",
+              "disabled"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "extends": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "overrides": {
+                "additionalProperties": false,
+                "minProperties": 1,
+                "properties": {
+                  "background": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boundary": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "focus": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "helper": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "icon": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "marker": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "text": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "state_overrides": {
+                "additionalProperties": false,
+                "properties": {
+                  "disabled": {
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boundary": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "focus": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "helper": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "icon": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "marker": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "text": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "hover": {
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boundary": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "focus": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "helper": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "icon": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "marker": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "text": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "pressed": {
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boundary": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "focus": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "helper": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "icon": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "marker": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "text": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "rest": {
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boundary": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "focus": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "helper": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "icon": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "marker": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "text": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "selected": {
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boundary": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "focus": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "helper": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "icon": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "marker": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "text": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "selected-disabled": {
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boundary": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "focus": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "helper": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "icon": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "marker": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "text": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "selected-hover": {
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boundary": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "focus": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "helper": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "icon": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "marker": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "text": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "selected-pressed": {
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boundary": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "focus": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "helper": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "icon": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "marker": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "text": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "required": [
+              "extends"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "minProperties": 1,
+      "type": "object"
+    },
+    "rules_version": {
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.2.0"
+    },
+    "surfaces": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "background": {
+            "type": "string"
+          },
+          "usages": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "minProperties": 1,
+            "type": "object"
+          }
+        },
+        "required": [
+          "background",
+          "usages"
+        ],
+        "type": "object"
+      },
+      "minProperties": 1,
+      "type": "object"
+    }
+  },
+  "required": [
+    "format",
+    "schema_version",
+    "rules_version",
+    "modes",
+    "surfaces",
+    "profiles"
+  ],
+  "type": "object"
+}

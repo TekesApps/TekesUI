@@ -65,7 +65,7 @@ fn tooltip_rest_and_open_have_asserted_actual_reads_including_empty_closed_rende
     let mut cases = Vec::new();
     for theme in Theme::ALL {
         for brand in 0..3 {
-            let palette = Palette { theme, brand };
+            let palette = Palette::new(theme, brand).expect("registered Gallery brand");
             for scenario in [
                 "rest",
                 "hover-open",

@@ -11,6 +11,7 @@ pub use generated::proposal;
 pub mod alpha;
 pub mod color;
 pub mod metrics;
+pub mod surface_palette;
 pub mod text;
 pub mod theme;
 
@@ -150,7 +151,7 @@ mod migration_tests {
     }
 }
 pub mod palette;
-pub use palette::Palette;
+pub use palette::{Palette, PaletteSource};
 
 #[cfg(test)]
 mod effect_binding_tests {

@@ -1168,10 +1168,7 @@ impl ExtendedStory {
                 specimen_width,
                 control_height,
             );
-            let palette = Palette {
-                theme: ctx.theme,
-                brand: s.brand,
-            };
+            let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
             match e.renderer() {
                 "switch" => {
                     let model = controls::Switch {
@@ -1442,10 +1439,7 @@ impl ExtendedStory {
                     ctx.text,
                     frame,
                     c,
-                    Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                 )
                 .unwrap();
             s.document_bottom = frame.max_y() + 12.;
@@ -1537,10 +1531,7 @@ impl ExtendedStory {
             feedback_adapter::variants(e, s, ctx, scene, c);
             return;
         }
-        let palette = Palette {
-            theme: ctx.theme,
-            brand: s.brand,
-        };
+        let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         let x = c.min_x();
         let y = c.min_y();
         let w = c.size.width.max(0.);
@@ -2012,10 +2003,7 @@ impl ExtendedStory {
         let bx = body.min_x();
         let by = body.min_y();
         let bw = body.size.width;
-        let palette = Palette {
-            theme: ctx.theme,
-            brand: s.brand,
-        };
+        let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         if self.disabled && self.pointer_dragging.is_some() {
             self.cancel_pointer();
         }
@@ -3877,7 +3865,7 @@ mod tests {
                         wrong += crate::gallery::quality_effects::record_panel_host_scale(
                             &scene,
                             &mut text,
-                            Palette { theme, brand },
+                            Palette::new(theme, brand).expect("registered Gallery brand"),
                             &name,
                             gpu.as_mut(),
                         );

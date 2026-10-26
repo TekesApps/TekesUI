@@ -65,7 +65,7 @@ fn ordinary_composed_button_uses_design_default_in_every_existing_state() {
                         &mut text,
                         frame,
                         frame,
-                        Palette { theme, brand },
+                        Palette::new(theme, brand).expect("registered Gallery brand"),
                     )
                     .unwrap();
                     assert_eq!(text.0.len(), 1);

@@ -85,7 +85,7 @@ fn existing_choice_states_preserve_values_and_use_actual_production_tokens() {
                     } else {
                         &all_labels
                     };
-                    let palette = Palette { theme, brand };
+                    let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                     let expected;
                     let ((scene, pointer), reads) = if component == "tui.select" {
                         let mut model = Select::new(labels.len());

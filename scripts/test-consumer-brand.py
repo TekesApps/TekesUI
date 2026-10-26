@@ -52,6 +52,60 @@ class ConsumerBrandTests(unittest.TestCase):
             compiler.compile_artifact(self.config('c', '#367F7B'), ROOT / ('must-not-create-artifact-' + str(os.getpid())))
         self.assertEqual((ROOT / 'design/brand/config.json').read_bytes(), before)
 
+    def test_consumer_theme_definitions_generate_full_artifact_and_independent_lock(self):
+        brand = ROOT / 'design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json'
+        project = self.directory / 'theme-consumer'
+        project.mkdir()
+        shutil.copyfile(brand, project / 'BrandConfig.json')
+        package_definitions = compiler.merge.load(ROOT / 'design/theme/themes.json')
+        by_id = {item['id']: item for item in package_definitions}
+        first = json.loads(json.dumps(by_id['blue']))
+        first.update(id='external-blue-default', brand_config='BrandConfig.json')
+        second = json.loads(json.dumps(by_id['blue-inputs']))
+        second.update(id='external-blue-inputs', brand_config='BrandConfig.json')
+        definitions = project / 'themes.json'
+        definitions.write_text(json.dumps([first, second]))
+        output = project / 'offline-design'
+        lock = project / 'theme-source.lock.json'
+        artifact = compiler.compile_artifact(project / 'BrandConfig.json', output, definitions, lock)
+
+        self.assertTrue((artifact / 'design/theme/generated/instances.json').is_file())
+        self.assertTrue((artifact / 'design/theme/generated/surface_rules.rs').is_file())
+        self.assertTrue(lock.is_file())
+        self.assertFalse(lock.is_relative_to(artifact))
+        manifest = compiler.merge.load(artifact / 'design/theme/generated/instances.json')
+        self.assertEqual(manifest['inputs_sha256']['design/brand/config.json'],
+                         hashlib.sha256((artifact / 'design/brand/config.json').read_bytes()).hexdigest())
+        self.assertEqual([item['id'] for item in manifest['instances']],
+                         ['external-blue-default', 'external-blue-inputs'])
+        self.assertEqual([item['brand_config'] for item in manifest['instances']],
+                         ['design/theme/consumer-configs/external-blue-default.json'] * 2)
+        self.assertEqual(manifest['instances'][0]['brand'], manifest['instances'][1]['brand'])
+        self.assertNotEqual(manifest['instances'][0]['compiled_color_roles'],
+                            manifest['instances'][1]['compiled_color_roles'])
+        lock_doc = compiler.merge.load(lock)
+        self.assertEqual([item['id'] for item in lock_doc['themes']],
+                         ['external-blue-default', 'external-blue-inputs'])
+        self.assertEqual(lock_doc['instances_sha256'],
+                         hashlib.sha256((artifact / 'design/theme/generated/instances.json').read_bytes()).hexdigest())
+
+    def test_consumer_theme_requires_separate_new_lock_path(self):
+        project = self.directory / 'theme-path-validation'
+        project.mkdir()
+        definitions = project / 'themes.json'
+        definitions.write_text('[]')
+        config = self.config('external', '#367F7B')
+        with self.assertRaisesRegex(ValueError, 'independent'):
+            compiler.compile_artifact(config, project / 'artifact', definitions)
+        with self.assertRaisesRegex(ValueError, 'outside'):
+            compiler.compile_artifact(config, project / 'artifact', definitions, project / 'artifact/lock.json')
+
+    def test_existing_brand_only_cli_path_stays_theme_free(self):
+        config = self.config('legacy-consumer', '#367F7B')
+        artifact = compiler.compile_artifact(config, self.directory / 'brand-only-artifact')
+        self.assertTrue((artifact / 'design/tokens.json').is_file())
+        self.assertFalse((artifact / 'design/theme/generated/instances.json').exists())
+
     @unittest.skipUnless(sys.platform == 'darwin', 'CoreText public consumer requires macOS')
     @build_lock()
     def test_two_external_consumers_and_real_control_scenes(self):

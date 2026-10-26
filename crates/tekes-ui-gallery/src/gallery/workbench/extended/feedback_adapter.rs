@@ -77,10 +77,7 @@ pub(super) fn matrix(
     scene.push_clip(viewport);
     let width = bounds.size.width.max(0.0);
     let mut y = bounds.min_y();
-    let palette = Palette {
-        theme: ctx.theme,
-        brand: state.brand,
-    };
+    let palette = Palette::new(ctx.theme, state.brand).expect("registered Gallery brand");
     let description = "Production-view state specimens. Use Playground for real pointer, keyboard, and focus behavior.";
     matrix_caption(ctx, scene, bounds.min_x(), &mut y, width, description);
     y += 12.0;
@@ -116,10 +113,7 @@ pub(super) fn variants(
     scene.push_clip(viewport);
     let width = bounds.size.width.max(0.0);
     let mut y = bounds.min_y();
-    let palette = Palette {
-        theme: ctx.theme,
-        brand: state.brand,
-    };
+    let palette = Palette::new(ctx.theme, state.brand).expect("registered Gallery brand");
     let description =
         "Supported model values and modes, rendered by the production presentation views.";
     matrix_caption(ctx, scene, bounds.min_x(), &mut y, width, description);
@@ -2337,7 +2331,7 @@ mod layout_tests {
         let frame = Rect::new(0., 0., 112., 30.);
         for theme in Theme::ALL {
             for brand in 0..=2 {
-                let palette = Palette { theme, brand };
+                let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                 for (status, label, fill_role) in cases {
                     let mut scene = Scene::new();
                     let mut badge = StatusBadgeView::default();
@@ -2709,7 +2703,7 @@ mod layout_tests {
                         let mut scene = Scene::new();
                         let mut y = 8.;
                         let bounds = Rect::new(8., 8., 700., 2000.);
-                        let palette = Palette { theme, brand };
+                        let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                         if variants {
                             matrix_empty_variants(&mut ctx, &mut scene, bounds, &mut y, palette);
                         } else {
@@ -2757,7 +2751,7 @@ mod layout_tests {
         for theme in Theme::ALL {
             for brand in 0..3 {
                 for focus in [false, true] {
-                    let palette = Palette { theme, brand };
+                    let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                     let mut views = FeedbackViews::default();
                     let mut text = TextEngine::new();
                     paint(&mut views, &mut text, palette);
@@ -2811,7 +2805,7 @@ mod layout_tests {
                         Size::new(240., 64.),
                         Rect::new(0., 0., 400., 240.),
                         None,
-                        tekes_ui_tokens::Palette { theme, brand },
+                        tekes_ui_tokens::Palette::new(theme, brand).expect("registered Gallery brand"),
                         proposal::TextRole::UiBody,
                     )
                     .visible

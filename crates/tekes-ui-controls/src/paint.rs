@@ -602,7 +602,7 @@ mod focus_tests {
         for theme in Theme::ALL {
             for brand in [0, 1, 2] {
                 for scale in [1.0, 2.0] {
-                    let palette = Palette { theme, brand };
+                    let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                     let frame = Rect::new(20.25, 22.5, 120., 36.);
                     let mut scene = Scene::new();
                     button(

@@ -120,7 +120,7 @@ fn passive_views_reject_unavailable_geometry_and_clear_previous_layout() {
 fn public_feedback_paint_preserves_progress_and_outcome_semantic_separation() {
     for theme in Theme::ALL {
         for brand in 0..3 {
-            let palette = Palette { theme, brand };
+            let palette = Palette::new(theme, brand).expect("registered Gallery brand");
             let frame = Rect::new(10., 20., 200., 12.);
             let clip = Rect::new(30., 20., 100., 12.);
             for value in [0., 0.45, 1.] {
@@ -167,7 +167,7 @@ fn actual_passive_feedback_token_reads() {
     for theme in Theme::ALL {
         for brand in 0..3 {
             for partial in [false, true] {
-                let palette = Palette { theme, brand };
+                let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                 let frame = Rect::new(10., 20., 200., 12.);
                 let clip = partial.then_some(Rect::new(30., 20., 100., 12.));
                 for variant in 0..9 {

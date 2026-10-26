@@ -1,0 +1,80 @@
+{
+  "format": "tekesui.theme-color-baseline/1",
+  "source_observation_manifest_sha256": "a40c771d7fe0491e0ecfa5520701674e15a697ffe40ce21718bc4c66be75b2b7",
+  "source_generated_instances_sha256": "6744808a4b34ba89db189c8edc32c99579d1ebb986f093c736e87e3bdb87fc0b",
+  "canonicalization": "UTF-8 JSON, ensure_ascii=false, keys sorted, separators comma/colon, complete per-theme/per-mode Surface packet",
+  "themes": [
+    {
+      "theme_id": "default",
+      "mode": "dark",
+      "canonical_sha256": "74279dbe92f003ca2f38b13758f15b63c430926104f023f357b4c2d8c217c592",
+      "surface_packet_count": 1316
+    },
+    {
+      "theme_id": "default",
+      "mode": "dark-ic",
+      "canonical_sha256": "2a13b26c8481c0d5ef5bf610d04e999bf65083437975cef7103952f1cb78cc5d",
+      "surface_packet_count": 1316
+    },
+    {
+      "theme_id": "default",
+      "mode": "light",
+      "canonical_sha256": "5431673786351bb874bb36c1ed00cfd3da5ec6155bc586da6328487ff74433ba",
+      "surface_packet_count": 1316
+    },
+    {
+      "theme_id": "default",
+      "mode": "light-ic",
+      "canonical_sha256": "f4d4fcdecc056a46eff6a3c752b0ad9fa442131bd01d90b17c7e34b8557f9a58",
+      "surface_packet_count": 1316
+    },
+    {
+      "theme_id": "blue",
+      "mode": "dark",
+      "canonical_sha256": "79d01ace950e91fde13cc7f5da407a47d157cb58e5a78b72aa7eb45a34451daa",
+      "surface_packet_count": 1316
+    },
+    {
+      "theme_id": "blue",
+      "mode": "dark-ic",
+      "canonical_sha256": "29fec3aa186b4a754959a05709288c367bea250047ae02b47cd726ca7d78213a",
+      "surface_packet_count": 1316
+    },
+    {
+      "theme_id": "blue",
+      "mode": "light",
+      "canonical_sha256": "3bdf6ffa32c2204b7b8da0f2b6c7c51001ffbf2493519781b92571f09cc80f47",
+      "surface_packet_count": 1316
+    },
+    {
+      "theme_id": "blue",
+      "mode": "light-ic",
+      "canonical_sha256": "0d642cf3c844e251ddd056d335ee70163c12af1531b3f3457329ec8bd92251b8",
+      "surface_packet_count": 1316
+    },
+    {
+      "theme_id": "clay",
+      "mode": "dark",
+      "canonical_sha256": "b6e3e86b6d657b3ab04b03da38583ab71cba4cf8a66b766eda8ba6235520afc0",
+      "surface_packet_count": 1316
+    },
+    {
+      "theme_id": "clay",
+      "mode": "dark-ic",
+      "canonical_sha256": "d2379f45d1781a76b26764bb2c3ecd9c28f6f097cb271d1b76dd8fd87d19b3cb",
+      "surface_packet_count": 1316
+    },
+    {
+      "theme_id": "clay",
+      "mode": "light",
+      "canonical_sha256": "881eb89292efef23c7afaf9c5454ea4085412adca49f571d1e77883e405cd9fe",
+      "surface_packet_count": 1316
+    },
+    {
+      "theme_id": "clay",
+      "mode": "light-ic",
+      "canonical_sha256": "16633bf6039462a729055f10b5e5bc7d05cefac7b7bc6ab3d0b1f3981ff12110",
+      "surface_packet_count": 1316
+    }
+  ]
+}

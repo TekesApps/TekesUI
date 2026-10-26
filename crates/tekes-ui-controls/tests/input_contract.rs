@@ -53,7 +53,7 @@ fn input_states_preserve_draft_selection_geometry_and_editability() {
     let mut cases = Vec::new();
     for theme in Theme::ALL {
         for brand in 0..3 {
-            let palette = Palette { theme, brand };
+            let palette = Palette::new(theme, brand).expect("registered Gallery brand");
             for component in ["tui.text-field", "tui.text-area", "tui.search-field"] {
                 for state in [
                     "rest",

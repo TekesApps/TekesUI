@@ -197,7 +197,7 @@ fn action_family_required_states_use_real_public_events_and_token_painters() {
     let mut cases = Vec::new();
     for theme in Theme::ALL {
         for brand in [0, 1, 2] {
-            let palette = Palette { theme, brand };
+            let palette = Palette::new(theme, brand).expect("registered Gallery brand");
             for component in [
                 "tui.button",
                 "tui.icon-button",

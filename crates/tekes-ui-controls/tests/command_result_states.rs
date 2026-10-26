@@ -73,7 +73,7 @@ fn command_results_use_the_production_query_and_menu_without_button_selected_pai
     for theme in Theme::ALL {
         for brand in 0..3 {
             for state in ["selected", "open", "empty"] {
-                let palette = Palette { theme, brand };
+                let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                 let mut model = CommandPalette {
                     combo: ComboBox {
                         items: ["Open recent", "Open settings", "Create workspace"]

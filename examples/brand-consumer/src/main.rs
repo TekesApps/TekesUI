@@ -96,14 +96,10 @@ fn main() {
         .zip(["light", "dark", "light-ic", "dark-ic"])
     {
         let palette = Palette::from(theme);
-        assert!(Palette::new(theme, usize::MAX).is_none());
         assert!(
-            Palette {
-                theme,
-                brand: usize::MAX
-            }
-            .color("primary-text")
-            .is_none()
+            Palette::new(theme, usize::MAX)
+                .and_then(|palette| palette.color("primary-text"))
+                .is_none()
         );
         assert!(palette.color("unknown-consumer-role").is_none());
         let roles = [

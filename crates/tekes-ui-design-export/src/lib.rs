@@ -8,6 +8,7 @@ use std::{collections::BTreeSet, fmt::Write};
 mod effects;
 mod freshness;
 mod gallery_brands;
+pub mod theme_system;
 mod proposal;
 mod validator;
 pub use freshness::{verify_consumer_inputs, verify_inputs};

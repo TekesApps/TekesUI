@@ -16,7 +16,8 @@
     "themes",
     "accessibility",
     "evidence",
-    "known_gaps"
+    "known_gaps",
+    "theme_system"
   ],
   "properties": {
     "$schema": {
@@ -274,6 +275,187 @@
       "minItems": 1,
       "items": {
         "type": "object"
+      }
+    },
+    "theme_system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "theme_schema",
+        "definitions",
+        "internal_modes",
+        "surface_rules",
+        "surface_rules_schema",
+        "generated_instances",
+        "generator",
+        "normal_build_validator",
+        "public_resolver",
+        "component_contract",
+        "root_concept",
+        "legacy_modes_policy",
+        "semantic_policy",
+        "delivery_status",
+        "version_policy",
+        "theme_input_contract",
+        "reviewed_artifact_lock",
+        "artifact_lock_schema"
+      ],
+      "properties": {
+        "theme_schema": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "definitions": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "internal_modes": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "surface_rules": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "surface_rules_schema": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "generated_instances": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "generator": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "normal_build_validator": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "public_resolver": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "component_contract": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "root_concept": {
+          "type": "string",
+          "minLength": 1
+        },
+        "legacy_modes_policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "semantic_policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "delivery_status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "theme_definition_schema",
+            "surface_schema",
+            "generation_rules",
+            "instance_format",
+            "provenance"
+          ],
+          "properties": {
+            "theme_definition_schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "surface_schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "generation_rules": {
+              "type": "string",
+              "minLength": 1
+            },
+            "instance_format": {
+              "type": "string",
+              "minLength": 1
+            },
+            "provenance": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "theme_input_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contract_version",
+            "definition_schema_version",
+            "instance_format",
+            "surface_schema_version",
+            "rules_version",
+            "supported_modes",
+            "pinned_inputs",
+            "neutral_base_allowed_roles",
+            "status_base_allowed_roles",
+            "constraints_ref"
+          ],
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "definition_schema_version": {
+              "const": "2.0.0"
+            },
+            "instance_format": {
+              "const": "tekesui.theme-instances/2"
+            },
+            "surface_schema_version": {
+              "const": "1.2.0"
+            },
+            "rules_version": {
+              "const": "1.6.1"
+            },
+            "supported_modes": {
+              "const": [
+                "light",
+                "dark",
+                "light-ic",
+                "dark-ic"
+              ]
+            },
+            "pinned_inputs": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "neutral_base_allowed_roles": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^p-[a-z0-9-]+$"
+              }
+            },
+            "status_base_allowed_roles": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^p-(status|warning)(-|$)[a-z0-9-]*$"
+              }
+            },
+            "constraints_ref": {
+              "const": "design/brand/policy.json"
+            }
+          }
+        },
+        "reviewed_artifact_lock": {
+          "$ref": "#/$defs/projectReference"
+        },
+        "artifact_lock_schema": {
+          "$ref": "#/$defs/projectReference"
+        }
       }
     }
   },

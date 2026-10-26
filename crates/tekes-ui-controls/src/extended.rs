@@ -2274,7 +2274,7 @@ mod tests {
     fn stateful_control_painters_use_brand_tokens_for_all_themes() {
         for theme in tekes_ui_tokens::Theme::ALL {
             for brand in [0, 1, 2] {
-                let palette = Palette { theme, brand };
+                let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                 let checked_focus = ControlState {
                     selected: true,
                     focused: true,

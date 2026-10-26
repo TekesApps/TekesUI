@@ -1,0 +1,1062 @@
+{
+  "format": "tekesui.theme-rules/1",
+  "modes": [
+    "light",
+    "dark",
+    "light-ic",
+    "dark-ic"
+  ],
+  "profiles": {
+    "check-checked": {
+      "disabled": {
+        "background": "surface-2",
+        "boundary": "border",
+        "focus": null,
+        "helper": null,
+        "icon": "tertiary-text",
+        "marker": "tertiary-text",
+        "text": "tertiary-text"
+      },
+      "hover": {
+        "background": "control-checked-hover",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "control-checked-mark",
+        "marker": "control-checked-mark",
+        "text": "control-checked-mark"
+      },
+      "pressed": {
+        "background": "control-checked-pressed",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "control-checked-mark",
+        "marker": "control-checked-mark",
+        "text": "control-checked-mark"
+      },
+      "rest": {
+        "background": "control-checked-ground",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "control-checked-mark",
+        "marker": "control-checked-mark",
+        "text": "control-checked-mark"
+      },
+      "selected": {
+        "background": "control-checked-ground",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "control-checked-mark",
+        "marker": "control-checked-mark",
+        "text": "control-checked-mark"
+      },
+      "selected-disabled": {
+        "background": "surface-2",
+        "boundary": "border",
+        "focus": null,
+        "helper": null,
+        "icon": "tertiary-text",
+        "marker": "tertiary-text",
+        "text": "tertiary-text"
+      },
+      "selected-hover": {
+        "background": "control-checked-hover",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "control-checked-mark",
+        "marker": "control-checked-mark",
+        "text": "control-checked-mark"
+      },
+      "selected-pressed": {
+        "background": "control-checked-pressed",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "control-checked-mark",
+        "marker": "control-checked-mark",
+        "text": "control-checked-mark"
+      }
+    },
+    "check-checked-error": {
+      "extends": "check-checked",
+      "overrides": {
+        "boundary": "status-failed"
+      }
+    },
+    "check-unchecked": {
+      "disabled": {
+        "background": "surface-2",
+        "boundary": "border",
+        "focus": null,
+        "helper": null,
+        "icon": "tertiary-text",
+        "marker": null,
+        "text": "tertiary-text"
+      },
+      "hover": {
+        "background": "button-hover",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "pressed": {
+        "background": "button-pressed",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "rest": {
+        "background": "surface-2",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "secondary-text",
+        "marker": null,
+        "text": "secondary-text"
+      },
+      "selected": {
+        "background": "row-selection",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "selected-disabled": {
+        "background": "surface-2",
+        "boundary": "border",
+        "focus": null,
+        "helper": null,
+        "icon": "tertiary-text",
+        "marker": null,
+        "text": "tertiary-text"
+      },
+      "selected-hover": {
+        "background": "row-selection-hover",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "selected-pressed": {
+        "background": "button-pressed",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      }
+    },
+    "check-unchecked-error": {
+      "extends": "check-unchecked",
+      "overrides": {
+        "boundary": "status-failed"
+      }
+    },
+    "content": {
+      "disabled": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": null,
+        "helper": null,
+        "icon": "disabled-text",
+        "marker": null,
+        "text": "disabled-text"
+      },
+      "rest": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": null,
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      }
+    },
+    "content-selectable": {
+      "extends": "content",
+      "overrides": {
+        "focus": "border-focused"
+      },
+      "state_overrides": {
+        "disabled": {
+          "focus": null
+        }
+      }
+    },
+    "control-label": {
+      "extends": "quiet",
+      "overrides": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": null,
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "state_overrides": {
+        "disabled": {
+          "icon": "tertiary-text",
+          "text": "tertiary-text"
+        },
+        "selected-disabled": {
+          "icon": "tertiary-text",
+          "text": "tertiary-text"
+        }
+      }
+    },
+    "input": {
+      "disabled": {
+        "background": "transcript-input",
+        "boundary": "separator",
+        "focus": null,
+        "helper": "secondary-text",
+        "icon": "disabled-text",
+        "marker": null,
+        "text": "disabled-text"
+      },
+      "hover": {
+        "background": "transcript-input",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": "secondary-text",
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "pressed": {
+        "background": "transcript-input",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": "secondary-text",
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "rest": {
+        "background": "transcript-input",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": "secondary-text",
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "selected": {
+        "background": "transcript-input",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": "secondary-text",
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "selected-disabled": {
+        "background": "transcript-input",
+        "boundary": "separator",
+        "focus": null,
+        "helper": "secondary-text",
+        "icon": "disabled-text",
+        "marker": null,
+        "text": "disabled-text"
+      },
+      "selected-hover": {
+        "background": "transcript-input",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": "secondary-text",
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "selected-pressed": {
+        "background": "transcript-input",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": "secondary-text",
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      }
+    },
+    "input-error": {
+      "extends": "input",
+      "overrides": {
+        "boundary": "status-failed",
+        "helper": "status-failed"
+      }
+    },
+    "link": {
+      "disabled": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": null,
+        "helper": null,
+        "icon": "disabled-text",
+        "marker": null,
+        "text": "disabled-text"
+      },
+      "hover": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "c-link-hover",
+        "marker": null,
+        "text": "c-link-hover"
+      },
+      "pressed": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "c-link-pressed",
+        "marker": null,
+        "text": "c-link-pressed"
+      },
+      "rest": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "c-link-foreground",
+        "marker": null,
+        "text": "c-link-foreground"
+      }
+    },
+    "primary": {
+      "disabled": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": null,
+        "helper": null,
+        "icon": "disabled-text",
+        "marker": null,
+        "text": "disabled-text"
+      },
+      "hover": {
+        "background": "action-primary-hover",
+        "boundary": "action-primary-hover",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "action-primary-foreground",
+        "marker": null,
+        "text": "action-primary-foreground"
+      },
+      "pressed": {
+        "background": "action-primary-pressed",
+        "boundary": "action-primary-pressed",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "action-primary-foreground",
+        "marker": null,
+        "text": "action-primary-foreground"
+      },
+      "rest": {
+        "background": "action-primary-ground",
+        "boundary": "action-primary-ground",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "action-primary-foreground",
+        "marker": null,
+        "text": "action-primary-foreground"
+      },
+      "selected": {
+        "background": "action-primary-ground",
+        "boundary": "action-primary-ground",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "action-primary-foreground",
+        "marker": null,
+        "text": "action-primary-foreground"
+      },
+      "selected-disabled": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": null,
+        "helper": null,
+        "icon": "disabled-text",
+        "marker": null,
+        "text": "disabled-text"
+      },
+      "selected-hover": {
+        "background": "action-primary-hover",
+        "boundary": "action-primary-hover",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "action-primary-foreground",
+        "marker": null,
+        "text": "action-primary-foreground"
+      },
+      "selected-pressed": {
+        "background": "action-primary-pressed",
+        "boundary": "action-primary-pressed",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "action-primary-foreground",
+        "marker": null,
+        "text": "action-primary-foreground"
+      }
+    },
+    "primary-error": {
+      "extends": "primary",
+      "overrides": {
+        "boundary": "status-failed"
+      },
+      "state_overrides": {
+        "disabled": {
+          "boundary": null
+        },
+        "selected-disabled": {
+          "boundary": null
+        }
+      }
+    },
+    "quiet": {
+      "disabled": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": null,
+        "helper": null,
+        "icon": "disabled-text",
+        "marker": null,
+        "text": "disabled-text"
+      },
+      "hover": {
+        "background": "button-hover",
+        "boundary": null,
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "pressed": {
+        "background": "button-pressed",
+        "boundary": null,
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "rest": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "secondary-text",
+        "marker": null,
+        "text": "secondary-text"
+      },
+      "selected": {
+        "background": "row-selection",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "selected-disabled": {
+        "background": "row-selection",
+        "boundary": "separator",
+        "focus": null,
+        "helper": null,
+        "icon": "disabled-text",
+        "marker": null,
+        "text": "disabled-text"
+      },
+      "selected-hover": {
+        "background": "row-selection-hover",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "selected-pressed": {
+        "background": "button-pressed",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      }
+    },
+    "quiet-error": {
+      "extends": "quiet",
+      "overrides": {
+        "boundary": "status-failed"
+      },
+      "state_overrides": {
+        "disabled": {
+          "boundary": null
+        },
+        "selected-disabled": {
+          "boundary": "separator"
+        }
+      }
+    },
+    "range-thumb": {
+      "extends": "link",
+      "overrides": {
+        "background": "surface-0",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "state_overrides": {
+        "disabled": {
+          "background": "surface-2",
+          "boundary": "disabled-text",
+          "focus": null,
+          "icon": "tertiary-text",
+          "text": "tertiary-text"
+        }
+      }
+    },
+    "range-track": {
+      "extends": "link",
+      "overrides": {
+        "background": "surface-3",
+        "boundary": "border",
+        "focus": null,
+        "helper": null,
+        "icon": "primary-text",
+        "marker": "accent",
+        "text": "primary-text"
+      },
+      "state_overrides": {
+        "disabled": {
+          "background": "surface-2",
+          "boundary": "disabled-text",
+          "icon": "tertiary-text",
+          "marker": "disabled-text",
+          "text": "tertiary-text"
+        },
+        "hover": {
+          "marker": "accent-hover"
+        },
+        "pressed": {
+          "marker": "accent-pressed"
+        }
+      }
+    },
+    "readonly": {
+      "extends": "input",
+      "overrides": {
+        "background": "surface-1"
+      }
+    },
+    "readonly-error": {
+      "extends": "readonly",
+      "overrides": {
+        "boundary": "status-failed",
+        "helper": "status-failed"
+      }
+    },
+    "selection": {
+      "disabled": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": null,
+        "helper": null,
+        "icon": "disabled-text",
+        "marker": null,
+        "text": "disabled-text"
+      },
+      "hover": {
+        "background": "button-hover",
+        "boundary": null,
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "pressed": {
+        "background": "button-pressed",
+        "boundary": null,
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": null,
+        "text": "primary-text"
+      },
+      "rest": {
+        "background": "$surface",
+        "boundary": null,
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "secondary-text",
+        "marker": null,
+        "text": "secondary-text"
+      },
+      "selected": {
+        "background": "row-selection",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": "c-list-selection-marker",
+        "text": "primary-text"
+      },
+      "selected-disabled": {
+        "background": "row-selection",
+        "boundary": "separator",
+        "focus": null,
+        "helper": null,
+        "icon": "disabled-text",
+        "marker": null,
+        "text": "disabled-text"
+      },
+      "selected-hover": {
+        "background": "row-selection-hover",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": "c-list-selection-marker",
+        "text": "primary-text"
+      },
+      "selected-pressed": {
+        "background": "button-pressed",
+        "boundary": "border",
+        "focus": "border-focused",
+        "helper": null,
+        "icon": "primary-text",
+        "marker": "c-list-selection-marker",
+        "text": "primary-text"
+      }
+    },
+    "selection-error": {
+      "extends": "selection",
+      "overrides": {
+        "boundary": "status-failed"
+      },
+      "state_overrides": {
+        "disabled": {
+          "boundary": null
+        },
+        "selected-disabled": {
+          "boundary": "separator"
+        }
+      }
+    },
+    "surface-frame": {
+      "extends": "content",
+      "overrides": {
+        "boundary": "separator"
+      }
+    },
+    "text-selection": {
+      "extends": "content",
+      "overrides": {
+        "background": "text-selection",
+        "icon": "selected-text",
+        "text": "selected-text"
+      }
+    },
+    "toggle-thumb": {
+      "extends": "check-checked",
+      "overrides": {
+        "focus": null,
+        "marker": null
+      },
+      "state_overrides": {
+        "disabled": {
+          "background": "disabled-text",
+          "boundary": "disabled-text",
+          "icon": "primary-text",
+          "text": "primary-text"
+        },
+        "hover": {
+          "background": "surface-0",
+          "icon": "primary-text",
+          "text": "primary-text"
+        },
+        "pressed": {
+          "background": "surface-0",
+          "icon": "primary-text",
+          "text": "primary-text"
+        },
+        "rest": {
+          "background": "surface-0",
+          "icon": "primary-text",
+          "text": "primary-text"
+        },
+        "selected": {
+          "background": "c-switch-on-thumb",
+          "icon": "c-switch-on-ground",
+          "text": "c-switch-on-ground"
+        },
+        "selected-disabled": {
+          "background": "disabled-text",
+          "boundary": "disabled-text",
+          "icon": "primary-text",
+          "text": "primary-text"
+        },
+        "selected-hover": {
+          "background": "c-switch-on-thumb",
+          "icon": "c-switch-on-ground",
+          "text": "c-switch-on-ground"
+        },
+        "selected-pressed": {
+          "background": "c-switch-on-thumb",
+          "icon": "c-switch-on-ground",
+          "text": "c-switch-on-ground"
+        }
+      }
+    },
+    "toggle-track": {
+      "extends": "check-unchecked",
+      "state_overrides": {
+        "disabled": {
+          "boundary": "disabled-text"
+        },
+        "rest": {
+          "background": "surface-3",
+          "icon": "primary-text",
+          "text": "primary-text"
+        },
+        "selected": {
+          "background": "c-switch-on-ground",
+          "icon": "c-switch-on-thumb",
+          "text": "c-switch-on-thumb"
+        },
+        "selected-disabled": {
+          "boundary": "disabled-text"
+        },
+        "selected-hover": {
+          "background": "control-checked-hover",
+          "icon": "c-switch-on-thumb",
+          "text": "c-switch-on-thumb"
+        },
+        "selected-pressed": {
+          "background": "control-checked-pressed",
+          "icon": "c-switch-on-thumb",
+          "text": "c-switch-on-thumb"
+        }
+      }
+    },
+    "toggle-track-error": {
+      "extends": "toggle-track",
+      "overrides": {
+        "boundary": "status-failed"
+      }
+    },
+    "content-status-info": {
+      "extends": "content",
+      "state_overrides": {
+        "rest": {
+          "text": "status-info",
+          "icon": "status-info"
+        }
+      }
+    },
+    "content-status-running": {
+      "extends": "content",
+      "state_overrides": {
+        "rest": {
+          "text": "status-running",
+          "icon": "status-running"
+        }
+      }
+    },
+    "content-status-succeeded": {
+      "extends": "content",
+      "state_overrides": {
+        "rest": {
+          "text": "status-succeeded",
+          "icon": "status-succeeded"
+        }
+      }
+    },
+    "content-status-failed": {
+      "extends": "content",
+      "state_overrides": {
+        "rest": {
+          "text": "status-failed",
+          "icon": "status-failed"
+        }
+      }
+    }
+  },
+  "rules_version": "1.6.1",
+  "schema_version": "1.2.0",
+  "surfaces": {
+    "canvas": {
+      "background": "document-canvas",
+      "usages": {
+        "action-primary": "primary",
+        "action-primary-error": "primary-error",
+        "action-quiet": "quiet",
+        "action-quiet-error": "quiet-error",
+        "check-checked": "check-checked",
+        "check-checked-error": "check-checked-error",
+        "check-mixed": "check-checked",
+        "check-mixed-error": "check-checked-error",
+        "check-unchecked": "check-unchecked",
+        "check-unchecked-error": "check-unchecked-error",
+        "content": "content",
+        "content-selectable": "content-selectable",
+        "control-label": "control-label",
+        "input": "input",
+        "input-error": "input-error",
+        "input-readonly": "readonly",
+        "input-readonly-error": "readonly-error",
+        "link": "link",
+        "range-thumb": "range-thumb",
+        "range-track": "range-track",
+        "selection": "selection",
+        "selection-error": "selection-error",
+        "surface-frame": "surface-frame",
+        "text-selection": "text-selection",
+        "toggle-thumb": "toggle-thumb",
+        "toggle-track": "toggle-track",
+        "toggle-track-error": "toggle-track-error",
+        "content-status-info": "content-status-info",
+        "content-status-running": "content-status-running",
+        "content-status-succeeded": "content-status-succeeded",
+        "content-status-failed": "content-status-failed"
+      }
+    },
+    "code": {
+      "background": "code-surface",
+      "usages": {
+        "action-primary": "primary",
+        "action-primary-error": "primary-error",
+        "action-quiet": "quiet",
+        "action-quiet-error": "quiet-error",
+        "check-checked": "check-checked",
+        "check-checked-error": "check-checked-error",
+        "check-mixed": "check-checked",
+        "check-mixed-error": "check-checked-error",
+        "check-unchecked": "check-unchecked",
+        "check-unchecked-error": "check-unchecked-error",
+        "content": "content",
+        "content-selectable": "content-selectable",
+        "control-label": "control-label",
+        "input": "input",
+        "input-error": "input-error",
+        "input-readonly": "readonly",
+        "input-readonly-error": "readonly-error",
+        "link": "link",
+        "range-thumb": "range-thumb",
+        "range-track": "range-track",
+        "selection": "selection",
+        "selection-error": "selection-error",
+        "surface-frame": "surface-frame",
+        "text-selection": "text-selection",
+        "toggle-thumb": "toggle-thumb",
+        "toggle-track": "toggle-track",
+        "toggle-track-error": "toggle-track-error",
+        "content-status-info": "content-status-info",
+        "content-status-running": "content-status-running",
+        "content-status-succeeded": "content-status-succeeded",
+        "content-status-failed": "content-status-failed"
+      }
+    },
+    "hint": {
+      "background": "surface-popover",
+      "usages": {
+        "action-primary": "primary",
+        "action-primary-error": "primary-error",
+        "action-quiet": "quiet",
+        "action-quiet-error": "quiet-error",
+        "check-checked": "check-checked",
+        "check-checked-error": "check-checked-error",
+        "check-mixed": "check-checked",
+        "check-mixed-error": "check-checked-error",
+        "check-unchecked": "check-unchecked",
+        "check-unchecked-error": "check-unchecked-error",
+        "content": "content",
+        "content-selectable": "content-selectable",
+        "control-label": "control-label",
+        "input": "input",
+        "input-error": "input-error",
+        "input-readonly": "readonly",
+        "input-readonly-error": "readonly-error",
+        "link": "link",
+        "range-thumb": "range-thumb",
+        "range-track": "range-track",
+        "selection": "selection",
+        "selection-error": "selection-error",
+        "surface-frame": "surface-frame",
+        "text-selection": "text-selection",
+        "toggle-thumb": "toggle-thumb",
+        "toggle-track": "toggle-track",
+        "toggle-track-error": "toggle-track-error",
+        "content-status-info": "content-status-info",
+        "content-status-running": "content-status-running",
+        "content-status-succeeded": "content-status-succeeded",
+        "content-status-failed": "content-status-failed"
+      }
+    },
+    "panel": {
+      "background": "surface-panel",
+      "usages": {
+        "action-primary": "primary",
+        "action-primary-error": "primary-error",
+        "action-quiet": "quiet",
+        "action-quiet-error": "quiet-error",
+        "check-checked": "check-checked",
+        "check-checked-error": "check-checked-error",
+        "check-mixed": "check-checked",
+        "check-mixed-error": "check-checked-error",
+        "check-unchecked": "check-unchecked",
+        "check-unchecked-error": "check-unchecked-error",
+        "content": "content",
+        "content-selectable": "content-selectable",
+        "control-label": "control-label",
+        "input": "input",
+        "input-error": "input-error",
+        "input-readonly": "readonly",
+        "input-readonly-error": "readonly-error",
+        "link": "link",
+        "range-thumb": "range-thumb",
+        "range-track": "range-track",
+        "selection": "selection",
+        "selection-error": "selection-error",
+        "surface-frame": "surface-frame",
+        "text-selection": "text-selection",
+        "toggle-thumb": "toggle-thumb",
+        "toggle-track": "toggle-track",
+        "toggle-track-error": "toggle-track-error",
+        "content-status-info": "content-status-info",
+        "content-status-running": "content-status-running",
+        "content-status-succeeded": "content-status-succeeded",
+        "content-status-failed": "content-status-failed"
+      }
+    },
+    "popover": {
+      "background": "surface-popover",
+      "usages": {
+        "action-primary": "primary",
+        "action-primary-error": "primary-error",
+        "action-quiet": "quiet",
+        "action-quiet-error": "quiet-error",
+        "check-checked": "check-checked",
+        "check-checked-error": "check-checked-error",
+        "check-mixed": "check-checked",
+        "check-mixed-error": "check-checked-error",
+        "check-unchecked": "check-unchecked",
+        "check-unchecked-error": "check-unchecked-error",
+        "content": "content",
+        "content-selectable": "content-selectable",
+        "control-label": "control-label",
+        "input": "input",
+        "input-error": "input-error",
+        "input-readonly": "readonly",
+        "input-readonly-error": "readonly-error",
+        "link": "link",
+        "range-thumb": "range-thumb",
+        "range-track": "range-track",
+        "selection": "selection",
+        "selection-error": "selection-error",
+        "surface-frame": "surface-frame",
+        "text-selection": "text-selection",
+        "toggle-thumb": "toggle-thumb",
+        "toggle-track": "toggle-track",
+        "toggle-track-error": "toggle-track-error",
+        "content-status-info": "content-status-info",
+        "content-status-running": "content-status-running",
+        "content-status-succeeded": "content-status-succeeded",
+        "content-status-failed": "content-status-failed"
+      }
+    },
+    "sidebar": {
+      "background": "surface-sidebar",
+      "usages": {
+        "action-primary": "primary",
+        "action-primary-error": "primary-error",
+        "action-quiet": "quiet",
+        "action-quiet-error": "quiet-error",
+        "check-checked": "check-checked",
+        "check-checked-error": "check-checked-error",
+        "check-mixed": "check-checked",
+        "check-mixed-error": "check-checked-error",
+        "check-unchecked": "check-unchecked",
+        "check-unchecked-error": "check-unchecked-error",
+        "content": "content",
+        "content-selectable": "content-selectable",
+        "control-label": "control-label",
+        "input": "input",
+        "input-error": "input-error",
+        "input-readonly": "readonly",
+        "input-readonly-error": "readonly-error",
+        "link": "link",
+        "range-thumb": "range-thumb",
+        "range-track": "range-track",
+        "selection": "selection",
+        "selection-error": "selection-error",
+        "surface-frame": "surface-frame",
+        "text-selection": "text-selection",
+        "toggle-thumb": "toggle-thumb",
+        "toggle-track": "toggle-track",
+        "toggle-track-error": "toggle-track-error",
+        "content-status-info": "content-status-info",
+        "content-status-running": "content-status-running",
+        "content-status-succeeded": "content-status-succeeded",
+        "content-status-failed": "content-status-failed"
+      }
+    },
+    "toolbar": {
+      "background": "surface-0",
+      "usages": {
+        "action-primary": "primary",
+        "action-primary-error": "primary-error",
+        "action-quiet": "quiet",
+        "action-quiet-error": "quiet-error",
+        "check-checked": "check-checked",
+        "check-checked-error": "check-checked-error",
+        "check-mixed": "check-checked",
+        "check-mixed-error": "check-checked-error",
+        "check-unchecked": "check-unchecked",
+        "check-unchecked-error": "check-unchecked-error",
+        "content": "content",
+        "content-selectable": "content-selectable",
+        "control-label": "control-label",
+        "input": "input",
+        "input-error": "input-error",
+        "input-readonly": "readonly",
+        "input-readonly-error": "readonly-error",
+        "link": "link",
+        "range-thumb": "range-thumb",
+        "range-track": "range-track",
+        "selection": "selection",
+        "selection-error": "selection-error",
+        "surface-frame": "surface-frame",
+        "text-selection": "text-selection",
+        "toggle-thumb": "toggle-thumb",
+        "toggle-track": "toggle-track",
+        "toggle-track-error": "toggle-track-error",
+        "content-status-info": "content-status-info",
+        "content-status-running": "content-status-running",
+        "content-status-succeeded": "content-status-succeeded",
+        "content-status-failed": "content-status-failed"
+      }
+    }
+  }
+}

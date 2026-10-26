@@ -248,10 +248,7 @@ fn button(
         label,
         rect,
         Some(clip),
-        tekes_ui_tokens::Palette {
-            theme: renderer.1,
-            brand: 0,
-        },
+        tekes_ui_tokens::Palette::new(renderer.1, 0).expect("registered Gallery brand"),
         paint::ButtonVariant::Quiet,
         ButtonSize::Xs,
         proposal::TextRole::UiCaption,

@@ -3654,10 +3654,7 @@ mod overlay_presence_tests {
             &model,
             &mut text,
             &mut scene,
-            Palette {
-                brand: 1,
-                ..palette
-            },
+            Palette::new(palette.theme, 1).expect("registered Gallery brand"),
         );
         assert!(scene.is_empty());
         assert!(!view.is_presented());

@@ -92,7 +92,7 @@ fn actual_menu_content_token_reads_are_bounded_and_state_checked() {
                         reduced: state != "exit",
                     };
                     let frame = Rect::new(0., 0., width, 640.);
-                    let palette = tekes_ui_tokens::Palette { theme, brand };
+                    let palette = tekes_ui_tokens::Palette::new(theme, brand).expect("registered Gallery brand");
                     host.render(&mut Scene::new(), &mut text, frame, frame, palette)
                         .unwrap();
                     if state.starts_with("tree-") {

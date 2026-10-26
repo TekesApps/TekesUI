@@ -1582,10 +1582,7 @@ fn action(
         title,
         r,
         state.button_clip,
-        tekes_ui_tokens::Palette {
-            theme: ctx.theme,
-            brand: state.brand,
-        },
+        tekes_ui_tokens::Palette::new(ctx.theme, state.brand).expect("registered Gallery brand"),
         if id == 20 {
             paint::ButtonVariant::Primary
         } else {
@@ -1680,10 +1677,7 @@ fn quiet_action(
         title,
         rect,
         state.button_clip,
-        tekes_ui_tokens::Palette {
-            theme: ctx.theme,
-            brand: state.brand,
-        },
+        tekes_ui_tokens::Palette::new(ctx.theme, state.brand).expect("registered Gallery brand"),
         paint::ButtonVariant::Quiet,
         ButtonSize::Body,
         proposal::TextRole::UiBody,
@@ -2930,10 +2924,7 @@ impl Workbench {
                     &field,
                     Rect::new(0.0, 0.0, cell_width, 4096.0),
                     None,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                     FieldPresentation::emphasized_form(),
                 );
@@ -2966,10 +2957,7 @@ impl Workbench {
         }
         let (cells, document_bottom) =
             matrix_cell_geometries(layout_bounds, columns, explanation_height, &measurements);
-        let palette = tekes_ui_tokens::Palette {
-            theme: ctx.theme,
-            brand: s.brand,
-        };
+        let palette = tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         for (n, (name, state, check_state)) in states.into_iter().enumerate() {
             let cell = cells[n];
             let r = cell.control;
@@ -3073,10 +3061,7 @@ impl Workbench {
             extended::navigation_states::matrix(e, s, ctx, scene, c);
             return;
         }
-        let palette = tekes_ui_tokens::Palette {
-            theme: ctx.theme,
-            brand: s.brand,
-        };
+        let palette = tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         let role = proposal::TextRole::UiBody;
         let mut y = c.min_y();
         let titles: &[&str] = match e.renderer() {
@@ -3273,10 +3258,7 @@ impl Workbench {
                     title,
                     r,
                     Some(c),
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                     paint::ButtonVariant::Primary,
                     [ButtonSize::Sm, ButtonSize::Md, ButtonSize::Lg][n],
                     proposal::TextRole::UiBody,
@@ -3517,10 +3499,7 @@ impl Workbench {
                     title,
                     row,
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                 );
                 s.buttons.insert(20, s.checkbox.button.clone());
@@ -3546,10 +3525,7 @@ impl Workbench {
                     &["General", "Security", "Advanced"],
                     Rect::new(x, body_y, w, 34.),
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                     s.density == 1,
                 );
@@ -3634,10 +3610,7 @@ impl Workbench {
                     trigger_frame,
                     s.preview,
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                     s.density == 1,
                 );
@@ -3679,10 +3652,7 @@ impl Workbench {
                     &s.field,
                     Rect::new(x, body_y, w.min(600.), 118.),
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                     FieldPresentation::emphasized_form(),
                 );
@@ -3943,10 +3913,7 @@ impl Workbench {
                     scene,
                     Rect::new(x, body_y, w.min(660.), 150.),
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                     true,
                     backing_scale,
                 );
@@ -3984,10 +3951,7 @@ impl Workbench {
                     scene,
                     frame,
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                     true,
                     backing_scale,
                 );
@@ -4002,10 +3966,7 @@ impl Workbench {
                     &["Create", "Rename", "Remove"],
                     surface.frame,
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                 );
                 for (index, layout) in layouts.into_iter().enumerate() {
@@ -4031,10 +3992,7 @@ impl Workbench {
                     &s.number,
                     Rect::new(x, body_y, w.min(198.), 36.),
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                 );
                 s.buttons.entry(23).or_default().state.disabled =
@@ -4083,10 +4041,7 @@ impl Workbench {
                             18.,
                         ),
                         s.button_clip,
-                        tekes_ui_tokens::Palette {
-                            theme: ctx.theme,
-                            brand: s.brand,
-                        },
+                        tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                     );
                     let _ = layout;
                 }
@@ -4097,10 +4052,7 @@ impl Workbench {
             .max(body_y + 100.)
             .max(content_bottom.map_or(f32::NEG_INFINITY, |bottom| bottom + 24.));
         s.event_log_frame = Some(event_log(ctx, scene, x, logy, w, &s.log, false));
-        let palette = tekes_ui_tokens::Palette {
-            theme: ctx.theme,
-            brand: s.brand,
-        };
+        let palette = tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         let trigger = s
             .buttons
             .get(&20)
@@ -4260,10 +4212,7 @@ impl Workbench {
                     super::pages::tokens::build(ctx, r, scene);
                     return;
                 }
-                let palette = tekes_ui_tokens::Palette {
-                    theme: ctx.theme,
-                    brand: s.brand,
-                };
+                let palette = tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
                 let roles = [
                     "surface-0",
                     "surface-1",
@@ -6061,10 +6010,7 @@ mod interaction_tests {
 
         let mut scene = Scene::new();
         let mut checkbox = Checkbox::default();
-        let palette = tekes_ui_tokens::Palette {
-            theme: tekes_ui_tokens::Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = tekes_ui_tokens::Palette::new(tekes_ui_tokens::Theme::LIGHT, 0).expect("registered Gallery brand");
         let layout = checkbox.render(
             &mut scene,
             &mut text,
@@ -7360,14 +7306,11 @@ mod interaction_tests {
         let scene = build(&mut w, i, &mut t);
         let layout = w.brand_preview.dialog_layout().unwrap();
         assert!(layout.visible.is_some());
-        let candidate = tekes_ui_tokens::Palette {
-            theme: tekes_ui_tokens::Theme::LIGHT,
-            brand: tekes_ui_tokens::palette::gallery_brand_presets()
+        let candidate = tekes_ui_tokens::Palette::new(tekes_ui_tokens::Theme::LIGHT, tekes_ui_tokens::palette::gallery_brand_presets()
                 .iter()
                 .find(|preset| preset.id == "rose")
                 .unwrap()
-                .palette_index,
-        };
+                .palette_index).expect("registered Gallery brand");
         // This Dialog uses quiet actions, so its surface stays neutral. A
         // branded button behind the scrim must not count as modal evidence.
         let modal_ground = candidate.color("surface-popover").unwrap();

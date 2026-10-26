@@ -957,10 +957,7 @@ mod tests {
                         label,
                         Rect::new(13.0, 17.0, measured.width, measured.height),
                         None,
-                        tekes_ui_tokens::Palette {
-                            theme: Theme::LIGHT,
-                            brand: 0,
-                        },
+                        tekes_ui_tokens::Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand"),
                         paint::ButtonVariant::Quiet,
                         ButtonSize::Md,
                         proposal::TextRole::UiBody,
@@ -1048,10 +1045,7 @@ mod tests {
                         label,
                         layout.frame,
                         None,
-                        tekes_ui_tokens::Palette {
-                            theme: Theme::LIGHT,
-                            brand: 0,
-                        },
+                        tekes_ui_tokens::Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand"),
                         paint::ButtonVariant::Quiet,
                         ButtonSize::Md,
                         proposal::TextRole::UiBody,
@@ -1079,10 +1073,7 @@ mod tests {
         text.set_type_scale(1.5);
         let label = "Smooth motion preview";
         let mut button = Button::default();
-        let palette = tekes_ui_tokens::Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = tekes_ui_tokens::Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let mut scene = Scene::new();
         let mut first_shapes = None;
         for frame in 0..120 {
