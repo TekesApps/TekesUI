@@ -33,8 +33,17 @@
 //!
 //! 不做的事：scene 不做脏区跟踪、不做命中测试、不做排序。上层每帧（按需）整体
 //! 重建，渲染层只负责画。
+//!
+//! # 有界 CPU 裁剪几何（#80）
+//!
+//! [`ClipShape`] 和 [`ClipRegion`] 提供轴对齐 Rect/RoundedRect 的规范化、
+//! 点/截面/可见边界查询；超出数值域或预算时显式返回 [`ClipError`]。
+//! [`ShapeKey`] 保留原 [`ShapeTable`] 的 owner，不能跨表借用同 generation/slot。
+//! 这些 CPU 查询不启用 Scene shape 指令或 GPU 裁剪；renderer、片段 append
+//! 与 Host 集成分别验收。历史 Root 的 GPU 证据不等于此 main 基线已接收。
 
 mod atlas;
+mod clip;
 mod geometry;
 mod glyph;
 mod quad;
@@ -42,6 +51,10 @@ mod scene;
 mod shadow;
 
 pub use atlas::{AtlasConfig, AtlasStats, DirtyRect, GlyphAtlas};
+pub use clip::{
+    ClipBudget, ClipError, ClipInterval, ClipRegion, ClipShape, InnerClipShape, ShapeKey,
+    ShapeTable, VisibleClipBounds,
+};
 pub use geometry::{Point, Rect, Size};
 pub use glyph::{
     AtlasGlyph, FontKey, GlyphKey, GlyphRun, ImageId, ImageQuad, PositionedGlyph, RasterFormat,
