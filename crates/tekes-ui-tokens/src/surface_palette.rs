@@ -494,3 +494,61 @@ mod status_content_tests {
         assert_eq!(count, 13 * 4 * surface_names().len() * 4 * 2);
     }
 }
+
+#[cfg(test)]
+mod passive_status_tests {
+    use super::*;
+    use crate::Theme;
+    #[test]
+    fn passive_status_complete_packets_and_rest_only() {
+        for mode in Theme::ALL {
+            for p in crate::palette::gallery_brand_presets()
+                .iter()
+                .map(|preset| Palette::new(mode, preset.palette_index).unwrap())
+                .chain(
+                    ["default", "blue", "clay", "blue-inputs"]
+                        .into_iter()
+                        .map(|id| Palette::for_theme_definition(mode, id).unwrap()),
+                )
+            {
+                for surface in surface_names() {
+                    for tone in ["info", "running", "succeeded", "failed"] {
+                        let usage = format!("status-badge-{tone}");
+                        let c = resolve_surface(p, surface, &usage, "rest").unwrap();
+                        assert_eq!(c.background, p.color(&format!("status-{tone}")).unwrap());
+                        assert_eq!(c.text, p.color("c-status-badge-foreground").unwrap());
+                        assert_eq!(c.icon, c.text);
+                        assert_eq!(
+                            (c.boundary, c.focus, c.marker, c.helper),
+                            (None, None, None, None)
+                        );
+                        for state in ["hover", "pressed", "disabled", "selected", "focus"] {
+                            assert_eq!(
+                                resolve_surface(p, surface, &usage, state),
+                                Err(SurfaceError::UnknownCombination)
+                            );
+                        }
+                    }
+                    let c = resolve_surface(p, surface, "skeleton", "rest").unwrap();
+                    assert_eq!(c.background, p.color("surface-2").unwrap());
+                    assert_eq!(c.text, p.color("primary-text").unwrap());
+                    assert_eq!(c.icon, c.text);
+                    assert_eq!(c.boundary, p.color("border"));
+                    assert_eq!((c.focus, c.marker, c.helper), (None, None, None));
+                    for state in ["hover", "pressed", "disabled", "selected", "focus"] {
+                        assert_eq!(
+                            resolve_surface(p, surface, "skeleton", state),
+                            Err(SurfaceError::UnknownCombination)
+                        );
+                    }
+                }
+                for surface in ["unknown", "Canvas", ""] {
+                    assert_eq!(
+                        resolve_surface(p, surface, "skeleton", "rest"),
+                        Err(SurfaceError::UnknownCombination)
+                    );
+                }
+            }
+        }
+    }
+}

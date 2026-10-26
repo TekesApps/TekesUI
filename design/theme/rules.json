@@ -812,9 +812,64 @@
         "marker": "c-progress-active",
         "helper": null
       }
+    },
+    "status-badge-info": {
+      "rest": {
+        "background": "status-info",
+        "text": "c-status-badge-foreground",
+        "icon": "c-status-badge-foreground",
+        "boundary": null,
+        "focus": null,
+        "marker": null,
+        "helper": null
+      }
+    },
+    "status-badge-running": {
+      "rest": {
+        "background": "status-running",
+        "text": "c-status-badge-foreground",
+        "icon": "c-status-badge-foreground",
+        "boundary": null,
+        "focus": null,
+        "marker": null,
+        "helper": null
+      }
+    },
+    "status-badge-succeeded": {
+      "rest": {
+        "background": "status-succeeded",
+        "text": "c-status-badge-foreground",
+        "icon": "c-status-badge-foreground",
+        "boundary": null,
+        "focus": null,
+        "marker": null,
+        "helper": null
+      }
+    },
+    "status-badge-failed": {
+      "rest": {
+        "background": "status-failed",
+        "text": "c-status-badge-foreground",
+        "icon": "c-status-badge-foreground",
+        "boundary": null,
+        "focus": null,
+        "marker": null,
+        "helper": null
+      }
+    },
+    "skeleton": {
+      "rest": {
+        "background": "surface-2",
+        "text": "primary-text",
+        "icon": "primary-text",
+        "boundary": "border",
+        "focus": null,
+        "marker": null,
+        "helper": null
+      }
     }
   },
-  "rules_version": "1.7.0",
+  "rules_version": "1.8.0",
   "schema_version": "1.3.0",
   "surfaces": {
     "canvas": {
@@ -851,7 +906,12 @@
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
         "content-status-failed": "content-status-failed",
-        "progress-track": "progress-track"
+        "progress-track": "progress-track",
+        "status-badge-info": "status-badge-info",
+        "status-badge-running": "status-badge-running",
+        "status-badge-succeeded": "status-badge-succeeded",
+        "status-badge-failed": "status-badge-failed",
+        "skeleton": "skeleton"
       }
     },
     "code": {
@@ -888,7 +948,12 @@
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
         "content-status-failed": "content-status-failed",
-        "progress-track": "progress-track"
+        "progress-track": "progress-track",
+        "status-badge-info": "status-badge-info",
+        "status-badge-running": "status-badge-running",
+        "status-badge-succeeded": "status-badge-succeeded",
+        "status-badge-failed": "status-badge-failed",
+        "skeleton": "skeleton"
       }
     },
     "hint": {
@@ -925,7 +990,12 @@
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
         "content-status-failed": "content-status-failed",
-        "progress-track": "progress-track"
+        "progress-track": "progress-track",
+        "status-badge-info": "status-badge-info",
+        "status-badge-running": "status-badge-running",
+        "status-badge-succeeded": "status-badge-succeeded",
+        "status-badge-failed": "status-badge-failed",
+        "skeleton": "skeleton"
       }
     },
     "panel": {
@@ -962,7 +1032,12 @@
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
         "content-status-failed": "content-status-failed",
-        "progress-track": "progress-track"
+        "progress-track": "progress-track",
+        "status-badge-info": "status-badge-info",
+        "status-badge-running": "status-badge-running",
+        "status-badge-succeeded": "status-badge-succeeded",
+        "status-badge-failed": "status-badge-failed",
+        "skeleton": "skeleton"
       }
     },
     "popover": {
@@ -999,7 +1074,12 @@
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
         "content-status-failed": "content-status-failed",
-        "progress-track": "progress-track"
+        "progress-track": "progress-track",
+        "status-badge-info": "status-badge-info",
+        "status-badge-running": "status-badge-running",
+        "status-badge-succeeded": "status-badge-succeeded",
+        "status-badge-failed": "status-badge-failed",
+        "skeleton": "skeleton"
       }
     },
     "sidebar": {
@@ -1036,7 +1116,12 @@
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
         "content-status-failed": "content-status-failed",
-        "progress-track": "progress-track"
+        "progress-track": "progress-track",
+        "status-badge-info": "status-badge-info",
+        "status-badge-running": "status-badge-running",
+        "status-badge-succeeded": "status-badge-succeeded",
+        "status-badge-failed": "status-badge-failed",
+        "skeleton": "skeleton"
       }
     },
     "toolbar": {
@@ -1073,7 +1158,12 @@
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
         "content-status-failed": "content-status-failed",
-        "progress-track": "progress-track"
+        "progress-track": "progress-track",
+        "status-badge-info": "status-badge-info",
+        "status-badge-running": "status-badge-running",
+        "status-badge-succeeded": "status-badge-succeeded",
+        "status-badge-failed": "status-badge-failed",
+        "skeleton": "skeleton"
       }
     }
   }

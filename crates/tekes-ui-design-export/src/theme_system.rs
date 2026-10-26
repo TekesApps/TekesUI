@@ -25,7 +25,7 @@ const STATES: [&str; 8] = [
     "selected-pressed",
     "selected-disabled",
 ];
-const USES: [&str; 32] = [
+const USES: [&str; 37] = [
     "content",
     "content-selectable",
     "action-quiet",
@@ -58,9 +58,33 @@ const USES: [&str; 32] = [
     "content-status-succeeded",
     "content-status-failed",
     "progress-track",
+    "status-badge-info",
+    "status-badge-running",
+    "status-badge-succeeded",
+    "status-badge-failed",
+    "skeleton",
 ];
 
 fn validate_use_channels(usage: &str, state: &str, pair: &Value) -> Result<(), String> {
+    if usage.starts_with("status-badge-") || usage == "skeleton" {
+        let badge = usage.starts_with("status-badge-");
+        let background = if badge {
+            format!("status-{}", usage.trim_start_matches("status-badge-"))
+        } else {
+            "surface-2".into()
+        };
+        let ink = if badge {
+            "c-status-badge-foreground"
+        } else {
+            "primary-text"
+        };
+        let expected = serde_json::json!({"background":background,"text":ink,"icon":ink,"boundary":if badge { Value::Null } else { Value::from("border") },"focus":null,"marker":null,"helper":null});
+        if state != "rest" || *pair != expected {
+            return Err(format!(
+                "invalid passive status packet binding: {usage}/{state}"
+            ));
+        }
+    }
     if usage == "link" && ["marker", "helper"].iter().any(|k| !pair[k].is_null()) {
         return Err(format!("Link has no marker/helper anatomy: {state}"));
     }
@@ -80,6 +104,8 @@ fn validate_use_channels(usage: &str, state: &str, pair: &Value) -> Result<(), S
         return Err("progress track requires boundary/marker and forbids focus/helper".into());
     }
     let focus_free = usage.starts_with("content-status-")
+        || usage.starts_with("status-badge-")
+        || usage == "skeleton"
         || [
             "content",
             "text-selection",
@@ -191,6 +217,10 @@ fn theme_input_contract(root: &Path, rules: &Value) -> Result<Value, String> {
             != surface_schema["properties"]["schema_version"]["const"]
         || contract["surface_schema_version"] != rules["schema_version"]
         || contract["rules_version"] != rules["rules_version"]
+        || system_schema["properties"]["theme_system"]["properties"]["theme_input_contract"]["properties"]
+            ["rules_version"]["const"]
+            != rules["rules_version"]
+        || system["theme_system"]["version_policy"]["generation_rules"] != rules["rules_version"]
         || contract["supported_modes"]
             != serde_json::json!(["light", "dark", "light-ic", "dark-ic"])
         || rules["modes"] != contract["supported_modes"]
@@ -683,7 +713,7 @@ pub fn compile_surface_rules(rules: &Value) -> Result<String, String> {
     )?;
     if rules["format"] != "tekesui.theme-rules/1"
         || rules["schema_version"] != "1.3.0"
-        || rules["rules_version"] != "1.7.0"
+        || rules["rules_version"] != "1.8.0"
         || rules["modes"] != serde_json::json!(["light", "dark", "light-ic", "dark-ic"])
     {
         return Err("unsupported Theme schema/rules/modes".into());
@@ -693,6 +723,13 @@ pub fn compile_surface_rules(rules: &Value) -> Result<String, String> {
         .as_object()
         .filter(|v| !v.is_empty())
         .ok_or("missing surfaces")?;
+    for required in [
+        "canvas", "code", "hint", "panel", "popover", "sidebar", "toolbar",
+    ] {
+        if !surfaces.contains_key(required) {
+            return Err("missing required Surface".into());
+        }
+    }
     // Reject malformed unused profiles too; no hidden invalid definitions.
     for profile in profiles.values() {
         let states = profile
@@ -758,7 +795,12 @@ pub fn compile_surface_rules(rules: &Value) -> Result<String, String> {
                 | "content-status-running"
                 | "content-status-succeeded"
                 | "content-status-failed" => &["rest", "disabled"],
-                "progress-track" => &["rest"],
+                "progress-track"
+                | "status-badge-info"
+                | "status-badge-running"
+                | "status-badge-succeeded"
+                | "status-badge-failed"
+                | "skeleton" => &["rest"],
                 "link" | "range-track" | "range-thumb" => &STATES[..4],
                 _ => &STATES,
             };
@@ -939,6 +981,7 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
         }
     }
     // Check the actual selected palette too, including explicit offline consumer artifacts.
+    verify_passive_status_contrast(&rules, &tokens["proposal"]["tokens"])?;
     verify_track_boundaries(&rules, &tokens["proposal"]["tokens"])?;
     verify_surface_foregrounds(&rules, &tokens["proposal"]["tokens"])?;
     let gallery: Value =
@@ -947,6 +990,7 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
         .as_array()
         .ok_or("missing Gallery palettes")?
     {
+        verify_passive_status_contrast(&rules, &serde_json::json!({"color": preset["color"]}))?;
         verify_track_boundaries(&rules, &serde_json::json!({"color": preset["color"]}))?;
         verify_surface_foregrounds(&rules, &serde_json::json!({"color": preset["color"]}))?;
     }
@@ -1220,6 +1264,61 @@ fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), Stri
     Ok(())
 }
 
+/// Fixed passive packets have distinct solid/parent and necessary boundary constraints.
+fn verify_passive_status_contrast(rules: &Value, palette: &Value) -> Result<(), String> {
+    let profiles = expanded_profiles(rules)?;
+    for mode in ["light", "dark", "light-ic", "dark-ic"] {
+        let luminance = |role: &str| color_luminance(&resolved(palette, role, mode, 0)?);
+        let ratio = |a: f64, b: f64| (a.max(b) + 0.05) / (a.min(b) + 0.05);
+        for (surface, definition) in rules["surfaces"].as_object().ok_or("missing surfaces")? {
+            let parent = luminance(
+                definition["background"]
+                    .as_str()
+                    .ok_or("missing parent ground")?,
+            )?;
+            for (usage, profile) in definition["usages"].as_object().ok_or("missing usages")? {
+                if !usage.starts_with("status-badge-") && usage != "skeleton" {
+                    continue;
+                }
+                let pair = &profiles[profile.as_str().ok_or("invalid profile")?]["rest"];
+                let color = |channel: &str| {
+                    luminance(
+                        pair[channel]
+                            .as_str()
+                            .ok_or("missing passive status channel")?,
+                    )
+                };
+                let fill = color("background")?;
+                if usage == "skeleton" {
+                    let edge = color("boundary")?;
+                    for (side, ground) in [("fill", fill), ("parent", parent)] {
+                        if ratio(edge, ground) < 3.0 {
+                            return Err(format!(
+                                "insufficient skeleton boundary-{side} contrast: {mode}/{surface}"
+                            ));
+                        }
+                    }
+                } else {
+                    let minimum = if mode.ends_with("-ic") { 7.0 } else { 4.5 };
+                    for channel in ["text", "icon"] {
+                        if ratio(color(channel)?, fill) < minimum {
+                            return Err(format!(
+                                "insufficient badge solid foreground contrast: {mode}/{surface}/{usage}/{channel}"
+                            ));
+                        }
+                    }
+                    if ratio(fill, parent) < 3.0 {
+                        return Err(format!(
+                            "insufficient badge fill-parent contrast: {mode}/{surface}/{usage}"
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 /// A necessary range or passive progress rail must remain visible against both its own fill and parent.
 /// This is a compiler constraint, never an RGB-to-Surface identity inference.
 fn verify_track_boundaries(rules: &Value, palette: &Value) -> Result<(), String> {
@@ -1450,6 +1549,7 @@ fn verify_instances(
             effective_tokens.push(serde_json::json!({"name":name,"value":values}));
         }
         let effective_roles = serde_json::json!({"color":{"tokens":effective_tokens}});
+        verify_passive_status_contrast(rules, &effective_roles)?;
         verify_track_boundaries(rules, &effective_roles)?;
         verify_surface_foregrounds(rules, &effective_roles)?;
         verify_solid_status_foregrounds(&effective_roles)?;
@@ -2104,7 +2204,9 @@ mod progress_tests {
             r["profiles"]["progress-track"].as_object().unwrap().len(),
             1
         );
-        for usage in USES.into_iter().filter(|u| *u != "progress-track") {
+        for usage in USES.into_iter().filter(|u| {
+            *u != "progress-track" && !u.starts_with("status-badge-") && *u != "skeleton"
+        }) {
             for indirect in [false, true] {
                 let mut r = rules();
                 r["profiles"]["passive-alias"] = serde_json::json!({"extends":"progress-track"});
@@ -2257,6 +2359,104 @@ mod solid_status_contrast_tests {
             verify_solid_status_foregrounds(&palette)
                 .unwrap_err()
                 .contains("light-ic/info")
+        );
+    }
+}
+
+#[cfg(test)]
+mod passive_status_policy_tests {
+    use super::*;
+    fn rules() -> Value {
+        serde_json::from_str(include_str!("../../../design/theme/rules.json")).unwrap()
+    }
+    #[test]
+    fn precise_bindings_channels_and_states() {
+        let r = rules();
+        assert!(compile_surface_rules(&r).is_ok());
+        for usage in [
+            "status-badge-info",
+            "status-badge-running",
+            "status-badge-succeeded",
+            "status-badge-failed",
+            "skeleton",
+        ] {
+            for channel in CHANNELS {
+                let mut bad = r.clone();
+                bad["profiles"][usage]["rest"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove(channel);
+                assert!(compile_surface_rules(&bad).is_err());
+                let mut bad = r.clone();
+                let ink = if bad["profiles"][usage]["rest"][channel] == "primary-text" {
+                    "secondary-text"
+                } else {
+                    "primary-text"
+                };
+                bad["profiles"][usage]["rest"][channel] = Value::from(ink);
+                assert!(
+                    compile_surface_rules(&bad)
+                        .unwrap_err()
+                        .contains("invalid passive status packet binding")
+                );
+            }
+            for state in ["hover", "pressed", "selected", "disabled", "focus"] {
+                let mut bad = r.clone();
+                bad["profiles"][usage][state] = r["profiles"][usage]["rest"].clone();
+                assert!(compile_surface_rules(&bad).is_err());
+            }
+        }
+    }
+    fn palette(parent: &str, fill: &str, edge: &str, ink: &str) -> Value {
+        let tokens=[("parent",parent),("fill",fill),("edge",edge),("ink",ink)].map(|(name,color)|serde_json::json!({"name":name,"value":{"light":color,"dark":color,"light-ic":color,"dark-ic":color}}));
+        serde_json::json!({"color":{"tokens":tokens}})
+    }
+    fn minimal(usage: &str) -> Value {
+        serde_json::json!({"profiles":{"packet":{"rest":{"background":"fill","text":"ink","icon":"ink","boundary":"edge"}}},"surfaces":{"canvas":{"background":"parent","usages":{usage:"packet"}}}})
+    }
+    #[test]
+    fn badge_parent_and_skeleton_sides_have_independent_guards() {
+        let r = minimal("status-badge-info");
+        assert!(
+            verify_passive_status_contrast(
+                &r,
+                &palette("#000000", "#FFFFFF", "#000000", "#000000")
+            )
+            .is_ok()
+        );
+        assert!(
+            verify_passive_status_contrast(
+                &r,
+                &palette("#FFFFFF", "#FFFFFF", "#000000", "#000000")
+            )
+            .unwrap_err()
+            .contains("badge fill-parent")
+        );
+        assert!(
+            verify_passive_status_contrast(
+                &r,
+                &palette("#000000", "#FFFFFF", "#000000", "#666666")
+            )
+            .unwrap_err()
+            .contains("badge solid foreground contrast: light-ic")
+        );
+        let r = minimal("skeleton");
+        for (parent, fill, side) in [
+            ("#000000", "#FFFFFF", "fill"),
+            ("#FFFFFF", "#000000", "parent"),
+        ] {
+            assert!(
+                verify_passive_status_contrast(&r, &palette(parent, fill, "#FFFFFF", "#000000"))
+                    .unwrap_err()
+                    .contains(&format!("skeleton boundary-{side}"))
+            );
+        }
+        assert!(
+            verify_passive_status_contrast(
+                &r,
+                &palette("#FFFFFF", "#FFFFFF", "#000000", "#000000")
+            )
+            .is_ok()
         );
     }
 }

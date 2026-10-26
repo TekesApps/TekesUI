@@ -29,10 +29,20 @@ USES['surface-frame'] = ['rest','disabled']
 USES['progress-track'] = ['rest']
 STATUS_CONTENT_USES = {'content-status-' + tone for tone in ['info','running','succeeded','failed']}
 for _use in STATUS_CONTENT_USES: USES[_use] = ['rest','disabled']
-FOCUS_FREE_USES = STATUS_CONTENT_USES | {'content','text-selection','control-label','toggle-thumb','range-track','surface-frame','progress-track'}
+BADGE_USES = {'status-badge-' + tone for tone in ['info','running','succeeded','failed']}
+PASSIVE_USES = BADGE_USES | {'skeleton'}
+for _use in PASSIVE_USES: USES[_use] = ['rest']
+FOCUS_FREE_USES = PASSIVE_USES | STATUS_CONTENT_USES | {'content','text-selection','control-label','toggle-thumb','range-track','surface-frame','progress-track'}
 
 
 def validate_use_channels(usage, state, pair):
+    if usage in PASSIVE_USES:
+        expected = dict(background=('status-' + usage.removeprefix('status-badge-')) if usage in BADGE_USES else 'surface-2',
+                        text='c-status-badge-foreground' if usage in BADGE_USES else 'primary-text',
+                        icon='c-status-badge-foreground' if usage in BADGE_USES else 'primary-text',
+                        boundary=None if usage in BADGE_USES else 'border', focus=None, marker=None, helper=None)
+        if state != 'rest' or pair != expected:
+            raise ValueError('invalid passive status packet binding: ' + usage + '/' + state)
     if usage == 'link' and any(pair[k] is not None for k in ['marker','helper']):
         raise ValueError('Link has no marker/helper anatomy: ' + state)
     if usage in STATUS_CONTENT_USES and (pair['background'] != '$surface' or any(pair[k] is not None for k in ['boundary','focus','marker','helper'])):
@@ -71,8 +81,9 @@ def expand_profiles(rules):
 def validate(rules):
     import jsonschema
     jsonschema.validate(rules, merge.load(ROOT / 'design/theme/rules.schema.json'))
-    if rules['rules_version'] != '1.7.0': raise ValueError('unsupported generation rules version')
+    if rules['rules_version'] != '1.8.0': raise ValueError('unsupported generation rules version')
     profiles = expand_profiles(rules)
+    if not {'canvas','code','hint','panel','popover','sidebar','toolbar'} <= set(rules['surfaces']): raise ValueError('missing required Surface')
     for surface, definition in rules['surfaces'].items():
         if not surface or not surface.isascii() or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789-' for c in surface):
             raise ValueError('invalid Surface identity: ' + surface)
@@ -151,11 +162,26 @@ def verify_profile_color_references(profiles, bundle):
                     raise ValueError(f'unknown color role: {role} in shared profile {name}/{state}/{channel}')
 
 
+def verify_passive_status_contrast(usage, mode, colors, parent):
+    if usage in BADGE_USES:
+        minimum = 7.0 if mode.endswith('-ic') else 4.5
+        for channel in ['text','icon']:
+            if contrast(colors[channel],colors['background']) < minimum:
+                raise ValueError('insufficient badge solid foreground contrast: ' + mode + '/' + usage + '/' + channel)
+        if contrast(colors['background'],parent) < 3.0:
+            raise ValueError('insufficient badge fill-parent contrast: ' + mode + '/' + usage)
+    if usage == 'skeleton':
+        for side, ground in [('fill',colors['background']),('parent',parent)]:
+            if colors['boundary'] is None or contrast(colors['boundary'],ground) < 3.0:
+                raise ValueError('insufficient skeleton boundary-' + side + ' contrast: ' + mode)
+
+
 def theme_input_contract(rules):
     import jsonschema
     system = merge.load(ROOT / 'design/system.json')
     jsonschema.validate(system, merge.load(ROOT / 'design/system.schema.json'))
     contract = system['theme_system']['theme_input_contract']
+    if system['theme_system']['version_policy']['generation_rules'] != rules['rules_version']: raise ValueError('stale Theme version policy pin')
     if contract.get('contract_version') != '1.0.0': raise ValueError('unsupported Theme input contract')
     rule_schema = merge.load(ROOT / 'design/theme/rules.schema.json')
     definition_schema = merge.load(ROOT / 'design/theme/theme.schema.json')
@@ -233,6 +259,12 @@ def generate():
         bundle, _ = brand.compile_config(config, base=effective, policy=policy, metadata=metadata)
         verify_profile_color_references(expand_profiles(rules), bundle)
         verify_solid_status_foregrounds(bundle)
+        # Check geometry constraints before overlapping Surface/track guards.
+        for mode in MODES:
+            for surface, usage, state, roles in rows:
+                if usage in PASSIVE_USES:
+                    colors = {k: None if v is None else merge.token_value(bundle,'color',v,mode) for k,v in roles.items()}
+                    verify_passive_status_contrast(usage, mode, colors, merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode))
         modes = {}
         for mode in MODES:
             surfaces = {}

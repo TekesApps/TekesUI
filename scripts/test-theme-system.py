@@ -16,6 +16,33 @@ spec.loader.exec_module(g)
 
 class ThemeSystemTests(unittest.TestCase):
     def rules(self): return g.merge.load(ROOT / 'design/theme/rules.json')
+    def test_passive_status_exact_bindings_and_rejections(self):
+        r=self.rules(); profiles=g.validate(r)
+        expected={'status-badge-'+t:dict(background='status-'+t,text='c-status-badge-foreground',icon='c-status-badge-foreground',boundary=None,focus=None,marker=None,helper=None) for t in ['info','running','succeeded','failed']}
+        expected['skeleton']=dict(background='surface-2',text='primary-text',icon='primary-text',boundary='border',focus=None,marker=None,helper=None)
+        self.assertEqual(len(g.USES),37)
+        for usage, packet in expected.items():
+            self.assertEqual(profiles[usage],{'rest':packet})
+            for surface in r['surfaces'].values(): self.assertEqual(surface['usages'][usage],usage)
+            for state in ['hover','pressed','disabled','selected','focus']:
+                bad=copy.deepcopy(r);bad['profiles'][usage][state]=copy.deepcopy(packet)
+                with self.assertRaises(Exception):g.bindings(bad)
+            for channel in g.CHANNELS:
+                bad=copy.deepcopy(r);del bad['profiles'][usage]['rest'][channel]
+                with self.assertRaises(Exception):g.bindings(bad)
+                bad=copy.deepcopy(r);bad['profiles'][usage]['rest'][channel]='primary-text' if packet[channel]!='primary-text' else 'secondary-text'
+                with self.assertRaisesRegex(ValueError,'invalid passive status packet binding'):g.bindings(bad)
+    def test_passive_status_contrast_independent_sides(self):
+        packet=dict(background='#FFFFFF',text='#000000',icon='#000000',boundary=None)
+        g.verify_passive_status_contrast('status-badge-info','light',packet,'#000000')
+        with self.assertRaisesRegex(ValueError,'badge fill-parent'):g.verify_passive_status_contrast('status-badge-info','light',packet,'#FFFFFF')
+        for mode,ink in [('light','#FFFFFF'),('light-ic','#666666')]:
+            bad=dict(packet,text=ink,icon=ink)
+            with self.assertRaisesRegex(ValueError,'badge solid foreground'):g.verify_passive_status_contrast('status-badge-info',mode,bad,'#000000')
+        for fill,parent,side in [('#FFFFFF','#000000','fill'),('#000000','#FFFFFF','parent')]:
+            bad=dict(packet,background=fill,boundary='#FFFFFF')
+            with self.assertRaisesRegex(ValueError,'skeleton boundary-'+side):g.verify_passive_status_contrast('skeleton','light',bad,parent)
+        g.verify_passive_status_contrast('skeleton','light',dict(packet,boundary='#000000'),'#FFFFFF')
     def test_progress_is_one_shared_passive_rest_packet(self):
         r=self.rules(); p=g.validate(r)
         self.assertEqual(set(p['progress-track']), {'rest'})
@@ -37,7 +64,7 @@ class ThemeSystemTests(unittest.TestCase):
             r=self.rules();r['profiles']['progress-track'][state]=copy.deepcopy(r['profiles']['progress-track']['rest'])
             with self.assertRaises(Exception):g.bindings(r)
     def test_rest_only_cannot_downgrade_any_previous_use_directly_or_indirectly(self):
-        for usage in set(g.USES)-{'progress-track'}:
+        for usage in set(g.USES)-g.PASSIVE_USES-{'progress-track'}:
             for indirect in [False,True]:
                 r=self.rules()
                 r['profiles']['passive-alias']={'extends':'progress-track'}
@@ -165,7 +192,7 @@ class ThemeSystemTests(unittest.TestCase):
             current=next(i for i in instances if i['id']==record['theme_id'])['modes'][record['mode']]
             # The frozen v1.6.1 baseline covers the original 31 uses. New passive
             # progress packets are checked separately; never rewrite the old fixture.
-            packet={surface:{usage:states for usage,states in uses.items() if usage != 'progress-track'} for surface,uses in current.items()}
+            packet={surface:{usage:states for usage,states in uses.items() if usage not in g.PASSIVE_USES | {'progress-track'}} for surface,uses in current.items()}
             self.assertEqual(sum(len(states) for uses in packet.values() for states in uses.values()),record['surface_packet_count'])
             self.assertEqual(hashlib.sha256(canonical(packet)).hexdigest(),record['canonical_sha256'],(record['theme_id'],record['mode']))
         for mode in g.MODES:

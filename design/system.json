@@ -289,12 +289,12 @@
       "$ref": "../crates/tekes-ui-tokens/src/surface_palette.rs"
     },
     "component_contract": {
-      "$ref": "./reviews/theme-surface-integration-20261023/api-v1.6.1-accepted.md"
+      "$ref": "./reviews/passive-status-theme-implementation-20261024/api-v1.8.0.md"
     },
     "version_policy": {
       "theme_definition_schema": "2.0.0",
       "surface_schema": "1.3.0",
-      "generation_rules": "1.7.0",
+      "generation_rules": "1.8.0",
       "instance_format": "tekesui.theme-instances/2",
       "provenance": "Each generated instance retains its definition version, internal modes, rules/schema versions and exact input SHA256. These are not package SemVer or published Git revisions."
     },
@@ -306,7 +306,7 @@
       "definition_schema_version": "2.0.0",
       "instance_format": "tekesui.theme-instances/2",
       "surface_schema_version": "1.3.0",
-      "rules_version": "1.7.0",
+      "rules_version": "1.8.0",
       "supported_modes": [
         "light",
         "dark",
@@ -325,12 +325,12 @@
         "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py": "f48e97e00a0f8da9d0b373d4636da251c35cbdc667b33a03b9679e00460e1acc",
         "design/source/base.tokens.json": "16215625e85017b393a096046c37849315d7c473d87e8c15c52fe8db887abf87",
         "design/source/token-metadata.json": "53db464280f6d381cf108cb78c1f894a1dd31d780a5045145d31e6bd925e637b",
-        "design/system.schema.json": "eb089a932a8da27fdf294615fcf7d6abd7d49519ee945a9c8527185279f59b06",
+        "design/system.schema.json": "f2af7574156d741a1f89cb3bcfabc27e68520df801b754f0cd5cf547c67dfe89",
         "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
-        "design/theme/rules.json": "c6b0db62b22e18d29a115700073c6b6e8c74b3b9ff049c9afb766bb6dc71a844",
+        "design/theme/rules.json": "e9bc8fd9c3f9d354b66efba7081c1fea228237e00f08fc6f1f7ad72ffb01c113",
         "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
         "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
-        "scripts/generate-theme-system.py": "8ff848cb76ffeeb9f9ba33d152da09a945df4364c12a06040976025add200b41",
+        "scripts/generate-theme-system.py": "015a9e459db44d87ba7fb1e1784507a943dea0db979ea822d31d8951d1cf22d4",
         "scripts/merge-design-system.py": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2"
       },
       "neutral_base_allowed_roles": [
