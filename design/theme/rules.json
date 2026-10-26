@@ -801,10 +801,21 @@
           "icon": "status-failed"
         }
       }
+    },
+    "progress-track": {
+      "rest": {
+        "background": "surface-2",
+        "text": "primary-text",
+        "icon": "primary-text",
+        "boundary": "border",
+        "focus": null,
+        "marker": "c-progress-active",
+        "helper": null
+      }
     }
   },
-  "rules_version": "1.6.1",
-  "schema_version": "1.2.0",
+  "rules_version": "1.7.0",
+  "schema_version": "1.3.0",
   "surfaces": {
     "canvas": {
       "background": "document-canvas",
@@ -839,7 +850,8 @@
         "content-status-info": "content-status-info",
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
-        "content-status-failed": "content-status-failed"
+        "content-status-failed": "content-status-failed",
+        "progress-track": "progress-track"
       }
     },
     "code": {
@@ -875,7 +887,8 @@
         "content-status-info": "content-status-info",
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
-        "content-status-failed": "content-status-failed"
+        "content-status-failed": "content-status-failed",
+        "progress-track": "progress-track"
       }
     },
     "hint": {
@@ -911,7 +924,8 @@
         "content-status-info": "content-status-info",
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
-        "content-status-failed": "content-status-failed"
+        "content-status-failed": "content-status-failed",
+        "progress-track": "progress-track"
       }
     },
     "panel": {
@@ -947,7 +961,8 @@
         "content-status-info": "content-status-info",
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
-        "content-status-failed": "content-status-failed"
+        "content-status-failed": "content-status-failed",
+        "progress-track": "progress-track"
       }
     },
     "popover": {
@@ -983,7 +998,8 @@
         "content-status-info": "content-status-info",
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
-        "content-status-failed": "content-status-failed"
+        "content-status-failed": "content-status-failed",
+        "progress-track": "progress-track"
       }
     },
     "sidebar": {
@@ -1019,7 +1035,8 @@
         "content-status-info": "content-status-info",
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
-        "content-status-failed": "content-status-failed"
+        "content-status-failed": "content-status-failed",
+        "progress-track": "progress-track"
       }
     },
     "toolbar": {
@@ -1055,7 +1072,8 @@
         "content-status-info": "content-status-info",
         "content-status-running": "content-status-running",
         "content-status-succeeded": "content-status-succeeded",
-        "content-status-failed": "content-status-failed"
+        "content-status-failed": "content-status-failed",
+        "progress-track": "progress-track"
       }
     }
   }

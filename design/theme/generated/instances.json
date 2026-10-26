@@ -15,14 +15,14 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py": "f48e97e00a0f8da9d0b373d4636da251c35cbdc667b33a03b9679e00460e1acc",
     "design/source/base.tokens.json": "16215625e85017b393a096046c37849315d7c473d87e8c15c52fe8db887abf87",
     "design/source/token-metadata.json": "53db464280f6d381cf108cb78c1f894a1dd31d780a5045145d31e6bd925e637b",
-    "design/system.json": "aaca9cce9db20b4648e9e613ee990e3b4aee0cd1736eb89321bb34ea74fa725b",
-    "design/system.schema.json": "1cc0b16085ddf444ff59b3cb392ebb9cab96a3722b399adfebfea0450a5707dc",
+    "design/system.json": "55cbf28566866b141ff7aa88665e0018608203c35f8d2a56d112089897ca98b5",
+    "design/system.schema.json": "eb089a932a8da27fdf294615fcf7d6abd7d49519ee945a9c8527185279f59b06",
     "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
-    "design/theme/rules.json": "d2b4bea053062d1727e096a8f27ebed8af0e61d56d5afbc67650e9f0df7addf2",
-    "design/theme/rules.schema.json": "6097667bd2b89bc446ee625e1d0cf5c4708cc3e5eb28fcfb7f3bded329cc3461",
+    "design/theme/rules.json": "c6b0db62b22e18d29a115700073c6b6e8c74b3b9ff049c9afb766bb6dc71a844",
+    "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
     "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
-    "design/theme/themes.json": "a5ad5759bea5ffe7b4ac953cd0a54383a7c43716fc6d5d5406b51f19dfd5d118",
-    "scripts/generate-theme-system.py": "16341faa973795f33bf9739022ed04eabb4d4c2f8e883d798ba0998192847be2",
+    "design/theme/themes.json": "96865f75bda0471e2b6d618966068de5bddf9feb73ce565f98a6753114c520ae",
+    "scripts/generate-theme-system.py": "8ff848cb76ffeeb9f9ba33d152da09a945df4364c12a06040976025add200b41",
     "scripts/merge-design-system.py": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2"
   },
   "instances": [
@@ -1949,6 +1949,17 @@
                 "text": "#BEBEBE"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#B1B1B1",
+                "text": "#F5F5F5"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -3703,6 +3714,17 @@
                 "icon": "#BEBEBE",
                 "marker": null,
                 "text": "#BEBEBE"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#B1B1B1",
+                "text": "#F5F5F5"
               }
             },
             "range-thumb": {
@@ -5461,6 +5483,17 @@
                 "text": "#BEBEBE"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#B1B1B1",
+                "text": "#F5F5F5"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -7215,6 +7248,17 @@
                 "icon": "#BEBEBE",
                 "marker": null,
                 "text": "#BEBEBE"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#B1B1B1",
+                "text": "#F5F5F5"
               }
             },
             "range-thumb": {
@@ -8973,6 +9017,17 @@
                 "text": "#BEBEBE"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#B1B1B1",
+                "text": "#F5F5F5"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -10729,6 +10784,17 @@
                 "text": "#BEBEBE"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#B1B1B1",
+                "text": "#F5F5F5"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -12483,6 +12549,17 @@
                 "icon": "#BEBEBE",
                 "marker": null,
                 "text": "#BEBEBE"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#B1B1B1",
+                "text": "#F5F5F5"
               }
             },
             "range-thumb": {
@@ -14243,6 +14320,17 @@
                 "text": "#D7D7D7"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#C7C7C7",
+                "text": "#FFFFFF"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -15997,6 +16085,17 @@
                 "icon": "#D7D7D7",
                 "marker": null,
                 "text": "#D7D7D7"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#C7C7C7",
+                "text": "#FFFFFF"
               }
             },
             "range-thumb": {
@@ -17755,6 +17854,17 @@
                 "text": "#D7D7D7"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#C7C7C7",
+                "text": "#FFFFFF"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -19509,6 +19619,17 @@
                 "icon": "#D7D7D7",
                 "marker": null,
                 "text": "#D7D7D7"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#C7C7C7",
+                "text": "#FFFFFF"
               }
             },
             "range-thumb": {
@@ -21267,6 +21388,17 @@
                 "text": "#D7D7D7"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#C7C7C7",
+                "text": "#FFFFFF"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -23023,6 +23155,17 @@
                 "text": "#D7D7D7"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#C7C7C7",
+                "text": "#FFFFFF"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -24777,6 +24920,17 @@
                 "icon": "#D7D7D7",
                 "marker": null,
                 "text": "#D7D7D7"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#C7C7C7",
+                "text": "#FFFFFF"
               }
             },
             "range-thumb": {
@@ -26537,6 +26691,17 @@
                 "text": "#505050"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#636363",
+                "text": "#151515"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -28291,6 +28456,17 @@
                 "icon": "#505050",
                 "marker": null,
                 "text": "#505050"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#636363",
+                "text": "#151515"
               }
             },
             "range-thumb": {
@@ -30049,6 +30225,17 @@
                 "text": "#505050"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#636363",
+                "text": "#151515"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -31803,6 +31990,17 @@
                 "icon": "#505050",
                 "marker": null,
                 "text": "#505050"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#636363",
+                "text": "#151515"
               }
             },
             "range-thumb": {
@@ -33561,6 +33759,17 @@
                 "text": "#505050"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#636363",
+                "text": "#151515"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -35317,6 +35526,17 @@
                 "text": "#505050"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#636363",
+                "text": "#151515"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -37071,6 +37291,17 @@
                 "icon": "#505050",
                 "marker": null,
                 "text": "#505050"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#636363",
+                "text": "#151515"
               }
             },
             "range-thumb": {
@@ -38831,6 +39062,17 @@
                 "text": "#383838"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#505050",
+                "text": "#141412"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -40585,6 +40827,17 @@
                 "icon": "#383838",
                 "marker": null,
                 "text": "#383838"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#505050",
+                "text": "#141412"
               }
             },
             "range-thumb": {
@@ -42343,6 +42596,17 @@
                 "text": "#383838"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#505050",
+                "text": "#141412"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -44097,6 +44361,17 @@
                 "icon": "#383838",
                 "marker": null,
                 "text": "#383838"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#505050",
+                "text": "#141412"
               }
             },
             "range-thumb": {
@@ -45855,6 +46130,17 @@
                 "text": "#383838"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#505050",
+                "text": "#141412"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -47609,6 +47895,17 @@
                 "icon": "#383838",
                 "marker": null,
                 "text": "#383838"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#505050",
+                "text": "#141412"
               }
             },
             "range-thumb": {
@@ -49367,6 +49664,17 @@
                 "text": "#383838"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#505050",
+                "text": "#141412"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -49859,7 +50167,7 @@
       "provenance": {
         "brand_config": "design/brand/config.json",
         "brand_config_sha256": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
-        "contract_sha256": "ba76168cdd84f705ed4e4fdf056432c646a1521d0bd94d671494166964db3127",
+        "contract_sha256": "f4db4956ff8bd832f77c33e657543acff66aab2cd45036d36b80972a4ee55341",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -51792,6 +52100,17 @@
                 "text": "#9BBEFF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#87B0FF",
+                "text": "#F5F5F5"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -53546,6 +53865,17 @@
                 "icon": "#9BBEFF",
                 "marker": null,
                 "text": "#9BBEFF"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#87B0FF",
+                "text": "#F5F5F5"
               }
             },
             "range-thumb": {
@@ -55304,6 +55634,17 @@
                 "text": "#9BBEFF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#87B0FF",
+                "text": "#F5F5F5"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -57058,6 +57399,17 @@
                 "icon": "#9BBEFF",
                 "marker": null,
                 "text": "#9BBEFF"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#87B0FF",
+                "text": "#F5F5F5"
               }
             },
             "range-thumb": {
@@ -58816,6 +59168,17 @@
                 "text": "#9BBEFF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#87B0FF",
+                "text": "#F5F5F5"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -60572,6 +60935,17 @@
                 "text": "#9BBEFF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#87B0FF",
+                "text": "#F5F5F5"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -62326,6 +62700,17 @@
                 "icon": "#9BBEFF",
                 "marker": null,
                 "text": "#9BBEFF"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#87B0FF",
+                "text": "#F5F5F5"
               }
             },
             "range-thumb": {
@@ -64086,6 +64471,17 @@
                 "text": "#C3D8FF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#AAC8FF",
+                "text": "#FFFFFF"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -65840,6 +66236,17 @@
                 "icon": "#C3D8FF",
                 "marker": null,
                 "text": "#C3D8FF"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#AAC8FF",
+                "text": "#FFFFFF"
               }
             },
             "range-thumb": {
@@ -67598,6 +68005,17 @@
                 "text": "#C3D8FF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#AAC8FF",
+                "text": "#FFFFFF"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -69352,6 +69770,17 @@
                 "icon": "#C3D8FF",
                 "marker": null,
                 "text": "#C3D8FF"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#AAC8FF",
+                "text": "#FFFFFF"
               }
             },
             "range-thumb": {
@@ -71110,6 +71539,17 @@
                 "text": "#C3D8FF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#AAC8FF",
+                "text": "#FFFFFF"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -72866,6 +73306,17 @@
                 "text": "#C3D8FF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#AAC8FF",
+                "text": "#FFFFFF"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -74620,6 +75071,17 @@
                 "icon": "#C3D8FF",
                 "marker": null,
                 "text": "#C3D8FF"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#AAC8FF",
+                "text": "#FFFFFF"
               }
             },
             "range-thumb": {
@@ -76380,6 +76842,17 @@
                 "text": "#0840BB"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#1E57D3",
+                "text": "#151515"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -78134,6 +78607,17 @@
                 "icon": "#0840BB",
                 "marker": null,
                 "text": "#0840BB"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#1E57D3",
+                "text": "#151515"
               }
             },
             "range-thumb": {
@@ -79892,6 +80376,17 @@
                 "text": "#0840BB"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#1E57D3",
+                "text": "#151515"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -81646,6 +82141,17 @@
                 "icon": "#0840BB",
                 "marker": null,
                 "text": "#0840BB"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#1E57D3",
+                "text": "#151515"
               }
             },
             "range-thumb": {
@@ -83404,6 +83910,17 @@
                 "text": "#0840BB"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#1E57D3",
+                "text": "#151515"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -85160,6 +85677,17 @@
                 "text": "#0840BB"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#1E57D3",
+                "text": "#151515"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -86914,6 +87442,17 @@
                 "icon": "#0840BB",
                 "marker": null,
                 "text": "#0840BB"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#1E57D3",
+                "text": "#151515"
               }
             },
             "range-thumb": {
@@ -88674,6 +89213,17 @@
                 "text": "#00298D"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#0840BB",
+                "text": "#141412"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -90428,6 +90978,17 @@
                 "icon": "#00298D",
                 "marker": null,
                 "text": "#00298D"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#0840BB",
+                "text": "#141412"
               }
             },
             "range-thumb": {
@@ -92186,6 +92747,17 @@
                 "text": "#00298D"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#0840BB",
+                "text": "#141412"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -93940,6 +94512,17 @@
                 "icon": "#00298D",
                 "marker": null,
                 "text": "#00298D"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#0840BB",
+                "text": "#141412"
               }
             },
             "range-thumb": {
@@ -95698,6 +96281,17 @@
                 "text": "#00298D"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#0840BB",
+                "text": "#141412"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -97452,6 +98046,17 @@
                 "icon": "#00298D",
                 "marker": null,
                 "text": "#00298D"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#0840BB",
+                "text": "#141412"
               }
             },
             "range-thumb": {
@@ -99210,6 +99815,17 @@
                 "text": "#00298D"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#0840BB",
+                "text": "#141412"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -99702,7 +100318,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
         "brand_config_sha256": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
-        "contract_sha256": "ba76168cdd84f705ed4e4fdf056432c646a1521d0bd94d671494166964db3127",
+        "contract_sha256": "f4db4956ff8bd832f77c33e657543acff66aab2cd45036d36b80972a4ee55341",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -101635,6 +102251,17 @@
                 "text": "#FFA385"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#F79271",
+                "text": "#F5F5F5"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -103389,6 +104016,17 @@
                 "icon": "#FFA385",
                 "marker": null,
                 "text": "#FFA385"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#F79271",
+                "text": "#F5F5F5"
               }
             },
             "range-thumb": {
@@ -105147,6 +105785,17 @@
                 "text": "#FFA385"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#F79271",
+                "text": "#F5F5F5"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -106901,6 +107550,17 @@
                 "icon": "#FFA385",
                 "marker": null,
                 "text": "#FFA385"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#F79271",
+                "text": "#F5F5F5"
               }
             },
             "range-thumb": {
@@ -108659,6 +109319,17 @@
                 "text": "#FFA385"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#F79271",
+                "text": "#F5F5F5"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -110415,6 +111086,17 @@
                 "text": "#FFA385"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#F79271",
+                "text": "#F5F5F5"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -112169,6 +112851,17 @@
                 "icon": "#FFA385",
                 "marker": null,
                 "text": "#FFA385"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#F5F5F5",
+                "marker": "#F79271",
+                "text": "#F5F5F5"
               }
             },
             "range-thumb": {
@@ -113929,6 +114622,17 @@
                 "text": "#FFC9B8"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#FFB298",
+                "text": "#FFFFFF"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -115683,6 +116387,17 @@
                 "icon": "#FFC9B8",
                 "marker": null,
                 "text": "#FFC9B8"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#FFB298",
+                "text": "#FFFFFF"
               }
             },
             "range-thumb": {
@@ -117441,6 +118156,17 @@
                 "text": "#FFC9B8"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#FFB298",
+                "text": "#FFFFFF"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -119195,6 +119921,17 @@
                 "icon": "#FFC9B8",
                 "marker": null,
                 "text": "#FFC9B8"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#FFB298",
+                "text": "#FFFFFF"
               }
             },
             "range-thumb": {
@@ -120953,6 +121690,17 @@
                 "text": "#FFC9B8"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#FFB298",
+                "text": "#FFFFFF"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -122709,6 +123457,17 @@
                 "text": "#FFC9B8"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#FFB298",
+                "text": "#FFFFFF"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -124463,6 +125222,17 @@
                 "icon": "#FFC9B8",
                 "marker": null,
                 "text": "#FFC9B8"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#FFFFFF",
+                "marker": "#FFB298",
+                "text": "#FFFFFF"
               }
             },
             "range-thumb": {
@@ -126223,6 +126993,17 @@
                 "text": "#882E0A"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#9F4323",
+                "text": "#151515"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -127977,6 +128758,17 @@
                 "icon": "#882E0A",
                 "marker": null,
                 "text": "#882E0A"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#9F4323",
+                "text": "#151515"
               }
             },
             "range-thumb": {
@@ -129735,6 +130527,17 @@
                 "text": "#882E0A"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#9F4323",
+                "text": "#151515"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -131489,6 +132292,17 @@
                 "icon": "#882E0A",
                 "marker": null,
                 "text": "#882E0A"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#9F4323",
+                "text": "#151515"
               }
             },
             "range-thumb": {
@@ -133247,6 +134061,17 @@
                 "text": "#882E0A"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#9F4323",
+                "text": "#151515"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -135003,6 +135828,17 @@
                 "text": "#882E0A"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#9F4323",
+                "text": "#151515"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -136757,6 +137593,17 @@
                 "icon": "#882E0A",
                 "marker": null,
                 "text": "#882E0A"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#737370",
+                "focus": null,
+                "helper": null,
+                "icon": "#151515",
+                "marker": "#9F4323",
+                "text": "#151515"
               }
             },
             "range-thumb": {
@@ -138517,6 +139364,17 @@
                 "text": "#641C00"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#882E0A",
+                "text": "#141412"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -140271,6 +141129,17 @@
                 "icon": "#641C00",
                 "marker": null,
                 "text": "#641C00"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#882E0A",
+                "text": "#141412"
               }
             },
             "range-thumb": {
@@ -142029,6 +142898,17 @@
                 "text": "#641C00"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#882E0A",
+                "text": "#141412"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -143783,6 +144663,17 @@
                 "icon": "#641C00",
                 "marker": null,
                 "text": "#641C00"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#882E0A",
+                "text": "#141412"
               }
             },
             "range-thumb": {
@@ -145541,6 +146432,17 @@
                 "text": "#641C00"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#882E0A",
+                "text": "#141412"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -147297,6 +148199,17 @@
                 "text": "#641C00"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#882E0A",
+                "text": "#141412"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -149051,6 +149964,17 @@
                 "icon": "#641C00",
                 "marker": null,
                 "text": "#641C00"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#141412",
+                "marker": "#882E0A",
+                "text": "#141412"
               }
             },
             "range-thumb": {
@@ -149545,7 +150469,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json",
         "brand_config_sha256": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
-        "contract_sha256": "ba76168cdd84f705ed4e4fdf056432c646a1521d0bd94d671494166964db3127",
+        "contract_sha256": "f4db4956ff8bd832f77c33e657543acff66aab2cd45036d36b80972a4ee55341",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -149930,7 +150854,7 @@
           "c-radio-checked-mark": "#FFFFFF",
           "c-segmented-thumb": "#FFFFFF",
           "c-segmented-track": "#EDEDEC",
-          "c-status-badge-foreground": "#111111",
+          "c-status-badge-foreground": "#FFFFFF",
           "c-switch-on-ground": "#2059D5",
           "c-switch-on-thumb": "#FFFFFF",
           "c-tabs-selected-marker": "#1E57D3",
@@ -149988,7 +150912,7 @@
           "p-status-failed": "#111111",
           "p-status-info": "#111111",
           "p-status-running": "#111111",
-          "p-status-solid-foreground": "#111111",
+          "p-status-solid-foreground": "#FFFFFF",
           "p-status-succeeded": "#111111",
           "p-surface-0": "#B6B6B6",
           "p-surface-1": "#FCFCFB",
@@ -150262,7 +151186,7 @@
             "p-status-solid-foreground": {
               "dark": "#000000",
               "dark-ic": "#000000",
-              "light": "#111111",
+              "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
             },
             "p-status-succeeded": {
@@ -151564,6 +152488,17 @@
                 "text": "#9BBEFF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#E7E7E7",
+                "marker": "#87B0FF",
+                "text": "#E7E7E7"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -153318,6 +154253,17 @@
                 "icon": "#9BBEFF",
                 "marker": null,
                 "text": "#9BBEFF"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#E7E7E7",
+                "marker": "#87B0FF",
+                "text": "#E7E7E7"
               }
             },
             "range-thumb": {
@@ -155076,6 +156022,17 @@
                 "text": "#9BBEFF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#E7E7E7",
+                "marker": "#87B0FF",
+                "text": "#E7E7E7"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -156830,6 +157787,17 @@
                 "icon": "#9BBEFF",
                 "marker": null,
                 "text": "#9BBEFF"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#E7E7E7",
+                "marker": "#87B0FF",
+                "text": "#E7E7E7"
               }
             },
             "range-thumb": {
@@ -158588,6 +159556,17 @@
                 "text": "#9BBEFF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#E7E7E7",
+                "marker": "#87B0FF",
+                "text": "#E7E7E7"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -160344,6 +161323,17 @@
                 "text": "#9BBEFF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#E7E7E7",
+                "marker": "#87B0FF",
+                "text": "#E7E7E7"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#1A1A19",
@@ -162098,6 +163088,17 @@
                 "icon": "#9BBEFF",
                 "marker": null,
                 "text": "#9BBEFF"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#1A1A19",
+                "boundary": "#A3A39E",
+                "focus": null,
+                "helper": null,
+                "icon": "#E7E7E7",
+                "marker": "#87B0FF",
+                "text": "#E7E7E7"
               }
             },
             "range-thumb": {
@@ -163858,6 +164859,17 @@
                 "text": "#C3D8FF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#EEEEEE",
+                "marker": "#AAC8FF",
+                "text": "#EEEEEE"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -165612,6 +166624,17 @@
                 "icon": "#C3D8FF",
                 "marker": null,
                 "text": "#C3D8FF"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#EEEEEE",
+                "marker": "#AAC8FF",
+                "text": "#EEEEEE"
               }
             },
             "range-thumb": {
@@ -167370,6 +168393,17 @@
                 "text": "#C3D8FF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#EEEEEE",
+                "marker": "#AAC8FF",
+                "text": "#EEEEEE"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -169124,6 +170158,17 @@
                 "icon": "#C3D8FF",
                 "marker": null,
                 "text": "#C3D8FF"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#EEEEEE",
+                "marker": "#AAC8FF",
+                "text": "#EEEEEE"
               }
             },
             "range-thumb": {
@@ -170882,6 +171927,17 @@
                 "text": "#C3D8FF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#EEEEEE",
+                "marker": "#AAC8FF",
+                "text": "#EEEEEE"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -172638,6 +173694,17 @@
                 "text": "#C3D8FF"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#EEEEEE",
+                "marker": "#AAC8FF",
+                "text": "#EEEEEE"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#171715",
@@ -174392,6 +175459,17 @@
                 "icon": "#C3D8FF",
                 "marker": null,
                 "text": "#C3D8FF"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#171715",
+                "boundary": "#C8C0B4",
+                "focus": null,
+                "helper": null,
+                "icon": "#EEEEEE",
+                "marker": "#AAC8FF",
+                "text": "#EEEEEE"
               }
             },
             "range-thumb": {
@@ -176152,6 +177230,17 @@
                 "text": "#033AB5"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#444444",
+                "focus": null,
+                "helper": null,
+                "icon": "#181818",
+                "marker": "#1E57D3",
+                "text": "#181818"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -177906,6 +178995,17 @@
                 "icon": "#033AB5",
                 "marker": null,
                 "text": "#033AB5"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#444444",
+                "focus": null,
+                "helper": null,
+                "icon": "#181818",
+                "marker": "#1E57D3",
+                "text": "#181818"
               }
             },
             "range-thumb": {
@@ -179664,6 +180764,17 @@
                 "text": "#033AB5"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#444444",
+                "focus": null,
+                "helper": null,
+                "icon": "#181818",
+                "marker": "#1E57D3",
+                "text": "#181818"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -181418,6 +182529,17 @@
                 "icon": "#033AB5",
                 "marker": null,
                 "text": "#033AB5"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#444444",
+                "focus": null,
+                "helper": null,
+                "icon": "#181818",
+                "marker": "#1E57D3",
+                "text": "#181818"
               }
             },
             "range-thumb": {
@@ -183176,6 +184298,17 @@
                 "text": "#033AB5"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#444444",
+                "focus": null,
+                "helper": null,
+                "icon": "#181818",
+                "marker": "#1E57D3",
+                "text": "#181818"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -184932,6 +186065,17 @@
                 "text": "#033AB5"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#444444",
+                "focus": null,
+                "helper": null,
+                "icon": "#181818",
+                "marker": "#1E57D3",
+                "text": "#181818"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -186686,6 +187830,17 @@
                 "icon": "#033AB5",
                 "marker": null,
                 "text": "#033AB5"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#444444",
+                "focus": null,
+                "helper": null,
+                "icon": "#181818",
+                "marker": "#1E57D3",
+                "text": "#181818"
               }
             },
             "range-thumb": {
@@ -188446,6 +189601,17 @@
                 "text": "#00298D"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#111111",
+                "marker": "#0840BB",
+                "text": "#111111"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -190200,6 +191366,17 @@
                 "icon": "#00298D",
                 "marker": null,
                 "text": "#00298D"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#111111",
+                "marker": "#0840BB",
+                "text": "#111111"
               }
             },
             "range-thumb": {
@@ -191958,6 +193135,17 @@
                 "text": "#00298D"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#111111",
+                "marker": "#0840BB",
+                "text": "#111111"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -193712,6 +194900,17 @@
                 "icon": "#00298D",
                 "marker": null,
                 "text": "#00298D"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#111111",
+                "marker": "#0840BB",
+                "text": "#111111"
               }
             },
             "range-thumb": {
@@ -195470,6 +196669,17 @@
                 "text": "#00298D"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#111111",
+                "marker": "#0840BB",
+                "text": "#111111"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -197224,6 +198434,17 @@
                 "icon": "#00298D",
                 "marker": null,
                 "text": "#00298D"
+              }
+            },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#111111",
+                "marker": "#0840BB",
+                "text": "#111111"
               }
             },
             "range-thumb": {
@@ -198982,6 +200203,17 @@
                 "text": "#00298D"
               }
             },
+            "progress-track": {
+              "rest": {
+                "background": "#FFFFFF",
+                "boundary": "#4E4A41",
+                "focus": null,
+                "helper": null,
+                "icon": "#111111",
+                "marker": "#0840BB",
+                "text": "#111111"
+              }
+            },
             "range-thumb": {
               "disabled": {
                 "background": "#FFFFFF",
@@ -199474,7 +200706,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
         "brand_config_sha256": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
-        "contract_sha256": "ba76168cdd84f705ed4e4fdf056432c646a1521d0bd94d671494166964db3127",
+        "contract_sha256": "f4db4956ff8bd832f77c33e657543acff66aab2cd45036d36b80972a4ee55341",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {
@@ -199537,7 +200769,7 @@
             "p-status-solid-foreground": {
               "dark": "#000000",
               "dark-ic": "#000000",
-              "light": "#111111",
+              "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
             },
             "p-status-succeeded": {
@@ -199568,11 +200800,11 @@
         }
       },
       "schema_version": "2.0.0",
-      "version": "1.0.0"
+      "version": "1.0.1"
     }
   ],
-  "rules_version": "1.6.1",
-  "schema_version": "1.2.0",
+  "rules_version": "1.7.0",
+  "schema_version": "1.3.0",
   "theme_input_contract": {
     "constraints_ref": "design/brand/policy.json",
     "contract_version": "1.0.0",
@@ -199613,15 +200845,15 @@
       "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py": "f48e97e00a0f8da9d0b373d4636da251c35cbdc667b33a03b9679e00460e1acc",
       "design/source/base.tokens.json": "16215625e85017b393a096046c37849315d7c473d87e8c15c52fe8db887abf87",
       "design/source/token-metadata.json": "53db464280f6d381cf108cb78c1f894a1dd31d780a5045145d31e6bd925e637b",
-      "design/system.schema.json": "1cc0b16085ddf444ff59b3cb392ebb9cab96a3722b399adfebfea0450a5707dc",
+      "design/system.schema.json": "eb089a932a8da27fdf294615fcf7d6abd7d49519ee945a9c8527185279f59b06",
       "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
-      "design/theme/rules.json": "d2b4bea053062d1727e096a8f27ebed8af0e61d56d5afbc67650e9f0df7addf2",
-      "design/theme/rules.schema.json": "6097667bd2b89bc446ee625e1d0cf5c4708cc3e5eb28fcfb7f3bded329cc3461",
+      "design/theme/rules.json": "c6b0db62b22e18d29a115700073c6b6e8c74b3b9ff049c9afb766bb6dc71a844",
+      "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
       "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
-      "scripts/generate-theme-system.py": "16341faa973795f33bf9739022ed04eabb4d4c2f8e883d798ba0998192847be2",
+      "scripts/generate-theme-system.py": "8ff848cb76ffeeb9f9ba33d152da09a945df4364c12a06040976025add200b41",
       "scripts/merge-design-system.py": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2"
     },
-    "rules_version": "1.6.1",
+    "rules_version": "1.7.0",
     "status_base_allowed_roles": [
       "p-status-failed",
       "p-status-info",
@@ -199638,6 +200870,6 @@
       "light-ic",
       "dark-ic"
     ],
-    "surface_schema_version": "1.2.0"
+    "surface_schema_version": "1.3.0"
   }
 }

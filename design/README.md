@@ -28,6 +28,10 @@ Python 是设计开发工具，不是 token 颜色消费的运行时依赖。离
 
 Theme 实例由 `scripts/generate-theme-system.py` 从定义/规则产生；普通 Rust Theme verifier 在 design-export，tokens 的 build.rs 校验后产生 typed token 与品牌/Theme 表。它们是同一链的不同阶段，须由单一共享 owner 同步输入、版本、锁和输出，不再建第二套引擎。默认、显式外部 Theme＋独立锁、legacy 行为分别遵守既有接口契约；不能通过“简化架构”放松 freshness、来源或拒绝条件。具体消费差距及 #55/#136 的职责见 [架构与平台边界](../docs/platform-boundary.md)。
 
+本地接收的 rules 1.7.0 / Surface schema 1.3.0 在原 31 个用途上增加 `progress-track/rest`：轨道背景、必要边界和进度 marker 来自完整共享包，focus/helper 为空；rest 不替代业务 loading/error/success/indeterminate 状态。Python 与正常 Rust 校验同守旧用途状态和必要对比，组件接入仍由 #72 按原范围验收。
+
+#62 的既有 solid-status 修复与 #71 共享生成链一并接收：`blue-inputs` 1.0.1 仅修正 light 的实心状态标签前景；四状态标签对底色遵守普通 4.5、增强 7.0。普通 Surface 前景不能替代实心标签检查。生成产物和来源锁必须由原工具产生；外部 Theme 的独立锁、自洽语义拒绝与合法恢复仍是验证要求。此次接收不代表 StatusBadge/Progress 组件迁移、原生无障碍或完整 Design System 已完成，交付记录入口为 #136。
+
 包静态 schema/颜色检查与项目 Rust 测试、实际截图、人工目测、真实输入及性能分别验收。导入包 reports 不自动成为当前原生实现的通过证据。版本与发布规则仍适用；Design System 提案编号不是项目 SemVer。Git 提交、阶段标签与正式发布分别由用户授权。
 
 ## 主线历史约定的承接

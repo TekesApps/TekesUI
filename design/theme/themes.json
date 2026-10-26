@@ -45,7 +45,7 @@
     "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
     "id": "blue-inputs",
     "schema_version": "2.0.0",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "inputs": {
       "contract_version": "1.0.0",
       "shared_contract_ref": "design/system.json#/theme_system/theme_input_contract",
@@ -114,7 +114,7 @@
             "dark-ic": "#BDFFD2"
           },
           "p-status-solid-foreground": {
-            "light": "#111111",
+            "light": "#FFFFFF",
             "dark": "#000000",
             "light-ic": "#FFFFFF",
             "dark-ic": "#000000"

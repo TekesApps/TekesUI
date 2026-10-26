@@ -406,10 +406,10 @@
               "const": "tekesui.theme-instances/2"
             },
             "surface_schema_version": {
-              "const": "1.2.0"
+              "const": "1.3.0"
             },
             "rules_version": {
-              "const": "1.6.1"
+              "const": "1.7.0"
             },
             "supported_modes": {
               "const": [

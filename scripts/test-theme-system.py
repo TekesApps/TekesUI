@@ -16,6 +16,47 @@ spec.loader.exec_module(g)
 
 class ThemeSystemTests(unittest.TestCase):
     def rules(self): return g.merge.load(ROOT / 'design/theme/rules.json')
+    def test_progress_is_one_shared_passive_rest_packet(self):
+        r=self.rules(); p=g.validate(r)
+        self.assertEqual(set(p['progress-track']), {'rest'})
+        self.assertEqual(p['progress-track']['rest'], dict(background='surface-2',text='primary-text',icon='primary-text',boundary='border',focus=None,marker='c-progress-active',helper=None))
+        for surface in r['surfaces'].values():self.assertEqual(surface['usages']['progress-track'],'progress-track')
+    def test_progress_rejects_missing_uses_channels_and_invented_states(self):
+        r=self.rules(); del r['surfaces']['canvas']['usages']['progress-track']
+        with self.assertRaises(Exception):g.bindings(r)
+        for channel in g.CHANNELS:
+            r=self.rules();del r['profiles']['progress-track']['rest'][channel]
+            with self.assertRaises(Exception):g.bindings(r)
+        for channel in ['background','text','icon','boundary','marker']:
+            r=self.rules();r['profiles']['progress-track']['rest'][channel]=None
+            with self.assertRaises(Exception):g.bindings(r)
+        for channel in ['focus','helper']:
+            r=self.rules();r['profiles']['progress-track']['rest'][channel]='primary-text'
+            with self.assertRaisesRegex(ValueError,'progress track requires'):g.bindings(r)
+        for state in g.STATES[1:]:
+            r=self.rules();r['profiles']['progress-track'][state]=copy.deepcopy(r['profiles']['progress-track']['rest'])
+            with self.assertRaises(Exception):g.bindings(r)
+    def test_rest_only_cannot_downgrade_any_previous_use_directly_or_indirectly(self):
+        for usage in set(g.USES)-{'progress-track'}:
+            for indirect in [False,True]:
+                r=self.rules()
+                r['profiles']['passive-alias']={'extends':'progress-track'}
+                r['surfaces']['canvas']['usages'][usage]='passive-alias' if indirect else 'progress-track'
+                with self.assertRaisesRegex(ValueError,'incomplete or unsupported states'):g.bindings(r)
+    def test_rest_only_inherited_overrides_and_unused_malformed_profiles_rejected(self):
+        for state in ['disabled','hover']:
+            r=self.rules();r['profiles']['unused']={'extends':'progress-track','state_overrides':{state:{'text':'primary-text'}}}
+            with self.assertRaisesRegex(ValueError,'override of inapplicable state'):g.bindings(r)
+        r=self.rules();r['profiles']['unused']={'rest':copy.deepcopy(r['profiles']['progress-track']['rest']),'hover':copy.deepcopy(r['profiles']['progress-track']['rest'])}
+        with self.assertRaises(Exception):g.bindings(r)
+    def test_normal_generation_rejects_low_progress_marker_and_boundary(self):
+        load=g.merge.load
+        for channel,role,message in [('marker','surface-2','insufficient foreground contrast'),('boundary','surface-2','insufficient progress boundary contrast')]:
+            r=self.rules();r['profiles']['progress-track']['rest'][channel]=role
+            def changed(path):return copy.deepcopy(r) if path == ROOT/'design/theme/rules.json' else load(path)
+            with patch.object(g.merge,'load',side_effect=changed):
+                with self.assertRaisesRegex(ValueError,message):g.generate()
+
     def test_link_rejects_invented_marker_helper_in_every_original_state(self):
         for state in ['rest','hover','pressed','disabled']:
             for channel in ['marker','helper']:
@@ -121,7 +162,11 @@ class ThemeSystemTests(unittest.TestCase):
         canonical=lambda x:json.dumps(x,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
         self.assertEqual(sum(x['surface_packet_count'] for x in fixture['themes']),15792)
         for record in fixture['themes']:
-            packet=next(i for i in instances if i['id']==record['theme_id'])['modes'][record['mode']]
+            current=next(i for i in instances if i['id']==record['theme_id'])['modes'][record['mode']]
+            # The frozen v1.6.1 baseline covers the original 31 uses. New passive
+            # progress packets are checked separately; never rewrite the old fixture.
+            packet={surface:{usage:states for usage,states in uses.items() if usage != 'progress-track'} for surface,uses in current.items()}
+            self.assertEqual(sum(len(states) for uses in packet.values() for states in uses.values()),record['surface_packet_count'])
             self.assertEqual(hashlib.sha256(canonical(packet)).hexdigest(),record['canonical_sha256'],(record['theme_id'],record['mode']))
         for mode in g.MODES:
             default=instances[0]['modes'][mode]
@@ -364,5 +409,52 @@ class ThemeSystemTests(unittest.TestCase):
         def with_rules(path):return r if path==ROOT/'design/theme/rules.json'else load(path)
         with patch.object(g.merge,'load',side_effect=with_rules):
             with self.assertRaisesRegex(ValueError,'insufficient focus contrast'):g.generate()
+
+    def solid_status_bundle(self):
+        return {'color': {'tokens': [
+            {'name': role, 'value': {mode: '#FFFFFF' if role == 'c-status-badge-foreground' else '#000000' for mode in g.MODES}}
+            for role in ['c-status-badge-foreground', 'status-info', 'status-running', 'status-succeeded', 'status-failed']
+        ]}}
+
+    def test_solid_status_rejects_each_same_color_mode_and_tone(self):
+        base = self.solid_status_bundle()
+        g.verify_solid_status_foregrounds(base)
+        for mode in g.MODES:
+            for tone in ['info', 'running', 'succeeded', 'failed']:
+                with self.subTest(mode=mode, tone=tone):
+                    bad = copy.deepcopy(base)
+                    next(t for t in bad['color']['tokens'] if t['name'] == 'status-' + tone)['value'][mode] = '#FFFFFF'
+                    with self.assertRaisesRegex(ValueError, 'insufficient solid status foreground contrast: ' + mode + '/' + tone):
+                        g.verify_solid_status_foregrounds(bad)
+
+    def test_solid_status_enhanced_mode_requires_existing_quality_seven(self):
+        bundle = self.solid_status_bundle()
+        bundle['color']['tokens'][1]['value']['light'] = '#767676'
+        g.verify_solid_status_foregrounds(bundle)
+        bundle['color']['tokens'][1]['value']['light-ic'] = '#767676'
+        with self.assertRaisesRegex(ValueError, 'solid status foreground contrast: light-ic/info'):
+            g.verify_solid_status_foregrounds(bundle)
+
+    def test_solid_status_missing_roles_or_modes_are_rejected(self):
+        base = self.solid_status_bundle()
+        for role in ['c-status-badge-foreground', 'status-info', 'status-running', 'status-succeeded', 'status-failed']:
+            bad = copy.deepcopy(base)
+            bad['color']['tokens'] = [t for t in bad['color']['tokens'] if t['name'] != role]
+            with self.assertRaisesRegex(ValueError, 'unknown/duplicate proposal token'):
+                g.verify_solid_status_foregrounds(bad)
+            for mode in g.MODES:
+                bad = copy.deepcopy(base)
+                next(t for t in bad['color']['tokens'] if t['name'] == role)['value'].pop(mode)
+                with self.assertRaises(KeyError):
+                    g.verify_solid_status_foregrounds(bad)
+
+    def test_solid_status_regenerated_bad_definition_is_rejected(self):
+        path = ROOT / 'design/theme/themes.json'
+        definitions = copy.deepcopy(g.merge.load(path))
+        next(t for t in definitions if t['id'] == 'blue-inputs')['inputs']['overrides']['status_base']['p-status-solid-foreground']['light'] = '#111111'
+        load = g.merge.load
+        with patch.object(g.merge, 'load', side_effect=lambda p: definitions if p == path else load(p)):
+            with self.assertRaisesRegex(ValueError, 'solid status foreground contrast: light/info'):
+                g.generate()
 
 if __name__=='__main__':unittest.main()

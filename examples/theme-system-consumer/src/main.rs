@@ -220,30 +220,77 @@ mod tests {
         let tokens = load("design/tokens.json");
         theme_system::verify_theme_system(&temp, &tokens).unwrap();
         let path = temp.join("design/theme/generated/instances.json");
+        let lock_path = temp.join("design/theme/artifact.lock.json");
+        let original_output_bytes = std::fs::read(&path).unwrap();
+        let original_lock_bytes = std::fs::read(&lock_path).unwrap();
+        use sha2::{Digest, Sha256};
+        let hash = |bytes: &[u8]| {
+            Sha256::digest(bytes)
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect::<String>()
+        };
+        // Keep the raw output lock self-consistent so semantic checks, rather
+        // than the earlier digest guard, decide these modified-output cases.
+        let write_consistent_output = |bad: &serde_json::Value| {
+            let bytes = serde_json::to_vec(bad).unwrap();
+            let mut lock: serde_json::Value = serde_json::from_slice(&original_lock_bytes).unwrap();
+            lock["instances_sha256"] = json!(hash(&bytes));
+            lock["source_inputs_sha256"] = bad["inputs_sha256"].clone();
+            let sorted_inputs = bad["inputs_sha256"]
+                .as_object()
+                .unwrap()
+                .iter()
+                .collect::<std::collections::BTreeMap<_, _>>();
+            lock["source_inputs_sha256_digest"] =
+                json!(hash(&serde_json::to_vec(&sorted_inputs).unwrap()));
+            std::fs::write(&path, bytes).unwrap();
+            std::fs::write(&lock_path, serde_json::to_vec(&lock).unwrap()).unwrap();
+        };
         let mut bad = output.clone();
+        assert_ne!(
+            bad["instances"][0]["modes"]["light"]["panel"]["action-quiet"]["hover"]["text"],
+            json!("#FFFFFF")
+        );
         bad["instances"][0]["modes"]["light"]["panel"]["action-quiet"]["hover"]["text"] =
             json!("#FFFFFF");
         std::fs::write(&path, serde_json::to_vec(&bad).unwrap()).unwrap();
         assert!(
             theme_system::verify_theme_system(&temp, &tokens)
                 .unwrap_err()
-                .contains("does not match its reviewed source lock")
+                .contains("Theme artifact does not match its reviewed source lock")
+        );
+        write_consistent_output(&bad);
+        assert!(
+            theme_system::verify_theme_system(&temp, &tokens)
+                .unwrap_err()
+                .contains("modified/incomplete")
         );
         let mut bad = output.clone();
         bad["instances"][0]["modes"]
             .as_object_mut()
             .unwrap()
             .remove("dark-ic");
-        std::fs::write(&path, serde_json::to_vec(&bad).unwrap()).unwrap();
-        assert!(theme_system::verify_theme_system(&temp, &tokens).is_err());
+        write_consistent_output(&bad);
+        assert!(
+            theme_system::verify_theme_system(&temp, &tokens)
+                .unwrap_err()
+                .contains("modified/incomplete")
+        );
         let mut bad = output.clone();
         bad["inputs_sha256"]
             .as_object_mut()
             .unwrap()
             .remove("design/theme/rules.json");
-        std::fs::write(&path, serde_json::to_vec(&bad).unwrap()).unwrap();
-        assert!(theme_system::verify_theme_system(&temp, &tokens).is_err());
-        std::fs::copy(source.join("design/theme/generated/instances.json"), &path).unwrap();
+        write_consistent_output(&bad);
+        assert!(
+            theme_system::verify_theme_system(&temp, &tokens)
+                .unwrap_err()
+                .contains("missing Theme input: design/theme/rules.json")
+        );
+        std::fs::write(&path, &original_output_bytes).unwrap();
+        std::fs::write(&lock_path, &original_lock_bytes).unwrap();
+        theme_system::verify_theme_system(&temp, &tokens).unwrap();
         std::fs::write(
             temp.join("design/theme/generated/surface_rules.rs"),
             b"tampered while hashes retained",

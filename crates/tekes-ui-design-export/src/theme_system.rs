@@ -25,7 +25,7 @@ const STATES: [&str; 8] = [
     "selected-pressed",
     "selected-disabled",
 ];
-const USES: [&str; 31] = [
+const USES: [&str; 32] = [
     "content",
     "content-selectable",
     "action-quiet",
@@ -57,6 +57,7 @@ const USES: [&str; 31] = [
     "content-status-running",
     "content-status-succeeded",
     "content-status-failed",
+    "progress-track",
 ];
 
 fn validate_use_channels(usage: &str, state: &str, pair: &Value) -> Result<(), String> {
@@ -71,6 +72,13 @@ fn validate_use_channels(usage: &str, state: &str, pair: &Value) -> Result<(), S
     {
         return Err("passive status content requires parent ground and forbids boundary/focus/marker/helper".into());
     }
+    if usage == "progress-track"
+        && (pair["boundary"].is_null()
+            || pair["marker"].is_null()
+            || ["focus", "helper"].iter().any(|k| !pair[k].is_null()))
+    {
+        return Err("progress track requires boundary/marker and forbids focus/helper".into());
+    }
     let focus_free = usage.starts_with("content-status-")
         || [
             "content",
@@ -79,6 +87,7 @@ fn validate_use_channels(usage: &str, state: &str, pair: &Value) -> Result<(), S
             "toggle-thumb",
             "range-track",
             "surface-frame",
+            "progress-track",
         ]
         .contains(&usage);
     let needs_focus = !focus_free && !state.contains("disabled");
@@ -673,8 +682,8 @@ pub fn compile_surface_rules(rules: &Value) -> Result<String, String> {
         ],
     )?;
     if rules["format"] != "tekesui.theme-rules/1"
-        || rules["schema_version"] != "1.2.0"
-        || rules["rules_version"] != "1.6.1"
+        || rules["schema_version"] != "1.3.0"
+        || rules["rules_version"] != "1.7.0"
         || rules["modes"] != serde_json::json!(["light", "dark", "light-ic", "dark-ic"])
     {
         return Err("unsupported Theme schema/rules/modes".into());
@@ -690,8 +699,8 @@ pub fn compile_surface_rules(rules: &Value) -> Result<String, String> {
             .as_object()
             .filter(|v| !v.is_empty())
             .ok_or("empty profile")?;
-        if !states.contains_key("rest") || !states.contains_key("disabled") {
-            return Err("profile requires rest and disabled".into());
+        if !states.contains_key("rest") || (states.len() != 1 && !states.contains_key("disabled")) {
+            return Err("profile requires rest and disabled or exactly rest".into());
         }
         for (state, pair) in states {
             if !STATES.contains(&state.as_str()) {
@@ -749,6 +758,7 @@ pub fn compile_surface_rules(rules: &Value) -> Result<String, String> {
                 | "content-status-running"
                 | "content-status-succeeded"
                 | "content-status-failed" => &["rest", "disabled"],
+                "progress-track" => &["rest"],
                 "link" | "range-track" | "range-thumb" => &STATES[..4],
                 _ => &STATES,
             };
@@ -929,7 +939,7 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
         }
     }
     // Check the actual selected palette too, including explicit offline consumer artifacts.
-    verify_range_boundaries(&rules, &tokens["proposal"]["tokens"])?;
+    verify_track_boundaries(&rules, &tokens["proposal"]["tokens"])?;
     verify_surface_foregrounds(&rules, &tokens["proposal"]["tokens"])?;
     let gallery: Value =
         serde_json::from_slice(&read("design/gallery/brands.json")?).map_err(|e| e.to_string())?;
@@ -937,7 +947,7 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
         .as_array()
         .ok_or("missing Gallery palettes")?
     {
-        verify_range_boundaries(&rules, &serde_json::json!({"color": preset["color"]}))?;
+        verify_track_boundaries(&rules, &serde_json::json!({"color": preset["color"]}))?;
         verify_surface_foregrounds(&rules, &serde_json::json!({"color": preset["color"]}))?;
     }
     verify_instances(root, &rules, &instances, &input_contract)?;
@@ -1121,6 +1131,31 @@ fn color_luminance(color: &Value) -> Result<f64, String> {
     Ok(linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722)
 }
 
+/// Validate the existing solid status label/ground pairs, independently of Surface packets.
+fn verify_solid_status_foregrounds(palette: &Value) -> Result<(), String> {
+    for mode in ["light", "dark", "light-ic", "dark-ic"] {
+        let foreground = color_luminance(
+            &resolved(palette, "c-status-badge-foreground", mode, 0).map_err(|error| {
+                format!("invalid solid status role {mode}/c-status-badge-foreground: {error}")
+            })?,
+        )?;
+        let minimum = if mode.ends_with("-ic") { 7.0 } else { 4.5 };
+        for tone in ["info", "running", "succeeded", "failed"] {
+            let role = format!("status-{tone}");
+            let background =
+                color_luminance(&resolved(palette, &role, mode, 0).map_err(|error| {
+                    format!("invalid solid status role {mode}/{role}: {error}")
+                })?)?;
+            if (foreground.max(background) + 0.05) / (foreground.min(background) + 0.05) < minimum {
+                return Err(format!(
+                    "insufficient solid status foreground contrast: {mode}/{tone}"
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Mirror the shared generator's foreground constraints in the ordinary build,
 /// even when an author has consistently regenerated every output and hash.
 fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), String> {
@@ -1185,45 +1220,52 @@ fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), Stri
     Ok(())
 }
 
-/// A necessary range rail must remain visible against both its own fill and parent.
+/// A necessary range or passive progress rail must remain visible against both its own fill and parent.
 /// This is a compiler constraint, never an RGB-to-Surface identity inference.
-fn verify_range_boundaries(rules: &Value, palette: &Value) -> Result<(), String> {
+fn verify_track_boundaries(rules: &Value, palette: &Value) -> Result<(), String> {
     let profiles = expanded_profiles(rules)?;
     for mode in ["light", "dark", "light-ic", "dark-ic"] {
         for (surface, definition) in rules["surfaces"].as_object().ok_or("missing surfaces")? {
             let parent = definition["background"]
                 .as_str()
                 .ok_or("missing parent ground")?;
-            let profile = definition["usages"]["range-track"]
-                .as_str()
-                .ok_or("missing range track")?;
-            for (state, pair) in profiles[profile]
-                .as_object()
-                .ok_or("missing range profile")?
-            {
-                if state == "disabled" {
-                    continue;
-                }
-                let luminance = |channel: &str| -> Result<f64, String> {
-                    let role = pair[channel]
-                        .as_str()
-                        .ok_or("missing required range boundary")?;
-                    color_luminance(&resolved(
-                        palette,
-                        if role == "$surface" { parent } else { role },
-                        mode,
-                        0,
-                    )?)
-                };
-                let edge = luminance("boundary")?;
-                for ground in [
-                    luminance("background")?,
-                    color_luminance(&resolved(palette, parent, mode, 0)?)?,
-                ] {
-                    if (edge.max(ground) + 0.05) / (edge.min(ground) + 0.05) < 3.0 {
-                        return Err(format!(
-                            "insufficient range boundary contrast: {mode}/{surface}/{state}"
-                        ));
+            for usage in ["range-track", "progress-track"] {
+                let profile = definition["usages"][usage]
+                    .as_str()
+                    .ok_or("missing required track")?;
+                for (state, pair) in profiles[profile]
+                    .as_object()
+                    .ok_or("missing range profile")?
+                {
+                    if state == "disabled" {
+                        continue;
+                    }
+                    let luminance = |channel: &str| -> Result<f64, String> {
+                        let role = pair[channel]
+                            .as_str()
+                            .ok_or("missing required track boundary")?;
+                        color_luminance(&resolved(
+                            palette,
+                            if role == "$surface" { parent } else { role },
+                            mode,
+                            0,
+                        )?)
+                    };
+                    let edge = luminance("boundary")?;
+                    for ground in [
+                        luminance("background")?,
+                        color_luminance(&resolved(palette, parent, mode, 0)?)?,
+                    ] {
+                        if (edge.max(ground) + 0.05) / (edge.min(ground) + 0.05) < 3.0 {
+                            return Err(format!(
+                                "insufficient {} boundary contrast: {mode}/{surface}/{state}",
+                                if usage == "range-track" {
+                                    "range"
+                                } else {
+                                    "progress"
+                                }
+                            ));
+                        }
                     }
                 }
             }
@@ -1408,8 +1450,9 @@ fn verify_instances(
             effective_tokens.push(serde_json::json!({"name":name,"value":values}));
         }
         let effective_roles = serde_json::json!({"color":{"tokens":effective_tokens}});
-        verify_range_boundaries(rules, &effective_roles)?;
+        verify_track_boundaries(rules, &effective_roles)?;
         verify_surface_foregrounds(rules, &effective_roles)?;
+        verify_solid_status_foregrounds(&effective_roles)?;
         let mut expected_modes = serde_json::Map::new();
         for mode in ["light", "dark", "light-ic", "dark-ic"] {
             let mut surfaces = serde_json::Map::new();
@@ -1769,7 +1812,7 @@ mod central_theme_input_tests {
 mod range_boundary_tests {
     use super::*;
     fn rules() -> Value {
-        serde_json::json!({"profiles":{"track":{"rest":{"background":"rail","boundary":"edge"},"disabled":{"background":"rail","boundary":"rail"}}},"surfaces":{"canvas":{"background":"parent","usages":{"range-track":"track"}}}})
+        serde_json::json!({"profiles":{"track":{"rest":{"background":"rail","boundary":"edge"},"disabled":{"background":"rail","boundary":"rail"}}},"surfaces":{"canvas":{"background":"parent","usages":{"range-track":"track","progress-track":"track"}}}})
     }
     fn palette(parent: &str, rail: &str, edge: &str) -> Value {
         serde_json::json!({"color":{"tokens":[{"name":"parent","value":parent},{"name":"rail","value":rail},{"name":"edge","value":edge}]}})
@@ -1793,7 +1836,7 @@ mod range_boundary_tests {
             palette("#666666", "#FFFFFF", "#666666"),
         ] {
             assert!(
-                verify_range_boundaries(&r, &p)
+                verify_track_boundaries(&r, &p)
                     .unwrap_err()
                     .contains("insufficient range boundary contrast")
             );
@@ -1802,7 +1845,7 @@ mod range_boundary_tests {
     #[test]
     fn active_boundary_passes_without_imposing_enabled_contrast_on_disabled() {
         assert!(
-            verify_range_boundaries(&rules(), &palette("#FFFFFF", "#FFFFFF", "#666666")).is_ok()
+            verify_track_boundaries(&rules(), &palette("#FFFFFF", "#FFFFFF", "#666666")).is_ok()
         );
     }
 }
@@ -2040,5 +2083,180 @@ mod link_anatomy_tests {
                 );
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod progress_tests {
+    use super::*;
+    fn rules() -> Value {
+        serde_json::from_str(include_str!("../../../design/theme/rules.json")).unwrap()
+    }
+    #[test]
+    fn passive_progress_packet_and_every_previous_state_contract_remain_exact() {
+        let r = rules();
+        assert!(
+            compile_surface_rules(&r)
+                .unwrap()
+                .contains("progress-track")
+        );
+        assert_eq!(
+            r["profiles"]["progress-track"].as_object().unwrap().len(),
+            1
+        );
+        for usage in USES.into_iter().filter(|u| *u != "progress-track") {
+            for indirect in [false, true] {
+                let mut r = rules();
+                r["profiles"]["passive-alias"] = serde_json::json!({"extends":"progress-track"});
+                r["surfaces"]["canvas"]["usages"][usage] = Value::from(if indirect {
+                    "passive-alias"
+                } else {
+                    "progress-track"
+                });
+                assert!(
+                    compile_surface_rules(&r)
+                        .unwrap_err()
+                        .contains("incomplete states"),
+                    "{usage}"
+                );
+            }
+        }
+    }
+    #[test]
+    fn progress_requires_all_visible_channels_and_forbids_interactive_parts() {
+        for channel in CHANNELS {
+            let mut r = rules();
+            r["profiles"]["progress-track"]["rest"]
+                .as_object_mut()
+                .unwrap()
+                .remove(channel);
+            assert!(compile_surface_rules(&r).is_err());
+        }
+        for channel in ["background", "text", "icon", "boundary", "marker"] {
+            let mut r = rules();
+            r["profiles"]["progress-track"]["rest"][channel] = Value::Null;
+            assert!(compile_surface_rules(&r).is_err());
+        }
+        for channel in ["focus", "helper"] {
+            let mut r = rules();
+            r["profiles"]["progress-track"]["rest"][channel] = Value::from("primary-text");
+            assert!(
+                compile_surface_rules(&r)
+                    .unwrap_err()
+                    .contains("progress track requires")
+            );
+        }
+        for state in &STATES[1..] {
+            let mut r = rules();
+            r["profiles"]["progress-track"][*state] =
+                r["profiles"]["progress-track"]["rest"].clone();
+            assert!(compile_surface_rules(&r).is_err());
+        }
+    }
+    #[test]
+    fn unused_inherited_rest_profiles_cannot_invent_states() {
+        for state in ["disabled", "hover"] {
+            let mut r = rules();
+            r["profiles"]["unused"] =
+                serde_json::json!({"extends":"progress-track","state_overrides":{}});
+            r["profiles"]["unused"]["state_overrides"][state] =
+                serde_json::json!({"text":"primary-text"});
+            assert!(compile_surface_rules(&r).is_err());
+        }
+        let mut r = rules();
+        r["profiles"]["unused"] = serde_json::json!({"rest":r["profiles"]["progress-track"]["rest"],"hover":r["profiles"]["progress-track"]["rest"]});
+        assert!(
+            compile_surface_rules(&r)
+                .unwrap_err()
+                .contains("profile requires")
+        );
+    }
+    fn minimal_rules() -> Value {
+        serde_json::json!({"profiles":{"range":{"rest":{"background":"rail","boundary":"safe"}},"progress":{"rest":{"background":"rail","boundary":"edge"}}},"surfaces":{"canvas":{"background":"parent","usages":{"range-track":"range","progress-track":"progress"}}}})
+    }
+    fn palette(rail: &str, parent: &str, edge: &str) -> Value {
+        serde_json::json!({"color":{"tokens":[{"name":"rail","value":rail},{"name":"parent","value":parent},{"name":"edge","value":edge},{"name":"safe","value":"#000000"}]}})
+    }
+    #[test]
+    fn present_progress_marker_with_insufficient_contrast_is_rejected() {
+        let r = serde_json::json!({"profiles":{"progress":{"rest":{"background":"rail","text":"edge","icon":"edge","boundary":"edge","marker":"rail","focus":null,"helper":null}}},"surfaces":{"canvas":{"background":"parent","usages":{"progress-track":"progress"}}}});
+        assert!(
+            verify_surface_foregrounds(&r, &palette("#FFFFFF", "#FFFFFF", "#000000"))
+                .unwrap_err()
+                .contains("progress-track/rest/marker")
+        );
+    }
+    #[test]
+    fn progress_boundary_checks_rail_parent_and_equal_ground_separately() {
+        for p in [
+            palette("#666666", "#FFFFFF", "#666666"),
+            palette("#FFFFFF", "#666666", "#666666"),
+            palette("#FFFFFF", "#FFFFFF", "#FFFFFF"),
+        ] {
+            assert!(
+                verify_track_boundaries(&minimal_rules(), &p)
+                    .unwrap_err()
+                    .contains("insufficient progress boundary contrast")
+            );
+        }
+        assert!(
+            verify_track_boundaries(&minimal_rules(), &palette("#FFFFFF", "#FFFFFF", "#666666"))
+                .is_ok()
+        );
+    }
+}
+
+#[cfg(test)]
+mod solid_status_contrast_tests {
+    use super::*;
+    #[test]
+    fn solid_status_pairs_reject_same_color_in_every_mode_and_tone() {
+        let modes = ["light", "dark", "light-ic", "dark-ic"];
+        let tokens = ["c-status-badge-foreground", "status-info", "status-running", "status-succeeded", "status-failed"]
+            .into_iter()
+            .map(|name| {
+                let color = if name == "c-status-badge-foreground" { "#FFFFFF" } else { "#000000" };
+                serde_json::json!({"name":name,"value":modes.into_iter().map(|m|(m, color)).collect::<std::collections::BTreeMap<_,_>>()})
+            })
+            .collect::<Vec<_>>();
+        let palette = serde_json::json!({"color":{"tokens":tokens}});
+        assert!(verify_solid_status_foregrounds(&palette).is_ok());
+        for mode in modes {
+            for tone in ["info", "running", "succeeded", "failed"] {
+                let mut bad = palette.clone();
+                let role = format!("status-{tone}");
+                let token = bad["color"]["tokens"]
+                    .as_array_mut()
+                    .unwrap()
+                    .iter_mut()
+                    .find(|t| t["name"].as_str() == Some(role.as_str()))
+                    .unwrap();
+                token["value"][mode] = serde_json::json!("#FFFFFF");
+                assert!(
+                    verify_solid_status_foregrounds(&bad)
+                        .unwrap_err()
+                        .contains(&format!("{mode}/{tone}"))
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn solid_status_enhanced_mode_requires_seven_not_four_point_five() {
+        let modes = ["light", "dark", "light-ic", "dark-ic"];
+        let tokens = ["c-status-badge-foreground", "status-info", "status-running", "status-succeeded", "status-failed"]
+            .into_iter().map(|name| {
+                let color = if name == "c-status-badge-foreground" { "#FFFFFF" } else { "#000000" };
+                serde_json::json!({"name":name,"value":modes.into_iter().map(|m|(m, color)).collect::<std::collections::BTreeMap<_,_>>()})
+            }).collect::<Vec<_>>();
+        let mut palette = serde_json::json!({"color":{"tokens":tokens}});
+        palette["color"]["tokens"][1]["value"]["light"] = serde_json::json!("#767676");
+        assert!(verify_solid_status_foregrounds(&palette).is_ok());
+        palette["color"]["tokens"][1]["value"]["light-ic"] = serde_json::json!("#767676");
+        assert!(
+            verify_solid_status_foregrounds(&palette)
+                .unwrap_err()
+                .contains("light-ic/info")
+        );
     }
 }

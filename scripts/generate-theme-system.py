@@ -26,9 +26,10 @@ for _use in ['control-label','toggle-track','toggle-track-error','toggle-thumb']
 for _use in ['range-track','range-thumb']:
     USES[_use] = STATES[:4]
 USES['surface-frame'] = ['rest','disabled']
+USES['progress-track'] = ['rest']
 STATUS_CONTENT_USES = {'content-status-' + tone for tone in ['info','running','succeeded','failed']}
 for _use in STATUS_CONTENT_USES: USES[_use] = ['rest','disabled']
-FOCUS_FREE_USES = STATUS_CONTENT_USES | {'content','text-selection','control-label','toggle-thumb','range-track','surface-frame'}
+FOCUS_FREE_USES = STATUS_CONTENT_USES | {'content','text-selection','control-label','toggle-thumb','range-track','surface-frame','progress-track'}
 
 
 def validate_use_channels(usage, state, pair):
@@ -36,6 +37,8 @@ def validate_use_channels(usage, state, pair):
         raise ValueError('Link has no marker/helper anatomy: ' + state)
     if usage in STATUS_CONTENT_USES and (pair['background'] != '$surface' or any(pair[k] is not None for k in ['boundary','focus','marker','helper'])):
         raise ValueError('passive status content requires parent ground and forbids boundary/focus/marker/helper')
+    if usage == 'progress-track' and (pair['boundary'] is None or pair['marker'] is None or any(pair[k] is not None for k in ['focus','helper'])):
+        raise ValueError('progress track requires boundary/marker and forbids focus/helper')
     needs_focus = usage not in FOCUS_FREE_USES and 'disabled' not in state
     if needs_focus != (pair['focus'] is not None):
         raise ValueError(f'incomplete or inapplicable focus: {usage}/{state}')
@@ -68,7 +71,7 @@ def expand_profiles(rules):
 def validate(rules):
     import jsonschema
     jsonschema.validate(rules, merge.load(ROOT / 'design/theme/rules.schema.json'))
-    if rules['rules_version'] != '1.6.1': raise ValueError('unsupported generation rules version')
+    if rules['rules_version'] != '1.7.0': raise ValueError('unsupported generation rules version')
     profiles = expand_profiles(rules)
     for surface, definition in rules['surfaces'].items():
         if not surface or not surface.isascii() or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789-' for c in surface):
@@ -85,6 +88,8 @@ def validate(rules):
                 raise ValueError('surface frame requires boundary and forbids focus/marker/helper')
             for state,pair in profiles[profile].items():validate_use_channels(usage,state,pair)
     for profile in profiles.values():
+        if set(profile) != {'rest'} and not {'rest','disabled'} <= set(profile):
+            raise ValueError('profile requires rest and disabled or exactly rest')
         for state, pair in profile.items():
             if set(pair) != set(CHANNELS): raise ValueError('incomplete channels')
             if any(pair[k] is None for k in ['background', 'text', 'icon']):
@@ -123,6 +128,17 @@ def contrast(a, b):
     a,b = sorted([lum(a),lum(b)])
     return (b+.05)/(a+.05)
 
+
+def verify_solid_status_foregrounds(bundle):
+    # Solid status label ink is a different use from passive status text on a Surface.
+    # Follow the existing quality text thresholds: normal 4.5, enhanced 7.0.
+    for mode in MODES:
+        foreground = merge.token_value(bundle, 'color', 'c-status-badge-foreground', mode)
+        minimum = 7.0 if mode.endswith('-ic') else 4.5
+        for tone in ['info', 'running', 'succeeded', 'failed']:
+            background = merge.token_value(bundle, 'color', 'status-' + tone, mode)
+            if contrast(foreground, background) < minimum:
+                raise ValueError(f'insufficient solid status foreground contrast: {mode}/{tone}')
 
 def verify_profile_color_references(profiles, bundle):
     # Match the existing ordinary Rust build's complete shared-role vocabulary check.
@@ -216,6 +232,7 @@ def generate():
         effective = effective_base(base, metadata, contract, definition['inputs']['overrides'])
         bundle, _ = brand.compile_config(config, base=effective, policy=policy, metadata=metadata)
         verify_profile_color_references(expand_profiles(rules), bundle)
+        verify_solid_status_foregrounds(bundle)
         modes = {}
         for mode in MODES:
             surfaces = {}
@@ -234,10 +251,10 @@ def generate():
                     parent = merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode)
                     if contrast(colors['focus'],parent) < 3.0:
                         raise ValueError(f'insufficient focus contrast: {definition["id"]}/{mode}/{surface}/{usage}/{state}')
-                if usage == 'range-track' and state != 'disabled':
+                if usage in ['range-track','progress-track'] and state != 'disabled':
                     parent = merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode)
                     if colors['boundary'] is None or min(contrast(colors['boundary'],colors['background']),contrast(colors['boundary'],parent)) < 3.0:
-                        raise ValueError(f'insufficient range boundary contrast: {definition["id"]}/{mode}/{surface}/{state}')
+                        raise ValueError(f'insufficient {"range" if usage == "range-track" else "progress"} boundary contrast: {definition["id"]}/{mode}/{surface}/{state}')
                 surfaces.setdefault(surface,{}).setdefault(usage,{})[state] = colors
             modes[mode] = surfaces
         compiled_roles = {mode: {token['name']: merge.token_value(bundle, 'color', token['name'], mode) for token in bundle['color']['tokens']} for mode in MODES}
