@@ -48,6 +48,51 @@
         "historical_public_api_verified": [
           "rest"
         ],
+        "practical_intake": {
+          "baseline_commit": "bb488947e312a5a3caa262e96985a272f634108e",
+          "claims": [
+            "Same measured StackContent/Host both axes through Theme::ALL retains child frame/visible/mount and original declared Surface forwarding to real Text/Button leaves",
+            "Exact leaf-specific ink roles and sole child Button focus target verified without adding container interaction states or replaying leaf state/contrast matrices",
+            "Actual public Gallery StackView keeps three-cell layout/model/clip and semantic child paint across Themes; Gallery target and strict passed"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.stack",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/stack-main8253390-candidate/main-intake/commit-receipt.json",
+              "commit": "bb488947e312a5a3caa262e96985a272f634108e",
+              "component": "tui.stack",
+              "issue": "#121",
+              "scope": "Actual current public retained layout/Theme forwarding and real Gallery/strict, corrected test mapping and explicit original evidence identities/boundaries.",
+              "sha256": "c6900e03b5c4e5d785714eaec2fdedf87bf2e2b5aa26218a79952d73fe9840b5"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Layout owns no paint/interactive states; ordinary gap/index/equal allocation geometry remains data. Text uses primary-text fallback while declared-Surface Button uses its original packet.text. No new leaf state/contrast matrix.",
+            "Original inheritance/clip/reveal/layout and shared leaf behavior reused, not mechanically rerun or re-signed"
+          ],
+          "gaps": [
+            "new dedicated external Theme/brand/scale/GPU/native-window/physicalIME/VoiceOver certification",
+            "other5 layout roots/full52"
+          ],
+          "scope": "Public retained measured StackContent/Host both axes Theme::ALL forwards declared Surface and real child semantics, geometry/visible/mount/focus targets stable; actual Gallery StackView three cells, tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual Stack/layout/new witness sources, not full dependency proof; public corrected fixture and unchanged Gallery/strict retain separate actual run identities.",
+            "sha256": {
+              "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+              "crates/tekes-ui-controls/src/layout.rs": "1fb04f0f3061b0439dded808949aa7dd89d03e6fef6084c53bfb9707062d6e35",
+              "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "4d2044ec220ba85f2356a4cde89b494349ea868e4369db794c666e19a62c5819",
+              "examples/composition-consumer/tests/stack_theme.rs": "50aebbe938dac79bac99d88b983a0c77bc85e4c5450e86877d052c51f2116a30"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "static",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -58648,7 +58693,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "1d5864ad3260db49d660208fdb835726c9f5792e2b7b7a348a5f5e596d8f199a",
+    "design/gallery/component-coverage.json": "0f80c476c64c60dfdc8e9b7df710a0a3152696fff24a6116a4cc66ce6d1c47d8",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58690,6 +58735,7 @@
     "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758",
     "examples/composition-consumer/tests/radio_group_theme.rs": "6053b0b681fdb0053633ed05a25c863da6c5cbc401c1577be664d663a1f0560b",
     "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",
+    "examples/composition-consumer/tests/stack_theme.rs": "50aebbe938dac79bac99d88b983a0c77bc85e4c5450e86877d052c51f2116a30",
     "examples/composition-consumer/tests/status_badge_theme.rs": "aaee4018f5c32e374ffe2d219b0156f91aff8a46f0e821e72d0237a301461543",
     "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
     "examples/composition-consumer/tests/surface_theme.rs": "ea80660bf10c7af0092bf43ff8dca05c3414eedb21452e40be5c80b83aa9edbf",

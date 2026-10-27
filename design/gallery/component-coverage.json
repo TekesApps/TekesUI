@@ -13,7 +13,45 @@
           "note": "Actual public Stack geometry scope has asserted zero lookups; SurfaceView paint is captured separately,4themes/3brands/real scales/Canvas,Panel/ancestor clip. Caller scale forwarding has216real Gallery GPU cases and independent consumer tests; page/native maturity remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/layout-surface.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/layout-surface.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "bb488947e312a5a3caa262e96985a272f634108e",
+        "scope": "Public retained measured StackContent/Host both axes Theme::ALL forwards declared Surface and real child semantics, geometry/visible/mount/focus targets stable; actual Gallery StackView three cells, tests only",
+        "claims": [
+          "Same measured StackContent/Host both axes through Theme::ALL retains child frame/visible/mount and original declared Surface forwarding to real Text/Button leaves",
+          "Exact leaf-specific ink roles and sole child Button focus target verified without adding container interaction states or replaying leaf state/contrast matrices",
+          "Actual public Gallery StackView keeps three-cell layout/model/clip and semantic child paint across Themes; Gallery target and strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected actual Stack/layout/new witness sources, not full dependency proof; public corrected fixture and unchanged Gallery/strict retain separate actual run identities.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+            "crates/tekes-ui-controls/src/layout.rs": "1fb04f0f3061b0439dded808949aa7dd89d03e6fef6084c53bfb9707062d6e35",
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "4d2044ec220ba85f2356a4cde89b494349ea868e4369db794c666e19a62c5819",
+            "examples/composition-consumer/tests/stack_theme.rs": "50aebbe938dac79bac99d88b983a0c77bc85e4c5450e86877d052c51f2116a30"
+          }
+        },
+        "exceptions": [
+          "Layout owns no paint/interactive states; ordinary gap/index/equal allocation geometry remains data. Text uses primary-text fallback while declared-Surface Button uses its original packet.text. No new leaf state/contrast matrix.",
+          "Original inheritance/clip/reveal/layout and shared leaf behavior reused, not mechanically rerun or re-signed"
+        ],
+        "gaps": [
+          "new dedicated external Theme/brand/scale/GPU/native-window/physicalIME/VoiceOver certification",
+          "other5 layout roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#121",
+            "component": "tui.stack",
+            "commit": "bb488947e312a5a3caa262e96985a272f634108e",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/stack-main8253390-candidate/main-intake/commit-receipt.json",
+            "sha256": "c6900e03b5c4e5d785714eaec2fdedf87bf2e2b5aa26218a79952d73fe9840b5",
+            "scope": "Actual current public retained layout/Theme forwarding and real Gallery/strict, corrected test mapping and explicit original evidence identities/boundaries."
+          }
+        ]
+      }
     },
     {
       "id": "tui.grid",
