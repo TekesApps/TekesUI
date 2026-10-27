@@ -6447,6 +6447,165 @@ mod interaction_tests {
     }
 
     #[test]
+    fn settings_gallery_retained_themes_keep_fixture_values_and_actual_palette() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        fn click(gallery: &mut Gallery, i: usize, id: usize) {
+            let p = gallery
+                .workbench
+                .state(i)
+                .visible_for_id(id)
+                .expect("real Settings fixture input/action")
+                .center();
+            gallery.handle_input(&mouse(p, true));
+            gallery.handle_input(&mouse(p, false));
+            gallery.build_scene(&mut Scene::new());
+        }
+        let mut gallery = Gallery::new();
+        let i = index("settings");
+        assert_eq!(entry(i).slug(), "example-settings");
+        assert!(gallery.open_route("example-settings/playground"));
+        gallery.set_view_size(1440., 1100.);
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        click(&mut gallery, i, 1000);
+        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommit {
+            text: "Settings Theme draft".into(),
+            replacement: None,
+        });
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(
+            gallery.workbench.state(i).input.query(),
+            "Settings Theme draft"
+        );
+        click(&mut gallery, i, 25);
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Checked
+        );
+        click(&mut gallery, i, 20);
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Pending);
+        click(&mut gallery, i, 21);
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Failed);
+        let original = gallery.workbench.state(i).field_view.layout();
+        let original_actions = [
+            gallery.workbench.state(i).visible_for_id(25),
+            gallery.workbench.state(i).visible_for_id(20),
+        ];
+        let events = gallery.workbench.state(i).log.clone();
+        let rest = Point::new(original.frame.max_x() + 8., original.frame.center().y);
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            gallery.handle_input(&move_pointer(Point::new(-100., -100.)));
+            gallery.handle_input(&move_pointer(rest));
+            gallery.animate(1. / 60.);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            assert_eq!(gallery.theme(), theme);
+            let state = gallery.workbench.state(i);
+            assert_eq!(state.input.query(), "Settings Theme draft");
+            assert_eq!(state.checkbox.checked, CheckState::Checked);
+            assert_eq!(state.phase, Phase::Failed);
+            assert!(!state.error && !state.disabled);
+            assert_eq!(
+                state.log, events,
+                "Theme does not reset or submit the fixture"
+            );
+            assert!(
+                state.draft_fixture.is_none(),
+                "Gallery Settings does not attach the durable Form store or AppWindow Settings"
+            );
+            assert_eq!(state.field_view.layout(), original);
+            assert_eq!(state.input.frame_at(0), Some(original.slot));
+            assert_eq!(
+                [state.visible_for_id(25), state.visible_for_id(20)],
+                original_actions
+            );
+            assert_eq!(state.button_labels[&20], "Retry save");
+            assert!(!state.buttons[&20].state.disabled && !state.buttons[&25].state.disabled);
+            assert!(state.button_clip.is_some_and(|clip| clip.contains(rest)));
+            let palette = Palette::new(theme, 0).unwrap();
+            assert_eq!(
+                Gallery::background(theme),
+                palette.color("document-canvas").unwrap()
+            );
+            let (input_index, input) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(n, p)| match p {
+                    Primitive::Quad(q) if q.rect == original.slot => Some((n, q)),
+                    _ => None,
+                })
+                .expect("original Settings TextDemo input ground");
+            assert_eq!(input.fill, palette.color("transcript-input").unwrap());
+            assert_eq!(
+                input.border_color,
+                palette
+                    .color(proposal::control_boundary("required-input", theme).unwrap())
+                    .unwrap()
+            );
+            // Same production FieldView/TextDemo path as accepted Form contrast checks.
+            // Keep this example's delta to actual role wiring and retained fixture state.
+            let mut metadata =
+                scene.primitives()[..input_index]
+                    .iter()
+                    .rev()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run) => Some(run),
+                        _ => None,
+                    });
+            for (slot, role) in [
+                (original.message, "secondary-text"),
+                (original.label, "primary-text"),
+            ] {
+                let run = metadata
+                    .next()
+                    .expect("own Field metadata immediately before input");
+                assert!(!run.glyphs.is_empty());
+                assert!(
+                    run.glyphs
+                        .iter()
+                        .any(|g| slot.inset(-0.5).contains(g.origin))
+                );
+                assert_eq!(run.color, palette.color(role).unwrap());
+            }
+            let text = scene.primitives()[input_index + 1..]
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Glyphs(run) if !run.glyphs.is_empty() => Some(run),
+                    _ => None,
+                })
+                .expect("own Settings input glyphs after input ground");
+            assert!(text.glyphs.iter().any(|g| original.slot.contains(g.origin)));
+            assert_eq!(text.color, palette.color("primary-text").unwrap());
+            observed.push((input.fill, text.color));
+        }
+        assert!(observed.windows(2).any(|w| w[0] != w[1]));
+        assert_eq!(
+            gallery.workbench.state(i).input.query(),
+            "Settings Theme draft"
+        );
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Failed);
+    }
+
+    #[test]
     fn settings_disabled_error_and_reset_controls_drive_real_models() {
         let i = index("settings");
         let mut workbench = Workbench::default();
@@ -7760,6 +7919,214 @@ mod interaction_tests {
             "wrapped action grows naturally"
         );
         assert_eq!(state.hit_at(layout.frame.center()), Some(22));
+    }
+
+    #[test]
+    fn pattern_filter_retained_themes_keep_real_query_results_and_clear_action() {
+        use tekes_ui_scene::{GlyphRun, Primitive};
+        use tekes_ui_tokens::{Palette, Theme};
+        fn glyphs(scene: &Scene, frame: Rect) -> Vec<GlyphRun> {
+            scene
+                .primitives()
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if !run.glyphs.is_empty()
+                            && run.glyphs.iter().all(|g| frame.contains(g.origin)) =>
+                    {
+                        Some(run.clone())
+                    }
+                    _ => None,
+                })
+                .collect()
+        }
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        let mut w = Workbench::default();
+        w.apply_reduced_motion(true);
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("filter");
+        assert_eq!(entry(i).slug(), "pattern-filter");
+        build(&mut w, i, &mut text);
+        let content = Rect::new(312., 70., 1000., 1200.);
+        let cases: [(&str, &[&str]); 3] = [
+            ("NOTES", &["Studio notes.md", "Research notes.txt"]),
+            (
+                "not-found",
+                &["No results. Clear the filter to see all files."],
+            ),
+            (
+                "",
+                &["Studio notes.md", "Research notes.txt", "项目计划.md"],
+            ),
+        ];
+        for (query, expected) in cases {
+            if query.is_empty() {
+                click(&mut w, i, 22, &mut text);
+                assert_eq!(
+                    w.state(i)
+                        .log
+                        .iter()
+                        .filter(|s| s.as_str() == "filter: cleared")
+                        .count(),
+                    1
+                );
+            } else {
+                assert!(w.focus_control(i, 1000).is_some());
+                w.handle(i, &Event::TextCommand("selectAll:".into()), &mut text);
+                w.handle(
+                    i,
+                    &Event::TextCommit {
+                        text: query.into(),
+                        replacement: None,
+                    },
+                    &mut text,
+                );
+            }
+            let mut original = None;
+            for theme in Theme::ALL {
+                text.begin_frame();
+                let mut static_text = super::super::static_text::StaticText::new(None);
+                let mut ctx = PageCtx {
+                    theme,
+                    text: &mut text,
+                    static_text: &mut static_text,
+                };
+                let mut scene = Scene::new();
+                w.build_clipped(i, &mut ctx, content, content, &mut scene);
+                assert!(scene.composition_error().is_none());
+                let state = w.state(i);
+                assert_eq!(state.input.query(), query);
+                let input = state.input.frame_at(0).unwrap();
+                let clear = state.buttons[&22].layout().unwrap();
+                let result_top = input.max_y().max(clear.frame.max_y())
+                    + proposal::metric("spacing", "space-section").unwrap();
+                let results = Rect::new(input.min_x(), result_top, state.preview.size.width, 120.);
+                assert!(
+                    state.event_log_frame.unwrap().min_y() > results.max_y(),
+                    "result oracle excludes event-log text"
+                );
+                let geometry = (input, clear.frame, results);
+                if let Some(before) = original {
+                    assert_eq!(geometry, before);
+                } else {
+                    original = Some(geometry);
+                }
+                assert_eq!(state.hit_at(input.center()), Some(1000));
+                assert_eq!(state.hit_at(clear.frame.center()), Some(22));
+                let palette = Palette::from(theme);
+                for (frame, ink_role, ground_role) in [
+                    (
+                        input,
+                        if query.is_empty() {
+                            "secondary-text"
+                        } else {
+                            "primary-text"
+                        },
+                        "transcript-input",
+                    ),
+                    (
+                        clear.frame,
+                        "primary-text",
+                        if state.buttons[&22].state.hovered {
+                            "button-hover"
+                        } else {
+                            "surface-2"
+                        },
+                    ),
+                ] {
+                    let (index, ground) = scene
+                        .primitives()
+                        .iter()
+                        .enumerate()
+                        .find_map(|(i, p)| match p {
+                            Primitive::Quad(q) if q.rect == frame => Some((i, q)),
+                            _ => None,
+                        })
+                        .expect("real filter child own ground");
+                    assert_eq!(ground.fill, palette.color(ground_role).unwrap());
+                    let inks: Vec<_> = scene.primitives()[index + 1..]
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Glyphs(r)
+                                if !r.glyphs.is_empty()
+                                    && r.glyphs.iter().all(|g| frame.contains(g.origin)) =>
+                            {
+                                Some(r.color)
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    assert!(
+                        !inks.is_empty(),
+                        "actual query/placeholder/Clear title glyphs"
+                    );
+                    for ink in inks {
+                        assert_eq!(ink, palette.color(ink_role).unwrap());
+                        assert_eq!((ink.a, ground.fill.a), (1., 1.));
+                        assert!(
+                            contrast(ink, ground.fill)
+                                >= if theme.is_increased() { 7. } else { 4.5 }
+                        );
+                    }
+                }
+                // The parent draws passive result text on the real Gallery renderer clear.
+                assert!(!scene.primitives().iter().any(
+                    |p| matches!(p,Primitive::Quad(q) if q.rect.intersection(&results).is_some())
+                ));
+                let ground = super::super::Gallery::background(theme);
+                assert_eq!(ground, palette.color("document-canvas").unwrap());
+                let actual = glyphs(&scene, results);
+                assert!(!actual.is_empty());
+                let mut reference = Scene::new();
+                // Fixed expected filenames/messages exercise real output, without reimplementing contains().
+                for (row, value) in expected.iter().enumerate() {
+                    label(
+                        &mut ctx,
+                        &mut reference,
+                        Rect::new(
+                            results.min_x(),
+                            results.min_y() + row as f32 * 40.,
+                            results.size.width,
+                            40.,
+                        ),
+                        value,
+                        false,
+                    );
+                }
+                assert_eq!(
+                    actual,
+                    glyphs(&reference, results),
+                    "actual filtered text identity/order/count for {query:?}"
+                );
+                for run in actual {
+                    assert_eq!(run.color, palette.color("primary-text").unwrap());
+                    assert_eq!((run.color.a, ground.a), (1., 1.));
+                    assert!(
+                        contrast(run.color, ground) >= if theme.is_increased() { 7. } else { 4.5 }
+                    );
+                }
+                if query.is_empty() {
+                    assert_eq!(
+                        state
+                            .log
+                            .iter()
+                            .filter(|s| s.as_str() == "filter: cleared")
+                            .count(),
+                        1,
+                        "Theme redraw does not replay Clear"
+                    );
+                }
+            }
+        }
     }
 
     #[test]
@@ -10145,6 +10512,18 @@ mod interaction_tests {
         w.handle(i, &mouse(point, false), &mut t);
         assert_eq!(w.state(i).selected, 2);
         assert!(w.state(i).log.back().unwrap().contains("selection: 2"));
+        assert_eq!(
+            w.state(i).detail.query(),
+            format!(
+                "Document 3 — reading notes\n\n{}",
+                include_str!("../../../../fixtures/text/gallery-reading-en.txt")
+            )
+        );
+        build_in(&mut w, i, &mut t, content);
+        let detail = w.state(i).detail.frame_at(0).unwrap().center();
+        w.handle(i, &mouse(detail, true), &mut t);
+        w.handle(i, &mouse(detail, false), &mut t);
+        assert!(w.state(i).detail.state().unwrap().read_only);
 
         let narrow_content = Rect::new(312.0, 70.0, 420.0, 600.0);
         let tiny_clip = Rect::new(312.0, 70.0, 420.0, 90.0);
@@ -11967,6 +12346,116 @@ mod interaction_tests {
         );
         std::fs::remove_dir_all(directory).unwrap();
     }
+    #[test]
+    fn pattern_async_gallery_keeps_nonstore_draft_through_themes_and_real_retry_reset() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_tokens::Theme;
+        fn click(gallery: &mut Gallery, i: usize, id: usize) {
+            gallery.build_scene(&mut Scene::new());
+            let point = gallery
+                .workbench
+                .state(i)
+                .visible_for_id(id)
+                .expect("real async action")
+                .center();
+            gallery.handle_input(&mouse(point, true));
+            gallery.handle_input(&mouse(point, false));
+            gallery.build_scene(&mut Scene::new());
+        }
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 1000.);
+        gallery.set_system_theme(Theme::LIGHT);
+        assert!(gallery.open_route("pattern-async/playground"));
+        let i = index("async");
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Ready);
+        assert!(gallery.workbench.state(i).draft_fixture.is_none());
+        click(&mut gallery, i, 1000);
+        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommit {
+            text: "Async draft".into(),
+            replacement: None,
+        });
+        gallery.build_scene(&mut Scene::new());
+        click(&mut gallery, i, 25);
+        let frame = gallery.workbench.state(i).input.frame_at(0).unwrap();
+        for (theme, phase, attempts) in [
+            (Theme::LIGHT, Phase::Ready, 0),
+            (Theme::DARK, Phase::Pending, 1),
+            (Theme::LIGHT_INCREASED, Phase::Failed, 1),
+            (Theme::DARK_INCREASED, Phase::Saved, 2),
+        ] {
+            match phase {
+                Phase::Ready => {}
+                Phase::Pending => click(&mut gallery, i, 20),
+                Phase::Failed => click(&mut gallery, i, 21),
+                Phase::Saved => {
+                    click(&mut gallery, i, 20);
+                    click(&mut gallery, i, 21);
+                }
+                Phase::Invalid => unreachable!("this table follows nonempty async draft actions"),
+            }
+            assert_eq!(gallery.workbench.state(i).phase, phase);
+            click(&mut gallery, i, 1000);
+            gallery.handle_input(&Event::TextCommand("moveToBeginningOfDocument:".into()));
+            for _ in 0..5 {
+                gallery.handle_input(&Event::TextCommand("moveRightAndModifySelection:".into()));
+            }
+            gallery.build_scene(&mut Scene::new());
+            let before = gallery
+                .text_input_state()
+                .expect("real async native input selection");
+            assert_eq!(before.text, "Async draft");
+            assert_eq!(before.selection, 0..5);
+            gallery.set_system_theme(theme);
+            gallery.build_scene(&mut Scene::new());
+            assert_eq!(gallery.theme(), theme);
+            let after = gallery.text_input_state().unwrap();
+            assert_eq!(after.text, before.text);
+            assert_eq!(after.selection, before.selection);
+            assert_eq!(after.caret_origin, before.caret_origin);
+            let state = gallery.workbench.state(i);
+            assert_eq!(state.input.frame_at(0), Some(frame));
+            assert_eq!(state.phase, phase);
+            assert_eq!(state.attempts, attempts);
+            assert_eq!(state.checkbox.checked, CheckState::Checked);
+            assert!(
+                state.draft_fixture.is_none(),
+                "async never acquires form durable storage"
+            );
+            assert!(state.draft_attempt.is_none());
+            assert!(
+                state.visible_for_id(26).is_none(),
+                "form-only durable recovery is absent"
+            );
+            assert_eq!(state.buttons[&20].state.disabled, phase == Phase::Pending);
+            assert_eq!(
+                state.button_labels[&20],
+                if phase == Phase::Failed {
+                    "Retry save"
+                } else {
+                    "Save settings"
+                }
+            );
+        }
+        click(&mut gallery, i, 0);
+        let state = gallery.workbench.state(i);
+        assert_eq!(state.phase, Phase::Ready);
+        assert_eq!(state.attempts, 0);
+        assert_eq!(state.input.query(), "Studio");
+        assert_eq!(state.checkbox.checked, CheckState::Unchecked);
+        assert!(state.draft_fixture.is_none());
+        assert!(state.draft_attempt.is_none());
+        assert_eq!(gallery.theme(), Theme::DARK_INCREASED);
+    }
+
     #[test]
     fn settings_full_failure_retry_and_danger_cancel_recovery() {
         let mut w = Workbench::default();
