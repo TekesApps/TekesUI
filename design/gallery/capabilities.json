@@ -36190,6 +36190,51 @@
           "error",
           "empty"
         ],
+        "practical_intake": {
+          "baseline_commit": "08c3456b764be1589f652655d66f8f5d0dda6901",
+          "claims": [
+            "Same public TabsView retained across Theme::ALL, selected/rest/hover/pressed/focus/disabled and actual glyph role/contrast verified",
+            "Original release-outside cancellation, one selected item, selected Quiet hover/pressed contract and keyboard navigation preserved",
+            "Actual Gallery route retains real selected panel and selection while switching Theme, using real pointer navigation and CoreText text4.5/7 contrast",
+            "Gallery all-target strict passed; unchanged shared Button/Theme and prior Dialog evidence reused at original identity"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.tabs",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/tabs-main5634d2a-candidate/main-intake/commit-receipt.json",
+              "commit": "08c3456b764be1589f652655d66f8f5d0dda6901",
+              "component": "tui.tabs",
+              "issue": "#123",
+              "scope": "Exact-main public retained Tabs and real Gallery tests, strict, failure and bounded unverified items.",
+              "sha256": "e5dda0aa8373f0e0f130402f1ce9b23e7dc3165e52542408514f29b983ea6dd7"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Shared Quiet Button semantics and generic geometry retained",
+            "Sidebar has its own pointer scope; rest sample explicitly uses the actual Workbench background rather than claiming sidebar hover-exit behavior"
+          ],
+          "gaps": [
+            "No new dedicated external Theme/GPU/native/physicalIME/VoiceOver certification",
+            "Remaining original family/full52 practical coverage is open"
+          ],
+          "scope": "Accepted retained public Tabs and actual Gallery Theme/selection/state/text-contrast tests; no production or shared rule changes.",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected model/View/consumer/Gallery source subset, not a dependency certificate; full actual run identity stays in original frozen manifests/receipts.",
+            "sha256": {
+              "crates/tekes-ui-controls/src/composite.rs": "8931bb75dcfe576efe58ed15021b5b3394ae4b217eed10723693080d1b4db276",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "2981ebca2d8427000af1fb30f7ea57c9d08e5ba7973c6acbca50b0c3173d6547",
+              "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
+              "examples/composition-consumer/tests/tabs_theme.rs": "88d4c4178f4caa4da2dea18dea8d62a7a186691e36b07048d9a48e76b88b935e"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "select",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -57981,7 +58026,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "6689ca316b482a23be89f564be3808263c86eab59420a7d46a4c5eb3d3436aa8",
+    "design/gallery/component-coverage.json": "30b2449f3862a466e004917b26f9c28ca479bd581f15327d9bfb47a68139c1c2",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58014,6 +58059,8 @@
     "examples/composition-consumer/src/status_badge_content.rs": "58006b3eb44e1cb7261c25ebd8bbd8819591a22f5ac53ae48fec6379b62b3a9c",
     "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80",
     "examples/composition-consumer/tests/dialog_theme.rs": "6cf7b51a1c7393501f89b44551da8031712ca5054d5ada0e91e3fc2234a97953",
+    "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
+    "examples/composition-consumer/tests/tabs_theme.rs": "88d4c4178f4caa4da2dea18dea8d62a7a186691e36b07048d9a48e76b88b935e",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",
     "scripts/generate-component-capabilities.py": "b7cb6c0de297601b95755e2d8bdb74b42e3cf37475e77ebf52693c7379385d61"
   },

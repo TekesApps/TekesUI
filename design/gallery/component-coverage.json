@@ -2022,7 +2022,45 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "08c3456b764be1589f652655d66f8f5d0dda6901",
+        "scope": "Accepted retained public Tabs and actual Gallery Theme/selection/state/text-contrast tests; no production or shared rule changes.",
+        "claims": [
+          "Same public TabsView retained across Theme::ALL, selected/rest/hover/pressed/focus/disabled and actual glyph role/contrast verified",
+          "Original release-outside cancellation, one selected item, selected Quiet hover/pressed contract and keyboard navigation preserved",
+          "Actual Gallery route retains real selected panel and selection while switching Theme, using real pointer navigation and CoreText text4.5/7 contrast",
+          "Gallery all-target strict passed; unchanged shared Button/Theme and prior Dialog evidence reused at original identity"
+        ],
+        "source_identity": {
+          "scope": "Selected model/View/consumer/Gallery source subset, not a dependency certificate; full actual run identity stays in original frozen manifests/receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composite.rs": "8931bb75dcfe576efe58ed15021b5b3394ae4b217eed10723693080d1b4db276",
+            "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "2981ebca2d8427000af1fb30f7ea57c9d08e5ba7973c6acbca50b0c3173d6547",
+            "examples/composition-consumer/tests/tabs_theme.rs": "88d4c4178f4caa4da2dea18dea8d62a7a186691e36b07048d9a48e76b88b935e"
+          }
+        },
+        "exceptions": [
+          "Shared Quiet Button semantics and generic geometry retained",
+          "Sidebar has its own pointer scope; rest sample explicitly uses the actual Workbench background rather than claiming sidebar hover-exit behavior"
+        ],
+        "gaps": [
+          "No new dedicated external Theme/GPU/native/physicalIME/VoiceOver certification",
+          "Remaining original family/full52 practical coverage is open"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.tabs",
+            "commit": "08c3456b764be1589f652655d66f8f5d0dda6901",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/tabs-main5634d2a-candidate/main-intake/commit-receipt.json",
+            "sha256": "e5dda0aa8373f0e0f130402f1ce9b23e7dc3165e52542408514f29b983ea6dd7",
+            "scope": "Exact-main public retained Tabs and real Gallery tests, strict, failure and bounded unverified items."
+          }
+        ]
+      }
     },
     {
       "id": "tui.breadcrumb",
