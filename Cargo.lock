@@ -1253,6 +1253,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "serde",
+ "tekes-ui-controls",
+ "tekes-ui-scene",
+ "tekes-ui-tokens",
  "toml",
 ]
 

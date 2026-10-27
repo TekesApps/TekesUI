@@ -14,7 +14,9 @@
 
 原10项model/store测试与all-target strict在最终接收差量上通过，锁文件使用原registry版本并经 `--locked --offline` 验证。证据为 SSD `artifacts/issue-136/settings70-foundation-maina6e9deb-intake/round01`；测试临时文件与构建输出均沿原SSD规则。该批不改模型/store原正文，原UI测试保留待后续接收。
 
-尚未交付：SettingsForm/Sidebar、SettingsSurface、自动保存窗口、独立配置UndoRedo及原生/PR#52公开固定依赖验证。基础通过不代表这些能力通过，#70继续开放。完整既有Settings设计和历史原型保留在Gallery Root的 `docs/design/apphost-settings.md` 与 `apphost-settings-prototype-20261022.md`，后续接收沿原契约，不把历史实现转签为当前main完成。
+共享UI追加接收（基线 `07f69be7750879425696433880d59678ae43c671`）：SettingsForm/Sidebar复用真实Button、TextField、Switch、Menu、NumberField、Scroll和List/ListView；保留编辑mount、无自动保存底栏、错误/Retry、help说明与固定header。原6项form/sidebar、2项number及1项row测试与all-target strict通过，证据SSD `artifacts/issue-136/settings70-ui-main07f69be-intake/round01`。基础model/store输入未变，不重复执行原10测试。这里的有限CPU行为不是完整Theme/GPU/native Settings验收；Sidebar兼容适配不等于全List根已接收。
+
+尚未交付：SettingsSurface、自动保存窗口、独立配置UndoRedo及原生/PR#52公开固定依赖验证。共享UI通过不代表这些能力通过，#70继续开放。完整既有Settings设计和历史原型保留在Gallery Root的 `docs/design/apphost-settings.md` 与 `apphost-settings-prototype-20261022.md`，后续接收沿原契约，不把历史实现转签为当前main完成。
 
 
 ## 1. 目标与范围
