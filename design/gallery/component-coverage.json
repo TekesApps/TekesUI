@@ -1795,7 +1795,46 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/selection.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/selection.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "611282ffadfec321c702aabad5ed2ae2c6d2be86",
+        "scope": "Public and actual Gallery retained Switch on/off Theme, actual thumb/label contrast, unfocused hover and original toggle/cancel/focus/disabled; minimal Gallery no-focus draw guard",
+        "claims": [
+          "Same public Switch/View and real Gallery switch on/off through Theme::ALL with actual thumb/track or necessary border contrast3 and label4.5/7",
+          "Unfocused hover survives real draw; representative hover/press/cancel/Space-release/Enter refusal/focus/disabled/re-enable behavior passed",
+          "Affected original Gallery switch/AX/unique-hit regressions and strict passed with Switch-only no-focus draw guard; Slider behavior unchanged"
+        ],
+        "source_identity": {
+          "scope": "Selected actual public/Gallery consumer/test sources, not exhaustive dependency proof; full frozen source/program receipts retained.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/selection.rs": "84be6fb77fdbbf88c7855959f73dc84ac17e8f9e16f59f7b7f34ea7f98f853c3",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "9d352dbb05679c3e5ca9dd7ddff478a1a0d24c402c58974fdc73262036069c61",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "31e6b667dc565eb8f1c47fb4f11571fa4aac0ddc7b87cf4ae08cc2afd272f3a6",
+            "examples/composition-consumer/tests/switch_theme.rs": "b3fabfc1f6340fa76148ed194787db52ba10ef36397994b8b1d90c4fcab27c9a"
+          }
+        },
+        "exceptions": [
+          "Ordinary geometry stays layout, disabled ink not active contrast; off thumb necessary border is asserted alongside actual fill. Genuine reduced-motion endpoint, not animation timing certification. Slider remains unchanged.",
+          "Old adapter failure is established from source, not misreported as an executed red baseline; original actual blur/window/disabled/cancel paths preserved"
+        ],
+        "gaps": [
+          "old Switch runtime red baseline (source-established cause only)",
+          "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver/motion timing certification",
+          "remaining10 input roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.switch",
+            "commit": "611282ffadfec321c702aabad5ed2ae2c6d2be86",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/switch-main9f827c2-candidate/main-intake/commit-receipt.json",
+            "sha256": "d33a22c0ed8d756da0736c34f0090c95ab42a0cb709bfaa0457ca743ddece950",
+            "scope": "Exact-main public/Gallery retained Switch Theme/input/contrast, bounded actual adapter fix and affected regressions/strict; original evidence identities retained."
+          }
+        ]
+      }
     },
     {
       "id": "tui.segmented-control",
