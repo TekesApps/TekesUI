@@ -1,3 +1,5 @@
+# Explicit local development source for docs/unified-button.md (unpublished WIP API).
+# Previous published baseline: controls-number-field-20261022; repin after API publication.
 [package]
 name = "tekes-ui-app-host-demo"
 version = "0.1.0"
@@ -8,14 +10,19 @@ publish = false
 [features]
 default = []
 three-panels = []
+mixed-columns = ["three-panels"]
+two-panels = []
+independent-settings = []
 
 [dependencies]
 anyhow = "1"
+tekes-ui-settings = { path = "../../crates/tekes-ui-settings" }
 serde_json = "1"
 tekes-ui-app-host = { path = "../../crates/tekes-ui-app-host" }
 tekes-ui-panel-module-demo = { path = "../panel-module-demo" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
+tekes-ui-controls = { path = "../../crates/tekes-ui-controls" }
 tekes-ui-app-protocol = { path = "../../crates/tekes-ui-app-protocol" }
 tekes-ui-render = { path = "../../crates/tekes-ui-render" }
 tekes-ui-scene = { path = "../../crates/tekes-ui-scene" }

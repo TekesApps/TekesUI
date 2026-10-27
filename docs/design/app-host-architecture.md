@@ -8,7 +8,7 @@
 
 ## 1. 目标与范围
 
-维护一套共享 App Host 源码，按构建 profile 预定模块组合、平台能力和发行资源，构建并打包成不同 target apps。Host 的 toolbar、Panel 容器和 splitter 均使用 native TekesUI 组件，由 Host 组合并管理其布局状态；每个 Panel 通过 ProcessContainer 承载独立的带 View ProcessComponent，模块声明 content/toolbar 并输出画面、事件和请求。另可固定装配无 View 的导航 ProcessComponent：它独占 nav.json 和导航历史，Host 只执行导航，成功后回报，由导航模块提交历史。
+维护一套共享 App Host 源码，按构建 profile 预定模块组合、平台能力和发行资源，构建并打包成不同 target apps。Host 的 toolbar、Panel 容器和 splitter 均使用 native TekesUI 组件，由 Host 组合并管理其布局状态；每列可以选择普通 Container 或 ProcessContainer；普通 Container 在窗口进程中运行原始 TekesUI ContentHost，ProcessContainer 承载独立的带 View ProcessComponent，模块声明 content/toolbar 并输出画面、事件和请求。另可固定装配无 View 的导航 ProcessComponent：它独占 nav.json 和导航历史，Host 只执行导航，成功后回报，由导航模块提交历史。
 
 这是一套公共框架与共享启动入口，不是生成多份 App 源码的代码模板。消费产品通过装配配置及必要的 host adapter 接入，不复制 Host 的状态机和 View。
 
@@ -19,6 +19,18 @@ AppHost、模块运行器及其接口在 TekesUI 仓库内分层维护；仓库�
 首版不提供用户安装插件、运行时发现任意模块、动态库加载、产品切换、模块热替换或热卸载。消费者通过普通 Rust crate 和模块工厂在编译期固定装配；首版将 Host、runtime 和选定模块链接为同一目标 App 可执行文件。Host 启动同一可执行文件的独立子进程，通过固定模块 ID 选择工厂；每个子进程只创建自己的模块实例，Host 不调用业务 View 工厂。崩溃后重新启动同一预定模块不属于动态插件替换。
 
 去掉 WASM 后不再有虚拟机、线性内存、fuel 或 guest/host ABI。原生模块是可信的随 App 发布代码；独立进程提供故障边界，不自动提供文件、网络或凭证的安全沙箱。现有原型继承父进程权限，不声称已实现能力隔离或 CPU/内存配额。未来权限限制由平台进程沙箱及 Host adapter 实现并单独验收。
+
+### 公共列接口（2026-10-22）
+
+`AppWindow::from_columns(Vec<Column>)` 接受一至三列，按 leading / center / trailing 的顺序装配；两列只有 leading / center。每列独立选择 `Container` 或 `ProcessContainer`，允许任意混用。列 ID 在窗口内唯一且稳定，拒绝空列集合、重复 ID 和超过三列。`AppProfile { modules }` 保留为旧的全进程列兼容入口。
+
+- `Container::new(id, Content)` 承载原始 TekesUI 内容；`from_source` 可以借用消费者已经拥有的原始 ContentHost，不克隆组件状态。渲染、输入、IME、无障碍继续交给该 ContentHost。`on_action` 消费其原始动作记录；`toolbar` 声明命令，`on_command` 绑定处理；未绑定的显式命令返回错误。
+- `ProcessContainer::new(ModuleDefinition)` 声明编译期工厂，复用已有隔离进程、IPC 与共享纹理通路。普通列不会进入 worker 注册表、启动 View 子进程或创建共享纹理；进程列仍按显隐惰性启动。此处是 AppWindow 的装配类型，不宣称已经迁移为 runtime 的新 View V2 适配器。
+- Host 统一安排列与 toolbar 的几何、分隔拖动和显隐；普通列以窗口逻辑坐标接收输入，进程列沿用 content-local 坐标及 viewport 门控。普通列绘制成功后发布该列当前几何；隐藏、失焦、几何变化取消旧输入会话，不能向另一列或旧布局重放。配置与导航的持久化不属于 Container。
+- SettingsWindow 通过同一个 `AppWindow::from_columns` 装配两个普通 Container，目录和表单保留各自原始 ContentHost。表单内边距、目录选择、Provider、保存及 Undo/Redo 是 Settings 消费者的适配逻辑；不为 Settings 再造一套公共列类型。导航与 Undo/Redo 的无 View ProcessComponent 不因内容列变为本地而删除。
+- Main 仅为 sample 消费者。默认三列样例保留原来的三个进程；`mixed-columns` 样例采用两列进程内容加一列本地可编辑备注，验证同窗混用。完整三个进程原型的验收要求仍适用于其全进程 profile。
+
+公共 Container 当前不负责动态插件发现、View 热迁移或跨窗口搬移。改变普通/进程运行模式需要消费者重新装配并构建。
 
 ## 2. 分层与所有权
 

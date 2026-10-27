@@ -1,0 +1,5 @@
+{
+  "exit_code": 101,
+  "scope": "This PR checkout against existing shared UI, not local unpublished UI WIP",
+  "expected_upstream_dependency_block": true
+}
