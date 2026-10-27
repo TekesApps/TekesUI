@@ -11968,6 +11968,116 @@ mod interaction_tests {
         std::fs::remove_dir_all(directory).unwrap();
     }
     #[test]
+    fn pattern_async_gallery_keeps_nonstore_draft_through_themes_and_real_retry_reset() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_tokens::Theme;
+        fn click(gallery: &mut Gallery, i: usize, id: usize) {
+            gallery.build_scene(&mut Scene::new());
+            let point = gallery
+                .workbench
+                .state(i)
+                .visible_for_id(id)
+                .expect("real async action")
+                .center();
+            gallery.handle_input(&mouse(point, true));
+            gallery.handle_input(&mouse(point, false));
+            gallery.build_scene(&mut Scene::new());
+        }
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 1000.);
+        gallery.set_system_theme(Theme::LIGHT);
+        assert!(gallery.open_route("pattern-async/playground"));
+        let i = index("async");
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Ready);
+        assert!(gallery.workbench.state(i).draft_fixture.is_none());
+        click(&mut gallery, i, 1000);
+        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommit {
+            text: "Async draft".into(),
+            replacement: None,
+        });
+        gallery.build_scene(&mut Scene::new());
+        click(&mut gallery, i, 25);
+        let frame = gallery.workbench.state(i).input.frame_at(0).unwrap();
+        for (theme, phase, attempts) in [
+            (Theme::LIGHT, Phase::Ready, 0),
+            (Theme::DARK, Phase::Pending, 1),
+            (Theme::LIGHT_INCREASED, Phase::Failed, 1),
+            (Theme::DARK_INCREASED, Phase::Saved, 2),
+        ] {
+            match phase {
+                Phase::Ready => {}
+                Phase::Pending => click(&mut gallery, i, 20),
+                Phase::Failed => click(&mut gallery, i, 21),
+                Phase::Saved => {
+                    click(&mut gallery, i, 20);
+                    click(&mut gallery, i, 21);
+                }
+                Phase::Invalid => unreachable!("this table follows nonempty async draft actions"),
+            }
+            assert_eq!(gallery.workbench.state(i).phase, phase);
+            click(&mut gallery, i, 1000);
+            gallery.handle_input(&Event::TextCommand("moveToBeginningOfDocument:".into()));
+            for _ in 0..5 {
+                gallery.handle_input(&Event::TextCommand("moveRightAndModifySelection:".into()));
+            }
+            gallery.build_scene(&mut Scene::new());
+            let before = gallery
+                .text_input_state()
+                .expect("real async native input selection");
+            assert_eq!(before.text, "Async draft");
+            assert_eq!(before.selection, 0..5);
+            gallery.set_system_theme(theme);
+            gallery.build_scene(&mut Scene::new());
+            assert_eq!(gallery.theme(), theme);
+            let after = gallery.text_input_state().unwrap();
+            assert_eq!(after.text, before.text);
+            assert_eq!(after.selection, before.selection);
+            assert_eq!(after.caret_origin, before.caret_origin);
+            let state = gallery.workbench.state(i);
+            assert_eq!(state.input.frame_at(0), Some(frame));
+            assert_eq!(state.phase, phase);
+            assert_eq!(state.attempts, attempts);
+            assert_eq!(state.checkbox.checked, CheckState::Checked);
+            assert!(
+                state.draft_fixture.is_none(),
+                "async never acquires form durable storage"
+            );
+            assert!(state.draft_attempt.is_none());
+            assert!(
+                state.visible_for_id(26).is_none(),
+                "form-only durable recovery is absent"
+            );
+            assert_eq!(state.buttons[&20].state.disabled, phase == Phase::Pending);
+            assert_eq!(
+                state.button_labels[&20],
+                if phase == Phase::Failed {
+                    "Retry save"
+                } else {
+                    "Save settings"
+                }
+            );
+        }
+        click(&mut gallery, i, 0);
+        let state = gallery.workbench.state(i);
+        assert_eq!(state.phase, Phase::Ready);
+        assert_eq!(state.attempts, 0);
+        assert_eq!(state.input.query(), "Studio");
+        assert_eq!(state.checkbox.checked, CheckState::Unchecked);
+        assert!(state.draft_fixture.is_none());
+        assert!(state.draft_attempt.is_none());
+        assert_eq!(gallery.theme(), Theme::DARK_INCREASED);
+    }
+
+    #[test]
     fn settings_full_failure_retry_and_danger_cancel_recovery() {
         let mut w = Workbench::default();
         let mut t = super::super::text::TextEngine::new();
