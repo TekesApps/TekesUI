@@ -3372,6 +3372,7 @@ impl Workbench {
                     "field",
                     "area",
                     "search",
+                    "number-field",
                     "menu",
                     "select",
                     "dialog",
@@ -5469,7 +5470,12 @@ impl Workbench {
                     // host's own story buttons before body adapters that may
                     // consume an otherwise unrelated pointer-up.
                     let mut header = None;
-                    for id in s.button_hits.iter().copied().filter(|id| *id <= 6) {
+                    for id in s
+                        .button_hits
+                        .iter()
+                        .copied()
+                        .filter(|id| *id <= 6 || (renderer == "number-field" && *id == 10))
+                    {
                         if s.buttons.get_mut(&id).is_some_and(|b| b.pointer_up_at(p)) {
                             header = Some(id);
                         }
@@ -13638,6 +13644,186 @@ mod interaction_tests {
                 .filter(|s| s.as_str() == "toolbar: create")
                 .count(),
             1
+        );
+    }
+
+    #[test]
+    fn number_field_gallery_retained_themes_keep_stepper_value_and_bound_state() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut gallery = Gallery::new();
+        let i = index("number-field");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        let original = gallery.workbench.state(i).number_view.layout();
+        let rest = Point::new(original.value.center().x, original.frame.max_y() + 4.);
+        let mut observed = Vec::new();
+        for state in ["normal", "upper-bound", "disabled"] {
+            if state == "upper-bound" {
+                assert!(gallery.workbench.state(i).number.set(32.));
+            }
+            if state == "disabled" {
+                let property = gallery
+                    .workbench
+                    .state(i)
+                    .visible_for_id(10)
+                    .unwrap()
+                    .center();
+                gallery.handle_input(&mouse(property, true));
+                gallery.handle_input(&mouse(property, false));
+                assert!(gallery.workbench.state(i).disabled);
+            } else {
+                assert!(gallery.workbench.focus_control(i, 23).is_some());
+            }
+            for theme in Theme::ALL {
+                gallery.apply(Command::Appearance(if theme.is_dark() {
+                    AppearanceChoice::Dark
+                } else {
+                    AppearanceChoice::Light
+                }));
+                gallery.apply(Command::Contrast(if theme.is_increased() {
+                    ContrastChoice::On
+                } else {
+                    ContrastChoice::Off
+                }));
+                assert_eq!(gallery.theme(), theme);
+                // Both the outside move and a real Workbench-domain rest move are needed.
+                gallery.handle_input(&move_pointer(Point::new(-100., -100.)));
+                gallery.handle_input(&move_pointer(rest));
+                gallery.animate(1. / 60.);
+                let mut scene = Scene::new();
+                gallery.build_scene(&mut scene);
+                let s = gallery.workbench.state(i);
+                let layout = s.number_view.layout();
+                assert_eq!(layout, original);
+                assert_eq!(s.number.value(), if state == "normal" { 8. } else { 32. });
+                assert_eq!(
+                    s.number_view.focused_index(),
+                    if state == "disabled" {
+                        None
+                    } else {
+                        Some(false)
+                    }
+                );
+                assert_eq!(s.buttons[&23].state.disabled, state == "disabled");
+                assert_eq!(s.buttons[&24].state.disabled, state != "normal");
+                let palette = Palette::new(theme, 0).unwrap();
+                let background = Gallery::background(theme);
+                for (region, role, ground) in [
+                    (
+                        layout.value,
+                        if state == "disabled" {
+                            "disabled-text"
+                        } else {
+                            "primary-text"
+                        },
+                        background,
+                    ),
+                    (
+                        layout.decrement.content,
+                        if state == "disabled" {
+                            "tertiary-text"
+                        } else {
+                            "primary-text"
+                        },
+                        palette.color("surface-2").unwrap(),
+                    ),
+                    (
+                        layout.increment.content,
+                        if state != "normal" {
+                            "tertiary-text"
+                        } else {
+                            "primary-text"
+                        },
+                        palette.color("surface-2").unwrap(),
+                    ),
+                ] {
+                    let labels: Vec<_> = scene
+                        .primitives()
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Glyphs(run)
+                                if run.glyphs.iter().any(|g| region.contains(g.origin)) =>
+                            {
+                                Some(run)
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    assert!(
+                        !labels.is_empty(),
+                        "real Gallery stepper glyphs in {region:?}"
+                    );
+                    for label in labels {
+                        assert_eq!(
+                            label.color,
+                            palette.color(role).unwrap(),
+                            "{theme:?} {state} {region:?}"
+                        );
+                        if role == "primary-text" {
+                            let luminance = |c: tekes_ui_tokens::Rgba| {
+                                let c = c.to_linear();
+                                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                            };
+                            let (a, b) = (luminance(label.color), luminance(ground));
+                            assert!(
+                                (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                                    >= if theme.is_increased() { 7. } else { 4.5 }
+                            );
+                        }
+                    }
+                }
+                for button in [layout.decrement, layout.increment] {
+                    assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.rect == button.frame && q.fill == palette.color("surface-2").unwrap())));
+                }
+                if state != "disabled" {
+                    assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_color == palette.color("border-focused").unwrap() && q.rect.intersection(&layout.decrement.frame).is_some())));
+                }
+                observed.push(palette.color("primary-text").unwrap());
+                if state != "normal" {
+                    let before = gallery.workbench.state(i).log.len();
+                    gallery.handle_input(&mouse(layout.increment.frame.center(), true));
+                    gallery.handle_input(&mouse(layout.increment.frame.center(), false));
+                    assert_eq!(gallery.workbench.state(i).number.value(), 32.);
+                    assert_eq!(
+                        gallery.workbench.state(i).log.len(),
+                        before,
+                        "unavailable step has no numeric action"
+                    );
+                }
+            }
+        }
+        assert!(observed.windows(2).any(|w| w[0] != w[1]));
+        let property = gallery
+            .workbench
+            .state(i)
+            .visible_for_id(10)
+            .unwrap()
+            .center();
+        gallery.handle_input(&mouse(property, true));
+        gallery.handle_input(&mouse(property, false));
+        gallery.build_scene(&mut Scene::new());
+        let minus = gallery
+            .workbench
+            .state(i)
+            .number_view
+            .layout()
+            .decrement
+            .frame
+            .center();
+        gallery.handle_input(&mouse(minus, true));
+        gallery.handle_input(&mouse(minus, false));
+        assert_eq!(
+            gallery.workbench.state(i).number.value(),
+            31.,
+            "original Gallery is the bounded stepper, not the editable numeric Content"
         );
     }
 
