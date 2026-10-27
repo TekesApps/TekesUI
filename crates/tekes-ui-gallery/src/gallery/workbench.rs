@@ -7922,6 +7922,214 @@ mod interaction_tests {
     }
 
     #[test]
+    fn pattern_filter_retained_themes_keep_real_query_results_and_clear_action() {
+        use tekes_ui_scene::{GlyphRun, Primitive};
+        use tekes_ui_tokens::{Palette, Theme};
+        fn glyphs(scene: &Scene, frame: Rect) -> Vec<GlyphRun> {
+            scene
+                .primitives()
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if !run.glyphs.is_empty()
+                            && run.glyphs.iter().all(|g| frame.contains(g.origin)) =>
+                    {
+                        Some(run.clone())
+                    }
+                    _ => None,
+                })
+                .collect()
+        }
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        let mut w = Workbench::default();
+        w.apply_reduced_motion(true);
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("filter");
+        assert_eq!(entry(i).slug(), "pattern-filter");
+        build(&mut w, i, &mut text);
+        let content = Rect::new(312., 70., 1000., 1200.);
+        let cases: [(&str, &[&str]); 3] = [
+            ("NOTES", &["Studio notes.md", "Research notes.txt"]),
+            (
+                "not-found",
+                &["No results. Clear the filter to see all files."],
+            ),
+            (
+                "",
+                &["Studio notes.md", "Research notes.txt", "项目计划.md"],
+            ),
+        ];
+        for (query, expected) in cases {
+            if query.is_empty() {
+                click(&mut w, i, 22, &mut text);
+                assert_eq!(
+                    w.state(i)
+                        .log
+                        .iter()
+                        .filter(|s| s.as_str() == "filter: cleared")
+                        .count(),
+                    1
+                );
+            } else {
+                assert!(w.focus_control(i, 1000).is_some());
+                w.handle(i, &Event::TextCommand("selectAll:".into()), &mut text);
+                w.handle(
+                    i,
+                    &Event::TextCommit {
+                        text: query.into(),
+                        replacement: None,
+                    },
+                    &mut text,
+                );
+            }
+            let mut original = None;
+            for theme in Theme::ALL {
+                text.begin_frame();
+                let mut static_text = super::super::static_text::StaticText::new(None);
+                let mut ctx = PageCtx {
+                    theme,
+                    text: &mut text,
+                    static_text: &mut static_text,
+                };
+                let mut scene = Scene::new();
+                w.build_clipped(i, &mut ctx, content, content, &mut scene);
+                assert!(scene.composition_error().is_none());
+                let state = w.state(i);
+                assert_eq!(state.input.query(), query);
+                let input = state.input.frame_at(0).unwrap();
+                let clear = state.buttons[&22].layout().unwrap();
+                let result_top = input.max_y().max(clear.frame.max_y())
+                    + proposal::metric("spacing", "space-section").unwrap();
+                let results = Rect::new(input.min_x(), result_top, state.preview.size.width, 120.);
+                assert!(
+                    state.event_log_frame.unwrap().min_y() > results.max_y(),
+                    "result oracle excludes event-log text"
+                );
+                let geometry = (input, clear.frame, results);
+                if let Some(before) = original {
+                    assert_eq!(geometry, before);
+                } else {
+                    original = Some(geometry);
+                }
+                assert_eq!(state.hit_at(input.center()), Some(1000));
+                assert_eq!(state.hit_at(clear.frame.center()), Some(22));
+                let palette = Palette::from(theme);
+                for (frame, ink_role, ground_role) in [
+                    (
+                        input,
+                        if query.is_empty() {
+                            "secondary-text"
+                        } else {
+                            "primary-text"
+                        },
+                        "transcript-input",
+                    ),
+                    (
+                        clear.frame,
+                        "primary-text",
+                        if state.buttons[&22].state.hovered {
+                            "button-hover"
+                        } else {
+                            "surface-2"
+                        },
+                    ),
+                ] {
+                    let (index, ground) = scene
+                        .primitives()
+                        .iter()
+                        .enumerate()
+                        .find_map(|(i, p)| match p {
+                            Primitive::Quad(q) if q.rect == frame => Some((i, q)),
+                            _ => None,
+                        })
+                        .expect("real filter child own ground");
+                    assert_eq!(ground.fill, palette.color(ground_role).unwrap());
+                    let inks: Vec<_> = scene.primitives()[index + 1..]
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Glyphs(r)
+                                if !r.glyphs.is_empty()
+                                    && r.glyphs.iter().all(|g| frame.contains(g.origin)) =>
+                            {
+                                Some(r.color)
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    assert!(
+                        !inks.is_empty(),
+                        "actual query/placeholder/Clear title glyphs"
+                    );
+                    for ink in inks {
+                        assert_eq!(ink, palette.color(ink_role).unwrap());
+                        assert_eq!((ink.a, ground.fill.a), (1., 1.));
+                        assert!(
+                            contrast(ink, ground.fill)
+                                >= if theme.is_increased() { 7. } else { 4.5 }
+                        );
+                    }
+                }
+                // The parent draws passive result text on the real Gallery renderer clear.
+                assert!(!scene.primitives().iter().any(
+                    |p| matches!(p,Primitive::Quad(q) if q.rect.intersection(&results).is_some())
+                ));
+                let ground = super::super::Gallery::background(theme);
+                assert_eq!(ground, palette.color("document-canvas").unwrap());
+                let actual = glyphs(&scene, results);
+                assert!(!actual.is_empty());
+                let mut reference = Scene::new();
+                // Fixed expected filenames/messages exercise real output, without reimplementing contains().
+                for (row, value) in expected.iter().enumerate() {
+                    label(
+                        &mut ctx,
+                        &mut reference,
+                        Rect::new(
+                            results.min_x(),
+                            results.min_y() + row as f32 * 40.,
+                            results.size.width,
+                            40.,
+                        ),
+                        value,
+                        false,
+                    );
+                }
+                assert_eq!(
+                    actual,
+                    glyphs(&reference, results),
+                    "actual filtered text identity/order/count for {query:?}"
+                );
+                for run in actual {
+                    assert_eq!(run.color, palette.color("primary-text").unwrap());
+                    assert_eq!((run.color.a, ground.a), (1., 1.));
+                    assert!(
+                        contrast(run.color, ground) >= if theme.is_increased() { 7. } else { 4.5 }
+                    );
+                }
+                if query.is_empty() {
+                    assert_eq!(
+                        state
+                            .log
+                            .iter()
+                            .filter(|s| s.as_str() == "filter: cleared")
+                            .count(),
+                        1,
+                        "Theme redraw does not replay Clear"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
     fn search_filter_row_wraps_without_overlapping_hits_or_results() {
         let gap = proposal::metric("spacing", "space-regular").unwrap();
         let results_gap = proposal::metric("spacing", "space-section").unwrap();
