@@ -1413,7 +1413,44 @@
         "owner": "tui.text-field",
         "reason": "These input variants already share the public TextSurface editor and input boundary roles. Reuse the existing text-field JSON contract as a partial family reference; this does not assert complete per-variant runtime dependencies."
       },
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/input.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/input.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "0bfbbdcf42532a9e0d6c46b16a31253acc4a4ee6",
+        "scope": "Actual multiline TextSurface and original configured TextFieldContent plus retained Gallery; tests only",
+        "claims": [
+          "Retained actual multiline surface and configured original content preserve source/selection/scroll/frame across four Themes; real CoreText ordinary/selected composite4.5/7, focus and scrollbar3 passed",
+          "Actual retained Gallery multiline input preserves native state/caret/scroll through Themes and performs real replacement/newline; strict passed",
+          "Both samplers corrected for LIGHT role-color aliases and partially visible selection; initial failed source/program evidence preserved"
+        ],
+        "source_identity": {
+          "scope": "Selected actual multiline implementation/adapter and own real integration witnesses; no recursive proof",
+          "sha256": {
+            "crates/tekes-ui-controls/src/text_surface.rs": "791439dcf9f778811e60af719458d8b871c82d4303a6727b28733bd840469825",
+            "crates/tekes-ui-controls/src/composition/adapters.rs": "6d16b70de8d8002de347abc319892b3066a3fd4041efe6ada0a0c4d4da35af4d",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "043c46f6746522b6f6d3feb6a895e914a465d867e9ac2a3f18e8be43d1d26e25",
+            "examples/composition-consumer/tests/text_area_theme.rs": "cf7792f60f0ccf11c7a675c44a1d13a5d5d165615d0aae25a7fa89caee2b558f"
+          }
+        },
+        "exceptions": [
+          "Ordinary geometry remains data; existing multiline configuration used rather than new TextArea API",
+          "Shared unchanged TextField state/AX/font/IME matrices retain original identities; failed color-alias/partial-rect sampler retained as failure"
+        ],
+        "gaps": [
+          "New external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+          "Other controls/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.text-area",
+            "commit": "0bfbbdcf42532a9e0d6c46b16a31253acc4a4ee6",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/text-area-mainfc261e4-candidate/main-intake/selection-oracle-correction01/commit-receipt.json",
+            "sha256": "70705cd57d5e50936bce47c11ac1f28ba72300c6b49afbc67e8581e304879303",
+            "scope": "Actual public2/Gallery1/strict passed at recorded main source; unchanged shared matrices retain original identities"
+          }
+        ]
+      }
     },
     {
       "id": "tui.search-field",
