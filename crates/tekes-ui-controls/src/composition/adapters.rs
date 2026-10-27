@@ -913,6 +913,15 @@ impl DialogContent {
     }
 }
 impl Component for DialogContent {
+    // Arranged semantic slots translate with their original modal frame. This
+    // qualifies the Dialog ancestor of a Scroll body for read-only focus reveal.
+    fn host_reveal_passthrough(&self) -> bool {
+        self.model.open && !self.modal.is_empty()
+    }
+    fn host_reveal_local_clip(&self) -> Option<Rect> {
+        Some(self.modal)
+    }
+
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
     }

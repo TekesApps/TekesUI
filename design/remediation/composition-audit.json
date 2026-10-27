@@ -730,7 +730,7 @@
         {
           "api": "tekes_ui_controls::composition::SliderContent",
           "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-          "line": 1045,
+          "line": 1054,
           "anchor": "pub struct SliderContent {"
         }
       ]
@@ -1840,7 +1840,7 @@
     "crates/tekes-ui-controls/src/composite.rs": "8931bb75dcfe576efe58ed15021b5b3394ae4b217eed10723693080d1b4db276",
     "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
     "crates/tekes-ui-controls/src/composition/actions.rs": "6d7a2569853c1b783c3f9c5af5b8df4029a3880311ac47eac12310cd6ebb8e7b",
-    "crates/tekes-ui-controls/src/composition/adapters.rs": "5d984fb677564bd575e2f00ec14d96a1ba955e701dd070de7109acead0aa141d",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "6d16b70de8d8002de347abc319892b3066a3fd4041efe6ada0a0c4d4da35af4d",
     "crates/tekes-ui-controls/src/composition/content_reading.rs": "a58e8a35e1af4bfb43c71665360cba93319db082a1383a47105ad9788b103d6d",
     "crates/tekes-ui-controls/src/composition/content_reveal.rs": "1d2173c778670f825e67257ea54912d04f497d555f293ced0228e19f8a1b2dde",
     "crates/tekes-ui-controls/src/composition/help.rs": "facae75ad05ce80881aedb7a3cc02416a1fa5ff4616435670af2c818139022a7",
@@ -1946,7 +1946,7 @@
     "examples/composition-consumer/src/popover_content.rs": "9175a0049f6e9c5aa08f919559871acf9b3f57ecea6bf8677d57363195fc6a26",
     "examples/composition-consumer/src/reading_prepend.rs": "f20e4d5d08f62f8093a1d5428c6499bf591d3a74e228239b28ad6e09588970d0",
     "examples/composition-consumer/src/reading_stream.rs": "6b7662c94ed91ed94b78526499ea1694e865568ff2b542ab4d354b144cede247",
-    "examples/composition-consumer/src/scenarios.rs": "a3a079eeec9ff7ca12a7d9eeda04ae7cc66647aa862eb3918827ca0d7bc92074",
+    "examples/composition-consumer/src/scenarios.rs": "d9552cc739cccb3c57f4b12daeabc47535dea5af72bb964516dae0fb206679b4",
     "examples/composition-consumer/src/scroll_updates.rs": "3f59942efc460f1c754580673e0f02799c7dcdb14a6358164091f76f60f8a121",
     "examples/composition-consumer/src/slider_content.rs": "762da114a39181ba43e10501ef8f59e73a742c7171f907e2a047bc031c20d926",
     "examples/composition-consumer/src/text_viewport.rs": "abd219243c296bd0ced6722147ef0e43e2e03723c85a0c212f5d0ed3b1a6a1cf",
@@ -1971,7 +1971,7 @@
     "examples/composition-consumer/tests/native_pointer_translation.rs": "9b7ec44a2a1ba65fc538c87f0f43f3e94e662bd4f7e77735d2d16f0a435cf44e",
     "examples/composition-consumer/tests/padding_focus.rs": "c507f4f758d0eaecfbd2f2bf5f4589ced599d05fc3c1c35fc0e735bbc3eb0b67",
     "examples/composition-consumer/tests/pointer_metadata.rs": "e804ffc666ec3128808a60b09e2b2007a1d3a4988193056fe2eda823a0e92679",
-    "examples/composition-consumer/tests/scenarios.rs": "b7ace0f87299dfd283aa14b5aa6cc2d24da7f26727e7b16d2682d93ebf228ade",
+    "examples/composition-consumer/tests/scenarios.rs": "61c29e19d77c985409b22fd19d48d3b1204a07c5d0690e3733ce7b91ed4310ce",
     "examples/composition-consumer/tests/scroll_reveal.rs": "3fb0700db0e5d3f969b11062aa6b2b686cf442e7ff3410ec03f0706422901a2c",
     "examples/composition-consumer/tests/slider_content.rs": "6b5bb596050ba55a1ea17b07680c1dadfd4e1fa83703a7e026355afd75c43e75",
     "examples/composition-consumer/tests/slider_states.rs": "9ba39cb152181ee5ab65b94d83e5573417fc706582a67eb6dc7712db5a1fc184",
@@ -2130,7 +2130,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-      "line": 1059,
+      "line": 1068,
       "anchor": "impl Component for SliderContent {"
     },
     {

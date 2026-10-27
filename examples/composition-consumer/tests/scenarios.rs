@@ -1014,6 +1014,19 @@ fn rich_dialog_uses_modal_focus_escape_restore_and_owned_form_state() {
     host.show_dialog(ids::DIALOG).unwrap();
     render(&mut host, &mut text);
     assert!(host.focused().is_some_and(|id| id != ids::DIALOG_INVOKER));
+    assert!(
+        host.plan_host_reveal(
+            ids::DIALOG_FIELD,
+            tekes_ui_controls::ScrollRevealOptions {
+                placement: tekes_ui_controls::ScrollRevealPlacement::Centered,
+                ..Default::default()
+            },
+            &[],
+            HostRevealBudget::default()
+        )
+        .is_ok(),
+        "the original Dialog and screen qualify the real Scroll body path and modal clip"
+    );
     let field = host.focused_text().unwrap();
     assert!(!field.input.text.is_empty());
     let dialog = host
@@ -3536,6 +3549,20 @@ fn return_latest_pointer_and_ax_preserve_editor_ime_but_explicit_keyboard_focus_
                 .iter()
                 .any(|(id, _)| *id == s::LATEST)
         );
+        assert!(
+            !fixture
+                .accessibility_action(s::LATEST, AccessibilityAction::Focus)
+                .consumed,
+            "active IME preedit rejects cross-owner accessibility focus"
+        );
+        assert_eq!(fixture.host.focused(), Some(s::COMPOSER));
+        let input = &fixture.host.focused_text().unwrap().input;
+        assert_eq!(
+            (input.text.clone(), input.marked.clone(), input.selection()),
+            before
+        );
+        assert!(fixture.event(&ContentEvent::Unmark).consumed);
+        assert!(fixture.host.focused_text().unwrap().input.marked.is_none());
         fixture.accessibility_action(s::LATEST, AccessibilityAction::Focus);
         assert_eq!(fixture.host.focused(), Some(s::LATEST));
     }

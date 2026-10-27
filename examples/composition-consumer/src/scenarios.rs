@@ -249,8 +249,15 @@ pub fn build_list() -> (ContentHost, ComponentId) {
 #[derive(Debug)]
 struct DialogScreen {
     children: Vec<Content>,
+    arranged: bool,
 }
 impl Component for DialogScreen {
+    // Both original child frames translate with this arranged screen. Child
+    // access is accessor-only, as required by the Scroll body's reveal route.
+    fn host_reveal_passthrough(&self) -> bool {
+        self.arranged
+    }
+
     fn measure(&mut self, _: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
         MeasuredChild::new(a)
     }
@@ -265,6 +272,7 @@ impl Component for DialogScreen {
         if let Some(dialog) = self.children.iter_mut().find(|n| n.id() == ids::DIALOG) {
             dialog.arrange(t, f, c);
         }
+        self.arranged = true;
     }
     fn children(&self) -> &[Content] {
         &self.children
@@ -349,6 +357,7 @@ pub fn rich_dialog() -> Result<ContentHost, CompositionError> {
         ids::DIALOG_SCREEN,
         DialogScreen {
             children: vec![invoker, dialog],
+            arranged: false,
         },
     ))
 }
