@@ -2450,7 +2450,44 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/combo-async.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/combo-async.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "22cbc8e88e980e889f03afb10d36488bba3e79f5",
+        "scope": "Actual public Select/View and real Gallery retain open-popup Theme, committed vs active identity, necessary text/focus contrast and original input/value/AX behavior; tests only",
+        "claims": [
+          "Same real Select/View with popup open through Theme::ALL retains committed index separately from keyboard/hover active row and actual trigger/menu/text4.5/7/focus ring3 roles",
+          "Original disabled/re-enable/matching press/outside release guard/Escape/window dismissal and Enter commit preserve value and interaction contracts",
+          "Actual retained Workbench Gallery menu parent/selected versus focused/hidden item/value/log/focus restoration and strict passed; no invented Content or graphic renderer"
+        ],
+        "source_identity": {
+          "scope": "Selected actual Select/widget/View/Gallery witnesses, not full Menu/dependency proof or native certificate",
+          "sha256": {
+            "crates/tekes-ui-controls/src/widgets.rs": "39e9bdce57eacfb93020954e72581a005eaaf2ec86bca69dff5ddd7d64921d86",
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "ddac2dd809a845ce53192237c02f6ae75cf89cb0653c1ce64f16767268f6ee8e",
+            "examples/composition-consumer/tests/select_theme.rs": "6f6026b4e183961ad86c49f287536090c29e8a0450a5772befe06fc9d32f7c0e"
+          }
+        },
+        "exceptions": [
+          "No builtin SelectContent or new artwork invented; direct MenuEvent/index contract does not use Host action journal",
+          "Ordinary popup/row geometry and indices stay data; existing shared Menu/Button/motion/overlay evidence retained"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+          "#127 original full combination/remaining controls/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.select",
+            "commit": "22cbc8e88e980e889f03afb10d36488bba3e79f5",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/select-main2c6d7db-candidate/main-intake/commit-receipt.json",
+            "sha256": "79ae8c9a5a2a598cfc787e156328be8e6f6d0d0b7bdce2456107883fc6dc20c1",
+            "scope": "Actual public/real Gallery/strict; original shared producer/Menu/motion/native results retain original identities"
+          }
+        ]
+      }
     },
     {
       "id": "tui.number-field",

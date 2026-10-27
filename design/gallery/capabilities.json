@@ -31995,6 +31995,50 @@
           "open",
           "empty"
         ],
+        "practical_intake": {
+          "baseline_commit": "22cbc8e88e980e889f03afb10d36488bba3e79f5",
+          "claims": [
+            "Same real Select/View with popup open through Theme::ALL retains committed index separately from keyboard/hover active row and actual trigger/menu/text4.5/7/focus ring3 roles",
+            "Original disabled/re-enable/matching press/outside release guard/Escape/window dismissal and Enter commit preserve value and interaction contracts",
+            "Actual retained Workbench Gallery menu parent/selected versus focused/hidden item/value/log/focus restoration and strict passed; no invented Content or graphic renderer"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.select",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/select-main2c6d7db-candidate/main-intake/commit-receipt.json",
+              "commit": "22cbc8e88e980e889f03afb10d36488bba3e79f5",
+              "component": "tui.select",
+              "issue": "#122",
+              "scope": "Actual public/real Gallery/strict; original shared producer/Menu/motion/native results retain original identities",
+              "sha256": "79ae8c9a5a2a598cfc787e156328be8e6f6d0d0b7bdce2456107883fc6dc20c1"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "No builtin SelectContent or new artwork invented; direct MenuEvent/index contract does not use Host action journal",
+            "Ordinary popup/row geometry and indices stay data; existing shared Menu/Button/motion/overlay evidence retained"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+            "#127 original full combination/remaining controls/full52"
+          ],
+          "scope": "Actual public Select/View and real Gallery retain open-popup Theme, committed vs active identity, necessary text/focus contrast and original input/value/AX behavior; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual Select/widget/View/Gallery witnesses, not full Menu/dependency proof or native certificate",
+            "sha256": {
+              "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+              "crates/tekes-ui-controls/src/widgets.rs": "39e9bdce57eacfb93020954e72581a005eaaf2ec86bca69dff5ddd7d64921d86",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "ddac2dd809a845ce53192237c02f6ae75cf89cb0653c1ce64f16767268f6ee8e",
+              "examples/composition-consumer/tests/select_theme.rs": "6f6026b4e183961ad86c49f287536090c29e8a0450a5772befe06fc9d32f7c0e"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "choice",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -59320,7 +59364,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "ded9d41912ba8750613510978b72b93f72190cb2e46d1a1bba088b12669569b3",
+    "design/gallery/component-coverage.json": "d3b76936db415b3e58e927d36142f2543ba1842ed7d8c0178a979260881f18a2",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -59369,6 +59413,7 @@
     "examples/composition-consumer/tests/radio_group_theme.rs": "6053b0b681fdb0053633ed05a25c863da6c5cbc401c1577be664d663a1f0560b",
     "examples/composition-consumer/tests/scroll_area_theme.rs": "a64afa37f06ad160330a797166fe7e4eb3c25a15d1e3ef214a6dda9d0e9b5133",
     "examples/composition-consumer/tests/segmented_control_theme.rs": "f356a6c267fb6bb0f2429e749e131d6c84027fa0f6c342e7c0ba2c423b515397",
+    "examples/composition-consumer/tests/select_theme.rs": "6f6026b4e183961ad86c49f287536090c29e8a0450a5772befe06fc9d32f7c0e",
     "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",
     "examples/composition-consumer/tests/slider_theme.rs": "856cfec5dd414caf2f9c52f8e2bfd4f6ad5fd1a9f768b4de5da9c7717e0885cb",
     "examples/composition-consumer/tests/split_view_theme.rs": "2fabc2e68f51cf92a4780ad4741c8471b7d0b6b1985fbcf036442d59eb255864",
