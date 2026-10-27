@@ -7225,6 +7225,54 @@
         "fixture_unverified": [
           "rest"
         ],
+        "practical_intake": {
+          "baseline_commit": "9f4660eed322b2be72edb137ac19a384dd6eaac9",
+          "claims": [
+            "Primary registered public readonly TextSurface and real Page::Text through Theme::ALL preserve source/selection/clipboard query/read-only rejection/reflow/scroll and exact actual normal/selected ink4.5/7",
+            "Selected-text contrast uses actual emitted selection alpha and actual own ground under source-confirmed encoded-sRGB blend; no pixel/GPU/native certification claimed",
+            "Minimal real TextContent adapter semantic role/Canvas path and actual Gallery target passed; original Gallery/strict identities retained after only public trait import restoration"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.text",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/text-main6594bad-candidate/main-intake/commit-receipt.json",
+              "commit": "9f4660eed322b2be72edb137ac19a384dd6eaac9",
+              "component": "tui.text",
+              "issue": "#122",
+              "scope": "Actual corrected public two cases/real Gallery/strict; original native copy/edit/IME and shared results retain identity, false preflight/compiler failure preserved",
+              "sha256": "7e4773e386f456ec2ebb4ced5e1916b641fed342fd1e7c97fe7316fe3d150e8f"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Scene selection composition follows actual encoded-sRGB premul contract and actual emitted alpha, not new GPU/AA pixel evidence",
+            "No invented Text hover/loading/editor scope; new clipboard coverage is query"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/whole-window/physicalIME/VoiceOver certification",
+            "new host copy-command dispatch/OS clipboard write; original valid result reused",
+            "other controls/full52"
+          ],
+          "scope": "Actual primary TextSurface/real Page::Text plus TextContent adapter retained Theme/source/selection/query/readonly/reflow/scroll and real text/alpha-background contrast; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual primary TextSurface/Gallery/adapter and blend-contract witnesses; separate public correction and unchanged Gallery/strict actual identities, not full shader/dependency proof",
+            "sha256": {
+              "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+              "crates/tekes-ui-controls/src/text_surface.rs": "791439dcf9f778811e60af719458d8b871c82d4303a6727b28733bd840469825",
+              "crates/tekes-ui-gallery/src/gallery/text.rs": "7d32a99059494d8e5dbee04522dcfd5132d41e4b1d189323a19d3ea2f3d493f4",
+              "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1",
+              "crates/tekes-ui-render/src/common.rs": "9c287dedd02bcc7e590369b51eb161284ebe2a90fdb5f07da94c70830cf0d7cf",
+              "crates/tekes-ui-render/src/quad.wgsl": "f8a48768ec52fabb7fa3e8939425e20814557d9e4de0349a04461b8e40b03b61",
+              "examples/composition-consumer/tests/text_theme.rs": "d06f5da2ccd134369542047ad10ac91ac4bc835ee371f4713012265049a4b210"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "static",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -59178,6 +59226,7 @@
     "crates/tekes-ui-render/src/image_pass.rs": "fa3442cebe8cacc2ace692d7060b891efad029acbfc1775dde74f054e3aa61e5",
     "crates/tekes-ui-render/src/instance.rs": "b7c596a5f7e3ec41f3a5a9e78a6b3b76d6047dc68045aad6ff9d33db8da865bd",
     "crates/tekes-ui-render/src/lib.rs": "4e1743824970601004a32ef3ac76a2761103f3fcfc2876d04bc901337731abe5",
+    "crates/tekes-ui-render/src/quad.wgsl": "f8a48768ec52fabb7fa3e8939425e20814557d9e4de0349a04461b8e40b03b61",
     "crates/tekes-ui-render/src/quad_pass.rs": "ff0be858d034ff9cf6afba8dae19e4f420fdd47a31e694e8d6b53accda0dd21f",
     "crates/tekes-ui-render/src/renderer.rs": "37fc70d4aa8821b59f31bd1db0047a1a42f269250c5bcaf2c3f4784df8698ec8",
     "crates/tekes-ui-render/src/shared_surface_macos.rs": "5f0ebe2d0f92e9b5038b0c40277677a5d6bc3422c2a7d01d6b1ece08249b4002",
@@ -59266,7 +59315,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "423ec1ec0b66054a47a3082ceeacd5eaea7aec241b5762f59b24dfe622f3819e",
+    "design/gallery/component-coverage.json": "ded9d41912ba8750613510978b72b93f72190cb2e46d1a1bba088b12669569b3",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -59324,6 +59373,7 @@
     "examples/composition-consumer/tests/surface_theme.rs": "ea80660bf10c7af0092bf43ff8dca05c3414eedb21452e40be5c80b83aa9edbf",
     "examples/composition-consumer/tests/switch_theme.rs": "b3fabfc1f6340fa76148ed194787db52ba10ef36397994b8b1d90c4fcab27c9a",
     "examples/composition-consumer/tests/tabs_theme.rs": "88d4c4178f4caa4da2dea18dea8d62a7a186691e36b07048d9a48e76b88b935e",
+    "examples/composition-consumer/tests/text_theme.rs": "d06f5da2ccd134369542047ad10ac91ac4bc835ee371f4713012265049a4b210",
     "examples/composition-consumer/tests/toolbar_theme.rs": "b81542fc6e3891c430d4e54e0e69acd42e364a442840ac9898598e22f4407557",
     "examples/composition-consumer/tests/tree_theme.rs": "01047607cc63d346bd67c1b490978477eace5a02009fa23b4b01c65a1d6921aa",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",

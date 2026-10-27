@@ -690,7 +690,48 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "9f4660eed322b2be72edb137ac19a384dd6eaac9",
+        "scope": "Actual primary TextSurface/real Page::Text plus TextContent adapter retained Theme/source/selection/query/readonly/reflow/scroll and real text/alpha-background contrast; tests only",
+        "claims": [
+          "Primary registered public readonly TextSurface and real Page::Text through Theme::ALL preserve source/selection/clipboard query/read-only rejection/reflow/scroll and exact actual normal/selected ink4.5/7",
+          "Selected-text contrast uses actual emitted selection alpha and actual own ground under source-confirmed encoded-sRGB blend; no pixel/GPU/native certification claimed",
+          "Minimal real TextContent adapter semantic role/Canvas path and actual Gallery target passed; original Gallery/strict identities retained after only public trait import restoration"
+        ],
+        "source_identity": {
+          "scope": "Selected actual primary TextSurface/Gallery/adapter and blend-contract witnesses; separate public correction and unchanged Gallery/strict actual identities, not full shader/dependency proof",
+          "sha256": {
+            "crates/tekes-ui-controls/src/text_surface.rs": "791439dcf9f778811e60af719458d8b871c82d4303a6727b28733bd840469825",
+            "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+            "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1",
+            "crates/tekes-ui-gallery/src/gallery/text.rs": "7d32a99059494d8e5dbee04522dcfd5132d41e4b1d189323a19d3ea2f3d493f4",
+            "crates/tekes-ui-render/src/common.rs": "9c287dedd02bcc7e590369b51eb161284ebe2a90fdb5f07da94c70830cf0d7cf",
+            "crates/tekes-ui-render/src/quad.wgsl": "f8a48768ec52fabb7fa3e8939425e20814557d9e4de0349a04461b8e40b03b61",
+            "examples/composition-consumer/tests/text_theme.rs": "d06f5da2ccd134369542047ad10ac91ac4bc835ee371f4713012265049a4b210"
+          }
+        },
+        "exceptions": [
+          "Scene selection composition follows actual encoded-sRGB premul contract and actual emitted alpha, not new GPU/AA pixel evidence",
+          "No invented Text hover/loading/editor scope; new clipboard coverage is query"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/whole-window/physicalIME/VoiceOver certification",
+          "new host copy-command dispatch/OS clipboard write; original valid result reused",
+          "other controls/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.text",
+            "commit": "9f4660eed322b2be72edb137ac19a384dd6eaac9",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/text-main6594bad-candidate/main-intake/commit-receipt.json",
+            "sha256": "7e4773e386f456ec2ebb4ced5e1916b641fed342fd1e7c97fe7316fe3d150e8f",
+            "scope": "Actual corrected public two cases/real Gallery/strict; original native copy/edit/IME and shared results retain identity, false preflight/compiler failure preserved"
+          }
+        ]
+      }
     },
     {
       "id": "tui.icon",
