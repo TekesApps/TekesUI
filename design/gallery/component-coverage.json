@@ -2572,7 +2572,45 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "c40f147c206c5bd744509b137c2bddda858356ac",
+        "scope": "Public retained selectable ListView and real Gallery adapter across Theme::ALL, own-row CoreText contrast and actual selection/navigation/AX; tests only",
+        "claims": [
+          "Same public selectable ListView retains selection across Theme::ALL with actual selected/hovered/disabled/restored grounds, real CoreText ink4.5/7 and focus indicator",
+          "Original disabled input rejection and Down/Home/End/Up/Enter behavior preserved",
+          "Actual Gallery retains selected/hover/focus state across four Themes, own-row glyph contrast, five ListItem semantics and real Home/End navigation; Gallery strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected real consumer/collection/Gallery sources, not exhaustive dependency proof; actual full-source/program identities retained in receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "ab7fd37894079c213053c7f084a16eab2c515b638659be0da4688bb5597a217b",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
+            "examples/composition-consumer/tests/list_theme.rs": "3f73caabbba6fff3368f54470ec3704b8935f8f9d2a25d019db2a82025033304"
+          }
+        },
+        "exceptions": [
+          "Non-selecting ListContent remains layout, Gallery has no List disabled toggle; public disabled behavior verified. Disabled tertiary not active contrast. Ordinary geometry stays layout; CoreText cfg macOS explicit before first build.",
+          "Original shared generation and Row/List/Settings/selection regressions reused unchanged"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+          "other5 family roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#124",
+            "component": "tui.list",
+            "commit": "c40f147c206c5bd744509b137c2bddda858356ac",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/list-main0a389a9-candidate/main-intake/commit-receipt.json",
+            "sha256": "c31e561d3a42f649e74f3d4f7192ffb8b569ec0218d106ab24fe3f7e57322b92",
+            "scope": "Exact-main actual public/Gallery retained selectable List Theme, real ink/ground/input/semantics, strict, original applicability boundaries."
+          }
+        ]
+      }
     },
     {
       "id": "tui.tree",

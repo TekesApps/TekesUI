@@ -45850,6 +45850,51 @@
           "disabled",
           "selected"
         ],
+        "practical_intake": {
+          "baseline_commit": "c40f147c206c5bd744509b137c2bddda858356ac",
+          "claims": [
+            "Same public selectable ListView retains selection across Theme::ALL with actual selected/hovered/disabled/restored grounds, real CoreText ink4.5/7 and focus indicator",
+            "Original disabled input rejection and Down/Home/End/Up/Enter behavior preserved",
+            "Actual Gallery retains selected/hover/focus state across four Themes, own-row glyph contrast, five ListItem semantics and real Home/End navigation; Gallery strict passed"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.list",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/list-main0a389a9-candidate/main-intake/commit-receipt.json",
+              "commit": "c40f147c206c5bd744509b137c2bddda858356ac",
+              "component": "tui.list",
+              "issue": "#124",
+              "scope": "Exact-main actual public/Gallery retained selectable List Theme, real ink/ground/input/semantics, strict, original applicability boundaries.",
+              "sha256": "c31e561d3a42f649e74f3d4f7192ffb8b569ec0218d106ab24fe3f7e57322b92"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Non-selecting ListContent remains layout, Gallery has no List disabled toggle; public disabled behavior verified. Disabled tertiary not active contrast. Ordinary geometry stays layout; CoreText cfg macOS explicit before first build.",
+            "Original shared generation and Row/List/Settings/selection regressions reused unchanged"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+            "other5 family roots/full52"
+          ],
+          "scope": "Public retained selectable ListView and real Gallery adapter across Theme::ALL, own-row CoreText contrast and actual selection/navigation/AX; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected real consumer/collection/Gallery sources, not exhaustive dependency proof; actual full-source/program identities retained in receipts.",
+            "sha256": {
+              "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
+              "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "ab7fd37894079c213053c7f084a16eab2c515b638659be0da4688bb5597a217b",
+              "examples/composition-consumer/tests/list_theme.rs": "3f73caabbba6fff3368f54470ec3704b8935f8f9d2a25d019db2a82025033304"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "select",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -58386,7 +58431,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "d6ea4585cfcdcf74de034f4992eb0b93304261cfcd5f19d4854d9190c3ba35e7",
+    "design/gallery/component-coverage.json": "698192566aaba61bbf64e59bc3f06e5ca7f96b1aea3a74ef54dd420b23b61ac7",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58425,6 +58470,7 @@
     "examples/composition-consumer/tests/dialog_theme.rs": "6cf7b51a1c7393501f89b44551da8031712ca5054d5ada0e91e3fc2234a97953",
     "examples/composition-consumer/tests/icon_button_theme.rs": "0d9bc7273e23df0ca442cc1d9cc76999e487df144576c070f673ac31e48b0a5c",
     "examples/composition-consumer/tests/icon_theme.rs": "49b5adb26de708799a14330a8a2b8d341150ab673cb4e07626187f5f3b8f0814",
+    "examples/composition-consumer/tests/list_theme.rs": "3f73caabbba6fff3368f54470ec3704b8935f8f9d2a25d019db2a82025033304",
     "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758",
     "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",
     "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
