@@ -437,7 +437,46 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "146a1c822e95e17bec355daa0d1356cec46fca9c",
+        "scope": "Actual public Disclosure retained trigger/body Theme/state/input and real Gallery native chevron direction/necessary contrast/header/body; tests only",
+        "claims": [
+          "Same actual public Disclosure model/View through Theme::ALL retains open/closed/body reveal/clip and necessary trigger rest/hover/press/focus/availability/re-enable with real header/body contrast4.5/7",
+          "Real key/matching press/drag-out cancel/Space release preserve original toggle semantics and caller body contract",
+          "Actual Workbench production native right/down chevron geometry/ink/contrast3 and header/body glyph states passed, Gallery strict passed; no fake glyph backend"
+        ],
+        "source_identity": {
+          "scope": "Selected actual Disclosure/View/Gallery native adapter/witness sources, not full dependency closure or pixel/native-window certificate",
+          "sha256": {
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "ab98fab1b0de4e7301d2fb0dcaee08ea0bade52b55b76ea25fa6b8c4b44a470f",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "3c1f9a98e0aca1273ced35c7114584e3d0be31b99b960b4ce466fa8564ca37a2",
+            "crates/tekes-ui-gallery/src/gallery/pages/icons.rs": "67a1afc5c6d2638642251de82cc2a3ffc37add1058e09d771d7c3e7a2d8af385",
+            "examples/composition-consumer/tests/disclosure_theme.rs": "93c2ac8710945220a7fe4fe29ab12118c9509de08403842d1b339ef9ff3324b1"
+          }
+        },
+        "exceptions": [
+          "No builtin DisclosureContent or public native-chevron alias invented; actual required icon path exercised in Gallery",
+          "Disabled trigger availability does not invent descendant policy; geometry remains data"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/whole-window/native AX/physicalIME/VoiceOver certification",
+          "other layout roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#121",
+            "component": "tui.disclosure",
+            "commit": "146a1c822e95e17bec355daa0d1356cec46fca9c",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/disclosure-main6594bad-candidate/main-intake/commit-receipt.json",
+            "sha256": "8f8cdddae9c7546ff35492746798928a465f7cf7410c1453ed29bbc5b1a032d1",
+            "scope": "Actual public/real Gallery native-icon Scene/strict; original shared Button/motion/ContentHost/IME evidence retains identity"
+          }
+        ]
+      }
     },
     {
       "id": "tui.surface",
