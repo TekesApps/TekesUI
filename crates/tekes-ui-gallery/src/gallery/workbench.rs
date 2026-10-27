@@ -11068,6 +11068,107 @@ mod interaction_tests {
     }
 
     #[test]
+    fn stack_gallery_retained_themes_keep_child_semantics_and_equal_cell_geometry() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut gallery = Gallery::new();
+        let i = index("stack");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        let mut original = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            let stack = &state.extended.stack_view;
+            let layout = stack.layout();
+            assert_eq!(layout.items.len(), 3);
+            assert!(layout.visible.is_some());
+            assert_eq!(
+                stack.model().axis,
+                tekes_ui_controls::extended::Axis::Horizontal
+            );
+            assert_eq!(stack.model().gap, 8.);
+            let cells: Vec<_> = layout
+                .items
+                .iter()
+                .map(|item| (item.frame(), item.visible_frame()))
+                .collect();
+            if let Some(original) = &original {
+                assert_eq!(&cells, original);
+            } else {
+                original = Some(cells);
+            }
+            assert!(
+                layout
+                    .items
+                    .windows(2)
+                    .all(|w| w[0].frame().max_x() <= w[1].frame().min_x())
+            );
+            let palette = Palette::new(theme, 0).unwrap();
+            for item in &layout.items {
+                let frame = item.frame();
+                let panel = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect == frame.inset(0.5) => Some(q),
+                        _ => None,
+                    })
+                    .expect("real Stack Gallery child surface");
+                assert_eq!(panel.fill, palette.color("surface-panel").unwrap());
+                let label = frame.inset(10.);
+                let inks: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run)
+                            if run.glyphs.iter().any(|g| label.contains(g.origin)) =>
+                        {
+                            Some(run.color)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(
+                    !inks.is_empty(),
+                    "each actual Stack child emits label glyphs"
+                );
+                assert!(
+                    inks.iter()
+                        .all(|ink| *ink == palette.color("primary-text").unwrap())
+                );
+            }
+            assert!(
+                state.logical_tab_ids().into_iter().all(|id| id < 20),
+                "layout-only Stack adds no interactive target"
+            );
+            observed.push(palette.color("primary-text").unwrap());
+        }
+        assert!(
+            observed.windows(2).any(|w| w[0] != w[1]),
+            "same Gallery layout forwards changed Theme to real child paint"
+        );
+    }
+
+    #[test]
     fn select_real_feedback_paints_before_its_popup_surface() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
