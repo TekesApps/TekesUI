@@ -2489,7 +2489,17 @@ impl Workbench {
                     return;
                 }
                 let mut ext = std::mem::take(&mut s.extended);
-                let component_bounds = if [
+                let component_bounds = if e.renderer() == "split-view" {
+                    // Pane height belongs to the real viewport, not the growing
+                    // scroll document or the amount already scrolled past its header.
+                    Rect::new(
+                        body.min_x(),
+                        body.min_y(),
+                        body.size.width,
+                        (viewport_clip.size.height - focus_gutter - (body_y - content.min_y()))
+                            .max(0.),
+                    )
+                } else if [
                     "list",
                     "tree",
                     "data-table",
@@ -14307,6 +14317,96 @@ mod interaction_tests {
             observed.windows(2).any(|w| w[0] != w[1]),
             "same real Gallery Grid forwards changed Theme to child surfaces"
         );
+    }
+
+    #[test]
+    fn split_view_gallery_log_follows_full_panes_and_help_with_stable_extent() {
+        use super::super::Gallery;
+        use tekes_ui_scene::Primitive;
+        let mut gallery = Gallery::new();
+        let i = index("split-view");
+        assert!(gallery.open_route("component-split-view/playground"));
+        gallery.set_view_size(1440., 1100.);
+        gallery.text_mut().set_scale(2.);
+        for entries in [0, 3] {
+            if entries != 0 {
+                for n in 0..entries {
+                    gallery
+                        .workbench
+                        .state(i)
+                        .record(format!("split fixture event {n}"));
+                }
+            }
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            let layout = state.extended.split_view.layout();
+            let pane_bottom = layout
+                .leading
+                .frame()
+                .max_y()
+                .max(layout.trailing.frame().max_y());
+            let help_bottom = state.document_bottom;
+            let log = state
+                .event_log_frame
+                .expect("original empty or populated event log");
+            assert!(
+                help_bottom > pane_bottom + 8.,
+                "measured helper follows complete panes"
+            );
+            assert!(
+                log.min_y() >= help_bottom + 24.,
+                "event log follows panes and measured helper"
+            );
+            assert_eq!(state.log.len(), entries);
+            let pane_size = layout.frame.frame().size;
+            let extent = gallery.page_document_height();
+            for _ in 0..4 {
+                gallery.build_scene(&mut Scene::new());
+                assert!(
+                    (gallery.page_document_height() - extent).abs() < 0.01,
+                    "rendering cannot feed its own document extent into pane height"
+                );
+                let size = gallery
+                    .workbench
+                    .state(i)
+                    .extended
+                    .split_view
+                    .layout()
+                    .frame
+                    .frame()
+                    .size;
+                assert!(
+                    (size.width - pane_size.width).abs() < 0.01
+                        && (size.height - pane_size.height).abs() < 0.01
+                );
+            }
+            gallery.scroll_page_to(f32::MAX);
+            scene.clear();
+            gallery.build_scene(&mut scene);
+            let viewport = gallery.viewport.bounds();
+            let state = gallery.workbench.state(i);
+            let log = state.event_log_frame.unwrap();
+            assert!(
+                log.min_y() >= viewport.min_y() && log.max_y() <= viewport.max_y(),
+                "complete original event log is scroll reachable"
+            );
+            assert_eq!(state.log.len(), entries);
+            let size = state.extended.split_view.layout().frame.frame().size;
+            assert!(
+                (size.width - pane_size.width).abs() < 0.01
+                    && (size.height - pane_size.height).abs() < 0.01
+            );
+            assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Glyphs(run) if run.glyphs.iter().any(|g| log.contains(g.origin)))), "event log retains actual text paint");
+            for _ in 0..4 {
+                gallery.build_scene(&mut Scene::new());
+                assert!(
+                    (gallery.page_document_height() - extent).abs() < 0.01,
+                    "bottom scroll must not grow the document"
+                );
+            }
+            gallery.scroll_page_to(0.);
+        }
     }
 
     #[test]
