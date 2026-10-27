@@ -18178,6 +18178,51 @@
           "open",
           "empty"
         ],
+        "practical_intake": {
+          "baseline_commit": "5227ff7d7a8233830e8f65f6eb5e019fded11137",
+          "claims": [
+            "Real existing caller-owned Scenario retains query/open popup/original source indices/active versus committed value across four Themes; own-ground CoreText4.5/7 and once-only pointer/repeated keyboard/Escape passed",
+            "Original ComboBoxView cancels disabled arm and rejects empty/stale presentation without renumbering source IDs",
+            "Real Gallery native editor query/AX source keys/keyboard-hover/Theme own grounds and actual native-selector+pointer confirmation/empty/cancel passed; strict passed"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.combo-box",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/combo-box-main9048146-candidate/main-intake/commit-receipt.json",
+              "commit": "5227ff7d7a8233830e8f65f6eb5e019fded11137",
+              "component": "tui.combo-box",
+              "issue": "#122",
+              "scope": "Actual public2/Gallery1/strict at recorded main source; unchanged shared parser/editor/Menu/IME evidence retains identities",
+              "sha256": "c977717212dc9e0b08b439c5022d96eac0c7a5e31f90034189a0efaf8e106bbb"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "No new ComboBoxContent/icon/filter engine; original caller-owned composition and geometry preserved",
+            "Shared unchanged TextField/Menu/Select/Button/IME functional matrices retain original identities; no duplicate permutations"
+          ],
+          "gaps": [
+            "New dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+            "Full52 and unrelated product gaps"
+          ],
+          "scope": "Actual ComboBox original public caller-owned composition and real Gallery filtered query/selection/Theme integration; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual ComboBox model/View/caller-owned public fixture and unique real integration witnesses; no recursive source proof",
+            "sha256": {
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "8e1788f550971a66100f8cb64e0cbbfa9c8d6e293e5ab5f785eabf4513de0b7d",
+              "examples/composition-consumer/src/combo_status.rs": "1e36d6989f56ed61eb67f2ab1b56c751164f2e1726c486eb65dd5430f9f40166",
+              "examples/composition-consumer/tests/combo_box_theme.rs": "3389d699f9449779fb00c97f34327fd50f9fe067458ada5425c564d8790cd977"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "choice",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -59618,7 +59663,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "0556ab4288c335483ded0d2b566f95670a329a524e9e1926a16ff49b541d79c2",
+    "design/gallery/component-coverage.json": "825014743c31c42828af2f5fa33a56e51491c57113a3a466352c0a4065c62cb8",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -59646,6 +59691,7 @@
     "design/reviews/number-field-release-20261022/probes-final/toolbar.json": "db79c58d569dc82c7715999713a6dce62c4716bb55d9eb5239b354c2cbe6f043",
     "design/reviews/number-field-release-20261022/probes-final/tooltip.json": "3dfec5cdc4a4d49815c84eaf933de25dd9b263ef238b5b0f71ee24d2c466ae59",
     "design/tokens.json": "6aabbcdad574a0fac10fcde2841063f74438048ca2f086aaebcb387d391d64ac",
+    "examples/composition-consumer/src/combo_status.rs": "1e36d6989f56ed61eb67f2ab1b56c751164f2e1726c486eb65dd5430f9f40166",
     "examples/composition-consumer/src/command_status.rs": "309aedada5e9c30fc12898957b34ef44a487b6f2f4ec8763f79431b8c967cc86",
     "examples/composition-consumer/src/empty_state_content.rs": "a73d1bb24db806e91efadedcad79225ca0a4339ff212b8a85a446c6330ca61cb",
     "examples/composition-consumer/src/skeleton_content.rs": "80d44ba5650da213609eeb1a778bed69237550d17e6c5fed2ac91be16eaa6932",
@@ -59653,6 +59699,7 @@
     "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80",
     "examples/composition-consumer/tests/checkbox_theme.rs": "849080ccac69b56bdaa6f751e708f91ed93e8383143414cccbb0baa2dc2969fc",
     "examples/composition-consumer/tests/code_block_theme.rs": "f4dde225a14755b9fff62c792685b74c80fffd3fabf6891bb688a5e14de5bd96",
+    "examples/composition-consumer/tests/combo_box_theme.rs": "3389d699f9449779fb00c97f34327fd50f9fe067458ada5425c564d8790cd977",
     "examples/composition-consumer/tests/command_palette_theme.rs": "eadd793e9e828b460bebaae52fa3cd935c88095f8e408536c96617b75f19f7d2",
     "examples/composition-consumer/tests/data_table_theme.rs": "4eb65e6676ec52269b1279fec17606320268488fe4724f398beed46a16b2bb2c",
     "examples/composition-consumer/tests/dialog_theme.rs": "6cf7b51a1c7393501f89b44551da8031712ca5054d5ada0e91e3fc2234a97953",
