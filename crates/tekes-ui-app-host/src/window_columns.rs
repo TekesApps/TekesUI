@@ -11,7 +11,7 @@ impl Host {
         let mut fragments=Vec::new();
         if !self.toolbar.modal() {
             for (i,panel) in self.panels.iter_mut().enumerate() {
-                if panel.bounds.size.width<=0. {continue;}
+                if panel.bounds.size.width<=0. || (self.is_settings_window && i==0 && (!self.leading_visible || self.sidebar_motion.needs_frame())) {continue;}
                 if let Some(local)=&mut panel.local {
                     let mut snapshot=None;
                     local.with_host(&mut |h|snapshot=ContentAccessibilitySnapshot::from_host(h));

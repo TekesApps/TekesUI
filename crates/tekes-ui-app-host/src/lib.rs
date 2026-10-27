@@ -6,6 +6,10 @@ pub mod module_process;
 pub mod navigation;
 pub mod settings_undo;
 #[cfg(target_os = "macos")]
+mod settings;
+#[cfg(target_os = "macos")]
+pub use settings::{SettingsDisplayMode, SettingsOptions, SettingsWindow};
+#[cfg(target_os = "macos")]
 mod navigation_window;
 #[cfg(target_os = "macos")]
 mod sidebar_motion;
@@ -55,6 +59,7 @@ pub struct AppWindow {
     profile: AppProfile,
     columns: Option<Vec<Column>>,
     navigation: Option<NavigationOptions>,
+    settings: Option<SettingsWindow>,
 }
 #[cfg(target_os = "macos")]
 impl AppWindow {
@@ -63,6 +68,7 @@ impl AppWindow {
             profile,
             columns: None,
             navigation: None,
+            settings: None,
         }
     }
     pub fn from_columns(columns: Vec<Column>) -> anyhow::Result<Self> {
@@ -78,9 +84,9 @@ impl AppWindow {
             profile: AppProfile { modules },
             columns: Some(columns),
             navigation: None,
+            settings: None,
         })
     }
-    #[cfg(test)]
     pub(crate) fn into_host(self, acceptance: bool) -> window::Host {
         match self.columns {
             Some(columns) => window::Host::from_columns(columns, acceptance, self.navigation),
@@ -100,8 +106,12 @@ impl AppWindow {
         self
     }
 
+    pub fn settings(mut self, settings: SettingsWindow) -> Self {
+        self.settings = Some(settings);
+        self
+    }
     pub fn run(self) -> anyhow::Result<()> {
-        run_columns(self.profile, self.columns, self.navigation)
+        run_columns(self.profile, self.columns, self.navigation, self.settings)
     }
 }
 
@@ -110,25 +120,49 @@ impl AppWindow {
 /// entry point belongs to the consuming app.
 #[cfg(target_os = "macos")]
 pub fn run(profile: AppProfile) -> anyhow::Result<()> {
-    run_internal(profile, None)
+    run_internal(profile, None, None)
 }
 #[cfg(target_os = "macos")]
 pub fn run_with_navigation(
     profile: AppProfile,
     navigation: NavigationOptions,
 ) -> anyhow::Result<()> {
-    run_internal(profile, Some(navigation))
+    run_internal(profile, Some(navigation), None)
 }
 #[cfg(target_os = "macos")]
-fn run_internal(profile: AppProfile, navigation: Option<NavigationOptions>) -> anyhow::Result<()> {
-    run_columns(profile, None, navigation)
+pub fn run_with_settings(
+    profile: AppProfile,
+    navigation: Option<NavigationOptions>,
+    settings: SettingsOptions,
+) -> anyhow::Result<()> {
+    run_internal(profile, navigation, Some(settings))
 }
 #[cfg(target_os = "macos")]
-fn run_columns(profile: AppProfile, columns: Option<Vec<Column>>, navigation: Option<NavigationOptions>) -> anyhow::Result<()> {
-    if let Some(columns) = &columns { columns::validate(columns)?; } else { validate(&profile)?; }
+fn run_internal(
+    profile: AppProfile,
+    navigation: Option<NavigationOptions>,
+    settings: Option<SettingsOptions>,
+) -> anyhow::Result<()> {
+    run_columns(profile, None, navigation, settings)
+}
+#[cfg(target_os = "macos")]
+fn run_columns(
+    profile: AppProfile,
+    columns: Option<Vec<Column>>,
+    navigation: Option<NavigationOptions>,
+    settings: Option<SettingsOptions>,
+) -> anyhow::Result<()> {
+    if let Some(columns) = &columns {
+        columns::validate(columns)?;
+    } else {
+        validate(&profile)?;
+    }
     let args: Vec<String> = std::env::args().collect();
     if tekes_ui_module_runtime::run_component_worker_from_args(
-        &[crate::navigation::definition(), crate::settings_undo::definition()],
+        &[
+            crate::navigation::definition(),
+            crate::settings_undo::definition(),
+        ],
         &args,
     )? {
         return Ok(());
@@ -148,8 +182,10 @@ fn run_columns(profile: AppProfile, columns: Option<Vec<Column>>, navigation: Op
         .map(|m| m.id.to_owned())
         .collect::<Vec<_>>();
     match args.get(1).map(String::as_str) {
-        None => window::run(ids, columns, false, navigation),
-        Some("--window-acceptance") if args.len() == 2 => window::run(ids, columns, true, navigation),
+        None => window::run(ids, columns, false, navigation, settings),
+        Some("--window-acceptance") if args.len() == 2 => {
+            window::run(ids, columns, true, navigation, settings)
+        }
         _ => anyhow::bail!("fixed-profile app accepts no runtime module discovery or selection"),
     }
 }

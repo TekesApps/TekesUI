@@ -164,6 +164,41 @@ impl Host {
         // TextContent remains an original single-line toolbar descendant.
         add(92200, ComponentId(91000 + center as u64), Placement::Navigation, 20,
             Contents::Title(title), Source::Title);
+        if let Some(state) = &self.settings {
+            let state = state.borrow();
+            if let Some(source) = &state.toolbar_source {
+                let mut buttons = vec![];
+                for action in state.toolbar_actions() {
+                    let icon = action
+                        .icon
+                        .as_deref()
+                        .map(|name| {
+                            crate::window_toolbar::icon_image(
+                                &mut self.toolbar_images,
+                                renderer,
+                                name,
+                                scale,
+                            )
+                        })
+                        .transpose()?;
+                    buttons.push(ButtonDecl {
+                        id: action.command.id,
+                        icon,
+                        text: action.accessible_name.unwrap_or(action.command.title),
+                        hint: action.tooltip,
+                        enabled: action.command.enabled,
+                    });
+                }
+                add(
+                    92300,
+                    ComponentId(91000 + center as u64),
+                    Placement::SecondaryAction,
+                    0,
+                    Contents::Commands(buttons, Overflow::Together),
+                    Source::Undo(source.clone()),
+                );
+            }
+        }
         for (slot, &index) in self.order.iter().enumerate() {
             let p = &self.panels[index];
             if frames[slot].size.width <= 0. || p.toolbar.is_empty() {
@@ -216,11 +251,15 @@ impl Host {
             let result = match invocation.source {
                 Source::Visibility(side) => self.toggle_visibility(side),
 
-                Source::Navigation(source) => self
-                    .navigation
-                    .as_mut()
-                    .map_or(Ok(()), |nav| nav.invoke(&source, invocation.command)),
+                Source::Navigation(source) => {
+                    if self.prepare_settings_item_navigation() {
+                        self.navigation.as_mut().map_or(Ok(()), |nav| nav.invoke(&source, invocation.command))
+                    } else { Ok(()) }
+                },
                 Source::Title => Err(anyhow::anyhow!("title has no command binding")),
+                Source::Undo(source) => self.settings.as_ref().map_or(Ok(()), |s| {
+                    s.borrow_mut().undo_action(invocation.command, &source)
+                }),
                 Source::Panel {
                     instance,
                     index,
@@ -274,7 +313,7 @@ impl Host {
             return Ok(handled || self.toolbar.modal() || self.toolbar.host.semantics().is_empty());
         }
         let body_capture =
-            self.drag_split.is_some() || self.pressed.is_some();
+            self.drag_split.is_some() || self.pressed.is_some() || self.settings_pointer.is_some();
         if body_capture
             && matches!(event,Event::Mouse(m) if matches!(m.kind,MouseEventKind::Dragged{..}|MouseEventKind::Up{..}))
         {
@@ -415,7 +454,15 @@ impl Host {
         self.toolbar_groups().into_iter().find(|&owner| Self::toolbar_control(owner) == focused)
     }
     pub(super) fn remember_toolbar_focus(&mut self, visible: Option<bool>) {
-        let Some(owner) = self.actual_toolbar_owner() else { return; };
+        let Some(owner) = self.actual_toolbar_owner() else {
+            if self.toolbar.host.content_host().focused().is_some() {
+                // Another actual shared group (e.g. config Undo) now owns focus.
+                // Old Panel return intent must not steal it on the next draw.
+                self.toolbar_focus = None;
+                self.toolbar_focus_lease = None;
+            }
+            return;
+        };
         let Some(mount) = self.toolbar.host.content_host().semantic_mount(Self::toolbar_control(owner)) else { return; };
         let Some(source) = self.toolbar.source(Self::toolbar_group(owner)).cloned() else { return; };
         self.toolbar_focus = Some(owner);
@@ -524,7 +571,7 @@ impl Host {
             self.set_toolbar_focus(next, true);
             return Ok(());
         }
-        if key.down && key.key == Some(ControlKey::Escape) && self.open_toolbar().is_none() {
+        if key.down && key.key == Some(ControlKey::Escape) && !self.toolbar.modal() {
             self.cancel_toolbar_input();
             self.reconcile_toolbar_focus(true);
             return Ok(());

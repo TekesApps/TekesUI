@@ -278,6 +278,16 @@ impl SettingsForm {
             .and_then(|n| n.component::<NumberFieldContent>())
             .is_some_and(|n| n.edit_state().dirty)
     }
+    /// Read-only admission before a native action uses its current publication.
+    /// Actual collection/commit remains in flush_numbers at the request boundary.
+    pub fn can_flush_numbers(&self) -> bool {
+        self.field_ids.iter().all(|id| {
+            self.host.get(*id).unwrap().component::<NumberFieldContent>().is_none_or(|number| {
+                let state = number.edit_state();
+                !state.composing && matches!(state.validation, NumberValidation::Valid(_))
+            })
+        })
+    }
     /// Ask original numeric controls to commit valid drafts; never parse editor text here.
     pub fn flush_numbers(&mut self, schema: &Schema, draft: &mut Draft) -> bool {
         let mut valid = true;

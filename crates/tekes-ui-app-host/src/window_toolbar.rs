@@ -43,6 +43,7 @@ pub(crate) fn icon_image(
 pub(crate) enum Source {
     Visibility(usize),
     Navigation(ComponentSource),
+    Undo(ComponentSource),
     Title,
     Panel {
         instance: u64,

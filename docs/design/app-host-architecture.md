@@ -20,11 +20,13 @@
 
 SettingsRow 焦点接收补充（本地 main `5992b2dc6c327d8fd96d2fd6adaa40c7db6ca8ed`）：仅在有效 arrange 且原子节点身份/顺序仍匹配时声明现有 reveal 平移能力；measure、lifecycle 和节点替换使该能力失效。Host 对未知布局的拒绝保持。原 Row 平移/失效检查、真实 Form 焦点与未知布局反例、原非法数字/marked 关闭函数回归及相关 strict 已通过；证据 SSD `artifacts/issue-136/settings70-row-reveal-main9a431c2-intake/round01`。真实 Form 检查运行于记录的 Window 候选，不能据此称完整 Settings Window 已交付。
 
-Settings List 本地输入适配已以 `1fd83df7ef73990310a45c74c8a1d76095765487` 接收：原 Scroll Host 内的 pointer 正向、未知 owner 拒绝，以及矩形内但曲线外的捕获 Move/Up 反例通过；原选择与键盘焦点保持，Settings/AppHost strict 通过。导航 AX 组合仍因焦点前可变准入使多 Host publication 失效而未接收，正在将这一步改为只读。证据 SSD `artifacts/issue-136/settings70-navigation-main5992b2d-intake/round03`。
+Settings List 本地输入适配已以 `1fd83df7ef73990310a45c74c8a1d76095765487` 接收：原 Scroll Host 内的 pointer 正向、未知 owner 拒绝，以及矩形内但曲线外的捕获 Move/Up 反例通过；原选择与键盘焦点保持，Settings/AppHost strict 通过。该轮暴露的导航 AX publication 失效保留为原失败，后续窗口批次按下述只读准入和先派发后清理修复。证据 SSD `artifacts/issue-136/settings70-navigation-main5992b2d-intake/round03`。
 
-当前窗口接收候选沿原 SettingsSurface、后台 Client 和配置 Undo 协调器装配两列 Settings 窗口。接收要求是：跨 Host 焦点转移前只读检查数值和组字状态，实际侧栏或 Back/Forward 请求发出前才调用原字段提交器；拒绝不替换表单、不写导航历史。原 publication 必须先成功派发，再清理另一 Host 焦点；侧栏 Back 关闭也必须在旧编辑焦点退休前执行输入准入。已收集的合法字段差量仍经原 Draft 自动保存调度，错误提示单独保留。发布阶段只投影已准入的 Item，原 navigation busy 门禁冻结期间输入。List 兼容适配必须兑现原 Host 的几何能力，包括裁剪区域外的捕获事件，不能依靠直接调组件绕过准入。
+本次本地窗口批次沿原 SettingsSurface、后台 Client 和配置 Undo 协调器装配两列 Settings 窗口。跨 Host 焦点转移前只读检查数值和组字状态，实际侧栏或 Back/Forward 请求发出前才调用原字段提交器；拒绝不替换表单、不写导航历史。原 publication 必须先成功派发，再清理另一 Host 焦点；侧栏 Back 关闭也必须在旧编辑焦点退休前执行输入准入。已收集的合法字段差量仍经原 Draft 自动保存调度，错误提示单独保留。发布阶段只投影已准入的 Item，原 navigation busy 门禁冻结期间输入。List 兼容适配必须兑现原 Host 的几何能力，包括裁剪区域外的捕获事件，不能依靠直接调组件绕过准入。
 
-尚未交付：上述窗口候选的完整接收、原生/PR#52公开固定依赖验证。共享UI通过不代表这些能力通过，#70继续开放。完整既有Settings设计和历史原型保留在Gallery Root的 `docs/design/apphost-settings.md` 与 `apphost-settings-prototype-20261022.md`，后续接收沿原契约，不把历史实现转签为当前main完成。
+本次窗口源码已完成有限接收验证：真实侧栏 pointer/key/AX、同份 publication 准入前后有效、成功后的旧焦点退休和原 List 键盘所有权、Back/Forward 拒绝与纠正后可用、原 Back 的 pointer/key/AX Focus/Press 及关闭保存屏障通过；Settings/AppHost strict 通过。证据 SSD `artifacts/issue-136/settings70-navigation-main5992b2d-intake/round04`、`round06`；原 partial autosave、Row/close、List 和 IPC/迁移证据保持其源码身份。Back 测试遗漏原动作消费步骤的失败与修正保留，未改变生产契约或删除断言。
+
+尚未验收：完整 Settings 原生窗口、物理 IME/VoiceOver 及 PR#52 独立 checkout 的公开固定依赖/同源 CI。有限模型/真实公共组件和平台窗口测试不代替这些层，#70继续开放。完整既有Settings设计和历史原型保留在Gallery Root的 `docs/design/apphost-settings.md` 与 `apphost-settings-prototype-20261022.md`，后续接收沿原契约，不把历史实现转签为当前main完成。
 
 
 平台Settings前置接收（2026-10-27，#70）：真实WindowHandle、普通/Exclusive子窗口、可见窗口恢复、key-window菜单/焦点分发和dirty退出通知已接入；重复present保留首次恢复名单与key，按身份去重。原47平台契约、strict及AppHost接口检查通过；定向真实AppKit回归验证实际激活/key前提、四窗口重复present、关闭恢复两可见窗口且不显示原隐藏者、恢复原焦点。证据SSD `artifacts/issue-136/settings70-window-main3e37ff7-intake/round02` 的exclusive-native及平台各round；早期harness缺正常生命周期而失败，记录保留。此有限原生结果不是完整Settings自动保存/Independent/物理IME/VoiceOver验收。

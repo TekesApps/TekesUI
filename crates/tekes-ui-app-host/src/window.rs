@@ -15,7 +15,7 @@ use tekes_ui_app_protocol::{InputKind, Request, ToolbarItem, VERSION};
 use tekes_ui_controls::{
     ControlKey, ToolbarControl,
     composition::{
-        ComponentId, ContentEvent, ContentKeyEvent, InputModifiers, PointerButton,
+        ComponentId, ContentEvent, ContentHost, ContentKeyEvent, InputModifiers, PointerButton,
         PointerEvent, PointerModifiers, PointerPhase,
     },
     extended::{Axis, SplitView},
@@ -31,6 +31,8 @@ use tekes_ui_tokens::{Palette, Rgba, Theme};
 const MIN_COLUMN: f32 = 120.;
 #[path = "window_accessibility.rs"]
 mod window_accessibility;
+#[path = "window_settings.rs"]
+mod window_settings;
 #[path = "window_columns.rs"]
 mod window_columns;
 #[path = "window_toolbar_mount.rs"]
@@ -415,6 +417,16 @@ enum ToolbarTarget {
 }
 
 pub struct Host {
+    settings: Option<std::rc::Rc<std::cell::RefCell<crate::settings::SettingsSurface>>>,
+    settings_back: bool,
+    settings_options: Option<crate::settings::SettingsOptions>,
+    settings_child: Option<tekes_ui_platform_macos::WindowHandle>,
+    is_settings_window: bool,
+    settings_frames: Vec<Rect>,
+    settings_top: f32,
+    settings_pointer: Option<bool>,
+    settings_provider: Option<tekes_ui_settings::FileProvider>,
+    settings_loading: Option<Receiver<Result<tekes_ui_settings::Snapshot, String>>>,
     leading_visible: bool,
     sidebar_motion: crate::sidebar_motion::SidebarMotion,
     motion_epoch: std::time::Instant,
@@ -461,6 +473,16 @@ impl Host {
     ) -> Self {
         let n = module_ids.len();
         Self {
+            settings: None,
+            settings_back: false,
+            settings_options: None,
+            settings_child: None,
+            is_settings_window: false,
+            settings_frames: Vec::new(),
+            settings_top: 0.,
+            settings_pointer: None,
+            settings_provider: None,
+            settings_loading: None,
             leading_visible: n != 3,
             sidebar_motion: crate::sidebar_motion::SidebarMotion::new(n != 3, true),
             motion_epoch: std::time::Instant::now(),
@@ -571,8 +593,10 @@ impl Host {
     }
     fn draw(&mut self, w: &Window) -> Result<()> {
         self.init(w)?;
+        if !self.is_settings_window { self.poll_settings_open(w)?; }
         self.text
             .begin_frame(self.motion_epoch.elapsed(), self.reduced_motion);
+        if self.is_settings_window { return self.draw_settings(w); }
         let progress = self.sidebar_motion.sample(
             self.motion_epoch.elapsed(),
             self.reduced_motion,
@@ -879,10 +903,25 @@ impl Host {
         let renderer = self.renderer.as_mut().unwrap();
         renderer.resize(w.drawable_size(), w.scale() as f32);
         renderer.render(&scene, &mut self.text.atlas, Rgba::gray(1.))?;
-        w.set_content_accessibility_publication(
-            self.content_accessibility_publication(w.is_active() && panel_input_open),
-        );
-        w.set_text_input_state(self.local_text_state(w.is_active() && panel_input_open));
+        if let Some(settings) = &self.settings
+            && settings.borrow().open
+        {
+            use tekes_ui_platform_macos::content_accessibility::{ContentAccessibilitySnapshot,ContentAccessibilityOwner,WindowAccessibilityPublication};
+            let publication=if w.is_active(){ContentAccessibilitySnapshot::from_host(&settings.borrow().form.host)
+                .and_then(|snapshot|WindowAccessibilityPublication::prepare(vec![(ContentAccessibilityOwner(u64::MAX),snapshot)]))}
+                else{WindowAccessibilityPublication::prepare(Vec::new())};
+            w.set_content_accessibility_publication(publication);
+            w.set_text_input_state(if w.is_active() {
+                settings.borrow().text_state()
+            } else {
+                None
+            });
+        } else {
+            w.set_content_accessibility_publication(
+                self.content_accessibility_publication(w.is_active() && panel_input_open),
+            );
+            w.set_text_input_state(self.local_text_state(w.is_active() && panel_input_open));
+        }
         if cfg!(debug_assertions)
             && (transitioning || w.is_animating())
             && let Some(nav) = &self.navigation
@@ -994,6 +1033,14 @@ impl Host {
         true
     }
     fn toggle_visibility(&mut self, side: usize) -> Result<()> {
+        if self.is_settings_window
+            && side == 0
+            && let Some(settings) = &mut self.settings
+        {
+            let mut settings = settings.borrow_mut();
+            settings.sidebar.host.cancel();
+            settings.sidebar.host.focus(None, false);
+        }
 
         if side == 0 {
             self.leading_visible = !self.leading_visible;
@@ -1027,7 +1074,7 @@ impl Host {
         } else {
             !self.trailing_visible
         };
-        if hidden {
+        if hidden && !self.is_settings_window {
             let i = self.order[slot];
             self.panels[i].request(InputKind::Cancel, 0., 0.)?;
             // Keep paint alive until the reveal reaches zero; input is gated
@@ -1085,6 +1132,28 @@ impl Host {
         if let Event::Accessibility{target,..}=&event
             && w.content_accessibility_publication().and_then(|p|p.owner(*target)).is_none(){return Ok(());}
 
+        if matches!(
+            &event,
+            Event::Command(tekes_ui_platform_macos::CommandId(0x534554))
+        ) || matches!(&event,Event::Key(k) if k.kind==KeyEventKind::Down && k.modifiers.command && k.characters_ignoring_modifiers==",")
+        {
+            self.cancel_toolbar_input();
+            if let Some(i) = self.pressed.take() {
+                self.panels[i].request(InputKind::Cancel, 0., 0.)?;
+            }
+            self.drag_split = None;
+            if self.is_settings_window {
+                w.request_redraw();
+                return Ok(());
+            }
+            self.open_settings(w)?;
+            w.request_redraw();
+            return Ok(());
+        }
+        if self.settings_navigation_focus_guard(&event, w.content_accessibility_publication().as_ref()) {
+            w.request_redraw();
+            return Ok(());
+        }
         if let Event::Key(key) = &event
             && self.typography_key_input(key)
         {
@@ -1097,7 +1166,9 @@ impl Host {
             return Ok(());
         }
 
-        if self.local_content_event(&event, w)? {
+        if self.settings.as_ref().is_some_and(|s| s.borrow().open)
+            && self.settings_event(&event, w)? { return Ok(()); }
+        if !self.is_settings_window && self.local_content_event(&event, w)? {
             w.request_redraw();
             return Ok(());
         }
@@ -1337,6 +1408,12 @@ impl Host {
     }
 }
 impl WindowHandler for Host {
+    fn allows_app_quit(&self) -> bool {
+        self.settings.as_ref().is_none_or(|s| {
+            let s = s.borrow();
+            s.clean_for_close()
+        })
+    }
 
     fn handle(&mut self, event: Event, w: &mut Window) {
         if let Err(e) = self.event(event, w) {
@@ -1350,15 +1427,38 @@ pub fn run(
     columns: Option<Vec<crate::Column>>,
     acceptance: bool,
     navigation: Option<NavigationOptions>,
+    settings: Option<crate::settings::SettingsOptions>,
 ) -> Result<()> {
     ensure!(
         (1..=3).contains(&columns.as_ref().map_or(module_ids.len(), Vec::len)),
         "expected one, two or three preselected modules"
     );
-    let host = if let Some(columns) = columns {
+    let mut host = if let Some(columns) = columns {
         Host::from_columns(columns, acceptance, navigation)
     } else {
         Host::new(module_ids, acceptance, navigation)
+    };
+    let has_settings = settings.is_some();
+    host.settings_provider = settings
+        .as_ref()
+        .map(|s| tekes_ui_settings::FileProvider::open(s.file.clone(), s.schema.namespace.clone()))
+        .transpose()?;
+    host.settings_options = settings;
+    let menus = if has_settings {
+        MenuBar {
+            menus: vec![tekes_ui_platform_macos::Menu::new(
+                "Settings",
+                vec![tekes_ui_platform_macos::MenuItem::Command(
+                    tekes_ui_platform_macos::MenuCommand::new(
+                        "Settings…",
+                        tekes_ui_platform_macos::CommandId(0x534554),
+                    )
+                    .key(tekes_ui_platform_macos::KeyEquivalent::command(',')),
+                )],
+            )],
+        }
+    } else {
+        MenuBar::default()
     };
     App::new(AppConfig {
         name: Some("TekesUI AppHost Prototype".into()),
@@ -1382,7 +1482,7 @@ pub fn run(
             }),
             ..Default::default()
         },
-        MenuBar::default(),
+        menus,
         host,
     );
     Ok(())
@@ -1923,4 +2023,219 @@ mod original_native_allocation_tests {
         assert_eq!(super::window_toolbar_geometry(66.,80.,Some(26.),2.),(80.,0.,80.));
         assert_eq!(super::window_toolbar_geometry(65.75,48.,Some(25.75),2.),(66.,1.75,48.));
     }
+}
+
+#[cfg(test)]
+mod settings_layout_tests {
+    use super::*;
+    #[test]
+    fn settings_layout_reuses_only_leading_visibility_toolbar_and_can_block_quit() {
+        let mut h = Host::new(vec![], false, None);
+        h.is_settings_window = true;
+        assert_eq!(h.panels.len(), 0);
+    }
+}
+
+#[cfg(test)]
+mod settings_guard_tests {
+    use super::*;
+    use crate::settings::{SettingsDisplayMode, SettingsSurface, SettingsWindow};
+    use tekes_ui_platform_macos::WindowHandler;
+    use tekes_ui_settings::{FileProvider, Snapshot};
+    #[test]
+    fn dirty_settings_blocks_app_quit_until_explicit_cancel_and_modes_are_window_policy() {
+        let path = std::env::temp_dir()
+            .join(format!(
+                "apphost-settings-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ))
+            .join("settings.toml");
+        let options = SettingsWindow::from_toml(
+            include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml"),
+            path.clone(),
+        )
+        .unwrap();
+        assert_eq!(options.display_mode, SettingsDisplayMode::Exclusive);
+        assert_eq!(
+            options
+                .clone()
+                .display_mode(SettingsDisplayMode::Independent)
+                .display_mode,
+            SettingsDisplayMode::Independent
+        );
+        let provider = FileProvider::open(path.clone(), options.schema.namespace.clone()).unwrap();
+        let surface = SettingsSurface::new(options, provider, Snapshot::default()).unwrap();
+        let first = surface.entry("workspace/general").unwrap();
+        let repeat = surface.entry("workspace/general").unwrap();
+        assert_ne!(first.id, repeat.id);
+        assert_eq!(first.params, repeat.params);
+        let mut host = Host::new(vec![], false, None);
+        host.is_settings_window = true;
+        host.settings_back = surface.exclusive;
+        host.settings = Some(std::rc::Rc::new(std::cell::RefCell::new(surface)));
+        assert!(host.allows_app_quit());
+        {
+            let mut state = host.settings.as_ref().unwrap().borrow_mut();
+            let s = &mut *state;
+            s.draft.edit(&s.schema.settings[0], "Changed".into());
+        }
+        assert!(!host.allows_app_quit());
+        host.settings.as_ref().unwrap().borrow_mut().draft.cancel();
+        assert!(host.allows_app_quit());
+        drop(host);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod settings_toolbar_focus_tests {
+    use super::*;
+    use crate::toolbar_source::ComponentSource;
+    use crate::window_toolbar::{Contents, Declaration, Source};
+    use tekes_ui_controls::composition::{ToolbarButtonDeclaration, ToolbarGroupOverflow, ToolbarPlacement, ToolbarRegion};
+    #[test]
+    fn actual_config_group_focus_retires_old_panel_return_intent() {
+        let mut host = Host::new(vec!["panel".into()], false, None);
+        host.panels = vec![Panel::new(0, "panel".into())];
+        host.panels[0].bounds = Rect::new(0.,0.,240.,300.);
+        let source = ComponentSource {
+            session: tekes_ui_module_runtime::component::Session {module:crate::settings_undo::MODULE_ID.into(),instance:1,host_epoch:1},
+            registration:1,window:host.toolbar.window,
+        };
+        let button = |id, name:&str| Contents::Commands(vec![ToolbarButtonDeclaration {id,icon:None,text:name.into(),hint:None,enabled:true}],ToolbarGroupOverflow::Together);
+        host.toolbar.sync(Rect::new(0.,0.,480.,300.),vec![ToolbarRegion::new(ComponentId(10),Rect::new(0.,0.,240.,52.)),ToolbarRegion::new(ComponentId(20),Rect::new(240.,0.,240.,52.))],vec![
+            Declaration {id:Host::toolbar_group(ToolbarTarget::Panel(0)),region:ComponentId(10),placement:ToolbarPlacement::Navigation,order:0,contents:button(7,"Panel"),source:Source::Panel{instance:host.panels[0].instance,index:0,module:"panel".into(),pid:None,generation:0}},
+            Declaration {id:ComponentId(92300),region:ComponentId(20),placement:ToolbarPlacement::SecondaryAction,order:0,contents:button(crate::settings_undo::UNDO,"Undo"),source:Source::Undo(source)},
+        ]).unwrap();
+        host.toolbar.host.render(&mut Scene::new(),&mut host.text,Theme::LIGHT.into()).unwrap();
+        host.set_toolbar_focus(Some(ToolbarTarget::Panel(0)),true);
+        assert_eq!(host.toolbar_focus,Some(ToolbarTarget::Panel(0)));
+        let undo = host.toolbar.host.semantics().into_iter().find(|n|n.node.id==ComponentId(92301)).unwrap().target;
+        assert!(host.toolbar.host.restore_focus(undo,true));
+        host.remember_toolbar_focus(Some(true));
+        host.reconcile_toolbar_focus(true);
+        assert_eq!(host.toolbar_focus,None);
+        assert!(host.toolbar_focus_lease.is_none());
+        assert_eq!(host.toolbar.host.content_host().focused(),Some(ComponentId(92301)));
+    }
+}
+
+#[cfg(test)]
+mod settings_close_input_tests {
+    use super::*;
+    use crate::settings::{SettingsSurface, SettingsWindow};
+    use tekes_ui_controls::composition::NumberFieldContent;
+    use tekes_ui_settings::{FileProvider, Snapshot};
+    fn fixture(schema: &str) -> (Host, std::path::PathBuf) {
+        let path = std::env::temp_dir().join(format!("settings-close-input-{}-{}",std::process::id(),std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos())).join("settings.toml");
+        let options=SettingsWindow::from_toml(schema,path.clone()).unwrap();
+        let provider=FileProvider::open(path.clone(),options.schema.namespace.clone()).unwrap();
+        let mut surface=SettingsSurface::new(options,provider,Snapshot::default()).unwrap();
+        surface.show();
+        // Ordinary focus/reveal requires current real layout, as in the Window.
+        let frame=Rect::new(0.,0.,620.,400.);
+        surface.form.render(&mut Scene::new(),&mut Text::new(),frame,Theme::LIGHT.into()).unwrap();
+        for (index,field) in surface.view_schema.settings.iter().enumerate() {
+            let id=ComponentId(100+index as u64);
+            let refusal=surface.form.host.plan_host_reveal(id,Default::default(),&[],Default::default()).err();
+            eprintln!("SETTINGS_FIXTURE selected={} field={} kind={:?} component={} focus_targets={:?} reveal_refusal={:?}",surface.selected,field.id,field.kind,surface.form.host.get(id).is_some(),surface.form.host.focus_targets(),refusal);
+        }
+        let mut host=Host::new(vec![],false,None);
+        host.settings=Some(std::rc::Rc::new(std::cell::RefCell::new(surface)));
+        (host,path)
+    }
+    #[test]
+    fn raw_number_draft_blocks_quit_and_close_commits_only_valid_input() {
+        for text in ["999%","125%"] {
+            let (host,path)=fixture(include_str!("../../../examples/app-host-demo/settings.schema.toml"));
+            let state=host.settings.as_ref().unwrap();
+            {
+                let mut s=state.borrow_mut();
+                let form=&mut s.form.host;
+                assert!(form.focus(Some(ComponentId(101)),true));
+                form.event(&ContentEvent::TextCommand("selectAll:".into()));
+                form.event(&ContentEvent::Commit{text:text.into(),replacement:None});
+                assert!(s.form.has_number_draft());
+                assert!(!s.draft.dirty(),"raw editor input is not a saved Draft value");
+            }
+            assert!(!host.allows_app_quit());
+            {
+                let mut s=state.borrow_mut();
+                assert!(!s.close_requested());
+                assert!(s.open);
+                if text=="999%" {
+                    assert!(!s.draft.dirty());
+                    assert!(s.form.has_number_draft());
+                    assert_eq!(s.form.host.get(ComponentId(101)).unwrap().component::<NumberFieldContent>().unwrap().edit_state().text,"999%");
+                } else {
+                    assert!(s.draft.dirty(),"valid raw input must await its persistence receipt");
+                    assert!(!s.form.has_number_draft());
+                }
+            }
+            assert!(!host.allows_app_quit());
+            assert!(!path.exists());
+            drop(host);
+            std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+        }
+    }
+    #[test]
+    fn marked_text_with_clean_draft_is_retained_when_close_or_quit_is_requested() {
+        let (host,path)=fixture(include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml"));
+        let state=host.settings.as_ref().unwrap();
+        {
+            let mut s=state.borrow_mut();
+            assert!(s.form.host.focus(Some(ComponentId(100)),true));
+            s.form.host.event(&ContentEvent::Preedit{text:"中文".into(),selection:0..2,clauses:std::iter::once(0..2).collect(),replacement:None});
+            assert!(s.form.host.is_composing());
+            assert!(!s.draft.dirty());
+        }
+        assert!(!host.allows_app_quit());
+        {
+            let mut s=state.borrow_mut();
+            let before=s.form.host.focused_text().unwrap().input.text.clone();
+            let marked=s.form.host.focused_text().unwrap().input.marked.clone();
+            assert!(!s.close_requested());
+            assert!(s.open);
+            assert_eq!(s.form.host.focused_text().unwrap().input.text,before);
+            assert_eq!(s.form.host.focused_text().unwrap().input.marked,marked);
+            assert!(!s.draft.dirty());
+        }
+        assert!(!host.allows_app_quit());
+        assert!(!path.exists());
+        drop(host);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+    #[test]
+    fn original_settings_row_focus_succeeds_but_unknown_scroll_layout_stays_rejected() {
+        use tekes_ui_controls::{ButtonTextRenderer,ScrollArea,composition::{Component,Content,ContentHost,HostRevealError,ScrollContent,TextFieldContent},layout::MeasuredChild};
+        use tekes_ui_scene::Size;
+        let (host,path)=fixture(include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml"));
+        {
+            let mut state=host.settings.as_ref().unwrap().borrow_mut();
+            assert!(state.form.host.plan_host_reveal(ComponentId(100),Default::default(),&[],Default::default()).is_ok());
+            assert!(state.form.host.focus(Some(ComponentId(100)),true));
+            assert_eq!(state.form.host.focused(),Some(ComponentId(100)));
+        }
+        drop(host);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+        #[derive(Debug)]
+        struct Unknown { children:Vec<Content> }
+        impl Component for Unknown {
+            fn children(&self)->&[Content]{&self.children}
+            fn children_mut(&mut self)->Option<&mut Vec<Content>>{Some(&mut self.children)}
+            fn measure(&mut self,text:&mut dyn ButtonTextRenderer,available:Size)->MeasuredChild{self.children[0].measure(text,available)}
+            fn arrange(&mut self,text:&mut dyn ButtonTextRenderer,frame:Rect,clip:Rect){self.children[0].arrange(text,frame,clip);}
+        }
+        let mut unknown=ContentHost::new(Content::new(ComponentId(1),ScrollContent::new(ScrollArea::default(),Content::new(ComponentId(2),Unknown{children:vec![Content::new(ComponentId(3),TextFieldContent::new("Unknown","draft"))]})))).unwrap();
+        let frame=Rect::new(0.,0.,620.,400.);
+        unknown.render(&mut Scene::new(),&mut Text::new(),frame,frame,Theme::LIGHT.into()).unwrap();
+        assert!(matches!(unknown.plan_host_reveal(ComponentId(3),Default::default(),&[],Default::default()),Err(HostRevealError::UnsupportedLayout)));
+        assert!(!unknown.focus(Some(ComponentId(3)),true));
+        assert_eq!(unknown.focused(),None);
+    }
+
 }

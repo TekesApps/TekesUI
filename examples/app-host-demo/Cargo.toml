@@ -8,11 +8,13 @@ publish = false
 [features]
 default = []
 three-panels = []
+independent-settings = []
 
 [dependencies]
 anyhow = "1"
 serde_json = "1"
 tekes-ui-app-host = { path = "../../crates/tekes-ui-app-host" }
+tekes-ui-settings = { path = "../../crates/tekes-ui-settings" }
 tekes-ui-panel-module-demo = { path = "../panel-module-demo" }
 
 [target.'cfg(target_os = "macos")'.dependencies]

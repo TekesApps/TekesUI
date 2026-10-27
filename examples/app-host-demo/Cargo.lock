@@ -947,6 +947,7 @@ dependencies = [
  "tekes-ui-app-host",
  "tekes-ui-app-protocol",
  "tekes-ui-panel-module-demo",
+ "tekes-ui-settings",
  "tekes-ui-render",
  "tekes-ui-scene",
  "tekes-ui-tokens",
