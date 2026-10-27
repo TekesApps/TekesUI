@@ -8659,7 +8659,8 @@ mod interaction_tests {
                     );
                 } else {
                     assert!(
-                        contrast(thumb.fill, outer.fill).max(contrast(thumb.border_color, outer.fill))
+                        contrast(thumb.fill, outer.fill)
+                            .max(contrast(thumb.border_color, outer.fill))
                             >= 3.,
                         "actual off thumb fill-or-boundary/track contrast"
                     );
