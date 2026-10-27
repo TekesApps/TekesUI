@@ -53007,11 +53007,12 @@
           "closing"
         ],
         "practical_intake": {
-          "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
+          "baseline_commit": "4658fe9253abafe5c9e80fd5abd6c38658ac5df3",
           "claims": [
-            "ContentTheme Surface inheritance reaches retained Dialog through actual ancestor resolution.",
-            "Default, explicit override, clear, and invalid default Surface rejection were covered in the accepted batch.",
-            "Original #97 public retained/half-ULP regression tests were restored and passed in the same batch."
+            "Same public DialogView retained across Theme::ALL: closed/open, focus, disabled/re-enabled, Cancel and original focus restore verified",
+            "Actual Gallery trigger retains same Dialog across four Theme contexts; actual modal ground and independent title glyphs consume semantic Palette roles",
+            "Actual opaque title/background contrast meets4.5 standard and7 increased; floating radius, scrim, decorative border and focus ring follow existing rules",
+            "Gallery all-target strict passed; earlier ContentTheme Surface inheritance/default/override/clear evidence remains limited to its original accepted source"
           ],
           "consumer_entry": {
             "invocation": "--component tui.dialog",
@@ -53042,38 +53043,40 @@
               "issue": "#62",
               "scope": "Controls Surface, public Dialog/fragment regressions, Controls Gallery strict, and public Surface strict all passed.",
               "sha256": "b2243e8a88fda39684aae1590c89e32740cd00ec3a385eb79d4d7878faad64f3"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/dialog-main45f1cf1-candidate/main-intake/commit-receipt.json",
+              "commit": "4658fe9253abafe5c9e80fd5abd6c38658ac5df3",
+              "component": "tui.dialog",
+              "issue": "#123",
+              "scope": "Exact-main public retained Dialog Theme/state and actual Gallery title contrast; strict and explicit unverified boundary.",
+              "sha256": "37647330b517ed0b92420dff3df19171aadba070f6822d38bda0ed711e0250f5"
             }
           ],
           "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
           "exceptions": [
-            "This record is limited to the 2026-10-26 retained Dialog Surface batch; older #62 Palette/ContentTheme consumption evidence retains its own identity."
+            "Existing Button hover/pressed state and shared generator/Palette results reused; no new distinct branch requires a component-wide cross product",
+            "Ordinary layout/indices remain geometry; default2x decorative hairline follows existing painter",
+            "Original #62 Surface receipts retain their original source/program identity and bounded scope"
           ],
           "gaps": [
-            "Native/VoiceOver acceptance.",
-            "ProgressContent full main acceptance.",
-            "Panel 450/18 integration.",
-            "Whole Design System or all 52 roots."
+            "No new dedicated external Theme, GPU/pixel, native/physicalIME/VoiceOver certification",
+            "Other original product gaps remain on their own Issues; remaining family/full52 practical coverage remains open"
           ],
-          "scope": "#62 accepted Surface inheritance/default/override/clear through the retained Dialog ancestor chain, with restored public retained regressions.",
+          "scope": "Accepted main retained public Dialog and actual Gallery Theme/state/copy-contrast tests, together with prior explicitly bounded Surface inheritance; no production Theme change.",
           "source_identity": {
-            "differences": {
-              "crates/tekes-ui-controls/src/composition.rs": {
-                "actual": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
-                "expected": "1d1c57425c66e41a70147354ce236bbeef10806b2b76d1bf58a427c10f8d1040"
-              },
-              "examples/composition-consumer/tests/surface_dialog_inheritance.rs": {
-                "actual": "4a0758a1ca478231b6edae3f56f110cbd5910416adb1eb9ebdbb3f7a11d146b8",
-                "expected": "ddbc8efcceebfe6c276b01d24d5aa90ea1aa4b7303de5f8e7ce56747445045d9"
-              }
-            },
-            "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+            "differences": {},
+            "scope": "Selected public/View/Gallery/test source subset for the new accepted scope; original full manifests/programs in run receipts. Earlier #62 receipts are not re-signed by this mapping.",
             "sha256": {
-              "crates/tekes-ui-controls/src/composition.rs": "1d1c57425c66e41a70147354ce236bbeef10806b2b76d1bf58a427c10f8d1040",
-              "examples/composition-consumer/tests/scene_fragment.rs": "912c2761b46cd3c32fd7c8779116dc81b0b14ee5fb752ba265edfcdd1b5e1813",
-              "examples/composition-consumer/tests/surface_dialog_inheritance.rs": "ddbc8efcceebfe6c276b01d24d5aa90ea1aa4b7303de5f8e7ce56747445045d9"
+              "crates/tekes-ui-controls/src/composite.rs": "8931bb75dcfe576efe58ed15021b5b3394ae4b217eed10723693080d1b4db276",
+              "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+              "crates/tekes-ui-controls/src/composition/adapters.rs": "6d16b70de8d8002de347abc319892b3066a3fd4041efe6ada0a0c4d4da35af4d",
+              "crates/tekes-ui-controls/src/control_motion.rs": "e4ea756801ec1684f92ab1e57f5a57ec49c95aacd475a857726f1cb5bd4ad312",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "daf8bc496154e379a8b6a87fc8febea24c38f22e426d4bd6f9b68aec3a0f1879",
+              "examples/composition-consumer/tests/dialog_theme.rs": "6cf7b51a1c7393501f89b44551da8031712ca5054d5ada0e91e3fc2234a97953"
             }
           },
-          "status": "accepted-source-subset-stale"
+          "status": "accepted-source-subset-matched"
         },
         "profile": "overlay",
         "profile_exceptions": {},
@@ -57973,7 +57976,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "78ed5b525a28f43a42ed3bd7f72ec9884269a6406f7d5cef80e7bb4dcde23a70",
+    "design/gallery/component-coverage.json": "6689ca316b482a23be89f564be3808263c86eab59420a7d46a4c5eb3d3436aa8",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58005,8 +58008,7 @@
     "examples/composition-consumer/src/skeleton_content.rs": "80d44ba5650da213609eeb1a778bed69237550d17e6c5fed2ac91be16eaa6932",
     "examples/composition-consumer/src/status_badge_content.rs": "58006b3eb44e1cb7261c25ebd8bbd8819591a22f5ac53ae48fec6379b62b3a9c",
     "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80",
-    "examples/composition-consumer/tests/scene_fragment.rs": "912c2761b46cd3c32fd7c8779116dc81b0b14ee5fb752ba265edfcdd1b5e1813",
-    "examples/composition-consumer/tests/surface_dialog_inheritance.rs": "4a0758a1ca478231b6edae3f56f110cbd5910416adb1eb9ebdbb3f7a11d146b8",
+    "examples/composition-consumer/tests/dialog_theme.rs": "6cf7b51a1c7393501f89b44551da8031712ca5054d5ada0e91e3fc2234a97953",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",
     "scripts/generate-component-capabilities.py": "b7cb6c0de297601b95755e2d8bdb74b42e3cf37475e77ebf52693c7379385d61"
   },
