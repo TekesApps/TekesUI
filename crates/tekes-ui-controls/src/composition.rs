@@ -2500,7 +2500,7 @@ impl ContentHost {
         // explicitly retains focus. Use the same marked/custom barrier as Tab.
         if self.is_composing() && self.focused != Some(id)
             && (matches!(action, AccessibilityAction::Focus | AccessibilityAction::SetSelection(_))
-                || (matches!(action, AccessibilityAction::Press)
+                || (part.is_none() && matches!(action, AccessibilityAction::Press)
                     && self.scope().find_active(id).is_some_and(|n| n.component.focusable() && !n.preserve_activation_focus)))
         { return ContentResponse::default(); }
         if matches!(action, AccessibilityAction::Press) {

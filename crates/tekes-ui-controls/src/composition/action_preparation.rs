@@ -334,9 +334,12 @@ impl ContentHost {
         self.local_ordinary_action_admissible(id, FocusOrigin::Pointer, wants_focus)
     }
     fn ordinary_ax_focus_admissible(&self, id: ComponentId, part: Option<usize>, action: &AccessibilityAction) -> bool {
-        let candidate = matches!(action, AccessibilityAction::Focus | AccessibilityAction::Press | AccessibilityAction::SetSelection(_))
-            && self.scope().find_active(id).is_some_and(|node| node.component.focusable())
-            && (!matches!(action, AccessibilityAction::Press) || !self.semantic_preserves_activation_focus(id, part));
+        // Ordinary part Press dispatches to its existing owner without moving
+        // keyboard focus; mirror the actual fallback rather than inventing a transfer.
+        let candidate = (matches!(action, AccessibilityAction::Focus | AccessibilityAction::SetSelection(_))
+            || (part.is_none() && matches!(action, AccessibilityAction::Press)
+                && !self.semantic_preserves_activation_focus(id, part)))
+            && self.scope().find_active(id).is_some_and(|node| node.component.focusable());
         if !self.original_reveal_admissible(id) {
             return self.local_ordinary_action_admissible(id, FocusOrigin::Accessibility, candidate);
         }
