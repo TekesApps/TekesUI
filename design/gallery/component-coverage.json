@@ -4415,7 +4415,45 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "29978859a2c99b1d70f12235b030f4cdc447bb28",
+        "scope": "Actual readonly LCS diff retained Theme/rows/full prefixes/real Code glyph status inks and parent-ground contrast, wrap/clip/passive Gallery consumption; tests only",
+        "claims": [
+          "Same public retained DiffViewRuntime/model through Theme::ALL preserves complete LCS Equal/Removed/Added order/IDs/full rendered prefixes and real CoreText Code-role glyph inks4.5/7 against actual caller ground",
+          "Real narrow150% full-line wrap/clip/empty/cancel and restore preserve readonly data and line identities",
+          "Actual registered Gallery component retains diff rows/layout/footer and rejects unrelated input/lifecycle changes, using exact Gallery DocumentCanvas clear input; strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected actual diff/View/adapter/clear-source witnesses, not recursive closure/pixel/native certificate",
+          "sha256": {
+            "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "90216f944b5224905e8658bc90d2a9457db2f4fe89dce215b6034b7f8e10edea",
+            "crates/tekes-ui-gallery/src/gallery/mod.rs": "18cec888b4b7fc85a239ed065a32140d78ef281e8a9aa4834765b6ca4afde2ca",
+            "examples/composition-consumer/tests/diff_view_theme.rs": "e07a547d4478f1813bde26362a35544830303ebe2d0b80d9973da5697f2b6d1e"
+          }
+        },
+        "exceptions": [
+          "Original readonly plain diff, no Content/editor/interactive state API invented",
+          "Transparent component uses actual caller Quad or exact Gallery DocumentCanvas clear input; static contrast budget not runtime proof"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/whole-window/native AX/physicalIME/VoiceOver certification",
+          "full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#124",
+            "component": "tui.diff-view",
+            "commit": "29978859a2c99b1d70f12235b030f4cdc447bb28",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/diff-view-maineb94677-candidate/main-intake/commit-receipt.json",
+            "sha256": "12cddf119175427ea28586d85db9d45a844ff563d37c921ad5a531d1076d5cf3",
+            "scope": "Actual public real delegated CoreText/Gallery component/strict; unchanged LCS/shared text/generator evidence retained with original identities"
+          }
+        ]
+      }
     }
   ]
 }
