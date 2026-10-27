@@ -25,3 +25,13 @@ Gold7：G3的有界规则、真实接入、GPU及外接屏原生渲染分别留�
 证据目录 `design/reviews/separator-scale-20261021/`，入口 progress.json、native-acceptance.json、comparison.html。观察输入身份 `f07266652b0a55118d6e3377fb80de5037b7df0a59e67f0cc9bcd5fb47b3692f`；owned-production.patch仅相对本轮WIP前态，不混入其他整改。
 
 集合候选154份原始输入已另存为collection-final-native-20261021/verified-source，原生验证器绑定该冻结输入并明确列出后续WIP变化。其重新激活检查仍待完成；不把本轮改动倒灌为已有通过证据。AgentKit冻结包不变。不测性能，不提交、推送或关闭Issue。
+
+## 2026-10-28：普通 Content 的独立接入（#54）
+
+上文统计与原生观察保留2026-10-21来源，不转签本轮。新增公开 `composition::SeparatorContent::new(Axis)`（默认横向），通过原 `SeparatorView::render_at_scale` 消费同一 Palette/backing-scale 装饰规则。父约束提供有限长轴，短轴按原 stroke-rule 钳制；只有实际装饰墨迹溢出短轴时才加叶子裁剪，正常非整数位置保留原 View 的祖先 device-scissor，避免旧 a1 的64例丢线。没有第二 painter、token 或业务状态机。
+
+该被动叶子不进入语义树、Tab、点击、滚轮、文本服务或焦点；它按当前原事务接口声明 StableHooks/有限 local prepared effects。实际 checked pane 新增/退休与原 reading、Composer marked/binding/selection/焦点及 Enter 门禁组合已验。曲线子树保留默认 Unsupported，本轮不新增曲线能力。
+
+最小公开消费样例见 `examples/composition-consumer/tests/support/separator_fixture.rs`，普通 Text→Separator→Text 树与9项 public 测试在独立消费者工作区执行。原 scale、当前 API binding/治理与strict通过；原 a2 完整8帧256例在当前 main 重跑，192正常全ROI与原View零像素差、所有clip外零像素，root已查看8图。两个测试lint修正分开留有失败与重跑身份；其余未变输入沿用原检查。详细当前程序/源码/图像收据在SSD `artifacts/issue-54/separator-content-main8de6c24-candidate/main-intake/`。
+
+这只完成#54本仓库组件与前三项实际接收；不可变公开交付和AgentKit精确pin接入仍依第4项分别完成。原生窗口、物理IME、VoiceOver、完整Gold7和性能未在本轮执行，不追加为本票前提。

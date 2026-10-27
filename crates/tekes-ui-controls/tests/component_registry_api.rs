@@ -49,6 +49,12 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-separator",
         "tekes_ui_controls::layout_view::SeparatorView",
     );
+    bind::<tekes_ui_controls::composition::SeparatorContent>(
+        &mut actual,
+        "tui.separator",
+        "component-separator",
+        "tekes_ui_controls::composition::SeparatorContent",
+    );
     bind::<tekes_ui_controls::extended::SplitView>(
         &mut actual,
         "tui.split-view",
@@ -1209,6 +1215,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::SemanticPart",
     );
+    public_type::<tekes_ui_controls::composition::SeparatorContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::SeparatorContent",
+    );
     public_type::<tekes_ui_controls::composition::SkeletonContent>(
         &mut actual,
         "tekes_ui_controls::composition::SkeletonContent",
@@ -1650,7 +1660,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_299<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_300<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,
