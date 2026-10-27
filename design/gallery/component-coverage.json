@@ -4191,37 +4191,35 @@
       ],
       "practical_intake": {
         "status": "accepted-bounded-evidence",
-        "baseline_commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
-        "scope": "Local main baseline plus exact #79 delta: original Notice model/View, shared Surface anatomy, public Content, lifecycle/actions, actual default/external GPU and Gallery AC5. Not native/wire or whole-library acceptance.",
+        "baseline_commit": "4b10bce94255640ad4be421c78c0b2a640f1fb28",
+        "scope": "Original #79 component/Theme/GPU results retained at original source; new #12 Banner-only natural inline label width repair and actual CoreText/owned behavior regression",
         "claims": [
-          "Original single action owner and prepared geometry; correct shared content/marker/frame and Quiet/Primary state consumption",
-          "Dismiss delivery and observed inactivity revocation verified with mixed Composer/reading preservation",
-          "Banner stays timer-free; original visible/dismissible and keyboard action behavior verified",
-          "Actual default/external Theme GPU, mounted Gallery and static variants/alignment passed"
+          "Historical component/Theme/default-external GPU and Gallery receipts remain separately scoped at their original sources, full prior record preserved",
+          "New original320pt/type150 runtime red92<102.91614 fixed by standard DS Button measurement in existing inline allocation; actual complete glyph baseline and whole message at four relevant width/scale cases passed",
+          "Original six owned controls/two Banner consumer action/lifecycle tests and production/new-target strict passed; no shared Button/Theme/API rule change"
         ],
+        "source_identity": {
+          "scope": "Selected current Banner layout/adapter/standard measurement and own CoreText witness only; no new GPU or all-Theme matrix claim",
+          "sha256": {
+            "crates/tekes-ui-controls/src/feedback_view.rs": "2d57cc6389d306fa6fcec03b4bc4b356d496cd47e4c1894f70d7a019ef68d392",
+            "crates/tekes-ui-controls/src/composition/notice.rs": "cc6dded89400f9bafa405ed499592f8f331792a68c746e501cb3e2768097c245",
+            "crates/tekes-ui-controls/src/widgets.rs": "39e9bdce57eacfb93020954e72581a005eaaf2ec86bca69dff5ddd7d64921d86",
+            "examples/composition-consumer/tests/banner_label.rs": "8fef6d2a1580b69b9c67105a9431bfb0a0d3f96303cc05c83056d4a0d4835983"
+          }
+        },
         "exceptions": [
           "Original geometry and parent allocations retained; no new ticker, queue or animation engine",
-          "Snapshot ZERO sample is supplied only at the explicit fixture boundary; missing SDK clock still fails"
+          "Snapshot ZERO sample is supplied only at the explicit fixture boundary; missing SDK clock still fails",
+          "New scope changes only inline width; original message slot/anchors/stack threshold retained, DS standard sizes unchanged"
         ],
         "gaps": [
           "Native window, physical IME, VoiceOver, performance and publication",
           "New-base module-runtime wire bridge; unchanged shared artifact/generator checks reused, no new external-artifact build claim",
           "Banner 320pt/type150 action word wrapping and full Gold7/page experience remain #12",
-          "Whole Design System/all52 root acceptance"
+          "Whole Design System/all52 root acceptance",
+          "New original320 Gallery GPU/native-window/physicalIME/VoiceOver/performance certification",
+          "Remaining #12 Progress/Split/whole-page acceptance"
         ],
-        "source_identity": {
-          "scope": "Exact received production inputs; source/config/program identities remain in original runtime receipts.",
-          "sha256": {
-            "crates/tekes-ui-controls/src/composition.rs": "87374073f784dd168991f8a12f72a9bf71ec5dd727e7941d98d34957be28a5e7",
-            "crates/tekes-ui-controls/src/composition/notice.rs": "e2976439dca772bb03c9992b8c3771c598eac089a59bc93ced3597232e46b297",
-            "crates/tekes-ui-controls/src/composition/actions.rs": "d9c78614e1b1cbe2cdc406c0c67ca350c93bd2f73fc4cff0307e4e8fa21af39b",
-            "crates/tekes-ui-controls/src/feedback_view.rs": "e17b4b063aa07760df034be2480b016641c4bae0c9ef6f17a6ab3daf8b703f26",
-            "crates/tekes-ui-controls/src/widgets.rs": "d5cd8ee66361fdc3b6b9eec43b199c72057796431637a6216b997c44193ffca2",
-            "crates/tekes-ui-controls/src/paint.rs": "0ad0c749f7da5393ad2e9c4afff5b2710ed3a4f72ff1f6f0741bf3fc3548cee8",
-            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "bf4b431faba91d567b81d85660dea2bf296988ad4139199bebff8b9c95782eb9",
-            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "df1baadc8554e6d62919fe2d31c97cc6b3ba1b5298b0e645e08e5e6a7cde7ccb"
-          }
-        },
         "evidence": [
           {
             "issue": "#93",
@@ -4254,6 +4252,22 @@
             "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice79-main08d845f-intake/root-review.json",
             "sha256": "af6e9894389584e44a51f60546f9a5fa9f9c315b098fc1b12fe759f56240ccd6",
             "scope": "Baseline 08d845f plus frozen integration delta, actual CPU/strict/AC5/GPU review; historical Root receipts not transferred."
+          },
+          {
+            "issue": "#12",
+            "component": "tui.banner",
+            "commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/banner-label-main4b574f2-candidate/main-intake/prior-practical-intake.json",
+            "sha256": "bebc9ce00ee2ed6bc806c9ec3ee8afadc53632bdad6cf49b9421abe211965d6f",
+            "scope": "Verbatim historical Theme/component/GPU practical record, not current layout rerun"
+          },
+          {
+            "issue": "#12",
+            "component": "tui.banner",
+            "commit": "4b10bce94255640ad4be421c78c0b2a640f1fb28",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/banner-label-main4b574f2-candidate/main-intake/commit-receipt.json",
+            "sha256": "bb5e11674d39747461f0e7a934359b33e270a55183152cef7c6f923f1ad760c2",
+            "scope": "Only Banner real-CoreText layout red/green+original owned behavior/strict newly executed; old GPU remains historical"
           }
         ]
       }

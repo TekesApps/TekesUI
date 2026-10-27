@@ -54998,12 +54998,11 @@
           "restricted"
         ],
         "practical_intake": {
-          "baseline_commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
+          "baseline_commit": "4b10bce94255640ad4be421c78c0b2a640f1fb28",
           "claims": [
-            "Original single action owner and prepared geometry; correct shared content/marker/frame and Quiet/Primary state consumption",
-            "Dismiss delivery and observed inactivity revocation verified with mixed Composer/reading preservation",
-            "Banner stays timer-free; original visible/dismissible and keyboard action behavior verified",
-            "Actual default/external Theme GPU, mounted Gallery and static variants/alignment passed"
+            "Historical component/Theme/default-external GPU and Gallery receipts remain separately scoped at their original sources, full prior record preserved",
+            "New original320pt/type150 runtime red92<102.91614 fixed by standard DS Button measurement in existing inline allocation; actual complete glyph baseline and whole message at four relevant width/scale cases passed",
+            "Original six owned controls/two Banner consumer action/lifecycle tests and production/new-target strict passed; no shared Button/Theme/API rule change"
           ],
           "consumer_entry": {
             "invocation": "--component tui.banner",
@@ -55042,68 +55041,50 @@
               "issue": "#79",
               "scope": "Baseline 08d845f plus frozen integration delta, actual CPU/strict/AC5/GPU review; historical Root receipts not transferred.",
               "sha256": "af6e9894389584e44a51f60546f9a5fa9f9c315b098fc1b12fe759f56240ccd6"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/banner-label-main4b574f2-candidate/main-intake/prior-practical-intake.json",
+              "commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
+              "component": "tui.banner",
+              "issue": "#12",
+              "scope": "Verbatim historical Theme/component/GPU practical record, not current layout rerun",
+              "sha256": "bebc9ce00ee2ed6bc806c9ec3ee8afadc53632bdad6cf49b9421abe211965d6f"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/banner-label-main4b574f2-candidate/main-intake/commit-receipt.json",
+              "commit": "4b10bce94255640ad4be421c78c0b2a640f1fb28",
+              "component": "tui.banner",
+              "issue": "#12",
+              "scope": "Only Banner real-CoreText layout red/green+original owned behavior/strict newly executed; old GPU remains historical",
+              "sha256": "bb5e11674d39747461f0e7a934359b33e270a55183152cef7c6f923f1ad760c2"
             }
           ],
           "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
           "exceptions": [
             "Original geometry and parent allocations retained; no new ticker, queue or animation engine",
-            "Snapshot ZERO sample is supplied only at the explicit fixture boundary; missing SDK clock still fails"
+            "Snapshot ZERO sample is supplied only at the explicit fixture boundary; missing SDK clock still fails",
+            "New scope changes only inline width; original message slot/anchors/stack threshold retained, DS standard sizes unchanged"
           ],
           "gaps": [
             "Native window, physical IME, VoiceOver, performance and publication",
             "New-base module-runtime wire bridge; unchanged shared artifact/generator checks reused, no new external-artifact build claim",
             "Banner 320pt/type150 action word wrapping and full Gold7/page experience remain #12",
-            "Whole Design System/all52 root acceptance"
+            "Whole Design System/all52 root acceptance",
+            "New original320 Gallery GPU/native-window/physicalIME/VoiceOver/performance certification",
+            "Remaining #12 Progress/Split/whole-page acceptance"
           ],
-          "scope": "Local main baseline plus exact #79 delta: original Notice model/View, shared Surface anatomy, public Content, lifecycle/actions, actual default/external GPU and Gallery AC5. Not native/wire or whole-library acceptance.",
+          "scope": "Original #79 component/Theme/GPU results retained at original source; new #12 Banner-only natural inline label width repair and actual CoreText/owned behavior regression",
           "source_identity": {
-            "differences": {
-              "crates/tekes-ui-controls/src/composition.rs": {
-                "actual": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
-                "expected": "87374073f784dd168991f8a12f72a9bf71ec5dd727e7941d98d34957be28a5e7"
-              },
-              "crates/tekes-ui-controls/src/composition/actions.rs": {
-                "actual": "6d7a2569853c1b783c3f9c5af5b8df4029a3880311ac47eac12310cd6ebb8e7b",
-                "expected": "d9c78614e1b1cbe2cdc406c0c67ca350c93bd2f73fc4cff0307e4e8fa21af39b"
-              },
-              "crates/tekes-ui-controls/src/composition/notice.rs": {
-                "actual": "cc6dded89400f9bafa405ed499592f8f331792a68c746e501cb3e2768097c245",
-                "expected": "e2976439dca772bb03c9992b8c3771c598eac089a59bc93ced3597232e46b297"
-              },
-              "crates/tekes-ui-controls/src/feedback_view.rs": {
-                "actual": "2d57cc6389d306fa6fcec03b4bc4b356d496cd47e4c1894f70d7a019ef68d392",
-                "expected": "e17b4b063aa07760df034be2480b016641c4bae0c9ef6f17a6ab3daf8b703f26"
-              },
-              "crates/tekes-ui-controls/src/paint.rs": {
-                "actual": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968",
-                "expected": "0ad0c749f7da5393ad2e9c4afff5b2710ed3a4f72ff1f6f0741bf3fc3548cee8"
-              },
-              "crates/tekes-ui-controls/src/widgets.rs": {
-                "actual": "39e9bdce57eacfb93020954e72581a005eaaf2ec86bca69dff5ddd7d64921d86",
-                "expected": "d5cd8ee66361fdc3b6b9eec43b199c72057796431637a6216b997c44193ffca2"
-              },
-              "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "afb1e1bf159b5e87bc0def5e30c72a8228e57d02b8576a56f20735ada3364a4a",
-                "expected": "bf4b431faba91d567b81d85660dea2bf296988ad4139199bebff8b9c95782eb9"
-              },
-              "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": {
-                "actual": "632635143cefc7531cba5f88e92e6d2d9939534f5217a3183a7d57ee434b3144",
-                "expected": "df1baadc8554e6d62919fe2d31c97cc6b3ba1b5298b0e645e08e5e6a7cde7ccb"
-              }
-            },
-            "scope": "Exact received production inputs; source/config/program identities remain in original runtime receipts.",
+            "differences": {},
+            "scope": "Selected current Banner layout/adapter/standard measurement and own CoreText witness only; no new GPU or all-Theme matrix claim",
             "sha256": {
-              "crates/tekes-ui-controls/src/composition.rs": "87374073f784dd168991f8a12f72a9bf71ec5dd727e7941d98d34957be28a5e7",
-              "crates/tekes-ui-controls/src/composition/actions.rs": "d9c78614e1b1cbe2cdc406c0c67ca350c93bd2f73fc4cff0307e4e8fa21af39b",
-              "crates/tekes-ui-controls/src/composition/notice.rs": "e2976439dca772bb03c9992b8c3771c598eac089a59bc93ced3597232e46b297",
-              "crates/tekes-ui-controls/src/feedback_view.rs": "e17b4b063aa07760df034be2480b016641c4bae0c9ef6f17a6ab3daf8b703f26",
-              "crates/tekes-ui-controls/src/paint.rs": "0ad0c749f7da5393ad2e9c4afff5b2710ed3a4f72ff1f6f0741bf3fc3548cee8",
-              "crates/tekes-ui-controls/src/widgets.rs": "d5cd8ee66361fdc3b6b9eec43b199c72057796431637a6216b997c44193ffca2",
-              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "bf4b431faba91d567b81d85660dea2bf296988ad4139199bebff8b9c95782eb9",
-              "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "df1baadc8554e6d62919fe2d31c97cc6b3ba1b5298b0e645e08e5e6a7cde7ccb"
+              "crates/tekes-ui-controls/src/composition/notice.rs": "cc6dded89400f9bafa405ed499592f8f331792a68c746e501cb3e2768097c245",
+              "crates/tekes-ui-controls/src/feedback_view.rs": "2d57cc6389d306fa6fcec03b4bc4b356d496cd47e4c1894f70d7a019ef68d392",
+              "crates/tekes-ui-controls/src/widgets.rs": "39e9bdce57eacfb93020954e72581a005eaaf2ec86bca69dff5ddd7d64921d86",
+              "examples/composition-consumer/tests/banner_label.rs": "8fef6d2a1580b69b9c67105a9431bfb0a0d3f96303cc05c83056d4a0d4835983"
             }
           },
-          "status": "accepted-source-subset-stale"
+          "status": "accepted-source-subset-matched"
         },
         "profile": "feedback",
         "profile_exceptions": {},
@@ -59683,7 +59664,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "f91a295290f8d4708cf71a13eea35fdee076ce480016d71c46b4ba0987b97a9f",
+    "design/gallery/component-coverage.json": "965aad6bdb6b58576640cb57a2fc5e663d10afc2a9307aa30d6cc3a2017957b7",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -59715,6 +59696,7 @@
     "examples/composition-consumer/src/command_status.rs": "309aedada5e9c30fc12898957b34ef44a487b6f2f4ec8763f79431b8c967cc86",
     "examples/composition-consumer/src/empty_state_content.rs": "a73d1bb24db806e91efadedcad79225ca0a4339ff212b8a85a446c6330ca61cb",
     "examples/composition-consumer/src/skeleton_content.rs": "80d44ba5650da213609eeb1a778bed69237550d17e6c5fed2ac91be16eaa6932",
+    "examples/composition-consumer/tests/banner_label.rs": "8fef6d2a1580b69b9c67105a9431bfb0a0d3f96303cc05c83056d4a0d4835983",
     "examples/composition-consumer/tests/breadcrumb_theme.rs": "0da781dd1b0dd19ad1b68bfc1fa399cc69a5949fe15b556202c4b1f17aa9c6b5",
     "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80",
     "examples/composition-consumer/tests/checkbox_theme.rs": "849080ccac69b56bdaa6f751e708f91ed93e8383143414cccbb0baa2dc2969fc",
