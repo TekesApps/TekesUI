@@ -6062,6 +6062,238 @@ mod interaction_tests {
     }
 
     #[test]
+    fn toast_gallery_retained_themes_preserve_mounted_clock_action_and_actual_ink() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme, surface_palette::resolve_surface};
+        let mut gallery = Gallery::new();
+        let i = index("toast");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(
+            gallery.workbench.state(i).extended.toast.remaining_ms(),
+            5000
+        );
+        assert!(gallery.animate(0.125));
+        gallery.build_scene(&mut Scene::new());
+        let retained = gallery.workbench.state(i).extended.toast.clone();
+        assert!(retained.visible && !retained.paused);
+        assert_eq!(retained.remaining_ms(), 4875);
+        assert_eq!(retained.message, "Changes saved");
+        assert_eq!(
+            retained.tone,
+            tekes_ui_controls::extended::NoticeTone::Success
+        );
+        let dismiss = gallery
+            .workbench
+            .state(i)
+            .visible_for_id(20)
+            .expect("mounted Toast action");
+        let rest = Point::new(dismiss.center().x, dismiss.max_y() + 64.);
+        let clock = gallery.text.motion_context().unwrap();
+        assert!(clock.reduced_motion);
+        let mut original_geometry = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            gallery.handle_input(&move_pointer(Point::new(-100., -100.)));
+            // A real Workbench-domain move clears the Toast's hover pause.
+            gallery.handle_input(&move_pointer(rest));
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            assert_eq!(
+                state.extended.toast, retained,
+                "Theme does not show/reset/expire the mounted Toast"
+            );
+            assert_eq!(state.visible_for_id(20), Some(dismiss));
+            assert_eq!(
+                state.button_labels.get(&20).map(String::as_str),
+                Some("Dismiss")
+            );
+            assert!(
+                state.log.is_empty(),
+                "Theme and paint produce no notice action"
+            );
+            assert!(
+                state.button_clip.is_some_and(|clip| clip.contains(rest)),
+                "rest move remains in the real Workbench input domain"
+            );
+            assert_eq!(gallery.text.motion_context(), Some(clock));
+            let primitives = scene.primitives();
+            let action_index = primitives
+                .iter()
+                .position(|p| matches!(p, Primitive::Quad(q) if q.rect == dismiss))
+                .expect("original Toast Quiet action Quad");
+            // Original ToastView paints frame, marker, message, then Dismiss.
+            // Anchor that own paint interval; captions/logs elsewhere are not body text.
+            let (marker_index, marker) = primitives[..action_index]
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(n, p)| match p {
+                    Primitive::Quad(q) => Some((n, q)),
+                    _ => None,
+                })
+                .expect("original Toast marker before action");
+            let frame = primitives[..marker_index]
+                .iter()
+                .rev()
+                .find_map(|p| match p {
+                    Primitive::Quad(q) => Some(q),
+                    _ => None,
+                })
+                .expect("original Toast panel before marker");
+            assert!(
+                frame.rect.contains(dismiss.center()) && frame.rect.contains(marker.rect.center())
+            );
+            assert!(
+                !frame.rect.contains(rest),
+                "rest move is outside the whole Toast so its clock is not hover-paused"
+            );
+            let geometry = (frame.rect, marker.rect, dismiss);
+            if let Some(original) = original_geometry {
+                assert_eq!(geometry, original);
+            } else {
+                original_geometry = Some(geometry);
+            }
+            let palette = Palette::new(theme, 0).unwrap();
+            // MountedToast creates an unannotated ContentHost: ContentTheme defaults
+            // to canvas, which ToastContent passes explicitly to its original View.
+            let frame_colors = resolve_surface(palette, "canvas", "surface-frame", "rest").unwrap();
+            let body = resolve_surface(palette, "canvas", "content", "rest").unwrap();
+            let status =
+                resolve_surface(palette, "canvas", "notice-marker-success", "rest").unwrap();
+            let action = resolve_surface(palette, "canvas", "action-quiet", "rest").unwrap();
+            assert_eq!(frame.fill, frame_colors.background);
+            assert_eq!(Some(frame.border_color), frame_colors.boundary);
+            assert_eq!(marker.fill, status.marker.unwrap());
+            let action_quad = match &primitives[action_index] {
+                Primitive::Quad(q) => q,
+                _ => unreachable!(),
+            };
+            assert_eq!(action_quad.fill, action.background);
+            let message: Vec<_> = primitives[marker_index + 1..action_index]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run) => Some(run),
+                    _ => None,
+                })
+                .collect();
+            assert!(!message.is_empty(), "actual mounted Toast message glyphs");
+            for run in &message {
+                assert!(!run.glyphs.is_empty());
+                assert!(
+                    run.glyphs
+                        .iter()
+                        .all(|g| frame.rect.contains(g.origin) && !dismiss.contains(g.origin))
+                );
+                assert_eq!(run.color, body.text);
+            }
+            let action_label = primitives[action_index + 1..]
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Glyphs(run) if !run.glyphs.is_empty() => Some(run),
+                    _ => None,
+                })
+                .expect("actual Toast Dismiss glyphs immediately after action Quad");
+            assert!(
+                action_label
+                    .glyphs
+                    .iter()
+                    .all(|g| dismiss.contains(g.origin))
+            );
+            assert_eq!(action_label.color, action.text);
+            let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+                let luminance = |c: tekes_ui_tokens::Rgba| {
+                    let c = c.to_linear();
+                    0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                };
+                let (a, b) = (luminance(a), luminance(b));
+                (a.max(b) + 0.05) / (a.min(b) + 0.05)
+            };
+            for (ink, ground) in message
+                .iter()
+                .map(|r| (r.color, frame.fill))
+                .chain(std::iter::once((action_label.color, action_quad.fill)))
+            {
+                assert!(
+                    contrast(ink, ground) >= if theme.is_increased() { 7. } else { 4.5 },
+                    "{theme:?}: real notice/action contrast {}",
+                    contrast(ink, ground)
+                );
+            }
+            assert!(contrast(marker.fill, frame.fill) >= 3.);
+            observed.push((frame.fill, body.text, marker.fill, action_label.color));
+            // Rebuilding at the same host time must not decrement or restart the timer.
+            gallery.build_scene(&mut Scene::new());
+            assert_eq!(gallery.workbench.state(i).extended.toast, retained);
+        }
+        assert!(observed.windows(2).any(|w| w[0] != w[1]));
+        assert!(gallery.animate(0.125));
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(
+            gallery.workbench.state(i).extended.toast.remaining_ms(),
+            4750
+        );
+        let advance = gallery
+            .workbench
+            .state(i)
+            .visible_for_id(21)
+            .expect("real Advance fixture timer button")
+            .center();
+        gallery.handle_input(&mouse(advance, true));
+        gallery.handle_input(&mouse(advance, false));
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(
+            gallery.workbench.state(i).extended.toast.remaining_ms(),
+            3750
+        );
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .log
+                .iter()
+                .filter(|s| s.as_str() == "toast timer: advanced 1 s")
+                .count(),
+            1
+        );
+        gallery.handle_input(&mouse(dismiss.center(), true));
+        gallery.handle_input(&mouse(dismiss.center(), false));
+        gallery.build_scene(&mut Scene::new());
+        assert!(!gallery.workbench.state(i).extended.toast.visible);
+        assert!(gallery.workbench.state(i).visible_for_id(20).is_none());
+        gallery.handle_input(&mouse(dismiss.center(), false));
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .log
+                .iter()
+                .filter(|s| s.as_str() == "toast: dismissed")
+                .count(),
+            1
+        );
+    }
+
+    #[test]
     fn narrow_large_text_state_matrix_allocates_wrapped_caption_and_real_control_extent() {
         use tekes_ui_scene::Primitive;
 
@@ -11235,6 +11467,407 @@ mod interaction_tests {
         assert!(w.state(i).draft_attempt.is_none());
         assert_eq!(w.state(i).input.query(), "unsaved but retained");
         assert!(!w.state(i).draft_fixture.as_ref().unwrap().has_pending());
+    }
+
+    #[test]
+    fn pattern_form_gallery_retained_themes_preserve_draft_selection_and_retry_semantics() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+        fn assert_input(scene: &Scene, frame: Rect, palette: Palette, backing: f32) -> usize {
+            let (index, ground) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == frame => Some((i, *q)),
+                    _ => None,
+                })
+                .expect("actual original form input input ground");
+            assert_eq!(ground.fill, palette.color("transcript-input").unwrap());
+            assert_eq!(
+                ground.corner_radii,
+                tekes_ui_scene::CornerRadii::uniform(
+                    proposal::metric("radius", "radius-input").unwrap()
+                )
+            );
+            assert_eq!(
+                ground.border_color,
+                palette
+                    .color(proposal::control_boundary("required-input", palette.theme).unwrap())
+                    .unwrap()
+            );
+            let inks = text_ink(&scene.primitives()[index + 1..], frame, backing);
+            assert!(
+                !inks.is_empty(),
+                "real CoreText form glyphs after own input ground"
+            );
+            let first_glyph = scene.primitives()[index + 1..]
+                .iter()
+                .position(|p| matches!(p, Primitive::Glyphs(run) if !run.glyphs.is_empty()))
+                .unwrap()
+                + index
+                + 1;
+            let overlays: Vec<_> = scene.primitives()[index + 1..first_glyph]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a > 0. && q.rect.intersection(&frame).is_some() =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .collect();
+            for overlay in &overlays {
+                assert_eq!(*overlay, palette.color("text-selection").unwrap());
+            }
+            let primary = palette.color("primary-text").unwrap();
+            let selected = palette.color("selected-text").unwrap();
+            let minimum = if palette.theme.is_increased() {
+                7.
+            } else {
+                4.5
+            };
+            assert!(inks.contains(&primary));
+            for ink in inks {
+                assert!(
+                    ink == primary || ink == selected,
+                    "actual form ink uses its declared role"
+                );
+                if ink == primary {
+                    assert!(
+                        contrast(ink, ground.fill) >= minimum,
+                        "actual ordinary text/input ground contrast"
+                    );
+                }
+                if ink == selected {
+                    // Equal role colors do not establish selection visibility. Check both grounds when visible.
+                    assert!(
+                        ink == primary || !overlays.is_empty(),
+                        "distinct selected ink requires visible selection paint"
+                    );
+                    for overlay in &overlays {
+                        let adjacent = Rgba::new(
+                            overlay.r * overlay.a + ground.fill.r * (1. - overlay.a),
+                            overlay.g * overlay.a + ground.fill.g * (1. - overlay.a),
+                            overlay.b * overlay.a + ground.fill.b * (1. - overlay.a),
+                            1.,
+                        );
+                        assert!(
+                            contrast(ink, adjacent) >= minimum,
+                            "actual selected text/composited own ground contrast"
+                        );
+                    }
+                }
+            }
+            overlays.len()
+        }
+
+        fn text_ink(primitives: &[Primitive], region: Rect, backing: f32) -> Vec<Rgba> {
+            primitives
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let a = g.glyph;
+                            region
+                                .intersection(&Rect::new(
+                                    g.origin.x + a.left as f32 / backing,
+                                    g.origin.y + a.top as f32 / backing,
+                                    a.width as f32 / backing,
+                                    a.height as f32 / backing,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect()
+        }
+        fn assert_label(scene: &Scene, region: Rect, palette: Palette, role: &str, backing: f32) {
+            let ink = text_ink(scene.primitives(), region, backing);
+            assert!(!ink.is_empty(), "real form metadata/phase glyphs");
+            let ground = Gallery::background(palette.theme);
+            assert_eq!(ground, palette.color("document-canvas").unwrap());
+            for color in ink {
+                assert_eq!(color, palette.color(role).unwrap());
+                assert!(
+                    contrast(color, ground)
+                        >= if palette.theme.is_increased() {
+                            7.
+                        } else {
+                            4.5
+                        }
+                );
+            }
+        }
+        fn assert_action(
+            scene: &Scene,
+            frame: Rect,
+            palette: Palette,
+            roles: (&str, &str, bool),
+            backing: f32,
+        ) {
+            let (index, ground) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == frame => Some((i, *q)),
+                    _ => None,
+                })
+                .expect("actual form action own ground");
+            assert_eq!(ground.fill, palette.color(roles.0).unwrap());
+            let ink = text_ink(&scene.primitives()[index + 1..], frame, backing);
+            assert!(!ink.is_empty());
+            for color in ink {
+                assert_eq!(color, palette.color(roles.1).unwrap());
+                if roles.2 {
+                    assert!(
+                        contrast(color, ground.fill)
+                            >= if palette.theme.is_increased() {
+                                7.
+                            } else {
+                                4.5
+                            }
+                    );
+                }
+            }
+        }
+        fn click(gallery: &mut Gallery, i: usize, id: usize) {
+            gallery.build_scene(&mut Scene::new());
+            let frame = gallery
+                .workbench
+                .state(i)
+                .visible_for_id(id)
+                .expect("real visible form action");
+            gallery.handle_input(&mouse(frame.center(), true));
+            gallery.handle_input(&mouse(frame.center(), false));
+            let input = gallery.workbench.state(i).input.frame_at(0).unwrap();
+            let mut moved = mouse(input.center(), false);
+            if let Event::Mouse(event) = &mut moved {
+                event.kind = tekes_ui_platform_macos::MouseEventKind::Moved;
+            }
+            gallery.handle_input(&moved);
+            gallery.build_scene(&mut Scene::new());
+        }
+        let directory =
+            std::env::temp_dir().join(format!("tekesui-pattern-form-theme-{}", std::process::id()));
+        std::fs::create_dir(&directory).unwrap();
+        let path = directory.join("form.json");
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 1100.);
+        gallery.set_system_theme(Theme::LIGHT);
+        assert!(gallery.open_route("pattern-form/playground"));
+        let i = index("form");
+        gallery.build_scene(&mut Scene::new());
+        gallery.workbench.state(i).open_draft_fixture(path.clone());
+        gallery.build_scene(&mut Scene::new());
+        // Empty input validation is the actual form submit path, not a synthetic error state.
+        click(&mut gallery, i, 1000);
+        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommit {
+            text: String::new(),
+            replacement: None,
+        });
+        gallery.build_scene(&mut Scene::new());
+        assert!(gallery.workbench.state(i).input.query().is_empty());
+        click(&mut gallery, i, 20);
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Invalid);
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        let field = gallery.workbench.state(i).field_view.layout();
+        assert_label(
+            &scene,
+            field.message,
+            Theme::LIGHT.into(),
+            "status-failed",
+            gallery.text.scale(),
+        );
+        let input = gallery.workbench.state(i).input.frame_at(0).unwrap();
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect==input && q.border_color==Palette::from(Theme::LIGHT).color(proposal::control_boundary("error",Theme::LIGHT).unwrap()).unwrap())));
+        click(&mut gallery, i, 1000);
+        gallery.handle_input(&Event::TextCommit {
+            text: "Theme draft".into(),
+            replacement: None,
+        });
+        gallery.build_scene(&mut Scene::new());
+        click(&mut gallery, i, 25);
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Checked
+        );
+        let persisted = durable_draft::DurableDraft::open(path.clone()).unwrap();
+        assert_eq!(persisted.draft().name, "Theme draft");
+        assert!(persisted.draft().notifications);
+        let revision = persisted.draft().revision;
+        click(&mut gallery, i, 20);
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Pending);
+        assert_eq!(
+            gallery.workbench.state(i).draft_attempt,
+            Some((revision, 1))
+        );
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        let save = gallery.workbench.state(i).buttons[&20]
+            .layout()
+            .unwrap()
+            .frame;
+        assert!(gallery.workbench.state(i).buttons[&20].state.disabled);
+        assert_action(
+            &scene,
+            save,
+            Theme::LIGHT.into(),
+            ("surface-2", "tertiary-text", false),
+            gallery.text.scale(),
+        );
+        click(&mut gallery, i, 21);
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Failed);
+        click(&mut gallery, i, 26);
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Failed);
+        assert!(gallery.workbench.state(i).draft_attempt.is_none());
+        assert_eq!(gallery.workbench.state(i).input.query(), "Theme draft");
+        click(&mut gallery, i, 1000);
+        gallery.handle_input(&Event::TextCommand("moveToBeginningOfDocument:".into()));
+        for _ in 0..5 {
+            gallery.handle_input(&Event::TextCommand("moveRightAndModifySelection:".into()));
+        }
+        gallery.build_scene(&mut Scene::new());
+        let frame = gallery.workbench.state(i).input.frame_at(0).unwrap();
+        assert_eq!(gallery.text_input_state().unwrap().selection, 0..5);
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            scene.clear();
+            gallery.build_scene(&mut scene);
+            let palette: Palette = theme.into();
+            assert_eq!(gallery.theme(), theme);
+            let native = gallery.text_input_state().unwrap();
+            assert_eq!(native.text, "Theme draft");
+            assert_eq!(native.selection, 0..5);
+            assert_eq!(gallery.workbench.state(i).input.frame_at(0), Some(frame));
+            let state = gallery.workbench.state(i);
+            assert_eq!(state.phase, Phase::Failed);
+            assert_eq!(state.checkbox.checked, CheckState::Checked);
+            assert_eq!(state.button_labels[&20], "Retry save");
+            assert!(!state.buttons[&20].state.disabled);
+            let store = state.draft_fixture.as_ref().unwrap();
+            assert!(store.is_durable());
+            assert!(store.has_pending());
+            assert!(!store.is_acknowledged());
+            assert_eq!(store.draft().revision, revision);
+            assert_eq!(store.draft().name, "Theme draft");
+            assert!(store.draft().notifications);
+            let layout = state.field_view.layout();
+            let notify = state.buttons[&25].layout().unwrap().frame;
+            let save = state.buttons[&20].layout().unwrap().frame;
+            let phase = state.phase_frame.unwrap();
+            assert!(
+                assert_input(&scene, frame, palette, gallery.text.scale()) > 0,
+                "retained visible selection must paint actual selection"
+            );
+            assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center() && q.border_color == palette.color("border-focused").unwrap())));
+            assert_label(
+                &scene,
+                layout.label,
+                palette,
+                "primary-text",
+                gallery.text.scale(),
+            );
+            assert_label(
+                &scene,
+                layout.message,
+                palette,
+                "secondary-text",
+                gallery.text.scale(),
+            );
+            assert_label(
+                &scene,
+                Rect::new(
+                    phase.min_x(),
+                    phase.min_y(),
+                    phase.size.width,
+                    phase.size.height.min(48.),
+                ),
+                palette,
+                "primary-text",
+                gallery.text.scale(),
+            );
+            assert_action(
+                &scene,
+                notify,
+                palette,
+                ("row-selection", "primary-text", true),
+                gallery.text.scale(),
+            );
+            assert_action(
+                &scene,
+                save,
+                palette,
+                ("action-primary-ground", "action-primary-foreground", true),
+                gallery.text.scale(),
+            );
+        }
+        click(&mut gallery, i, 20);
+        assert_eq!(
+            gallery.workbench.state(i).draft_attempt,
+            Some((revision, 2))
+        );
+        click(&mut gallery, i, 21);
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Saved);
+        assert!(
+            durable_draft::DurableDraft::open(path.clone())
+                .unwrap()
+                .is_acknowledged()
+        );
+        assert_eq!(gallery.workbench.state(i).input.query(), "Theme draft");
+        // Disabled composition must block the original editor and both actions together.
+        click(&mut gallery, i, 10);
+        assert!(gallery.workbench.state(i).disabled);
+        click(&mut gallery, i, 25);
+        click(&mut gallery, i, 20);
+        click(&mut gallery, i, 1000);
+        gallery.handle_input(&Event::TextCommit {
+            text: "blocked".into(),
+            replacement: None,
+        });
+        assert_eq!(gallery.workbench.state(i).input.query(), "Theme draft");
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Checked
+        );
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Saved);
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        let state = gallery.workbench.state(i);
+        assert!(state.buttons[&20].state.disabled);
+        assert!(state.buttons[&25].state.disabled);
+        let save = state.buttons[&20].layout().unwrap().frame;
+        assert_action(
+            &scene,
+            save,
+            Theme::DARK_INCREASED.into(),
+            ("surface-2", "tertiary-text", false),
+            gallery.text.scale(),
+        );
+        std::fs::remove_dir_all(directory).unwrap();
     }
 
     #[test]
