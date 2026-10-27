@@ -57975,7 +57975,7 @@
     "crates/tekes-ui-gallery/src/gallery/mod.rs": "18cec888b4b7fc85a239ed065a32140d78ef281e8a9aa4834765b6ca4afde2ca",
     "crates/tekes-ui-gallery/src/gallery/motion_preview.rs": "dd35eebb7edc40a9ef805445981693ac644275a833491709da7b562250084c55",
     "crates/tekes-ui-gallery/src/gallery/navigation.rs": "164ac5f639e4028e7947003d2c936c780bec14e99308ea93b55b7f10ccf7b9d1",
-    "crates/tekes-ui-gallery/src/gallery/pages/icons.rs": "53e8e623e613eb3d167ba9d555052fb43b88b2becee77f209713eae0348140e5",
+    "crates/tekes-ui-gallery/src/gallery/pages/icons.rs": "67a1afc5c6d2638642251de82cc2a3ffc37add1058e09d771d7c3e7a2d8af385",
     "crates/tekes-ui-gallery/src/gallery/pages/mod.rs": "7d829ad1b05018d939685054471e21e6c0bc9a82ef80ffcf13b9e6a7a9328ed6",
     "crates/tekes-ui-gallery/src/gallery/pages/motion.rs": "8223945a3c78fbbb0798e32f0b8ed8838b82d55510a541e95833e0b10a49583f",
     "crates/tekes-ui-gallery/src/gallery/pages/primitives.rs": "dcd32f2a3c02639a37f861a1a3e8257c1bd22b9567ab4fe0d2d93ded83911eea",
