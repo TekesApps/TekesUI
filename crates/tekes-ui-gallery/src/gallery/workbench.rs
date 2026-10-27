@@ -9105,6 +9105,163 @@ mod interaction_tests {
     }
 
     #[test]
+    fn menu_gallery_theme_changes_keep_real_popup_title_items_and_navigation() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let v = c.to_linear();
+                0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        let mut gallery = Gallery::new();
+        let i = index("menu");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        gallery.set_reduced_motion(true);
+        gallery.animate(1. / 60.);
+        gallery.build_scene(&mut Scene::new());
+        let trigger = gallery.workbench.state(i).buttons[&20].layout().unwrap();
+        gallery.handle_input(&mouse(trigger.frame.center(), true));
+        gallery.handle_input(&mouse(trigger.frame.center(), false));
+        gallery.build_scene(&mut Scene::new());
+        assert!(gallery.workbench.state(i).menu_view.is_open());
+        let mut surfaces = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let popup = gallery.workbench.state(i).menu_layout.clone().unwrap();
+            // This gutter is inside the real Menu popup input domain; a window-exterior move does not reach its reducer.
+            gallery.handle_input(&move_pointer(popup.popup.origin));
+            gallery.handle_input(&key(115, true));
+            gallery.animate(1. / 60.);
+            for hovered in [false, true] {
+                if hovered {
+                    gallery.handle_input(&move_pointer(popup.items[1].frame.center()));
+                }
+                let mut scene = Scene::new();
+                gallery.build_scene(&mut scene);
+                let state = gallery.workbench.state(i);
+                let popup = state.menu_layout.as_ref().unwrap();
+                let selected = if hovered { 1 } else { 0 };
+                assert_eq!(popup.active_item, selected);
+                assert!(state.menu_view.is_open());
+                let palette = Palette::new(theme, 0).unwrap();
+                let surface = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect == popup.popup => Some(q.fill),
+                        _ => None,
+                    })
+                    .unwrap();
+                assert_eq!(surface, palette.color("surface-popover").unwrap());
+                if !hovered {
+                    surfaces.push(surface);
+                }
+                let trigger = state.buttons[&20].layout().unwrap();
+                // The menu owns pointer moves while open. Its original
+                // Primary invoker retains the hover from the real opening click.
+                assert!(state.buttons[&20].state.hovered);
+                assert!(!state.buttons[&20].state.pressed);
+                // Gallery's main action uses Primary; the separate public
+                // MenuContent fixture intentionally uses its Quiet trigger.
+                for (layout, expected_fill, expected_ink) in [
+                    (trigger, "action-primary-hover", "action-primary-foreground"),
+                    (
+                        popup.items[selected],
+                        if hovered {
+                            "row-selection-hover"
+                        } else {
+                            "row-selection"
+                        },
+                        "primary-text",
+                    ),
+                ] {
+                    let (background_index, fill) = scene
+                        .primitives()
+                        .iter()
+                        .enumerate()
+                        .find_map(|(index, p)| match p {
+                            Primitive::Quad(q) if q.rect == layout.frame => Some((index, q.fill)),
+                            _ => None,
+                        })
+                        .unwrap();
+                    assert_eq!(
+                        fill,
+                        palette.color(expected_fill).unwrap(),
+                        "{theme:?} actual Gallery {expected_fill}"
+                    );
+                    // Underlay text may occupy the same coordinates, but the
+                    // actual title/item glyphs paint after their own background.
+                    let inks: Vec<_> = scene.primitives()[background_index + 1..]
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Glyphs(run)
+                                if run.glyphs.iter().any(|g| layout.content.contains(g.origin)) =>
+                            {
+                                Some(run.color)
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    assert!(
+                        !inks.is_empty(),
+                        "actual Gallery title/item CoreText glyphs"
+                    );
+                    for ink in inks {
+                        assert_eq!(
+                            ink,
+                            palette.color(expected_ink).unwrap(),
+                            "{theme:?} {expected_fill} actual title/item after background {background_index}"
+                        );
+                        assert!(contrast(ink, fill) >= if theme.is_increased() { 7. } else { 4.5 });
+                    }
+                }
+                let focus = scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.rect.center() == popup.items[selected].frame.center() && q.border_color == palette.color("border-focused").unwrap()));
+                assert_eq!(focus, !hovered);
+            }
+        }
+        assert!(surfaces.windows(2).any(|w| w[0] != w[1]));
+        let before = gallery
+            .workbench
+            .state(i)
+            .log
+            .iter()
+            .filter(|s| *s == "menu action: 1")
+            .count();
+        gallery.handle_input(&key(36, true));
+        assert!(!gallery.workbench.state(i).menu_view.is_open());
+        assert_eq!(gallery.workbench.state(i).focus, Some(20));
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .log
+                .iter()
+                .filter(|s| *s == "menu action: 1")
+                .count(),
+            before + 1
+        );
+    }
+
+    #[test]
     fn menu_keyboard_close_restores_caller_button_focus_modality() {
         for close in [36, 53] {
             let mut w = Workbench::default();
