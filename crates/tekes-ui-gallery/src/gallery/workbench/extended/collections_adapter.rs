@@ -2219,6 +2219,210 @@ mod tests {
     }
 
     #[test]
+    fn diff_view_gallery_retained_themes_keep_lcs_rows_real_status_ink_and_passive_input() {
+        use crate::gallery::Gallery;
+        use tekes_ui_controls::{collections_view::DocumentLayout, extended::DiffKind};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Rgba, Theme};
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+        fn assert_rows(
+            scene: &Scene,
+            layout: &DocumentLayout,
+            model: &DiffView,
+            palette: Palette,
+            clear: Rgba,
+        ) {
+            assert_eq!(layout.blocks.len(), model.lines.len());
+            for (line, block) in model.lines.iter().zip(&layout.blocks) {
+                assert!(
+                    block.visible.is_some(),
+                    "original Gallery row is fully presented in this fixture"
+                );
+                let runs: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, p)| match p {
+                        Primitive::Glyphs(run)
+                            if !run.glyphs.is_empty()
+                                && run.glyphs.iter().all(|g| block.frame.contains(g.origin)) =>
+                        {
+                            Some((i, run))
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(
+                    !runs.is_empty(),
+                    "each actual Diff row emits glyphs separately from its footer"
+                );
+                for (index, run) in runs {
+                    let role = match line.kind {
+                        DiffKind::Equal => "primary-text",
+                        DiffKind::Added => "status-succeeded",
+                        DiffKind::Removed => "status-failed",
+                    };
+                    assert_eq!(run.color, palette.color(role).unwrap());
+                    assert_eq!(run.color.a, 1.);
+                    let parent = scene.primitives()[..index]
+                        .iter()
+                        .rev()
+                        .find_map(|p| match p {
+                            Primitive::Quad(q)
+                                if q.fill.a == 1.
+                                    && q.rect.min_x() <= block.frame.min_x()
+                                    && q.rect.max_x() >= block.frame.max_x()
+                                    && q.rect.min_y() <= block.frame.min_y()
+                                    && q.rect.max_y() >= block.frame.max_y() =>
+                            {
+                                Some(q.fill)
+                            }
+                            _ => None,
+                        })
+                        .unwrap_or(clear);
+                    assert!(
+                        contrast(run.color, parent)
+                            >= if palette.theme.is_increased() {
+                                7.
+                            } else {
+                                4.5
+                            },
+                        "actual diff status ink/parent ground contrast"
+                    );
+                }
+            }
+        }
+        let entry = crate::gallery::workbench::entries()
+            .iter()
+            .find(|e| e.renderer() == "diff-view")
+            .expect("registered actual Diff Gallery adapter");
+        assert_eq!(entry.slug(), "component-diff-view");
+        let mut ext = ExtendedStory::default();
+        let original = ext.diff.clone();
+        for kind in [DiffKind::Equal, DiffKind::Added, DiffKind::Removed] {
+            assert!(original.lines.iter().any(|line| line.kind == kind));
+        }
+        let mut state = StoryState::default();
+        let unrelated = (777, Rect::new(1., 2., 3., 4.));
+        state.hits.push(unrelated);
+        let mut text = TextEngine::new();
+        text.set_scale(1.);
+        text.set_motion_enabled(true);
+        text.set_motion_context(std::time::Duration::ZERO, true);
+        let body = Rect::new(24., 32., 480., 600.);
+        let mut initial = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            text.begin_frame();
+            let mut static_text = StaticText::new(None);
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            let palette = Palette::from(theme);
+            let mut scene = Scene::new();
+            assert!(build(
+                &mut ext, entry, &mut state, &mut ctx, &mut scene, body, body, palette
+            ));
+            assert!(scene.composition_error().is_none());
+            let layout = ext.collections_views.diff.layout().clone();
+            if let Some(before) = &initial {
+                assert_eq!(&layout, before);
+            } else {
+                initial = Some(layout.clone());
+            }
+            assert_eq!(
+                layout
+                    .blocks
+                    .iter()
+                    .map(|block| block.id)
+                    .collect::<Vec<_>>(),
+                (0..original.lines.len()).collect::<Vec<_>>()
+            );
+            assert_eq!(
+                Gallery::background(theme),
+                palette.color("document-canvas").unwrap()
+            );
+            assert_rows(
+                &scene,
+                &layout,
+                &original,
+                palette,
+                Gallery::background(theme),
+            );
+            assert!(state.document_bottom > layout.blocks.last().unwrap().frame.max_y());
+            assert_eq!(state.hits, vec![unrelated]);
+            assert!(logical_focus_targets(&ext, "diff-view").is_empty());
+            assert!(!accepts_key("diff-view", Some(20)));
+            let mut log = Vec::new();
+            assert!(
+                key(
+                    &mut ext,
+                    "diff-view",
+                    Some(20),
+                    ControlKey::Enter,
+                    true,
+                    &mut |s| log.push(s)
+                )
+                .is_none()
+            );
+            assert!(
+                pointer_move(
+                    &mut ext,
+                    "diff-view",
+                    layout.frame.center(),
+                    None,
+                    &mut |s| log.push(s)
+                )
+                .is_none()
+            );
+            assert!(
+                pointer_down(
+                    &mut ext,
+                    "diff-view",
+                    layout.frame.center(),
+                    None,
+                    &mut |s| log.push(s)
+                )
+                .is_none()
+            );
+            assert!(
+                pointer_up(
+                    &mut ext,
+                    "diff-view",
+                    layout.frame.center(),
+                    None,
+                    &mut |s| log.push(s)
+                )
+                .is_none()
+            );
+            blur(&mut ext, "diff-view");
+            window_active(&mut ext, "diff-view", false);
+            window_active(&mut ext, "diff-view", true);
+            assert!(log.is_empty());
+            assert_eq!(ext.diff, original);
+            assert_eq!(ext.collections_views.diff.layout(), &layout);
+            observed.push((
+                palette.color("status-succeeded").unwrap(),
+                palette.color("status-failed").unwrap(),
+                Gallery::background(theme),
+            ));
+        }
+        assert!(
+            observed.windows(2).any(|pair| pair[0] != pair[1]),
+            "same registered Gallery adapter consumes Theme changes"
+        );
+    }
+
+    #[test]
     fn gallery_code_block_height_uses_its_real_narrow_large_text_slot() {
         let entry = crate::gallery::workbench::entries()
             .iter()
