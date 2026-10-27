@@ -1325,6 +1325,51 @@
         "historical_public_api_verified": [
           "rest"
         ],
+        "practical_intake": {
+          "baseline_commit": "ceeee8a6e30092e0cf709cd14edea465ac3d1302",
+          "claims": [
+            "Public retained SeparatorView switches Theme::ALL across horizontal/vertical axes with original frame/ancestor clip and hidden no-paint",
+            "Actual Gallery playground View and variants painter use both decorative directions at actual2x scale with normal hairline/IC stroke-rule and stable centers/spans",
+            "Both new targets and Gallery strict passed under original source guard/build lock/SSD"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.separator",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/separator-main0a389a9-candidate/main-intake/commit-receipt.json",
+              "commit": "ceeee8a6e30092e0cf709cd14edea465ac3d1302",
+              "component": "tui.separator",
+              "issue": "#121",
+              "scope": "Actual main retained decorative Theme/clip and Gallery dual implementation/scale tests; strict passed; exceptions and not_run preserved.",
+              "sha256": "010a23fada4c6f3cfd1bba560b5f98e95b215cc911d33cfb3f24302198376b0d"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Original decorative grouping spec excludes required interaction boundaries; no invented text/interaction/disabled/focus states or contrast threshold. Current main has no SeparatorContent API.",
+            "Ordinary direction/placement geometry stays layout; shared brand/invalid-scale/1x/SplitView results reused unchanged"
+          ],
+          "gaps": [
+            "new full-brand/GPU/native-window/physicalIME/VoiceOver certification",
+            "other7 family roots/full52"
+          ],
+          "scope": "Retained existing public SeparatorView and actual Gallery playground/variants, four Themes, both axes, actual2x decorative stroke, original geometry/clip/hidden; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected real consumer/render sources, not exhaustive dependency proof; actual full-source run identities retained in receipts.",
+            "sha256": {
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+              "crates/tekes-ui-controls/src/paint.rs": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "81d61e1f0e9b7ebda581eab90ab760fd86f7b838d9741505d311e5e672ffddd4",
+              "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "static",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -58287,7 +58332,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "585db2b6bae9563bcb4aa7be3ae1d4a0626bdb8ccc299e3d9f29d8dfa450c4a7",
+    "design/gallery/component-coverage.json": "db31771bf638f4e2f6ad9c001a38e12658e558e15f006e63d117470306497fb8",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58326,6 +58371,7 @@
     "examples/composition-consumer/tests/icon_button_theme.rs": "0d9bc7273e23df0ca442cc1d9cc76999e487df144576c070f673ac31e48b0a5c",
     "examples/composition-consumer/tests/icon_theme.rs": "49b5adb26de708799a14330a8a2b8d341150ab673cb4e07626187f5f3b8f0814",
     "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758",
+    "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",
     "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
     "examples/composition-consumer/tests/tabs_theme.rs": "88d4c4178f4caa4da2dea18dea8d62a7a186691e36b07048d9a48e76b88b935e",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",

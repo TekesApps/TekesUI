@@ -51,7 +51,45 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/separator.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/separator.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "ceeee8a6e30092e0cf709cd14edea465ac3d1302",
+        "scope": "Retained existing public SeparatorView and actual Gallery playground/variants, four Themes, both axes, actual2x decorative stroke, original geometry/clip/hidden; tests only",
+        "claims": [
+          "Public retained SeparatorView switches Theme::ALL across horizontal/vertical axes with original frame/ancestor clip and hidden no-paint",
+          "Actual Gallery playground View and variants painter use both decorative directions at actual2x scale with normal hairline/IC stroke-rule and stable centers/spans",
+          "Both new targets and Gallery strict passed under original source guard/build lock/SSD"
+        ],
+        "source_identity": {
+          "scope": "Selected real consumer/render sources, not exhaustive dependency proof; actual full-source run identities retained in receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-controls/src/paint.rs": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "81d61e1f0e9b7ebda581eab90ab760fd86f7b838d9741505d311e5e672ffddd4",
+            "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c"
+          }
+        },
+        "exceptions": [
+          "Original decorative grouping spec excludes required interaction boundaries; no invented text/interaction/disabled/focus states or contrast threshold. Current main has no SeparatorContent API.",
+          "Ordinary direction/placement geometry stays layout; shared brand/invalid-scale/1x/SplitView results reused unchanged"
+        ],
+        "gaps": [
+          "new full-brand/GPU/native-window/physicalIME/VoiceOver certification",
+          "other7 family roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#121",
+            "component": "tui.separator",
+            "commit": "ceeee8a6e30092e0cf709cd14edea465ac3d1302",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/separator-main0a389a9-candidate/main-intake/commit-receipt.json",
+            "sha256": "010a23fada4c6f3cfd1bba560b5f98e95b215cc911d33cfb3f24302198376b0d",
+            "scope": "Actual main retained decorative Theme/clip and Gallery dual implementation/scale tests; strict passed; exceptions and not_run preserved."
+          }
+        ]
+      }
     },
     {
       "id": "tui.split-view",
