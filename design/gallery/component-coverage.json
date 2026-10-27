@@ -212,7 +212,48 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "2753d52ff5e344bec4492d9046b1c0933e56593b",
+        "scope": "Local A prepared SplitViewContent retained capture/ratio/layout/clip/leaf Theme through both axes and real Gallery drag/pane labels/cancel/keyboard, tests only",
+        "claims": [
+          "Original prepared SplitViewContent retains capture/ratio/geometry/clip/focus/mount and actual pane leaf Theme during both axes; exact old public pass source reused, Cancel restores original ratio",
+          "Actual Gallery original drag across Themes preserves pane/scale-aware divider paint and own label ink, then Escape/Right/Enter contract; corrected named Gallery and strict passed",
+          "Production/scene/assertions remain; initial whole-pane sampler included later helper/log roles and is preserved as failed identity, only own label paint interval corrected"
+        ],
+        "source_identity": {
+          "scope": "Selected actual local A split/pane/witness sources; public and corrected Gallery retain distinct observed source identities; not a B/full product certificate",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition/split_view.rs": "379caa197a2e449045fb17e9f3ffc67eefe8f6f27e552f4ffd539920ee269eb3",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "ab98fab1b0de4e7301d2fb0dcaee08ea0bade52b55b76ea25fa6b8c4b44a470f",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+            "examples/composition-consumer/tests/split_view_theme.rs": "2fabc2e68f51cf92a4780ad4741c8471b7d0b6b1985fbcf036442d59eb255864"
+          }
+        },
+        "exceptions": [
+          "Original divider uses decorative separator, no own new state palette or fake Splitter semantics",
+          "Ordinary ratio/constraints/hit widths remain geometry; unchanged leaf/clip/reveal/editor states reuse old identities"
+        ],
+        "gaps": [
+          "#103 B semantic Splitter/platform-wire/default-externalTheme/GPU main delivery",
+          "new dedicated native-window/physicalIME/VoiceOver certification",
+          "#12 tall pane/helper-log whole-page pixel/native readability",
+          "other layout roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#121",
+            "component": "tui.split-view",
+            "commit": "2753d52ff5e344bec4492d9046b1c0933e56593b",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/split-view-main97bd424-candidate/main-intake/commit-receipt.json",
+            "sha256": "e6004f228b87bef1e2ebfc0d80148df057b221d7c4284e049e1dec9ba67cda44",
+            "scope": "Actual corrected Gallery/strict plus exact original public pass reuse; #103 B/#12/native gaps remain separate"
+          }
+        ]
+      }
     },
     {
       "id": "tui.scroll-area",
@@ -4218,7 +4259,45 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "781f2ab65ce7ba8b2c2c331565fc232f6aebe8ec",
+        "scope": "Actual readonly Markdown subset retained Theme/block IDs/wrap/clip/passivity and registered Gallery adapter transparent clear-ground text; tests only",
+        "claims": [
+          "Same public retained Markdown model/View through Theme::ALL keeps supported block parse/IDs/order, real narrow/wide wrap/clip and each-block caller-ground contrast4.5/7",
+          "Actual registered Gallery component build uses exact Gallery DocumentCanvas clear input and retains real blocks/layout/footer distinction across Themes",
+          "Original passive input/lifecycle and Gallery strict passed; no invented own surface/interaction/editor or full-window certification"
+        ],
+        "source_identity": {
+          "scope": "Selected actual Markdown/View/adapter/clear-source witnesses, not recursive closure or pixel/native certificate",
+          "sha256": {
+            "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "d71b574c3f31e2cecf2d1dba4266c7719af736075a1f395cdfa1cf274fb9af2a",
+            "crates/tekes-ui-gallery/src/gallery/mod.rs": "18cec888b4b7fc85a239ed065a32140d78ef281e8a9aa4834765b6ca4afde2ca",
+            "examples/composition-consumer/tests/markdown_theme.rs": "4de00576cc7f49fee977b433a4ddc30bcf100863e3991ab89fa66f281dd2fae0"
+          }
+        },
+        "exceptions": [
+          "Original supported readonly heading/paragraph/bullet/fenced-code subset, no full editor/Content/interactive API invented",
+          "Transparent component uses actual caller Quad or Gallery DocumentCanvas clear input; no own surface/pixel claim"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/whole-window/native AX/physicalIME/VoiceOver certification",
+          "DiffView/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#124",
+            "component": "tui.markdown",
+            "commit": "781f2ab65ce7ba8b2c2c331565fc232f6aebe8ec",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/markdown-maineb94677-candidate/main-intake/commit-receipt.json",
+            "sha256": "b5882e70941efa105117d4857e0fe81bcd7c44b5518a1dc5c2e524971600fe7a",
+            "scope": "Actual public/Gallery component/strict; unchanged parser/shared text/generator evidence retained with original identities"
+          }
+        ]
+      }
     },
     {
       "id": "tui.code-block",
@@ -4377,7 +4456,45 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "29978859a2c99b1d70f12235b030f4cdc447bb28",
+        "scope": "Actual readonly LCS diff retained Theme/rows/full prefixes/real Code glyph status inks and parent-ground contrast, wrap/clip/passive Gallery consumption; tests only",
+        "claims": [
+          "Same public retained DiffViewRuntime/model through Theme::ALL preserves complete LCS Equal/Removed/Added order/IDs/full rendered prefixes and real CoreText Code-role glyph inks4.5/7 against actual caller ground",
+          "Real narrow150% full-line wrap/clip/empty/cancel and restore preserve readonly data and line identities",
+          "Actual registered Gallery component retains diff rows/layout/footer and rejects unrelated input/lifecycle changes, using exact Gallery DocumentCanvas clear input; strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected actual diff/View/adapter/clear-source witnesses, not recursive closure/pixel/native certificate",
+          "sha256": {
+            "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "90216f944b5224905e8658bc90d2a9457db2f4fe89dce215b6034b7f8e10edea",
+            "crates/tekes-ui-gallery/src/gallery/mod.rs": "18cec888b4b7fc85a239ed065a32140d78ef281e8a9aa4834765b6ca4afde2ca",
+            "examples/composition-consumer/tests/diff_view_theme.rs": "e07a547d4478f1813bde26362a35544830303ebe2d0b80d9973da5697f2b6d1e"
+          }
+        },
+        "exceptions": [
+          "Original readonly plain diff, no Content/editor/interactive state API invented",
+          "Transparent component uses actual caller Quad or exact Gallery DocumentCanvas clear input; static contrast budget not runtime proof"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/whole-window/native AX/physicalIME/VoiceOver certification",
+          "full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#124",
+            "component": "tui.diff-view",
+            "commit": "29978859a2c99b1d70f12235b030f4cdc447bb28",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/diff-view-maineb94677-candidate/main-intake/commit-receipt.json",
+            "sha256": "12cddf119175427ea28586d85db9d45a844ff563d37c921ad5a531d1076d5cf3",
+            "scope": "Actual public real delegated CoreText/Gallery component/strict; unchanged LCS/shared text/generator evidence retained with original identities"
+          }
+        ]
+      }
     }
   ]
 }
