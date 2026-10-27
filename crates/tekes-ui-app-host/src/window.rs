@@ -744,7 +744,9 @@ impl Host {
             .to_owned();
         for (slot, bounds) in frames.iter().enumerate() {
             if bounds.size.width > 0. {
-                self.panel_geometry(self.order[slot], *bounds, scale, toolbar_height)?;
+                let index = self.order[slot];
+                self.panels[index].start(w.wake_proxy());
+                self.panel_geometry(index, *bounds, scale, toolbar_height)?;
             }
         }
         let renderer = self.renderer.as_mut().unwrap();
@@ -758,7 +760,6 @@ impl Host {
                 continue;
             }
             let p = &mut self.panels[index];
-            p.start(w.wake_proxy());
             p.geometry(*bounds, scale, toolbar_height)?;
             let content = content_geometry(*bounds, p.toolbar_height);
             scene.push_quad(Quad::new(content, palette.color("surface-panel").unwrap()));
@@ -1164,9 +1165,10 @@ impl Host {
             self.step = 24;
             w.set_title("TekesUI AppHost — native window ready");
             eprintln!(
-                "NATIVE_WINDOW_READY panels={} pids={:?} resize_burst=21 max_inflight_per_panel=2 physical_input=false",
+                "NATIVE_WINDOW_READY panels={} pids={:?} resize_burst=21 max_inflight_per_panel=2 physical_input=false native_window={}",
                 self.panels.len(),
-                self.panels.iter().map(|p| p.pid).collect::<Vec<_>>()
+                self.panels.iter().map(|p| p.pid).collect::<Vec<_>>(),
+                w.native_window_number()
             );
         }
         Ok(())

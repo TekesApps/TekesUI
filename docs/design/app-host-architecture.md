@@ -28,7 +28,11 @@ Settings List 本地输入适配已以 `1fd83df7ef73990310a45c74c8a1d76095765487
 
 有限原生 Settings 验收追加：仅既有 `--window-acceptance` 加 `TEKESUI_SETTINGS_WINDOW_ACCEPTANCE=1` 启用私有 `settings-window-only` 驱动；正常产品入口和无 env 的旧 Main23 路径保持。真实 Main 模块及原 Settings 命令均保留，子 Host 自己等待导航、有效 AX publication 与启用输入框，再经原输入提交、自动保存、Toolbar Undo IPC 和原关闭路径执行。Exclusive 显示→保存110→Undo回100/实际字段100%→Back关闭/父窗及焦点恢复通过；Independent 同二进制无截图旁路重放也通过，其此前截图已实际检查。证据 SSD `artifacts/issue-70/native-window-main113c0f9/exclusive-round05`、`independent-round06`、`independent-round07-no-capture`。截图只证明实际看到的窗口内容，不替代完整像素验收。
 
-原失败保留：旧 Main23 `exclusive-round03` 50秒超时，无首帧/READY；本 scope 的 Main resize/panel-frame 为 not_run，不转签。scope04 异步字段未就绪的驱动误报已修；Independent 首次在关闭前失活，焦点终态失败，同程序重放成功不抹除该失败，也不推定具体失活来源。Main 首帧现象仍须归因到实际启动/传输/导入边界，#70继续开放。
+原失败保留：旧 Main23 `exclusive-round03` 50秒超时，无首帧/READY；本 scope 的 Main resize/panel-frame 为 not_run，不转签。scope04 异步字段未就绪的驱动误报已修；Independent 首次在关闭前失活，焦点终态失败，同程序重放成功不抹除该失败，也不推定具体失活来源。该 Main 首帧失败已由后续真实诊断定位，旧失败保留，后续修正及范围见下。
+
+Main 冷启动修正（2026-10-27，验证基线 `477baed` + `window.rs` 精确差量）：首次几何更新早于进程 panel 启动，Layout 被未启动门禁丢弃；启动后几何相同，不会再次派发，工作进程因此一直等待 stdin。可见 panel 现在先启动、再提交首次几何；隐藏 panel、local Container、协议、场景和原门禁不变。AppHost all-target strict 及原 Main23 真实验收通过，实际收到23帧并达到原 READY，截图已人工核对内容；READY 后验证包装器终止自己的进程，不将其视为产品退出生命周期验收。相同最终源码下，Exclusive 与 Independent 均经真实 Main、原 Settings 命令、原输入及 Undo 路径通过显示→保存110→Undo100/实际字段100%→关闭与父窗焦点恢复。仅因启动顺序输入发生变化补验这两条集成链，无关有效回归不重跑。证据 SSD `artifacts/issue-70/main-cold-start-fix/{run02,settings-exclusive-run03,settings-independent-run03}`，诊断失败见 `main-first-frame-diagnostic/run01`；后两条不含新的视觉截图。
+
+#70 本轮有限关闭核对：已确认的 Main 产品缺陷已修复，上述本地 Settings 原生链通过；尚不能把全部本地 PR 范围标为完成。AC1/2 的已有 API/Schema/平台设计和共享依赖沿既有接收，公共不可变依赖与开发 path 分列。AC3 尚缺最终 PR 独立 checkout 的原列组合、输入/capture/焦点/AX 接收：当前 demo 仍使用兼容 `run_with_settings(AppProfile)`，PR52 样例包含 `from_columns` 的一/二/三列与 mixed-columns，不能用本轮单列 Main 及 Settings 两列替代。已有公共装配测试保留，不重开发 API。AC4 的 #48/Toolbar 一般进程、多窗口及 VoiceOver 长期契约不由本票有限 Settings 结果代签；物理 IME/完整 VoiceOver 未执行，但不是本票明文独立全量门禁。AC3/5 的公开不可变依赖、最终 PR 同源 CI 和独立交付记录仍缺；需要远端更新/CI 的步骤等待授权，不能将所有本地缺口归为远端阻塞。唯一接收负责人 root，下一交付为核对原 PR 样例相对于已接收 API 的最小完整差量和精确依赖，不扩大 Settings 功能。#70 保持开放。
 
 原 #70 AC3 的最终 PR 独立 checkout、精确公开依赖和同源 CI 尚未完成。AC4 要求关联 #48/Toolbar 剩余项并明确本 PR 不承诺的一般远端、多窗口与 VoiceOver 范围；物理 IME/完整 VoiceOver 并非 #70 明文规定的独立全量关闭门禁。本批只证明程序驱动输入与语义 AX，未宣称物理输入/IME/VoiceOver通过；#48 等原能力目标继续保留，不因本次范围说明被删除。完整既有Settings设计和历史原型保留在Gallery Root的 `docs/design/apphost-settings.md` 与 `apphost-settings-prototype-20261022.md`，后续接收沿原契约，不把历史实现转签为当前main完成。
 
