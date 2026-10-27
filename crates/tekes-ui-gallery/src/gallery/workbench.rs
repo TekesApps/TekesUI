@@ -14603,6 +14603,242 @@ mod interaction_tests {
     }
 
     #[test]
+    fn combo_box_gallery_retained_themes_keep_filtered_source_identity_and_native_query() {
+        use tekes_ui_platform_macos::AccessibilityRole;
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        fn assert_ink(scene: &Scene, frame: Rect, theme: Theme, ground_role: &str, backing: f32) {
+            let palette = Palette::from(theme);
+            let (index, ground) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == frame => Some((i, q)),
+                    _ => None,
+                })
+                .expect("actual ComboBox input/candidate ground");
+            assert_eq!(ground.fill, palette.color(ground_role).unwrap());
+            let inks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(r)
+                        if !r.glyphs.is_empty()
+                            && r.glyphs.iter().any(|g| {
+                                let a = g.glyph;
+                                frame
+                                    .intersection(&Rect::new(
+                                        g.origin.x + a.left as f32 / backing,
+                                        g.origin.y + a.top as f32 / backing,
+                                        a.width as f32 / backing,
+                                        a.height as f32 / backing,
+                                    ))
+                                    .is_some()
+                            }) =>
+                    {
+                        Some(r.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "actual query/candidate CoreText glyphs after their own ground"
+            );
+            for ink in inks {
+                assert_eq!(ink, palette.color("primary-text").unwrap());
+                assert_eq!((ink.a, ground.fill.a), (1., 1.));
+                let luminance = |c: tekes_ui_tokens::Rgba| {
+                    let c = c.to_linear();
+                    0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                };
+                let (a, b) = (luminance(ink), luminance(ground.fill));
+                assert!(
+                    (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                        >= if theme.is_increased() { 7. } else { 4.5 }
+                );
+            }
+        }
+        let mut w = Workbench::default();
+        w.apply_reduced_motion(true);
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("combo-box");
+        click(&mut w, i, 1000, &mut text);
+        w.handle(
+            i,
+            &Event::TextCommit {
+                text: "Com".into(),
+                replacement: None,
+            },
+            &mut text,
+        );
+        build(&mut w, i, &mut text);
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut original = None;
+        for theme in Theme::ALL {
+            let popup = w
+                .state(i)
+                .extended
+                .combo_view
+                .options
+                .layout()
+                .unwrap()
+                .clone();
+            w.handle(i, &move_pointer(popup.popup.origin), &mut text);
+            w.handle(i, &Event::TextCommand("moveUp:".into()), &mut text);
+            w.handle(i, &Event::TextCommand("moveDown:".into()), &mut text);
+            for hovered in [false, true] {
+                if hovered {
+                    w.handle(i, &move_pointer(popup.items[0].frame.center()), &mut text);
+                }
+                text.begin_frame();
+                let mut static_text = super::super::static_text::StaticText::new(None);
+                let mut ctx = PageCtx {
+                    theme,
+                    text: &mut text,
+                    static_text: &mut static_text,
+                };
+                let mut scene = Scene::new();
+                w.build_clipped(i, &mut ctx, content, content, &mut scene);
+                assert!(scene.composition_error().is_none());
+                let state = w.state(i);
+                let combo = &state.extended.combo;
+                let view = &state.extended.combo_view.options;
+                assert!(combo.open);
+                assert_eq!(combo.query, "Com");
+                assert_eq!(state.input.query(), "Com");
+                assert_eq!(combo.selected, None);
+                assert_eq!(state.focus, Some(1000));
+                let active = if hovered { 1 } else { 2 };
+                assert_eq!(combo.active, Some(active));
+                assert_eq!(combo.filtered(), vec![1, 2]);
+                assert_eq!(
+                    (view.original_index(0), view.original_index(1)),
+                    (Some(1), Some(2))
+                );
+                let popup = view.layout().unwrap();
+                let input = state.input.frame_at(0).unwrap();
+                let geometry = (
+                    input,
+                    popup.popup,
+                    popup.items.iter().map(|r| r.frame).collect::<Vec<_>>(),
+                );
+                if let Some(before) = &original {
+                    assert_eq!(&geometry, before);
+                } else {
+                    original = Some(geometry);
+                }
+                let ground = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect == popup.popup => Some(q),
+                        _ => None,
+                    })
+                    .unwrap();
+                assert_eq!(
+                    ground.fill,
+                    Palette::from(theme).color("surface-popover").unwrap()
+                );
+                assert_ink(&scene, input, theme, "transcript-input", text.scale());
+                assert_ink(
+                    &scene,
+                    popup.items[active - 1].frame,
+                    theme,
+                    if hovered {
+                        "row-selection-hover"
+                    } else {
+                        "row-selection"
+                    },
+                    text.scale(),
+                );
+                let nodes = w.accessibility_nodes(i);
+                let menu = nodes
+                    .iter()
+                    .find(|n| n.role == AccessibilityRole::Menu)
+                    .unwrap();
+                let options: Vec<_> = nodes
+                    .iter()
+                    .filter(|n| n.role == AccessibilityRole::MenuItem)
+                    .collect();
+                assert_eq!(options.len(), 2);
+                assert_eq!(
+                    options.iter().map(|n| n.key.part).collect::<Vec<_>>(),
+                    vec![Some(41), Some(42)]
+                );
+                assert!(
+                    options
+                        .iter()
+                        .all(|n| n.parent == Some(menu.key) && !n.selected)
+                );
+                assert!(
+                    options
+                        .iter()
+                        .find(|n| n.key.part == Some(40 + active))
+                        .unwrap()
+                        .focused
+                );
+            }
+        }
+        w.handle(i, &Event::TextCommand("moveDown:".into()), &mut text);
+        w.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).extended.combo.selected, Some(2));
+        assert_eq!(w.state(i).input.query(), "Comfortable");
+        assert!(!w.state(i).extended.combo.open);
+        assert_eq!(
+            w.state(i)
+                .log
+                .iter()
+                .filter(|s| s.as_str() == "combo selection: 2")
+                .count(),
+            1
+        );
+        w.handle(i, &Event::TextCommand("selectAll:".into()), &mut text);
+        w.handle(
+            i,
+            &Event::TextCommit {
+                text: "absent".into(),
+                replacement: None,
+            },
+            &mut text,
+        );
+        build(&mut w, i, &mut text);
+        assert!(w.state(i).extended.combo.open);
+        assert_eq!(w.state(i).extended.combo.active, None);
+        assert!(w.state(i).extended.combo_view.options.layout().is_none());
+        assert!(w.state(i).hits.iter().all(|(id, _)| !(40..43).contains(id)));
+        assert_eq!(w.state(i).extended.combo.selected, Some(2));
+        w.handle(i, &Event::TextCommand("cancelOperation:".into()), &mut text);
+        assert!(!w.state(i).extended.combo.open);
+        assert_eq!(w.state(i).input.query(), "absent");
+        w.handle(i, &Event::TextCommand("selectAll:".into()), &mut text);
+        w.handle(
+            i,
+            &Event::TextCommit {
+                text: "Com".into(),
+                replacement: None,
+            },
+            &mut text,
+        );
+        build(&mut w, i, &mut text);
+        click(&mut w, i, 41, &mut text);
+        assert_eq!(w.state(i).extended.combo.selected, Some(1));
+        assert_eq!(w.state(i).input.query(), "Compact");
+        assert_eq!(w.state(i).focus, Some(1000));
+        assert_eq!(
+            w.state(i)
+                .log
+                .iter()
+                .filter(|s| s.as_str() == "combo selection: 1")
+                .count(),
+            1
+        );
+    }
+
+    #[test]
     fn combobox_native_text_command_moves_the_real_input_caret() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
