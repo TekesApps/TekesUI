@@ -6639,6 +6639,53 @@
       "state_coverage": {
         "fixture_unverified": [],
         "historical_public_api_verified": [],
+        "practical_intake": {
+          "baseline_commit": "228f2c8e98730df07a97370ea75dd058893b4a27",
+          "claims": [
+            "Same real public ToolbarControl/ContentHost across Theme::ALL retains action geometry/selection/availability with original toolbar semantic packet/own-ground glyph4.5/7 and necessary focus/hover/press states",
+            "Original pointer command7 and grouped overflow command42 emit once-only correct payload and mount after explicit original Host action queue opt-in",
+            "Actual Gallery SurfaceView/ToolbarView Primary-first/Quiet-rest states/real title contrasts and Rename/Create pointer/key/cancel passed; original Gallery/strict pass identities retained"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.toolbar",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/toolbar-main511badf-candidate/main-intake/commit-receipt.json",
+              "commit": "228f2c8e98730df07a97370ea75dd058893b4a27",
+              "component": "tui.toolbar",
+              "issue": "#121",
+              "scope": "Actual corrected public/real Gallery/strict; original #69 and shared Surface/Button/Menu evidence retains identity, first public101 preserved",
+              "sha256": "e4992c60f9619bd19d0672dabd2d41c754ca42237c11597547a9c39b4ac1a079"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Palette-free Toolbar geometry helper is separate from actual public ToolbarControl and actual Gallery ToolbarView",
+            "Original public Host action records require set_action_events(true); not a new production contract",
+            "Different original Primary/Quiet policies preserved; ordinary widths/gaps/indices stay geometry"
+          ],
+          "gaps": [
+            "new dedicated #69 Host/overlay/window/IME/GPU certification",
+            "#127 original full combination/new native AX/VoiceOver/physicalIME",
+            "full52"
+          ],
+          "scope": "Actual public ToolbarControl retained Theme/states/own-ground text and original once-only pointer/overflow commands; actual Gallery distinct ToolbarView paths; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual two visual toolbar paths and witnesses; corrected public and unchanged Gallery/strict retain separate actual run identities, not full Host/#127 proof",
+            "sha256": {
+              "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+              "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+              "crates/tekes-ui-controls/src/toolbar.rs": "ebb1e0678cedf656af14a99d48a5eb77e4778e4db1dcb7e3f316856b012793f5",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
+              "examples/composition-consumer/tests/toolbar_theme.rs": "b81542fc6e3891c430d4e54e0e69acd42e364a442840ac9898598e22f4407557"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "button",
         "profile_exceptions": {
           "loading": "The action-group Toolbar is not an independently activatable action; busy state belongs to its child actions. Existing basic_states fixture explicitly excludes a group loading state."
@@ -59214,7 +59261,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "e098abe424d18c73674f70e2e1a06dd251ec813033dcc9bdfd1c19fcffe3f79b",
+    "design/gallery/component-coverage.json": "423ec1ec0b66054a47a3082ceeacd5eaea7aec241b5762f59b24dfe622f3819e",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -59272,6 +59319,7 @@
     "examples/composition-consumer/tests/surface_theme.rs": "ea80660bf10c7af0092bf43ff8dca05c3414eedb21452e40be5c80b83aa9edbf",
     "examples/composition-consumer/tests/switch_theme.rs": "b3fabfc1f6340fa76148ed194787db52ba10ef36397994b8b1d90c4fcab27c9a",
     "examples/composition-consumer/tests/tabs_theme.rs": "88d4c4178f4caa4da2dea18dea8d62a7a186691e36b07048d9a48e76b88b935e",
+    "examples/composition-consumer/tests/toolbar_theme.rs": "b81542fc6e3891c430d4e54e0e69acd42e364a442840ac9898598e22f4407557",
     "examples/composition-consumer/tests/tree_theme.rs": "01047607cc63d346bd67c1b490978477eace5a02009fa23b4b01c65a1d6921aa",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",
     "scripts/generate-component-capabilities.py": "b7cb6c0de297601b95755e2d8bdb74b42e3cf37475e77ebf52693c7379385d61"

@@ -638,7 +638,47 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/toolbar.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/toolbar.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "228f2c8e98730df07a97370ea75dd058893b4a27",
+        "scope": "Actual public ToolbarControl retained Theme/states/own-ground text and original once-only pointer/overflow commands; actual Gallery distinct ToolbarView paths; tests only",
+        "claims": [
+          "Same real public ToolbarControl/ContentHost across Theme::ALL retains action geometry/selection/availability with original toolbar semantic packet/own-ground glyph4.5/7 and necessary focus/hover/press states",
+          "Original pointer command7 and grouped overflow command42 emit once-only correct payload and mount after explicit original Host action queue opt-in",
+          "Actual Gallery SurfaceView/ToolbarView Primary-first/Quiet-rest states/real title contrasts and Rename/Create pointer/key/cancel passed; original Gallery/strict pass identities retained"
+        ],
+        "source_identity": {
+          "scope": "Selected actual two visual toolbar paths and witnesses; corrected public and unchanged Gallery/strict retain separate actual run identities, not full Host/#127 proof",
+          "sha256": {
+            "crates/tekes-ui-controls/src/toolbar.rs": "ebb1e0678cedf656af14a99d48a5eb77e4778e4db1dcb7e3f316856b012793f5",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+            "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
+            "examples/composition-consumer/tests/toolbar_theme.rs": "b81542fc6e3891c430d4e54e0e69acd42e364a442840ac9898598e22f4407557"
+          }
+        },
+        "exceptions": [
+          "Palette-free Toolbar geometry helper is separate from actual public ToolbarControl and actual Gallery ToolbarView",
+          "Original public Host action records require set_action_events(true); not a new production contract",
+          "Different original Primary/Quiet policies preserved; ordinary widths/gaps/indices stay geometry"
+        ],
+        "gaps": [
+          "new dedicated #69 Host/overlay/window/IME/GPU certification",
+          "#127 original full combination/new native AX/VoiceOver/physicalIME",
+          "full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#121",
+            "component": "tui.toolbar",
+            "commit": "228f2c8e98730df07a97370ea75dd058893b4a27",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/toolbar-main511badf-candidate/main-intake/commit-receipt.json",
+            "sha256": "e4992c60f9619bd19d0672dabd2d41c754ca42237c11597547a9c39b4ac1a079",
+            "scope": "Actual corrected public/real Gallery/strict; original #69 and shared Surface/Button/Menu evidence retains identity, first public101 preserved"
+          }
+        ]
+      }
     },
     {
       "id": "tui.text",
