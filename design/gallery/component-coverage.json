@@ -314,7 +314,45 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "5cc0063571efc89aa6409b8d925aa53c05df4dd2",
+        "scope": "Geometry-only ScrollArea/ScrollContent retains offset/clip/layout/leaf Theme; actual dedicated Gallery readonly TextSurface thumb/text/parent contrast; tests only",
+        "claims": [
+          "Same public ScrollContent/ScrollArea with real Text/Button retains interior scroll offset/zero overscroll/range/child frame/visible clip/mount across Theme::ALL",
+          "Original declared Surface reaches exact real leaf semantic paint; no invented container painter or repeated leaf state matrix",
+          "Actual public Gallery component-scroll-area route keeps historical reading position/frame/visible thumb across Themes and actual opaque parent/thumb3/document text4.5/7; strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected actual scroll/content/TextSurface/dedicated Gallery witnesses, not full dependency closure or native full-editor certificate",
+          "sha256": {
+            "crates/tekes-ui-controls/src/scroll_view.rs": "9e3176c67669075319e8e594c791333c6fa08f7c87f3744cbeafe56d77e33476",
+            "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+            "crates/tekes-ui-controls/src/text_surface.rs": "791439dcf9f778811e60af719458d8b871c82d4303a6727b28733bd840469825",
+            "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "5377b74f83af60160af14ea69905b479ddca9a2952801bb31f6ce6eeaca2a946",
+            "examples/composition-consumer/tests/scroll_area_theme.rs": "a64afa37f06ad160330a797166fe7e4eb3c25a15d1e3ef214a6dda9d0e9b5133"
+          }
+        },
+        "exceptions": [
+          "ScrollArea/ScrollContent do not gain fabricated painter/Palette/state API; actual Gallery TextSurface owns thumb",
+          "Ordinary offsets/ranges/thumb ratios remain geometry; shared leaf matrices and original reveal/reading/selection results reused"
+        ],
+        "gaps": [
+          "new dedicated full editor/selection/native-window/physicalIME/VoiceOver/GPU certification",
+          "Toolbar/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#121",
+            "component": "tui.scroll-area",
+            "commit": "5cc0063571efc89aa6409b8d925aa53c05df4dd2",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/scroll-area-main356ad1d-candidate/main-intake/commit-receipt.json",
+            "sha256": "6b0df76de068b380eada2d9a9471c3cb3085e018cf7fa122eaedf49f20b29a21",
+            "scope": "Actual public/dedicated Gallery/strict; original generated scroll/clip/reveal/reading/editor results retain identity"
+          }
+        ]
+      }
     },
     {
       "id": "tui.disclosure",
