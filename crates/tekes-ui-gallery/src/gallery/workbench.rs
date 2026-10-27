@@ -8028,7 +8028,13 @@ mod interaction_tests {
         gallery.handle_input(&move_pointer(Point::new(0., 0.)));
         // The sidebar owns (0, 0); request tab rest through the real Workbench
         // background so the existing Tabs pointer reducer receives the move.
-        let tab_frame = gallery.workbench.state(i).tabs_layout.as_ref().unwrap().frame;
+        let tab_frame = gallery
+            .workbench
+            .state(i)
+            .tabs_layout
+            .as_ref()
+            .unwrap()
+            .frame;
         gallery.handle_input(&move_pointer(Point::new(
             tab_frame.center().x,
             tab_frame.max_y() + 4.,
@@ -9311,6 +9317,104 @@ mod interaction_tests {
         w.handle(number, &key(49, true), &mut text);
         w.handle(number, &key(49, false), &mut text);
         assert_eq!(w.state(number).number.value(), before + 2.0);
+    }
+
+    #[test]
+    fn breadcrumb_gallery_theme_switch_preserves_path_and_real_navigation() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut gallery = Gallery::new();
+        let i = index("breadcrumb");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        let trail_frame = gallery
+            .workbench
+            .state(i)
+            .extended
+            .breadcrumb_view
+            .layout()
+            .frame;
+        let rest_point = Point::new(trail_frame.center().x, trail_frame.max_y() + 4.);
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            gallery.handle_input(&move_pointer(Point::new(-100., -100.)));
+            // Theme role endpoints use the real Workbench input scope, not an
+            // out-of-window move which never reaches the Breadcrumb reducer.
+            gallery.handle_input(&move_pointer(rest_point));
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            let layout = state.extended.breadcrumb_view.layout();
+            assert_eq!(layout.items.len(), 3);
+            let ancestor = layout.items[1].frame();
+            let current = layout.items[2].frame();
+            let palette = Palette::new(theme, 0).unwrap();
+            let fills: Vec<_> = scene
+                .primitives()
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q) if q.rect == ancestor || q.rect == current => Some(q.fill),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(fills, vec![palette.color("surface-2").unwrap(); 2]);
+            for (frame, role) in [(ancestor, "primary-text"), (current, "tertiary-text")] {
+                let inks: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run)
+                            if run.glyphs.iter().any(|g| frame.contains(g.origin)) =>
+                        {
+                            Some(run.color)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(!inks.is_empty(), "real Gallery Breadcrumb {role} glyphs");
+                assert!(inks.iter().all(|ink| *ink == palette.color(role).unwrap()));
+            }
+            observed.push(fills[0]);
+            let before = gallery.workbench.state(i).log.len();
+            gallery.handle_input(&mouse(current.center(), true));
+            gallery.handle_input(&mouse(current.center(), false));
+            assert_eq!(
+                gallery.workbench.state(i).log.len(),
+                before,
+                "current page does not navigate"
+            );
+            gallery.handle_input(&mouse(ancestor.center(), true));
+            gallery.handle_input(&mouse(ancestor.center(), false));
+            assert_eq!(gallery.workbench.state(i).extended.selected, 1);
+            assert_eq!(gallery.workbench.state(i).log.len(), before + 1);
+            assert_eq!(
+                gallery.workbench.state(i).log.back().map(String::as_str),
+                Some("breadcrumb: 1")
+            );
+            assert_eq!(
+                gallery.workbench.state(i).extended.breadcrumb.items.len(),
+                3
+            );
+        }
+        assert!(observed.windows(2).any(|w| w[0] != w[1]));
     }
 
     #[test]
