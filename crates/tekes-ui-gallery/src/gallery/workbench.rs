@@ -8123,6 +8123,108 @@ mod interaction_tests {
     }
 
     #[test]
+    fn gallery_retained_dialog_theme_switch_repaints_modal_and_copy() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("dialog");
+        // Open through the actual Gallery trigger and keep this same DialogView.
+        click(&mut w, i, 20, &mut text);
+        assert!(w.state(i).dialog_view.focus_button(1));
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut previous_ground = None;
+        for theme in Theme::ALL {
+            text.begin_frame();
+            let mut static_text = super::super::static_text::StaticText::new(None);
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            let mut scene = Scene::new();
+            w.build_clipped(i, &mut ctx, content, content, &mut scene);
+            assert!(scene.composition_error().is_none());
+            let palette = Palette::new(theme, w.brand).unwrap();
+            let state = w.state(i);
+            assert!(state.dialog_view.is_open());
+            assert_eq!(state.dialog_view.dialog().focus, 1);
+            assert_eq!(state.focus, Some(71));
+            let layout = state.dialog_layout.as_ref().expect("actual Gallery modal");
+            assert!(layout.visible.is_some());
+            let (surface_index, surface) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(index, p)| match p {
+                    Primitive::Quad(q) if q.rect == layout.modal => Some((index, q)),
+                    _ => None,
+                })
+                .expect("actual Gallery Dialog surface");
+            assert_eq!(surface.fill, palette.color("surface-popover").unwrap());
+            assert_eq!(
+                surface.corner_radii.top_left,
+                proposal::metric("radius", "c-dialog-radius").unwrap()
+            );
+            assert!(scene.primitives().iter().any(|p| matches!(p,
+                Primitive::Quad(q) if q.rect == layout.preview && q.fill == palette.color("scrim").unwrap()
+            )));
+            let copy = scene.primitives()[surface_index + 1..]
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if !run.glyphs.is_empty()
+                            && run
+                                .glyphs
+                                .iter()
+                                .all(|glyph| layout.title.contains(glyph.origin)) =>
+                    {
+                        Some(run)
+                    }
+                    _ => None,
+                })
+                .expect("actual Gallery Dialog copy, independently of action labels");
+            assert_eq!(copy.color, palette.color("primary-text").unwrap());
+            assert_eq!((copy.color.a, surface.fill.a), (1., 1.));
+            let luminance = |color: tekes_ui_tokens::Rgba| {
+                let linear = color.to_linear();
+                0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+            };
+            let (a, b) = (luminance(copy.color), luminance(surface.fill));
+            assert!(
+                (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                    >= if theme.is_increased() { 7. } else { 4.5 }
+            );
+            assert!(scene.primitives().iter().any(|p| matches!(p,
+                Primitive::Quad(q) if q.fill.a == 0. && q.border_color == palette.color("border-focused").unwrap()
+                    && q.rect.intersection(&layout.buttons[1].frame).is_some()
+            )));
+            if let Some(previous) = previous_ground
+                && theme.is_dark()
+            {
+                assert_ne!(previous, surface.fill);
+            }
+            previous_ground = Some(surface.fill);
+        }
+        // Existing Gallery availability feeds the same retained Dialog actions.
+        w.state(i).disabled = true;
+        build(&mut w, i, &mut text);
+        assert_eq!(
+            w.state(i).dialog_view.activate_button(1),
+            DialogEvent::Blocked
+        );
+        assert!(w.state(i).dialog_view.is_open());
+        w.state(i).disabled = false;
+        build(&mut w, i, &mut text);
+        w.handle(i, &key(53, true), &mut text);
+        assert!(!w.state(i).dialog_view.is_open());
+        assert_eq!(w.state(i).focus, Some(20));
+    }
+
+    #[test]
     fn dialog_contains_focus_and_pointer_input_and_survives_window_deactivation() {
         let mut w = Workbench::default();
         let mut t = super::super::text::TextEngine::new();
