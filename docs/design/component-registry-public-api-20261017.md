@@ -1,5 +1,7 @@
 # #8 当前组件登记：公开编译绑定与历史身份映射
 
+当前入口：原 Workbench/能力清单与 context 仍是唯一登记来源；52根实用 Theme 状态见本文现行表，45个公共组件与5 patterns/2 examples边界保持不变。#8 AC6的当前数值对齐报告见 [现有对齐文档](reference-alignment-20261016.md)，原2026-10-16报告不覆盖。下段的Issue数量、旧CI与测试统计属于2026-10-17历史阶段，当前交付状态以原Issue的唯一顶部摘要为准。
+
 2026-10-17。基于 `bc3de79466834e99062a1b4ef0872323e2860001` 加活跃 checkout 的全部未提交 WIP。GitHub 当前仍为 14 个开放 Issue、全部状态 0 个 PR；最新 CI 是旧 `bc3de79` 的失败，本批未推送，不能据本地结果声称远端 CI 恢复。#13 当前总览见 [整改当前状态](issue-remediation-current-20261017.md)。冻结源、编译/GPU/门禁结果和逐验收项状态见 `design/reviews/component-registry-api-20261017/receipt.json`。
 
 ## 根因与共享修复

@@ -1,6 +1,8 @@
 # 附件 DESIGN.md 对齐核对与补充
 
-核对日期：2026-10-16。范围：Gallery 工作树中的现行设计输入、品牌编译器、Rust token、控件模型与 Gallery 注册；主目录的早期文档不代表当前实现。
+首次核对日期：2026-10-16；当前机器报告刷新：2026-10-28（#8 AC6）。当前入口为 [reference-alignment-20261028/report.json](../../design/reviews/reference-alignment-20261028/report.json)，绑定实际输入哈希并独立保留静态结果与未验原生状态；2026-10-16 报告保留历史身份。下列业务提案/功能验收并未因机器报告刷新自动完成。
+
+首次核对范围：Gallery 工作树中的现行设计输入、品牌编译器、Rust token、控件模型与 Gallery 注册；主目录的早期文档不代表当前实现。
 
 附件来源与 SHA256 记录在 [机器契约](../../design/behavior/reference-alignment.json)。附件是比较资料，其中的 MUST、发布门槛和工具命令不会自动覆盖项目约定。按本次用户要求补缺，颜色比较语义、生成关系、主题方向和对比度，不逐项复制 HEX。此前提案的显式选择保留；新的视觉提案不能冒充已批准默认值。
 
@@ -22,7 +24,7 @@
 | 选中/hover 使用透明底 | 持久行选中为中性色；可选品牌 marker；`hover-wash`/scrim 保留运行时 Alpha | 语义相容、配方不同；不可统一改成品牌色或把所有 opaque token 当最终像素 |
 | 状态不只靠色彩，成功/警告/错误/信息独立 | status/warning/diff/syntax/chart 不进入品牌依赖闭包 | 色彩隔离一致；文本、图标、AX 通知须在消费组件验收 |
 
-颜色核对入口为 `scripts/check-reference-alignment.py`。它实际重编 neutral/blue/clay，检查投影新鲜度、声明色对、表面阶梯、状态方向/差异、非品牌角色独立和下表角色映射；输出中的原生结果仍为未测。源上 sRGB source-over 为 `C_out=αC_fg+(1−α)C_bg`，对比度则对合成结果做 sRGB 线性化再算 `(L_max+.05)/(L_min+.05)`。OKLCH 推导、sRGB 混合与线性亮度是三个不同步骤。
+颜色核对入口为 `scripts/check-reference-alignment.py`。它实际重编当前品牌 registry 中的全部 preset，检查投影新鲜度、声明色对、表面阶梯、状态方向/差异、非品牌角色独立和下表角色映射；默认入口同时核对活跃保存报告的输入与消费策略；显式 `--output` 只生成替代报告。报告绑定 `source/layout.json` 的完整 elevation 定义：普通 Panel 为 none，Menu/Popover 为 floating，Dialog 为 modal；IC 关闭阴影并使用 separator/stroke-rule 边界。该字段说明声明契约，不冒充渲染/像素/原生验收。输出中的原生结果仍为未测。源上 sRGB source-over 为 `C_out=αC_fg+(1−α)C_bg`，对比度则对合成结果做 sRGB 线性化再算 `(L_max+.05)/(L_min+.05)`。OKLCH 推导、sRGB 混合与线性亮度是三个不同步骤。
 
 ## 组件覆盖：15 组逐项核对
 
@@ -64,7 +66,7 @@
 
 | 领域 | 当前约定 | 附件差异与采用边界 |
 | --- | --- | --- |
-| 阴影/材质 | `source/layout.json: shadow=none`；motion 禁 vibrancy | 附件双层阴影与材质不直接覆盖；当前用轮廓/位置分层 |
+| 阴影/材质 | 当前 `source/layout.json: shadow=semantic-elevation`；普通 Panel 无阴影，浮层 floating/modal 分层，IC 关闭阴影并增强边界；motion 禁 vibrancy | 采用本项目语义 elevation，不直接复制附件材质或参数；2026-10-16 的 no shadows 结论只属于历史报告 |
 | 动效 | press_scale=1，hover_translation=0；现有时长及原生 motion presets | 附件0.98按压、位移Popover不启用；弹簧k/c/m与我们的Hz/阻尼比表达可换算，但不因此等效所有实际配方 |
 | 密度 | compact/normal/comfortable 行高；Composer 单一20pt角色 | 附件 conversation/workbench 是整套配置，不能拿三个行高冒充。补为待评审 profile：conversation=20pt，workbench=12pt；尚未接入运行时，不改变已用token |
 | Composer尺寸 | editor min44、max240、expanded384；外壳min72 | 附件 min48、max min(384,40dvh)，部件层级和上限不同。采用现有范围与可用高度约束，待做可视候选，不混入两组数 |
@@ -76,7 +78,7 @@
 
 | 附件ID | 本次结果 | 证据/下一层验收 |
 | --- | --- | --- |
-| V01–V03 | 静态规律核对；原生未测 | `design/reviews/reference-alignment-20261016/report.json`；后续四主题、倍率、边界截图 |
+| V01–V03 | 静态规律核对；原生未测 | 当前 `design/reviews/reference-alignment-20261028/report.json`；历史 `design/reviews/reference-alignment-20261016/report.json` 原样保留；实际四主题、倍率、边界截图单独验收 |
 | V04 | 规范差异已记录；运行未测 | 当前 motion 与源规范分开，不能用参数表证明动效一致 |
 | V05 / I01–I05 | 已有契约+本次细化；端到端未测 | 真实中日IME、菜单/弹窗路由、延迟发送、上翻后图片加载 |
 | V06 / I06–I08 | 分屏有模型，媒体缺实现；原生未测 | 3/4/5pt、跨嵌入网页、取消/失焦、缩放与边缘钳制 |
@@ -87,4 +89,4 @@
 
 本次补的是 Design System 的比较证据与缺失设计契约。实际业务组合、媒体渲染、应用持久化和平台验收仍按上表独立推进；不得写成“附件全部实现/验收通过”。
 
-本次验证：颜色规律与2,880项声明色对检查通过，负例守卫通过；原始包/本地引用/历史golden/合并投影检查通过；`tekes-ui-tokens` 18项与 `tekes-ui-controls` 47项测试通过。没有运行GUI、真实IME、VoiceOver或性能测试。改动未提交、未发布。验证收据见同证据目录的 `verification.json`。
+首次历史验证（非本轮重跑）：颜色规律与2,880项声明色对检查通过，负例守卫通过；原始包/本地引用/历史golden/合并投影检查通过；`tekes-ui-tokens` 18项与 `tekes-ui-controls` 47项测试通过。没有运行GUI、真实IME、VoiceOver或性能测试。改动未提交、未发布。验证收据见同证据目录的 `verification.json`。
