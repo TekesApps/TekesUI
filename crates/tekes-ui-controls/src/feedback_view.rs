@@ -6,8 +6,8 @@ use crate::extended::{
     Banner, EmptyState, NoticeTone, Popover, Progress, StatusBadge, Toast, Tooltip,
 };
 use crate::{
-    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout, ControlKey, Field,
-    Insets, NumberField, Toolbar, paint,
+    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout, ControlKey,
+    Field, Insets, NumberField, Toolbar, paint,
 };
 use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
@@ -74,7 +74,15 @@ fn paint_notice_background(
     if let Some(clip) = layout.background_paint_clip() {
         scene.push_clip(clip);
     }
-    paint::surface_kind_with_elevation_colors_at_scale(scene, frame, palette, kind, backing_scale, "panel", colors);
+    paint::surface_kind_with_elevation_colors_at_scale(
+        scene,
+        frame,
+        palette,
+        kind,
+        backing_scale,
+        "panel",
+        colors,
+    );
     if layout.background_paint_clip().is_some() {
         scene.pop_clip();
     }
@@ -1086,7 +1094,8 @@ impl PopoverView {
         role: proposal::TextRole,
     ) -> Size {
         let spacing = popover_spacing();
-        let dismiss = ButtonModel::measure(text, "Dismiss", spacing.action_width, ButtonSize::Md, role);
+        let dismiss =
+            ButtonModel::measure(text, "Dismiss", spacing.action_width, ButtonSize::Md, role);
         Size::new(
             (content.width + spacing.content_inset_x * 2.)
                 .max(spacing.action_width + spacing.action_inset_x * 2.)
@@ -1521,12 +1530,22 @@ pub(crate) fn place_overlay(anchor: Rect, size: Size, viewport: Rect, gap: f32) 
 }
 
 /// Toast rendering keeps duration progression deterministic in its model.
-#[derive(Clone,Copy,Debug)]
-struct NoticePrepared { message:Rect, marker:Rect, role:proposal::TextRole, clip:Option<Rect> }
-fn notice_usage(tone:NoticeTone,toast:bool)->&'static str {match tone {
- NoticeTone::Info=>"notice-marker-info",NoticeTone::Success=>"notice-marker-success",NoticeTone::Error=>"notice-marker-error",
- NoticeTone::Warning if toast=>"notice-marker-toast-warning",NoticeTone::Warning=>"notice-marker-banner-warning",
-}}
+#[derive(Clone, Copy, Debug)]
+struct NoticePrepared {
+    message: Rect,
+    marker: Rect,
+    role: proposal::TextRole,
+    clip: Option<Rect>,
+}
+fn notice_usage(tone: NoticeTone, toast: bool) -> &'static str {
+    match tone {
+        NoticeTone::Info => "notice-marker-info",
+        NoticeTone::Success => "notice-marker-success",
+        NoticeTone::Error => "notice-marker-error",
+        NoticeTone::Warning if toast => "notice-marker-toast-warning",
+        NoticeTone::Warning => "notice-marker-banner-warning",
+    }
+}
 #[derive(Clone, Debug, Default)]
 pub struct ToastView {
     layout: ViewLayout,
@@ -1568,9 +1587,10 @@ impl ToastView {
             role,
         );
         let action_width = natural_action.width.max(90.0).min(available_action_width);
-        let action_height = ButtonModel::measure(text, "Dismiss", action_width, ButtonSize::Body, role)
-            .height
-            .max(34.0);
+        let action_height =
+            ButtonModel::measure(text, "Dismiss", action_width, ButtonSize::Body, role)
+                .height
+                .max(34.0);
         let content_width = if stacked {
             (width - leading_inset - 12.0).max(0.0)
         } else {
@@ -1587,7 +1607,14 @@ impl ToastView {
         Size::new(width, height)
     }
 
-    pub fn prepare(&mut self, text: &mut impl ButtonTextRenderer, model: &Toast, frame: Rect, clip: Option<Rect>, role: proposal::TextRole) -> ViewLayout {
+    pub fn prepare(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        model: &Toast,
+        frame: Rect,
+        clip: Option<Rect>,
+        role: proposal::TextRole,
+    ) -> ViewLayout {
         let visible = clipped(frame, clip);
         let stacked = Self::stacked(frame);
         let right_inset = if stacked { 12.0 } else { 50.0 };
@@ -1650,45 +1677,152 @@ impl ToastView {
                 .then_some(logical_dismiss_frame);
 
         let message = self.layout.content;
-        let marker = notice_marker_frame(text, &model.message, role, message, frame.min_x()+14.,10.);
-        let h=text.measure(&model.message,role,message.size.width).height.max(0.).min(message.size.height);
-        let draw=Rect::new(message.min_x(),message.min_y(),message.size.width,h);
-        self.prepared=Some(NoticePrepared {message:draw,marker,role,clip});
-        self.dismiss_layout=if model.visible  { visible.map(|v|self.dismiss.prepare_label(text,"Dismiss",logical_dismiss_frame,Some(v),role)) } else {None};
-        if self.dismiss_layout.is_none() {self.dismiss.clear_layout();}
+        let marker = notice_marker_frame(
+            text,
+            &model.message,
+            role,
+            message,
+            frame.min_x() + 14.,
+            10.,
+        );
+        let h = text
+            .measure(&model.message, role, message.size.width)
+            .height
+            .max(0.)
+            .min(message.size.height);
+        let draw = Rect::new(message.min_x(), message.min_y(), message.size.width, h);
+        self.prepared = Some(NoticePrepared {
+            message: draw,
+            marker,
+            role,
+            clip,
+        });
+        self.dismiss_layout = if model.visible {
+            visible.map(|v| {
+                self.dismiss
+                    .prepare_label(text, "Dismiss", logical_dismiss_frame, Some(v), role)
+            })
+        } else {
+            None
+        };
+        if self.dismiss_layout.is_none() {
+            self.dismiss.clear_layout();
+        }
         self.layout
     }
-    pub fn set_surface(&mut self,name:&str)->Result<(),tekes_ui_tokens::surface_palette::SurfaceError>{
-        self.surface=Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);Ok(())
+    pub fn set_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);
+        Ok(())
     }
-    pub fn invalidate_geometry(&mut self){ self.prepared=None;self.dismiss_layout=None;self.logical_dismiss_frame=None;self.dismiss.clear_layout(); }
-    pub fn activate_dismiss(&mut self,model:&mut Toast)->bool{
-        if !model.visible  || self.focus_target().is_none() {return false;}
+    pub fn invalidate_geometry(&mut self) {
+        self.prepared = None;
+        self.dismiss_layout = None;
+        self.logical_dismiss_frame = None;
+        self.dismiss.clear_layout();
+    }
+    pub fn activate_dismiss(&mut self, model: &mut Toast) -> bool {
+        if !model.visible || self.focus_target().is_none() {
+            return false;
+        }
         self.dismiss.pointer_down();
-        let activated=self.dismiss.pointer_up(true);
-        if activated {model.dismiss();self.dismiss.blur();} activated
+        let activated = self.dismiss.pointer_up(true);
+        if activated {
+            model.dismiss();
+            self.dismiss.blur();
+        }
+        activated
     }
-    pub fn pointer_move_button(&mut self,p:Point){self.dismiss.pointer_move_at(p);}
-    pub fn paint_prepared(&mut self,scene:&mut Scene,text:&mut impl ButtonTextRenderer,model:&Toast,palette:Palette){
-        if !model.visible {return;}
-        let (Some(p),Some(v))=(self.prepared,self.layout.visible) else {return;};
-        let surface=self.surface.unwrap_or("panel");
-        let usage=notice_usage(model.tone,true);
-        let marker=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,usage,"rest").expect("validated notice marker packet");
-        let body=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,"content","rest").expect("validated notice content packet");
-        let frame_colors=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,"surface-frame","rest").expect("validated notice frame packet");
+    pub fn pointer_move_button(&mut self, p: Point) {
+        self.dismiss.pointer_move_at(p);
+    }
+    pub fn paint_prepared(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &Toast,
+        palette: Palette,
+    ) {
+        if !model.visible {
+            return;
+        }
+        let (Some(p), Some(v)) = (self.prepared, self.layout.visible) else {
+            return;
+        };
+        let surface = self.surface.unwrap_or("panel");
+        let usage = notice_usage(model.tone, true);
+        let marker =
+            tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, usage, "rest")
+                .expect("validated notice marker packet");
+        let body =
+            tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, "content", "rest")
+                .expect("validated notice content packet");
+        let frame_colors = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            surface,
+            "surface-frame",
+            "rest",
+        )
+        .expect("validated notice frame packet");
         self.dismiss.set_surface(surface);
-        let _action=self.dismiss.surface_colors(palette,paint::ButtonVariant::Quiet,surface);
-        paint_notice_background(scene,self.layout.frame,p.clip,Some(v),palette,paint::SurfaceKind::Panel,text.backing_scale(),frame_colors);
+        let _action = self
+            .dismiss
+            .surface_colors(palette, paint::ButtonVariant::Quiet, surface);
+        paint_notice_background(
+            scene,
+            self.layout.frame,
+            p.clip,
+            Some(v),
+            palette,
+            paint::SurfaceKind::Panel,
+            text.backing_scale(),
+            frame_colors,
+        );
         scene.push_clip(v);
-        scene.push_quad(Quad::new(p.marker,marker.marker.expect("notice marker")).with_corner_radius(p.marker.size.height*0.5));
-        if !p.message.is_empty() && !model.message.is_empty() {text.draw(scene,&model.message,p.role,p.message,ButtonTextAlign::Leading,body.text);}
-        if let Some(layout)=self.dismiss_layout {self.dismiss.paint_prepared_label_variant(scene,text,"Dismiss",layout,Some(v),palette,p.role,paint::ButtonVariant::Quiet);}
+        scene.push_quad(
+            Quad::new(p.marker, marker.marker.expect("notice marker"))
+                .with_corner_radius(p.marker.size.height * 0.5),
+        );
+        if !p.message.is_empty() && !model.message.is_empty() {
+            text.draw(
+                scene,
+                &model.message,
+                p.role,
+                p.message,
+                ButtonTextAlign::Leading,
+                body.text,
+            );
+        }
+        if let Some(layout) = self.dismiss_layout {
+            self.dismiss.paint_prepared_label_variant(
+                scene,
+                text,
+                "Dismiss",
+                layout,
+                Some(v),
+                palette,
+                p.role,
+                paint::ButtonVariant::Quiet,
+            );
+        }
         scene.pop_clip();
     }
     #[allow(clippy::too_many_arguments)]
-    pub fn render(&mut self,scene:&mut Scene,text:&mut impl ButtonTextRenderer,model:&Toast,frame:Rect,clip:Option<Rect>,palette:Palette,role:proposal::TextRole)->ViewLayout{
-        self.prepare(text,model,frame,clip,role);self.paint_prepared(scene,text,model,palette);self.layout
+    pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &Toast,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+    ) -> ViewLayout {
+        self.prepare(text, model, frame, clip, role);
+        self.paint_prepared(scene, text, model, palette);
+        self.layout
     }
     pub fn focus_dismiss(&mut self, focused: bool, focus_visible: bool) {
         let enabled = focused && self.logical_dismiss_frame.is_some() && !self.inactive;
@@ -1819,7 +1953,14 @@ impl BannerView {
             self.dismiss_button.cancel();
         }
     }
-    pub fn prepare(&mut self, text: &mut impl ButtonTextRenderer, model: &Banner, frame: Rect, clip: Option<Rect>, role: proposal::TextRole) -> ViewLayout {
+    pub fn prepare(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        model: &Banner,
+        frame: Rect,
+        clip: Option<Rect>,
+        role: proposal::TextRole,
+    ) -> ViewLayout {
         let visible = clipped(frame, clip);
         self.layout = ViewLayout {
             frame,
@@ -1859,48 +2000,170 @@ impl BannerView {
         .then_some(logical_dismiss_frame);
         self.dismiss_layout = None;
 
-        let msg_width = if stacked {(frame.size.width-46.).max(0.)} else if model.dismissible {(dismiss_x-frame.min_x()-50.).max(0.)} else {(frame.size.width-40.).max(0.)};
-        let height=text.measure(&model.message,role,msg_width).height.max(54.).min((frame.size.height-12.).max(0.));
-        let message=Rect::new(frame.min_x()+34.,frame.min_y()+6.,msg_width,height);
-        let marker=notice_marker_frame(text,&model.message,role,message,frame.min_x()+12.,12.);
-        let h=text.measure(&model.message,role,message.size.width).height.max(0.).min(message.size.height);
-        let draw=Rect::new(message.min_x(),message.min_y(),message.size.width,h);
-        self.prepared=Some(NoticePrepared {message:draw,marker,role,clip});
-        self.dismiss_layout=if model.visible && model.dismissible { visible.map(|v|self.dismiss_button.prepare_label(text,"Dismiss",logical_dismiss_frame,Some(v),role)) } else {None};
-        if self.dismiss_layout.is_none() {self.dismiss_button.clear_layout();}
+        let msg_width = if stacked {
+            (frame.size.width - 46.).max(0.)
+        } else if model.dismissible {
+            (dismiss_x - frame.min_x() - 50.).max(0.)
+        } else {
+            (frame.size.width - 40.).max(0.)
+        };
+        let height = text
+            .measure(&model.message, role, msg_width)
+            .height
+            .max(54.)
+            .min((frame.size.height - 12.).max(0.));
+        let message = Rect::new(frame.min_x() + 34., frame.min_y() + 6., msg_width, height);
+        let marker = notice_marker_frame(
+            text,
+            &model.message,
+            role,
+            message,
+            frame.min_x() + 12.,
+            12.,
+        );
+        let h = text
+            .measure(&model.message, role, message.size.width)
+            .height
+            .max(0.)
+            .min(message.size.height);
+        let draw = Rect::new(message.min_x(), message.min_y(), message.size.width, h);
+        self.prepared = Some(NoticePrepared {
+            message: draw,
+            marker,
+            role,
+            clip,
+        });
+        self.dismiss_layout = if model.visible && model.dismissible {
+            visible.map(|v| {
+                self.dismiss_button.prepare_label(
+                    text,
+                    "Dismiss",
+                    logical_dismiss_frame,
+                    Some(v),
+                    role,
+                )
+            })
+        } else {
+            None
+        };
+        if self.dismiss_layout.is_none() {
+            self.dismiss_button.clear_layout();
+        }
         self.layout
     }
-    pub fn set_surface(&mut self,name:&str)->Result<(),tekes_ui_tokens::surface_palette::SurfaceError>{
-        self.surface=Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);Ok(())
+    pub fn set_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);
+        Ok(())
     }
-    pub fn invalidate_geometry(&mut self){ self.prepared=None;self.dismiss_layout=None;self.logical_dismiss_frame=None;self.dismiss_button.clear_layout(); }
-    pub fn activate_dismiss(&mut self,model:&mut Banner)->bool{
-        if !model.visible || !model.dismissible || self.focus_target().is_none() {return false;}
+    pub fn invalidate_geometry(&mut self) {
+        self.prepared = None;
+        self.dismiss_layout = None;
+        self.logical_dismiss_frame = None;
+        self.dismiss_button.clear_layout();
+    }
+    pub fn activate_dismiss(&mut self, model: &mut Banner) -> bool {
+        if !model.visible || !model.dismissible || self.focus_target().is_none() {
+            return false;
+        }
         self.dismiss_button.pointer_down();
-        let activated=self.dismiss_button.pointer_up(true);
-        if activated {model.dismiss();self.dismiss_button.blur();} activated
+        let activated = self.dismiss_button.pointer_up(true);
+        if activated {
+            model.dismiss();
+            self.dismiss_button.blur();
+        }
+        activated
     }
-    pub fn pointer_move_button(&mut self,p:Point){self.dismiss_button.pointer_move_at(p);}
-    pub fn paint_prepared(&mut self,scene:&mut Scene,text:&mut impl ButtonTextRenderer,model:&Banner,palette:Palette){
-        if !model.visible {return;}
-        let (Some(p),Some(v))=(self.prepared,self.layout.visible) else {return;};
-        let surface=self.surface.unwrap_or("panel");
-        let usage=notice_usage(model.tone,false);
-        let marker=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,usage,"rest").expect("validated notice marker packet");
-        let body=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,"content","rest").expect("validated notice content packet");
-        let frame_colors=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,"surface-frame","rest").expect("validated notice frame packet");
+    pub fn pointer_move_button(&mut self, p: Point) {
+        self.dismiss_button.pointer_move_at(p);
+    }
+    pub fn paint_prepared(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &Banner,
+        palette: Palette,
+    ) {
+        if !model.visible {
+            return;
+        }
+        let (Some(p), Some(v)) = (self.prepared, self.layout.visible) else {
+            return;
+        };
+        let surface = self.surface.unwrap_or("panel");
+        let usage = notice_usage(model.tone, false);
+        let marker =
+            tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, usage, "rest")
+                .expect("validated notice marker packet");
+        let body =
+            tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, "content", "rest")
+                .expect("validated notice content packet");
+        let frame_colors = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            surface,
+            "surface-frame",
+            "rest",
+        )
+        .expect("validated notice frame packet");
         self.dismiss_button.set_surface(surface);
-        let _action=self.dismiss_button.surface_colors(palette,paint::ButtonVariant::Primary,surface);
-        paint_notice_background(scene,self.layout.frame,p.clip,Some(v),palette,paint::SurfaceKind::Panel,text.backing_scale(),frame_colors);
+        let _action =
+            self.dismiss_button
+                .surface_colors(palette, paint::ButtonVariant::Primary, surface);
+        paint_notice_background(
+            scene,
+            self.layout.frame,
+            p.clip,
+            Some(v),
+            palette,
+            paint::SurfaceKind::Panel,
+            text.backing_scale(),
+            frame_colors,
+        );
         scene.push_clip(v);
-        scene.push_quad(Quad::new(p.marker,marker.marker.expect("notice marker")).with_corner_radius(p.marker.size.height*0.5));
-        if !p.message.is_empty() && !model.message.is_empty() {text.draw(scene,&model.message,p.role,p.message,ButtonTextAlign::Leading,body.text);}
-        if let Some(layout)=self.dismiss_layout {self.dismiss_button.paint_prepared_label_variant(scene,text,"Dismiss",layout,Some(v),palette,p.role,paint::ButtonVariant::Primary);}
+        scene.push_quad(
+            Quad::new(p.marker, marker.marker.expect("notice marker"))
+                .with_corner_radius(p.marker.size.height * 0.5),
+        );
+        if !p.message.is_empty() && !model.message.is_empty() {
+            text.draw(
+                scene,
+                &model.message,
+                p.role,
+                p.message,
+                ButtonTextAlign::Leading,
+                body.text,
+            );
+        }
+        if let Some(layout) = self.dismiss_layout {
+            self.dismiss_button.paint_prepared_label_variant(
+                scene,
+                text,
+                "Dismiss",
+                layout,
+                Some(v),
+                palette,
+                p.role,
+                paint::ButtonVariant::Primary,
+            );
+        }
         scene.pop_clip();
     }
     #[allow(clippy::too_many_arguments)]
-    pub fn render(&mut self,scene:&mut Scene,text:&mut impl ButtonTextRenderer,model:&Banner,frame:Rect,clip:Option<Rect>,palette:Palette,role:proposal::TextRole)->ViewLayout{
-        self.prepare(text,model,frame,clip,role);self.paint_prepared(scene,text,model,palette);self.layout
+    pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &Banner,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+    ) -> ViewLayout {
+        self.prepare(text, model, frame, clip, role);
+        self.paint_prepared(scene, text, model, palette);
+        self.layout
     }
     pub fn pointer_move(&mut self, p: Point) {
         self.dismiss_button.pointer_move_at(p);
@@ -1967,47 +2230,102 @@ pub struct StatusBadgeView {
     surface: Option<&'static str>,
 }
 impl StatusBadgeView {
-    pub fn set_surface(&mut self, name: &str) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    pub fn set_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
         self.surface = Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);
         Ok(())
     }
-    pub fn surface(&self) -> &'static str { self.surface.unwrap_or("canvas") }
+    pub fn surface(&self) -> &'static str {
+        self.surface.unwrap_or("canvas")
+    }
     /// UiCaption uses the caller's original text service; there is no intrinsic
     /// badge height/padding. The parent owns the finite allocation.
-    pub fn measure_label(text: &mut dyn ButtonTextRenderer, label: &str, available: Size)
-        -> Result<Size, tekes_ui_tokens::surface_palette::SurfaceError> {
+    pub fn measure_label(
+        text: &mut dyn ButtonTextRenderer,
+        label: &str,
+        available: Size,
+    ) -> Result<Size, tekes_ui_tokens::surface_palette::SurfaceError> {
         if !finite_rect(Rect::new(0., 0., available.width, available.height)) {
             return Err(tekes_ui_tokens::surface_palette::SurfaceError::UnknownCombination);
         }
         let size = text.measure(label, proposal::TextRole::UiCaption, available.width);
-        Ok(Size::new(size.width.min(available.width).max(0.), size.height.min(available.height).max(0.)))
+        Ok(Size::new(
+            size.width.min(available.width).max(0.),
+            size.height.min(available.height).max(0.),
+        ))
     }
     /// Both original View and Content delegate text geometry to this entry.
     /// label_frame is an explicit host allocation (Gallery retains its inset).
     #[allow(clippy::too_many_arguments)]
-    pub fn render_labelled(&mut self, scene: &mut Scene, text: &mut dyn ButtonTextRenderer,
-        model: StatusBadge, label: &str, frame: Rect, label_frame: Rect, clip: Option<Rect>, palette: Palette,
+    pub fn render_labelled(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        model: StatusBadge,
+        label: &str,
+        frame: Rect,
+        label_frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
     ) -> Result<ViewLayout, tekes_ui_tokens::surface_palette::SurfaceError> {
-        self.render_labelled_aligned(scene, text, model, label, frame, label_frame, clip, palette, ButtonTextAlign::Center)
+        self.render_labelled_aligned(
+            scene,
+            text,
+            model,
+            label,
+            frame,
+            label_frame,
+            clip,
+            palette,
+            ButtonTextAlign::Center,
+        )
     }
     /// Explicit existing text alignment for original hosts such as Gallery;
     /// this does not add padding, intrinsic height, or a separate text layout.
     #[allow(clippy::too_many_arguments)]
-    pub fn render_labelled_aligned(&mut self, scene: &mut Scene, text: &mut dyn ButtonTextRenderer,
-        model: StatusBadge, label: &str, frame: Rect, label_frame: Rect, clip: Option<Rect>, palette: Palette, align: ButtonTextAlign,
+    pub fn render_labelled_aligned(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        model: StatusBadge,
+        label: &str,
+        frame: Rect,
+        label_frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        align: ButtonTextAlign,
     ) -> Result<ViewLayout, tekes_ui_tokens::surface_palette::SurfaceError> {
-        if !finite_rect(frame) || !finite_rect(label_frame) || clip.is_some_and(|r| !finite_rect(r)) {
+        if !finite_rect(frame) || !finite_rect(label_frame) || clip.is_some_and(|r| !finite_rect(r))
+        {
             return Err(tekes_ui_tokens::surface_palette::SurfaceError::UnknownCombination);
         }
-        let colors = tekes_ui_tokens::surface_palette::resolve_surface(palette, self.surface(), crate::extended::status_badge_usage(model), "rest")?;
-        let layout = ViewLayout { frame, content: label_frame, visible: clipped(frame, clip) };
+        let colors = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            self.surface(),
+            crate::extended::status_badge_usage(model),
+            "rest",
+        )?;
+        let layout = ViewLayout {
+            frame,
+            content: label_frame,
+            visible: clipped(frame, clip),
+        };
         // Validate the entire request before committing retained layout or Scene.
         Self::measure_label(text, label, label_frame.size)?;
         if let Some(visible) = layout.visible {
             scene.push_clip(visible);
             crate::extended::status_badge_on_surface(scene, frame, palette, model, self.surface())?;
             if !label.is_empty() && !label_frame.is_empty() {
-                text.draw(scene, label, proposal::TextRole::UiCaption, label_frame, align, colors.text);
+                text.draw(
+                    scene,
+                    label,
+                    proposal::TextRole::UiCaption,
+                    label_frame,
+                    align,
+                    colors.text,
+                );
             }
             scene.pop_clip();
         }
@@ -2040,7 +2358,8 @@ impl StatusBadgeView {
         };
         if let Some(v) = visible {
             scene.push_clip(v);
-            crate::extended::status_badge_on_surface(scene, frame, palette, model, self.surface()).expect("validated StatusBadge Surface");
+            crate::extended::status_badge_on_surface(scene, frame, palette, model, self.surface())
+                .expect("validated StatusBadge Surface");
             scene.pop_clip();
         }
         self.layout
@@ -2056,7 +2375,10 @@ pub struct ProgressView {
 }
 impl ProgressView {
     /// Reject unknown context before replacing the retained Surface.
-    pub fn set_surface(&mut self, name: &str) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    pub fn set_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
         self.surface = Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);
         Ok(())
     }
@@ -2110,12 +2432,19 @@ struct EmptyStatePrepared {
     role: proposal::TextRole,
 }
 impl EmptyStateView {
-    pub fn set_surface(&mut self, name: &str) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    pub fn set_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
         self.surface = Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);
         Ok(())
     }
-    pub fn cancel_action(&mut self) { self.action.cancel(); }
-    pub fn invalidate_body_geometry(&mut self) { self.prepared = None; }
+    pub fn cancel_action(&mut self) {
+        self.action.cancel();
+    }
+    pub fn invalidate_body_geometry(&mut self) {
+        self.prepared = None;
+    }
     pub fn invalidate_geometry(&mut self) {
         self.invalidate_body_geometry();
         self.action_layout = None;
@@ -2123,7 +2452,9 @@ impl EmptyStateView {
         self.action.clear_layout();
     }
     pub fn activate_action(&mut self) -> bool {
-        if self.focus_target().is_none() { return false; }
+        if self.focus_target().is_none() {
+            return false;
+        }
         self.action.pointer_down();
         self.action.pointer_up(true)
     }
@@ -2200,8 +2531,12 @@ impl EmptyStateView {
         }
     }
     pub fn prepare(
-        &mut self, text: &mut impl ButtonTextRenderer, model: &EmptyState,
-        frame: Rect, clip: Option<Rect>, role: proposal::TextRole,
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        model: &EmptyState,
+        frame: Rect,
+        clip: Option<Rect>,
+        role: proposal::TextRole,
     ) -> ViewLayout {
         let visible = clipped(frame, clip);
         // Keep the Gallery's established left-aligned empty-state composition.
@@ -2242,51 +2577,105 @@ impl EmptyStateView {
         });
         let title_frame = Rect::new(x, title_y, title_width, title_h);
         let detail_frame = Rect::new(x, detail_y, content_width.min(460.), detail_h);
-        let title_draw_h = text.measure(&model.title, proposal::TextRole::UiHeading, title_width).height.max(0.).min(title_h);
-        let detail_draw_h = text.measure(&model.detail, role, detail_frame.size.width).height.max(0.).min(detail_h);
+        let title_draw_h = text
+            .measure(&model.title, proposal::TextRole::UiHeading, title_width)
+            .height
+            .max(0.)
+            .min(title_h);
+        let detail_draw_h = text
+            .measure(&model.detail, role, detail_frame.size.width)
+            .height
+            .max(0.)
+            .min(detail_h);
         self.prepared = Some(EmptyStatePrepared {
-            title: title_frame, detail: detail_frame,
+            title: title_frame,
+            detail: detail_frame,
             title_draw: Rect::new(x, title_y, title_width, title_draw_h),
-            detail_draw: Rect::new(x, detail_y, detail_frame.size.width, detail_draw_h), role,
+            detail_draw: Rect::new(x, detail_y, detail_frame.size.width, detail_draw_h),
+            role,
         });
         self.action.state.disabled = self.disabled || self.inactive;
         self.action_layout = match (&model.action, visible) {
-            (Some(label), Some(v)) => Some(self.action.prepare_label(text, label, logical_action_frame, Some(v), role)),
-            _ => { self.action.clear_layout(); self.action.blur(); None }
+            (Some(label), Some(v)) => {
+                Some(
+                    self.action
+                        .prepare_label(text, label, logical_action_frame, Some(v), role),
+                )
+            }
+            _ => {
+                self.action.clear_layout();
+                self.action.blur();
+                None
+            }
         };
         self.layout
     }
     /// Consume the arranged geometry. No measure call or hit-frame mutation.
     pub fn paint_prepared(
-        &mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
-        model: &EmptyState, palette: Palette,
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &EmptyState,
+        palette: Palette,
     ) {
-        let Some(prepared) = self.prepared else { return; };
-        let Some(visible) = self.layout.visible else { return; };
+        let Some(prepared) = self.prepared else {
+            return;
+        };
+        let Some(visible) = self.layout.visible else {
+            return;
+        };
         let surface = self.surface.unwrap_or("canvas");
-        let body = tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, "content", "rest")
-            .expect("generated EmptyState content packet");
+        let body =
+            tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, "content", "rest")
+                .expect("generated EmptyState content packet");
         // Resolve both complete packets before adding any ink or clip.
         self.action.set_surface(surface);
-        let _action_packet = self.action.surface_colors(palette, paint::ButtonVariant::Primary, surface);
+        let _action_packet =
+            self.action
+                .surface_colors(palette, paint::ButtonVariant::Primary, surface);
         scene.push_clip(visible);
         if !model.title.is_empty() && !prepared.title.is_empty() {
-            text.draw(scene, &model.title, proposal::TextRole::UiHeading, prepared.title_draw,
-                ButtonTextAlign::Leading, body.text);
+            text.draw(
+                scene,
+                &model.title,
+                proposal::TextRole::UiHeading,
+                prepared.title_draw,
+                ButtonTextAlign::Leading,
+                body.text,
+            );
         }
         if !model.detail.is_empty() && !prepared.detail.is_empty() {
-            text.draw(scene, &model.detail, prepared.role, prepared.detail_draw,
-                ButtonTextAlign::Leading, body.text);
+            text.draw(
+                scene,
+                &model.detail,
+                prepared.role,
+                prepared.detail_draw,
+                ButtonTextAlign::Leading,
+                body.text,
+            );
         }
         if let (Some(label), Some(layout)) = (&model.action, self.action_layout) {
-            self.action.paint_prepared_label(scene, text, label, layout, self.layout.visible, palette, prepared.role);
+            self.action.paint_prepared_label(
+                scene,
+                text,
+                label,
+                layout,
+                self.layout.visible,
+                palette,
+                prepared.role,
+            );
         }
         scene.pop_clip();
     }
     #[allow(clippy::too_many_arguments)]
     pub fn render(
-        &mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
-        model: &EmptyState, frame: Rect, clip: Option<Rect>, palette: Palette,
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &EmptyState,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
         role: proposal::TextRole,
     ) -> ViewLayout {
         self.prepare(text, model, frame, clip, role);
@@ -2345,7 +2734,10 @@ pub struct SkeletonView {
 }
 impl SkeletonView {
     /// Validate before replacing the retained context.
-    pub fn set_surface(&mut self, name: &str) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    pub fn set_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
         self.surface = Some(tekes_ui_tokens::surface_palette::canonical_surface(name)?);
         Ok(())
     }
@@ -2369,10 +2761,14 @@ impl SkeletonView {
             // Geometry already bounds its own ink. Quantizing the leaf frame
             // into a second scissor can erase fractional narrow allocations.
             // Keep the ancestor clip as the sole rectangular clip owner.
-            if let Some(clip) = clip { scene.push_clip(clip); }
+            if let Some(clip) = clip {
+                scene.push_clip(clip);
+            }
             paint::skeleton_on_surface(scene, frame, palette, self.surface())
                 .expect("generated Skeleton Surface packet");
-            if clip.is_some() { scene.pop_clip(); }
+            if clip.is_some() {
+                scene.pop_clip();
+            }
         }
         self.layout
     }

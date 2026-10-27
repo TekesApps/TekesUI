@@ -275,8 +275,7 @@ fn hover_redraw_does_not_consume_unhandled_event() {
 }
 #[test]
 fn bubbling_button_preserves_capture_and_records_activation_once() {
-    let button =
-        Content::new(ComponentId(2), Button::new("Send")).bubbling_handled_events(true);
+    let button = Content::new(ComponentId(2), Button::new("Send")).bubbling_handled_events(true);
     let mut host = ContentHost::new(probe(1, vec![button], false, false, false)).unwrap();
     host.set_action_events(true);
     render(&mut host);
@@ -356,8 +355,7 @@ fn opt_in_cannot_bubble_through_modal_boundary() {
                     role: proposal::TextRole::UiHeading,
                 },
             ),
-            Content::new(ComponentId(3), Button::new("Action"))
-                .bubbling_handled_events(true),
+            Content::new(ComponentId(3), Button::new("Action")).bubbling_handled_events(true),
             Content::new(ComponentId(4), Button::new("Close")),
         ),
     ))

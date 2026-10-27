@@ -371,7 +371,9 @@ impl NumberFieldContent {
     }
 }
 impl Component for NumberFieldContent {
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Local }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
 
     fn requires_text_services(&self) -> bool {
         true

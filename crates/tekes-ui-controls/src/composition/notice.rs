@@ -1081,26 +1081,61 @@ mod tests {
         assert_ne!(h.semantic_mount(A), old);
     }
     #[derive(Debug)]
-    struct RetainedExit { active: bool, children: Vec<Content>, paints: usize }
+    struct RetainedExit {
+        active: bool,
+        children: Vec<Content>,
+        paints: usize,
+    }
     impl Component for RetainedExit {
-        fn active(&self) -> bool { self.active }
-        fn paints_children(&self) -> bool { true }
-        fn overlay_presented(&self) -> bool { true }
-        fn children(&self) -> &[Content] { &self.children }
-        fn children_mut(&mut self) -> Option<&mut Vec<Content>> { Some(&mut self.children) }
-        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, size: Size) -> MeasuredChild { MeasuredChild::new(size) }
+        fn active(&self) -> bool {
+            self.active
+        }
+        fn paints_children(&self) -> bool {
+            true
+        }
+        fn overlay_presented(&self) -> bool {
+            true
+        }
+        fn children(&self) -> &[Content] {
+            &self.children
+        }
+        fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+            Some(&mut self.children)
+        }
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, size: Size) -> MeasuredChild {
+            MeasuredChild::new(size)
+        }
         fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
             self.children[0].measure(text, frame.size);
             self.children[0].arrange(text, frame, clip);
         }
-        fn paint_overlay(&mut self, scene: &mut Scene, text: &mut dyn ButtonTextRenderer,
-            _: Rect, _: Rect, theme: ContentTheme) { self.paints += 1; self.children[0].paint(scene, text, theme); }
+        fn paint_overlay(
+            &mut self,
+            scene: &mut Scene,
+            text: &mut dyn ButtonTextRenderer,
+            _: Rect,
+            _: Rect,
+            theme: ContentTheme,
+        ) {
+            self.paints += 1;
+            self.children[0].paint(scene, text, theme);
+        }
     }
     #[test]
     fn retained_exit_paint_does_not_extend_clock_or_actions() {
-        let mut h = ContentHost::new(Content::new(ComponentId(799), RetainedExit { active: true, paints: 0,
-            children: vec![Content::new(T, ToastContent::new("Toast", Toast::new("Saved", NoticeTone::Info, 1000), A).unwrap())],
-        })).unwrap();
+        let mut h = ContentHost::new(Content::new(
+            ComponentId(799),
+            RetainedExit {
+                active: true,
+                paints: 0,
+                children: vec![Content::new(
+                    T,
+                    ToastContent::new("Toast", Toast::new("Saved", NoticeTone::Info, 1000), A)
+                        .unwrap(),
+                )],
+            },
+        ))
+        .unwrap();
         paint(&mut h).unwrap();
         h.root.component_mut::<RetainedExit>().unwrap().active = false;
         paint(&mut h).unwrap();

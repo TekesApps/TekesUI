@@ -6,7 +6,7 @@
 //! one external model for its lifetime; do not alternate between them.
 use crate::control_motion::OverlayPresence;
 use crate::{
-    ButtonModel, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout,
+    ButtonLayout, ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout,
     ControlKey, Dialog, Insets, Menu, ScrollArea, ScrollPolicy, Tabs, paint,
 };
 use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
@@ -189,7 +189,8 @@ impl TabsView {
             return self.placement.clone();
         }
         let frame = safe_rect(frame);
-        self.buttons.resize_with(self.model.count, ButtonModel::default);
+        self.buttons
+            .resize_with(self.model.count, ButtonModel::default);
         let lane = if self.model.count == 0 {
             0.0
         } else {
@@ -1117,7 +1118,8 @@ impl MenuRuntime {
         self.visible_bounds = visible_bounds;
         self.ancestor_clip = ancestor_clip;
         let count = model.items.count.min(labels.len());
-        self.buttons.resize_with(model.items.count, ButtonModel::default);
+        self.buttons
+            .resize_with(model.items.count, ButtonModel::default);
         let has_check = self.row_styles.iter().any(|style| style.checked.is_some());
         let has_submenu = self.row_styles.iter().any(|style| style.submenu);
         let indicator_gap = if has_check || has_submenu {

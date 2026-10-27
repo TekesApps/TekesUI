@@ -4,7 +4,7 @@ use super::text::TextEngine;
 use tekes_ui_composition_consumer::{IconImages, compound_button};
 use tekes_ui_controls::{
     ControlKey,
-    composition::{ComponentId, Button, ContentEvent},
+    composition::{Button, ComponentId, ContentEvent},
 };
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{Rect, Scene, Size};
@@ -552,7 +552,6 @@ fn independent_consumer_compound_button_uses_real_icon_text_and_gpu_in_four_them
                             .unwrap()
                             .component::<Button>()
                             .unwrap()
-
                             .activations,
                         1
                     );

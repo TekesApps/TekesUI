@@ -340,11 +340,17 @@ pub struct TextInputState {
 }
 
 impl TextInputState {
-    pub(crate) fn character_index_for_point(&self,p:Point)->Option<usize>{
-        self.carets.iter().filter(|v|v.2.height>0.0&&v.2.width>=0.0).min_by(|a,b|{
-            let distance=|v:&(usize,Point,Size)|((p.y-(v.1.y+v.2.height*0.5)).abs()*1000.0)+(p.x-v.1.x).abs();
-            distance(a).total_cmp(&distance(b))
-        }).map(|v|v.0)
+    pub(crate) fn character_index_for_point(&self, p: Point) -> Option<usize> {
+        self.carets
+            .iter()
+            .filter(|v| v.2.height > 0.0 && v.2.width >= 0.0)
+            .min_by(|a, b| {
+                let distance = |v: &(usize, Point, Size)| {
+                    ((p.y - (v.1.y + v.2.height * 0.5)).abs() * 1000.0) + (p.x - v.1.x).abs()
+                };
+                distance(a).total_cmp(&distance(b))
+            })
+            .map(|v| v.0)
     }
 
     pub(crate) fn conversion_ended(previous: Option<&Self>, current: Option<&Self>) -> bool {
@@ -734,9 +740,25 @@ mod tests {
 #[cfg(test)]
 mod issue102_no_geometry_tests {
     use super::*;
-    #[test] fn issue102_no_geometry_keeps_marked_but_never_guesses_point_or_first_rect(){
-        let old=TextInputState{text:"中".into(),selection:1..1,marked:Some(0..1),caret_index:1,..Default::default()};
-        let no_geometry=old.clone();assert!(!TextInputState::conversion_ended(Some(&old),Some(&no_geometry)));
-        assert_eq!(no_geometry.character_index_for_point(Point{x:200.,y:200.}),None);assert!(no_geometry.first_rect_for_range(0..1).is_none());assert_eq!(no_geometry.marked,old.marked);
+    #[test]
+    fn issue102_no_geometry_keeps_marked_but_never_guesses_point_or_first_rect() {
+        let old = TextInputState {
+            text: "中".into(),
+            selection: 1..1,
+            marked: Some(0..1),
+            caret_index: 1,
+            ..Default::default()
+        };
+        let no_geometry = old.clone();
+        assert!(!TextInputState::conversion_ended(
+            Some(&old),
+            Some(&no_geometry)
+        ));
+        assert_eq!(
+            no_geometry.character_index_for_point(Point { x: 200., y: 200. }),
+            None
+        );
+        assert!(no_geometry.first_rect_for_range(0..1).is_none());
+        assert_eq!(no_geometry.marked, old.marked);
     }
 }

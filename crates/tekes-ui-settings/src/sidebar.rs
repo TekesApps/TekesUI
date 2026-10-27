@@ -7,7 +7,8 @@ use std::collections::BTreeMap;
 use tekes_ui_controls::{
     ButtonTextRenderer, ScrollArea,
     composition::{
-        Button, ComponentId, Content, ContentEvent, ContentHost, ScrollContent, StackContent, TextContent, TextFieldContent,
+        Button, ComponentId, Content, ContentEvent, ContentHost, ScrollContent, StackContent,
+        TextContent, TextFieldContent,
     },
     extended::{Axis, Stack},
 };
@@ -68,26 +69,52 @@ impl SettingsSidebar {
                 flexible_child: None,
             },
         );
-        let scroll = Content::new(ComponentId(1), ScrollContent::new(ScrollArea::default(), rows));
+        let scroll = Content::new(
+            ComponentId(1),
+            ScrollContent::new(ScrollArea::default(), rows),
+        );
         let root = if back {
-            Content::new(ComponentId(3), StackContent {
-                model: Stack { axis: Axis::Vertical, gap: 12. },
-                children: vec![
-                    Content::new(ComponentId(5), StackContent {
-                        model: Stack { axis: Axis::Horizontal, gap: 12. },
-                        children: vec![
-                            Content::new(ComponentId(4), Button::new("Back").with_accessible_name("Back").with_help("返回主窗口")),
-                            Content::new(ComponentId(6), TextFieldContent::inline("Search", "", 20.)).with_help("Search"),
-                        ],
-                        flexible_child: Some(ComponentId(6)),
-                    }),
-                    scroll,
-                ],
-                flexible_child: Some(ComponentId(1)),
-            })
-        } else { scroll };
-        let mut host = ContentHost::new(root)
-        .map_err(|e| anyhow::anyhow!("Settings sidebar: {e:?}"))?;
+            Content::new(
+                ComponentId(3),
+                StackContent {
+                    model: Stack {
+                        axis: Axis::Vertical,
+                        gap: 12.,
+                    },
+                    children: vec![
+                        Content::new(
+                            ComponentId(5),
+                            StackContent {
+                                model: Stack {
+                                    axis: Axis::Horizontal,
+                                    gap: 12.,
+                                },
+                                children: vec![
+                                    Content::new(
+                                        ComponentId(4),
+                                        Button::new("Back")
+                                            .with_accessible_name("Back")
+                                            .with_help("返回主窗口"),
+                                    ),
+                                    Content::new(
+                                        ComponentId(6),
+                                        TextFieldContent::inline("Search", "", 20.),
+                                    )
+                                    .with_help("Search"),
+                                ],
+                                flexible_child: Some(ComponentId(6)),
+                            },
+                        ),
+                        scroll,
+                    ],
+                    flexible_child: Some(ComponentId(1)),
+                },
+            )
+        } else {
+            scroll
+        };
+        let mut host =
+            ContentHost::new(root).map_err(|e| anyhow::anyhow!("Settings sidebar: {e:?}"))?;
         host.set_action_events(true);
         Ok(Self {
             host,
@@ -97,7 +124,11 @@ impl SettingsSidebar {
         })
     }
     pub fn set_back_icon(&mut self, image: tekes_ui_scene::ImageId) {
-        if let Some(button) = self.host.get_mut(ComponentId(4)).and_then(|n| n.component_mut::<Button>()) {
+        if let Some(button) = self
+            .host
+            .get_mut(ComponentId(4))
+            .and_then(|n| n.component_mut::<Button>())
+        {
             button.set_contents(image);
         }
     }

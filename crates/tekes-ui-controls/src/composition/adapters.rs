@@ -31,7 +31,9 @@ impl ListContent {
     }
 }
 impl Component for ListContent {
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
 
     fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
         ActionTransactionCompatibility::StableHooks
@@ -76,12 +78,18 @@ impl SwitchContent {
 }
 impl Component for SwitchContent {
     fn pointer_event_in_region(&mut self, event: &ContentEvent, inside: bool) -> ContentResponse {
-        if !event.is_primary_pointer() { return event.deliver(self); }
+        if !event.is_primary_pointer() {
+            return event.deliver(self);
+        }
         let mut response = ContentResponse::default();
         match event.routing_event().as_ref() {
-            ContentEvent::PointerMove(point) => response.changed = self.view.pointer_move_in_region(*point, inside),
+            ContentEvent::PointerMove(point) => {
+                response.changed = self.view.pointer_move_in_region(*point, inside)
+            }
             ContentEvent::PointerUp(point) => {
-                let result = self.view.pointer_up_in_region(*point, &mut self.model, inside);
+                let result = self
+                    .view
+                    .pointer_up_in_region(*point, &mut self.model, inside);
                 response.consumed = result != SelectionEvent::Ignored;
                 response.changed = result == SelectionEvent::Changed;
             }
@@ -90,7 +98,9 @@ impl Component for SwitchContent {
         response
     }
 
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Local }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
 
     fn accessibility_action(
         &mut self,
@@ -238,7 +248,11 @@ impl TextFieldContent {
     pub fn inline(name: impl Into<String>, value: &str, width_em: f32) -> Self {
         let mut content = Self::new(name, value);
         content.show_metadata = false;
-        content.inline_width_em = Some(if width_em.is_finite() { width_em.max(0.) } else { 0. });
+        content.inline_width_em = Some(if width_em.is_finite() {
+            width_em.max(0.)
+        } else {
+            0.
+        });
         content
     }
 
@@ -354,16 +368,45 @@ impl TextFieldContent {
     }
 }
 impl Component for TextFieldContent {
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Local }
-    fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{PreparedEffects::local_work(n)?.checked_add(self.surface.input.text.len().checked_add(self.field.label.len()).and_then(|v|v.checked_add(self.field.message().len())).and_then(|v|v.checked_mul(n.max(1))).ok_or(PreparedEffectsError::CounterCapacity)?).ok_or(PreparedEffectsError::CounterCapacity)}
-    fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError>{
-        let mut focused=self.focused;let mut unmark=false;
-        for h in hooks {if let PreparedHookKind::Focus{focused:next,..}=h.kind {if focused&&!next {unmark=true;}focused=next;}}
-        if !self.surface.input.preflight_unmark(unmark){return Err(PreparedEffectsError::CounterCapacity);}
-        Ok(PreparedEffects::local(self,hooks))
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
     }
-    fn table_transaction_compatibility(&self)->TableTransactionCompatibility{TableTransactionCompatibility::StableHooks}
-
+    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
+        PreparedEffects::local_work(n)?
+            .checked_add(
+                self.surface
+                    .input
+                    .text
+                    .len()
+                    .checked_add(self.field.label.len())
+                    .and_then(|v| v.checked_add(self.field.message().len()))
+                    .and_then(|v| v.checked_mul(n.max(1)))
+                    .ok_or(PreparedEffectsError::CounterCapacity)?,
+            )
+            .ok_or(PreparedEffectsError::CounterCapacity)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        let mut focused = self.focused;
+        let mut unmark = false;
+        for h in hooks {
+            if let PreparedHookKind::Focus { focused: next, .. } = h.kind {
+                if focused && !next {
+                    unmark = true;
+                }
+                focused = next;
+            }
+        }
+        if !self.surface.input.preflight_unmark(unmark) {
+            return Err(PreparedEffectsError::CounterCapacity);
+        }
+        Ok(PreparedEffects::local(self, hooks))
+    }
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
 
     fn action_kinds(&self, result: &ContentResponse) -> Vec<ContentActionKind> {
         if result.activated {
@@ -430,8 +473,14 @@ impl Component for TextFieldContent {
     }
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
         let a = if let Some(em) = self.inline_width_em {
-            Size::new(a.width.min(t.resolved_font_size(proposal::TextRole::UiBody) * em), a.height)
-        } else { a };
+            Size::new(
+                a.width
+                    .min(t.resolved_font_size(proposal::TextRole::UiBody) * em),
+                a.height,
+            )
+        } else {
+            a
+        };
         let l = self.field_layout(
             t,
             Rect::new(0., 0., a.width, a.height),
@@ -864,11 +913,30 @@ impl DialogContent {
     }
 }
 impl Component for DialogContent {
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
-    fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{PreparedEffects::local_work(n)}
-    fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError>{if self.presence.preflight_clears(hooks.iter().filter(|h|h.kind==PreparedHookKind::Lifecycle(Lifecycle::Unmounted)).count()){Ok(PreparedEffects::local(self,hooks))}else{Err(PreparedEffectsError::CounterCapacity)}}
-    fn table_transaction_compatibility(&self)->TableTransactionCompatibility{TableTransactionCompatibility::StableHooks}
-
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
+    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
+        PreparedEffects::local_work(n)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        if self.presence.preflight_clears(
+            hooks
+                .iter()
+                .filter(|h| h.kind == PreparedHookKind::Lifecycle(Lifecycle::Unmounted))
+                .count(),
+        ) {
+            Ok(PreparedEffects::local(self, hooks))
+        } else {
+            Err(PreparedEffectsError::CounterCapacity)
+        }
+    }
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
 
     fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
         ActionTransactionCompatibility::StableHooks
@@ -989,7 +1057,9 @@ impl SliderContent {
     }
 }
 impl Component for SliderContent {
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Local }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
 
     fn validate(&self) -> Result<(), CompositionError> {
         if self.name.trim().is_empty() {

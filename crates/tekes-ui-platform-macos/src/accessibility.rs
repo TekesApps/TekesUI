@@ -329,7 +329,10 @@ fn text_in_range(text: &str, range: std::ops::Range<usize>) -> Option<String> {
 pub(crate) fn validate_accessibility_nodes(nodes: &[AccessibilityNode]) -> bool {
     validate_accessibility_nodes_with_geometry(nodes, &std::collections::HashSet::new())
 }
-pub(crate) fn validate_accessibility_nodes_with_geometry(nodes: &[AccessibilityNode], geometry_keys: &std::collections::HashSet<AccessibilityKey>) -> bool {
+pub(crate) fn validate_accessibility_nodes_with_geometry(
+    nodes: &[AccessibilityNode],
+    geometry_keys: &std::collections::HashSet<AccessibilityKey>,
+) -> bool {
     use std::collections::{HashMap, HashSet};
 
     let mut parents = HashMap::with_capacity(nodes.len());
@@ -343,8 +346,10 @@ pub(crate) fn validate_accessibility_nodes_with_geometry(nodes: &[AccessibilityN
             || frame.size.height < 0.0
             || ((frame.size.width == 0.0 || frame.size.height == 0.0)
                 && !(geometry_keys.contains(&node.key)
-                    && frame.origin.x == 0.0 && frame.origin.y == 0.0
-                    && frame.size.width == 0.0 && frame.size.height == 0.0))
+                    && frame.origin.x == 0.0
+                    && frame.origin.y == 0.0
+                    && frame.size.width == 0.0
+                    && frame.size.height == 0.0))
             || !(frame.origin.x + frame.size.width).is_finite()
             || !(frame.origin.y + frame.size.height).is_finite()
             || parents.insert(node.key, node.parent).is_some()
@@ -422,10 +427,16 @@ pub(crate) mod native {
         impl NativeAccessibilityElement {
             #[unsafe(method(isAccessibilityElement))]
             fn isAccessibilityElement(&self) -> bool {
-                #[cfg(feature="content-accessibility")]
-                let structural=self.ivars().shared.upgrade().is_some_and(|shared|shared.content_geometry.borrow().as_ref().is_some_and(|s|s.structural_only.contains(&self.ivars().key)));
-                #[cfg(not(feature="content-accessibility"))]
-                let structural=false;
+                #[cfg(feature = "content-accessibility")]
+                let structural = self.ivars().shared.upgrade().is_some_and(|shared| {
+                    shared
+                        .content_geometry
+                        .borrow()
+                        .as_ref()
+                        .is_some_and(|s| s.structural_only.contains(&self.ivars().key))
+                });
+                #[cfg(not(feature = "content-accessibility"))]
+                let structural = false;
                 !structural && self.node().is_some()
             }
 
@@ -667,8 +678,18 @@ pub(crate) mod native {
                 let local = objects
                     .view
                     .convertPoint_fromView(objects.window.convertPointFromScreen(point), None);
-                #[cfg(feature="content-accessibility")]
-                if shared.content_geometry.borrow().as_ref().is_some_and(|s|!s.contains(node.key,crate::event::Point{x:local.x,y:local.y})) {return Self::native_range(None);}
+                #[cfg(feature = "content-accessibility")]
+                if shared.content_geometry.borrow().as_ref().is_some_and(|s| {
+                    !s.contains(
+                        node.key,
+                        crate::event::Point {
+                            x: local.x,
+                            y: local.y,
+                        },
+                    )
+                }) {
+                    return Self::native_range(None);
+                }
                 let f = node.frame;
                 if local.x < f.origin.x
                     || local.y < f.origin.y
@@ -719,19 +740,31 @@ pub(crate) mod native {
                 self.trace_text(&format!("frame-for-range {range:?}"));
                 // A retained old element must not borrow the next publication's
                 // same-key geometry after lawful recovery.
-                if self.node().is_none() { return NSRect::ZERO; }
+                if self.node().is_none() {
+                    return NSRect::ZERO;
+                }
                 let Some(end) = range.location.checked_add(range.length) else {
                     return NSRect::ZERO;
                 };
-                #[cfg(feature="content-accessibility")]
-                let frame={
-                    let snapshot_frame=self.ivars().shared.upgrade().and_then(|shared|shared.content_geometry.borrow().as_ref().map(|s|s.frame_for_range(self.ivars().key,range.location..end)));
-                    snapshot_frame.unwrap_or_else(||self.text_layout().and_then(|l| l.frame_for_range(range.location..end)))
+                #[cfg(feature = "content-accessibility")]
+                let frame = {
+                    let snapshot_frame = self.ivars().shared.upgrade().and_then(|shared| {
+                        shared
+                            .content_geometry
+                            .borrow()
+                            .as_ref()
+                            .map(|s| s.frame_for_range(self.ivars().key, range.location..end))
+                    });
+                    snapshot_frame.unwrap_or_else(|| {
+                        self.text_layout()
+                            .and_then(|l| l.frame_for_range(range.location..end))
+                    })
                 };
-                #[cfg(not(feature="content-accessibility"))]
-                let frame=self.text_layout().and_then(|l|l.frame_for_range(range.location..end));
-                let Some(frame) = frame
-                else {
+                #[cfg(not(feature = "content-accessibility"))]
+                let frame = self
+                    .text_layout()
+                    .and_then(|l| l.frame_for_range(range.location..end));
+                let Some(frame) = frame else {
                     return NSRect::ZERO;
                 };
                 let Some(shared) = self.ivars().shared.upgrade() else {
@@ -781,26 +814,42 @@ pub(crate) mod native {
             }
 
             #[unsafe(method_id(accessibilityHitTest:))]
-            fn content_curve_hit_test(&self,point:NSPoint)->Option<Retained<objc2::runtime::AnyObject>> {
-                #[cfg(feature="content-accessibility")]
-                { (|| {
-                    let (shared,_)=self.shared_and_node()?;
-                    if shared.content_geometry.borrow().is_some() {
-                        let objects=shared.objects.get()?;
-                        return unsafe {msg_send![&*objects.view, accessibilityHitTest:point]};
-                    }
-                    unsafe {msg_send![super(self), accessibilityHitTest:point]}
-                })() }
-                #[cfg(not(feature="content-accessibility"))]
-                unsafe {msg_send![super(self), accessibilityHitTest:point]}
+            fn content_curve_hit_test(
+                &self,
+                point: NSPoint,
+            ) -> Option<Retained<objc2::runtime::AnyObject>> {
+                #[cfg(feature = "content-accessibility")]
+                {
+                    (|| {
+                        let (shared, _) = self.shared_and_node()?;
+                        if shared.content_geometry.borrow().is_some() {
+                            let objects = shared.objects.get()?;
+                            return unsafe {
+                                msg_send![&*objects.view, accessibilityHitTest:point]
+                            };
+                        }
+                        unsafe { msg_send![super(self), accessibilityHitTest:point] }
+                    })()
+                }
+                #[cfg(not(feature = "content-accessibility"))]
+                unsafe {
+                    msg_send![super(self), accessibilityHitTest:point]
+                }
             }
             #[unsafe(method(accessibilityFrame))]
             fn accessibilityFrame(&self) -> NSRect {
                 let Some((shared, node)) = self.shared_and_node() else {
                     return NSRect::ZERO;
                 };
-                #[cfg(feature="content-accessibility")]
-                if shared.content_geometry.borrow().as_ref().is_some_and(|s|!s.is_current()) {return NSRect::ZERO;}
+                #[cfg(feature = "content-accessibility")]
+                if shared
+                    .content_geometry
+                    .borrow()
+                    .as_ref()
+                    .is_some_and(|s| !s.is_current())
+                {
+                    return NSRect::ZERO;
+                }
                 let local = NSRect::new(
                     NSPoint::new(node.frame.origin.x, node.frame.origin.y),
                     NSSize::new(node.frame.size.width, node.frame.size.height),
@@ -1271,8 +1320,15 @@ pub(crate) mod native {
             if shared.closed.get() {
                 return None;
             }
-            #[cfg(feature="content-accessibility")]
-            if shared.content_geometry.borrow().as_ref().is_some_and(|p|!p.is_current()){return None;}
+            #[cfg(feature = "content-accessibility")]
+            if shared
+                .content_geometry
+                .borrow()
+                .as_ref()
+                .is_some_and(|p| !p.is_current())
+            {
+                return None;
+            }
             let current = shared
                 .accessibility_elements
                 .borrow()
@@ -1423,8 +1479,15 @@ pub(crate) mod native {
         if shared.closed.get() {
             return NSArray::new();
         }
-        #[cfg(feature="content-accessibility")]
-        if shared.content_geometry.borrow().as_ref().is_some_and(|p|!p.is_current()){return NSArray::new();}
+        #[cfg(feature = "content-accessibility")]
+        if shared
+            .content_geometry
+            .borrow()
+            .as_ref()
+            .is_some_and(|p| !p.is_current())
+        {
+            return NSArray::new();
+        }
         let cache = shared.accessibility_elements.borrow();
         let keys: Vec<_> = shared
             .accessibility_nodes

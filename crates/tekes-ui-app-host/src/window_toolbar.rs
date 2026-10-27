@@ -84,7 +84,10 @@ impl MountedToolbar {
         }
     }
     pub fn source(&self, group: ComponentId) -> Option<&Source> {
-        self.declarations.iter().find(|d| d.id == group).map(|d| &d.source)
+        self.declarations
+            .iter()
+            .find(|d| d.id == group)
+            .map(|d| &d.source)
     }
     pub fn sync(
         &mut self,
@@ -117,8 +120,7 @@ impl MountedToolbar {
                     (Contents::Commands(a, _), Contents::Commands(b, _)) => {
                         a.iter().map(|b| b.id).eq(b.iter().map(|b| b.id))
                     }
-                    (Contents::Title(_), Contents::Title(_))
-                    => true,
+                    (Contents::Title(_), Contents::Title(_)) => true,
                     _ => false,
                 };
                 if compatible {
@@ -164,7 +166,6 @@ impl MountedToolbar {
                                         label.text = title.clone()
                                     })
                             }
-
                         };
                         result.map_err(|e| anyhow::anyhow!("toolbar values: {e:?}"))?;
                     }
@@ -189,7 +190,6 @@ impl MountedToolbar {
                     Content::new(target, TextContent::new(title.clone())),
                     vec![],
                 ),
-
             };
             self.host
                 .register(ToolbarRegistration {

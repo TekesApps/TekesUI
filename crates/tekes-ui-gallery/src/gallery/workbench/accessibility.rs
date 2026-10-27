@@ -1548,10 +1548,7 @@ mod selection_tests {
             if renderer == "icon-button" {
                 assert_eq!(
                     before.label,
-                    g.workbench.states[&i]
-                        .extended
-                        .icon_button_view
-                        .name()
+                    g.workbench.states[&i].extended.icon_button_view.name()
                 );
             }
             let log = g.workbench.states[&i].log.len();

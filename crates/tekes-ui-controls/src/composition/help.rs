@@ -105,7 +105,7 @@ struct Request {
     id: ComponentId,
     mount: u64,
     part: Option<usize>,
-    revision: (u64,u64),
+    revision: (u64, u64),
     keyboard: bool,
     anchor: Option<Rect>,
 }
@@ -186,8 +186,11 @@ impl ContentHost {
         viewport: Rect,
         palette: Palette,
     ) {
-        if self.help_overlay_deferred && self.window_active && !self.reading_transaction
-            && !self.reveal_clock.pending && self.last_layout.is_some()
+        if self.help_overlay_deferred
+            && self.window_active
+            && !self.reading_transaction
+            && !self.reveal_clock.pending
+            && self.last_layout.is_some()
         {
             self.render_help(scene, text, viewport, viewport, palette);
         }

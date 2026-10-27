@@ -1,6 +1,7 @@
 //! Public action-state contracts; model flags stay authoritative between frames.
 use tekes_ui_controls::{
-    Button, ButtonTextAlign, ButtonTextRenderer, ControlKey, composition::{Component, ContentEvent},
+    Button, ButtonTextAlign, ButtonTextRenderer, ControlKey,
+    composition::{Component, ContentEvent},
     extended::{Link, SegmentedControl},
     layout_view::{LinkView, SegmentedControlView},
 };
@@ -29,12 +30,24 @@ fn latest_icon_model_availability_blocks_pointer_release_without_a_render() {
         let mut model = Button::new(tekes_ui_scene::ImageId(1)).with_accessible_name("Settings");
         let frame = Rect::new(0., 0., 40., 40.);
         model.arrange(&mut Labels, frame, frame);
-        model.paint(&mut Scene::new(), &mut Labels, frame, frame, Palette::from(Theme::LIGHT).into());
-        assert!(model.event(&ContentEvent::PointerDown(frame.center())).consumed);
+        model.paint(
+            &mut Scene::new(),
+            &mut Labels,
+            frame,
+            frame,
+            Palette::from(Theme::LIGHT).into(),
+        );
+        assert!(
+            model
+                .event(&ContentEvent::PointerDown(frame.center()))
+                .consumed
+        );
         model.button.state.loading = loading;
         model.button.state.disabled = !loading;
         assert!(
-            !model.event(&ContentEvent::PointerUp(frame.center())).activated,
+            !model
+                .event(&ContentEvent::PointerUp(frame.center()))
+                .activated,
             "latest disabled/loading must prevent activation before another paint"
         );
         assert_eq!(model.button.state.loading, loading);
@@ -276,14 +289,22 @@ fn action_family_required_states_use_real_public_events_and_token_painters() {
                                 }
                             }
                             "tui.icon-button" => {
-                                let mut model = Button::new(tekes_ui_scene::ImageId(1)).with_accessible_name("Create item");
-                                let natural = model.measure(&mut text, Size::new(f32::MAX, f32::MAX)).size;
+                                let mut model = Button::new(tekes_ui_scene::ImageId(1))
+                                    .with_accessible_name("Create item");
+                                let natural =
+                                    model.measure(&mut text, Size::new(f32::MAX, f32::MAX)).size;
                                 let frame = Rect::new(12., 12., natural.width, natural.height);
                                 let p = frame.center();
                                 model.button.state.disabled = has("disabled");
                                 model.button.state.loading = has("loading");
                                 model.arrange(&mut text, frame, frame);
-                                model.paint(&mut Scene::new(), &mut text, frame, frame, palette.into());
+                                model.paint(
+                                    &mut Scene::new(),
+                                    &mut text,
+                                    frame,
+                                    frame,
+                                    palette.into(),
+                                );
                                 let baseline = model.button.layout().unwrap();
                                 if has("hover") {
                                     model.event(&ContentEvent::PointerMove(p));
@@ -310,7 +331,12 @@ fn action_family_required_states_use_real_public_events_and_token_painters() {
                                 if has("disabled") || has("loading") {
                                     assert!(!model.event(&ContentEvent::PointerDown(p)).consumed);
                                     assert!(
-                                        !model.event(&ContentEvent::Key { key: ControlKey::Enter, down: true }).activated
+                                        !model
+                                            .event(&ContentEvent::Key {
+                                                key: ControlKey::Enter,
+                                                down: true
+                                            })
+                                            .activated
                                     );
                                     assert!(!model.accessibility_action(None, &tekes_ui_controls::composition::AccessibilityAction::Press).activated);
                                 }
@@ -593,18 +619,38 @@ fn icon_chrome_uses_semantic_control_radius_and_default_icon_size() {
     let mut model = Button::new(tekes_ui_scene::ImageId(1)).with_accessible_name("Create item");
     let frame = Rect::new(12., 12., 40., 40.);
     model.arrange(&mut Labels, frame, frame);
-    model.paint(&mut Scene::new(), &mut Labels, frame, frame, Palette::from(Theme::LIGHT).into());
+    model.paint(
+        &mut Scene::new(),
+        &mut Labels,
+        frame,
+        frame,
+        Palette::from(Theme::LIGHT).into(),
+    );
     model.event(&ContentEvent::PointerMove(frame.center()));
     let mut scene = Scene::new();
-    model.paint(&mut scene, &mut Labels, frame, frame, Palette::from(Theme::LIGHT).into());
+    model.paint(
+        &mut scene,
+        &mut Labels,
+        frame,
+        frame,
+        Palette::from(Theme::LIGHT).into(),
+    );
     let expected = proposal::metric("radius", "radius-control").unwrap();
     assert!(scene.primitives().iter().any(|p| matches!(p,
         tekes_ui_scene::Primitive::Quad(q) if q.rect==frame && q.corner_radii==tekes_ui_scene::CornerRadii::uniform(expected))),
         "IconButton chrome must use its declared radius-control token");
-    let icon = scene.primitives().iter().find_map(|p| match p {
-        tekes_ui_scene::Primitive::Image(image) if image.image == tekes_ui_scene::ImageId(1) => Some(image.rect),
-        _ => None,
-    }).expect("real image Button must emit its original artwork");
+    let icon = scene
+        .primitives()
+        .iter()
+        .find_map(|p| match p {
+            tekes_ui_scene::Primitive::Image(image)
+                if image.image == tekes_ui_scene::ImageId(1) =>
+            {
+                Some(image.rect)
+            }
+            _ => None,
+        })
+        .expect("real image Button must emit its original artwork");
     assert_eq!(icon.size, Size::new(16., 16.));
 }
 
@@ -612,11 +658,22 @@ fn icon_chrome_uses_semantic_control_radius_and_default_icon_size() {
 fn icon_natural_sizes_are_token_owned_and_explicit_frames_remain_supported() {
     struct Typography(f32);
     impl ButtonTextRenderer for Typography {
-        fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 { role.style().size * self.0 }
+        fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+            role.style().size * self.0
+        }
         fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
             Labels.measure(value, role, width)
         }
-        fn draw(&mut self, _: &mut Scene, _: &str, _: proposal::TextRole, _: Rect, _: ButtonTextAlign, _: Rgba) {}
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
     }
     // The approved unified Button rule replaces standalone compact/default
     // presets. Both natural size and artwork follow the same body typography.
@@ -634,16 +691,38 @@ fn icon_natural_sizes_are_token_owned_and_explicit_frames_remain_supported() {
         ] {
             model.arrange(&mut text, frame, frame);
             let mut scene = Scene::new();
-            model.paint(&mut scene, &mut text, frame, frame, Palette::from(Theme::LIGHT).into());
+            model.paint(
+                &mut scene,
+                &mut text,
+                frame,
+                frame,
+                Palette::from(Theme::LIGHT).into(),
+            );
             assert_eq!(model.button.layout().unwrap().frame, frame);
-            let icon = scene.primitives().iter().find_map(|p| match p {
-                tekes_ui_scene::Primitive::Image(image) if image.image == tekes_ui_scene::ImageId(1) => Some(image.rect),
-                _ => None,
-            }).expect("real unified Image Button must emit artwork");
+            let icon = scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    tekes_ui_scene::Primitive::Image(image)
+                        if image.image == tekes_ui_scene::ImageId(1) =>
+                    {
+                        Some(image.rect)
+                    }
+                    _ => None,
+                })
+                .expect("real unified Image Button must emit artwork");
             assert_eq!(icon.size, Size::new(side, side));
             assert_eq!(icon.center(), frame.center());
-            assert!(model.event(&ContentEvent::PointerDown(frame.center())).consumed);
-            assert!(model.event(&ContentEvent::PointerUp(frame.center())).activated);
+            assert!(
+                model
+                    .event(&ContentEvent::PointerDown(frame.center()))
+                    .consumed
+            );
+            assert!(
+                model
+                    .event(&ContentEvent::PointerUp(frame.center()))
+                    .activated
+            );
         }
     }
 }

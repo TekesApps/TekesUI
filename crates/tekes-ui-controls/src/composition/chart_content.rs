@@ -235,7 +235,9 @@ impl Component for ChartContent {
             }
             if let ContentEvent::PointerMove(point) = pointer.routing_event() {
                 return ContentResponse {
-                    changed: self.view.pointer_move_in_region(point, &mut self.model, inside),
+                    changed: self
+                        .view
+                        .pointer_move_in_region(point, &mut self.model, inside),
                     ..Default::default()
                 };
             }
@@ -243,7 +245,9 @@ impl Component for ChartContent {
         }
         if let ContentEvent::PointerMove(point) = event {
             return ContentResponse {
-                changed: self.view.pointer_move_in_region(*point, &mut self.model, inside),
+                changed: self
+                    .view
+                    .pointer_move_in_region(*point, &mut self.model, inside),
                 ..Default::default()
             };
         }
@@ -398,13 +402,19 @@ mod tests {
     fn curved_region_rejection_clears_chart_hover_through_original_view() {
         let mut chart = chart();
         let frame = Rect::new(0.0, 0.0, 320.0, 280.0);
-        chart.view.arrange_owner(&mut Text, &mut chart.model, frame, Some(frame));
+        chart
+            .view
+            .arrange_owner(&mut Text, &mut chart.model, frame, Some(frame));
         let bar = chart.view.layout().geometry.bars[1].rect;
         let point = tekes_ui_scene::Point::new(
             bar.min_x() + bar.size.width * 0.5,
             bar.min_y() + bar.size.height * 0.5,
         );
-        assert!(chart.view.pointer_move_in_region(point, &mut chart.model, true));
+        assert!(
+            chart
+                .view
+                .pointer_move_in_region(point, &mut chart.model, true)
+        );
         assert_eq!(chart.model.hovered(), Some(1));
         let secondary_move = ContentEvent::Pointer(PointerEvent {
             position: point,
@@ -413,8 +423,15 @@ mod tests {
             modifiers: PointerModifiers::default(),
             click_count: 0,
         });
-        assert_eq!(chart.pointer_event_in_region(&secondary_move, false), ContentResponse::default());
-        assert_eq!(chart.model.hovered(), Some(1), "non-primary metadata never reaches the region reducer");
+        assert_eq!(
+            chart.pointer_event_in_region(&secondary_move, false),
+            ContentResponse::default()
+        );
+        assert_eq!(
+            chart.model.hovered(),
+            Some(1),
+            "non-primary metadata never reaches the region reducer"
+        );
         let primary_move = ContentEvent::Pointer(PointerEvent {
             position: point,
             phase: PointerPhase::Move,
@@ -436,7 +453,10 @@ mod tests {
         ))
         .unwrap();
         let frame = Rect::new(0.0, 0.0, 320.0, 280.0);
-        assert!(!host.focus(Some(id), true), "unmeasured Chart target remains rejected");
+        assert!(
+            !host.focus(Some(id), true),
+            "unmeasured Chart target remains rejected"
+        );
         render(&mut host, frame);
         assert!(matches!(
             host.required_focus_result(id),
@@ -450,8 +470,14 @@ mod tests {
         ))
         .unwrap();
         render(&mut tiny, Rect::new(0.0, 0.0, 4.0, 4.0));
-        assert_eq!(tiny.required_focus_result(id), Some(RequiredFocusResult::Insufficient));
-        assert!(!tiny.focus(Some(id), true), "Panel cannot downgrade Chart Insufficient to Legacy");
+        assert_eq!(
+            tiny.required_focus_result(id),
+            Some(RequiredFocusResult::Insufficient)
+        );
+        assert!(
+            !tiny.focus(Some(id), true),
+            "Panel cannot downgrade Chart Insufficient to Legacy"
+        );
     }
 
     #[test]
@@ -749,10 +775,15 @@ mod tests {
 
     #[test]
     fn invalid_updates_preserve_original_model_layout_and_required_evidence() {
-        assert!(matches!(ChartContent::try_new("  ", vec![]), Err(ChartContentError::EmptyName)));
+        assert!(matches!(
+            ChartContent::try_new("  ", vec![]),
+            Err(ChartContentError::EmptyName)
+        ));
         let mut chart = chart();
         let frame = Rect::new(0., 0., 320., 280.);
-        chart.view.arrange_owner(&mut Text, &mut chart.model, frame, Some(frame));
+        chart
+            .view
+            .arrange_owner(&mut Text, &mut chart.model, frame, Some(frame));
         chart.view.focus(true, &mut chart.model);
         chart.model.select(1);
         chart.model.set_hovered(Some(2));
@@ -760,12 +791,23 @@ mod tests {
         let layout = chart.view.layout().clone();
         let evidence = chart.required_focus_space();
         for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-            assert_eq!(chart.update_data(vec![ChartDatum::new("legal", 9.), ChartDatum::new("bad", value)]), Err(ChartContentError::NonFiniteValue { index: 1 }));
+            assert_eq!(
+                chart.update_data(vec![
+                    ChartDatum::new("legal", 9.),
+                    ChartDatum::new("bad", value)
+                ]),
+                Err(ChartContentError::NonFiniteValue { index: 1 })
+            );
             assert_eq!(chart.model, model);
             assert_eq!(chart.view.layout(), &layout);
             assert_eq!(chart.required_focus_space(), evidence);
         }
-        chart.update_data(vec![ChartDatum::new("", -0.), ChartDatum::new("", f64::MAX)]).unwrap();
+        chart
+            .update_data(vec![
+                ChartDatum::new("", -0.),
+                ChartDatum::new("", f64::MAX),
+            ])
+            .unwrap();
         assert_eq!(chart.selected_index(), Some(1));
         assert_eq!(chart.model.hovered(), None);
         assert_eq!(chart.required_focus_space(), RequiredFocusSpace::Unmeasured);
@@ -779,16 +821,55 @@ mod tests {
         let mut host = ContentHost::new(Content::new(id, chart())).unwrap();
         let frame = Rect::new(0., 0., 320., 280.);
         render(&mut host, frame);
-        let bar = host.get(id).unwrap().component::<ChartContent>().unwrap().view.layout().geometry.bars[1].rect;
-        let point = Point::new(bar.min_x() + bar.size.width * 0.5, bar.min_y() + bar.size.height * 0.5);
+        let bar = host
+            .get(id)
+            .unwrap()
+            .component::<ChartContent>()
+            .unwrap()
+            .view
+            .layout()
+            .geometry
+            .bars[1]
+            .rect;
+        let point = Point::new(
+            bar.min_x() + bar.size.width * 0.5,
+            bar.min_y() + bar.size.height * 0.5,
+        );
         assert!(host.event(&ContentEvent::PointerDown(point)).consumed);
-        assert_eq!(host.get(id).unwrap().component::<ChartContent>().unwrap().selected_index(), Some(1));
-        host.get_mut(id).unwrap().component_mut::<ChartContent>().unwrap().update_data(vec![ChartDatum::new("replacement", -4.)]).unwrap();
+        assert_eq!(
+            host.get(id)
+                .unwrap()
+                .component::<ChartContent>()
+                .unwrap()
+                .selected_index(),
+            Some(1)
+        );
+        host.get_mut(id)
+            .unwrap()
+            .component_mut::<ChartContent>()
+            .unwrap()
+            .update_data(vec![ChartDatum::new("replacement", -4.)])
+            .unwrap();
         render(&mut host, frame);
         let response = host.event(&ContentEvent::PointerUp(point));
         assert!(!response.changed && !response.activated);
-        assert_eq!(host.get(id).unwrap().component::<ChartContent>().unwrap().selected_index(), Some(0));
-        assert_eq!(host.get(id).unwrap().component::<ChartContent>().unwrap().data()[0].label, "replacement");
+        assert_eq!(
+            host.get(id)
+                .unwrap()
+                .component::<ChartContent>()
+                .unwrap()
+                .selected_index(),
+            Some(0)
+        );
+        assert_eq!(
+            host.get(id)
+                .unwrap()
+                .component::<ChartContent>()
+                .unwrap()
+                .data()[0]
+                .label,
+            "replacement"
+        );
     }
 
     #[test]
@@ -796,10 +877,15 @@ mod tests {
         for deactivate in [false, true] {
             let mut chart = chart();
             let frame = Rect::new(0., 0., 320., 280.);
-            chart.view.arrange_owner(&mut Text, &mut chart.model, frame, Some(frame));
+            chart
+                .view
+                .arrange_owner(&mut Text, &mut chart.model, frame, Some(frame));
             chart.view.focus(true, &mut chart.model);
             let bar = chart.view.layout().geometry.bars[1].rect;
-            let point = Point::new(bar.min_x() + bar.size.width * 0.5, bar.min_y() + bar.size.height * 0.5);
+            let point = Point::new(
+                bar.min_x() + bar.size.width * 0.5,
+                bar.min_y() + bar.size.height * 0.5,
+            );
             assert!(chart.view.pointer_move(point, &mut chart.model));
             assert_eq!(chart.model.hovered(), Some(1));
             let selected = chart.selected_index();
@@ -816,7 +902,12 @@ mod tests {
             assert_eq!(chart.model.hovered(), None);
             // No fresh pointer input: painting must not copy a retired View
             // hover back into the same original BarChart model.
-            chart.view.paint_owner(&mut Scene::new(), &mut Text, &mut chart.model, Theme::LIGHT.into());
+            chart.view.paint_owner(
+                &mut Scene::new(),
+                &mut Text,
+                &mut chart.model,
+                Theme::LIGHT.into(),
+            );
             assert_eq!(chart.model.hovered(), None);
             assert_eq!(chart.selected_index(), selected);
             assert_eq!(chart.data(), data.as_slice());

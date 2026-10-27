@@ -20,9 +20,10 @@ use objc2::{DefinedClass, MainThreadOnly, define_class, msg_send, sel};
 use objc2_app_kit::{
     NSAnimationContext, NSApplication, NSApplicationActivationPolicy, NSApplicationDelegate,
     NSApplicationTerminateReply, NSBackingStoreType, NSEvent, NSEventModifierFlags, NSEventType,
-    NSMenuItem, NSToolbar, NSWindow, NSWindowAnimationBehavior, NSWindowCollectionBehavior, NSWindowDelegate,
-    NSWindowOcclusionState, NSWindowOrderingMode, NSWindowStyleMask, NSWindowTitleVisibility, NSWindowToolbarStyle,
-    NSWorkspace, NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification,
+    NSMenuItem, NSToolbar, NSWindow, NSWindowAnimationBehavior, NSWindowCollectionBehavior,
+    NSWindowDelegate, NSWindowOcclusionState, NSWindowOrderingMode, NSWindowStyleMask,
+    NSWindowTitleVisibility, NSWindowToolbarStyle, NSWorkspace,
+    NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification,
 };
 use objc2_foundation::{
     MainThreadMarker, NSNotification, NSObject, NSObjectProtocol, NSPoint, NSProcessInfo, NSRect,
@@ -478,7 +479,10 @@ pub(crate) fn present_exclusive(child: &Rc<Shared>, anchor: &Rc<Shared>) {
             if o.window.isKeyWindow() || Rc::ptr_eq(&shared, anchor) {
                 key = Some(Rc::downgrade(&shared));
             }
-            if !hidden.iter().any(|saved| saved.ptr_eq(&Rc::downgrade(&shared))) {
+            if !hidden
+                .iter()
+                .any(|saved| saved.ptr_eq(&Rc::downgrade(&shared)))
+            {
                 hidden.push(Rc::downgrade(&shared));
             }
         }

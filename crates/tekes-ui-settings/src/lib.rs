@@ -5,7 +5,9 @@ mod model;
 mod sidebar;
 mod store;
 pub use form::{FormIntent, SettingsForm};
+pub use model::{
+    Draft, Field, FieldType, Group, Item, OptionValue, Page, Schema, Snapshot, Submission,
+};
 pub use sidebar::{SelectableListContent, SettingsSidebar};
-pub use model::{Draft, Field, FieldType, Group, Item, OptionValue, Page, Schema, Snapshot, Submission};
 pub use store::{CommitFailure, FileProvider};
 pub use toml::Value;

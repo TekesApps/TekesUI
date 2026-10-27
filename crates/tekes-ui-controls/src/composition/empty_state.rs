@@ -190,12 +190,7 @@ impl Component for EmptyStateContent {
         let Owner { model, view, .. } = &mut *o;
         view.set_surface(theme.surface())
             .expect("inherited canonical Surface");
-        view.paint_prepared(
-            scene,
-            &mut TextAdapter(text),
-            model,
-            theme.palette,
-        );
+        view.paint_prepared(scene, &mut TextAdapter(text), model, theme.palette);
     }
     fn semantics(&self) -> ContentSemantics {
         let mut s = ContentSemantics::new(ContentRole::Group, &self.name);
@@ -567,24 +562,35 @@ mod tests {
     #[test]
     fn hidden_retained_proxy_renews_without_replacing_owner_or_root() {
         const DIALOG: ComponentId = ComponentId(782);
-        let mut h = ContentHost::new(Content::new(DIALOG, DialogContent::new(
-            "Empty state dialog",
-            Content::new(ComponentId(783), TextContent::new("Header")),
-            Content::new(ROOT, EmptyStateContent::new("Empty", model("Create"), ACTION).unwrap()),
-            Content::new(ComponentId(784), TextContent::new("Footer")),
-        ))).unwrap();
+        let mut h = ContentHost::new(Content::new(
+            DIALOG,
+            DialogContent::new(
+                "Empty state dialog",
+                Content::new(ComponentId(783), TextContent::new("Header")),
+                Content::new(
+                    ROOT,
+                    EmptyStateContent::new("Empty", model("Create"), ACTION).unwrap(),
+                ),
+                Content::new(ComponentId(784), TextContent::new("Footer")),
+            ),
+        ))
+        .unwrap();
         h.set_action_events(true);
         h.show_dialog(DIALOG).unwrap();
         paint(&mut h).unwrap();
         let root = h.get(ROOT).unwrap().mount;
         let action = h.get(ACTION).unwrap().mount;
         let owner = h
-            .get(ROOT).unwrap()
+            .get(ROOT)
+            .unwrap()
             .component::<EmptyStateContent>()
             .unwrap()
             .owner
             .clone();
-        assert!(h.accessibility_action(ACTION, None, AccessibilityAction::Press).activated);
+        assert!(
+            h.accessibility_action(ACTION, None, AccessibilityAction::Press)
+                .activated
+        );
         assert!(h.close_dialog());
         assert!(h.semantic_mount(ACTION).is_none());
         h.show_dialog(DIALOG).unwrap();
@@ -595,7 +601,11 @@ mod tests {
         assert_ne!(h.semantic_mount(ACTION), Some(action));
         assert!(Rc::ptr_eq(
             &owner,
-            &h.get(ROOT).unwrap().component::<EmptyStateContent>().unwrap().owner
+            &h.get(ROOT)
+                .unwrap()
+                .component::<EmptyStateContent>()
+                .unwrap()
+                .owner
         ));
     }
     #[test]
@@ -615,42 +625,85 @@ mod tests {
         assert_eq!(h.drain_actions().len(), 1);
     }
     #[derive(Debug)]
-    struct RetainedParent { shown: bool, children: Vec<Content> }
+    struct RetainedParent {
+        shown: bool,
+        children: Vec<Content>,
+    }
     impl Component for RetainedParent {
-        fn active(&self) -> bool { self.shown }
-        fn children(&self) -> &[Content] { &self.children }
-        fn children_mut(&mut self) -> Option<&mut Vec<Content>> { Some(&mut self.children) }
-        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild { MeasuredChild::new(available) }
+        fn active(&self) -> bool {
+            self.shown
+        }
+        fn children(&self) -> &[Content] {
+            &self.children
+        }
+        fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+            Some(&mut self.children)
+        }
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+            MeasuredChild::new(available)
+        }
         fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-            for child in &mut self.children { child.measure(text, frame.size); child.arrange(text, frame, clip); }
+            for child in &mut self.children {
+                child.measure(text, frame.size);
+                child.arrange(text, frame, clip);
+            }
         }
     }
     #[test]
     fn inactive_ancestor_and_window_revoke_retained_descendants_without_resurrection() {
         const PARENT: ComponentId = ComponentId(785);
-        let mut h = ContentHost::new(Content::new(PARENT, RetainedParent { shown: true,
-            children: vec![Content::new(ROOT, EmptyStateContent::new("Empty", model("Create"), ACTION).unwrap())],
-        })).unwrap();
+        let mut h = ContentHost::new(Content::new(
+            PARENT,
+            RetainedParent {
+                shown: true,
+                children: vec![Content::new(
+                    ROOT,
+                    EmptyStateContent::new("Empty", model("Create"), ACTION).unwrap(),
+                )],
+            },
+        ))
+        .unwrap();
         h.set_action_events(true);
         paint(&mut h).unwrap();
         let root = h.get(ROOT).unwrap().mount;
         let old = h.semantic_mount(ACTION).unwrap();
-        assert!(h.accessibility_action(ACTION, None, AccessibilityAction::Press).activated);
+        assert!(
+            h.accessibility_action(ACTION, None, AccessibilityAction::Press)
+                .activated
+        );
         h.root.component_mut::<RetainedParent>().unwrap().shown = false;
         paint(&mut h).unwrap();
         assert!(h.semantic_mount(ACTION).is_none());
-        assert!(!h.get(ROOT).unwrap().component::<EmptyStateContent>().unwrap().owner.borrow().window_active);
+        assert!(
+            !h.get(ROOT)
+                .unwrap()
+                .component::<EmptyStateContent>()
+                .unwrap()
+                .owner
+                .borrow()
+                .window_active
+        );
         h.set_window_active(false);
         h.set_window_active(true);
-        assert!(!h.get(ROOT).unwrap().component::<EmptyStateContent>().unwrap().owner.borrow().window_active);
+        assert!(
+            !h.get(ROOT)
+                .unwrap()
+                .component::<EmptyStateContent>()
+                .unwrap()
+                .owner
+                .borrow()
+                .window_active
+        );
         h.root.component_mut::<RetainedParent>().unwrap().shown = true;
         assert!(h.semantic_mount(ACTION).is_none());
         assert!(h.drain_actions().is_empty());
         paint(&mut h).unwrap();
         assert_eq!(h.get(ROOT).unwrap().mount, root);
         assert_ne!(h.semantic_mount(ACTION), Some(old));
-        assert!(h.accessibility_action(ACTION, None, AccessibilityAction::Press).activated);
+        assert!(
+            h.accessibility_action(ACTION, None, AccessibilityAction::Press)
+                .activated
+        );
         assert_eq!(h.drain_actions().len(), 1);
     }
-
 }

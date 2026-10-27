@@ -2,33 +2,55 @@
 use super::*;
 impl Host {
     /// Prepare all original Hosts in actual paint order; toolbar is composited last.
-    pub(super) fn content_accessibility_publication(&mut self, active: bool)
-        -> Option<tekes_ui_platform_macos::content_accessibility::WindowAccessibilityPublication>
+    pub(super) fn content_accessibility_publication(
+        &mut self,
+        active: bool,
+    ) -> Option<tekes_ui_platform_macos::content_accessibility::WindowAccessibilityPublication>
     {
-        use tekes_ui_platform_macos::content_accessibility::{ContentAccessibilitySnapshot,ContentAccessibilityOwner,WindowAccessibilityPublication};
-        if !active { return WindowAccessibilityPublication::prepare(Vec::new()); }
+        use tekes_ui_platform_macos::content_accessibility::{
+            ContentAccessibilityOwner, ContentAccessibilitySnapshot, WindowAccessibilityPublication,
+        };
+        if !active {
+            return WindowAccessibilityPublication::prepare(Vec::new());
+        }
         self.toolbar_accessibility_nodes(active); // refresh original stamped target map
-        let mut fragments=Vec::new();
+        let mut fragments = Vec::new();
         if !self.toolbar.modal() {
-            for (i,panel) in self.panels.iter_mut().enumerate() {
-                if panel.bounds.size.width<=0. || (self.is_settings_window && i==0 && (!self.leading_visible || self.sidebar_motion.needs_frame())) {continue;}
-                if let Some(local)=&mut panel.local {
-                    let mut snapshot=None;
-                    local.with_host(&mut |h|snapshot=ContentAccessibilitySnapshot::from_host(h));
-                    fragments.push((ContentAccessibilityOwner(i as u64+1),snapshot?));
+            for (i, panel) in self.panels.iter_mut().enumerate() {
+                if panel.bounds.size.width <= 0.
+                    || (self.is_settings_window
+                        && i == 0
+                        && (!self.leading_visible || self.sidebar_motion.needs_frame()))
+                {
+                    continue;
+                }
+                if let Some(local) = &mut panel.local {
+                    let mut snapshot = None;
+                    local.with_host(&mut |h| snapshot = ContentAccessibilitySnapshot::from_host(h));
+                    fragments.push((ContentAccessibilityOwner(i as u64 + 1), snapshot?));
                 }
             }
         }
-        let mut keys=std::collections::HashMap::new();
+        let mut keys = std::collections::HashMap::new();
         for node in self.toolbar.host.semantics() {
-            for (target,part) in std::iter::once((node.target,None)).chain(node.parts.iter().map(|(t,p)|(*t,Some(p.index)))) {
-                if let Some((key,_))=self.toolbar_ax.iter().find(|(_,t)|*t==target) {
-                    keys.insert(tekes_ui_platform_macos::content_accessibility::content_key(self.toolbar.host.content_host(),node.node.id,part)?,*key);
+            for (target, part) in std::iter::once((node.target, None))
+                .chain(node.parts.iter().map(|(t, p)| (*t, Some(p.index))))
+            {
+                if let Some((key, _)) = self.toolbar_ax.iter().find(|(_, t)| *t == target) {
+                    keys.insert(
+                        tekes_ui_platform_macos::content_accessibility::content_key(
+                            self.toolbar.host.content_host(),
+                            node.node.id,
+                            part,
+                        )?,
+                        *key,
+                    );
                 }
             }
         }
-        let toolbar=ContentAccessibilitySnapshot::from_host(self.toolbar.host.content_host())?.with_native_keys(&keys)?;
-        fragments.push((ContentAccessibilityOwner(0),toolbar));
+        let toolbar = ContentAccessibilitySnapshot::from_host(self.toolbar.host.content_host())?
+            .with_native_keys(&keys)?;
+        fragments.push((ContentAccessibilityOwner(0), toolbar));
         WindowAccessibilityPublication::prepare(fragments)
     }
     pub(super) fn local_text_state(
@@ -64,15 +86,35 @@ impl Host {
             return Ok(false);
         }
         if let Event::Accessibility { target, action } = event {
-            let Some(publication)=w.content_accessibility_publication() else{return Ok(false);};
-            let Some(owner)=publication.owner(*target) else{return Ok(false);};
-            let Some(index)=owner.0.checked_sub(1).and_then(|i|usize::try_from(i).ok()) else{return Ok(false);};
-            let Some(panel)=self.panels.get_mut(index) else{return Ok(false);};
-            if panel.bounds.size.width<=0. {return Ok(false);}
-            let Some(local)=&mut panel.local else{return Ok(false);};
-            let mut consumed=false;
-            local.with_host(&mut |h|consumed=publication.dispatch(owner,h,*target,action.clone()).consumed);
-            if consumed {local.dispatch_actions();self.focused=index;self.set_toolbar_focus(None, false);}
+            let Some(publication) = w.content_accessibility_publication() else {
+                return Ok(false);
+            };
+            let Some(owner) = publication.owner(*target) else {
+                return Ok(false);
+            };
+            let Some(index) = owner.0.checked_sub(1).and_then(|i| usize::try_from(i).ok()) else {
+                return Ok(false);
+            };
+            let Some(panel) = self.panels.get_mut(index) else {
+                return Ok(false);
+            };
+            if panel.bounds.size.width <= 0. {
+                return Ok(false);
+            }
+            let Some(local) = &mut panel.local else {
+                return Ok(false);
+            };
+            let mut consumed = false;
+            local.with_host(&mut |h| {
+                consumed = publication
+                    .dispatch(owner, h, *target, action.clone())
+                    .consumed
+            });
+            if consumed {
+                local.dispatch_actions();
+                self.focused = index;
+                self.set_toolbar_focus(None, false);
+            }
             return Ok(consumed);
         }
         let index = if let Event::Scroll(s) = event {
@@ -205,52 +247,154 @@ mod tests {
     }
 }
 
-
 #[cfg(test)]
 mod window_publication_tests {
     use super::*;
-    use crate::{AppWindow,Container};
-    use crate::window_toolbar::{Source,Declaration,Contents};
-    use tekes_ui_controls::composition::{ToolbarButtonDeclaration as ButtonDecl,ToolbarGroupOverflow as Overflow};
+    use crate::window_toolbar::{Contents, Declaration, Source};
+    use crate::{AppWindow, Container};
     use tekes_ui_controls::composition::*;
+    use tekes_ui_controls::composition::{
+        ToolbarButtonDeclaration as ButtonDecl, ToolbarGroupOverflow as Overflow,
+    };
+    use tekes_ui_platform_macos::{
+        AccessibilityAction, AccessibilityRole, content_accessibility::ContentAccessibilityOwner,
+    };
     use tekes_ui_tokens::Theme;
-    use tekes_ui_platform_macos::{AccessibilityAction,AccessibilityRole,content_accessibility::ContentAccessibilityOwner};
     #[test]
     fn actual_apphost_three_hosts_keep_original_owners_and_open_toolbar_excludes_background() {
-        let columns=vec![
-            Container::new("curve",Content::new(ComponentId(8100),PanelContent::new(Content::new(ComponentId(8101),TextFieldContent::new("Composer","draft"))).unwrap())).unwrap().into(),
-            Container::new("plain",Content::new(ComponentId(8200),Button::new("Body button"))).unwrap().into(),
+        let columns = vec![
+            Container::new(
+                "curve",
+                Content::new(
+                    ComponentId(8100),
+                    PanelContent::new(Content::new(
+                        ComponentId(8101),
+                        TextFieldContent::new("Composer", "draft"),
+                    ))
+                    .unwrap(),
+                ),
+            )
+            .unwrap()
+            .into(),
+            Container::new(
+                "plain",
+                Content::new(ComponentId(8200), Button::new("Body button")),
+            )
+            .unwrap()
+            .into(),
         ];
-        let mut window=AppWindow::from_columns(columns).unwrap().into_host(false);
+        let mut window = AppWindow::from_columns(columns).unwrap().into_host(false);
         assert!(window.mount_columns());
-        for (i,panel) in window.panels.iter_mut().enumerate() {
-            panel.bounds=Rect::new(i as f32*180.,40.,180.,150.);
-            let mut result=None;
-            panel.local.as_mut().unwrap().with_host(&mut |h|result=Some(h.render(&mut Scene::new(),&mut window.text,panel.bounds,panel.bounds,Theme::LIGHT.into())));
+        for (i, panel) in window.panels.iter_mut().enumerate() {
+            panel.bounds = Rect::new(i as f32 * 180., 40., 180., 150.);
+            let mut result = None;
+            panel.local.as_mut().unwrap().with_host(&mut |h| {
+                result = Some(h.render(
+                    &mut Scene::new(),
+                    &mut window.text,
+                    panel.bounds,
+                    panel.bounds,
+                    Theme::LIGHT.into(),
+                ))
+            });
             result.unwrap().unwrap();
         }
-        let source=Source::Panel{instance:window.panels[0].instance,index:0,module:"curve".into(),pid:None,generation:0};
-        window.toolbar.sync(Rect::new(0.,0.,360.,200.),vec![ToolbarRegion::new(ComponentId(10),Rect::new(0.,0.,70.,40.))],vec![Declaration{
-            id:ComponentId(100),region:ComponentId(10),placement:ToolbarPlacement::Navigation,order:0,
-            contents:Contents::Commands(vec![ButtonDecl{id:7,icon:None,text:"Long original command".into(),hint:None,enabled:true}],Overflow::Together),source,
-        }]).unwrap();
-        window.toolbar.host.render(&mut Scene::new(),&mut window.text,Theme::LIGHT.into()).unwrap();
+        let source = Source::Panel {
+            instance: window.panels[0].instance,
+            index: 0,
+            module: "curve".into(),
+            pid: None,
+            generation: 0,
+        };
+        window
+            .toolbar
+            .sync(
+                Rect::new(0., 0., 360., 200.),
+                vec![ToolbarRegion::new(
+                    ComponentId(10),
+                    Rect::new(0., 0., 70., 40.),
+                )],
+                vec![Declaration {
+                    id: ComponentId(100),
+                    region: ComponentId(10),
+                    placement: ToolbarPlacement::Navigation,
+                    order: 0,
+                    contents: Contents::Commands(
+                        vec![ButtonDecl {
+                            id: 7,
+                            icon: None,
+                            text: "Long original command".into(),
+                            hint: None,
+                            enabled: true,
+                        }],
+                        Overflow::Together,
+                    ),
+                    source,
+                }],
+            )
+            .unwrap();
+        window
+            .toolbar
+            .host
+            .render(&mut Scene::new(), &mut window.text, Theme::LIGHT.into())
+            .unwrap();
         assert!(!window.toolbar.modal());
-        let publication=window.content_accessibility_publication(true).unwrap();
-        let composer=publication.nodes().iter().find(|n|n.label=="Composer").unwrap().key;
-        let body=publication.nodes().iter().find(|n|n.label=="Body button").unwrap().key;
-        assert_eq!(publication.owner(composer),Some(ContentAccessibilityOwner(1)));
-        assert_eq!(publication.owner(body),Some(ContentAccessibilityOwner(2)));
+        let publication = window.content_accessibility_publication(true).unwrap();
+        let composer = publication
+            .nodes()
+            .iter()
+            .find(|n| n.label == "Composer")
+            .unwrap()
+            .key;
+        let body = publication
+            .nodes()
+            .iter()
+            .find(|n| n.label == "Body button")
+            .unwrap()
+            .key;
+        assert_eq!(
+            publication.owner(composer),
+            Some(ContentAccessibilityOwner(1))
+        );
+        assert_eq!(publication.owner(body), Some(ContentAccessibilityOwner(2)));
         assert!(publication.text_layouts().unwrap().contains_key(&composer));
-        let overflow=publication.nodes().iter().find(|n|n.role==AccessibilityRole::MenuButton).unwrap().key;
-        assert_eq!(publication.owner(overflow),Some(ContentAccessibilityOwner(0)));
-        assert!(window.toolbar_accessibility_action(true,overflow,AccessibilityAction::Press).unwrap());
-        window.toolbar.host.render(&mut Scene::new(),&mut window.text,Theme::LIGHT.into()).unwrap();
+        let overflow = publication
+            .nodes()
+            .iter()
+            .find(|n| n.role == AccessibilityRole::MenuButton)
+            .unwrap()
+            .key;
+        assert_eq!(
+            publication.owner(overflow),
+            Some(ContentAccessibilityOwner(0))
+        );
+        assert!(
+            window
+                .toolbar_accessibility_action(true, overflow, AccessibilityAction::Press)
+                .unwrap()
+        );
+        window
+            .toolbar
+            .host
+            .render(&mut Scene::new(), &mut window.text, Theme::LIGHT.into())
+            .unwrap();
         assert!(window.toolbar.modal());
-        let modal=window.content_accessibility_publication(true).unwrap();
-        assert!(modal.owner(composer).is_none());assert!(modal.owner(body).is_none());
+        let modal = window.content_accessibility_publication(true).unwrap();
+        assert!(modal.owner(composer).is_none());
+        assert!(modal.owner(body).is_none());
         assert!(!modal.nodes().is_empty());
-        assert!(modal.nodes().iter().all(|n|modal.owner(n.key)==Some(ContentAccessibilityOwner(0))));
-        assert!(window.content_accessibility_publication(false).unwrap().nodes().is_empty());
+        assert!(
+            modal
+                .nodes()
+                .iter()
+                .all(|n| modal.owner(n.key) == Some(ContentAccessibilityOwner(0)))
+        );
+        assert!(
+            window
+                .content_accessibility_publication(false)
+                .unwrap()
+                .nodes()
+                .is_empty()
+        );
     }
 }

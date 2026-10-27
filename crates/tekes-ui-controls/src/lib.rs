@@ -2,8 +2,10 @@
 pub mod collections_view;
 mod composite;
 pub mod composition;
-pub use composition::{Button, ButtonContents, ButtonImagePosition, ButtonActivationPhase};
-pub use composition::{ChartContent, ChartContentError, RequiredFocusEvidence, RequiredFocusSpace, RequiredFocusResult};
+pub use composition::{Button, ButtonActivationPhase, ButtonContents, ButtonImagePosition};
+pub use composition::{
+    ChartContent, ChartContentError, RequiredFocusEvidence, RequiredFocusResult, RequiredFocusSpace,
+};
 mod control_motion;
 mod draft;
 pub mod feedback_view;
@@ -44,7 +46,7 @@ pub use text_surface::{
 pub use toolbar::{ToolbarAction, ToolbarControl, ToolbarIconAction};
 mod widgets;
 pub use widgets::{
-    ButtonModel, ButtonFramePolicy, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer,
+    ButtonFramePolicy, ButtonLayout, ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer,
     CheckState, Checkbox, CheckboxLayout, ControlKey, ControlMotionContext, ControlState, Dialog,
     Field, Menu, NumberField, Select, Tabs,
 };

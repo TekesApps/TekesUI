@@ -712,11 +712,12 @@ impl TekesView {
             });
         }
         drop(elements);
-        #[cfg(feature="content-accessibility")]
-        let publication_changed=shared.content_geometry.borrow().is_some();
-        #[cfg(not(feature="content-accessibility"))]
-        let publication_changed=false;
-        let structural = publication_changed || nodes.len() != previous.len()
+        #[cfg(feature = "content-accessibility")]
+        let publication_changed = shared.content_geometry.borrow().is_some();
+        #[cfg(not(feature = "content-accessibility"))]
+        let publication_changed = false;
+        let structural = publication_changed
+            || nodes.len() != previous.len()
             || nodes.iter().zip(previous).any(|(a, b)| {
                 a.key != b.key
                     || a.parent != b.parent

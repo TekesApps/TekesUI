@@ -61,7 +61,13 @@ fn text_layout(layout: ContentTextLayout) -> AccessibilityTextLayout {
         lines: layout.lines,
     }
 }
-fn enrich(host: &ContentHost, id: ComponentId, part: Option<usize>, semantics: &ContentSemantics, node: &mut AccessibilityNode) {
+fn enrich(
+    host: &ContentHost,
+    id: ComponentId,
+    part: Option<usize>,
+    semantics: &ContentSemantics,
+    node: &mut AccessibilityNode,
+) {
     if part.is_none() {
         add_slider_range(host, id, semantics, node);
         // Preserve the existing value/selection contract before shaping. Complete
@@ -69,7 +75,10 @@ fn enrich(host: &ContentHost, id: ComponentId, part: Option<usize>, semantics: &
         if semantics.role == ContentRole::TextInput
             && let Some(input) = host.semantic_text_input_snapshot(id)
         {
-            if host.text_surface(id).is_some_and(|surface| surface.input.multiline) {
+            if host
+                .text_surface(id)
+                .is_some_and(|surface| surface.input.multiline)
+            {
                 node.role = AccessibilityRole::TextArea;
             }
             node.value = Some(input.text);
@@ -78,17 +87,21 @@ fn enrich(host: &ContentHost, id: ComponentId, part: Option<usize>, semantics: &
         }
     }
     if let Some(layout) = host.semantic_text_layout_snapshot(id, part) {
-        if layout.multiline { node.role = AccessibilityRole::TextArea; }
+        if layout.multiline {
+            node.role = AccessibilityRole::TextArea;
+        }
         node.value = Some(layout.input.text.clone());
         node.text_selection = Some(layout.input.selection);
         node.read_only = layout.input.read_only;
     }
 }
 pub fn content_nodes(host: &ContentHost) -> Vec<AccessibilityNode> {
-    if host.requires_curve_geometry(){return Vec::new();}
+    if host.requires_curve_geometry() {
+        return Vec::new();
+    }
     project_content_nodes(host)
 }
-fn project_content_nodes(host:&ContentHost)->Vec<AccessibilityNode> {
+fn project_content_nodes(host: &ContentHost) -> Vec<AccessibilityNode> {
     if !host.is_window_active() {
         return Vec::new();
     }
@@ -323,7 +336,7 @@ mod tests {
 }
 
 /// One immutable original Host publication: nodes, shaped text and exact point authority.
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct ContentAccessibilitySnapshot {
     pub(crate) nodes: Vec<AccessibilityNode>,
     pub(crate) text_layouts: HashMap<AccessibilityKey, AccessibilityTextLayout>,
@@ -332,56 +345,172 @@ pub struct ContentAccessibilitySnapshot {
     pub(crate) structural_only: std::collections::HashSet<AccessibilityKey>,
 }
 impl ContentAccessibilitySnapshot {
-    pub fn nodes(&self)->&[AccessibilityNode] {&self.nodes}
-    pub fn text_layouts(&self)->&HashMap<AccessibilityKey, AccessibilityTextLayout> {&self.text_layouts}
-    pub fn from_host(host:&ContentHost)->Option<Self> {
-        if !host.is_window_active() { return None; }
-        let geometry=host.geometry_snapshot()?; let mut nodes=project_content_nodes(host);
-        let text_layouts=content_text_layouts(host);let semantics=host.semantics();let mut identities=HashMap::new();let mut structural_only=std::collections::HashSet::new();
+    pub fn nodes(&self) -> &[AccessibilityNode] {
+        &self.nodes
+    }
+    pub fn text_layouts(&self) -> &HashMap<AccessibilityKey, AccessibilityTextLayout> {
+        &self.text_layouts
+    }
+    pub fn from_host(host: &ContentHost) -> Option<Self> {
+        if !host.is_window_active() {
+            return None;
+        }
+        let geometry = host.geometry_snapshot()?;
+        let mut nodes = project_content_nodes(host);
+        let text_layouts = content_text_layouts(host);
+        let semantics = host.semantics();
+        let mut identities = HashMap::new();
+        let mut structural_only = std::collections::HashSet::new();
         for node in &mut nodes {
-            let id=semantics.iter().find(|n|host.semantic_mount(n.id)==Some(node.key.component))?.id;
-            if geometry.identity(id,node.key.part)!=Some(node.key.component){return None;}
-            identities.insert(node.key,(id,node.key.part));
-            let frame=tekes_ui_scene::Rect::new(node.frame.origin.x as f32,node.frame.origin.y as f32,node.frame.size.width as f32,node.frame.size.height as f32);
-            node.frame=match geometry.bounds(id,node.key.part,frame).ok()? {
-                Some(b)=>crate::placement::Rect{origin:Point{x:b.min_x() as f64,y:b.min_y() as f64},size:Size{width:b.size.width as f64,height:b.size.height as f64}},
-                None=>{ if matches!(node.role,AccessibilityRole::Group) && !text_layouts.contains_key(&node.key) {structural_only.insert(node.key);} crate::placement::Rect{origin:Point{x:0.,y:0.},size:Size{width:0.,height:0.}} }
+            let id = semantics
+                .iter()
+                .find(|n| host.semantic_mount(n.id) == Some(node.key.component))?
+                .id;
+            if geometry.identity(id, node.key.part) != Some(node.key.component) {
+                return None;
+            }
+            identities.insert(node.key, (id, node.key.part));
+            let frame = tekes_ui_scene::Rect::new(
+                node.frame.origin.x as f32,
+                node.frame.origin.y as f32,
+                node.frame.size.width as f32,
+                node.frame.size.height as f32,
+            );
+            node.frame = match geometry.bounds(id, node.key.part, frame).ok()? {
+                Some(b) => crate::placement::Rect {
+                    origin: Point {
+                        x: b.min_x() as f64,
+                        y: b.min_y() as f64,
+                    },
+                    size: Size {
+                        width: b.size.width as f64,
+                        height: b.size.height as f64,
+                    },
+                },
+                None => {
+                    if matches!(node.role, AccessibilityRole::Group)
+                        && !text_layouts.contains_key(&node.key)
+                    {
+                        structural_only.insert(node.key);
+                    }
+                    crate::placement::Rect {
+                        origin: Point { x: 0., y: 0. },
+                        size: Size {
+                            width: 0.,
+                            height: 0.,
+                        },
+                    }
+                }
             };
         }
-        let snapshot=Self{nodes,text_layouts,geometry,identities,structural_only};if snapshot.is_valid(){Some(snapshot)}else{None}
+        let snapshot = Self {
+            nodes,
+            text_layouts,
+            geometry,
+            identities,
+            structural_only,
+        };
+        if snapshot.is_valid() {
+            Some(snapshot)
+        } else {
+            None
+        }
     }
     /// Remap only explicit original keys into a window adapter's native namespace.
     /// Geometry and its original lease are retained unchanged; missing parents fail validation.
-    pub fn with_native_keys(mut self, keys: &HashMap<AccessibilityKey, AccessibilityKey>) -> Option<Self> {
-        let original = self.nodes.iter().map(|n|n.key).collect::<std::collections::HashSet<_>>();
-        if keys.keys().any(|k|!original.contains(k)) { return None; }
-        self.nodes.retain(|n|keys.contains_key(&n.key));
+    pub fn with_native_keys(
+        mut self,
+        keys: &HashMap<AccessibilityKey, AccessibilityKey>,
+    ) -> Option<Self> {
+        let original = self
+            .nodes
+            .iter()
+            .map(|n| n.key)
+            .collect::<std::collections::HashSet<_>>();
+        if keys.keys().any(|k| !original.contains(k)) {
+            return None;
+        }
+        self.nodes.retain(|n| keys.contains_key(&n.key));
         for n in &mut self.nodes {
             n.key = *keys.get(&n.key)?;
-            n.parent = match n.parent { Some(p)=>Some(*keys.get(&p)?),None=>None };
+            n.parent = match n.parent {
+                Some(p) => Some(*keys.get(&p)?),
+                None => None,
+            };
         }
-        self.text_layouts = self.text_layouts.into_iter().filter_map(|(k,v)|keys.get(&k).map(|k|(*k,v))).collect();
-        self.identities = self.identities.into_iter().filter_map(|(k,v)|keys.get(&k).map(|k|(*k,v))).collect();
-        self.structural_only = self.structural_only.into_iter().filter_map(|k|keys.get(&k).copied()).collect();
+        self.text_layouts = self
+            .text_layouts
+            .into_iter()
+            .filter_map(|(k, v)| keys.get(&k).map(|k| (*k, v)))
+            .collect();
+        self.identities = self
+            .identities
+            .into_iter()
+            .filter_map(|(k, v)| keys.get(&k).map(|k| (*k, v)))
+            .collect();
+        self.structural_only = self
+            .structural_only
+            .into_iter()
+            .filter_map(|k| keys.get(&k).copied())
+            .collect();
         self.is_valid().then_some(self)
     }
-    pub fn generation(&self)->u64 {self.geometry.generation}
-    pub fn is_current(&self)->bool {self.geometry.is_current()}
-    pub fn is_valid(&self)->bool {
-        self.is_current() && crate::accessibility::validate_accessibility_nodes_with_geometry(&self.nodes,&self.identities.keys().copied().collect())
-            && self.text_layouts.iter().all(|(key,layout)| self.identities.contains_key(key)&&layout.is_valid())
+    pub fn generation(&self) -> u64 {
+        self.geometry.generation
     }
-    pub fn hit_test(&self,point:Point)->Option<AccessibilityKey> {
-        let (id,mount,part)=self.geometry.hit_test(tekes_ui_scene::Point::new(point.x as f32,point.y as f32))?;
-        let key=*self.identities.iter().find(|(_,v)|**v==(id,part)).map(|(k,_)|k)?;
-        (self.geometry.identity(id,part)==Some(mount)&&!self.structural_only.contains(&key)).then_some(key)
+    pub fn is_current(&self) -> bool {
+        self.geometry.is_current()
     }
-    pub fn contains(&self,key:AccessibilityKey,point:Point)->bool {self.hit_test(point)==Some(key)}
-    pub fn frame_for_range(&self,key:AccessibilityKey,range:std::ops::Range<usize>)->Option<crate::placement::Rect> {
-        let (id,part)=*self.identities.get(&key)?;let rect=self.text_layouts.get(&key)?.frame_for_range(range)?;
-        let r=tekes_ui_scene::Rect::new(rect.origin.x as f32,rect.origin.y as f32,rect.size.width as f32,rect.size.height as f32);
-        let b=self.geometry.bounds(id,part,r).ok()??;
-        Some(crate::placement::Rect{origin:Point{x:b.min_x() as f64,y:b.min_y() as f64},size:Size{width:b.size.width as f64,height:b.size.height as f64}})
+    pub fn is_valid(&self) -> bool {
+        self.is_current()
+            && crate::accessibility::validate_accessibility_nodes_with_geometry(
+                &self.nodes,
+                &self.identities.keys().copied().collect(),
+            )
+            && self
+                .text_layouts
+                .iter()
+                .all(|(key, layout)| self.identities.contains_key(key) && layout.is_valid())
+    }
+    pub fn hit_test(&self, point: Point) -> Option<AccessibilityKey> {
+        let (id, mount, part) = self
+            .geometry
+            .hit_test(tekes_ui_scene::Point::new(point.x as f32, point.y as f32))?;
+        let key = *self
+            .identities
+            .iter()
+            .find(|(_, v)| **v == (id, part))
+            .map(|(k, _)| k)?;
+        (self.geometry.identity(id, part) == Some(mount) && !self.structural_only.contains(&key))
+            .then_some(key)
+    }
+    pub fn contains(&self, key: AccessibilityKey, point: Point) -> bool {
+        self.hit_test(point) == Some(key)
+    }
+    pub fn frame_for_range(
+        &self,
+        key: AccessibilityKey,
+        range: std::ops::Range<usize>,
+    ) -> Option<crate::placement::Rect> {
+        let (id, part) = *self.identities.get(&key)?;
+        let rect = self.text_layouts.get(&key)?.frame_for_range(range)?;
+        let r = tekes_ui_scene::Rect::new(
+            rect.origin.x as f32,
+            rect.origin.y as f32,
+            rect.size.width as f32,
+            rect.size.height as f32,
+        );
+        let b = self.geometry.bounds(id, part, r).ok()??;
+        Some(crate::placement::Rect {
+            origin: Point {
+                x: b.min_x() as f64,
+                y: b.min_y() as f64,
+            },
+            size: Size {
+                width: b.size.width as f64,
+                height: b.size.height as f64,
+            },
+        })
     }
 }
 

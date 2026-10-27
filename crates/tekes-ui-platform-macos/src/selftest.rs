@@ -1197,7 +1197,9 @@ pub fn exclusive_reentry_contract() {
     struct Noop;
     impl WindowHandler for Noop {
         fn handle(&mut self, event: Event, window: &mut Window) {
-            if event == Event::CloseRequested { window.close(); }
+            if event == Event::CloseRequested {
+                window.close();
+            }
         }
     }
     struct Probe {
@@ -1210,20 +1212,29 @@ pub fn exclusive_reentry_contract() {
                 window.close();
                 return;
             }
-            if event != Event::Focus(true) || self.started { return; }
+            if event != Event::Focus(true) || self.started {
+                return;
+            }
             let mtm = MainThreadMarker::new().expect("native focus callback is main-thread");
             let app = NSApplication::sharedApplication(mtm);
             // launch_window emits logical Focus before first presentation. Wait
             // for actual native activation instead of treating that as key focus.
-            let Some(anchor_window) = app.keyWindow().filter(|w|
-                app.isRunning() && app.isActive()
-                    && w.windowNumber() == window.native_window_number()) else { return; };
+            let Some(anchor_window) = app.keyWindow().filter(|w| {
+                app.isRunning()
+                    && app.isActive()
+                    && w.windowNumber() == window.native_window_number()
+            }) else {
+                return;
+            };
             self.started = true;
             assert!(app.isRunning() && app.isActive());
             assert_eq!(anchor_window.windowNumber(), window.native_window_number());
             let config = |name: &str| WindowConfig {
                 title: format!("TekesUI Exclusive reentry {name}"),
-                size: crate::Size { width: 320., height: 200. },
+                size: crate::Size {
+                    width: 320.,
+                    height: 200.,
+                },
                 ..Default::default()
             };
             let other = window.open_window(config("visible"), Noop);
@@ -1234,39 +1245,76 @@ pub fn exclusive_reentry_contract() {
             // Establish the real original key before opening Settings. No key
             // operation is performed by the test after closing the cover.
             anchor_window.makeKeyAndOrderFront(None);
-            println!("EXCLUSIVE_FOCUS stage=initial-anchor app_active={} app_running={} actual_key={:?} target={} target_key={}",
-                app.isActive(), app.isRunning(), app.keyWindow().map(|w|w.windowNumber()),
-                anchor_window.windowNumber(), anchor_window.isKeyWindow());
-            assert!(anchor_window.isKeyWindow(), "initial anchor must actually own native key focus");
+            println!(
+                "EXCLUSIVE_FOCUS stage=initial-anchor app_active={} app_running={} actual_key={:?} target={} target_key={}",
+                app.isActive(),
+                app.isRunning(),
+                app.keyWindow().map(|w| w.windowNumber()),
+                anchor_window.windowNumber(),
+                anchor_window.isKeyWindow()
+            );
+            assert!(
+                anchor_window.isKeyWindow(),
+                "initial anchor must actually own native key focus"
+            );
             assert!(anchor_window.isVisible() && other_window.isVisible());
             assert!(!hidden_window.isVisible());
             let cover = window.open_exclusive_window(config("cover"), Noop);
             let cover_window = &cover.shared.objects.get().unwrap().window;
-            assert!(cover_window.isKeyWindow(), "Exclusive cover must actually own native key focus");
+            assert!(
+                cover_window.isKeyWindow(),
+                "Exclusive cover must actually own native key focus"
+            );
             assert!(cover_window.isVisible());
             assert!(!anchor_window.isVisible() && !other_window.isVisible());
             assert_eq!(cover.shared.exclusive_restore.borrow().len(), 2);
-            assert!(cover.shared.exclusive_key.borrow().as_ref()
-                .and_then(std::rc::Weak::upgrade).is_some_and(|saved|
-                    saved.objects.get().is_some_and(|o| o.window.windowNumber() == window.native_window_number())));
+            assert!(
+                cover
+                    .shared
+                    .exclusive_key
+                    .borrow()
+                    .as_ref()
+                    .and_then(std::rc::Weak::upgrade)
+                    .is_some_and(|saved| saved
+                        .objects
+                        .get()
+                        .is_some_and(|o| o.window.windowNumber() == window.native_window_number()))
+            );
             // Re-show an already-recorded window to cover duplicate merging.
             other_window.orderFront(None);
             window.present_exclusive(&cover);
             assert_eq!(cover.shared.exclusive_restore.borrow().len(), 2);
-            assert!(cover.shared.exclusive_key.borrow().as_ref()
-                .and_then(std::rc::Weak::upgrade).is_some_and(|saved|
-                    saved.objects.get().is_some_and(|o| o.window.windowNumber() == window.native_window_number())));
+            assert!(
+                cover
+                    .shared
+                    .exclusive_key
+                    .borrow()
+                    .as_ref()
+                    .and_then(std::rc::Weak::upgrade)
+                    .is_some_and(|saved| saved
+                        .objects
+                        .get()
+                        .is_some_and(|o| o.window.windowNumber() == window.native_window_number()))
+            );
             assert!(cover_window.isVisible());
             assert!(!anchor_window.isVisible() && !other_window.isVisible());
             assert!(!hidden_window.isVisible());
             cover_window.close();
-            println!("EXCLUSIVE_FOCUS stage=after-close app_active={} app_running={} actual_key={:?} target={} target_key={}",
-                app.isActive(), app.isRunning(), app.keyWindow().map(|w|w.windowNumber()),
-                anchor_window.windowNumber(), anchor_window.isKeyWindow());
+            println!(
+                "EXCLUSIVE_FOCUS stage=after-close app_active={} app_running={} actual_key={:?} target={} target_key={}",
+                app.isActive(),
+                app.isRunning(),
+                app.keyWindow().map(|w| w.windowNumber()),
+                anchor_window.windowNumber(),
+                anchor_window.isKeyWindow()
+            );
             assert!(cover.is_closed());
             assert!(anchor_window.isVisible() && other_window.isVisible());
             assert!(!hidden_window.isVisible());
-            assert!(anchor_window.isKeyWindow(), "original key window must be restored");
+            assert!(
+                anchor_window.isKeyWindow(),
+                "original key window must be restored"
+            );
             assert!(cover.shared.exclusive_restore.borrow().is_empty());
             assert!(cover.shared.exclusive_key.borrow().is_none());
             for handle in [&other, &hidden] {
@@ -1285,11 +1333,27 @@ pub fn exclusive_reentry_contract() {
     App::new(AppConfig {
         name: Some("TekesUI Exclusive reentry regression".into()),
         quit_after_last_window_closed: true,
-    }).run(WindowConfig {
-        title: "TekesUI Exclusive reentry anchor".into(),
-        size: crate::Size { width: 320., height: 200. },
-        ..Default::default()
-    }, MenuBar::default(), Probe { started: false, complete: complete.clone() });
-    assert!(complete.get(), "native application never completed the focused Exclusive scenario");
-    println!("EXCLUSIVE_REENTRY_NATIVE_OK windows=4 repeated_present=2 restore_visible=2 restore_originally_hidden=0 original_focus=true");
+    })
+    .run(
+        WindowConfig {
+            title: "TekesUI Exclusive reentry anchor".into(),
+            size: crate::Size {
+                width: 320.,
+                height: 200.,
+            },
+            ..Default::default()
+        },
+        MenuBar::default(),
+        Probe {
+            started: false,
+            complete: complete.clone(),
+        },
+    );
+    assert!(
+        complete.get(),
+        "native application never completed the focused Exclusive scenario"
+    );
+    println!(
+        "EXCLUSIVE_REENTRY_NATIVE_OK windows=4 repeated_present=2 restore_visible=2 restore_originally_hidden=0 original_focus=true"
+    );
 }

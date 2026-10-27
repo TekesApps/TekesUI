@@ -29,14 +29,14 @@ use tekes_ui_render::Renderer;
 use tekes_ui_scene::{ImageId, ImageQuad, Point, Quad, Rect, Scene};
 use tekes_ui_tokens::{Palette, Rgba, Theme};
 const MIN_COLUMN: f32 = 120.;
-#[path = "window_accessibility.rs"]
-mod window_accessibility;
-#[path = "window_settings.rs"]
-mod window_settings;
 #[path = "window_acceptance.rs"]
 mod window_acceptance;
+#[path = "window_accessibility.rs"]
+mod window_accessibility;
 #[path = "window_columns.rs"]
 mod window_columns;
+#[path = "window_settings.rs"]
+mod window_settings;
 #[path = "window_toolbar_mount.rs"]
 mod window_toolbar_mount;
 /// Same allocation used by the accepted public toolbar-split consumer:
@@ -599,10 +599,14 @@ impl Host {
     }
     fn draw(&mut self, w: &Window) -> Result<()> {
         self.init(w)?;
-        if !self.is_settings_window { self.poll_settings_open(w)?; }
+        if !self.is_settings_window {
+            self.poll_settings_open(w)?;
+        }
         self.text
             .begin_frame(self.motion_epoch.elapsed(), self.reduced_motion);
-        if self.is_settings_window { return self.draw_settings(w); }
+        if self.is_settings_window {
+            return self.draw_settings(w);
+        }
         let progress = self.sidebar_motion.sample(
             self.motion_epoch.elapsed(),
             self.reduced_motion,
@@ -814,7 +818,9 @@ impl Host {
             // Focus restoration is admitted only after current shared geometry
             // exists; paint that accepted state in this same native frame.
             toolbar_scene = Scene::new();
-            self.toolbar.host.render(&mut toolbar_scene, &mut self.text, Theme::LIGHT.into())
+            self.toolbar
+                .host
+                .render(&mut toolbar_scene, &mut self.text, Theme::LIGHT.into())
                 .map_err(|e| anyhow::anyhow!("toolbar restored focus paint: {e:?}"))?;
         }
         let mut toolbar_controls = self.toolbar.host.content_host().pointer_regions();
@@ -921,10 +927,22 @@ impl Host {
         if let Some(settings) = &self.settings
             && settings.borrow().open
         {
-            use tekes_ui_platform_macos::content_accessibility::{ContentAccessibilitySnapshot,ContentAccessibilityOwner,WindowAccessibilityPublication};
-            let publication=if w.is_active(){ContentAccessibilitySnapshot::from_host(&settings.borrow().form.host)
-                .and_then(|snapshot|WindowAccessibilityPublication::prepare(vec![(ContentAccessibilityOwner(u64::MAX),snapshot)]))}
-                else{WindowAccessibilityPublication::prepare(Vec::new())};
+            use tekes_ui_platform_macos::content_accessibility::{
+                ContentAccessibilityOwner, ContentAccessibilitySnapshot,
+                WindowAccessibilityPublication,
+            };
+            let publication = if w.is_active() {
+                ContentAccessibilitySnapshot::from_host(&settings.borrow().form.host).and_then(
+                    |snapshot| {
+                        WindowAccessibilityPublication::prepare(vec![(
+                            ContentAccessibilityOwner(u64::MAX),
+                            snapshot,
+                        )])
+                    },
+                )
+            } else {
+                WindowAccessibilityPublication::prepare(Vec::new())
+            };
             w.set_content_accessibility_publication(publication);
             w.set_text_input_state(if w.is_active() {
                 settings.borrow().text_state()
@@ -1023,7 +1041,6 @@ impl Host {
         Ok(())
     }
 
-
     fn typography_key_input(&mut self, key: &KeyEvent) -> bool {
         if key.kind != KeyEventKind::Down
             || !key.modifiers.command
@@ -1121,21 +1138,42 @@ impl Host {
                     result.parent_window = w.native_window_number();
                 }
                 shared.transition(window_acceptance::Stage::Opening);
-                eprintln!("SETTINGS_ACCEPTANCE_SCOPE scope=settings-window-only env=1 main-resize=not_run panel-frame=not_run parent_window={}", w.native_window_number());
+                eprintln!(
+                    "SETTINGS_ACCEPTANCE_SCOPE scope=settings-window-only env=1 main-resize=not_run panel-frame=not_run parent_window={}",
+                    w.native_window_number()
+                );
                 w.request_redraw();
             }
             window_acceptance::Stage::Closing
-                if self.settings_child.as_ref().is_some_and(|child| child.is_closed())
-                    && w.is_active() && w.is_key_window() && !w.is_occluded() =>
+                if self
+                    .settings_child
+                    .as_ref()
+                    .is_some_and(|child| child.is_closed())
+                    && w.is_active()
+                    && w.is_key_window()
+                    && !w.is_occluded() =>
             {
                 shared.transition(window_acceptance::Stage::Done);
-                eprintln!("SETTINGS_ACCEPTANCE_PASS parent_window={} child_window={:?} mode={:?} shown_active_key_non_occluded=true saved=true undo_restored=true closed=true parent_restored=true physical_input=false", w.native_window_number(), shared.0.lock().ok().and_then(|s|s.child_window), shared.0.lock().ok().and_then(|s|s.mode));
+                eprintln!(
+                    "SETTINGS_ACCEPTANCE_PASS parent_window={} child_window={:?} mode={:?} shown_active_key_non_occluded=true saved=true undo_restored=true closed=true parent_restored=true physical_input=false",
+                    w.native_window_number(),
+                    shared.0.lock().ok().and_then(|s| s.child_window),
+                    shared.0.lock().ok().and_then(|s| s.mode)
+                );
                 w.close();
             }
             window_acceptance::Stage::Failed
-                if self.settings_child.as_ref().is_none_or(|child| child.is_closed()) =>
+                if self
+                    .settings_child
+                    .as_ref()
+                    .is_none_or(|child| child.is_closed()) =>
             {
-                eprintln!("SETTINGS_ACCEPTANCE_FAIL child_closed=true parent_active={} parent_key={} error={:?}", w.is_active(), w.is_key_window(), shared.0.lock().ok().and_then(|s|s.error.clone()));
+                eprintln!(
+                    "SETTINGS_ACCEPTANCE_FAIL child_closed=true parent_active={} parent_key={} error={:?}",
+                    w.is_active(),
+                    w.is_key_window(),
+                    shared.0.lock().ok().and_then(|s| s.error.clone())
+                );
                 w.close();
             }
             _ => {}
@@ -1149,7 +1187,8 @@ impl Host {
         if let Some(shared) = self.acceptance_shared.clone() {
             return self.accept_settings_window_parent(w, &shared);
         }
-        if self.step >= 24 && self.panels.len() == 3
+        if self.step >= 24
+            && self.panels.len() == 3
             && std::env::var("TEKESUI_COLUMNS_WINDOW_ACCEPTANCE").as_deref() == Ok("1")
         {
             return self.accept_columns(w);
@@ -1192,45 +1231,68 @@ impl Host {
         Ok(())
     }
     fn event(&mut self, event: Event, w: &mut Window) -> Result<()> {
-        if !self.is_settings_window && matches!(&event, Event::Created)
-            && let Some(shared) = self.acceptance_shared.clone() {
-                let start_watchdog = if let Ok(mut result) = shared.0.lock() {
-                    result.parent_window = w.native_window_number();
-                    result.parent_wake = Some(w.wake_proxy());
-                    result.started = std::time::Instant::now();
-                    !std::mem::replace(&mut result.watchdog_started, true)
-                } else { false };
-                if start_watchdog {
-                    std::thread::spawn(move || {
-                        std::thread::sleep(std::time::Duration::from_secs(30));
-                        if shared.stage() != window_acceptance::Stage::Done {
-                            shared.fail("30s total Settings-only acceptance timeout");
-                            if let Ok(result) = shared.0.lock() {
-                                if let Some(wake) = &result.child_wake { let _ = wake.wake(); }
-                                if let Some(wake) = &result.parent_wake { let _ = wake.wake(); }
+        if !self.is_settings_window
+            && matches!(&event, Event::Created)
+            && let Some(shared) = self.acceptance_shared.clone()
+        {
+            let start_watchdog = if let Ok(mut result) = shared.0.lock() {
+                result.parent_window = w.native_window_number();
+                result.parent_wake = Some(w.wake_proxy());
+                result.started = std::time::Instant::now();
+                !std::mem::replace(&mut result.watchdog_started, true)
+            } else {
+                false
+            };
+            if start_watchdog {
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(30));
+                    if shared.stage() != window_acceptance::Stage::Done {
+                        shared.fail("30s total Settings-only acceptance timeout");
+                        if let Ok(result) = shared.0.lock() {
+                            if let Some(wake) = &result.child_wake {
+                                let _ = wake.wake();
+                            }
+                            if let Some(wake) = &result.parent_wake {
+                                let _ = wake.wake();
                             }
                         }
-                    });
-                }
+                    }
+                });
+            }
         }
-        if self.acceptance_shared.as_ref().is_some_and(|s| s.stage() == window_acceptance::Stage::Opening)
+        if self
+            .acceptance_shared
+            .as_ref()
+            .is_some_and(|s| s.stage() == window_acceptance::Stage::Opening)
             && !self.is_settings_window
             && matches!(&event, Event::Redraw | Event::Wake)
         {
-            self.event(Event::Command(tekes_ui_platform_macos::CommandId(0x534554)), w)?;
+            self.event(
+                Event::Command(tekes_ui_platform_macos::CommandId(0x534554)),
+                w,
+            )?;
             if let Some(shared) = &self.acceptance_shared {
                 shared.transition(window_acceptance::Stage::AwaitingShown);
             }
             w.request_redraw();
             return Ok(());
         }
-        if self.is_settings_window && self.acceptance_shared.is_some()
-            && matches!(&event, Event::Redraw | Event::Wake | Event::AnimationFrame(_))
+        if self.is_settings_window
+            && self.acceptance_shared.is_some()
+            && matches!(
+                &event,
+                Event::Redraw | Event::Wake | Event::AnimationFrame(_)
+            )
         {
             self.drive_settings_acceptance(w)?;
         }
-        if let Event::Accessibility{target,..}=&event
-            && w.content_accessibility_publication().and_then(|p|p.owner(*target)).is_none(){return Ok(());}
+        if let Event::Accessibility { target, .. } = &event
+            && w.content_accessibility_publication()
+                .and_then(|p| p.owner(*target))
+                .is_none()
+        {
+            return Ok(());
+        }
 
         if matches!(
             &event,
@@ -1250,7 +1312,9 @@ impl Host {
             w.request_redraw();
             return Ok(());
         }
-        if self.settings_navigation_focus_guard(&event, w.content_accessibility_publication().as_ref()) {
+        if self
+            .settings_navigation_focus_guard(&event, w.content_accessibility_publication().as_ref())
+        {
             w.request_redraw();
             return Ok(());
         }
@@ -1267,7 +1331,10 @@ impl Host {
         }
 
         if self.settings.as_ref().is_some_and(|s| s.borrow().open)
-            && self.settings_event(&event, w)? { return Ok(()); }
+            && self.settings_event(&event, w)?
+        {
+            return Ok(());
+        }
         if !self.is_settings_window && self.local_content_event(&event, w)? {
             w.request_redraw();
             return Ok(());
@@ -1520,10 +1587,16 @@ impl WindowHandler for Host {
             eprintln!("HOST_ERROR {e:#}");
             if let Some(shared) = &self.acceptance_shared {
                 shared.fail(format!("HOST_ERROR {e:#}"));
-                if let Ok(result) = shared.0.lock() && let Some(wake) = &result.parent_wake { let _ = wake.wake(); }
+                if let Ok(result) = shared.0.lock()
+                    && let Some(wake) = &result.parent_wake
+                {
+                    let _ = wake.wake();
+                }
             }
             w.set_title(&format!("AppHost error: {e}"));
-            if self.acceptance_shared.is_some() { w.close(); }
+            if self.acceptance_shared.is_some() {
+                w.close();
+            }
         }
     }
 }
@@ -1547,7 +1620,9 @@ pub fn run(
     let settings_window_acceptance = acceptance
         && has_settings
         && std::env::var("TEKESUI_SETTINGS_WINDOW_ACCEPTANCE").as_deref() == Ok("1");
-    if settings_window_acceptance { host.acceptance_shared = Some(window_acceptance::Shared::new()); }
+    if settings_window_acceptance {
+        host.acceptance_shared = Some(window_acceptance::Shared::new());
+    }
     host.settings_provider = settings
         .as_ref()
         .map(|s| tekes_ui_settings::FileProvider::open(s.file.clone(), s.schema.namespace.clone()))
@@ -1798,17 +1873,23 @@ mod two_column_geometry_tests {
         assert_eq!(hidden[1], whole);
         assert_eq!(hidden[0], Rect::default());
     }
-
 }
-
 
 #[cfg(test)]
 mod window_focus_tests {
     use super::*;
     use crate::window_toolbar::{Contents, Declaration, Source};
-    use tekes_ui_controls::{ToolbarAction, composition::{ToolbarButtonDeclaration, ToolbarGroupOverflow, ToolbarPlacement, ToolbarRegion}};
+    use tekes_ui_controls::{
+        ToolbarAction,
+        composition::{
+            ToolbarButtonDeclaration, ToolbarGroupOverflow, ToolbarPlacement, ToolbarRegion,
+        },
+    };
     fn render(h: &mut Host) {
-        h.toolbar.host.render(&mut Scene::new(), &mut h.text, Theme::LIGHT.into()).unwrap();
+        h.toolbar
+            .host
+            .render(&mut Scene::new(), &mut h.text, Theme::LIGHT.into())
+            .unwrap();
     }
     fn refresh(h: &mut Host, narrow: Option<usize>) {
         let viewport = Rect::new(0., 0., 1000., 400.);
@@ -1818,22 +1899,65 @@ mod window_focus_tests {
             let (rect, actions, source) = match owner {
                 ToolbarTarget::Visibility(side) => (
                     Rect::new(if side == 0 { 0. } else { 820. }, 0., 48., 52.),
-                    vec![ToolbarAction { id: if side == 0 { 0x5601 } else { 0x5602 }, title: "Show".into(), enabled: true }],
+                    vec![ToolbarAction {
+                        id: if side == 0 { 0x5601 } else { 0x5602 },
+                        title: "Show".into(),
+                        enabled: true,
+                    }],
                     Source::Visibility(side),
                 ),
                 ToolbarTarget::Panel(i) => {
                     let p = &h.panels[i];
-                    (Rect::new(p.bounds.min_x(), 0., if narrow == Some(i) { 60. } else { 240. }, 52.),
-                    p.toolbar.iter().map(|a| ToolbarAction {id:a.id,title:a.title.clone(),enabled:a.enabled && (!a.geometry_dependent || p.frame_viewport == p.viewport)}).collect(),
-                    Source::Panel {instance:p.instance,index:i,module:p.module_id.clone(),pid:p.pid,generation:p.toolbar_generation})
+                    (
+                        Rect::new(
+                            p.bounds.min_x(),
+                            0.,
+                            if narrow == Some(i) { 60. } else { 240. },
+                            52.,
+                        ),
+                        p.toolbar
+                            .iter()
+                            .map(|a| ToolbarAction {
+                                id: a.id,
+                                title: a.title.clone(),
+                                enabled: a.enabled
+                                    && (!a.geometry_dependent || p.frame_viewport == p.viewport),
+                            })
+                            .collect(),
+                        Source::Panel {
+                            instance: p.instance,
+                            index: i,
+                            module: p.module_id.clone(),
+                            pid: p.pid,
+                            generation: p.toolbar_generation,
+                        },
+                    )
                 }
                 ToolbarTarget::Navigation => unreachable!("fixture has no navigation process"),
             };
             let group = Host::toolbar_group(owner);
             let region = ComponentId(93000 + order as u64);
             regions.push(ToolbarRegion::new(region, rect));
-            declarations.push(Declaration { id:group,region,placement:ToolbarPlacement::Navigation,order:0,
-                contents:Contents::Commands(actions.into_iter().map(|a|ToolbarButtonDeclaration {id:a.id,icon:None,text:a.title,hint:None,enabled:a.enabled}).collect(),ToolbarGroupOverflow::Split),source });
+            declarations.push(Declaration {
+                id: group,
+                region,
+                placement: ToolbarPlacement::Navigation,
+                order: 0,
+                contents: Contents::Commands(
+                    actions
+                        .into_iter()
+                        .map(|a| ToolbarButtonDeclaration {
+                            id: a.id,
+                            icon: None,
+                            text: a.title,
+                            hint: None,
+                            enabled: a.enabled,
+                        })
+                        .collect(),
+                    ToolbarGroupOverflow::Split,
+                ),
+                source,
+            });
         }
         h.remember_toolbar_focus(None);
         h.toolbar.sync(viewport, regions, declarations).unwrap();
@@ -1842,14 +1966,29 @@ mod window_focus_tests {
     fn fixture() -> Host {
         let ids = (0..3).map(|i| format!("window-test-{i}")).collect();
         let mut h = Host::new(ids, false, None);
-        h.panels = (0..3).map(|i|Panel::new(i,format!("window-test-{i}"))).collect();
+        h.panels = (0..3)
+            .map(|i| Panel::new(i, format!("window-test-{i}")))
+            .collect();
         h.leading_visible = true;
-        for (i,p) in h.panels.iter_mut().enumerate() {
-            p.bounds=Rect::new(80.+i as f32*240.,0.,240.,300.);
-            p.toolbar_height=66.;
-            p.toolbar=vec![ToolbarItem{id:7,title:"Increment".into(),enabled:true,geometry_dependent:false},ToolbarItem{id:8,title:"Reset".into(),enabled:true,geometry_dependent:false}];
+        for (i, p) in h.panels.iter_mut().enumerate() {
+            p.bounds = Rect::new(80. + i as f32 * 240., 0., 240., 300.);
+            p.toolbar_height = 66.;
+            p.toolbar = vec![
+                ToolbarItem {
+                    id: 7,
+                    title: "Increment".into(),
+                    enabled: true,
+                    geometry_dependent: false,
+                },
+                ToolbarItem {
+                    id: 8,
+                    title: "Reset".into(),
+                    enabled: true,
+                    geometry_dependent: false,
+                },
+            ];
         }
-        refresh(&mut h,None);
+        refresh(&mut h, None);
         h
     }
     fn key(h: &mut Host, key: ControlKey, down: bool) {
@@ -1957,7 +2096,12 @@ mod window_focus_tests {
         h.set_toolbar_focus(Some(ToolbarTarget::Panel(0)), true);
         key(&mut h, ControlKey::Tab { reverse: false }, true);
         assert_eq!(h.toolbar_focus, Some(ToolbarTarget::Panel(1)));
-        h.panels[1].toolbar = vec![ToolbarItem { id:7,title:"Disabled".into(),enabled:false,geometry_dependent:false }];
+        h.panels[1].toolbar = vec![ToolbarItem {
+            id: 7,
+            title: "Disabled".into(),
+            enabled: false,
+            geometry_dependent: false,
+        }];
         refresh(&mut h, None);
         h.reconcile_toolbar_focus(true);
         assert_eq!(h.toolbar_focus, None);
@@ -1994,7 +2138,14 @@ mod window_focus_tests {
         let p = Point::new(110., 26.);
         h.dispatch_toolbar(owner, &ContentEvent::PointerDown(p))
             .unwrap();
-        assert_eq!(h.toolbar.host.content_host().pointer_capture().map(|(id, _)| id), Some(Host::toolbar_control(owner)));
+        assert_eq!(
+            h.toolbar
+                .host
+                .content_host()
+                .pointer_capture()
+                .map(|(id, _)| id),
+            Some(Host::toolbar_control(owner))
+        );
         key(&mut h, ControlKey::Escape, true);
         h.dispatch_toolbar(owner, &ContentEvent::PointerUp(p))
             .unwrap();
@@ -2125,12 +2276,27 @@ mod window_focus_tests {
 mod original_native_allocation_tests {
     #[test]
     fn native_toolbar_alignment_preserves_full_allocation_without_centering_in_it() {
-        assert_eq!(super::window_toolbar_geometry(66.,48.,Some(26.),2.),(66.,2.,48.));
-        assert_eq!(super::window_toolbar_geometry(40.,32.,Some(20.),1.),(40.,4.,32.));
-        assert_eq!(super::window_toolbar_geometry(0.,48.,None,2.),(48.,0.,48.));
+        assert_eq!(
+            super::window_toolbar_geometry(66., 48., Some(26.), 2.),
+            (66., 2., 48.)
+        );
+        assert_eq!(
+            super::window_toolbar_geometry(40., 32., Some(20.), 1.),
+            (40., 4., 32.)
+        );
+        assert_eq!(
+            super::window_toolbar_geometry(0., 48., None, 2.),
+            (48., 0., 48.)
+        );
         // Oversize retains complete content rather than a negative, clipped origin.
-        assert_eq!(super::window_toolbar_geometry(66.,80.,Some(26.),2.),(80.,0.,80.));
-        assert_eq!(super::window_toolbar_geometry(65.75,48.,Some(25.75),2.),(66.,1.75,48.));
+        assert_eq!(
+            super::window_toolbar_geometry(66., 80., Some(26.), 2.),
+            (80., 0., 80.)
+        );
+        assert_eq!(
+            super::window_toolbar_geometry(65.75, 48., Some(25.75), 2.),
+            (66., 1.75, 48.)
+        );
     }
 }
 
@@ -2205,31 +2371,91 @@ mod settings_toolbar_focus_tests {
     use super::*;
     use crate::toolbar_source::ComponentSource;
     use crate::window_toolbar::{Contents, Declaration, Source};
-    use tekes_ui_controls::composition::{ToolbarButtonDeclaration, ToolbarGroupOverflow, ToolbarPlacement, ToolbarRegion};
+    use tekes_ui_controls::composition::{
+        ToolbarButtonDeclaration, ToolbarGroupOverflow, ToolbarPlacement, ToolbarRegion,
+    };
     #[test]
     fn actual_config_group_focus_retires_old_panel_return_intent() {
         let mut host = Host::new(vec!["panel".into()], false, None);
         host.panels = vec![Panel::new(0, "panel".into())];
-        host.panels[0].bounds = Rect::new(0.,0.,240.,300.);
+        host.panels[0].bounds = Rect::new(0., 0., 240., 300.);
         let source = ComponentSource {
-            session: tekes_ui_module_runtime::component::Session {module:crate::settings_undo::MODULE_ID.into(),instance:1,host_epoch:1},
-            registration:1,window:host.toolbar.window,
+            session: tekes_ui_module_runtime::component::Session {
+                module: crate::settings_undo::MODULE_ID.into(),
+                instance: 1,
+                host_epoch: 1,
+            },
+            registration: 1,
+            window: host.toolbar.window,
         };
-        let button = |id, name:&str| Contents::Commands(vec![ToolbarButtonDeclaration {id,icon:None,text:name.into(),hint:None,enabled:true}],ToolbarGroupOverflow::Together);
-        host.toolbar.sync(Rect::new(0.,0.,480.,300.),vec![ToolbarRegion::new(ComponentId(10),Rect::new(0.,0.,240.,52.)),ToolbarRegion::new(ComponentId(20),Rect::new(240.,0.,240.,52.))],vec![
-            Declaration {id:Host::toolbar_group(ToolbarTarget::Panel(0)),region:ComponentId(10),placement:ToolbarPlacement::Navigation,order:0,contents:button(7,"Panel"),source:Source::Panel{instance:host.panels[0].instance,index:0,module:"panel".into(),pid:None,generation:0}},
-            Declaration {id:ComponentId(92300),region:ComponentId(20),placement:ToolbarPlacement::SecondaryAction,order:0,contents:button(crate::settings_undo::UNDO,"Undo"),source:Source::Undo(source)},
-        ]).unwrap();
-        host.toolbar.host.render(&mut Scene::new(),&mut host.text,Theme::LIGHT.into()).unwrap();
-        host.set_toolbar_focus(Some(ToolbarTarget::Panel(0)),true);
-        assert_eq!(host.toolbar_focus,Some(ToolbarTarget::Panel(0)));
-        let undo = host.toolbar.host.semantics().into_iter().find(|n|n.node.id==ComponentId(92301)).unwrap().target;
-        assert!(host.toolbar.host.restore_focus(undo,true));
+        let button = |id, name: &str| {
+            Contents::Commands(
+                vec![ToolbarButtonDeclaration {
+                    id,
+                    icon: None,
+                    text: name.into(),
+                    hint: None,
+                    enabled: true,
+                }],
+                ToolbarGroupOverflow::Together,
+            )
+        };
+        host.toolbar
+            .sync(
+                Rect::new(0., 0., 480., 300.),
+                vec![
+                    ToolbarRegion::new(ComponentId(10), Rect::new(0., 0., 240., 52.)),
+                    ToolbarRegion::new(ComponentId(20), Rect::new(240., 0., 240., 52.)),
+                ],
+                vec![
+                    Declaration {
+                        id: Host::toolbar_group(ToolbarTarget::Panel(0)),
+                        region: ComponentId(10),
+                        placement: ToolbarPlacement::Navigation,
+                        order: 0,
+                        contents: button(7, "Panel"),
+                        source: Source::Panel {
+                            instance: host.panels[0].instance,
+                            index: 0,
+                            module: "panel".into(),
+                            pid: None,
+                            generation: 0,
+                        },
+                    },
+                    Declaration {
+                        id: ComponentId(92300),
+                        region: ComponentId(20),
+                        placement: ToolbarPlacement::SecondaryAction,
+                        order: 0,
+                        contents: button(crate::settings_undo::UNDO, "Undo"),
+                        source: Source::Undo(source),
+                    },
+                ],
+            )
+            .unwrap();
+        host.toolbar
+            .host
+            .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
+            .unwrap();
+        host.set_toolbar_focus(Some(ToolbarTarget::Panel(0)), true);
+        assert_eq!(host.toolbar_focus, Some(ToolbarTarget::Panel(0)));
+        let undo = host
+            .toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .find(|n| n.node.id == ComponentId(92301))
+            .unwrap()
+            .target;
+        assert!(host.toolbar.host.restore_focus(undo, true));
         host.remember_toolbar_focus(Some(true));
         host.reconcile_toolbar_focus(true);
-        assert_eq!(host.toolbar_focus,None);
+        assert_eq!(host.toolbar_focus, None);
         assert!(host.toolbar_focus_lease.is_none());
-        assert_eq!(host.toolbar.host.content_host().focused(),Some(ComponentId(92301)));
+        assert_eq!(
+            host.toolbar.host.content_host().focused(),
+            Some(ComponentId(92301))
+        );
     }
 }
 
@@ -2240,48 +2466,98 @@ mod settings_close_input_tests {
     use tekes_ui_controls::composition::NumberFieldContent;
     use tekes_ui_settings::{FileProvider, Snapshot};
     fn fixture(schema: &str) -> (Host, std::path::PathBuf) {
-        let path = std::env::temp_dir().join(format!("settings-close-input-{}-{}",std::process::id(),std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos())).join("settings.toml");
-        let options=SettingsWindow::from_toml(schema,path.clone()).unwrap();
-        let provider=FileProvider::open(path.clone(),options.schema.namespace.clone()).unwrap();
-        let mut surface=SettingsSurface::new(options,provider,Snapshot::default()).unwrap();
+        let path = std::env::temp_dir()
+            .join(format!(
+                "settings-close-input-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ))
+            .join("settings.toml");
+        let options = SettingsWindow::from_toml(schema, path.clone()).unwrap();
+        let provider = FileProvider::open(path.clone(), options.schema.namespace.clone()).unwrap();
+        let mut surface = SettingsSurface::new(options, provider, Snapshot::default()).unwrap();
         surface.show();
         // Ordinary focus/reveal requires current real layout, as in the Window.
-        let frame=Rect::new(0.,0.,620.,400.);
-        surface.form.render(&mut Scene::new(),&mut Text::new(),frame,Theme::LIGHT.into()).unwrap();
-        for (index,field) in surface.view_schema.settings.iter().enumerate() {
-            let id=ComponentId(100+index as u64);
-            let refusal=surface.form.host.plan_host_reveal(id,Default::default(),&[],Default::default()).err();
-            eprintln!("SETTINGS_FIXTURE selected={} field={} kind={:?} component={} focus_targets={:?} reveal_refusal={:?}",surface.selected,field.id,field.kind,surface.form.host.get(id).is_some(),surface.form.host.focus_targets(),refusal);
+        let frame = Rect::new(0., 0., 620., 400.);
+        surface
+            .form
+            .render(
+                &mut Scene::new(),
+                &mut Text::new(),
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        for (index, field) in surface.view_schema.settings.iter().enumerate() {
+            let id = ComponentId(100 + index as u64);
+            let refusal = surface
+                .form
+                .host
+                .plan_host_reveal(id, Default::default(), &[], Default::default())
+                .err();
+            eprintln!(
+                "SETTINGS_FIXTURE selected={} field={} kind={:?} component={} focus_targets={:?} reveal_refusal={:?}",
+                surface.selected,
+                field.id,
+                field.kind,
+                surface.form.host.get(id).is_some(),
+                surface.form.host.focus_targets(),
+                refusal
+            );
         }
-        let mut host=Host::new(vec![],false,None);
-        host.settings=Some(std::rc::Rc::new(std::cell::RefCell::new(surface)));
-        (host,path)
+        let mut host = Host::new(vec![], false, None);
+        host.settings = Some(std::rc::Rc::new(std::cell::RefCell::new(surface)));
+        (host, path)
     }
     #[test]
     fn raw_number_draft_blocks_quit_and_close_commits_only_valid_input() {
-        for text in ["999%","125%"] {
-            let (host,path)=fixture(include_str!("../../../examples/app-host-demo/settings.schema.toml"));
-            let state=host.settings.as_ref().unwrap();
+        for text in ["999%", "125%"] {
+            let (host, path) = fixture(include_str!(
+                "../../../examples/app-host-demo/settings.schema.toml"
+            ));
+            let state = host.settings.as_ref().unwrap();
             {
-                let mut s=state.borrow_mut();
-                let form=&mut s.form.host;
-                assert!(form.focus(Some(ComponentId(101)),true));
+                let mut s = state.borrow_mut();
+                let form = &mut s.form.host;
+                assert!(form.focus(Some(ComponentId(101)), true));
                 form.event(&ContentEvent::TextCommand("selectAll:".into()));
-                form.event(&ContentEvent::Commit{text:text.into(),replacement:None});
+                form.event(&ContentEvent::Commit {
+                    text: text.into(),
+                    replacement: None,
+                });
                 assert!(s.form.has_number_draft());
-                assert!(!s.draft.dirty(),"raw editor input is not a saved Draft value");
+                assert!(
+                    !s.draft.dirty(),
+                    "raw editor input is not a saved Draft value"
+                );
             }
             assert!(!host.allows_app_quit());
             {
-                let mut s=state.borrow_mut();
+                let mut s = state.borrow_mut();
                 assert!(!s.close_requested());
                 assert!(s.open);
-                if text=="999%" {
+                if text == "999%" {
                     assert!(!s.draft.dirty());
                     assert!(s.form.has_number_draft());
-                    assert_eq!(s.form.host.get(ComponentId(101)).unwrap().component::<NumberFieldContent>().unwrap().edit_state().text,"999%");
+                    assert_eq!(
+                        s.form
+                            .host
+                            .get(ComponentId(101))
+                            .unwrap()
+                            .component::<NumberFieldContent>()
+                            .unwrap()
+                            .edit_state()
+                            .text,
+                        "999%"
+                    );
                 } else {
-                    assert!(s.draft.dirty(),"valid raw input must await its persistence receipt");
+                    assert!(
+                        s.draft.dirty(),
+                        "valid raw input must await its persistence receipt"
+                    );
                     assert!(!s.form.has_number_draft());
                 }
             }
@@ -2293,24 +2569,31 @@ mod settings_close_input_tests {
     }
     #[test]
     fn marked_text_with_clean_draft_is_retained_when_close_or_quit_is_requested() {
-        let (host,path)=fixture(include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml"));
-        let state=host.settings.as_ref().unwrap();
+        let (host, path) = fixture(include_str!(
+            "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
+        ));
+        let state = host.settings.as_ref().unwrap();
         {
-            let mut s=state.borrow_mut();
-            assert!(s.form.host.focus(Some(ComponentId(100)),true));
-            s.form.host.event(&ContentEvent::Preedit{text:"中文".into(),selection:0..2,clauses:std::iter::once(0..2).collect(),replacement:None});
+            let mut s = state.borrow_mut();
+            assert!(s.form.host.focus(Some(ComponentId(100)), true));
+            s.form.host.event(&ContentEvent::Preedit {
+                text: "中文".into(),
+                selection: 0..2,
+                clauses: std::iter::once(0..2).collect(),
+                replacement: None,
+            });
             assert!(s.form.host.is_composing());
             assert!(!s.draft.dirty());
         }
         assert!(!host.allows_app_quit());
         {
-            let mut s=state.borrow_mut();
-            let before=s.form.host.focused_text().unwrap().input.text.clone();
-            let marked=s.form.host.focused_text().unwrap().input.marked.clone();
+            let mut s = state.borrow_mut();
+            let before = s.form.host.focused_text().unwrap().input.text.clone();
+            let marked = s.form.host.focused_text().unwrap().input.marked.clone();
             assert!(!s.close_requested());
             assert!(s.open);
-            assert_eq!(s.form.host.focused_text().unwrap().input.text,before);
-            assert_eq!(s.form.host.focused_text().unwrap().input.marked,marked);
+            assert_eq!(s.form.host.focused_text().unwrap().input.text, before);
+            assert_eq!(s.form.host.focused_text().unwrap().input.marked, marked);
             assert!(!s.draft.dirty());
         }
         assert!(!host.allows_app_quit());
@@ -2320,31 +2603,89 @@ mod settings_close_input_tests {
     }
     #[test]
     fn original_settings_row_focus_succeeds_but_unknown_scroll_layout_stays_rejected() {
-        use tekes_ui_controls::{ButtonTextRenderer,ScrollArea,composition::{Component,Content,ContentHost,HostRevealError,ScrollContent,TextFieldContent},layout::MeasuredChild};
+        use tekes_ui_controls::{
+            ButtonTextRenderer, ScrollArea,
+            composition::{
+                Component, Content, ContentHost, HostRevealError, ScrollContent, TextFieldContent,
+            },
+            layout::MeasuredChild,
+        };
         use tekes_ui_scene::Size;
-        let (host,path)=fixture(include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml"));
+        let (host, path) = fixture(include_str!(
+            "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
+        ));
         {
-            let mut state=host.settings.as_ref().unwrap().borrow_mut();
-            assert!(state.form.host.plan_host_reveal(ComponentId(100),Default::default(),&[],Default::default()).is_ok());
-            assert!(state.form.host.focus(Some(ComponentId(100)),true));
-            assert_eq!(state.form.host.focused(),Some(ComponentId(100)));
+            let mut state = host.settings.as_ref().unwrap().borrow_mut();
+            assert!(
+                state
+                    .form
+                    .host
+                    .plan_host_reveal(
+                        ComponentId(100),
+                        Default::default(),
+                        &[],
+                        Default::default()
+                    )
+                    .is_ok()
+            );
+            assert!(state.form.host.focus(Some(ComponentId(100)), true));
+            assert_eq!(state.form.host.focused(), Some(ComponentId(100)));
         }
         drop(host);
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
         #[derive(Debug)]
-        struct Unknown { children:Vec<Content> }
-        impl Component for Unknown {
-            fn children(&self)->&[Content]{&self.children}
-            fn children_mut(&mut self)->Option<&mut Vec<Content>>{Some(&mut self.children)}
-            fn measure(&mut self,text:&mut dyn ButtonTextRenderer,available:Size)->MeasuredChild{self.children[0].measure(text,available)}
-            fn arrange(&mut self,text:&mut dyn ButtonTextRenderer,frame:Rect,clip:Rect){self.children[0].arrange(text,frame,clip);}
+        struct Unknown {
+            children: Vec<Content>,
         }
-        let mut unknown=ContentHost::new(Content::new(ComponentId(1),ScrollContent::new(ScrollArea::default(),Content::new(ComponentId(2),Unknown{children:vec![Content::new(ComponentId(3),TextFieldContent::new("Unknown","draft"))]})))).unwrap();
-        let frame=Rect::new(0.,0.,620.,400.);
-        unknown.render(&mut Scene::new(),&mut Text::new(),frame,frame,Theme::LIGHT.into()).unwrap();
-        assert!(matches!(unknown.plan_host_reveal(ComponentId(3),Default::default(),&[],Default::default()),Err(HostRevealError::UnsupportedLayout)));
-        assert!(!unknown.focus(Some(ComponentId(3)),true));
-        assert_eq!(unknown.focused(),None);
+        impl Component for Unknown {
+            fn children(&self) -> &[Content] {
+                &self.children
+            }
+            fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+                Some(&mut self.children)
+            }
+            fn measure(
+                &mut self,
+                text: &mut dyn ButtonTextRenderer,
+                available: Size,
+            ) -> MeasuredChild {
+                self.children[0].measure(text, available)
+            }
+            fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+                self.children[0].arrange(text, frame, clip);
+            }
+        }
+        let mut unknown = ContentHost::new(Content::new(
+            ComponentId(1),
+            ScrollContent::new(
+                ScrollArea::default(),
+                Content::new(
+                    ComponentId(2),
+                    Unknown {
+                        children: vec![Content::new(
+                            ComponentId(3),
+                            TextFieldContent::new("Unknown", "draft"),
+                        )],
+                    },
+                ),
+            ),
+        ))
+        .unwrap();
+        let frame = Rect::new(0., 0., 620., 400.);
+        unknown
+            .render(
+                &mut Scene::new(),
+                &mut Text::new(),
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(matches!(
+            unknown.plan_host_reveal(ComponentId(3), Default::default(), &[], Default::default()),
+            Err(HostRevealError::UnsupportedLayout)
+        ));
+        assert!(!unknown.focus(Some(ComponentId(3)), true));
+        assert_eq!(unknown.focused(), None);
     }
-
 }

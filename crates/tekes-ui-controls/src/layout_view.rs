@@ -7,7 +7,7 @@
 use crate::control_motion::{ProgressTransition, motion_for};
 use crate::layout::{AlignmentOverride, MeasuredChild, layout_measured_children};
 use crate::{
-    ButtonModel, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey,
+    ButtonLayout, ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey,
     composite::{MenuEvent, MenuLayout, MenuView},
     extended::{
         Axis, Breadcrumb, ComboBox, CommandPalette, ControlFrame, Disclosure, Grid, Link,
@@ -411,7 +411,7 @@ impl SplitViewView {
         bounds: Rect,
         clip: Option<Rect>,
     ) -> SplitViewLayout {
-        if !valid(bounds, None) || clip.is_some_and(|c| !valid(c,None)) {
+        if !valid(bounds, None) || clip.is_some_and(|c| !valid(c, None)) {
             self.cancel(model);
             self.layout = SplitViewLayout::default();
             return self.layout;
@@ -3694,27 +3694,56 @@ mod tests {
             let mut model = Link::default();
             let frame = Rect::new(8., 8., 120., 36.);
             model.button.state.disabled = state == "disabled";
-            if focused { view.focus(true); }
+            if focused {
+                view.focus(true);
+            }
             view.render(
-                &mut Scene::new(), &mut FixedText, &mut model, "Open", frame,
-                None, Palette::from(Theme::LIGHT), proposal::TextRole::UiBody,
+                &mut Scene::new(),
+                &mut FixedText,
+                &mut model,
+                "Open",
+                frame,
+                None,
+                Palette::from(Theme::LIGHT),
+                proposal::TextRole::UiBody,
             );
-            if state == "hover" { view.pointer_move(frame.center()); }
-            else if state == "pressed" { assert!(view.pointer_down(frame.center())); }
+            if state == "hover" {
+                view.pointer_move(frame.center());
+            } else if state == "pressed" {
+                assert!(view.pointer_down(frame.center()));
+            }
             // Keep the same model, view and held input while changing palettes.
             for theme in Theme::ALL {
                 let palette = Palette::from(theme);
                 let mut scene = Scene::new();
                 view.render(
-                    &mut scene, &mut FixedText, &mut model, "Open", frame,
-                    None, palette, proposal::TextRole::UiBody,
+                    &mut scene,
+                    &mut FixedText,
+                    &mut model,
+                    "Open",
+                    frame,
+                    None,
+                    palette,
+                    proposal::TextRole::UiBody,
                 );
-                let underline = scene.primitives().iter().find_map(|primitive| match primitive {
-                    tekes_ui_scene::Primitive::Quad(quad)
-                        if quad.rect.size.height <= 2. && quad.rect.size.width == frame.size.width => Some(quad.fill),
-                    _ => None,
-                }).expect("Link render emits its semantic underline");
-                assert_eq!(underline, palette.color(role).expect("generated Link semantic color"), "{state} in {theme:?}");
+                let underline = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|primitive| match primitive {
+                        tekes_ui_scene::Primitive::Quad(quad)
+                            if quad.rect.size.height <= 2.
+                                && quad.rect.size.width == frame.size.width =>
+                        {
+                            Some(quad.fill)
+                        }
+                        _ => None,
+                    })
+                    .expect("Link render emits its semantic underline");
+                assert_eq!(
+                    underline,
+                    palette.color(role).expect("generated Link semantic color"),
+                    "{state} in {theme:?}"
+                );
                 let has_keyboard_focus = scene.primitives().iter().any(|primitive| {
                     matches!(primitive, tekes_ui_scene::Primitive::Quad(quad) if quad.border_width == 2.)
                 });
@@ -4008,11 +4037,22 @@ mod tests {
         let clip = Rect::new(0., 0., 400., 300.);
         icon.arrange(&mut text, frame, clip);
         icon.paint(&mut scene, &mut text, frame, clip, palette.into());
-        assert!(icon.event(&ContentEvent::PointerDown(frame.center())).consumed);
+        assert!(
+            icon.event(&ContentEvent::PointerDown(frame.center()))
+                .consumed
+        );
         icon.arrange(&mut text, invalid, clip);
         icon.paint(&mut scene, &mut text, invalid, clip, palette.into());
-        assert!(!icon.event(&ContentEvent::PointerUp(frame.center())).activated);
-        assert!(!icon.event(&ContentEvent::PointerDown(frame.center())).consumed);
+        assert!(
+            !icon
+                .event(&ContentEvent::PointerUp(frame.center()))
+                .activated
+        );
+        assert!(
+            !icon
+                .event(&ContentEvent::PointerDown(frame.center()))
+                .consumed
+        );
         icon.set_focus(true, true);
         // A hidden invalidated button must not retain an old pointer placement.
         assert!(icon.button.layout().is_none());
@@ -4106,12 +4146,25 @@ mod tests {
         button.button.state.selected = true;
         let frame = Rect::new(0., 0., 40., 40.);
         button.arrange(&mut FixedText, frame, frame);
-        button.paint(&mut Scene::new(), &mut FixedText, frame, frame, Palette::from(Theme::LIGHT).into());
+        button.paint(
+            &mut Scene::new(),
+            &mut FixedText,
+            frame,
+            frame,
+            Palette::from(Theme::LIGHT).into(),
+        );
         assert!(button.button.state.loading && button.button.state.selected);
-        assert!(!button.event(&ContentEvent::PointerDown(frame.center())).consumed);
+        assert!(
+            !button
+                .event(&ContentEvent::PointerDown(frame.center()))
+                .consumed
+        );
         button.set_focus(true, true);
         assert_eq!(
-            button.event(&ContentEvent::Key { key: ControlKey::Enter, down: true }),
+            button.event(&ContentEvent::Key {
+                key: ControlKey::Enter,
+                down: true
+            }),
             ContentResponse::default()
         );
     }

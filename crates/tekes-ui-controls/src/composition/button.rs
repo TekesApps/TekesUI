@@ -122,7 +122,9 @@ impl Button {
     fn presentation_variant(&self) -> ButtonVariant {
         if self.toolbar_presentation && self.variant != ButtonVariant::Primary {
             ButtonVariant::Toolbar
-        } else { self.variant }
+        } else {
+            self.variant
+        }
     }
     /// Replacing presentation never creates another action or resets its counter.
     pub fn set_contents(&mut self, contents: impl Into<ButtonContents>) {
@@ -267,7 +269,8 @@ impl Button {
         // Empty-label layout supplies horizontal chrome, not a zero-height
         // constraint for arbitrary content. The actual receiving height is the
         // proposal; the measured body then determines the final Button slot.
-        self.measured = self.measure_body(text, Size::new(empty.content.size.width, available.height));
+        self.measured =
+            self.measure_body(text, Size::new(empty.content.size.width, available.height));
         MeasuredChild::new(
             if self.button.frame_policy == crate::ButtonFramePolicy::Exact {
                 self.measured
@@ -284,20 +287,44 @@ impl Button {
     }
 }
 impl Component for Button {
-    fn table_transaction_compatibility(&self)->TableTransactionCompatibility{TableTransactionCompatibility::StableHooks}
-    fn prepared_effects_work(&self,n:usize)->Result<usize,PreparedEffectsError>{PreparedEffects::local_work(n)}
-    fn prepare_effects(&self,hooks:&[PreparedHook])->Result<PreparedEffects,PreparedEffectsError>{
-        if self.help.is_some()&&self.help_revision==u64::MAX&&hooks.iter().any(|h|h.kind==PreparedHookKind::Lifecycle(Lifecycle::Unmounted)){return Err(PreparedEffectsError::CounterCapacity);}
-        Ok(PreparedEffects::local(self,hooks))
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
+        PreparedEffects::local_work(n)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        if self.help.is_some()
+            && self.help_revision == u64::MAX
+            && hooks
+                .iter()
+                .any(|h| h.kind == PreparedHookKind::Lifecycle(Lifecycle::Unmounted))
+        {
+            return Err(PreparedEffectsError::CounterCapacity);
+        }
+        Ok(PreparedEffects::local(self, hooks))
     }
 
+    fn focus_boundary_visible(&self) -> bool {
+        self.button.state.focused && self.button.state.focus_visible
+    }
+    fn set_clip_region(&mut self, region: Option<tekes_ui_scene::ClipRegion>) {
+        self.button.set_clip_region(region);
+    }
 
-    fn focus_boundary_visible(&self)->bool {self.button.state.focused&&self.button.state.focus_visible}
-    fn set_clip_region(&mut self,region:Option<tekes_ui_scene::ClipRegion>) {self.button.set_clip_region(region);}
-
-
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { if self.content.is_empty() { CurveSubtreeCapability::Local } else { CurveSubtreeCapability::Recursive } }
-    fn action_transaction_compatibility(&self)->ActionTransactionCompatibility {ActionTransactionCompatibility::StableHooks}
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        if self.content.is_empty() {
+            CurveSubtreeCapability::Local
+        } else {
+            CurveSubtreeCapability::Recursive
+        }
+    }
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
     fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
         let owned = action_preparation::OwnedActionRequest::read(request);
         if self
@@ -322,9 +349,20 @@ impl Component for Button {
             && !self.button.state.disabled
             && !self.button.state.loading
     }
-    fn accessibility_action(&mut self,part:Option<usize>,action:&AccessibilityAction)->ContentResponse {
-        let Some(d)=self.decide_action(&action_preparation::OwnedActionRequest::Accessibility(part,action.clone()))else{return ContentResponse::default();};
-        let r=d.response;self.apply_action(d);r
+    fn accessibility_action(
+        &mut self,
+        part: Option<usize>,
+        action: &AccessibilityAction,
+    ) -> ContentResponse {
+        let Some(d) = self.decide_action(&action_preparation::OwnedActionRequest::Accessibility(
+            part,
+            action.clone(),
+        )) else {
+            return ContentResponse::default();
+        };
+        let r = d.response;
+        self.apply_action(d);
+        r
     }
 
     fn lifecycle(&mut self, event: Lifecycle) {
@@ -525,13 +563,24 @@ impl Component for Button {
     fn event(&mut self, event: &ContentEvent) -> ContentResponse {
         // Unavailable actions do not consume keyboard input. Pointer motion
         // still reaches the original model so re-enabling cannot retain hover.
-        if !self.focusable() && matches!(event, ContentEvent::Key { .. } | ContentEvent::TextCommand(_)) {
+        if !self.focusable()
+            && matches!(
+                event,
+                ContentEvent::Key { .. } | ContentEvent::TextCommand(_)
+            )
+        {
             self.button.synchronize_activation();
             return ContentResponse::default();
         }
-        if matches!(event,ContentEvent::PointerDown(_)) {
-            let Some(d)=self.decide_action(&action_preparation::OwnedActionRequest::Pointer(event.clone()))else{return ContentResponse::default();};
-            let r=d.response;self.apply_action(d);return r;
+        if matches!(event, ContentEvent::PointerDown(_)) {
+            let Some(d) = self.decide_action(&action_preparation::OwnedActionRequest::Pointer(
+                event.clone(),
+            )) else {
+                return ContentResponse::default();
+            };
+            let r = d.response;
+            self.apply_action(d);
+            return r;
         }
         let mut r = ContentResponse::default();
         match event {
@@ -639,16 +688,34 @@ pub(super) fn measure_action_slot(
 pub(super) fn action_child_theme(action: &Button, theme: ContentTheme) -> ContentTheme {
     // The original model already advanced its hover/press channels during paint.
     // Decorative text uses those same complete endpoints and inherited Surface.
-    let (text, icon) = if action.toolbar_presentation || action.variant == ButtonVariant::Toolbar || theme.surface_declared {
-        let colors = action.button.surface_colors(theme.palette, action.presentation_variant(), if action.toolbar_presentation || action.variant == ButtonVariant::Toolbar { "toolbar" } else { theme.surface() });
+    let (text, icon) = if action.toolbar_presentation
+        || action.variant == ButtonVariant::Toolbar
+        || theme.surface_declared
+    {
+        let colors = action.button.surface_colors(
+            theme.palette,
+            action.presentation_variant(),
+            if action.toolbar_presentation || action.variant == ButtonVariant::Toolbar {
+                "toolbar"
+            } else {
+                theme.surface()
+            },
+        );
         (colors.text, colors.icon)
     } else {
         // Same undeclared palette/variant foreground as the original label and
         // decorative Content path. Explicit boundaries use generated endpoints.
-        let role = if action.button.state.disabled { "tertiary-text" }
-            else if action.variant == ButtonVariant::Primary { "action-primary-foreground" }
-            else { "primary-text" };
-        let ink = theme.palette.color(role).expect("original Button foreground role");
+        let role = if action.button.state.disabled {
+            "tertiary-text"
+        } else if action.variant == ButtonVariant::Primary {
+            "action-primary-foreground"
+        } else {
+            "primary-text"
+        };
+        let ink = theme
+            .palette
+            .color(role)
+            .expect("original Button foreground role");
         (ink, ink)
     };
     ContentTheme {
@@ -695,12 +762,18 @@ impl Button {
                 let ContentEvent::PointerDown(point) = event.as_ref() else {
                     return None;
                 };
-                (self.button.prepare_content_down(
-                    *point,
-                    self.pointer_activation_phase == ButtonActivationPhase::Press,
-                ), true)
+                (
+                    self.button.prepare_content_down(
+                        *point,
+                        self.pointer_activation_phase == ButtonActivationPhase::Press,
+                    ),
+                    true,
+                )
             }
-            action_preparation::OwnedActionRequest::Accessibility(None, AccessibilityAction::Press) => {
+            action_preparation::OwnedActionRequest::Accessibility(
+                None,
+                AccessibilityAction::Press,
+            ) => {
                 if !self.focusable() {
                     return None;
                 }
@@ -709,8 +782,16 @@ impl Button {
             _ => return None,
         };
         let response = ContentResponse {
-            consumed: if is_pointer { button.consumed } else { button.activated },
-            changed: if is_pointer { button.consumed } else { button.activated },
+            consumed: if is_pointer {
+                button.consumed
+            } else {
+                button.activated
+            },
+            changed: if is_pointer {
+                button.consumed
+            } else {
+                button.activated
+            },
             capture_pointer: is_pointer && button.consumed,
             activated: button.activated,
             ..Default::default()
@@ -718,7 +799,11 @@ impl Button {
         Some(PreparedButtonAction {
             button,
             activations: self.activations,
-            focus: if response.consumed { PreparedActionFocus::Owner } else { PreparedActionFocus::None },
+            focus: if response.consumed {
+                PreparedActionFocus::Owner
+            } else {
+                PreparedActionFocus::None
+            },
             response,
         })
     }
@@ -750,23 +835,50 @@ mod tests {
             for text_command in [false, true] {
                 let mut button = Button::new("Apply");
                 button.set_focus(true, true);
-                assert!(button.event(&ContentEvent::Key { key: ControlKey::Space, down: true }).consumed);
+                assert!(
+                    button
+                        .event(&ContentEvent::Key {
+                            key: ControlKey::Space,
+                            down: true
+                        })
+                        .consumed
+                );
                 assert!(button.button.state.pressed);
                 button.button.state.disabled = !loading;
                 button.button.state.loading = loading;
                 let observed = if text_command {
                     ContentEvent::TextCommand("insertNewline:".into())
                 } else {
-                    ContentEvent::Key { key: ControlKey::Enter, down: true }
+                    ContentEvent::Key {
+                        key: ControlKey::Enter,
+                        down: true,
+                    }
                 };
                 assert_eq!(button.event(&observed), ContentResponse::default());
                 assert!(!button.button.state.pressed);
                 button.button.state.disabled = false;
                 button.button.state.loading = false;
-                assert!(!button.event(&ContentEvent::Key { key: ControlKey::Space, down: false }).activated);
+                assert!(
+                    !button
+                        .event(&ContentEvent::Key {
+                            key: ControlKey::Space,
+                            down: false
+                        })
+                        .activated
+                );
                 assert_eq!(button.activations, 0);
-                button.event(&ContentEvent::Key { key: ControlKey::Space, down: true });
-                assert!(button.event(&ContentEvent::Key { key: ControlKey::Space, down: false }).activated);
+                button.event(&ContentEvent::Key {
+                    key: ControlKey::Space,
+                    down: true,
+                });
+                assert!(
+                    button
+                        .event(&ContentEvent::Key {
+                            key: ControlKey::Space,
+                            down: false
+                        })
+                        .activated
+                );
                 assert_eq!(button.activations, 1);
             }
         }
@@ -777,17 +889,32 @@ mod tests {
         fn measure(&mut self, _: &str, role: proposal::TextRole, width: f32) -> Size {
             Size::new(40_f32.min(width), role.style().line_height)
         }
-        fn draw(&mut self, _: &mut Scene, _: &str, _: proposal::TextRole, _: Rect, _: ButtonTextAlign, ink: Rgba) {
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            ink: Rgba,
+        ) {
             self.0.push(ink);
         }
     }
     const ROOT: ComponentId = ComponentId(83900);
     const ACTION: ComponentId = ComponentId(83901);
-    fn frame() -> Rect { Rect::new(10., 20., 160., 60.) }
+    fn frame() -> Rect {
+        Rect::new(10., 20., 160., 60.)
+    }
     fn colors(scene: &Scene, text: &Text) -> (Rgba, Rgba) {
-        let fill = scene.primitives().iter().find_map(|p| match p {
-            tekes_ui_scene::Primitive::Quad(q) => Some(q.fill), _ => None,
-        }).expect("actual original Button fill");
+        let fill = scene
+            .primitives()
+            .iter()
+            .find_map(|p| match p {
+                tekes_ui_scene::Primitive::Quad(q) => Some(q.fill),
+                _ => None,
+            })
+            .expect("actual original Button fill");
         assert_eq!(text.0.len(), 1);
         (fill, text.0[0])
     }
@@ -795,29 +922,56 @@ mod tests {
         let mut original = ButtonModel::default();
         let mut text = Text::default();
         let mut scene = Scene::new();
-        original.render(&mut scene, &mut text, "Apply", frame(), Some(frame()), palette,
-            variant, ButtonSize::Body, proposal::TextRole::UiBody, ButtonTextAlign::Center);
+        original.render(
+            &mut scene,
+            &mut text,
+            "Apply",
+            frame(),
+            Some(frame()),
+            palette,
+            variant,
+            ButtonSize::Body,
+            proposal::TextRole::UiBody,
+            ButtonTextAlign::Center,
+        );
         colors(&scene, &text)
     }
     fn paint_colors(host: &mut ContentHost, palette: Palette) -> (Rgba, Rgba) {
         let mut scene = Scene::new();
         let mut text = Text::default();
-        host.render(&mut scene, &mut text, frame(), frame(), palette).unwrap();
+        host.render(&mut scene, &mut text, frame(), frame(), palette)
+            .unwrap();
         colors(&scene, &text)
     }
     fn host(custom: bool, variant: ButtonVariant) -> ContentHost {
         let mut button = if custom {
             Button::new(Content::new(ComponentId(83902), TextContent::new("Apply")))
                 .with_accessible_name("Apply")
-        } else { Button::new("Apply") };
+        } else {
+            Button::new("Apply")
+        };
         button.variant = variant;
-        ContentHost::new(Content::new(ROOT, StackContent {
-            model: Stack { axis: Axis::Vertical, gap: 0. },
-            children: vec![Content::new(ACTION, button)], flexible_child: None,
-        })).unwrap()
+        ContentHost::new(Content::new(
+            ROOT,
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                children: vec![Content::new(ACTION, button)],
+                flexible_child: None,
+            },
+        ))
+        .unwrap()
     }
     fn declared_colors(palette: Palette, surface: &str) -> (Rgba, Rgba) {
-        let colors = tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, "action-quiet", "rest").unwrap();
+        let colors = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            surface,
+            "action-quiet",
+            "rest",
+        )
+        .unwrap();
         (colors.background, colors.text)
     }
 
@@ -825,10 +979,17 @@ mod tests {
     fn undeclared_button_variants_preserve_original_label_and_custom_colors() {
         for theme in tekes_ui_tokens::Theme::ALL {
             let palette: Palette = theme.into();
-            for variant in [ButtonVariant::Quiet, ButtonVariant::Panel, ButtonVariant::Primary] {
+            for variant in [
+                ButtonVariant::Quiet,
+                ButtonVariant::Panel,
+                ButtonVariant::Primary,
+            ] {
                 for custom in [false, true] {
-                    assert_eq!(paint_colors(&mut host(custom, variant), palette), original_colors(palette, variant),
-                        "{theme:?}/{variant:?}/custom={custom}");
+                    assert_eq!(
+                        paint_colors(&mut host(custom, variant), palette),
+                        original_colors(palette, variant),
+                        "{theme:?}/{variant:?}/custom={custom}"
+                    );
                 }
             }
         }
@@ -841,20 +1002,43 @@ mod tests {
             let mut host = host(custom, ButtonVariant::Panel);
             let original = original_colors(palette, ButtonVariant::Panel);
             assert_eq!(paint_colors(&mut host, palette), original);
-            host.get_mut(ROOT).unwrap().set_surface(Some("sidebar")).unwrap();
-            assert_eq!(paint_colors(&mut host, palette), declared_colors(palette, "sidebar"));
-            host.get_mut(ROOT).unwrap().set_surface(Some("canvas")).unwrap();
-            assert_eq!(paint_colors(&mut host, palette), declared_colors(palette, "canvas"));
+            host.get_mut(ROOT)
+                .unwrap()
+                .set_surface(Some("sidebar"))
+                .unwrap();
+            assert_eq!(
+                paint_colors(&mut host, palette),
+                declared_colors(palette, "sidebar")
+            );
+            host.get_mut(ROOT)
+                .unwrap()
+                .set_surface(Some("canvas"))
+                .unwrap();
+            assert_eq!(
+                paint_colors(&mut host, palette),
+                declared_colors(palette, "canvas")
+            );
             host.get_mut(ROOT).unwrap().set_surface(None).unwrap();
             assert_eq!(paint_colors(&mut host, palette), original);
-            host.get_mut(ACTION).unwrap().set_surface(Some("code")).unwrap();
-            assert_eq!(paint_colors(&mut host, palette), declared_colors(palette, "code"));
+            host.get_mut(ACTION)
+                .unwrap()
+                .set_surface(Some("code"))
+                .unwrap();
+            assert_eq!(
+                paint_colors(&mut host, palette),
+                declared_colors(palette, "code")
+            );
             host.get_mut(ACTION).unwrap().set_surface(None).unwrap();
             assert_eq!(paint_colors(&mut host, palette), original);
-            assert!(host.set_inherited_surface("canvas").unwrap(), "same name is a new explicit declaration");
+            assert!(
+                host.set_inherited_surface("canvas").unwrap(),
+                "same name is a new explicit declaration"
+            );
             assert!(!host.set_inherited_surface("canvas").unwrap());
-            assert_eq!(paint_colors(&mut host, palette), declared_colors(palette, "canvas"));
+            assert_eq!(
+                paint_colors(&mut host, palette),
+                declared_colors(palette, "canvas")
+            );
         }
     }
-
 }

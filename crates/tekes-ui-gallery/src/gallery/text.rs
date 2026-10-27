@@ -15,8 +15,8 @@ use std::{
 };
 
 use tekes_ui_controls::{
-    ButtonModel, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlMotionContext,
-    TextSurfaceTextRenderer,
+    ButtonLayout, ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer,
+    ControlMotionContext, TextSurfaceTextRenderer,
 };
 use tekes_ui_render::{RenderError, Renderer};
 use tekes_ui_scene::{GlyphAtlas, Point, Rect, Scene, Size};
@@ -957,7 +957,8 @@ mod tests {
                         label,
                         Rect::new(13.0, 17.0, measured.width, measured.height),
                         None,
-                        tekes_ui_tokens::Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand"),
+                        tekes_ui_tokens::Palette::new(Theme::LIGHT, 0)
+                            .expect("registered Gallery brand"),
                         paint::ButtonVariant::Quiet,
                         ButtonSize::Md,
                         proposal::TextRole::UiBody,
@@ -1045,7 +1046,8 @@ mod tests {
                         label,
                         layout.frame,
                         None,
-                        tekes_ui_tokens::Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand"),
+                        tekes_ui_tokens::Palette::new(Theme::LIGHT, 0)
+                            .expect("registered Gallery brand"),
                         paint::ButtonVariant::Quiet,
                         ButtonSize::Md,
                         proposal::TextRole::UiBody,
@@ -1073,7 +1075,8 @@ mod tests {
         text.set_type_scale(1.5);
         let label = "Smooth motion preview";
         let mut button = ButtonModel::default();
-        let palette = tekes_ui_tokens::Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
+        let palette =
+            tekes_ui_tokens::Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let mut scene = Scene::new();
         let mut first_shapes = None;
         for frame in 0..120 {

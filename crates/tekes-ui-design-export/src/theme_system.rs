@@ -104,7 +104,9 @@ fn validate_use_channels(usage: &str, state: &str, pair: &Value) -> Result<(), S
     if let Some(marker) = notice_marker_role(usage) {
         let expected = serde_json::json!({"background":"$surface","text":"primary-text","icon":"primary-text","boundary":null,"focus":null,"marker":marker,"helper":null});
         if state != "rest" || *pair != expected {
-            return Err(format!("invalid notice marker packet binding: {usage}/{state}"));
+            return Err(format!(
+                "invalid notice marker packet binding: {usage}/{state}"
+            ));
         }
     }
     if usage.starts_with("status-badge-") || usage == "skeleton" {
@@ -144,7 +146,8 @@ fn validate_use_channels(usage: &str, state: &str, pair: &Value) -> Result<(), S
     {
         return Err("progress track requires boundary/marker and forbids focus/helper".into());
     }
-    let focus_free = notice_marker_role(usage).is_some() || usage.starts_with("content-status-")
+    let focus_free = notice_marker_role(usage).is_some()
+        || usage.starts_with("content-status-")
         || usage.starts_with("status-badge-")
         || usage == "skeleton"
         || [
@@ -1446,20 +1449,27 @@ fn verify_data_plot_contrast(
     Ok(())
 }
 
-
 /// Notice marker ink must contrast with the actual Surface parent, never a badge fill.
 fn verify_notice_marker_contrast(rules: &Value, palette: &Value) -> Result<(), String> {
     let profiles = expanded_profiles(rules)?;
     for mode in ["light", "dark", "light-ic", "dark-ic"] {
         let luminance = |role: &str| color_luminance(&resolved(palette, role, mode, 0)?);
         for (surface, definition) in rules["surfaces"].as_object().ok_or("missing surfaces")? {
-            let parent = luminance(definition["background"].as_str().ok_or("missing parent ground")?)?;
+            let parent = luminance(
+                definition["background"]
+                    .as_str()
+                    .ok_or("missing parent ground")?,
+            )?;
             for (usage, profile) in definition["usages"].as_object().ok_or("missing usages")? {
-                if notice_marker_role(usage).is_none() { continue; }
+                if notice_marker_role(usage).is_none() {
+                    continue;
+                }
                 let pair = &profiles[profile.as_str().ok_or("invalid profile")?]["rest"];
                 let ink = luminance(pair["marker"].as_str().ok_or("missing notice marker")?)?;
-                if (ink.max(parent)+0.05)/(ink.min(parent)+0.05) < 3.0 {
-                    return Err(format!("insufficient notice marker-parent contrast: {mode}/{surface}/{usage}"));
+                if (ink.max(parent) + 0.05) / (ink.min(parent) + 0.05) < 3.0 {
+                    return Err(format!(
+                        "insufficient notice marker-parent contrast: {mode}/{surface}/{usage}"
+                    ));
                 }
             }
         }
@@ -2096,9 +2106,9 @@ mod central_theme_input_tests {
 
         let mut tampered_lock: Value = serde_json::from_slice(&lock).unwrap();
         tampered_lock["source_inputs_sha256"] = instances["inputs_sha256"].clone();
-        tampered_lock["source_inputs_sha256_digest"] = Value::String(
-            sha256_hex(&canonical_compact_bytes(&instances["inputs_sha256"]).unwrap()),
-        );
+        tampered_lock["source_inputs_sha256_digest"] = Value::String(sha256_hex(
+            &canonical_compact_bytes(&instances["inputs_sha256"]).unwrap(),
+        ));
         let tampered_lock_bytes = serde_json::to_vec(&tampered_lock).unwrap();
         assert!(
             validate_reviewed_artifact_lock(
@@ -2675,36 +2685,81 @@ mod passive_status_policy_tests {
 #[cfg(test)]
 mod notice_marker_tests {
     use super::*;
-    fn rules() -> Value { serde_json::from_str(include_str!("../../../design/theme/rules.json")).unwrap() }
+    fn rules() -> Value {
+        serde_json::from_str(include_str!("../../../design/theme/rules.json")).unwrap()
+    }
     #[test]
     fn exact_notice_packets_states_aliases_and_warnings() {
-        let r=rules(); assert!(compile_surface_rules(&r).is_ok());
+        let r = rules();
+        assert!(compile_surface_rules(&r).is_ok());
         for usage in USES.into_iter().filter(|u| notice_marker_role(u).is_some()) {
-            let expected=serde_json::json!({"background":"$surface","text":"primary-text","icon":"primary-text","boundary":null,"focus":null,"marker":notice_marker_role(usage).unwrap(),"helper":null});
-            assert_eq!(r["profiles"][usage]["rest"],expected);
+            let expected = serde_json::json!({"background":"$surface","text":"primary-text","icon":"primary-text","boundary":null,"focus":null,"marker":notice_marker_role(usage).unwrap(),"helper":null});
+            assert_eq!(r["profiles"][usage]["rest"], expected);
             for channel in CHANNELS {
-                let mut bad=r.clone();bad["profiles"][usage]["rest"].as_object_mut().unwrap().remove(channel);
+                let mut bad = r.clone();
+                bad["profiles"][usage]["rest"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove(channel);
                 assert!(compile_surface_rules(&bad).is_err());
-                let mut bad=r.clone();bad["profiles"][usage]["rest"][channel]=Value::from(if expected[channel]=="primary-text" {"secondary-text"} else {"primary-text"});
-                assert!(compile_surface_rules(&bad).unwrap_err().contains("invalid notice marker packet binding"));
+                let mut bad = r.clone();
+                bad["profiles"][usage]["rest"][channel] =
+                    Value::from(if expected[channel] == "primary-text" {
+                        "secondary-text"
+                    } else {
+                        "primary-text"
+                    });
+                assert!(
+                    compile_surface_rules(&bad)
+                        .unwrap_err()
+                        .contains("invalid notice marker packet binding")
+                );
             }
-            for state in ["hover","pressed","disabled","selected","focus","selected-hover","selected-pressed","selected-disabled"] {
-                let mut bad=r.clone();bad["profiles"][usage][state]=expected.clone();assert!(compile_surface_rules(&bad).is_err());
+            for state in [
+                "hover",
+                "pressed",
+                "disabled",
+                "selected",
+                "focus",
+                "selected-hover",
+                "selected-pressed",
+                "selected-disabled",
+            ] {
+                let mut bad = r.clone();
+                bad["profiles"][usage][state] = expected.clone();
+                assert!(compile_surface_rules(&bad).is_err());
             }
-            let mut bad=r.clone();bad["profiles"][usage]=serde_json::json!({"extends":usage});assert!(compile_surface_rules(&bad).unwrap_err().contains("cyclic"));
+            let mut bad = r.clone();
+            bad["profiles"][usage] = serde_json::json!({"extends":usage});
+            assert!(compile_surface_rules(&bad).unwrap_err().contains("cyclic"));
         }
-        for (usage,wrong) in [("notice-marker-toast-warning","status-running"),("notice-marker-banner-warning","status-failed")] {
-            let mut bad=r.clone();bad["profiles"][usage]["rest"]["marker"]=Value::from(wrong);assert!(compile_surface_rules(&bad).unwrap_err().contains("invalid notice marker packet binding"));
+        for (usage, wrong) in [
+            ("notice-marker-toast-warning", "status-running"),
+            ("notice-marker-banner-warning", "status-failed"),
+        ] {
+            let mut bad = r.clone();
+            bad["profiles"][usage]["rest"]["marker"] = Value::from(wrong);
+            assert!(
+                compile_surface_rules(&bad)
+                    .unwrap_err()
+                    .contains("invalid notice marker packet binding")
+            );
         }
-        let mut extra=r.clone();extra["surfaces"]["inspector"]=r["surfaces"]["panel"].clone();assert!(compile_surface_rules(&extra).unwrap().contains("inspector"));
+        let mut extra = r.clone();
+        extra["surfaces"]["inspector"] = r["surfaces"]["panel"].clone();
+        assert!(compile_surface_rules(&extra).unwrap().contains("inspector"));
     }
     #[test]
     fn actual_parent_contrast_is_independent_of_fill() {
         for usage in USES.into_iter().filter(|u| notice_marker_role(u).is_some()) {
-            let r=serde_json::json!({"profiles":{"p":{"rest":{"background":"fill","marker":"ink"}}},"surfaces":{"panel":{"background":"parent","usages":{usage:"p"}}}});
-            let palette=|ink|serde_json::json!({"color":{"tokens":[{"name":"parent","value":"#FFFFFF"},{"name":"fill","value":"#000000"},{"name":"ink","value":ink}]}});
-            assert!(verify_notice_marker_contrast(&r,&palette("#000000")).is_ok());
-            assert!(verify_notice_marker_contrast(&r,&palette("#FFFFFF")).unwrap_err().contains("notice marker-parent"));
+            let r = serde_json::json!({"profiles":{"p":{"rest":{"background":"fill","marker":"ink"}}},"surfaces":{"panel":{"background":"parent","usages":{usage:"p"}}}});
+            let palette = |ink| serde_json::json!({"color":{"tokens":[{"name":"parent","value":"#FFFFFF"},{"name":"fill","value":"#000000"},{"name":"ink","value":ink}]}});
+            assert!(verify_notice_marker_contrast(&r, &palette("#000000")).is_ok());
+            assert!(
+                verify_notice_marker_contrast(&r, &palette("#FFFFFF"))
+                    .unwrap_err()
+                    .contains("notice marker-parent")
+            );
         }
     }
 }

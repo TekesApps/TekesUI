@@ -1866,8 +1866,11 @@ pub fn progress_on_surface(
         width * model.value
     };
     scene.push_quad(
-        Quad::new(Rect::new(rect.min_x(), rect.min_y(), active, height), marker)
-            .with_corner_radius(height * 0.5),
+        Quad::new(
+            Rect::new(rect.min_x(), rect.min_y(), active, height),
+            marker,
+        )
+        .with_corner_radius(height * 0.5),
     );
     // Keep the shared necessary boundary visible even at 100%. The fill and
     // rounded geometry remain the original model's full allocation.
@@ -1875,7 +1878,10 @@ pub fn progress_on_surface(
         scene.push_quad(
             Quad::new(track, Rgba::new(0., 0., 0., 0.))
                 .with_corner_radius(height * 0.5)
-                .with_border(proposal::metric("stroke", "stroke-rule").expect("Progress boundary stroke"), boundary),
+                .with_border(
+                    proposal::metric("stroke", "stroke-rule").expect("Progress boundary stroke"),
+                    boundary,
+                ),
         );
     }
     Ok(())
@@ -1888,17 +1894,32 @@ pub fn status_badge(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, st
 /// Resolve the complete rest-only packet before writing any Scene primitive.
 /// Invalid/non-finite allocations reject atomically as an unknown combination.
 pub fn status_badge_on_surface(
-    scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, status: StatusBadge, surface: &str,
+    scene: &mut Scene,
+    rect: Rect,
+    theme: impl Into<Palette>,
+    status: StatusBadge,
+    surface: &str,
 ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
-    let colors = tekes_ui_tokens::surface_palette::resolve_surface(theme.into(), surface, status_badge_usage(status), "rest")?;
-    if !rect.min_x().is_finite() || !rect.min_y().is_finite()
-        || !rect.max_x().is_finite() || !rect.max_y().is_finite()
-        || !rect.size.width.is_finite() || !rect.size.height.is_finite()
-        || rect.size.width < 0. || rect.size.height < 0. {
+    let colors = tekes_ui_tokens::surface_palette::resolve_surface(
+        theme.into(),
+        surface,
+        status_badge_usage(status),
+        "rest",
+    )?;
+    if !rect.min_x().is_finite()
+        || !rect.min_y().is_finite()
+        || !rect.max_x().is_finite()
+        || !rect.max_y().is_finite()
+        || !rect.size.width.is_finite()
+        || !rect.size.height.is_finite()
+        || rect.size.width < 0.
+        || rect.size.height < 0.
+    {
         return Err(tekes_ui_tokens::surface_palette::SurfaceError::UnknownCombination);
     }
-    scene.push_quad(Quad::new(rect, colors.background)
-        .with_corner_radius(rect.size.height.max(0.) * 0.5));
+    scene.push_quad(
+        Quad::new(rect, colors.background).with_corner_radius(rect.size.height.max(0.) * 0.5),
+    );
     Ok(())
 }
 pub(crate) fn status_badge_usage(status: StatusBadge) -> &'static str {
@@ -2052,14 +2073,27 @@ mod tests {
         use crate::composition::Component;
         struct Text;
         impl crate::ButtonTextRenderer for Text {
-            fn measure(&mut self, _: &str, role: proposal::TextRole, _: f32) -> tekes_ui_scene::Size {
+            fn measure(
+                &mut self,
+                _: &str,
+                role: proposal::TextRole,
+                _: f32,
+            ) -> tekes_ui_scene::Size {
                 tekes_ui_scene::Size::new(0., role.style().line_height)
             }
-            fn draw(&mut self, _: &mut Scene, _: &str, _: proposal::TextRole, _: Rect,
-                _: crate::ButtonTextAlign, _: tekes_ui_tokens::Rgba) {}
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: crate::ButtonTextAlign,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+            }
         }
-        let mut icon = crate::composition::Button::new(tekes_ui_scene::ImageId(1))
-            .with_accessible_name("Add");
+        let mut icon =
+            crate::composition::Button::new(tekes_ui_scene::ImageId(1)).with_accessible_name("Add");
         let clip = Rect::new(0., 0., 80., 80.);
         let palette = Palette::from(tekes_ui_tokens::Theme::LIGHT);
         let frame = Rect::new(10., 10., 44., 40.);

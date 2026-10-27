@@ -54,7 +54,9 @@ impl ToolbarGroup {
     }
 }
 impl Component for ToolbarGroup {
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
 
     fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
         ActionTransactionCompatibility::StableHooks
@@ -62,7 +64,9 @@ impl Component for ToolbarGroup {
     fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
         action_preparation::ignored_pointer(request)
     }
-    fn active(&self) -> bool { self.visible }
+    fn active(&self) -> bool {
+        self.visible
+    }
     fn children(&self) -> &[Content] {
         &self.children
     }
@@ -131,10 +135,16 @@ pub struct ToolbarContent {
 }
 impl ToolbarContent {
     pub fn new(children: Vec<Content>) -> Self {
-        Self { children, paint_ground: true }
+        Self {
+            children,
+            paint_ground: true,
+        }
     }
     pub(super) fn hosted() -> Self {
-        Self { children: vec![], paint_ground: false }
+        Self {
+            children: vec![],
+            paint_ground: false,
+        }
     }
     fn section(child: &Content) -> usize {
         child
@@ -143,7 +153,9 @@ impl ToolbarContent {
     }
 }
 impl Component for ToolbarContent {
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
 
     fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
         ActionTransactionCompatibility::StableHooks
@@ -152,7 +164,9 @@ impl Component for ToolbarContent {
         action_preparation::ignored_pointer(request)
     }
     fn child_theme(&self, theme: ContentTheme) -> ContentTheme {
-        theme.with_surface("toolbar").expect("generated Toolbar Surface")
+        theme
+            .with_surface("toolbar")
+            .expect("generated Toolbar Surface")
     }
     fn children(&self) -> &[Content] {
         &self.children
@@ -173,13 +187,21 @@ impl Component for ToolbarContent {
         let mut counts = [0usize; 3];
         for child in self.children.iter_mut().filter(|c| c.active()) {
             counts[Self::section(child)] += 1;
-            widths += child.measure(text, Size::new(available.width, row)).size.width;
+            widths += child
+                .measure(text, Size::new(available.width, row))
+                .size
+                .width;
         }
         let gaps = [spacing(text, "space-tight"), gap, gap];
         let sections = counts.iter().filter(|&&n| n > 0).count();
-        let width = if sections == 0 { 0. } else {
-            widths + gap * (2 + sections.saturating_sub(1)) as f32
-                + (0..3).map(|i| gaps[i] * counts[i].saturating_sub(1) as f32).sum::<f32>()
+        let width = if sections == 0 {
+            0.
+        } else {
+            widths
+                + gap * (2 + sections.saturating_sub(1)) as f32
+                + (0..3)
+                    .map(|i| gaps[i] * counts[i].saturating_sub(1) as f32)
+                    .sum::<f32>()
         };
         MeasuredChild::new(Size::new(width.min(available.width), row))
     }
@@ -210,37 +232,58 @@ impl Component for ToolbarContent {
             row,
         );
         fn minimum(node: &Content, text: &mut dyn ButtonTextRenderer) -> f32 {
-            if !node.active() { return 0.; }
+            if !node.active() {
+                return 0.;
+            }
             if let Some(control) = node.component::<crate::ToolbarControl>() {
                 return control.minimum_width(text);
             }
             let children = node.component.children();
             let gap = spacing(text, "space-tight");
-            children.iter().map(|c|minimum(c,text)).sum::<f32>()
+            children.iter().map(|c| minimum(c, text)).sum::<f32>()
                 + gap * children.len().saturating_sub(1) as f32
         }
         let mut entries = Vec::new();
-        for (index, child) in self.children.iter_mut().enumerate().filter(|(_,c)|c.active()) {
+        for (index, child) in self
+            .children
+            .iter_mut()
+            .enumerate()
+            .filter(|(_, c)| c.active())
+        {
             let natural = child.measure(text, inner.size).size.width;
             let floor = minimum(child, text).min(natural);
             entries.push((index, natural, floor));
         }
         let section_gaps = [spacing(text, "space-tight"), gap, gap];
         let mut counts = [0usize; 3];
-        for (index, _, _) in &entries { counts[Self::section(&self.children[*index])] += 1; }
-        let reserved = (0..3).map(|i| section_gaps[i] * counts[i].saturating_sub(1) as f32).sum::<f32>()
+        for (index, _, _) in &entries {
+            counts[Self::section(&self.children[*index])] += 1;
+        }
+        let reserved = (0..3)
+            .map(|i| section_gaps[i] * counts[i].saturating_sub(1) as f32)
+            .sum::<f32>()
             + gap * counts.iter().filter(|&&n| n > 0).count().saturating_sub(1) as f32;
         // Reserve each command group's original More trigger before spending
         // width on titles/custom content. Placement remains local to this row.
         let budget = (inner.size.width - reserved).max(0.);
-        let floors = entries.iter().map(|(_,_,m)|m).sum::<f32>();
-        let extra = entries.iter().map(|(_,n,m)|n-m).sum::<f32>();
+        let floors = entries.iter().map(|(_, _, m)| m).sum::<f32>();
+        let extra = entries.iter().map(|(_, n, m)| n - m).sum::<f32>();
         let mut members: [Vec<(usize, f32)>; 3] = Default::default();
         for (index, natural, floor) in entries {
             let width = if budget < floors {
-                if floors > 0. { floor * budget / floors } else { 0. }
+                if floors > 0. {
+                    floor * budget / floors
+                } else {
+                    0.
+                }
             } else {
-                floor + (natural-floor) * if extra > 0. { ((budget-floors)/extra).min(1.) } else { 0. }
+                floor
+                    + (natural - floor)
+                        * if extra > 0. {
+                            ((budget - floors) / extra).min(1.)
+                        } else {
+                            0.
+                        }
             };
             members[Self::section(&self.children[index])].push((index, width));
         }

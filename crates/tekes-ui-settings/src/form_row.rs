@@ -48,11 +48,17 @@ impl SettingsRow {
     }
 }
 impl Component for SettingsRow {
-    fn lifecycle(&mut self, _: Lifecycle) { self.arranged_mounts = None; }
+    fn lifecycle(&mut self, _: Lifecycle) {
+        self.arranged_mounts = None;
+    }
     fn host_reveal_passthrough(&self) -> bool {
-        let Some(mounts) = self.arranged_mounts else { return false; };
-        self.children.len() == 2 && self.children.iter().enumerate().all(|(i, child)|
-            child.id() == self.child_ids[i] && child.mount_identity() == mounts[i])
+        let Some(mounts) = self.arranged_mounts else {
+            return false;
+        };
+        self.children.len() == 2
+            && self.children.iter().enumerate().all(|(i, child)| {
+                child.id() == self.child_ids[i] && child.mount_identity() == mounts[i]
+            })
     }
     fn children(&self) -> &[Content] {
         &self.children
@@ -106,7 +112,10 @@ impl Component for SettingsRow {
         // A scroll translation preserves this arranged row's widths, child
         // order, relative frames and absence of a local clip; reflow re-arranges.
         if self.children.iter().map(Content::id).eq(self.child_ids) {
-            self.arranged_mounts = Some([self.children[0].mount_identity(), self.children[1].mount_identity()]);
+            self.arranged_mounts = Some([
+                self.children[0].mount_identity(),
+                self.children[1].mount_identity(),
+            ]);
         }
     }
 }
@@ -199,37 +208,72 @@ mod tests {
     }
     #[test]
     fn arranged_row_translation_keeps_original_children_and_invalidates_on_reflow_or_lifecycle() {
-        let label = || Content::new(ComponentId(1), BoxContent{text_width:180.,wraps:true});
-        let value = || Content::new(ComponentId(2), BoxContent{text_width:80.,wraps:false});
-        let mut row=SettingsRow::new("row",label(),value(),false);
-        let clip=Rect::new(0.,0.,1000.,1000.);
-        let first=Rect::new(10.,20.,620.,100.);
+        let label = || {
+            Content::new(
+                ComponentId(1),
+                BoxContent {
+                    text_width: 180.,
+                    wraps: true,
+                },
+            )
+        };
+        let value = || {
+            Content::new(
+                ComponentId(2),
+                BoxContent {
+                    text_width: 80.,
+                    wraps: false,
+                },
+            )
+        };
+        let mut row = SettingsRow::new("row", label(), value(), false);
+        let clip = Rect::new(0., 0., 1000., 1000.);
+        let first = Rect::new(10., 20., 620., 100.);
         assert!(!row.host_reveal_passthrough());
-        row.measure(&mut Text,first.size);
+        row.measure(&mut Text, first.size);
         assert!(!row.host_reveal_passthrough());
-        row.arrange(&mut Text,first,clip);
+        row.arrange(&mut Text, first, clip);
         assert!(row.host_reveal_passthrough());
-        let original:Vec<_>=row.children().iter().map(|c|c.frame()).collect();
-        let _=row.children_mut();
-        assert!(row.host_reveal_passthrough(),"child accessor must not revoke its own planner admission");
+        let original: Vec<_> = row.children().iter().map(|c| c.frame()).collect();
+        let _ = row.children_mut();
+        assert!(
+            row.host_reveal_passthrough(),
+            "child accessor must not revoke its own planner admission"
+        );
         assert!(row.host_reveal_local_clip().is_none());
-        row.measure(&mut Text,first.size);
-        assert!(!row.host_reveal_passthrough(),"measuring/reflow needs a fresh arrange");
-        row.arrange(&mut Text,Rect::new(50.,80.,620.,100.),clip);
+        row.measure(&mut Text, first.size);
+        assert!(
+            !row.host_reveal_passthrough(),
+            "measuring/reflow needs a fresh arrange"
+        );
+        row.arrange(&mut Text, Rect::new(50., 80., 620., 100.), clip);
         assert!(row.host_reveal_passthrough());
-        for (before,child) in original.iter().zip(row.children()) {
-            assert_eq!(child.frame(),Rect::new(before.min_x()+40.,before.min_y()+60.,before.size.width,before.size.height));
+        for (before, child) in original.iter().zip(row.children()) {
+            assert_eq!(
+                child.frame(),
+                Rect::new(
+                    before.min_x() + 40.,
+                    before.min_y() + 60.,
+                    before.size.width,
+                    before.size.height
+                )
+            );
         }
         assert!(row.host_reveal_local_clip().is_none());
-        row.children.swap(0,1);
-        assert!(!row.host_reveal_passthrough(),"original child order is required");
-        row.children.swap(0,1);
-        row.children[1]=value();
-        assert!(!row.host_reveal_passthrough(),"same numeric ID cannot renew an original mount");
-        row.arrange(&mut Text,first,clip);
+        row.children.swap(0, 1);
+        assert!(
+            !row.host_reveal_passthrough(),
+            "original child order is required"
+        );
+        row.children.swap(0, 1);
+        row.children[1] = value();
+        assert!(
+            !row.host_reveal_passthrough(),
+            "same numeric ID cannot renew an original mount"
+        );
+        row.arrange(&mut Text, first, clip);
         assert!(row.host_reveal_passthrough());
         row.lifecycle(Lifecycle::Unmounted);
         assert!(!row.host_reveal_passthrough());
     }
-
 }

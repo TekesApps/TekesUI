@@ -2233,10 +2233,12 @@ impl Workbench {
         // deterministic frame sample and restore the caller's exact context.
         if self.snapshot {
             let host_clock = ctx.text.motion_context();
-            ctx.text.replace_fixture_motion_context(Some(tekes_ui_controls::ControlMotionContext {
-                now: host_clock.map_or(Duration::ZERO, |clock| clock.now),
-                reduced_motion: true,
-            }));
+            ctx.text.replace_fixture_motion_context(Some(
+                tekes_ui_controls::ControlMotionContext {
+                    now: host_clock.map_or(Duration::ZERO, |clock| clock.now),
+                    reduced_motion: true,
+                },
+            ));
             self.build_clipped_story(i, ctx, content, viewport_clip, scene);
             ctx.text.replace_fixture_motion_context(host_clock);
         } else {
@@ -2946,7 +2948,8 @@ impl Workbench {
                     &field,
                     Rect::new(0.0, 0.0, cell_width, 4096.0),
                     None,
-                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                     FieldPresentation::emphasized_form(),
                 );
@@ -2979,7 +2982,8 @@ impl Workbench {
         }
         let (cells, document_bottom) =
             matrix_cell_geometries(layout_bounds, columns, explanation_height, &measurements);
-        let palette = tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
+        let palette =
+            tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         for (n, (name, state, check_state)) in states.into_iter().enumerate() {
             let cell = cells[n];
             let r = cell.control;
@@ -3083,7 +3087,8 @@ impl Workbench {
             extended::navigation_states::matrix(e, s, ctx, scene, c);
             return;
         }
-        let palette = tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
+        let palette =
+            tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         let role = proposal::TextRole::UiBody;
         let mut y = c.min_y();
         let titles: &[&str] = match e.renderer() {
@@ -3280,7 +3285,8 @@ impl Workbench {
                     title,
                     r,
                     Some(c),
-                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     paint::ButtonVariant::Primary,
                     [ButtonSize::Sm, ButtonSize::Md, ButtonSize::Lg][n],
                     proposal::TextRole::UiBody,
@@ -3521,7 +3527,8 @@ impl Workbench {
                     title,
                     row,
                     s.button_clip,
-                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                 );
                 s.buttons.insert(20, s.checkbox.button.clone());
@@ -3547,7 +3554,8 @@ impl Workbench {
                     &["General", "Security", "Advanced"],
                     Rect::new(x, body_y, w, 34.),
                     s.button_clip,
-                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                     s.density == 1,
                 );
@@ -3632,7 +3640,8 @@ impl Workbench {
                     trigger_frame,
                     s.preview,
                     s.button_clip,
-                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                     s.density == 1,
                 );
@@ -3674,7 +3683,8 @@ impl Workbench {
                     &s.field,
                     Rect::new(x, body_y, w.min(600.), 118.),
                     s.button_clip,
-                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                     FieldPresentation::emphasized_form(),
                 );
@@ -3935,7 +3945,8 @@ impl Workbench {
                     scene,
                     Rect::new(x, body_y, w.min(660.), 150.),
                     s.button_clip,
-                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     true,
                     backing_scale,
                 );
@@ -3973,7 +3984,8 @@ impl Workbench {
                     scene,
                     frame,
                     s.button_clip,
-                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     true,
                     backing_scale,
                 );
@@ -3988,7 +4000,8 @@ impl Workbench {
                     &["Create", "Rename", "Remove"],
                     surface.frame,
                     s.button_clip,
-                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                 );
                 for (index, layout) in layouts.into_iter().enumerate() {
@@ -4014,7 +4027,8 @@ impl Workbench {
                     &s.number,
                     Rect::new(x, body_y, w.min(198.), 36.),
                     s.button_clip,
-                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                 );
                 s.buttons.entry(23).or_default().state.disabled =
@@ -4063,7 +4077,8 @@ impl Workbench {
                             18.,
                         ),
                         s.button_clip,
-                        tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
+                        tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                            .expect("registered Gallery brand"),
                     );
                     let _ = layout;
                 }
@@ -4074,7 +4089,8 @@ impl Workbench {
             .max(body_y + 100.)
             .max(content_bottom.map_or(f32::NEG_INFINITY, |bottom| bottom + 24.));
         s.event_log_frame = Some(event_log(ctx, scene, x, logy, w, &s.log, false));
-        let palette = tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
+        let palette =
+            tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         let trigger = s
             .buttons
             .get(&20)
@@ -4234,7 +4250,8 @@ impl Workbench {
                     super::pages::tokens::build(ctx, r, scene);
                     return;
                 }
-                let palette = tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
+                let palette = tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                    .expect("registered Gallery brand");
                 let roles = [
                     "surface-0",
                     "surface-1",
@@ -5985,20 +6002,28 @@ mod interaction_tests {
     fn issue79_snapshot_clock_is_explicit_and_restores_the_caller() {
         let i = index("toast");
         let mut text = super::super::text::TextEngine::new();
-        for clock in [None, Some(tekes_ui_controls::ControlMotionContext {
-            now: Duration::from_secs(42), reduced_motion: false,
-        })] {
+        for clock in [
+            None,
+            Some(tekes_ui_controls::ControlMotionContext {
+                now: Duration::from_secs(42),
+                reduced_motion: false,
+            }),
+        ] {
             text.replace_fixture_motion_context(clock);
             let mut w = Workbench::fixture();
             let mut st = super::super::static_text::StaticText::new(None);
-            let mut ctx = PageCtx { theme: tekes_ui_tokens::Theme::LIGHT, text: &mut text, static_text: &mut st };
+            let mut ctx = PageCtx {
+                theme: tekes_ui_tokens::Theme::LIGHT,
+                text: &mut text,
+                static_text: &mut st,
+            };
             ctx.text.begin_frame();
             let mut first = Scene::new();
-            w.build(i, &mut ctx, Rect::new(312.,70.,1000.,820.), &mut first);
+            w.build(i, &mut ctx, Rect::new(312., 70., 1000., 820.), &mut first);
             assert_eq!(ctx.text.motion_context(), clock);
             ctx.text.begin_frame();
             let mut second = Scene::new();
-            w.build(i, &mut ctx, Rect::new(312.,70.,1000.,820.), &mut second);
+            w.build(i, &mut ctx, Rect::new(312., 70., 1000., 820.), &mut second);
             assert_eq!(ctx.text.motion_context(), clock);
             assert_eq!(first, second);
             assert_eq!(w.state(i).extended.toast.remaining_ms(), 5000);
@@ -6012,13 +6037,22 @@ mod interaction_tests {
         assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
         gallery.set_reduced_motion(true);
         gallery.build_scene(&mut Scene::new());
-        assert_eq!(gallery.workbench.state(i).extended.toast.remaining_ms(), 5000);
+        assert_eq!(
+            gallery.workbench.state(i).extended.toast.remaining_ms(),
+            5000
+        );
         assert!(gallery.text.motion_frame_requested());
         assert!(gallery.animate(0.125));
         gallery.build_scene(&mut Scene::new());
-        assert_eq!(gallery.workbench.state(i).extended.toast.remaining_ms(), 4875);
+        assert_eq!(
+            gallery.workbench.state(i).extended.toast.remaining_ms(),
+            4875
+        );
         gallery.build_scene(&mut Scene::new());
-        assert_eq!(gallery.workbench.state(i).extended.toast.remaining_ms(), 4875);
+        assert_eq!(
+            gallery.workbench.state(i).extended.toast.remaining_ms(),
+            4875
+        );
     }
 
     #[test]
@@ -6074,7 +6108,8 @@ mod interaction_tests {
 
         let mut scene = Scene::new();
         let mut checkbox = Checkbox::default();
-        let palette = tekes_ui_tokens::Palette::new(tekes_ui_tokens::Theme::LIGHT, 0).expect("registered Gallery brand");
+        let palette = tekes_ui_tokens::Palette::new(tekes_ui_tokens::Theme::LIGHT, 0)
+            .expect("registered Gallery brand");
         let layout = checkbox.render(
             &mut scene,
             &mut text,
@@ -7372,11 +7407,15 @@ mod interaction_tests {
         let scene = build(&mut w, i, &mut t);
         let layout = w.brand_preview.dialog_layout().unwrap();
         assert!(layout.visible.is_some());
-        let candidate = tekes_ui_tokens::Palette::new(tekes_ui_tokens::Theme::LIGHT, tekes_ui_tokens::palette::gallery_brand_presets()
+        let candidate = tekes_ui_tokens::Palette::new(
+            tekes_ui_tokens::Theme::LIGHT,
+            tekes_ui_tokens::palette::gallery_brand_presets()
                 .iter()
                 .find(|preset| preset.id == "rose")
                 .unwrap()
-                .palette_index).expect("registered Gallery brand");
+                .palette_index,
+        )
+        .expect("registered Gallery brand");
         // This Dialog uses quiet actions, so its surface stays neutral. A
         // branded button behind the scrim must not count as modal evidence.
         let modal_ground = candidate.color("surface-popover").unwrap();
@@ -10229,23 +10268,82 @@ mod skeleton_gpu_acceptance {
     #[test]
     #[ignore = "explicit Gallery GPU acceptance requires a fresh SSD output directory"]
     fn skeleton_original_gallery_route_gpu() {
-        let out=std::path::PathBuf::from(std::env::var_os("TEKESUI_SKELETON_GALLERY_OUT").expect("fresh GPU output"));std::fs::create_dir(&out).unwrap();
-        let mut gpu=tekes_ui_render::Renderer::new_headless().unwrap();let mut cases=vec![];
-        let i=entries().iter().position(|e|e.renderer()=="skeleton").unwrap();
-        for (mode,theme) in tekes_ui_tokens::Theme::ALL.into_iter().enumerate(){for brand in [0,1,2]{for scale in [1_u32,2]{for (width,height)in [(1440_u32,960_u32),(720,480)]{
-            let mut g=super::super::Gallery::new();g.set_system_theme(theme);g.text.set_scale(scale as f32);g.set_reduced_motion(true);g.workbench.brand=brand;assert!(g.open_route("component-skeleton/playground"));g.set_view_size(width as f32,height as f32);
-            let mut scene=Scene::new();g.build_scene(&mut scene);
-            let f=g.workbench.state(i).skeleton_view.layout().frame;assert_eq!(f.size.height,18.);
-            let p=tekes_ui_tokens::Palette::new(theme,brand).unwrap();let packet=tekes_ui_tokens::surface_palette::resolve_surface(p,"canvas","skeleton","rest").unwrap();
-            assert!(scene.primitives().iter().any(|p|matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==f&&q.fill==packet.background)));
-            assert!(scene.primitives().iter().any(|p|matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==f&&q.border_color==packet.boundary.unwrap()&&q.border_width>0.)));
-            let size=(width*scale,height*scale);let rgba=gpu.render_to_rgba8(&scene,g.atlas_mut(),size,scale as f32,super::super::Gallery::background(theme)).unwrap();
-            let key=format!("mode{mode}-brand{brand}-{width}x{height}@{scale}x");let file=format!("{key}.png");let mut png=png::Encoder::new(std::fs::File::create(out.join(&file)).unwrap(),size.0,size.1);png.set_color(png::ColorType::Rgba);png.set_depth(png::BitDepth::Eight);png.write_header().unwrap().write_image_data(&rgba).unwrap();
-            // Count ink variation on the final original 18pt fixture row. It
-            // must contain actual boundary/fill pixels, not just page chrome.
-            let mut colors=std::collections::BTreeSet::new();for y in ((f.min_y()*scale as f32).ceil() as u32)..((f.max_y()*scale as f32).floor() as u32).min(size.1){for x in ((f.min_x()*scale as f32).ceil() as u32)..((f.max_x()*scale as f32).floor() as u32).min(size.0){let off=((y*size.0+x)*4)as usize;colors.insert(rgba[off..off+4].to_vec());}}
-            assert!(colors.len()>1,"original row missing visible boundary");cases.push(serde_json::json!({"case":key,"file":file,"row_distinct_colors":colors.len(),"original_gallery_route":true,"actual_GPU":true,"fixture_height":18,"SDK_default_height":false}));
-        }}}}
-        std::fs::write(out.join("receipt.json"),serde_json::to_vec_pretty(&serde_json::json!({"cases":cases,"native_window":false})).unwrap()).unwrap();
+        let out = std::path::PathBuf::from(
+            std::env::var_os("TEKESUI_SKELETON_GALLERY_OUT").expect("fresh GPU output"),
+        );
+        std::fs::create_dir(&out).unwrap();
+        let mut gpu = tekes_ui_render::Renderer::new_headless().unwrap();
+        let mut cases = vec![];
+        let i = entries()
+            .iter()
+            .position(|e| e.renderer() == "skeleton")
+            .unwrap();
+        for (mode, theme) in tekes_ui_tokens::Theme::ALL.into_iter().enumerate() {
+            for brand in [0, 1, 2] {
+                for scale in [1_u32, 2] {
+                    for (width, height) in [(1440_u32, 960_u32), (720, 480)] {
+                        let mut g = super::super::Gallery::new();
+                        g.set_system_theme(theme);
+                        g.text.set_scale(scale as f32);
+                        g.set_reduced_motion(true);
+                        g.workbench.brand = brand;
+                        assert!(g.open_route("component-skeleton/playground"));
+                        g.set_view_size(width as f32, height as f32);
+                        let mut scene = Scene::new();
+                        g.build_scene(&mut scene);
+                        let f = g.workbench.state(i).skeleton_view.layout().frame;
+                        assert_eq!(f.size.height, 18.);
+                        let p = tekes_ui_tokens::Palette::new(theme, brand).unwrap();
+                        let packet = tekes_ui_tokens::surface_palette::resolve_surface(
+                            p, "canvas", "skeleton", "rest",
+                        )
+                        .unwrap();
+                        assert!(scene.primitives().iter().any(|p|matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==f&&q.fill==packet.background)));
+                        assert!(scene.primitives().iter().any(|p|matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==f&&q.border_color==packet.boundary.unwrap()&&q.border_width>0.)));
+                        let size = (width * scale, height * scale);
+                        let rgba = gpu
+                            .render_to_rgba8(
+                                &scene,
+                                g.atlas_mut(),
+                                size,
+                                scale as f32,
+                                super::super::Gallery::background(theme),
+                            )
+                            .unwrap();
+                        let key = format!("mode{mode}-brand{brand}-{width}x{height}@{scale}x");
+                        let file = format!("{key}.png");
+                        let mut png = png::Encoder::new(
+                            std::fs::File::create(out.join(&file)).unwrap(),
+                            size.0,
+                            size.1,
+                        );
+                        png.set_color(png::ColorType::Rgba);
+                        png.set_depth(png::BitDepth::Eight);
+                        png.write_header().unwrap().write_image_data(&rgba).unwrap();
+                        // Count ink variation on the final original 18pt fixture row. It
+                        // must contain actual boundary/fill pixels, not just page chrome.
+                        let mut colors = std::collections::BTreeSet::new();
+                        for y in ((f.min_y() * scale as f32).ceil() as u32)
+                            ..((f.max_y() * scale as f32).floor() as u32).min(size.1)
+                        {
+                            for x in ((f.min_x() * scale as f32).ceil() as u32)
+                                ..((f.max_x() * scale as f32).floor() as u32).min(size.0)
+                            {
+                                let off = ((y * size.0 + x) * 4) as usize;
+                                colors.insert(rgba[off..off + 4].to_vec());
+                            }
+                        }
+                        assert!(colors.len() > 1, "original row missing visible boundary");
+                        cases.push(serde_json::json!({"case":key,"file":file,"row_distinct_colors":colors.len(),"original_gallery_route":true,"actual_GPU":true,"fixture_height":18,"SDK_default_height":false}));
+                    }
+                }
+            }
+        }
+        std::fs::write(
+            out.join("receipt.json"),
+            serde_json::to_vec_pretty(&serde_json::json!({"cases":cases,"native_window":false}))
+                .unwrap(),
+        )
+        .unwrap();
     }
 }

@@ -971,10 +971,16 @@ impl TextDemo {
     pub fn needs_animation(&self) -> bool {
         self.surfaces.iter().any(|s| s.scroll.needs_animation())
             || (self.window_active && self.surfaces[0].stream_remaining > 0)
-            || self.reading_buttons.iter().any(ButtonModel::needs_animation)
+            || self
+                .reading_buttons
+                .iter()
+                .any(ButtonModel::needs_animation)
     }
     pub fn animate(&mut self, dt: f32) -> bool {
-        let mut changed = self.reading_buttons.iter().any(ButtonModel::needs_animation);
+        let mut changed = self
+            .reading_buttons
+            .iter()
+            .any(ButtonModel::needs_animation);
         for surface in &mut self.surfaces {
             changed |= surface.scroll.tick(dt);
         }

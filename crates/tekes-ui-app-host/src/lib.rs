@@ -4,11 +4,13 @@ pub mod gpu;
 #[cfg(target_os = "macos")]
 pub mod module_process;
 pub mod navigation;
-pub mod settings_undo;
 #[cfg(target_os = "macos")]
 mod settings;
+pub mod settings_undo;
 #[cfg(target_os = "macos")]
 pub use settings::{SettingsDisplayMode, SettingsOptions, SettingsWindow};
+#[cfg(target_os = "macos")]
+mod columns;
 #[cfg(target_os = "macos")]
 mod navigation_window;
 #[cfg(target_os = "macos")]
@@ -16,13 +18,11 @@ mod sidebar_motion;
 #[cfg(target_os = "macos")]
 mod text;
 #[cfg(target_os = "macos")]
+mod toolbar_source;
+#[cfg(target_os = "macos")]
 mod window;
 #[cfg(target_os = "macos")]
 mod window_toolbar;
-#[cfg(target_os = "macos")]
-mod toolbar_source;
-#[cfg(target_os = "macos")]
-mod columns;
 #[cfg(target_os = "macos")]
 pub use columns::{Column, Container, ContainerContent, ProcessContainer};
 #[cfg(target_os = "macos")]

@@ -522,7 +522,9 @@ impl StaticText {
         StaticText {
             fixture: 0,
             width: DEFAULT_WIDTH,
-            fixture_buttons: (0..FIXTURES.len()).map(|_| ButtonModel::default()).collect(),
+            fixture_buttons: (0..FIXTURES.len())
+                .map(|_| ButtonModel::default())
+                .collect(),
             width_buttons: (0..manifest_widths().iter().map(Vec::len).max().unwrap_or(0))
                 .map(|_| ButtonModel::default())
                 .collect(),

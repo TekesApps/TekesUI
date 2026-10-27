@@ -394,7 +394,11 @@ impl ChartView {
             return ChartOwnerFocusSpace::Unmeasured;
         }
         let target = owner.target;
-        let focus_clip = if witness_visible { owner.focus_clip } else { None };
+        let focus_clip = if witness_visible {
+            owner.focus_clip
+        } else {
+            None
+        };
         model.set_focused(self.focused && self.window_active, self.focus_visible);
         model.set_hovered(self.hovered);
         let mut geometry: ChartGeometry = self.layout.geometry.clone();
@@ -417,7 +421,9 @@ impl ChartView {
             });
             scene.pop_clip();
         }
-        if model.focus_visible() && let Some(focus_clip) = focus_clip {
+        if model.focus_visible()
+            && let Some(focus_clip) = focus_clip
+        {
             scene.push_clip(focus_clip);
             crate::paint::focus_ring_with_color(
                 scene,

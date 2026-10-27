@@ -168,9 +168,9 @@ impl OverlayPresence {
         self.progress.needs_animation()
     }
 
-    pub(super) fn preflight_clears(&self,count:usize)->bool {
-        let mut progress=self.progress.clone();
-        (0..count).all(|_|progress.snap(0.0,self.now).is_ok())
+    pub(super) fn preflight_clears(&self, count: usize) -> bool {
+        let mut progress = self.progress.clone();
+        (0..count).all(|_| progress.snap(0.0, self.now).is_ok())
     }
     pub(super) fn clear(&mut self) {
         self.retained.clear();

@@ -1187,7 +1187,8 @@ impl DataTableView {
         scene.push_clip(own_clip.expect("checked table clip"));
         self.header_buttons
             .resize_with(model.columns, ButtonModel::default);
-        self.row_buttons.resize_with(model.rows, ButtonModel::default);
+        self.row_buttons
+            .resize_with(model.rows, ButtonModel::default);
         for (col, _header_height) in header_heights.iter().copied().enumerate() {
             let r = Rect::new(
                 frame.min_x() + col as f32 * cw,
@@ -1650,7 +1651,10 @@ impl ChartView {
         }
         if self.owner_band.is_some()
             && !self.focused
-            && !matches!(self.owner_focus_space(model), ChartOwnerFocusSpace::Visible { .. })
+            && !matches!(
+                self.owner_focus_space(model),
+                ChartOwnerFocusSpace::Visible { .. }
+            )
         {
             return CollectionEvent::Ignored;
         }
@@ -1705,11 +1709,8 @@ fn chart_label_metrics(
                 proposal::TextRole::UiCaption,
                 value_width,
             );
-            let category_size = text.measure(
-                &datum.label,
-                proposal::TextRole::UiCaption,
-                category_width,
-            );
+            let category_size =
+                text.measure(&datum.label, proposal::TextRole::UiCaption, category_width);
             measured &= [
                 value_size.width,
                 value_size.height,
@@ -1723,7 +1724,11 @@ fn chart_label_metrics(
         }
     }
     let widths_available = model.data().is_empty() || model.label_widths(frame).is_some();
-    (value_line_height, category_line_height, measured && widths_available)
+    (
+        value_line_height,
+        category_line_height,
+        measured && widths_available,
+    )
 }
 
 fn draw_chart_labels(
@@ -1734,9 +1739,13 @@ fn draw_chart_labels(
 ) {
     draw_chart_labels_with_inks(scene, text, geometry, |category| {
         if category {
-            palette.color("secondary-text").expect("DS secondary text token")
+            palette
+                .color("secondary-text")
+                .expect("DS secondary text token")
         } else {
-            palette.color("primary-text").expect("DS primary text token")
+            palette
+                .color("primary-text")
+                .expect("DS primary text token")
         }
     });
 }

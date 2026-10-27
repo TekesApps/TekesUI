@@ -1,4 +1,4 @@
-use tekes_ui_settings::{Draft, Schema, SettingsForm, Snapshot, SelectableListContent};
+use tekes_ui_settings::{Draft, Schema, SelectableListContent, SettingsForm, Snapshot};
 fn schema() -> Schema {
     Schema::parse(include_str!("fixtures/layout.schema.toml")).unwrap()
 }
@@ -268,13 +268,24 @@ fn descriptions_use_original_help_and_accessibility_without_extra_label_rows() {
 
 #[test]
 fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
-    use tekes_ui_controls::composition::{Button, Component, ComponentId, ScrollContent, StackContent, TextFieldContent};
+    use tekes_ui_controls::composition::{
+        Button, Component, ComponentId, ScrollContent, StackContent, TextFieldContent,
+    };
     let sidebar = tekes_ui_settings::SettingsSidebar::new_with_back(&schema()).unwrap();
-    let root = sidebar.host.get(ComponentId(3)).unwrap().component::<StackContent>().unwrap();
+    let root = sidebar
+        .host
+        .get(ComponentId(3))
+        .unwrap()
+        .component::<StackContent>()
+        .unwrap();
     assert_eq!(root.children().len(), 2);
     assert!(root.children()[1].component::<ScrollContent>().is_some());
     let header = root.children()[0].component::<StackContent>().unwrap();
     assert_eq!(header.children().len(), 2);
     assert!(header.children()[0].component::<Button>().is_some());
-    assert!(header.children()[1].component::<TextFieldContent>().is_some());
+    assert!(
+        header.children()[1]
+            .component::<TextFieldContent>()
+            .is_some()
+    );
 }

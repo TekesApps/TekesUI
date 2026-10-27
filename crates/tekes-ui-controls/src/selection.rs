@@ -645,7 +645,10 @@ pub struct SwitchView {
     space_armed: bool,
     window_active: bool,
     thumb_transition: ProgressTransition,
-    motion_palette: Option<(tekes_ui_tokens::Theme, tekes_ui_tokens::palette::PaletteSource)>,
+    motion_palette: Option<(
+        tekes_ui_tokens::Theme,
+        tekes_ui_tokens::palette::PaletteSource,
+    )>,
     motion_initialized: bool,
     motion_now: Duration,
     motion_suspended: bool,
@@ -1049,7 +1052,12 @@ impl SwitchView {
     pub fn pointer_up(&mut self, point: Point, model: &mut Switch) -> SelectionEvent {
         self.pointer_up_in_region(point, model, true)
     }
-    pub(crate) fn pointer_up_in_region(&mut self, point: Point, model: &mut Switch, inside: bool) -> SelectionEvent {
+    pub(crate) fn pointer_up_in_region(
+        &mut self,
+        point: Point,
+        model: &mut Switch,
+        inside: bool,
+    ) -> SelectionEvent {
         if model.disabled {
             return if self.cancel() {
                 SelectionEvent::Handled

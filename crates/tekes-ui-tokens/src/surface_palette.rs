@@ -578,16 +578,56 @@ mod notice_marker_tests {
     #[test]
     fn complete_notice_packets_all_brands_modes_surfaces() {
         for mode in crate::Theme::ALL {
-            for p in crate::palette::gallery_brand_presets().iter().map(|preset|Palette::new(mode,preset.palette_index).unwrap()).chain(["default","blue","clay","blue-inputs"].into_iter().map(|id|Palette::for_theme_definition(mode,id).unwrap())) {
+            for p in crate::palette::gallery_brand_presets()
+                .iter()
+                .map(|preset| Palette::new(mode, preset.palette_index).unwrap())
+                .chain(
+                    ["default", "blue", "clay", "blue-inputs"]
+                        .into_iter()
+                        .map(|id| Palette::for_theme_definition(mode, id).unwrap()),
+                )
+            {
                 for surface in surface_names() {
-                    for (tone,role) in [("info","status-info"),("success","status-succeeded"),("error","status-failed"),("toast-warning","status-failed"),("banner-warning","status-running")] {
-                        let u=format!("notice-marker-{tone}");let c=resolve_surface(p,surface,&u,"rest").unwrap();
-                        assert_eq!(c.background,resolve_surface(p,surface,"content","rest").unwrap().background);
-                        assert_eq!(c.text,p.color("primary-text").unwrap());assert_eq!(c.icon,c.text);assert_eq!(c.marker,p.color(role));assert_eq!((c.boundary,c.focus,c.helper),(None,None,None));
-                        for state in ["hover","pressed","disabled","selected","focus","selected-hover","selected-pressed","selected-disabled"] {assert_eq!(resolve_surface(p,surface,&u,state),Err(SurfaceError::UnknownCombination));}
+                    for (tone, role) in [
+                        ("info", "status-info"),
+                        ("success", "status-succeeded"),
+                        ("error", "status-failed"),
+                        ("toast-warning", "status-failed"),
+                        ("banner-warning", "status-running"),
+                    ] {
+                        let u = format!("notice-marker-{tone}");
+                        let c = resolve_surface(p, surface, &u, "rest").unwrap();
+                        assert_eq!(
+                            c.background,
+                            resolve_surface(p, surface, "content", "rest")
+                                .unwrap()
+                                .background
+                        );
+                        assert_eq!(c.text, p.color("primary-text").unwrap());
+                        assert_eq!(c.icon, c.text);
+                        assert_eq!(c.marker, p.color(role));
+                        assert_eq!((c.boundary, c.focus, c.helper), (None, None, None));
+                        for state in [
+                            "hover",
+                            "pressed",
+                            "disabled",
+                            "selected",
+                            "focus",
+                            "selected-hover",
+                            "selected-pressed",
+                            "selected-disabled",
+                        ] {
+                            assert_eq!(
+                                resolve_surface(p, surface, &u, state),
+                                Err(SurfaceError::UnknownCombination)
+                            );
+                        }
                     }
                 }
-                assert_eq!(resolve_surface(p,"unknown","notice-marker-info","rest"),Err(SurfaceError::UnknownCombination));
+                assert_eq!(
+                    resolve_surface(p, "unknown", "notice-marker-info", "rest"),
+                    Err(SurfaceError::UnknownCombination)
+                );
             }
         }
     }

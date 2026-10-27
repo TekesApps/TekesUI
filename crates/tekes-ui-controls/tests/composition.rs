@@ -408,7 +408,6 @@ fn compound_action_has_one_focus_one_name_and_rejects_nested_controls() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-
             .activations,
         1
     );
@@ -428,7 +427,10 @@ fn compound_action_has_one_focus_one_name_and_rejects_nested_controls() {
         })
     ));
     assert!(matches!(
-        ContentHost::new(Content::new(id(6), Button::new(button(7)).with_accessible_name("  "))),
+        ContentHost::new(Content::new(
+            id(6),
+            Button::new(button(7)).with_accessible_name("  ")
+        )),
         Err(CompositionError::EmptyAccessibleName)
     ));
 }

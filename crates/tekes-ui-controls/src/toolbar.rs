@@ -1,9 +1,7 @@
 //! Module-declared single-row toolbar. Measurement, overflow and menu input
 //! belong to this control; window hosts only provide its allocated frame.
 use crate::composite::MenuRowStyle;
-use crate::{
-    ButtonTextAlign, ButtonTextRenderer, ControlKey, MenuEvent, MenuView,
-};
+use crate::{ButtonTextAlign, ButtonTextRenderer, ControlKey, MenuEvent, MenuView};
 use tekes_ui_scene::{ImageId, Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
 
@@ -33,7 +31,6 @@ pub(crate) fn metrics(
         row: ink * proposal::TOOLBAR_ROW_TO_VISIBLE_ICON,
         box_size: ink * proposal::TOOLBAR_BOX_TO_VISIBLE_ICON,
         inset: ink * proposal::TOOLBAR_INSET_TO_VISIBLE_ICON,
-
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -213,7 +210,9 @@ impl ToolbarControl {
         }
     }
     pub(crate) fn minimum_width(&self, text: &mut dyn ButtonTextRenderer) -> f32 {
-        if self.actions.is_empty() { return 0.; }
+        if self.actions.is_empty() {
+            return 0.;
+        }
         {
             let m = metrics(text, self.text_role);
             self.overflow_size(&mut ToolbarText(text)).width + self.edge_inset(m) * 2.
@@ -299,7 +298,12 @@ impl ToolbarControl {
             size.width += item.width;
             size.height = size.height.max(item.height);
         }
-        Size::new(size.width + pad * self.actions.len().saturating_sub(1) as f32 + self.edge_inset(m) * 2., m.row)
+        Size::new(
+            size.width
+                + pad * self.actions.len().saturating_sub(1) as f32
+                + self.edge_inset(m) * 2.,
+            m.row,
+        )
     }
     pub fn render(
         &mut self,
@@ -352,8 +356,9 @@ impl ToolbarControl {
         // Match measure() in outer-frame space. Subtracting the insets first
         // loses low bits under typography zoom and can invent overflow even
         // at the exact natural width returned to a host.
-        let natural_width =
-            sizes.iter().map(|s| s.width).sum::<f32>() + pad * sizes.len().saturating_sub(1) as f32 + edge * 2.;
+        let natural_width = sizes.iter().map(|s| s.width).sum::<f32>()
+            + pad * sizes.len().saturating_sub(1) as f32
+            + edge * 2.;
         let needs_overflow = natural_width > frame.size.width;
         let mut overflow = self.overflow_size(text);
         overflow.height = overflow
@@ -362,9 +367,12 @@ impl ToolbarControl {
         let mut visible = Vec::new();
         let mut used = 0.;
         for (i, s) in sizes.iter().enumerate() {
-            if needs_overflow && self.keep_group_together { break; }
+            if needs_overflow && self.keep_group_together {
+                break;
+            }
             let next = used + s.width;
-            let with_overflow = next + overflow.width + pad * (visible.len() + 1) as f32 + edge * 2.;
+            let with_overflow =
+                next + overflow.width + pad * (visible.len() + 1) as f32 + edge * 2.;
             if needs_overflow && with_overflow > frame.size.width {
                 break;
             }
@@ -418,7 +426,14 @@ impl ToolbarControl {
             self.buttons[i].set_contents(content);
             self.buttons[i].set_accessible_name(Some(self.actions[i].title.clone()));
             crate::composition::Component::arrange(&mut self.buttons[i], text, rect, clip);
-            crate::composition::Component::paint(&mut self.buttons[i], scene, text, rect, clip, palette.into());
+            crate::composition::Component::paint(
+                &mut self.buttons[i],
+                scene,
+                text,
+                rect,
+                clip,
+                palette.into(),
+            );
             x += size.width + pad;
         }
         self.trigger_rect = Rect::default();
@@ -436,9 +451,22 @@ impl ToolbarControl {
                 Some(image) => crate::composition::ButtonContents::Image(image),
                 None => crate::composition::ButtonContents::Text("…".into()),
             });
-            self.trigger.set_accessible_name(Some("More actions".into()));
-            crate::composition::Component::arrange(&mut self.trigger, text, self.trigger_rect, clip);
-            crate::composition::Component::paint(&mut self.trigger, scene, text, self.trigger_rect, clip, palette.into());
+            self.trigger
+                .set_accessible_name(Some("More actions".into()));
+            crate::composition::Component::arrange(
+                &mut self.trigger,
+                text,
+                self.trigger_rect,
+                clip,
+            );
+            crate::composition::Component::paint(
+                &mut self.trigger,
+                scene,
+                text,
+                self.trigger_rect,
+                clip,
+                palette.into(),
+            );
         }
     }
     /// Called after all ordinary content so the popup can overlay sibling panes.
@@ -561,14 +589,24 @@ impl crate::composition::Component for ToolbarControl {
     fn validate(&self) -> Result<(), crate::composition::CompositionError> {
         let mut ids = std::collections::BTreeSet::new();
         for action in &self.actions {
-            if !ids.insert(action.id) { return Err(crate::composition::CompositionError::DuplicateId(crate::composition::ComponentId(action.id))); }
-            if action.title.trim().is_empty() { return Err(crate::composition::CompositionError::EmptyAccessibleName); }
+            if !ids.insert(action.id) {
+                return Err(crate::composition::CompositionError::DuplicateId(
+                    crate::composition::ComponentId(action.id),
+                ));
+            }
+            if action.title.trim().is_empty() {
+                return Err(crate::composition::CompositionError::EmptyAccessibleName);
+            }
         }
         Ok(())
     }
-    fn action_payload(&self, kind: crate::composition::ContentActionKind) -> Option<crate::composition::ContentActionPayload> {
+    fn action_payload(
+        &self,
+        kind: crate::composition::ContentActionKind,
+    ) -> Option<crate::composition::ContentActionPayload> {
         (kind == crate::composition::ContentActionKind::Activate)
-            .then_some(self.last_action).flatten()
+            .then_some(self.last_action)
+            .flatten()
             .map(crate::composition::ContentActionPayload::ToolbarCommand)
     }
     fn pointer_regions(&self, _: Rect, clip: Rect) -> Vec<Rect> {

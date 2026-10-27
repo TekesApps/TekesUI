@@ -1069,7 +1069,9 @@ fn deliver_menu_input(view: &mut MenuView, event: &ContentEvent) -> (MenuEvent, 
 }
 
 impl Component for MenuContent {
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability { CurveSubtreeCapability::Recursive }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
 
     fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
         ActionTransactionCompatibility::StableHooks

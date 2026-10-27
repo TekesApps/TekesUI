@@ -9,9 +9,9 @@
 //! 纯数据部分（事件、菜单描述、配置）不含平台代码，在任何平台上都能编译和单测。
 
 pub mod accessibility;
+pub mod config;
 #[cfg(feature = "content-accessibility")]
 pub mod content_accessibility;
-pub mod config;
 pub mod event;
 pub mod menu;
 pub mod placement;

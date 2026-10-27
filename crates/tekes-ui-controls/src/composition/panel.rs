@@ -89,9 +89,18 @@ impl PanelContent {
     }
 }
 impl Component for PanelContent {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility { TableTransactionCompatibility::StableHooks }
-    fn prepared_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> { PreparedEffects::local_work(calls) }
-    fn prepare_effects(&self, hooks: &[PreparedHook]) -> Result<PreparedEffects, PreparedEffectsError> { Ok(PreparedEffects::local(self, hooks)) }
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+    fn prepared_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> {
+        PreparedEffects::local_work(calls)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        Ok(PreparedEffects::local(self, hooks))
+    }
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
     }
@@ -605,8 +614,8 @@ impl ContentHost {
 
 #[cfg(test)]
 mod frozen_generation_tests {
-    use super::*;
     use super::Button;
+    use super::*;
     use crate::{ButtonTextAlign, ButtonTextRenderer};
 
     fn frozen_shape() -> ClipShape {
@@ -652,12 +661,7 @@ mod frozen_generation_tests {
 
     struct TestText;
     impl ButtonTextRenderer for TestText {
-        fn measure(
-            &mut self,
-            text: &str,
-            _role: proposal::TextRole,
-            max_width: f32,
-        ) -> Size {
+        fn measure(&mut self, text: &str, _role: proposal::TextRole, max_width: f32) -> Size {
             Size::new((text.chars().count() as f32 * 7.).min(max_width), 18.)
         }
         fn draw(
@@ -676,11 +680,18 @@ mod frozen_generation_tests {
         let button = Content::new(ComponentId(9911), Button::new("press"));
         let root = Content::new(
             ComponentId(9910),
-            PanelContent::new(Content::new(ComponentId(9912), StackContent {
-                model: Stack { axis: Axis::Vertical, gap: 0. },
-                flexible_child: None,
-                children: vec![button],
-            })).unwrap(),
+            PanelContent::new(Content::new(
+                ComponentId(9912),
+                StackContent {
+                    model: Stack {
+                        axis: Axis::Vertical,
+                        gap: 0.,
+                    },
+                    flexible_child: None,
+                    children: vec![button],
+                },
+            ))
+            .unwrap(),
         );
         let mut host = ContentHost::new(root).unwrap();
         let mut scene = Scene::new();
@@ -691,22 +702,27 @@ mod frozen_generation_tests {
             Rect::new(0., 0., 140., 90.),
             Rect::new(0., 0., 140., 90.),
             Palette::from(tekes_ui_tokens::Theme::LIGHT),
-        ).unwrap();
+        )
+        .unwrap();
         (host, scene, text)
     }
 
     fn rendered_switch_host() -> (ContentHost, Scene, TestText) {
-        let switch = Content::new(
-            ComponentId(9921),
-            SwitchContent::new("switch", false),
-        );
+        let switch = Content::new(ComponentId(9921), SwitchContent::new("switch", false));
         let root = Content::new(
             ComponentId(9920),
-            PanelContent::new(Content::new(ComponentId(9922), StackContent {
-                model: Stack { axis: Axis::Vertical, gap: 0. },
-                flexible_child: None,
-                children: vec![switch],
-            })).unwrap(),
+            PanelContent::new(Content::new(
+                ComponentId(9922),
+                StackContent {
+                    model: Stack {
+                        axis: Axis::Vertical,
+                        gap: 0.,
+                    },
+                    flexible_child: None,
+                    children: vec![switch],
+                },
+            ))
+            .unwrap(),
         );
         let mut host = ContentHost::new(root).unwrap();
         let mut scene = Scene::new();
@@ -717,7 +733,8 @@ mod frozen_generation_tests {
             Rect::new(0., 0., 140., 90.),
             Rect::new(0., 0., 140., 90.),
             Palette::from(tekes_ui_tokens::Theme::LIGHT),
-        ).unwrap();
+        )
+        .unwrap();
         (host, scene, text)
     }
 
@@ -823,8 +840,14 @@ mod frozen_generation_tests {
         assert!(!down.activated);
         let up = host.event(&ContentEvent::PointerUp(point));
         assert!(up.activated);
-        assert_eq!(host.get(ComponentId(9911)).unwrap()
-            .component::<Button>().unwrap().activations, 1);
+        assert_eq!(
+            host.get(ComponentId(9911))
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .activations,
+            1
+        );
     }
 
     #[test]
@@ -832,22 +855,31 @@ mod frozen_generation_tests {
         let (mut host, _scene, _text) = rendered_button_host();
         let response = host.event(&ContentEvent::PointerDown(Point::new(1., 1.)));
         assert!(!response.consumed);
-        assert_eq!(host.get(ComponentId(9911)).unwrap()
-            .component::<Button>().unwrap().activations, 0);
+        assert_eq!(
+            host.get(ComponentId(9911))
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .activations,
+            0
+        );
     }
 
     #[test]
     fn panel_button_accessibility_press_uses_same_prepared_owner_once() {
         let (mut host, _scene, _text) = rendered_button_host();
-        let response = host.accessibility_action(
-            ComponentId(9911),
-            None,
-            AccessibilityAction::Press,
-        );
+        let response =
+            host.accessibility_action(ComponentId(9911), None, AccessibilityAction::Press);
         assert!(response.consumed && response.activated);
         assert_eq!(host.focused(), Some(ComponentId(9911)));
-        assert_eq!(host.get(ComponentId(9911)).unwrap()
-            .component::<Button>().unwrap().activations, 1);
+        assert_eq!(
+            host.get(ComponentId(9911))
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .activations,
+            1
+        );
     }
 
     #[test]
@@ -856,24 +888,38 @@ mod frozen_generation_tests {
         let frame = host.get(ComponentId(9911)).unwrap().frame();
         let point = frame.center();
         let button = host.get_mut(ComponentId(9911)).unwrap();
-        button.component_mut::<Button>().unwrap().button.state.disabled = true;
+        button
+            .component_mut::<Button>()
+            .unwrap()
+            .button
+            .state
+            .disabled = true;
         let response = host.event(&ContentEvent::PointerDown(point));
         assert!(!response.consumed);
-        assert_eq!(host.get(ComponentId(9911)).unwrap()
-            .component::<Button>().unwrap().activations, 0);
+        assert_eq!(
+            host.get(ComponentId(9911))
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .activations,
+            0
+        );
     }
 
     #[test]
     fn unsupported_prepared_switch_keeps_its_original_accessibility_reducer() {
         let (mut host, _scene, _text) = rendered_switch_host();
-        let response = host.accessibility_action(
-            ComponentId(9921),
-            None,
-            AccessibilityAction::Press,
-        );
+        let response =
+            host.accessibility_action(ComponentId(9921), None, AccessibilityAction::Press);
         assert!(response.consumed && response.activated);
-        assert!(host.get(ComponentId(9921)).unwrap()
-            .component::<SwitchContent>().unwrap().model.checked);
+        assert!(
+            host.get(ComponentId(9921))
+                .unwrap()
+                .component::<SwitchContent>()
+                .unwrap()
+                .model
+                .checked
+        );
     }
 
     #[test]
@@ -892,35 +938,82 @@ mod frozen_generation_tests {
         assert!(down.consumed && down.capture_pointer);
         let up = host.event(&ContentEvent::PointerUp(point));
         assert!(up.consumed && up.changed);
-        assert!(host.get(ComponentId(9921)).unwrap()
-            .component::<SwitchContent>().unwrap().model.checked);
+        assert!(
+            host.get(ComponentId(9921))
+                .unwrap()
+                .component::<SwitchContent>()
+                .unwrap()
+                .model
+                .checked
+        );
     }
     #[test]
     fn captured_switch_uses_actual_curve_membership_without_rewriting_point_or_canceling_reentry() {
         for release_outside in [true, false] {
-            let child = Content::new(ComponentId(9931), SwitchContent::new("switch", false)).preserving_focus();
+            let child = Content::new(ComponentId(9931), SwitchContent::new("switch", false))
+                .preserving_focus();
             let mut panel = PanelContent::new(child).unwrap();
             panel.set_padding(Some(crate::Insets::default())).unwrap();
             let mut host = ContentHost::new(Content::new(ComponentId(9930), panel)).unwrap();
             let frame = Rect::new(0., 0., 100., 32.);
-            host.render(&mut Scene::new(), &mut TestText, frame, frame, Palette::from(tekes_ui_tokens::Theme::LIGHT)).unwrap();
-            let toggle = host.get(ComponentId(9931)).unwrap().component::<SwitchContent>().unwrap().view.layout().frame();
+            host.render(
+                &mut Scene::new(),
+                &mut TestText,
+                frame,
+                frame,
+                Palette::from(tekes_ui_tokens::Theme::LIGHT),
+            )
+            .unwrap();
+            let toggle = host
+                .get(ComponentId(9931))
+                .unwrap()
+                .component::<SwitchContent>()
+                .unwrap()
+                .view
+                .layout()
+                .frame();
             let center = toggle.center();
             let corner = Point::new(toggle.min_x() + 0.5, toggle.min_y() + 0.5);
-            let shape = host.get(ComponentId(9930)).unwrap().component::<PanelContent>().unwrap().geometry().unwrap().shape;
-            assert!(toggle.contains(corner), "the real release point remains in the same rectangular toggle bbox");
-            assert_eq!(shape.contains([f64::from(corner.x), f64::from(corner.y)]), Ok(false));
+            let shape = host
+                .get(ComponentId(9930))
+                .unwrap()
+                .component::<PanelContent>()
+                .unwrap()
+                .geometry()
+                .unwrap()
+                .shape;
+            assert!(
+                toggle.contains(corner),
+                "the real release point remains in the same rectangular toggle bbox"
+            );
+            assert_eq!(
+                shape.contains([f64::from(corner.x), f64::from(corner.y)]),
+                Ok(false)
+            );
             assert!(host.event(&ContentEvent::PointerDown(center)).consumed);
             assert!(host.pointer_capture().is_some());
             assert!(host.event(&ContentEvent::PointerMove(corner)).changed);
-            assert!(host.pointer_capture().is_some(), "leaving the exact region does not cancel the original gesture");
-            let release = if release_outside { corner } else {
+            assert!(
+                host.pointer_capture().is_some(),
+                "leaving the exact region does not cancel the original gesture"
+            );
+            let release = if release_outside {
+                corner
+            } else {
                 assert!(host.event(&ContentEvent::PointerMove(center)).changed);
                 center
             };
             assert!(host.event(&ContentEvent::PointerUp(release)).consumed);
             assert!(host.pointer_capture().is_none());
-            assert_eq!(host.get(ComponentId(9931)).unwrap().component::<SwitchContent>().unwrap().model.checked, !release_outside);
+            assert_eq!(
+                host.get(ComponentId(9931))
+                    .unwrap()
+                    .component::<SwitchContent>()
+                    .unwrap()
+                    .model
+                    .checked,
+                !release_outside
+            );
         }
     }
 
@@ -929,15 +1022,39 @@ mod frozen_generation_tests {
         for gate in 0..3 {
             let (mut host, _scene, _text) = rendered_switch_host();
             host.set_action_events(true);
-            let point = host.get(ComponentId(9921)).unwrap().component::<SwitchContent>().unwrap().view.layout().frame().center();
-            if gate == 0 { host.focus_epoch = u64::MAX; }
-            if gate == 1 { host.capture_epoch = u64::MAX; }
-            if gate == 2 { let _ = host.get_mut(ComponentId(9921)); }
+            let point = host
+                .get(ComponentId(9921))
+                .unwrap()
+                .component::<SwitchContent>()
+                .unwrap()
+                .view
+                .layout()
+                .frame()
+                .center();
+            if gate == 0 {
+                host.focus_epoch = u64::MAX;
+            }
+            if gate == 1 {
+                host.capture_epoch = u64::MAX;
+            }
+            if gate == 2 {
+                let _ = host.get_mut(ComponentId(9921));
+            }
             let response = if gate == 0 {
                 host.accessibility_action(ComponentId(9921), None, AccessibilityAction::Press)
-            } else { host.event(&ContentEvent::PointerDown(point)) };
+            } else {
+                host.event(&ContentEvent::PointerDown(point))
+            };
             assert!(!response.consumed && !response.activated);
-            assert!(!host.get(ComponentId(9921)).unwrap().component::<SwitchContent>().unwrap().model.checked);
+            assert!(
+                !host
+                    .get(ComponentId(9921))
+                    .unwrap()
+                    .component::<SwitchContent>()
+                    .unwrap()
+                    .model
+                    .checked
+            );
             assert!(host.focused().is_none());
             assert!(host.pointer_capture().is_none());
             assert!(host.drain_actions().is_empty());
@@ -952,79 +1069,262 @@ mod frozen_generation_tests {
         const INNER: ComponentId = ComponentId(9943);
         const TARGET: ComponentId = ComponentId(9944);
         fn host(viewport: f32) -> ContentHost {
-            let target_row = Content::new(ComponentId(9950), StackContent {
-                model: Stack { axis: Axis::Horizontal, gap: 0. }, flexible_child: Some(TARGET),
-                children: vec![Content::new(ComponentId(9951), TextContent::new("pad")),
-                    Content::new(TARGET, Button::new("target")),
-                    Content::new(ComponentId(9952), TextContent::new("pad"))],
-            });
-            let mut rows: Vec<_> = (9960..9968).map(|id| Content::new(ComponentId(id), TextContent::new("row"))).collect();
+            let target_row = Content::new(
+                ComponentId(9950),
+                StackContent {
+                    model: Stack {
+                        axis: Axis::Horizontal,
+                        gap: 0.,
+                    },
+                    flexible_child: Some(TARGET),
+                    children: vec![
+                        Content::new(ComponentId(9951), TextContent::new("pad")),
+                        Content::new(TARGET, Button::new("target")),
+                        Content::new(ComponentId(9952), TextContent::new("pad")),
+                    ],
+                },
+            );
+            let mut rows: Vec<_> = (9960..9968)
+                .map(|id| Content::new(ComponentId(id), TextContent::new("row")))
+                .collect();
             rows.push(target_row);
             rows.push(Content::new(ComponentId(9970), TextContent::new("tail")));
-            let body = Content::new(ComponentId(9953), StackContent { model: Stack { axis: Axis::Vertical, gap: 0. }, flexible_child: None, children: rows });
+            let body = Content::new(
+                ComponentId(9953),
+                StackContent {
+                    model: Stack {
+                        axis: Axis::Vertical,
+                        gap: 0.,
+                    },
+                    flexible_child: None,
+                    children: rows,
+                },
+            );
             let mut inner = ScrollContent::new(ScrollArea::default(), body);
             inner.viewport_height = Some(viewport);
-            let scope = Content::new(SCOPE, StackContent { model: Stack { axis: Axis::Vertical, gap: 0. }, flexible_child: None,
-                children: vec![Content::new(INNER, inner)] });
+            let scope = Content::new(
+                SCOPE,
+                StackContent {
+                    model: Stack {
+                        axis: Axis::Vertical,
+                        gap: 0.,
+                    },
+                    flexible_child: None,
+                    children: vec![Content::new(INNER, inner)],
+                },
+            );
             let mut panel = PanelContent::new(scope).unwrap();
             panel.set_padding(Some(crate::Insets::default())).unwrap();
             let mut outer = ScrollContent::new(ScrollArea::default(), Content::new(PANEL, panel));
             outer.viewport_height = Some(140.);
             let mut host = ContentHost::new(Content::new(OUTER, outer)).unwrap();
             let frame = Rect::new(0., 0., 140., 140.);
-            host.render(&mut Scene::new(), &mut TestText, frame, frame, Palette::from(tekes_ui_tokens::Theme::LIGHT)).unwrap();
+            host.render(
+                &mut Scene::new(),
+                &mut TestText,
+                frame,
+                frame,
+                Palette::from(tekes_ui_tokens::Theme::LIGHT),
+            )
+            .unwrap();
             // Same real non-Panel input scope used by the original scope tests.
             // The full original tree, renderer, Panel and both Scroll owners stay mounted.
             host.modal = Some((SCOPE, None));
             host
         }
         let mut current = host(60.);
-        let outer_before = current.get(OUTER).unwrap().component::<ScrollContent>().unwrap().scroll.offset;
+        let outer_before = current
+            .get(OUTER)
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .scroll
+            .offset;
         // This case asserts the immediate committed offset. Default navigation
         // is animated; this renderer intentionally supplies no animation clock.
-        let plan = current.plan_host_reveal(TARGET, crate::ScrollRevealOptions {
-            animated: false, ..Default::default()
-        }, &[], HostRevealBudget::default()).unwrap();
-        assert_eq!(plan.planned_offsets().map(|(id, _)| id).collect::<Vec<_>>(), vec![INNER]);
-        let planned = plan.planned_offsets().find(|(id, _)| *id == INNER).unwrap().1;
-        let inner = current.get(INNER).unwrap().component::<ScrollContent>().unwrap();
+        let plan = current
+            .plan_host_reveal(
+                TARGET,
+                crate::ScrollRevealOptions {
+                    animated: false,
+                    ..Default::default()
+                },
+                &[],
+                HostRevealBudget::default(),
+            )
+            .unwrap();
+        assert_eq!(
+            plan.planned_offsets().map(|(id, _)| id).collect::<Vec<_>>(),
+            vec![INNER]
+        );
+        let planned = plan
+            .planned_offsets()
+            .find(|(id, _)| *id == INNER)
+            .unwrap()
+            .1;
+        let inner = current
+            .get(INNER)
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap();
         let target_frame = current.get(TARGET).unwrap().frame();
-        eprintln!("SCOPED_INNER_REVEAL target={target_frame:?} viewport={:?} document={:?} limit={:?} offset={:?} planned={planned:?}",
-            inner.viewport, inner.scroll.document_size(), inner.scroll.limit(), inner.scroll.offset);
-        assert!(target_frame.min_y() > inner.viewport.max_y(), "the full original target is genuinely below this viewport");
+        eprintln!(
+            "SCOPED_INNER_REVEAL target={target_frame:?} viewport={:?} document={:?} limit={:?} offset={:?} planned={planned:?}",
+            inner.viewport,
+            inner.scroll.document_size(),
+            inner.scroll.limit(),
+            inner.scroll.offset
+        );
+        assert!(
+            target_frame.min_y() > inner.viewport.max_y(),
+            "the full original target is genuinely below this viewport"
+        );
         assert!(inner.scroll.limit().y > 0.);
-        assert!(planned.y > inner.scroll.offset.y, "the solver must plan real inner movement before commit");
+        assert!(
+            planned.y > inner.scroll.offset.y,
+            "the solver must plan real inner movement before commit"
+        );
         assert!(!plan.requested_options().animated);
         assert!(current.commit_host_reveal(plan).unwrap().revealed);
-        assert!(current.get(INNER).unwrap().component::<ScrollContent>().unwrap().scroll.offset.y > 0.);
-        assert_eq!(current.get(OUTER).unwrap().component::<ScrollContent>().unwrap().scroll.offset, outer_before);
+        assert!(
+            current
+                .get(INNER)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .offset
+                .y
+                > 0.
+        );
+        assert_eq!(
+            current
+                .get(OUTER)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .offset,
+            outer_before
+        );
         let frame = Rect::new(0., 0., 140., 140.);
-        current.render(&mut Scene::new(), &mut TestText, frame, frame, Palette::from(tekes_ui_tokens::Theme::LIGHT)).unwrap();
+        current
+            .render(
+                &mut Scene::new(),
+                &mut TestText,
+                frame,
+                frame,
+                Palette::from(tekes_ui_tokens::Theme::LIGHT),
+            )
+            .unwrap();
         assert!(current.focus(Some(TARGET), true));
         assert_eq!(current.focused(), Some(TARGET));
-        assert_eq!(current.get(OUTER).unwrap().component::<ScrollContent>().unwrap().scroll.offset, outer_before);
+        assert_eq!(
+            current
+                .get(OUTER)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .offset,
+            outer_before
+        );
 
         let mut stale = host(60.);
-        let plan = stale.plan_host_reveal(TARGET, Default::default(), &[], HostRevealBudget::default()).unwrap();
-        let before = stale.get(INNER).unwrap().component::<ScrollContent>().unwrap().scroll.offset;
-        stale.get_mut(PANEL).unwrap().component_mut::<PanelContent>().unwrap().set_canvas(true);
-        assert_eq!(stale.commit_host_reveal(plan), Err(HostRevealError::StalePlan));
-        assert_eq!(stale.get(INNER).unwrap().component::<ScrollContent>().unwrap().scroll.offset, before);
-        assert_eq!(stale.get(OUTER).unwrap().component::<ScrollContent>().unwrap().scroll.offset, outer_before);
+        let plan = stale
+            .plan_host_reveal(TARGET, Default::default(), &[], HostRevealBudget::default())
+            .unwrap();
+        let before = stale
+            .get(INNER)
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .scroll
+            .offset;
+        stale
+            .get_mut(PANEL)
+            .unwrap()
+            .component_mut::<PanelContent>()
+            .unwrap()
+            .set_canvas(true);
+        assert_eq!(
+            stale.commit_host_reveal(plan),
+            Err(HostRevealError::StalePlan)
+        );
+        assert_eq!(
+            stale
+                .get(INNER)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .offset,
+            before
+        );
+        assert_eq!(
+            stale
+                .get(OUTER)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .offset,
+            outer_before
+        );
         assert!(stale.focused().is_none());
 
         let mut impossible = host(8.);
-        let before = impossible.get(INNER).unwrap().component::<ScrollContent>().unwrap().scroll.offset;
-        assert!(impossible.plan_host_reveal(TARGET, Default::default(), &[], HostRevealBudget::default()).is_err());
+        let before = impossible
+            .get(INNER)
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .scroll
+            .offset;
+        assert!(
+            impossible
+                .plan_host_reveal(TARGET, Default::default(), &[], HostRevealBudget::default())
+                .is_err()
+        );
         assert!(!impossible.focus(Some(TARGET), true));
-        assert_eq!(impossible.get(INNER).unwrap().component::<ScrollContent>().unwrap().scroll.offset, before);
-        assert_eq!(impossible.get(OUTER).unwrap().component::<ScrollContent>().unwrap().scroll.offset, outer_before);
+        assert_eq!(
+            impossible
+                .get(INNER)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .offset,
+            before
+        );
+        assert_eq!(
+            impossible
+                .get(OUTER)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .offset,
+            outer_before
+        );
         assert!(impossible.focused().is_none());
 
         let mut no_scroll = scoped_host();
-        assert_eq!(no_scroll.plan_host_reveal(ComponentId(9903), Default::default(), &[], HostRevealBudget::default()).unwrap_err(), HostRevealError::NoFeasibleRegion);
-        assert!(!no_scroll.focus(Some(ComponentId(9903)), true), "an inherited curve must not become LogicalFocus merely because its Panel is outside the input scope");
+        assert_eq!(
+            no_scroll
+                .plan_host_reveal(
+                    ComponentId(9903),
+                    Default::default(),
+                    &[],
+                    HostRevealBudget::default()
+                )
+                .unwrap_err(),
+            HostRevealError::NoFeasibleRegion
+        );
+        assert!(
+            !no_scroll.focus(Some(ComponentId(9903)), true),
+            "an inherited curve must not become LogicalFocus merely because its Panel is outside the input scope"
+        );
         assert!(no_scroll.focused().is_none());
     }
-
 }

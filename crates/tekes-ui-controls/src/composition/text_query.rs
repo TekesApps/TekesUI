@@ -119,19 +119,47 @@ mod tests {
     use super::super::*;
     use crate::{TextSurfaceHost, TextSurfaceTextRenderer};
     use std::rc::Rc;
-    use tekes_ui_text::{Paragraph, ShapeOptions, Shaper, TextStyle, coretext::{CoreTextFonts, CoreTextShaper}};
+    use tekes_ui_text::{
+        Paragraph, ShapeOptions, Shaper, TextStyle,
+        coretext::{CoreTextFonts, CoreTextShaper},
+    };
     use tekes_ui_tokens::Theme;
 
     struct Text(bool);
     impl ButtonTextRenderer for Text {
-        fn measure(&mut self, _: &str, role: proposal::TextRole, _: f32) -> Size { Size::new(80., role.style().line_height) }
-        fn draw(&mut self, _: &mut Scene, _: &str, _: proposal::TextRole, _: Rect, _: ButtonTextAlign, _: Rgba) {}
-        fn text_surface_host(&mut self) -> Option<&mut dyn TextSurfaceHost> { if self.0 { Some(self) } else { None } }
+        fn measure(&mut self, _: &str, role: proposal::TextRole, _: f32) -> Size {
+            Size::new(80., role.style().line_height)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+        fn text_surface_host(&mut self) -> Option<&mut dyn TextSurfaceHost> {
+            if self.0 { Some(self) } else { None }
+        }
     }
     impl TextSurfaceHost for Text {
-        fn shape_surface(&mut self, text: &str, role: proposal::TextRole, width: Option<f32>) -> Rc<Paragraph> {
+        fn shape_surface(
+            &mut self,
+            text: &str,
+            role: proposal::TextRole,
+            width: Option<f32>,
+        ) -> Rc<Paragraph> {
             let mut shaper = CoreTextShaper::new(CoreTextFonts::new());
-            Rc::new(shaper.shape(text, &TextStyle::system(role.style().size), &ShapeOptions { width: width.map(f64::from), line_spacing: 0. }))
+            Rc::new(shaper.shape(
+                text,
+                &TextStyle::system(role.style().size),
+                &ShapeOptions {
+                    width: width.map(f64::from),
+                    line_spacing: 0.,
+                },
+            ))
         }
     }
     impl TextSurfaceTextRenderer for Text {
@@ -139,12 +167,21 @@ mod tests {
     }
     fn render(host: &mut ContentHost, width: f32, height: f32) {
         let frame = Rect::new(0., 0., width, height);
-        host.render(&mut Scene::new(), &mut Text(true), frame, frame, Theme::LIGHT.into()).unwrap();
+        host.render(
+            &mut Scene::new(),
+            &mut Text(true),
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
     }
     const ROOT: ComponentId = ComponentId(82900);
     const FIELD: ComponentId = ComponentId(82901);
     const SCROLL: ComponentId = ComponentId(82902);
-    fn field() -> Content { Content::new(FIELD, TextFieldContent::new("retained", "original text 😀")) }
+    fn field() -> Content {
+        Content::new(FIELD, TextFieldContent::new("retained", "original text 😀"))
+    }
 
     #[test]
     fn off_focus_layout_uses_original_paragraph_and_stable_selection_binding() {
@@ -155,7 +192,13 @@ mod tests {
         assert!(!before.lines.is_empty() && !before.carets.is_empty());
         assert_eq!(before.input.text, "original text 😀");
         assert_eq!(host.semantic_text_layout_snapshot(FIELD, Some(0)), None);
-        host.get_mut(FIELD).unwrap().component_mut::<TextFieldContent>().unwrap().surface.input.select(1, false);
+        host.get_mut(FIELD)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .input
+            .select(1, false);
         render(&mut host, 200., 80.);
         let after = host.semantic_text_layout_snapshot(FIELD, None).unwrap();
         assert_eq!(after.input.binding, before.input.binding);
@@ -171,10 +214,23 @@ mod tests {
         let mut host = ContentHost::new(field()).unwrap();
         render(&mut host, 280., 80.);
         let before = host.semantic_text_layout_snapshot(FIELD, None).unwrap();
-        host.get_mut(FIELD).unwrap().component_mut::<TextFieldContent>().unwrap().surface.input.disabled = true;
-        assert_eq!(host.semantic_text_layout_snapshot(FIELD, None), Some(before));
+        host.get_mut(FIELD)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .input
+            .disabled = true;
+        assert_eq!(
+            host.semantic_text_layout_snapshot(FIELD, None),
+            Some(before)
+        );
         assert_eq!(host.semantic_text_input_snapshot(FIELD), None);
-        assert!(!host.accessibility_action(FIELD, None, AccessibilityAction::SetSelection(1..3)).consumed);
+        assert!(
+            !host
+                .accessibility_action(FIELD, None, AccessibilityAction::SetSelection(1..3))
+                .consumed
+        );
         assert!(host.is_window_active());
         host.set_window_active(false);
         assert!(!host.is_window_active());
@@ -185,11 +241,18 @@ mod tests {
     fn zero_split_pane_cannot_publish_retained_text_layout() {
         let split = SplitViewContent::try_new(SplitViewConstruction {
             config: SplitViewConfig::default(),
-            slots: SplitViewSlotIds { leading: ComponentId(82910), trailing: ComponentId(82911), divider: ComponentId(82912) },
-            leading: field(), trailing: Content::new(ComponentId(82913), Button::new("other")),
+            slots: SplitViewSlotIds {
+                leading: ComponentId(82910),
+                trailing: ComponentId(82911),
+                divider: ComponentId(82912),
+            },
+            leading: field(),
+            trailing: Content::new(ComponentId(82913), Button::new("other")),
             budget: 64 * 1024 * 1024,
-        }).unwrap();
-        let mut host = ContentHost::try_new_prepared(Content::new(ROOT, split), 64 * 1024 * 1024).unwrap();
+        })
+        .unwrap();
+        let mut host =
+            ContentHost::try_new_prepared(Content::new(ROOT, split), 64 * 1024 * 1024).unwrap();
         render(&mut host, 600., 200.);
         let before = host.semantic_text_layout_snapshot(FIELD, None).unwrap();
         render(&mut host, 0., 0.);
@@ -201,31 +264,65 @@ mod tests {
     }
 
     fn scroll() -> Content {
-        let rows = Content::new(ComponentId(82920), StackContent {
-            model: Stack { axis: Axis::Vertical, gap: 2. }, flexible_child: None,
-            children: (0..24).map(|i| Content::new(ComponentId(83000+i), TextContent::new(format!("row {i}")))).collect(),
-        });
+        let rows = Content::new(
+            ComponentId(82920),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 2.,
+                },
+                flexible_child: None,
+                children: (0..24)
+                    .map(|i| {
+                        Content::new(ComponentId(83000 + i), TextContent::new(format!("row {i}")))
+                    })
+                    .collect(),
+            },
+        );
         let mut owner = ScrollContent::new(ScrollArea::default(), rows);
         owner.viewport_height = Some(64.);
         Content::new(SCROLL, owner)
     }
     fn wheel(host: &mut ContentHost) {
         let point = host.get(SCROLL).unwrap().visible().unwrap().center();
-        let response = host.event(&ContentEvent::Scroll { position: point, delta: Point::new(0., 24.), precise: true, begin: true, end: true, momentum: false, time: 1. });
+        let response = host.event(&ContentEvent::Scroll {
+            position: point,
+            delta: Point::new(0., 24.),
+            precise: true,
+            begin: true,
+            end: true,
+            momentum: false,
+            time: 1.,
+        });
         assert!(response.consumed);
-        assert_eq!(host.reading_scroll_source(), Some((SCROLL, host.semantic_mount(SCROLL).unwrap())));
+        assert_eq!(
+            host.reading_scroll_source(),
+            Some((SCROLL, host.semantic_mount(SCROLL).unwrap()))
+        );
     }
     #[test]
     fn reading_source_is_actual_owner_clears_before_refusal_and_expires_on_remount() {
-        let mut host = ContentHost::new(Content::new(ROOT, StackContent {
-            model: Stack { axis: Axis::Vertical, gap: 2. }, flexible_child: None, children: vec![scroll(), field()],
-        })).unwrap();
+        let mut host = ContentHost::new(Content::new(
+            ROOT,
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 2.,
+                },
+                flexible_child: None,
+                children: vec![scroll(), field()],
+            },
+        ))
+        .unwrap();
         render(&mut host, 300., 160.);
         wheel(&mut host);
         host.event(&ContentEvent::PointerMove(Point::new(-50., -50.)));
         assert_eq!(host.reading_scroll_source(), None);
         wheel(&mut host);
-        assert!(matches!(host.event_with_text(&ContentEvent::Unmark, &mut Text(false)), Err(CompositionError::MissingTextServices(_))));
+        assert!(matches!(
+            host.event_with_text(&ContentEvent::Unmark, &mut Text(false)),
+            Err(CompositionError::MissingTextServices(_))
+        ));
         assert_eq!(host.reading_scroll_source(), None);
         wheel(&mut host);
         let old_mount = host.semantic_mount(SCROLL).unwrap();

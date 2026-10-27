@@ -408,7 +408,10 @@ pub struct ButtonModel {
     last_pointer: Option<Point>,
     hover_transition: ProgressTransition,
     press_transition: ProgressTransition,
-    motion_palette: Option<(tekes_ui_tokens::Theme, tekes_ui_tokens::palette::PaletteSource)>,
+    motion_palette: Option<(
+        tekes_ui_tokens::Theme,
+        tekes_ui_tokens::palette::PaletteSource,
+    )>,
     motion_now: Duration,
     motion_suspended: bool,
     // Effective parent Surface supplied by the original feedback View.
@@ -424,7 +427,13 @@ enum ButtonArm {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct ButtonActionDecision {
-    expected: (ControlState, ButtonArm, Option<ButtonLayout>, Option<Point>, bool),
+    expected: (
+        ControlState,
+        ButtonArm,
+        Option<ButtonLayout>,
+        Option<Point>,
+        bool,
+    ),
     next_state: ControlState,
     next_arm: ButtonArm,
     point: Option<Point>,
@@ -439,12 +448,16 @@ impl ButtonModel {
         self.surface = None;
     }
     pub(crate) fn surface_colors(
-        &self, palette: Palette, variant: crate::paint::ButtonVariant, surface: &str,
+        &self,
+        palette: Palette,
+        variant: crate::paint::ButtonVariant,
+        surface: &str,
     ) -> tekes_ui_tokens::surface_palette::SurfaceColors {
         crate::paint::button_surface_colors(
             palette,
             surface,
-            self.state, variant,
+            self.state,
+            variant,
             self.hover_transition.value() as f32,
             self.press_transition.value() as f32,
         )
@@ -494,12 +507,18 @@ impl ButtonModel {
     }
 
     pub(crate) fn measure_content(
-        text: &mut dyn ButtonTextRenderer, content: Size, max_width: f32,
-        size: ButtonSize, role: proposal::TextRole,
+        text: &mut dyn ButtonTextRenderer,
+        content: Size,
+        max_width: f32,
+        size: ButtonSize,
+        role: proposal::TextRole,
     ) -> Size {
         let scale = button_typography_scale(text, role);
-        Size::new((finite_nonnegative(content.width) + size.inset() * scale * 2.).min(max_width),
-            (size.minimum_height() * scale).max(finite_nonnegative(content.height) + size.vertical_inset(role) * scale * 2.))
+        Size::new(
+            (finite_nonnegative(content.width) + size.inset() * scale * 2.).min(max_width),
+            (size.minimum_height() * scale)
+                .max(finite_nonnegative(content.height) + size.vertical_inset(role) * scale * 2.),
+        )
     }
 
     /// Paint the existing action chrome around content measured through the
@@ -577,8 +596,7 @@ impl ButtonModel {
         let context = text.motion_context();
         self.render_with_motion_context(
             scene, text, label, frame, clip, palette, variant, size, role, align, context, None,
-            radius,
-            None,
+            radius, None,
         )
     }
 
@@ -655,23 +673,23 @@ impl ButtonModel {
         };
         let max_width = (frame.size.width - inset * 2.0).max(0.0);
         let layout = prepared.unwrap_or_else(|| {
-        let label_size = measured_content.unwrap_or_else(|| {
-            if label.is_empty() {
-                Size::default()
-            } else {
-                text.measure(label, role, max_width)
-            }
-        });
-        ButtonLayout::resolve_scaled(
-            frame,
-            clip,
-            label_size,
-            size,
-            role,
-            align,
-            self.frame_policy,
-            scale,
-        )
+            let label_size = measured_content.unwrap_or_else(|| {
+                if label.is_empty() {
+                    Size::default()
+                } else {
+                    text.measure(label, role, max_width)
+                }
+            });
+            ButtonLayout::resolve_scaled(
+                frame,
+                clip,
+                label_size,
+                size,
+                role,
+                align,
+                self.frame_policy,
+                scale,
+            )
         });
         self.placement = Some(layout);
         let chrome = self
@@ -766,16 +784,26 @@ impl ButtonModel {
             if let Some(background_clip) = background_clip {
                 scene.push_clip(background_clip);
             }
-            let ink = if let Some(surface) = self.surface.or((variant == crate::paint::ButtonVariant::Toolbar).then_some("toolbar")) {
+            let ink = if let Some(surface) = self
+                .surface
+                .or((variant == crate::paint::ButtonVariant::Toolbar).then_some("toolbar"))
+            {
                 let (hover, pressed) = transition_progress.unwrap_or((
                     self.hover_transition.value() as f32,
                     self.press_transition.value() as f32,
                 ));
                 crate::paint::button_variant_on_surface(
-                    scene, chrome, palette, self.state, variant,
+                    scene,
+                    chrome,
+                    palette,
+                    self.state,
+                    variant,
                     radius.unwrap_or_else(|| size.radius() * scale),
-                    hover, pressed, surface,
-                ).text
+                    hover,
+                    pressed,
+                    surface,
+                )
+                .text
             } else if let Some((hover, pressed)) = transition_progress {
                 crate::paint::button_variant_with_interaction(
                     scene,
@@ -811,14 +839,26 @@ impl ButtonModel {
 
     /// Arrange through the original resolver without painting or arming input.
     pub(crate) fn prepare_label(
-        &mut self, text: &mut impl ButtonTextRenderer, label: &str,
-        frame: Rect, clip: Option<Rect>, role: proposal::TextRole,
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        frame: Rect,
+        clip: Option<Rect>,
+        role: proposal::TextRole,
     ) -> ButtonLayout {
         let scale = button_typography_scale(text, role);
         let width = (frame.size.width - ButtonSize::Body.inset() * scale * 2.).max(0.);
         let measured = text.measure(label, role, width);
-        let layout = ButtonLayout::resolve_scaled(frame, clip, measured, ButtonSize::Body,
-            role, ButtonTextAlign::default(), self.frame_policy, scale);
+        let layout = ButtonLayout::resolve_scaled(
+            frame,
+            clip,
+            measured,
+            ButtonSize::Body,
+            role,
+            ButtonTextAlign::default(),
+            self.frame_policy,
+            scale,
+        );
         self.placement = Some(layout);
         layout
     }
@@ -834,14 +874,48 @@ impl ButtonModel {
         palette: Palette,
         role: proposal::TextRole,
     ) {
-        self.paint_prepared_label_variant(scene,text,label,layout,clip,palette,role,crate::paint::ButtonVariant::Primary);
+        self.paint_prepared_label_variant(
+            scene,
+            text,
+            label,
+            layout,
+            clip,
+            palette,
+            role,
+            crate::paint::ButtonVariant::Primary,
+        );
     }
     // Preserve the existing explicit renderer/layout/clip/Theme contract;
     // the variant is the original Toast Quiet versus Banner Primary choice.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn paint_prepared_label_variant(&mut self,scene:&mut Scene,text:&mut impl ButtonTextRenderer,label:&str,layout:ButtonLayout,clip:Option<Rect>,palette:Palette,role:proposal::TextRole,variant:crate::paint::ButtonVariant){
-        let context=text.motion_context();
-        self.render_with_motion_context(scene,text,label,layout.frame,clip,palette,variant,ButtonSize::Body,role,ButtonTextAlign::default(),context,None,None,Some(layout));
+    pub(crate) fn paint_prepared_label_variant(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        layout: ButtonLayout,
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+        variant: crate::paint::ButtonVariant,
+    ) {
+        let context = text.motion_context();
+        self.render_with_motion_context(
+            scene,
+            text,
+            label,
+            layout.frame,
+            clip,
+            palette,
+            variant,
+            ButtonSize::Body,
+            role,
+            ButtonTextAlign::default(),
+            context,
+            None,
+            None,
+            Some(layout),
+        );
     }
 
     pub fn layout(&self) -> Option<ButtonLayout> {
@@ -916,8 +990,6 @@ impl ButtonModel {
         self.refresh_pointer_state();
     }
 
-
-
     pub(crate) fn set_clip_region(&mut self, region: Option<tekes_ui_scene::ClipRegion>) {
         self.clip_region = region;
         self.refresh_pointer_state();
@@ -925,9 +997,10 @@ impl ButtonModel {
 
     fn hit_test(&self, point: Point) -> bool {
         self.placement.is_some_and(|layout| layout.hit_test(point))
-            && self.clip_region.as_ref().is_none_or(|region| {
-                region.contains([point.x as f64, point.y as f64]) == Ok(true)
-            })
+            && self
+                .clip_region
+                .as_ref()
+                .is_none_or(|region| region.contains([point.x as f64, point.y as f64]) == Ok(true))
     }
 
     fn decided_pointer_arm(&self, mut state: ControlState) -> (ControlState, ButtonArm) {
@@ -938,7 +1011,14 @@ impl ButtonModel {
         state.pressed = armed;
         state.focused = armed;
         state.focus_visible = false;
-        (state, if armed { ButtonArm::Pointer } else { ButtonArm::None })
+        (
+            state,
+            if armed {
+                ButtonArm::Pointer
+            } else {
+                ButtonArm::None
+            },
+        )
     }
 
     pub(crate) fn prepare_content_down(
@@ -966,7 +1046,13 @@ impl ButtonModel {
             arm = ButtonArm::PointerActivated;
         }
         ButtonActionDecision {
-            expected: (self.state, self.arm, self.placement, self.last_pointer, self.motion_suspended),
+            expected: (
+                self.state,
+                self.arm,
+                self.placement,
+                self.last_pointer,
+                self.motion_suspended,
+            ),
             next_state: state,
             next_arm: arm,
             point: Some(point),
@@ -983,7 +1069,13 @@ impl ButtonModel {
             state.pressed = false;
         }
         ButtonActionDecision {
-            expected: (self.state, self.arm, self.placement, self.last_pointer, self.motion_suspended),
+            expected: (
+                self.state,
+                self.arm,
+                self.placement,
+                self.last_pointer,
+                self.motion_suspended,
+            ),
             next_state: state,
             next_arm: arm,
             point: self.last_pointer,
@@ -2875,7 +2967,8 @@ mod tests {
 
         for theme in Theme::ALL {
             for brand in palettes {
-                let palette = tekes_ui_tokens::Palette::new(theme, brand).expect("registered Gallery brand");
+                let palette =
+                    tekes_ui_tokens::Palette::new(theme, brand).expect("registered Gallery brand");
                 for (checked, state) in states {
                     let mut checkbox = Checkbox {
                         button: ButtonModel {
@@ -3063,23 +3156,40 @@ impl Toolbar {
 #[cfg(test)]
 mod empty_state_surface_tests {
     use super::*;
-    use tekes_ui_tokens::{Theme, surface_palette::{resolve_surface, surface_names}};
+    use tekes_ui_tokens::{
+        Theme,
+        surface_palette::{resolve_surface, surface_names},
+    };
     #[derive(Default)]
-    struct Text { measures: usize, inks: Vec<Rgba> }
+    struct Text {
+        measures: usize,
+        inks: Vec<Rgba>,
+    }
     impl ButtonTextRenderer for Text {
         fn measure(&mut self, _: &str, _: proposal::TextRole, _: f32) -> Size {
             self.measures += 1;
             Size::new(50., 18.)
         }
-        fn draw(&mut self, _: &mut Scene, _: &str, _: proposal::TextRole,
-            _: Rect, _: ButtonTextAlign, ink: Rgba) { self.inks.push(ink); }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            ink: Rgba,
+        ) {
+            self.inks.push(ink);
+        }
     }
     #[test]
     fn empty_state_prepared_action_consumes_surface_packets_and_keeps_geometry() {
         for theme in Theme::ALL {
-            let palettes = (0..3).map(|brand| Palette::new(theme, brand).unwrap())
-                .chain(["blue", "blue-inputs"].into_iter()
-                    .map(|id| Palette::for_theme_definition(theme, id).expect("required Theme definition")));
+            let palettes = (0..3)
+                .map(|brand| Palette::new(theme, brand).unwrap())
+                .chain(["blue", "blue-inputs"].into_iter().map(|id| {
+                    Palette::for_theme_definition(theme, id).expect("required Theme definition")
+                }));
             for palette in palettes {
                 for surface in surface_names() {
                     for state in ["rest", "hover", "pressed", "disabled", "focus"] {
@@ -3087,35 +3197,84 @@ mod empty_state_surface_tests {
                         let mut text = Text::default();
                         let frame = Rect::new(10.25, 12.5, 140., 40.);
                         let clip = Rect::new(0., 0., 220., 160.);
-                        let layout = button.prepare_label(&mut text, "Create", frame, Some(clip), proposal::TextRole::UiBody);
+                        let layout = button.prepare_label(
+                            &mut text,
+                            "Create",
+                            frame,
+                            Some(clip),
+                            proposal::TextRole::UiBody,
+                        );
                         button.set_surface(surface);
                         match state {
                             "hover" => button.pointer_move_at(frame.center()),
-                            "pressed" => { assert!(button.pointer_down_at(frame.center())); }
+                            "pressed" => {
+                                assert!(button.pointer_down_at(frame.center()));
+                            }
                             "disabled" => button.state.disabled = true,
-                            "focus" => { button.state.focused = true; button.state.focus_visible = true; }
+                            "focus" => {
+                                button.state.focused = true;
+                                button.state.focus_visible = true;
+                            }
                             _ => {}
                         }
-                        let expected = resolve_surface(palette, surface, "action-primary",
-                            if state == "focus" { "rest" } else { state }).unwrap();
+                        let expected = resolve_surface(
+                            palette,
+                            surface,
+                            "action-primary",
+                            if state == "focus" { "rest" } else { state },
+                        )
+                        .unwrap();
                         let measures = text.measures;
                         let mut scene = Scene::new();
-                        button.paint_prepared_label(&mut scene, &mut text, "Create", layout, Some(clip), palette, proposal::TextRole::UiBody);
-                        assert_eq!(text.measures, measures, "paint must retain prepared geometry");
+                        button.paint_prepared_label(
+                            &mut scene,
+                            &mut text,
+                            "Create",
+                            layout,
+                            Some(clip),
+                            palette,
+                            proposal::TextRole::UiBody,
+                        );
+                        assert_eq!(
+                            text.measures, measures,
+                            "paint must retain prepared geometry"
+                        );
                         assert_eq!(button.layout(), Some(layout));
-                        assert_eq!(text.inks, vec![expected.text], "{theme:?}/{surface}/{state}");
-                        let quads: Vec<_> = scene.primitives().iter().filter_map(|p| match p {
-                            tekes_ui_scene::Primitive::Quad(quad) => Some(quad), _ => None,
-                        }).collect();
-                        assert_eq!(quads[0].fill, expected.background, "{theme:?}/{surface}/{state}");
+                        assert_eq!(
+                            text.inks,
+                            vec![expected.text],
+                            "{theme:?}/{surface}/{state}"
+                        );
+                        let quads: Vec<_> = scene
+                            .primitives()
+                            .iter()
+                            .filter_map(|p| match p {
+                                tekes_ui_scene::Primitive::Quad(quad) => Some(quad),
+                                _ => None,
+                            })
+                            .collect();
+                        assert_eq!(
+                            quads[0].fill, expected.background,
+                            "{theme:?}/{surface}/{state}"
+                        );
                         if let Some(boundary) = expected.boundary {
                             assert_eq!(quads[0].border_color, boundary);
-                            assert_eq!(quads[0].border_width, proposal::metric("stroke", "stroke-rule").unwrap());
-                        } else { assert_eq!(quads[0].border_width, 0.); }
+                            assert_eq!(
+                                quads[0].border_width,
+                                proposal::metric("stroke", "stroke-rule").unwrap()
+                            );
+                        } else {
+                            assert_eq!(quads[0].border_width, 0.);
+                        }
                         if state == "focus" {
                             assert_eq!(quads.len(), 2);
-                            assert_eq!(quads[1].border_color, expected.focus.expect("action focus packet"));
-                        } else { assert_eq!(quads.len(), 1); }
+                            assert_eq!(
+                                quads[1].border_color,
+                                expected.focus.expect("action focus packet")
+                            );
+                        } else {
+                            assert_eq!(quads.len(), 1);
+                        }
                     }
                 }
             }
@@ -3124,30 +3283,87 @@ mod empty_state_surface_tests {
     #[test]
     fn notice_prepared_dismiss_consumes_quiet_and_primary_state_packets() {
         for theme in Theme::ALL {
-            let palette=Palette::for_theme_definition(theme,"blue-inputs").expect("required Theme definition");
+            let palette = Palette::for_theme_definition(theme, "blue-inputs")
+                .expect("required Theme definition");
             for surface in surface_names() {
-                for (variant,usage) in [(crate::paint::ButtonVariant::Quiet,"action-quiet"),(crate::paint::ButtonVariant::Primary,"action-primary")] {
-                    for state in ["rest","hover","pressed","disabled","focus"] {
-                        let mut button=ButtonModel::default();let mut text=Text::default();let frame=Rect::new(10.25,12.5,140.,40.);let clip=Rect::new(0.,0.,220.,160.);
-                        let layout=button.prepare_label(&mut text,"Dismiss",frame,Some(clip),proposal::TextRole::UiBody);button.set_surface(surface);
+                for (variant, usage) in [
+                    (crate::paint::ButtonVariant::Quiet, "action-quiet"),
+                    (crate::paint::ButtonVariant::Primary, "action-primary"),
+                ] {
+                    for state in ["rest", "hover", "pressed", "disabled", "focus"] {
+                        let mut button = ButtonModel::default();
+                        let mut text = Text::default();
+                        let frame = Rect::new(10.25, 12.5, 140., 40.);
+                        let clip = Rect::new(0., 0., 220., 160.);
+                        let layout = button.prepare_label(
+                            &mut text,
+                            "Dismiss",
+                            frame,
+                            Some(clip),
+                            proposal::TextRole::UiBody,
+                        );
+                        button.set_surface(surface);
                         match state {
-                            "hover"=>button.pointer_move_at(frame.center()),
-                            "pressed"=>{assert!(button.pointer_down_at(frame.center()));},
-                            "disabled"=>button.state.disabled=true,
-                            "focus"=>{button.state.focused=true;button.state.focus_visible=true;},
-                            _=>{},
+                            "hover" => button.pointer_move_at(frame.center()),
+                            "pressed" => {
+                                assert!(button.pointer_down_at(frame.center()));
+                            }
+                            "disabled" => button.state.disabled = true,
+                            "focus" => {
+                                button.state.focused = true;
+                                button.state.focus_visible = true;
+                            }
+                            _ => {}
                         }
-                        let expected=resolve_surface(palette,surface,usage,if state=="focus"{"rest"}else{state}).unwrap();let measures=text.measures;let mut scene=Scene::new();
-                        button.paint_prepared_label_variant(&mut scene,&mut text,"Dismiss",layout,Some(clip),palette,proposal::TextRole::UiBody,variant);
-                        assert_eq!(text.measures,measures);assert_eq!(button.layout(),Some(layout));assert_eq!(text.inks,vec![expected.text]);
-                        let quads:Vec<_>=scene.primitives().iter().filter_map(|p|match p{tekes_ui_scene::Primitive::Quad(q)=>Some(q),_=>None}).collect();
-                        assert_eq!(quads[0].fill,expected.background);
-                        if let Some(boundary)=expected.boundary{assert_eq!(quads[0].border_color,boundary);assert_eq!(quads[0].border_width,proposal::metric("stroke","stroke-rule").unwrap());}else{assert_eq!(quads[0].border_width,0.);}
-                        if state=="focus"{assert_eq!(quads.len(),2);assert_eq!(quads[1].border_color,expected.focus.unwrap());}else{assert_eq!(quads.len(),1);}
+                        let expected = resolve_surface(
+                            palette,
+                            surface,
+                            usage,
+                            if state == "focus" { "rest" } else { state },
+                        )
+                        .unwrap();
+                        let measures = text.measures;
+                        let mut scene = Scene::new();
+                        button.paint_prepared_label_variant(
+                            &mut scene,
+                            &mut text,
+                            "Dismiss",
+                            layout,
+                            Some(clip),
+                            palette,
+                            proposal::TextRole::UiBody,
+                            variant,
+                        );
+                        assert_eq!(text.measures, measures);
+                        assert_eq!(button.layout(), Some(layout));
+                        assert_eq!(text.inks, vec![expected.text]);
+                        let quads: Vec<_> = scene
+                            .primitives()
+                            .iter()
+                            .filter_map(|p| match p {
+                                tekes_ui_scene::Primitive::Quad(q) => Some(q),
+                                _ => None,
+                            })
+                            .collect();
+                        assert_eq!(quads[0].fill, expected.background);
+                        if let Some(boundary) = expected.boundary {
+                            assert_eq!(quads[0].border_color, boundary);
+                            assert_eq!(
+                                quads[0].border_width,
+                                proposal::metric("stroke", "stroke-rule").unwrap()
+                            );
+                        } else {
+                            assert_eq!(quads[0].border_width, 0.);
+                        }
+                        if state == "focus" {
+                            assert_eq!(quads.len(), 2);
+                            assert_eq!(quads[1].border_color, expected.focus.unwrap());
+                        } else {
+                            assert_eq!(quads.len(), 1);
+                        }
                     }
                 }
             }
         }
     }
-
 }

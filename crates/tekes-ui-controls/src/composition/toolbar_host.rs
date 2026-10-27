@@ -7,7 +7,10 @@ use tekes_ui_scene::ImageId;
 
 /// Window-owned toolbar content is anchored independently of animated containers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ToolbarWindowEdge { Leading, Trailing }
+pub enum ToolbarWindowEdge {
+    Leading,
+    Trailing,
+}
 /// Registration ownership: Container follows its allocation and is removed with
 /// it; Window retains a fixed edge allocation independent of panel visibility.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -37,7 +40,10 @@ impl ToolbarRegion {
     /// `band` is the window toolbar band, not a moving panel frame. The shared
     /// host measures all original Content and reserves its space from siblings.
     pub fn window(id: ComponentId, band: Rect, edge: ToolbarWindowEdge) -> Self {
-        Self { scope: ToolbarRegionScope::Window(edge), ..Self::new(id, band) }
+        Self {
+            scope: ToolbarRegionScope::Window(edge),
+            ..Self::new(id, band)
+        }
     }
     fn usable(&self) -> Rect {
         let f = self.available;
@@ -169,9 +175,12 @@ impl Component for Regions {
             // split gaps. A fixed window registration must not repaint those
             // gaps merely because its positioning band spans the whole window.
             if matches!(region.scope, ToolbarRegionScope::Window(_))
-                && self.allocations.iter().any(|r| r.scope == ToolbarRegionScope::Container
-                    && r.available.min_y() < region.available.max_y()
-                    && r.available.max_y() > region.available.min_y()) {
+                && self.allocations.iter().any(|r| {
+                    r.scope == ToolbarRegionScope::Container
+                        && r.available.min_y() < region.available.max_y()
+                        && r.available.max_y() > region.available.min_y()
+                })
+            {
                 continue;
             }
             crate::paint::toolbar_background(
@@ -190,8 +199,14 @@ impl Component for Regions {
         for region in &self.allocations {
             if let ToolbarRegionScope::Window(edge) = region.scope {
                 let usable = region.usable();
-                let width = self.children.iter_mut().find(|c| c.id == region.id)
-                    .expect("registered region").measure(text, usable.size).size.width;
+                let width = self
+                    .children
+                    .iter_mut()
+                    .find(|c| c.id == region.id)
+                    .expect("registered region")
+                    .measure(text, usable.size)
+                    .size
+                    .width;
                 measured.push((region.id, region.available, usable, edge, width));
             }
         }
@@ -200,40 +215,78 @@ impl Component for Regions {
             // Same-row edge contributions share one budget, including native
             // exclusions. In a narrow window their original overflow stays owner.
             let same_band = |b: Rect| b == band;
-            let left = measured.iter().filter(|(_,b,_,_,_)|same_band(*b))
-                .map(|(_,_,u,_,_)|u.min_x()).fold(usable.min_x(), f32::max);
-            let right = measured.iter().filter(|(_,b,_,_,_)|same_band(*b))
-                .map(|(_,_,u,_,_)|u.max_x()).fold(usable.max_x(), f32::min).max(left);
-            let total = measured.iter().filter(|(_,b,_,_,_)|same_band(*b)).map(|(_,_,_,_,w)|w).sum::<f32>();
-            let factor = if total > 0. { ((right-left)/total).min(1.) } else { 0. };
-            let preceding = measured[..index].iter().filter(|(_,b,_,e,_)|same_band(*b) && *e == edge)
-                .map(|(_,_,_,_,w)|w * factor).sum::<f32>();
+            let left = measured
+                .iter()
+                .filter(|(_, b, _, _, _)| same_band(*b))
+                .map(|(_, _, u, _, _)| u.min_x())
+                .fold(usable.min_x(), f32::max);
+            let right = measured
+                .iter()
+                .filter(|(_, b, _, _, _)| same_band(*b))
+                .map(|(_, _, u, _, _)| u.max_x())
+                .fold(usable.max_x(), f32::min)
+                .max(left);
+            let total = measured
+                .iter()
+                .filter(|(_, b, _, _, _)| same_band(*b))
+                .map(|(_, _, _, _, w)| w)
+                .sum::<f32>();
+            let factor = if total > 0. {
+                ((right - left) / total).min(1.)
+            } else {
+                0.
+            };
+            let preceding = measured[..index]
+                .iter()
+                .filter(|(_, b, _, e, _)| same_band(*b) && *e == edge)
+                .map(|(_, _, _, _, w)| w * factor)
+                .sum::<f32>();
             let width = natural * factor;
             let x = match edge {
                 ToolbarWindowEdge::Leading => left + preceding,
                 ToolbarWindowEdge::Trailing => right - preceding - width,
             };
-            fixed.push((id, edge, Rect::new(x, usable.min_y(), width, usable.size.height)));
+            fixed.push((
+                id,
+                edge,
+                Rect::new(x, usable.min_y(), width, usable.size.height),
+            ));
         }
         for child in &mut self.children {
-            let region = self.allocations.iter().find(|r| r.id == child.id).expect("registered region");
-            let usable = if let Some((_, _, frame)) = fixed.iter().find(|(id,_,_)| *id == child.id) {
+            let region = self
+                .allocations
+                .iter()
+                .find(|r| r.id == child.id)
+                .expect("registered region");
+            let usable = if let Some((_, _, frame)) =
+                fixed.iter().find(|(id, _, _)| *id == child.id)
+            {
                 *frame
             } else {
                 let base = region.usable();
                 let mut left = base.min_x();
                 let mut right = base.max_x();
                 for (_, edge, frame) in &fixed {
-                    if frame.size.width <= 0. || frame.min_y() >= base.max_y() || frame.max_y() <= base.min_y() { continue; }
+                    if frame.size.width <= 0.
+                        || frame.min_y() >= base.max_y()
+                        || frame.max_y() <= base.min_y()
+                    {
+                        continue;
+                    }
                     match edge {
                         ToolbarWindowEdge::Leading => left = left.max(frame.max_x()).min(right),
                         ToolbarWindowEdge::Trailing => right = right.min(frame.min_x()).max(left),
                     }
                 }
-                Rect::new(left, base.min_y(), (right-left).max(0.), base.size.height)
+                Rect::new(left, base.min_y(), (right - left).max(0.), base.size.height)
             };
             let row = crate::toolbar::metrics(text, proposal::TextRole::UiBody).row;
-            let frame = Rect::new(usable.min_x(), usable.center().y-row*0.5, usable.size.width, row);
+            let frame = Rect::new(
+                usable.min_x(),
+                usable.center().y - row * 0.5,
+                usable.size.width,
+                row,
+            );
             let clip = usable.intersection(&clip).unwrap_or_default();
             child.arrange(text, frame, clip);
         }
@@ -333,7 +386,11 @@ impl<B: Clone + Debug> ToolbarHost<B> {
             return Ok(());
         }
         let old: Vec<_> = current.iter().map(|r| r.id).collect();
-        let changed: Vec<_> = current.iter().filter(|old| !regions.contains(old)).map(|r| r.id).collect();
+        let changed: Vec<_> = current
+            .iter()
+            .filter(|old| !regions.contains(old))
+            .map(|r| r.id)
+            .collect();
         // Validate collisions against original descendants before any mutation.
         for r in &regions {
             if !old.contains(&r.id) && self.host.get(r.id).is_some() {
@@ -345,7 +402,9 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         } else {
             // Moving/hiding one container must not blur a fixed window editor
             // or recreate a persistent control in a different region.
-            for id in changed { self.host.cancel_subtree(id); }
+            for id in changed {
+                self.host.cancel_subtree(id);
+            }
         }
         self.invocations.clear();
         self.invalidate();
@@ -357,10 +416,8 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         }
         for region in &regions {
             if self.host.get(region.id).is_none() {
-                self.host.insert(
-                    self.root,
-                    Content::new(region.id, ToolbarContent::hosted()),
-                )?;
+                self.host
+                    .insert(self.root, Content::new(region.id, ToolbarContent::hosted()))?;
             }
         }
         self.host
@@ -744,16 +801,28 @@ impl<B: Clone + Debug> ToolbarHost<B> {
     /// The original Host still decides focus/reveal/IME admission. `true` means
     /// accepted, including an unchanged focused owner, never a refused transfer.
     pub fn restore_focus(&mut self, target: ToolbarAccessibilityTarget, visible: bool) -> bool {
-        if !self.ready || !self.active || target.part.is_some()
+        if !self.ready
+            || !self.active
+            || target.part.is_some()
             || target.revision != self.revision
             || self.host.semantic_mount(target.id) != Some(target.mount)
-            || !self.registrations.keys().any(|group| self.host.get(*group)
-                .is_some_and(|node| node.find(target.id).is_some()))
+            || !self.registrations.keys().any(|group| {
+                self.host
+                    .get(*group)
+                    .is_some_and(|node| node.find(target.id).is_some())
+            })
         {
             return false;
         }
-        matches!(self.host.admit_ordinary_focus(Some(target.id), visible, None,
-            action_preparation::FocusOrigin::Direct), action_preparation::FocusAdmission::Accepted { .. })
+        matches!(
+            self.host.admit_ordinary_focus(
+                Some(target.id),
+                visible,
+                None,
+                action_preparation::FocusOrigin::Direct
+            ),
+            action_preparation::FocusAdmission::Accepted { .. }
+        )
     }
     pub fn help_tooltip(&self) -> Option<(ComponentId, &str, crate::feedback_view::OverlayLayout)> {
         if self.ready && self.active {

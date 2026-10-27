@@ -94,9 +94,13 @@ struct EditorState {
 impl EditorState {
     fn read(host: &ContentHost) -> Self {
         Self {
-            binding: host.focus_admission_text_surface().map(|s| s.input.controlled_binding()),
+            binding: host
+                .focus_admission_text_surface()
+                .map(|s| s.input.controlled_binding()),
             composing: host.is_composing(),
-            text: host.focus_admission_text_surface().map(|s| s.input.action_snapshot()),
+            text: host
+                .focus_admission_text_surface()
+                .map(|s| s.input.action_snapshot()),
         }
     }
 }
@@ -118,7 +122,8 @@ impl ContentHost {
     // Focus transfer must authenticate the original mounted editor even when a
     // newly opened scope excludes it from public native/AX text queries.
     fn focus_admission_text_surface(&self) -> Option<&crate::TextSurface> {
-        self.focused.and_then(|id| self.root.find(id))
+        self.focused
+            .and_then(|id| self.root.find(id))
             .and_then(|node| node.component.text_surface())
     }
     fn prepare_focus(
@@ -156,7 +161,11 @@ impl ContentHost {
         {
             return Err(HostRevealError::CompositionBarrier);
         }
-        if id != self.focused && self.focus_admission_text_surface().is_some_and(|s| !s.input.can_unmark()) {
+        if id != self.focused
+            && self
+                .focus_admission_text_surface()
+                .is_some_and(|s| !s.input.can_unmark())
+        {
             return Err(HostRevealError::IdentityExhausted);
         }
         let next_epoch = if id != self.focused {
@@ -219,7 +228,10 @@ impl ContentHost {
                     .find_active(id)
                     .is_some_and(|n| n.component.focusable() && !n.component.semantics().disabled)
             })
-            && (p.id == self.focused || self.focus_admission_text_surface().is_none_or(|s| s.input.can_unmark()))
+            && (p.id == self.focused
+                || self
+                    .focus_admission_text_surface()
+                    .is_none_or(|s| s.input.can_unmark()))
             && !(p.id.is_some()
                 && p.id != self.focused
                 && self.is_composing()
@@ -271,19 +283,33 @@ impl ContentHost {
     /// Used only at an ordinary Host entry after UnsupportedLayout or absence
     /// of a prepared-hook contract. It grants no prepared transaction capability.
     pub(super) fn original_reveal_admissible(&self, id: ComponentId) -> bool {
-        let Ok(route) = ContentRoute::capture(
-            &self.root, id, HostRevealBudget::default().max_path_nodes,
-        ) else { return false; };
-        if (0..=route.depth()).any(|depth| route.node(&self.root, depth)
-            .is_none_or(|node| node.component.requires_focus_reveal() || node.component::<ScrollContent>().is_some())) {
+        let Ok(route) =
+            ContentRoute::capture(&self.root, id, HostRevealBudget::default().max_path_nodes)
+        else {
+            return false;
+        };
+        if (0..=route.depth()).any(|depth| {
+            route.node(&self.root, depth).is_none_or(|node| {
+                node.component.requires_focus_reveal()
+                    || node.component::<ScrollContent>().is_some()
+            })
+        }) {
             return false;
         }
-        self.reveal_clock.stamp().is_ok_and(|(_, input)| input.checked_add(1).is_some())
+        self.reveal_clock
+            .stamp()
+            .is_ok_and(|(_, input)| input.checked_add(1).is_some())
     }
     /// Ordinary focus keeps the pure prepared path whenever it is available.
     /// Legacy custom layout remains supported by the original dynamic hooks,
     /// without representing those hooks as a read-only/atomic reveal proof.
-    pub(super) fn admit_ordinary_focus(&mut self, id: Option<ComponentId>, visible: bool, traversal: Option<bool>, origin: FocusOrigin) -> FocusAdmission {
+    pub(super) fn admit_ordinary_focus(
+        &mut self,
+        id: Option<ComponentId>,
+        visible: bool,
+        traversal: Option<bool>,
+        origin: FocusOrigin,
+    ) -> FocusAdmission {
         match self.prepare_focus(id, visible, traversal, origin) {
             Ok(prepared) => return self.apply_focus(prepared),
             Err(HostRevealError::UnsupportedLayout)
@@ -294,18 +320,30 @@ impl ContentHost {
         // admission before encountering unsupported layout. No callback ran.
         let changed = self.focused != id;
         self.reveal_clock.invalidate_input();
-        if changed { self.focus_epoch += 1; }
+        if changed {
+            self.focus_epoch += 1;
+        }
         if changed && let Some(owner) = self.focused.and_then(|old| self.root.find_mut(old)) {
             owner.component.set_focus(false, false);
         }
         self.focused = id;
         if let Some(id) = id {
             let frame = {
-                let owner = self.root.find_mut(id).expect("validated ordinary focus owner");
-                if let Some(reverse) = traversal { owner.component.set_focus_from_traversal(reverse); }
-                else { owner.component.set_focus(true, visible); }
-                owner.component.text_surface()
-                    .filter(|surface| surface.presentation == crate::TextSurfacePresentation::Content)
+                let owner = self
+                    .root
+                    .find_mut(id)
+                    .expect("validated ordinary focus owner");
+                if let Some(reverse) = traversal {
+                    owner.component.set_focus_from_traversal(reverse);
+                } else {
+                    owner.component.set_focus(true, visible);
+                }
+                owner
+                    .component
+                    .text_surface()
+                    .filter(|surface| {
+                        surface.presentation == crate::TextSurfacePresentation::Content
+                    })
                     .map_or(owner.frame, |surface| surface.caret())
             };
             self.root.reveal(id, frame);
@@ -317,35 +355,83 @@ impl ContentHost {
     /// CurveLocal qualifies only the original ordinary geometry consumer, not
     /// prepared-effect purity. A real successful current reveal plan is required
     /// for focus transfer; UnsupportedLayout is never a success on this path.
-    fn local_ordinary_action_admissible(&self, id: ComponentId, origin: FocusOrigin, wants_focus: bool) -> bool {
-        let Some(node) = self.scope().find_active(id) else { return false; };
-        if !self.window_active || node.component.semantics().disabled
+    fn local_ordinary_action_admissible(
+        &self,
+        id: ComponentId,
+        origin: FocusOrigin,
+        wants_focus: bool,
+    ) -> bool {
+        let Some(node) = self.scope().find_active(id) else {
+            return false;
+        };
+        if !self.window_active
+            || node.component.semantics().disabled
             || node.component.curve_subtree_capability() != CurveSubtreeCapability::Local
-            || !self.reveal_clock.stamp().is_ok_and(|(_, input)| input.checked_add(1).is_some())
-            || (self.requires_curve_geometry() && self.geometry_snapshot().is_none_or(|snapshot| !snapshot.is_current())) {
+            || !self
+                .reveal_clock
+                .stamp()
+                .is_ok_and(|(_, input)| input.checked_add(1).is_some())
+            || (self.requires_curve_geometry()
+                && self
+                    .geometry_snapshot()
+                    .is_none_or(|snapshot| !snapshot.is_current()))
+        {
             return false;
         }
-        !wants_focus || self.prepare_focus(Some(id), matches!(origin, FocusOrigin::Accessibility), None, origin).is_ok()
+        !wants_focus
+            || self
+                .prepare_focus(
+                    Some(id),
+                    matches!(origin, FocusOrigin::Accessibility),
+                    None,
+                    origin,
+                )
+                .is_ok()
     }
     fn ordinary_pointer_action_admissible(&self, id: ComponentId) -> bool {
-        if self.original_reveal_admissible(id) { return true; }
-        let wants_focus = self.scope().find_active(id).is_some_and(|node| node.component.focusable()
-            && !node.preserve_activation_focus && !node.component.preserves_activation_focus());
+        if self.original_reveal_admissible(id) {
+            return true;
+        }
+        let wants_focus = self.scope().find_active(id).is_some_and(|node| {
+            node.component.focusable()
+                && !node.preserve_activation_focus
+                && !node.component.preserves_activation_focus()
+        });
         self.local_ordinary_action_admissible(id, FocusOrigin::Pointer, wants_focus)
     }
-    fn ordinary_ax_focus_admissible(&self, id: ComponentId, part: Option<usize>, action: &AccessibilityAction) -> bool {
+    fn ordinary_ax_focus_admissible(
+        &self,
+        id: ComponentId,
+        part: Option<usize>,
+        action: &AccessibilityAction,
+    ) -> bool {
         // Ordinary part Press dispatches to its existing owner without moving
         // keyboard focus; mirror the actual fallback rather than inventing a transfer.
-        let candidate = (matches!(action, AccessibilityAction::Focus | AccessibilityAction::SetSelection(_))
-            || (part.is_none() && matches!(action, AccessibilityAction::Press)
-                && !self.semantic_preserves_activation_focus(id, part)))
-            && self.scope().find_active(id).is_some_and(|node| node.component.focusable());
+        let candidate = (matches!(
+            action,
+            AccessibilityAction::Focus | AccessibilityAction::SetSelection(_)
+        ) || (part.is_none()
+            && matches!(action, AccessibilityAction::Press)
+            && !self.semantic_preserves_activation_focus(id, part)))
+            && self
+                .scope()
+                .find_active(id)
+                .is_some_and(|node| node.component.focusable());
         if !self.original_reveal_admissible(id) {
-            return self.local_ordinary_action_admissible(id, FocusOrigin::Accessibility, candidate);
+            return self.local_ordinary_action_admissible(
+                id,
+                FocusOrigin::Accessibility,
+                candidate,
+            );
         }
-        if !candidate { return true; }
+        if !candidate {
+            return true;
+        }
         match self.prepare_focus(Some(id), true, None, FocusOrigin::Accessibility) {
-            Ok(_) => self.reveal_clock.stamp().is_ok_and(|(_, input)| input.checked_add(1).is_some()),
+            Ok(_) => self
+                .reveal_clock
+                .stamp()
+                .is_ok_and(|(_, input)| input.checked_add(1).is_some()),
             Err(HostRevealError::UnsupportedLayout) => self.original_reveal_admissible(id),
             Err(_) => false,
         }
@@ -404,7 +490,9 @@ impl ContentHost {
             let Some(owner) = action.route.node(&self.root, action.route.depth()) else {
                 return Some(false);
             };
-            if !action.action.effect.validate(&*owner.component) { return Some(false); }
+            if !action.action.effect.validate(&*owner.component) {
+                return Some(false);
+            }
             for depth in 0..=action.route.depth() {
                 let Some(owner) = action.route.node(&self.root, depth) else {
                     return Some(false);
@@ -416,12 +504,16 @@ impl ContentHost {
         if let Some(focus) = focus {
             for route in focus.old.iter().chain(focus.new.iter()) {
                 for depth in 0..=route.depth() {
-                    let Some(owner) = route.node(&self.root, depth) else { return Some(false); };
+                    let Some(owner) = route.node(&self.root, depth) else {
+                        return Some(false);
+                    };
                     unsupported |= owner.component.action_transaction_compatibility()
                         != ActionTransactionCompatibility::StableHooks;
                 }
             }
-            if !self.validate_focus(focus) { return Some(false); }
+            if !self.validate_focus(focus) {
+                return Some(false);
+            }
         }
         if unsupported { None } else { Some(true) }
     }
@@ -457,9 +549,8 @@ impl ContentHost {
         // Its pointer-down may extend the original selection, so leave that
         // same-owner reducer untouched; cross-owner transfers use preparation.
         if self.focused.is_some_and(|focused| {
-            path.iter().any(|node| {
-                node.id == focused && node.component.text_surface().is_some()
-            })
+            path.iter()
+                .any(|node| node.id == focused && node.component.text_surface().is_some())
         }) {
             return None;
         }
@@ -475,9 +566,12 @@ impl ContentHost {
                 // existing reducer/capture behavior; do not reject a supported
                 // pointer action merely because a focus plan cannot be staged.
                 return if !self.ordinary_pointer_action_admissible(original_target)
-                    || self.validate_action_owners(&actions, None) == Some(false) {
+                    || self.validate_action_owners(&actions, None) == Some(false)
+                {
                     Some(ContentResponse::default())
-                } else { None };
+                } else {
+                    None
+                };
             }
             let ActionPreparation::Ready(action) = node
                 .component
@@ -487,9 +581,12 @@ impl ContentHost {
                 // existing reducer/capture behavior; do not reject a supported
                 // pointer action merely because a focus plan cannot be staged.
                 return if !self.ordinary_pointer_action_admissible(original_target)
-                    || self.validate_action_owners(&actions, None) == Some(false) {
+                    || self.validate_action_owners(&actions, None) == Some(false)
+                {
                     Some(ContentResponse::default())
-                } else { None };
+                } else {
+                    None
+                };
             };
             if action.refused {
                 self.event_bubbled = Some(false);
@@ -541,10 +638,18 @@ impl ContentHost {
         };
         let stamp = self.reveal_clock.stamp().ok();
         let capture = self.capture_epoch;
-        if stamp.is_none() { return Some(ContentResponse::default()); }
-        let owners_current = self.validate_action_owners(&actions, focus.as_ref()).or_else(|| {
-            if focus.is_some() || self.ordinary_pointer_action_admissible(original_target) { None } else { Some(false) }
-        })?;
+        if stamp.is_none() {
+            return Some(ContentResponse::default());
+        }
+        let owners_current = self
+            .validate_action_owners(&actions, focus.as_ref())
+            .or_else(|| {
+                if focus.is_some() || self.ordinary_pointer_action_admissible(original_target) {
+                    None
+                } else {
+                    Some(false)
+                }
+            })?;
         if !owners_current
             || self.capture_epoch != capture
             || self.reveal_clock.stamp().ok() != stamp
@@ -609,8 +714,11 @@ impl ContentHost {
                         == ActionTransactionCompatibility::StableHooks
                 });
             if !stable_press {
-                return if self.ordinary_ax_focus_admissible(id, part, action) { None }
-                    else { Some(ContentResponse::default()) };
+                return if self.ordinary_ax_focus_admissible(id, part, action) {
+                    None
+                } else {
+                    Some(ContentResponse::default())
+                };
             }
         }
         if part.is_none() && matches!(action, AccessibilityAction::Focus) {
@@ -625,17 +733,25 @@ impl ContentHost {
         if n.component.action_transaction_compatibility()
             != ActionTransactionCompatibility::StableHooks
         {
-            return if self.ordinary_ax_focus_admissible(id, part, action) { None }
-                else { Some(ContentResponse::default()) };
+            return if self.ordinary_ax_focus_admissible(id, part, action) {
+                None
+            } else {
+                Some(ContentResponse::default())
+            };
         }
         let ActionPreparation::Ready(prepared) = n
             .component
             .prepare_action(ComponentActionRequest::Accessibility { part, action })
         else {
-            return if self.ordinary_ax_focus_admissible(id, part, action) { None }
-                else { Some(ContentResponse::default()) };
+            return if self.ordinary_ax_focus_admissible(id, part, action) {
+                None
+            } else {
+                Some(ContentResponse::default())
+            };
         };
-        if prepared.refused { return Some(ContentResponse::default()); }
+        if prepared.refused {
+            return Some(ContentResponse::default());
+        }
         let wants_focus = prepared.response.consumed
             && (matches!(
                 action,
@@ -652,7 +768,11 @@ impl ContentHost {
             ) {
                 Ok(p) => Some(p),
                 Err(HostRevealError::UnsupportedLayout)
-                    if self.original_reveal_admissible(id) && prepared.effect.validate(&*n.component) => return None,
+                    if self.original_reveal_admissible(id)
+                        && prepared.effect.validate(&*n.component) =>
+                {
+                    return None;
+                }
                 Err(_) => return Some(ContentResponse::default()),
             }
         } else {
@@ -669,7 +789,9 @@ impl ContentHost {
         }];
         match self.validate_action_owners(&actions, focus.as_ref()) {
             Some(true) => {}
-            None if focus.is_some() || self.ordinary_ax_focus_admissible(id, part, action) => return None,
+            None if focus.is_some() || self.ordinary_ax_focus_admissible(id, part, action) => {
+                return None;
+            }
             _ => return Some(ContentResponse::default()),
         }
         let changed = if let Some(p) = focus {
@@ -774,8 +896,8 @@ pub(super) fn prepare_original<T: Component, D: OriginalActionDecision + 'static
 }
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::Button;
+    use super::*;
     struct Text;
     impl ButtonTextRenderer for Text {
         fn measure(
@@ -1036,7 +1158,8 @@ mod tests {
     }
 
     #[test]
-    fn ordinary_predictable_layout_without_prepared_action_keeps_explicit_ime_and_capacity_refusals() {
+    fn ordinary_predictable_layout_without_prepared_action_keeps_explicit_ime_and_capacity_refusals()
+     {
         #[derive(Debug)]
         struct OrdinaryLayout {
             children: Vec<Content>,
@@ -1045,38 +1168,95 @@ mod tests {
             arranged: bool,
         }
         impl Component for OrdinaryLayout {
-            fn host_reveal_passthrough(&self) -> bool { self.arranged && self.children.len() == 1 }
-            fn children(&self) -> &[Content] { &self.children }
-            fn children_mut(&mut self) -> Option<&mut Vec<Content>> { Some(&mut self.children) }
-            fn requires_focus_reveal(&self) -> bool { self.explicit_reveal }
-            fn composing(&self) -> bool { self.composing }
-            fn focusable(&self) -> bool { self.children.is_empty() }
-            fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: tekes_ui_scene::Size) -> crate::layout::MeasuredChild {
-                if let Some(child) = self.children.first_mut() { child.measure(text, available); }
-                crate::layout::MeasuredChild::new(tekes_ui_scene::Size::new(available.width, if self.children.is_empty() {40.} else {400.}))
+            fn host_reveal_passthrough(&self) -> bool {
+                self.arranged && self.children.len() == 1
+            }
+            fn children(&self) -> &[Content] {
+                &self.children
+            }
+            fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+                Some(&mut self.children)
+            }
+            fn requires_focus_reveal(&self) -> bool {
+                self.explicit_reveal
+            }
+            fn composing(&self) -> bool {
+                self.composing
+            }
+            fn focusable(&self) -> bool {
+                self.children.is_empty()
+            }
+            fn measure(
+                &mut self,
+                text: &mut dyn ButtonTextRenderer,
+                available: tekes_ui_scene::Size,
+            ) -> crate::layout::MeasuredChild {
+                if let Some(child) = self.children.first_mut() {
+                    child.measure(text, available);
+                }
+                crate::layout::MeasuredChild::new(tekes_ui_scene::Size::new(
+                    available.width,
+                    if self.children.is_empty() { 40. } else { 400. },
+                ))
             }
             fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
                 self.arranged = false;
                 if let Some(child) = self.children.first_mut() {
-                    child.arrange(text, Rect::new(frame.min_x(), frame.min_y()+300., frame.size.width, 40.), clip);
+                    child.arrange(
+                        text,
+                        Rect::new(frame.min_x(), frame.min_y() + 300., frame.size.width, 40.),
+                        clip,
+                    );
                 }
-                self.arranged = [frame, clip].into_iter().all(|rect| [rect.min_x(), rect.min_y(), rect.max_x(), rect.max_y(), rect.size.width, rect.size.height].into_iter().all(f32::is_finite) && rect.size.width >= 0. && rect.size.height >= 0.);
+                self.arranged = [frame, clip].into_iter().all(|rect| {
+                    [
+                        rect.min_x(),
+                        rect.min_y(),
+                        rect.max_x(),
+                        rect.max_y(),
+                        rect.size.width,
+                        rect.size.height,
+                    ]
+                    .into_iter()
+                    .all(f32::is_finite)
+                        && rect.size.width >= 0.
+                        && rect.size.height >= 0.
+                });
             }
         }
         fn ordinary(explicit_reveal: bool, composing: bool) -> ContentHost {
-            let body = Content::new(ComponentId(9994), OrdinaryLayout {
-                children: vec![Content::new(TARGET, Button::new("ordinary target"))],
-                explicit_reveal,
-                composing: false,
-                arranged: false,
-            });
+            let body = Content::new(
+                ComponentId(9994),
+                OrdinaryLayout {
+                    children: vec![Content::new(TARGET, Button::new("ordinary target"))],
+                    explicit_reveal,
+                    composing: false,
+                    arranged: false,
+                },
+            );
             let mut scroll = ScrollContent::new(ScrollArea::default(), body);
             scroll.viewport_height = Some(100.);
-            let old = Content::new(OLD, OrdinaryLayout { children: vec![], explicit_reveal: false, composing, arranged: false });
-            let mut h = ContentHost::new(Content::new(ComponentId(9990), StackContent {
-                model: Stack { axis: Axis::Vertical, gap: 0. }, flexible_child: None,
-                children: vec![Content::new(SCROLL, scroll), old],
-            })).unwrap();
+            let old = Content::new(
+                OLD,
+                OrdinaryLayout {
+                    children: vec![],
+                    explicit_reveal: false,
+                    composing,
+                    arranged: false,
+                },
+            );
+            let mut h = ContentHost::new(Content::new(
+                ComponentId(9990),
+                StackContent {
+                    model: Stack {
+                        axis: Axis::Vertical,
+                        gap: 0.,
+                    },
+                    flexible_child: None,
+                    children: vec![Content::new(SCROLL, scroll), old],
+                },
+            ))
+            .unwrap();
             render(&mut h);
             assert!(h.focus(Some(OLD), true));
             h.set_action_events(true);
@@ -1084,43 +1264,103 @@ mod tests {
         }
         for explicit in [false, true] {
             let mut h = ordinary(explicit, false);
-            assert_eq!(h.prepare_focus(Some(TARGET), true, None, FocusOrigin::Accessibility).is_ok(), !explicit, "the fixed arranged wrapper declares geometry, not prepared-action support");
+            assert_eq!(
+                h.prepare_focus(Some(TARGET), true, None, FocusOrigin::Accessibility)
+                    .is_ok(),
+                !explicit,
+                "the fixed arranged wrapper declares geometry, not prepared-action support"
+            );
             let response = h.accessibility_action(TARGET, None, AccessibilityAction::Press);
             assert_eq!(response.consumed, !explicit);
-            assert_eq!(h.focused(), Some(if explicit {OLD} else {TARGET}));
-            assert_eq!(h.get(TARGET).unwrap().component::<Button>().unwrap().activations, usize::from(!explicit));
+            assert_eq!(h.focused(), Some(if explicit { OLD } else { TARGET }));
+            assert_eq!(
+                h.get(TARGET)
+                    .unwrap()
+                    .component::<Button>()
+                    .unwrap()
+                    .activations,
+                usize::from(!explicit)
+            );
             assert_eq!(h.drain_actions().len(), usize::from(!explicit));
-            assert_eq!(h.get(SCROLL).unwrap().component::<ScrollContent>().unwrap().scroll.offset.y > 0., !explicit);
+            assert_eq!(
+                h.get(SCROLL)
+                    .unwrap()
+                    .component::<ScrollContent>()
+                    .unwrap()
+                    .scroll
+                    .offset
+                    .y
+                    > 0.,
+                !explicit
+            );
         }
         for explicit in [false, true] {
             let mut h = ordinary(explicit, false);
-            let response = h.event(&ContentEvent::Key { key: ControlKey::Tab { reverse: false }, down: true });
+            let response = h.event(&ContentEvent::Key {
+                key: ControlKey::Tab { reverse: false },
+                down: true,
+            });
             assert!(response.consumed);
             assert_eq!(response.changed, !explicit);
-            assert_eq!(h.focused(), Some(if explicit {OLD} else {TARGET}));
+            assert_eq!(h.focused(), Some(if explicit { OLD } else { TARGET }));
             // Tab may commit a real Scroll move; refresh normal geometry before re-entry.
             render(&mut h);
             h.focus(None, false);
             assert_eq!(h.enter_focus(false), !explicit);
-            assert_eq!(h.focused(), if explicit {None} else {Some(TARGET)});
+            assert_eq!(h.focused(), if explicit { None } else { Some(TARGET) });
         }
         let mut stale = ordinary(false, false);
         let owner = stale.get(TARGET).unwrap();
-        let ActionPreparation::Ready(action) = owner.component.prepare_action(ComponentActionRequest::Accessibility {
-            part: None, action: &AccessibilityAction::Press,
-        }) else { panic!("original Button has a prepared decision"); };
-        let route = ContentRoute::capture(&stale.root, TARGET, HostRevealBudget::default().max_path_nodes).unwrap();
+        let ActionPreparation::Ready(action) =
+            owner
+                .component
+                .prepare_action(ComponentActionRequest::Accessibility {
+                    part: None,
+                    action: &AccessibilityAction::Press,
+                })
+        else {
+            panic!("original Button has a prepared decision");
+        };
+        let route = ContentRoute::capture(
+            &stale.root,
+            TARGET,
+            HostRevealBudget::default().max_path_nodes,
+        )
+        .unwrap();
         let actions = [OwnerAction { route, action }];
-        assert_eq!(stale.validate_action_owners(&actions, None), None, "current ordinary wrapper lacks the prepared-hook contract");
-        stale.get_mut(TARGET).unwrap().component_mut::<Button>().unwrap().activations += 1;
-        assert_eq!(stale.validate_action_owners(&actions, None), Some(false), "unknown ancestry cannot mask a stale original decision");
+        assert_eq!(
+            stale.validate_action_owners(&actions, None),
+            None,
+            "current ordinary wrapper lacks the prepared-hook contract"
+        );
+        stale
+            .get_mut(TARGET)
+            .unwrap()
+            .component_mut::<Button>()
+            .unwrap()
+            .activations += 1;
+        assert_eq!(
+            stale.validate_action_owners(&actions, None),
+            Some(false),
+            "unknown ancestry cannot mask a stale original decision"
+        );
         let mut pointer_max = ordinary(false, false);
         assert!(pointer_max.focus(Some(TARGET), true));
         render(&mut pointer_max);
         assert!(pointer_max.focus(Some(OLD), true));
         let point = pointer_max.get(TARGET).unwrap().frame.center();
-        assert!(pointer_max.get(TARGET).unwrap().visible().is_some_and(|r| r.contains(point)));
-        let button = pointer_max.get_mut(TARGET).unwrap().component_mut::<Button>().unwrap();
+        assert!(
+            pointer_max
+                .get(TARGET)
+                .unwrap()
+                .visible()
+                .is_some_and(|r| r.contains(point))
+        );
+        let button = pointer_max
+            .get_mut(TARGET)
+            .unwrap()
+            .component_mut::<Button>()
+            .unwrap();
         button.pointer_activation_phase = ButtonActivationPhase::Press;
         button.activations = usize::MAX;
         let before = format!("{:?}", pointer_max.root);
@@ -1132,8 +1372,16 @@ mod tests {
         assert!(pointer_max.drain_actions().is_empty());
         for failure in 0..3 {
             let mut h = ordinary(false, failure == 1);
-            if failure == 0 { h.focus_epoch = u64::MAX; }
-            if failure == 2 { h.get_mut(TARGET).unwrap().component_mut::<Button>().unwrap().activations = usize::MAX; }
+            if failure == 0 {
+                h.focus_epoch = u64::MAX;
+            }
+            if failure == 2 {
+                h.get_mut(TARGET)
+                    .unwrap()
+                    .component_mut::<Button>()
+                    .unwrap()
+                    .activations = usize::MAX;
+            }
             let before = format!("{:?}", h.root);
             let epoch = h.focus_epoch;
             let response = h.accessibility_action(TARGET, None, AccessibilityAction::Press);
@@ -1150,30 +1398,68 @@ mod tests {
 mod overlay_focus_admission_tests {
     use super::*;
     #[derive(Debug)]
-    struct Scope { open: bool, children: Vec<Content> }
+    struct Scope {
+        open: bool,
+        children: Vec<Content>,
+    }
     impl Component for Scope {
-        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild { MeasuredChild::new(available) }
-        fn children(&self) -> &[Content] { &self.children }
-        fn children_mut(&mut self) -> Option<&mut Vec<Content>> { Some(&mut self.children) }
-        fn overlay_open(&self) -> bool { self.open }
-        fn overlay_scope(&self) -> Option<OverlayScope> { Some(OverlayScope::default()) }
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+            MeasuredChild::new(available)
+        }
+        fn children(&self) -> &[Content] {
+            &self.children
+        }
+        fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+            Some(&mut self.children)
+        }
+        fn overlay_open(&self) -> bool {
+            self.open
+        }
+        fn overlay_scope(&self) -> Option<OverlayScope> {
+            Some(OverlayScope::default())
+        }
     }
     #[test]
     fn new_scope_cannot_hide_original_editor_from_focus_transfer_admission() {
         let editor = ComponentId(80901);
         let target = ComponentId(80903);
         let field = TextFieldContent::new("Composer", "");
-        let mut host = ContentHost::new(Content::new(ComponentId(80900), StackContent {
-            model: Stack { axis: Axis::Vertical, gap: 0. }, flexible_child: None,
-            children: vec![Content::new(editor, field), Content::new(ComponentId(80902), Scope {
-                open: true, children: vec![Content::new(target, Button::new("Popup action"))],
-            })],
-        })).unwrap();
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(80900),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(editor, field),
+                    Content::new(
+                        ComponentId(80902),
+                        Scope {
+                            open: true,
+                            children: vec![Content::new(target, Button::new("Popup action"))],
+                        },
+                    ),
+                ],
+            },
+        ))
+        .unwrap();
         host.focused = Some(editor);
         // Mount first: the real lifecycle establishes the original editor identity.
-        let field = host.root.find_mut(editor).unwrap().component_mut::<TextFieldContent>().unwrap();
+        let field = host
+            .root
+            .find_mut(editor)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap();
         field.set_focus(true, false);
-        field.event(&ContentEvent::Preedit { text: "中".into(), selection: 1..1, clauses: vec![], replacement: None });
+        field.event(&ContentEvent::Preedit {
+            text: "中".into(),
+            selection: 1..1,
+            clauses: vec![],
+            replacement: None,
+        });
         field.surface.input.test_edit_epoch(u64::MAX);
         let original = field.surface.input.action_snapshot();
         let binding = field.surface.input.controlled_binding();
@@ -1183,16 +1469,34 @@ mod overlay_focus_admission_tests {
         assert_eq!(state.binding, Some(binding));
         assert_eq!(state.text, Some(original));
         assert!(state.composing);
-        assert!(matches!(host.prepare_focus(None, false, None, FocusOrigin::Direct), Err(HostRevealError::IdentityExhausted)));
+        assert!(matches!(
+            host.prepare_focus(None, false, None, FocusOrigin::Direct),
+            Err(HostRevealError::IdentityExhausted)
+        ));
         for origin in [FocusOrigin::Traversal, FocusOrigin::Accessibility] {
-            assert!(matches!(host.prepare_focus(Some(target), true, None, origin), Err(HostRevealError::CompositionBarrier)));
+            assert!(matches!(
+                host.prepare_focus(Some(target), true, None, origin),
+                Err(HostRevealError::CompositionBarrier)
+            ));
         }
         assert_eq!(host.focused(), Some(editor));
-        assert!(host.focus_admission_text_surface().unwrap().input.marked.is_some());
+        assert!(
+            host.focus_admission_text_surface()
+                .unwrap()
+                .input
+                .marked
+                .is_some()
+        );
         // Restore the test-injected capacity after asserting refusal, so normal
         // host destruction can unmark the still-focused original editor.
-        host.root.find_mut(editor).unwrap().component_mut::<TextFieldContent>().unwrap()
-            .surface.input.test_edit_epoch(0);
+        host.root
+            .find_mut(editor)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .input
+            .test_edit_epoch(0);
     }
 
     #[test]
@@ -1201,27 +1505,67 @@ mod overlay_focus_admission_tests {
         let scope = ComponentId(80912);
         let target = ComponentId(80913);
         let field = TextFieldContent::new("Composer", "");
-        let mut host = ContentHost::new(Content::new(ComponentId(80910), StackContent {
-            model: Stack { axis: Axis::Vertical, gap: 0. }, flexible_child: None,
-            children: vec![Content::new(editor, field), Content::new(scope, Scope {
-                open: false, children: vec![Content::new(target, Button::new("Popup action"))],
-            })],
-        })).unwrap();
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(80910),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(editor, field),
+                    Content::new(
+                        scope,
+                        Scope {
+                            open: false,
+                            children: vec![Content::new(target, Button::new("Popup action"))],
+                        },
+                    ),
+                ],
+            },
+        ))
+        .unwrap();
         host.focused = Some(editor);
         // Capacity exhaustion is an input after mounting, not a lifecycle failure.
-        let field = host.root.find_mut(editor).unwrap().component_mut::<TextFieldContent>().unwrap();
+        let field = host
+            .root
+            .find_mut(editor)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap();
         field.set_focus(true, false);
-        field.event(&ContentEvent::Preedit { text: "中".into(), selection: 1..1, clauses: vec![], replacement: None });
+        field.event(&ContentEvent::Preedit {
+            text: "中".into(),
+            selection: 1..1,
+            clauses: vec![],
+            replacement: None,
+        });
         field.surface.input.test_edit_epoch(u64::MAX);
         // This exercises the original focus admission before any target reveal
         // work. The active original scope still has an eligible focus intent.
         host.root.find_mut(target).unwrap().frame = Rect::new(10., 10., 80., 24.);
-        host.root.find_mut(editor).unwrap().component_mut::<TextFieldContent>().unwrap()
-            .surface.scroll.overscroll = Point::new(0., 8.);
-        let before_input = host.focus_admission_text_surface().unwrap().input.action_snapshot();
+        host.root
+            .find_mut(editor)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .scroll
+            .overscroll = Point::new(0., 8.);
+        let before_input = host
+            .focus_admission_text_surface()
+            .unwrap()
+            .input
+            .action_snapshot();
         let before_scroll = format!("{:?}", host.focus_admission_text_surface().unwrap().scroll);
         let before_epoch = host.focus_epoch();
-        host.root.find_mut(scope).unwrap().component_mut::<Scope>().unwrap().open = true;
+        host.root
+            .find_mut(scope)
+            .unwrap()
+            .component_mut::<Scope>()
+            .unwrap()
+            .open = true;
 
         host.reconcile_active_inputs();
 
@@ -1236,7 +1580,13 @@ mod overlay_focus_admission_tests {
         assert!(host.drain_actions().is_empty());
         // Restore the test-injected capacity after asserting refusal, so normal
         // host destruction can unmark the still-focused original editor.
-        host.root.find_mut(editor).unwrap().component_mut::<TextFieldContent>().unwrap()
-            .surface.input.test_edit_epoch(0);
+        host.root
+            .find_mut(editor)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .input
+            .test_edit_epoch(0);
     }
 }

@@ -36,7 +36,10 @@ fn settings_columns(
 }
 impl Host {
     pub(super) fn prepare_settings_item_navigation(&mut self) -> bool {
-        let allowed = self.settings.as_ref().is_none_or(|state| state.borrow_mut().prepare_item_navigation());
+        let allowed = self
+            .settings
+            .as_ref()
+            .is_none_or(|state| state.borrow_mut().prepare_item_navigation());
         if !allowed {
             // Reject before a request or cross-Host focus cancellation. No
             // history/input gate is changed, and the actual form keeps its IME.
@@ -48,43 +51,113 @@ impl Host {
         self.settings.as_ref().is_some_and(|state| {
             let state = state.borrow();
             state.sidebar.host.semantics().iter().any(|node| {
-                state.sidebar.host.get(node.id)
+                state
+                    .sidebar
+                    .host
+                    .get(node.id)
                     .and_then(|n| n.component::<tekes_ui_settings::SelectableListContent>())
-                    .is_some_and(|list| list.view.layout().items.iter()
-                        .any(|row| row.visible.is_some_and(|visible| visible.contains(point))))
+                    .is_some_and(|list| {
+                        list.view
+                            .layout()
+                            .items
+                            .iter()
+                            .any(|row| row.visible.is_some_and(|visible| visible.contains(point)))
+                    })
             })
         })
     }
     pub(super) fn settings_navigation_focus_guard(
         &mut self,
         event: &Event,
-        publication: Option<&tekes_ui_platform_macos::content_accessibility::WindowAccessibilityPublication>,
+        publication: Option<
+            &tekes_ui_platform_macos::content_accessibility::WindowAccessibilityPublication,
+        >,
     ) -> bool {
-        let Some(state) = &self.settings else { return false; };
-        if self.navigation.as_ref().is_some_and(|nav| nav.busy || !nav.host.input_open)
-            || state.borrow().restoring() { return false; }
+        let Some(state) = &self.settings else {
+            return false;
+        };
+        if self
+            .navigation
+            .as_ref()
+            .is_some_and(|nav| nav.busy || !nav.host.input_open)
+            || state.borrow().restoring()
+        {
+            return false;
+        }
         let mut back = false;
         let target = match event {
-            Event::Mouse(mouse) if matches!(mouse.kind, MouseEventKind::Down { button: MouseButton::Left, .. }) => {
+            Event::Mouse(mouse)
+                if matches!(
+                    mouse.kind,
+                    MouseEventKind::Down {
+                        button: MouseButton::Left,
+                        ..
+                    }
+                ) =>
+            {
                 let point = Point::new(mouse.position.x as f32, mouse.position.y as f32);
-                back = self.leading_visible && state.borrow().sidebar.host.get(ComponentId(4))
-                    .and_then(|node| node.visible()).is_some_and(|visible| visible.contains(point));
-                (self.toolbar.host.content_host().get(Self::toolbar_control(ToolbarTarget::Navigation)).is_some_and(|node| node.frame().contains(point))
-                    || self.toolbar.host.content_host().input_overlay_owner().is_some_and(|(id, _)| id == Self::toolbar_control(ToolbarTarget::Navigation)))
-                    || (self.leading_visible && self.sidebar_navigation_point(point)) || back
+                back = self.leading_visible
+                    && state
+                        .borrow()
+                        .sidebar
+                        .host
+                        .get(ComponentId(4))
+                        .and_then(|node| node.visible())
+                        .is_some_and(|visible| visible.contains(point));
+                (self
+                    .toolbar
+                    .host
+                    .content_host()
+                    .get(Self::toolbar_control(ToolbarTarget::Navigation))
+                    .is_some_and(|node| node.frame().contains(point))
+                    || self
+                        .toolbar
+                        .host
+                        .content_host()
+                        .input_overlay_owner()
+                        .is_some_and(|(id, _)| {
+                            id == Self::toolbar_control(ToolbarTarget::Navigation)
+                        }))
+                    || (self.leading_visible && self.sidebar_navigation_point(point))
+                    || back
             }
             Event::Key(key) if key.kind == KeyEventKind::Down => {
                 let key = toolbar_key(key.clone()).key;
                 let sidebar = state.borrow();
-                let focused_list = sidebar.sidebar.host.focused().and_then(|id| sidebar.sidebar.host.get(id))
-                    .is_some_and(|node| node.component::<tekes_ui_settings::SelectableListContent>().is_some());
-                back = self.leading_visible && sidebar.sidebar.host.focused() == Some(ComponentId(4))
+                let focused_list = sidebar
+                    .sidebar
+                    .host
+                    .focused()
+                    .and_then(|id| sidebar.sidebar.host.get(id))
+                    .is_some_and(|node| {
+                        node.component::<tekes_ui_settings::SelectableListContent>()
+                            .is_some()
+                    });
+                back = self.leading_visible
+                    && sidebar.sidebar.host.focused() == Some(ComponentId(4))
                     && matches!(key, Some(ControlKey::Enter | ControlKey::Space));
-                (focused_list && matches!(key, Some(ControlKey::Up | ControlKey::Down | ControlKey::Home | ControlKey::End | ControlKey::Enter)))
-                    || (self.toolbar.host.content_host().focused() == Some(Self::toolbar_control(ToolbarTarget::Navigation))
-                        && matches!(key, Some(ControlKey::Enter | ControlKey::Space))) || back
+                (focused_list
+                    && matches!(
+                        key,
+                        Some(
+                            ControlKey::Up
+                                | ControlKey::Down
+                                | ControlKey::Home
+                                | ControlKey::End
+                                | ControlKey::Enter
+                        )
+                    ))
+                    || (self.toolbar.host.content_host().focused()
+                        == Some(Self::toolbar_control(ToolbarTarget::Navigation))
+                        && matches!(key, Some(ControlKey::Enter | ControlKey::Space)))
+                    || back
             }
-            Event::Accessibility {target, action: tekes_ui_platform_macos::AccessibilityAction::Focus | tekes_ui_platform_macos::AccessibilityAction::Press} => {
+            Event::Accessibility {
+                target,
+                action:
+                    tekes_ui_platform_macos::AccessibilityAction::Focus
+                    | tekes_ui_platform_macos::AccessibilityAction::Press,
+            } => {
                 let owner = publication.and_then(|p| p.owner(*target));
                 if owner == Some(tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner(0)) {
                     let opaque = self.toolbar_ax.iter().find(|(key, _)| key == target).map(|(_, target)| *target);
@@ -103,16 +176,33 @@ impl Host {
         let ready = state.borrow().navigation_input_ready();
         // Successful preflight is pure: this same native publication is still
         // needed by the actual action. Rejected input may update its feedback.
-        if !target || ready { return false; }
+        if !target || ready {
+            return false;
+        }
         if back {
             let allowed = state.borrow_mut().prepare_back_focus();
-            if !allowed { self.set_toolbar_focus(None, false); }
+            if !allowed {
+                self.set_toolbar_focus(None, false);
+            }
             !allowed
-        } else { !self.prepare_settings_item_navigation() }
+        } else {
+            !self.prepare_settings_item_navigation()
+        }
     }
-    pub(super) fn settings_sidebar_input(&mut self, event: &ContentEvent) -> Result<Option<crate::navigation::Entry>> {
-        self.panels[0].local.as_mut().unwrap().event(event, &mut self.text)?;
-        self.settings.as_ref().unwrap().borrow_mut().take_item_navigation()
+    pub(super) fn settings_sidebar_input(
+        &mut self,
+        event: &ContentEvent,
+    ) -> Result<Option<crate::navigation::Entry>> {
+        self.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .event(event, &mut self.text)?;
+        self.settings
+            .as_ref()
+            .unwrap()
+            .borrow_mut()
+            .take_item_navigation()
     }
     pub(super) fn open_settings(&mut self, w: &Window) -> Result<()> {
         if let Some(child) = &self.settings_child
@@ -175,7 +265,9 @@ impl Host {
         let mut host = app.into_host(false);
         host.is_settings_window = true;
         host.acceptance_shared = self.acceptance_shared.clone();
-        if self.acceptance_shared.is_some() { host.settings_options = self.settings_options.clone(); }
+        if self.acceptance_shared.is_some() {
+            host.settings_options = self.settings_options.clone();
+        }
         host.leading_visible = true;
         host.trailing_visible = false;
         host.sidebar_motion = crate::sidebar_motion::SidebarMotion::new(true, false);
@@ -209,72 +301,179 @@ impl Host {
         Ok(())
     }
     pub(super) fn drive_settings_acceptance(&mut self, w: &mut Window) -> Result<()> {
-        let Some(shared) = self.acceptance_shared.clone() else { return Ok(()); };
+        let Some(shared) = self.acceptance_shared.clone() else {
+            return Ok(());
+        };
         let stage = shared.stage();
-        if matches!(stage, window_acceptance::Stage::Done | window_acceptance::Stage::Main) { return Ok(()); }
-        if shared.0.lock().is_ok_and(|s| s.phase_started.elapsed() > std::time::Duration::from_secs(10)) {
+        if matches!(
+            stage,
+            window_acceptance::Stage::Done | window_acceptance::Stage::Main
+        ) {
+            return Ok(());
+        }
+        if shared
+            .0
+            .lock()
+            .is_ok_and(|s| s.phase_started.elapsed() > std::time::Duration::from_secs(10))
+        {
             if stage == window_acceptance::Stage::AwaitingShown {
                 let nav = self.navigation.as_ref();
                 let publication = w.content_accessibility_publication();
-                let text_size_targets: Vec<String> = publication.as_ref().map(|p| {
-                    p.nodes().iter().filter(|n| n.label == "文字大小").map(|n| format!("label={:?},role={:?},enabled={},owner={:?}", n.label, n.role, n.enabled, p.owner(n.key).map(|owner| owner.0))).collect()
-                }).unwrap_or_default();
-                let text_field_count = publication.as_ref().map_or(0, |p| p.nodes().iter().filter(|n| n.role == tekes_ui_platform_macos::AccessibilityRole::TextField).count());
-                let text_fields: Vec<String> = publication.as_ref().map(|p| {
-                    p.nodes().iter().filter(|n| n.role == tekes_ui_platform_macos::AccessibilityRole::TextField).take(12)
-                        .map(|n| format!("label={:?},role={:?},enabled={},owner={:?}", n.label, n.role, n.enabled, p.owner(n.key).map(|owner| owner.0))).collect()
-                }).unwrap_or_default();
-                eprintln!("SETTINGS_ACCEPTANCE_WAIT_TIMEOUT phase=AwaitingShown nav_present={} nav_busy={} nav_input_open={} nav_error={:?} active={} key={} occluded={} publication_present={} publication_current={} publication_valid={} publication_nodes={} text_size_targets={:?} text_field_count={} text_fields_first12={:?}",
-                    nav.is_some(), nav.is_some_and(|n| n.busy), nav.is_some_and(|n| n.host.input_open), nav.and_then(|n| n.error.as_deref()),
-                    w.is_active(), w.is_key_window(), w.is_occluded(), publication.is_some(),
-                    publication.as_ref().is_some_and(|p| p.is_current()), publication.as_ref().is_some_and(|p| p.is_valid()),
-                    publication.as_ref().map_or(0, |p| p.nodes().len()), text_size_targets, text_field_count, text_fields);
+                let text_size_targets: Vec<String> = publication
+                    .as_ref()
+                    .map(|p| {
+                        p.nodes()
+                            .iter()
+                            .filter(|n| n.label == "文字大小")
+                            .map(|n| {
+                                format!(
+                                    "label={:?},role={:?},enabled={},owner={:?}",
+                                    n.label,
+                                    n.role,
+                                    n.enabled,
+                                    p.owner(n.key).map(|owner| owner.0)
+                                )
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                let text_field_count = publication.as_ref().map_or(0, |p| {
+                    p.nodes()
+                        .iter()
+                        .filter(|n| n.role == tekes_ui_platform_macos::AccessibilityRole::TextField)
+                        .count()
+                });
+                let text_fields: Vec<String> = publication
+                    .as_ref()
+                    .map(|p| {
+                        p.nodes()
+                            .iter()
+                            .filter(|n| {
+                                n.role == tekes_ui_platform_macos::AccessibilityRole::TextField
+                            })
+                            .take(12)
+                            .map(|n| {
+                                format!(
+                                    "label={:?},role={:?},enabled={},owner={:?}",
+                                    n.label,
+                                    n.role,
+                                    n.enabled,
+                                    p.owner(n.key).map(|owner| owner.0)
+                                )
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                eprintln!(
+                    "SETTINGS_ACCEPTANCE_WAIT_TIMEOUT phase=AwaitingShown nav_present={} nav_busy={} nav_input_open={} nav_error={:?} active={} key={} occluded={} publication_present={} publication_current={} publication_valid={} publication_nodes={} text_size_targets={:?} text_field_count={} text_fields_first12={:?}",
+                    nav.is_some(),
+                    nav.is_some_and(|n| n.busy),
+                    nav.is_some_and(|n| n.host.input_open),
+                    nav.and_then(|n| n.error.as_deref()),
+                    w.is_active(),
+                    w.is_key_window(),
+                    w.is_occluded(),
+                    publication.is_some(),
+                    publication.as_ref().is_some_and(|p| p.is_current()),
+                    publication.as_ref().is_some_and(|p| p.is_valid()),
+                    publication.as_ref().map_or(0, |p| p.nodes().len()),
+                    text_size_targets,
+                    text_field_count,
+                    text_fields
+                );
             }
             shared.fail(format!("10s timeout in {stage:?}"));
             w.close();
-            if let Ok(s) = shared.0.lock() && let Some(wake) = &s.parent_wake { let _ = wake.wake(); }
+            if let Ok(s) = shared.0.lock()
+                && let Some(wake) = &s.parent_wake
+            {
+                let _ = wake.wake();
+            }
             return Ok(());
         }
         if stage == window_acceptance::Stage::Failed {
             w.close();
-            if let Ok(s) = shared.0.lock() && let Some(wake) = &s.parent_wake { let _ = wake.wake(); }
+            if let Ok(s) = shared.0.lock()
+                && let Some(wake) = &s.parent_wake
+            {
+                let _ = wake.wake();
+            }
             return Ok(());
         }
-        if shared.0.lock().is_ok_and(|s| s.started.elapsed() > std::time::Duration::from_secs(30)) {
+        if shared
+            .0
+            .lock()
+            .is_ok_and(|s| s.started.elapsed() > std::time::Duration::from_secs(30))
+        {
             shared.fail("30s total acceptance timeout");
             w.close();
             return Ok(());
         }
-        if let Ok(mut result) = shared.0.lock() { result.child_wake = Some(w.wake_proxy()); }
+        if let Ok(mut result) = shared.0.lock() {
+            result.child_wake = Some(w.wake_proxy());
+        }
         let publication = w.content_accessibility_publication();
         match stage {
             window_acceptance::Stage::AwaitingShown => {
-                let options = self.settings_options.as_ref().ok_or_else(|| anyhow::anyhow!("acceptance settings options absent"))?;
-                let field = options.schema.settings.iter().find(|f| f.label == "文字大小")
-                    .ok_or_else(|| anyhow::anyhow!("acceptance requires demo text-size field `文字大小`"))?;
-                let nav_ready = self.navigation.as_ref().is_some_and(|nav| nav.host.input_open && !nav.busy && nav.error.is_none());
+                let options = self
+                    .settings_options
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("acceptance settings options absent"))?;
+                let field = options
+                    .schema
+                    .settings
+                    .iter()
+                    .find(|f| f.label == "文字大小")
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("acceptance requires demo text-size field `文字大小`")
+                    })?;
+                let nav_ready = self
+                    .navigation
+                    .as_ref()
+                    .is_some_and(|nav| nav.host.input_open && !nav.busy && nav.error.is_none());
                 if !w.is_active() || !w.is_key_window() || w.is_occluded() || !nav_ready {
                     w.request_redraw();
                     return Ok(());
                 }
-                let Some(publication) = publication else { w.request_redraw(); return Ok(()); };
+                let Some(publication) = publication else {
+                    w.request_redraw();
+                    return Ok(());
+                };
                 if !publication.is_current() || !publication.is_valid() {
                     w.request_redraw();
                     return Ok(());
                 }
-                let owner = tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner(2);
-                let Some(node) = publication.nodes().iter().find(|n| n.label == field.label
-                    && n.enabled
-                    && n.role == tekes_ui_platform_macos::AccessibilityRole::TextField
-                    && publication.owner(n.key) == Some(owner)) else {
+                let owner =
+                    tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner(2);
+                let Some(node) = publication.nodes().iter().find(|n| {
+                    n.label == field.label
+                        && n.enabled
+                        && n.role == tekes_ui_platform_macos::AccessibilityRole::TextField
+                        && publication.owner(n.key) == Some(owner)
+                }) else {
                     w.request_redraw();
                     return Ok(());
                 };
-                let original = self.settings.as_ref().unwrap().borrow().draft.display(field);
-                let current: i64 = original.parse().map_err(|_| anyhow::anyhow!("text-size AX value is not integer: {original}"))?;
-                let edited = if current + 10 <= 300 { current + 10 } else { current - 10 };
+                let original = self
+                    .settings
+                    .as_ref()
+                    .unwrap()
+                    .borrow()
+                    .draft
+                    .display(field);
+                let current: i64 = original.parse().map_err(|_| {
+                    anyhow::anyhow!("text-size AX value is not integer: {original}")
+                })?;
+                let edited = if current + 10 <= 300 {
+                    current + 10
+                } else {
+                    current - 10
+                };
                 {
-                    let mut result = shared.0.lock().map_err(|e| anyhow::anyhow!("acceptance lock: {e}"))?;
+                    let mut result = shared
+                        .0
+                        .lock()
+                        .map_err(|e| anyhow::anyhow!("acceptance lock: {e}"))?;
                     result.child_window = Some(w.native_window_number());
                     result.mode = Some(options.display_mode);
                     result.field_path = field.path.clone();
@@ -283,59 +482,161 @@ impl Host {
                     result.stage = window_acceptance::Stage::Shown;
                     result.phase_started = std::time::Instant::now();
                 }
-                eprintln!("SETTINGS_ACCEPTANCE_SHOWN parent_window={} child_window={} active={} key={} occluded={} ax_nodes={} mode={:?} physical_input=false", shared.0.lock().unwrap().parent_window, w.native_window_number(), w.is_active(), w.is_key_window(), w.is_occluded(), publication.nodes().len(), options.display_mode);
-                self.event(Event::Accessibility { target: node.key, action: tekes_ui_platform_macos::AccessibilityAction::Focus }, w)?;
+                eprintln!(
+                    "SETTINGS_ACCEPTANCE_SHOWN parent_window={} child_window={} active={} key={} occluded={} ax_nodes={} mode={:?} physical_input=false",
+                    shared.0.lock().unwrap().parent_window,
+                    w.native_window_number(),
+                    w.is_active(),
+                    w.is_key_window(),
+                    w.is_occluded(),
+                    publication.nodes().len(),
+                    options.display_mode
+                );
+                self.event(
+                    Event::Accessibility {
+                        target: node.key,
+                        action: tekes_ui_platform_macos::AccessibilityAction::Focus,
+                    },
+                    w,
+                )?;
                 w.request_redraw();
             }
             window_acceptance::Stage::Shown => {
-                let Some(publication) = publication else { return Ok(()); };
-                let node = publication.nodes().iter().find(|n| n.label == "文字大小" && n.enabled && n.role == tekes_ui_platform_macos::AccessibilityRole::TextField)
+                let Some(publication) = publication else {
+                    return Ok(());
+                };
+                let node = publication
+                    .nodes()
+                    .iter()
+                    .find(|n| {
+                        n.label == "文字大小"
+                            && n.enabled
+                            && n.role == tekes_ui_platform_macos::AccessibilityRole::TextField
+                    })
                     .ok_or_else(|| anyhow::anyhow!("Settings AX field disappeared after Focus"))?;
-                self.event(Event::Accessibility { target: node.key, action: tekes_ui_platform_macos::AccessibilityAction::Focus }, w)?;
+                self.event(
+                    Event::Accessibility {
+                        target: node.key,
+                        action: tekes_ui_platform_macos::AccessibilityAction::Focus,
+                    },
+                    w,
+                )?;
                 self.event(Event::TextCommand("selectAll:".into()), w)?;
                 shared.transition(window_acceptance::Stage::Editing);
                 w.request_redraw();
             }
             window_acceptance::Stage::Editing => {
-                let value = shared.0.lock().unwrap().edited.clone().ok_or_else(|| anyhow::anyhow!("acceptance edited value missing"))?;
-                self.event(Event::TextCommit { text: value, replacement: None }, w)?;
+                let value = shared
+                    .0
+                    .lock()
+                    .unwrap()
+                    .edited
+                    .clone()
+                    .ok_or_else(|| anyhow::anyhow!("acceptance edited value missing"))?;
+                self.event(
+                    Event::TextCommit {
+                        text: value,
+                        replacement: None,
+                    },
+                    w,
+                )?;
                 self.event(Event::TextCommand("insertNewline:".into()), w)?;
                 shared.transition(window_acceptance::Stage::Saving);
                 w.request_redraw();
             }
             window_acceptance::Stage::Saving => {
-                let options = self.settings_options.as_ref().ok_or_else(|| anyhow::anyhow!("acceptance settings options absent"))?;
-                let (field_path, edited) = { let s = shared.0.lock().unwrap(); (s.field_path.clone(), s.edited.clone().unwrap()) };
+                let options = self
+                    .settings_options
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("acceptance settings options absent"))?;
+                let (field_path, edited) = {
+                    let s = shared.0.lock().unwrap();
+                    (s.field_path.clone(), s.edited.clone().unwrap())
+                };
                 let source = match std::fs::read_to_string(&options.file) {
                     Ok(source) => source,
-                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => { w.request_redraw(); return Ok(()); },
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                        w.request_redraw();
+                        return Ok(());
+                    }
                     Err(e) => return Err(anyhow::anyhow!("read settings file: {e}")),
                 };
-                let saved = window_acceptance::read_integer_override(&source, &field_path).map_err(anyhow::Error::msg)?;
-                let clean = self.settings.as_ref().is_some_and(|s| !s.borrow().draft.dirty() && !s.borrow().blocked());
-                if saved.as_deref() == Some(edited.as_str()) && clean
-                    && let Some(undo) = self.toolbar.host.semantics().into_iter().flat_map(|n| n.parts.into_iter()).find(|(_, p)| p.semantics.name == "Undo" && !p.semantics.disabled).map(|(_, p)| p.frame) {
-                        eprintln!("SETTINGS_ACCEPTANCE_SAVED path={} value={} draft_clean=true undo_enabled=true", options.file.display(), edited);
-                        shared.transition(window_acceptance::Stage::Undoing);
-                        let point = tekes_ui_platform_macos::Point { x: undo.center().x as f64, y: undo.center().y as f64 };
-                        for kind in [MouseEventKind::Down { button: MouseButton::Left, click_count: 1 }, MouseEventKind::Up { button: MouseButton::Left, click_count: 1 }] {
-                            self.event(Event::Mouse(tekes_ui_platform_macos::MouseEvent { kind, position: point, modifiers: tekes_ui_platform_macos::Modifiers::default() }), w)?;
-                        }
-                        shared.transition(window_acceptance::Stage::Restoring);
+                let saved = window_acceptance::read_integer_override(&source, &field_path)
+                    .map_err(anyhow::Error::msg)?;
+                let clean = self
+                    .settings
+                    .as_ref()
+                    .is_some_and(|s| !s.borrow().draft.dirty() && !s.borrow().blocked());
+                if saved.as_deref() == Some(edited.as_str())
+                    && clean
+                    && let Some(undo) = self
+                        .toolbar
+                        .host
+                        .semantics()
+                        .into_iter()
+                        .flat_map(|n| n.parts.into_iter())
+                        .find(|(_, p)| p.semantics.name == "Undo" && !p.semantics.disabled)
+                        .map(|(_, p)| p.frame)
+                {
+                    eprintln!(
+                        "SETTINGS_ACCEPTANCE_SAVED path={} value={} draft_clean=true undo_enabled=true",
+                        options.file.display(),
+                        edited
+                    );
+                    shared.transition(window_acceptance::Stage::Undoing);
+                    let point = tekes_ui_platform_macos::Point {
+                        x: undo.center().x as f64,
+                        y: undo.center().y as f64,
+                    };
+                    for kind in [
+                        MouseEventKind::Down {
+                            button: MouseButton::Left,
+                            click_count: 1,
+                        },
+                        MouseEventKind::Up {
+                            button: MouseButton::Left,
+                            click_count: 1,
+                        },
+                    ] {
+                        self.event(
+                            Event::Mouse(tekes_ui_platform_macos::MouseEvent {
+                                kind,
+                                position: point,
+                                modifiers: tekes_ui_platform_macos::Modifiers::default(),
+                            }),
+                            w,
+                        )?;
+                    }
+                    shared.transition(window_acceptance::Stage::Restoring);
                 }
             }
-            window_acceptance::Stage::Undoing => { w.request_redraw(); }
+            window_acceptance::Stage::Undoing => {
+                w.request_redraw();
+            }
             window_acceptance::Stage::Restoring => {
-                let options = self.settings_options.as_ref().ok_or_else(|| anyhow::anyhow!("acceptance settings options absent"))?;
+                let options = self
+                    .settings_options
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("acceptance settings options absent"))?;
                 let s = shared.0.lock().unwrap();
-                let original = s.original.clone().ok_or_else(|| anyhow::anyhow!("acceptance original value missing"))?;
+                let original = s
+                    .original
+                    .clone()
+                    .ok_or_else(|| anyhow::anyhow!("acceptance original value missing"))?;
                 let source = match std::fs::read_to_string(&options.file) {
                     Ok(source) => source,
                     Err(e) if e.kind() == std::io::ErrorKind::NotFound => String::new(),
                     Err(e) => return Err(e.into()),
                 };
-                let field = options.schema.settings.iter().find(|f| f.label == "文字大小").ok_or_else(|| anyhow::anyhow!("text-size field disappeared"))?;
-                let saved = window_acceptance::read_integer_override(&source, &s.field_path).map_err(anyhow::Error::msg)?.unwrap_or_else(|| field.display(&field.default));
+                let field = options
+                    .schema
+                    .settings
+                    .iter()
+                    .find(|f| f.label == "文字大小")
+                    .ok_or_else(|| anyhow::anyhow!("text-size field disappeared"))?;
+                let saved = window_acceptance::read_integer_override(&source, &s.field_path)
+                    .map_err(anyhow::Error::msg)?
+                    .unwrap_or_else(|| field.display(&field.default));
                 let (form_value, edit, clean) = {
                     let settings = self.settings.as_ref().unwrap().borrow();
                     let edit = settings.form.host.semantics().iter().find_map(|node| {
@@ -344,25 +645,59 @@ impl Host {
                             .and_then(|n| n.component::<tekes_ui_controls::composition::NumberFieldContent>())
                             .map(|number| number.edit_state())
                     }).ok_or_else(|| anyhow::anyhow!("actual Settings NumberField absent"))?;
-                    (settings.draft.display(field), edit, !settings.draft.dirty() && !settings.blocked())
+                    (
+                        settings.draft.display(field),
+                        edit,
+                        !settings.draft.dirty() && !settings.blocked(),
+                    )
                 };
                 drop(s);
-                if saved == original && form_value == original && edit.text == format!("{original}{}", field.suffix)
-                    && !edit.dirty && !edit.composing && clean {
-                    eprintln!("SETTINGS_ACCEPTANCE_UNDO_RESTORED path={} value={} form_value={} field_text={:?} draft_clean=true", options.file.display(), saved, form_value, edit.text);
+                if saved == original
+                    && form_value == original
+                    && edit.text == format!("{original}{}", field.suffix)
+                    && !edit.dirty
+                    && !edit.composing
+                    && clean
+                {
+                    eprintln!(
+                        "SETTINGS_ACCEPTANCE_UNDO_RESTORED path={} value={} form_value={} field_text={:?} draft_clean=true",
+                        options.file.display(),
+                        saved,
+                        form_value,
+                        edit.text
+                    );
                     let mode = shared.0.lock().unwrap().mode.unwrap();
                     if mode == crate::SettingsDisplayMode::Exclusive {
-                        let back = publication.as_ref().and_then(|p| p.nodes().iter().find(|n| n.label == "Back" || n.label == "返回")).ok_or_else(|| anyhow::anyhow!("published original Settings Back action absent"))?;
+                        let back = publication
+                            .as_ref()
+                            .and_then(|p| {
+                                p.nodes()
+                                    .iter()
+                                    .find(|n| n.label == "Back" || n.label == "返回")
+                            })
+                            .ok_or_else(|| {
+                                anyhow::anyhow!("published original Settings Back action absent")
+                            })?;
                         shared.transition(window_acceptance::Stage::Closing);
-                        self.event(Event::Accessibility { target: back.key, action: tekes_ui_platform_macos::AccessibilityAction::Press }, w)?;
+                        self.event(
+                            Event::Accessibility {
+                                target: back.key,
+                                action: tekes_ui_platform_macos::AccessibilityAction::Press,
+                            },
+                            w,
+                        )?;
                     } else {
                         shared.transition(window_acceptance::Stage::Closing);
                         self.event(Event::CloseRequested, w)?;
                     }
-                    if let Some(wake) = shared.0.lock().unwrap().parent_wake.clone() { let _ = wake.wake(); }
-                } else { w.request_redraw(); }
+                    if let Some(wake) = shared.0.lock().unwrap().parent_wake.clone() {
+                        let _ = wake.wake();
+                    }
+                } else {
+                    w.request_redraw();
+                }
             }
-            window_acceptance::Stage::Closing => { }
+            window_acceptance::Stage::Closing => {}
             _ => {}
         }
         Ok(())
@@ -442,7 +777,9 @@ impl Host {
         self.settings_top = top;
         if self.settings_back {
             let image = crate::window_toolbar::icon_image(
-                &mut self.toolbar_images, renderer, "tekes-back",
+                &mut self.toolbar_images,
+                renderer,
+                "tekes-back",
                 w.scale() as f32 * self.text.type_scale(),
             )?;
             settings.sidebar.set_back_icon(image);
@@ -544,7 +881,9 @@ impl Host {
             .is_some_and(|n| n.host.input_open && !n.busy)
             && !shared_settings.borrow().restoring();
         let active = w.is_active();
-        w.set_content_accessibility_publication(self.content_accessibility_publication(active && input_open));
+        w.set_content_accessibility_publication(
+            self.content_accessibility_publication(active && input_open),
+        );
         w.set_text_input_state(if active && input_open {
             crate::columns::text_state(self.toolbar.host.content_host()).or_else(|| {
                 (!self.toolbar.modal() && self.toolbar.host.content_host().focused().is_none())
@@ -575,8 +914,12 @@ impl Host {
                 })
                 .collect(),
         );
-        let animate = (self.acceptance_shared.as_ref().is_some_and(|s| !matches!(s.stage(), window_acceptance::Stage::Done | window_acceptance::Stage::Failed))
-            || self.sidebar_motion.needs_frame()
+        let animate = (self.acceptance_shared.as_ref().is_some_and(|s| {
+            !matches!(
+                s.stage(),
+                window_acceptance::Stage::Done | window_acceptance::Stage::Failed
+            )
+        }) || self.sidebar_motion.needs_frame()
             || self.toolbar.host.needs_render()
             || self.text.animation_requested()
             || self.settings.as_ref().unwrap().borrow().needs_frame())
@@ -675,11 +1018,21 @@ impl Host {
         }
         // Header search is an original local editor, using the same text/IME
         // and clipboard adapter as every ordinary Container, not the form draft.
-        let sidebar_editor = self.settings.as_ref().is_some_and(|s|
-            s.borrow().sidebar.host.focused_text().is_some());
-        if sidebar_editor && matches!(event,
-            Event::Key(_) | Event::TextKey(_) | Event::TextCommit { .. }
-            | Event::TextPreedit { .. } | Event::TextUnmark | Event::TextCommand(_)) {
+        let sidebar_editor = self
+            .settings
+            .as_ref()
+            .is_some_and(|s| s.borrow().sidebar.host.focused_text().is_some());
+        if sidebar_editor
+            && matches!(
+                event,
+                Event::Key(_)
+                    | Event::TextKey(_)
+                    | Event::TextCommit { .. }
+                    | Event::TextPreedit { .. }
+                    | Event::TextUnmark
+                    | Event::TextCommand(_)
+            )
+        {
             self.focused = 0;
             if self.local_content_event(event, w)? {
                 self.draw(w)?;
@@ -869,25 +1222,53 @@ impl Host {
                 }
             }
             Event::Accessibility { target, action } => {
-                let Some(publication)=w.content_accessibility_publication() else{return Ok(false);};
-                let Some(owner)=publication.owner(*target) else{return Ok(false);};
-                if !settings.accessibility_input(&publication, owner, *target, action.clone(), self.leading_visible) {
+                let Some(publication) = w.content_accessibility_publication() else {
+                    return Ok(false);
+                };
+                let Some(owner) = publication.owner(*target) else {
+                    return Ok(false);
+                };
+                if !settings.accessibility_input(
+                    &publication,
+                    owner,
+                    *target,
+                    action.clone(),
+                    self.leading_visible,
+                ) {
                     return Ok(true);
                 }
                 // Do not revoke any participating Host until publication.dispatch
                 // has delivered successfully to its stamped original owner.
-                if matches!(action, tekes_ui_platform_macos::AccessibilityAction::Focus | tekes_ui_platform_macos::AccessibilityAction::Press) {
+                if matches!(
+                    action,
+                    tekes_ui_platform_macos::AccessibilityAction::Focus
+                        | tekes_ui_platform_macos::AccessibilityAction::Press
+                ) {
                     self.set_toolbar_focus(None, false);
                     self.focused = if owner.0 == 1 { 0 } else { 1 };
                 }
                 if owner.0 == 1 {
                     if let Some(entry) = settings.take_item_navigation()? {
-                        if self.navigation.as_ref().is_some_and(|n| n.host.input_open && !n.busy) {
-                            self.navigation.as_mut().unwrap().send(crate::navigation::Command::Navigate(crate::navigation::Action::Push(entry)))?;
+                        if self
+                            .navigation
+                            .as_ref()
+                            .is_some_and(|n| n.host.input_open && !n.busy)
+                        {
+                            self.navigation.as_mut().unwrap().send(
+                                crate::navigation::Command::Navigate(
+                                    crate::navigation::Action::Push(entry),
+                                ),
+                            )?;
                         }
-                    } else if settings.sidebar.take_back() { settings.close_requested(); }
+                    } else if settings.sidebar.take_back() {
+                        settings.close_requested();
+                    }
                 } else {
-                    intents.extend(settings.form.collect(&settings.view_schema, &mut settings.draft));
+                    intents.extend(
+                        settings
+                            .form
+                            .collect(&settings.view_schema, &mut settings.draft),
+                    );
                 }
             }
             Event::Focus(false) => {
@@ -983,13 +1364,17 @@ mod pinned_header_tests {
     use tekes_ui_controls::composition::TextFieldContent;
     #[test]
     fn header_uses_toolkit_icon_and_fixed_original_editor_with_scrolling_list() {
-        let schema = tekes_ui_settings::Schema::parse(include_str!("../../../examples/app-host-demo/settings.schema.toml")).unwrap();
+        let schema = tekes_ui_settings::Schema::parse(include_str!(
+            "../../../examples/app-host-demo/settings.schema.toml"
+        ))
+        .unwrap();
         let mut sidebar = tekes_ui_settings::SettingsSidebar::new_with_back(&schema).unwrap();
         sidebar.set_back_icon(tekes_ui_scene::ImageId(777));
         let mut text = crate::text::Text::new();
         let frame = Rect::new(0., 0., 260., 180.);
         let draw = |s: &mut tekes_ui_settings::SettingsSidebar, t: &mut crate::text::Text| {
-            s.render(&mut Scene::new(), t, frame, Theme::LIGHT.into()).unwrap();
+            s.render(&mut Scene::new(), t, frame, Theme::LIGHT.into())
+                .unwrap();
         };
         draw(&mut sidebar, &mut text);
         let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
@@ -997,14 +1382,63 @@ mod pinned_header_tests {
         let scroll = sidebar.host.get(ComponentId(1)).unwrap().frame();
         assert!(back.max_x() < search.min_x());
         assert!(search.max_y() < scroll.min_y());
-        assert!(sidebar.host.get(ComponentId(4)).unwrap().component::<tekes_ui_controls::Button>().unwrap().label.is_empty());
-        sidebar.host.event_with_text(&ContentEvent::PointerDown(search.center()), &mut text).unwrap();
-        sidebar.host.event_with_text(&ContentEvent::PointerUp(search.center()), &mut text).unwrap();
-        sidebar.host.event_with_text(&ContentEvent::Commit { text: "搜索".into(), replacement: None }, &mut text).unwrap();
-        sidebar.host.event_with_text(&ContentEvent::Scroll { position: scroll.center(), delta: Point::new(0., 100.), precise: true, begin: true, end: false, momentum: false, time: 0. }, &mut text).unwrap();
+        assert!(
+            sidebar
+                .host
+                .get(ComponentId(4))
+                .unwrap()
+                .component::<tekes_ui_controls::Button>()
+                .unwrap()
+                .label
+                .is_empty()
+        );
+        sidebar
+            .host
+            .event_with_text(&ContentEvent::PointerDown(search.center()), &mut text)
+            .unwrap();
+        sidebar
+            .host
+            .event_with_text(&ContentEvent::PointerUp(search.center()), &mut text)
+            .unwrap();
+        sidebar
+            .host
+            .event_with_text(
+                &ContentEvent::Commit {
+                    text: "搜索".into(),
+                    replacement: None,
+                },
+                &mut text,
+            )
+            .unwrap();
+        sidebar
+            .host
+            .event_with_text(
+                &ContentEvent::Scroll {
+                    position: scroll.center(),
+                    delta: Point::new(0., 100.),
+                    precise: true,
+                    begin: true,
+                    end: false,
+                    momentum: false,
+                    time: 0.,
+                },
+                &mut text,
+            )
+            .unwrap();
         draw(&mut sidebar, &mut text);
         assert_eq!(sidebar.host.get(ComponentId(6)).unwrap().frame(), search);
-        assert_eq!(sidebar.host.get(ComponentId(6)).unwrap().component::<TextFieldContent>().unwrap().surface.input.text, "搜索");
+        assert_eq!(
+            sidebar
+                .host
+                .get(ComponentId(6))
+                .unwrap()
+                .component::<TextFieldContent>()
+                .unwrap()
+                .surface
+                .input
+                .text,
+            "搜索"
+        );
         sidebar.event(&ContentEvent::PointerDown(back.center()));
         sidebar.event(&ContentEvent::PointerUp(back.center()));
         assert!(sidebar.take_back());
@@ -1012,221 +1446,657 @@ mod pinned_header_tests {
     }
 }
 
-
 #[cfg(test)]
 mod navigation_input_tests {
     use super::*;
-    use crate::settings::{SettingsDisplayMode,SettingsSurface,SettingsWindow};
-    use crate::window_toolbar::{Contents,Declaration,Source};
+    use crate::settings::{SettingsDisplayMode, SettingsSurface, SettingsWindow};
     use crate::toolbar_source::ComponentSource;
-    use tekes_ui_controls::composition::{ToolbarButtonDeclaration,ToolbarGroupOverflow,ToolbarPlacement,ToolbarRegion,AccessibilityAction as ContentAction};
-    use tekes_ui_platform_macos::{AccessibilityAction,Modifiers,content_accessibility::ContentAccessibilityOwner};
-    use tekes_ui_settings::{FileProvider,Snapshot,SelectableListContent};
-    fn fixture(marked:bool)->(Host,std::path::PathBuf) { fixture_mode(marked,SettingsDisplayMode::Independent) }
-    fn fixture_mode(marked:bool,mode:SettingsDisplayMode)->(Host,std::path::PathBuf) {
-        let path=std::env::temp_dir().join(format!("settings-nav-input-{}-{}",std::process::id(),std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos())).join("settings.toml");
+    use crate::window_toolbar::{Contents, Declaration, Source};
+    use tekes_ui_controls::composition::{
+        AccessibilityAction as ContentAction, ToolbarButtonDeclaration, ToolbarGroupOverflow,
+        ToolbarPlacement, ToolbarRegion,
+    };
+    use tekes_ui_platform_macos::{
+        AccessibilityAction, Modifiers, content_accessibility::ContentAccessibilityOwner,
+    };
+    use tekes_ui_settings::{FileProvider, SelectableListContent, Snapshot};
+    fn fixture(marked: bool) -> (Host, std::path::PathBuf) {
+        fixture_mode(marked, SettingsDisplayMode::Independent)
+    }
+    fn fixture_mode(marked: bool, mode: SettingsDisplayMode) -> (Host, std::path::PathBuf) {
+        let path = std::env::temp_dir()
+            .join(format!(
+                "settings-nav-input-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ))
+            .join("settings.toml");
         let schema=include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml").replace("min = 10\nmax = 32","min = 10\nmax = 32\nstep = 1")
             .replace("[[groups.items]]\nid = \"advanced\"", "[[groups.items.fields]]\nid = \"extra-number\"\npath = [\"reading\", \"extra_number\"]\nlabel = \"Extra number\"\ntype = \"integer\"\ndefault = 14\nmin = 10\nmax = 32\nstep = 1\n\n[[groups.items]]\nid = \"advanced\"");
-        let options=SettingsWindow::from_toml(&schema,path.clone()).unwrap().display_mode(mode);
-        let provider=FileProvider::open(path.clone(),options.schema.namespace.clone()).unwrap();
-        let mut surface=SettingsSurface::new(options,provider,Snapshot::default()).unwrap();
-        if !marked {assert!(surface.prepare_item_navigation());surface.select("reading/text").unwrap();}
+        let options = SettingsWindow::from_toml(&schema, path.clone())
+            .unwrap()
+            .display_mode(mode);
+        let provider = FileProvider::open(path.clone(), options.schema.namespace.clone()).unwrap();
+        let mut surface = SettingsSurface::new(options, provider, Snapshot::default()).unwrap();
+        if !marked {
+            assert!(surface.prepare_item_navigation());
+            surface.select("reading/text").unwrap();
+        }
         surface.show();
-        let state=std::rc::Rc::new(std::cell::RefCell::new(surface));
-        let mut host=crate::AppWindow::from_columns(settings_columns(&state)).unwrap().into_host(false);
-        host.settings=Some(state);host.is_settings_window=true;host.leading_visible=true;
+        let state = std::rc::Rc::new(std::cell::RefCell::new(surface));
+        let mut host = crate::AppWindow::from_columns(settings_columns(&state))
+            .unwrap()
+            .into_host(false);
+        host.settings = Some(state);
+        host.is_settings_window = true;
+        host.leading_visible = true;
         assert!(host.mount_columns());
-        let source=ComponentSource{session:tekes_ui_module_runtime::component::Session{module:crate::navigation::MODULE_ID.into(),instance:1,host_epoch:1},registration:1,window:host.toolbar.window};
-        host.toolbar.sync(Rect::new(0.,0.,940.,600.),vec![ToolbarRegion::new(ComponentId(10),Rect::new(0.,0.,280.,52.))],vec![Declaration{id:ComponentId(92100),region:ComponentId(10),placement:ToolbarPlacement::Navigation,order:0,contents:Contents::Commands(vec![ToolbarButtonDeclaration{id:crate::navigation::BACK,icon:None,text:"Back".into(),hint:None,enabled:true},ToolbarButtonDeclaration{id:crate::navigation::FORWARD,icon:None,text:"Forward".into(),hint:None,enabled:true}],ToolbarGroupOverflow::Split),source:Source::Navigation(source)}]).unwrap();
+        let source = ComponentSource {
+            session: tekes_ui_module_runtime::component::Session {
+                module: crate::navigation::MODULE_ID.into(),
+                instance: 1,
+                host_epoch: 1,
+            },
+            registration: 1,
+            window: host.toolbar.window,
+        };
+        host.toolbar
+            .sync(
+                Rect::new(0., 0., 940., 600.),
+                vec![ToolbarRegion::new(
+                    ComponentId(10),
+                    Rect::new(0., 0., 280., 52.),
+                )],
+                vec![Declaration {
+                    id: ComponentId(92100),
+                    region: ComponentId(10),
+                    placement: ToolbarPlacement::Navigation,
+                    order: 0,
+                    contents: Contents::Commands(
+                        vec![
+                            ToolbarButtonDeclaration {
+                                id: crate::navigation::BACK,
+                                icon: None,
+                                text: "Back".into(),
+                                hint: None,
+                                enabled: true,
+                            },
+                            ToolbarButtonDeclaration {
+                                id: crate::navigation::FORWARD,
+                                icon: None,
+                                text: "Forward".into(),
+                                hint: None,
+                                enabled: true,
+                            },
+                        ],
+                        ToolbarGroupOverflow::Split,
+                    ),
+                    source: Source::Navigation(source),
+                }],
+            )
+            .unwrap();
         render(&mut host);
         {
-            let mut s=host.settings.as_ref().unwrap().borrow_mut();
-            let id=ComponentId(if marked {100}else{101});
-            assert!(s.form.host.focus(Some(id),true));
-            if marked {s.form.host.event(&ContentEvent::Preedit{text:"中文".into(),selection:0..2,clauses:std::iter::once(0..2).collect(),replacement:None});}
-            else {s.form.host.event(&ContentEvent::TextCommand("selectAll:".into()));s.form.host.event(&ContentEvent::Commit{text:"99".into(),replacement:None});}
+            let mut s = host.settings.as_ref().unwrap().borrow_mut();
+            let id = ComponentId(if marked { 100 } else { 101 });
+            assert!(s.form.host.focus(Some(id), true));
+            if marked {
+                s.form.host.event(&ContentEvent::Preedit {
+                    text: "中文".into(),
+                    selection: 0..2,
+                    clauses: std::iter::once(0..2).collect(),
+                    replacement: None,
+                });
+            } else {
+                s.form
+                    .host
+                    .event(&ContentEvent::TextCommand("selectAll:".into()));
+                s.form.host.event(&ContentEvent::Commit {
+                    text: "99".into(),
+                    replacement: None,
+                });
+            }
         }
         render(&mut host);
-        (host,path)
+        (host, path)
     }
-    fn render(host:&mut Host) {
-        for (i,frame) in [Rect::new(16.,60.,260.,500.),Rect::new(300.,60.,620.,500.)].into_iter().enumerate() {
-            host.panels[i].bounds=frame;
-            host.panels[i].local.as_mut().unwrap().render(&mut Scene::new(),&mut host.text,frame,frame,Theme::LIGHT.into()).unwrap();
+    fn render(host: &mut Host) {
+        for (i, frame) in [
+            Rect::new(16., 60., 260., 500.),
+            Rect::new(300., 60., 620., 500.),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            host.panels[i].bounds = frame;
+            host.panels[i]
+                .local
+                .as_mut()
+                .unwrap()
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
         }
-        host.toolbar.host.render(&mut Scene::new(),&mut host.text,Theme::LIGHT.into()).unwrap();
+        host.toolbar
+            .host
+            .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
+            .unwrap();
     }
-    fn correct(host:&mut Host,marked:bool) {
-        let mut s=host.settings.as_ref().unwrap().borrow_mut();
-        if marked {s.form.host.event(&ContentEvent::Unmark);}
-        else {s.form.host.event(&ContentEvent::TextCommand("selectAll:".into()));s.form.host.event(&ContentEvent::Commit{text:"18".into(),replacement:None});}
-        let state=&mut *s;
-        state.form.collect(&state.view_schema,&mut state.draft);
+    fn correct(host: &mut Host, marked: bool) {
+        let mut s = host.settings.as_ref().unwrap().borrow_mut();
+        if marked {
+            s.form.host.event(&ContentEvent::Unmark);
+        } else {
+            s.form
+                .host
+                .event(&ContentEvent::TextCommand("selectAll:".into()));
+            s.form.host.event(&ContentEvent::Commit {
+                text: "18".into(),
+                replacement: None,
+            });
+        }
+        let state = &mut *s;
+        state.form.collect(&state.view_schema, &mut state.draft);
         state.edited();
-        drop(s);render(host);
+        drop(s);
+        render(host);
     }
-    fn row(host:&Host,marked:bool)->(ComponentId,Point,String) {
-        let label=if marked {"文本与语言"}else{"高级排版"};
-        let state=host.settings.as_ref().unwrap().borrow();
+    fn row(host: &Host, marked: bool) -> (ComponentId, Point, String) {
+        let label = if marked {
+            "文本与语言"
+        } else {
+            "高级排版"
+        };
+        let state = host.settings.as_ref().unwrap().borrow();
         for node in state.sidebar.host.semantics() {
-            if let Some(list)=state.sidebar.host.get(node.id).and_then(|n|n.component::<SelectableListContent>())
-                && let Some(index)=list.labels.iter().position(|s|s==label) {
-                let point=list.view.layout().items.iter().find(|r|r.id==index).unwrap().visible.unwrap().center();
-                return (node.id,point,label.into());
+            if let Some(list) = state
+                .sidebar
+                .host
+                .get(node.id)
+                .and_then(|n| n.component::<SelectableListContent>())
+                && let Some(index) = list.labels.iter().position(|s| s == label)
+            {
+                let point = list
+                    .view
+                    .layout()
+                    .items
+                    .iter()
+                    .find(|r| r.id == index)
+                    .unwrap()
+                    .visible
+                    .unwrap()
+                    .center();
+                return (node.id, point, label.into());
             }
         }
         panic!("original sidebar route missing");
     }
-    fn key(code:u16)->Event { Event::Key(KeyEvent{kind:KeyEventKind::Down,key_code:code,characters:String::new(),characters_ignoring_modifiers:String::new(),modifiers:Modifiers::NONE,is_repeat:false}) }
-    fn assert_retained(host:&Host,selected:&str,text:&str,marked:Option<std::ops::Range<usize>>) {
-        let state=host.settings.as_ref().unwrap().borrow();
-        assert_eq!(state.selected,selected);
-        assert_eq!(state.form.host.focused_text().unwrap().input.text,text);
-        assert_eq!(state.form.host.focused_text().unwrap().input.marked,marked);
+    fn key(code: u16) -> Event {
+        Event::Key(KeyEvent {
+            kind: KeyEventKind::Down,
+            key_code: code,
+            characters: String::new(),
+            characters_ignoring_modifiers: String::new(),
+            modifiers: Modifiers::NONE,
+            is_repeat: false,
+        })
+    }
+    fn assert_retained(
+        host: &Host,
+        selected: &str,
+        text: &str,
+        marked: Option<std::ops::Range<usize>>,
+    ) {
+        let state = host.settings.as_ref().unwrap().borrow();
+        assert_eq!(state.selected, selected);
+        assert_eq!(state.form.host.focused_text().unwrap().input.text, text);
+        assert_eq!(state.form.host.focused_text().unwrap().input.marked, marked);
         assert!(state.form.has_number_draft() || state.form.host.is_composing());
     }
     #[test]
     fn actual_sidebar_pointer_keyboard_and_ax_refuse_then_accept_corrected_input() {
-        for marked in [false,true] { for channel in ["pointer","key","ax"] {
-            let (mut host,path)=fixture(marked);
-            let (list,point,label)=row(&host,marked);
-            if channel=="key" {assert!(host.settings.as_ref().unwrap().borrow_mut().sidebar.host.focus(Some(list),true));render(&mut host);}
-            let publication=host.content_accessibility_publication(true).unwrap();
-            let target=publication.nodes().iter().find(|n|n.label==label).unwrap().key;
-            let event=match channel {
-                "pointer"=>Event::Mouse(MouseEvent{kind:MouseEventKind::Down{button:MouseButton::Left,click_count:1},position:tekes_ui_platform_macos::Point{x:point.x as f64,y:point.y as f64},modifiers:Modifiers::NONE}),
-                "key"=>key(if marked {36}else{125}),
-                _=>Event::Accessibility{target,action:AccessibilityAction::Press},
-            };
-            let (selected,text,composition)={let s=host.settings.as_ref().unwrap().borrow();(s.selected.clone(),s.form.host.focused_text().unwrap().input.text.clone(),s.form.host.focused_text().unwrap().input.marked.clone())};
-            assert!(host.settings_navigation_focus_guard(&event,Some(&publication)),"{channel} must refuse before focus/unmark");
-            assert_retained(&host,&selected,&text,composition.clone());
-            if channel == "ax" {
-                let mut state=host.settings.as_ref().unwrap().borrow_mut();
-                let focused=state.sidebar.host.focused();
-                assert!(!state.accessibility_input(&publication,ContentAccessibilityOwner(1),target,AccessibilityAction::Press,true),"stale/refused publication cannot dispatch");
-                assert_eq!(state.sidebar.host.focused(),focused,"refusal must not transfer keyboard ownership");
-            }
-            assert_retained(&host,&selected,&text,composition);
-            assert!(host.settings.as_ref().unwrap().borrow_mut().take_item_navigation().unwrap().is_none());
-            correct(&mut host,marked);
-            let publication=host.content_accessibility_publication(true).unwrap();
-            assert!(publication.is_current());
-            assert!(!host.settings_navigation_focus_guard(&event,Some(&publication)),"corrected {channel} must remain usable");
-            assert!(publication.is_current(),"allowed preflight must preserve the same multi-Host AX publication");
-            let entry=match &event {
+        for marked in [false, true] {
+            for channel in ["pointer", "key", "ax"] {
+                let (mut host, path) = fixture(marked);
+                let (list, point, label) = row(&host, marked);
+                if channel == "key" {
+                    assert!(
+                        host.settings
+                            .as_ref()
+                            .unwrap()
+                            .borrow_mut()
+                            .sidebar
+                            .host
+                            .focus(Some(list), true)
+                    );
+                    render(&mut host);
+                }
+                let publication = host.content_accessibility_publication(true).unwrap();
+                let target = publication
+                    .nodes()
+                    .iter()
+                    .find(|n| n.label == label)
+                    .unwrap()
+                    .key;
+                let event = match channel {
+                    "pointer" => Event::Mouse(MouseEvent {
+                        kind: MouseEventKind::Down {
+                            button: MouseButton::Left,
+                            click_count: 1,
+                        },
+                        position: tekes_ui_platform_macos::Point {
+                            x: point.x as f64,
+                            y: point.y as f64,
+                        },
+                        modifiers: Modifiers::NONE,
+                    }),
+                    "key" => key(if marked { 36 } else { 125 }),
+                    _ => Event::Accessibility {
+                        target,
+                        action: AccessibilityAction::Press,
+                    },
+                };
+                let (selected, text, composition) = {
+                    let s = host.settings.as_ref().unwrap().borrow();
+                    (
+                        s.selected.clone(),
+                        s.form.host.focused_text().unwrap().input.text.clone(),
+                        s.form.host.focused_text().unwrap().input.marked.clone(),
+                    )
+                };
+                assert!(
+                    host.settings_navigation_focus_guard(&event, Some(&publication)),
+                    "{channel} must refuse before focus/unmark"
+                );
+                assert_retained(&host, &selected, &text, composition.clone());
+                if channel == "ax" {
+                    let mut state = host.settings.as_ref().unwrap().borrow_mut();
+                    let focused = state.sidebar.host.focused();
+                    assert!(
+                        !state.accessibility_input(
+                            &publication,
+                            ContentAccessibilityOwner(1),
+                            target,
+                            AccessibilityAction::Press,
+                            true
+                        ),
+                        "stale/refused publication cannot dispatch"
+                    );
+                    assert_eq!(
+                        state.sidebar.host.focused(),
+                        focused,
+                        "refusal must not transfer keyboard ownership"
+                    );
+                }
+                assert_retained(&host, &selected, &text, composition);
+                assert!(
+                    host.settings
+                        .as_ref()
+                        .unwrap()
+                        .borrow_mut()
+                        .take_item_navigation()
+                        .unwrap()
+                        .is_none()
+                );
+                correct(&mut host, marked);
+                let publication = host.content_accessibility_publication(true).unwrap();
+                assert!(publication.is_current());
+                assert!(
+                    !host.settings_navigation_focus_guard(&event, Some(&publication)),
+                    "corrected {channel} must remain usable"
+                );
+                assert!(
+                    publication.is_current(),
+                    "allowed preflight must preserve the same multi-Host AX publication"
+                );
+                let entry=match &event {
                 Event::Accessibility{target,action}=>{let mut state=host.settings.as_ref().unwrap().borrow_mut();assert!(state.accessibility_input(&publication,ContentAccessibilityOwner(1),*target,action.clone(),true));assert_eq!(state.sidebar.host.focused(),Some(list),"successful List Press keeps original keyboard owner");assert_eq!(state.form.host.focused(),None,"old form focus retires only after successful AX delivery");state.take_item_navigation().unwrap()},
                 _=>host.settings_sidebar_input(&crate::window::window_toolbar_mount::native_toolbar_event(&event).unwrap()).unwrap(),
             }.unwrap_or_else(|| panic!("original sidebar must produce its real settings-item Entry: marked={marked} channel={channel}"));
-            let expected=if marked {"reading/text"}else{"reading/advanced"};
-            assert_eq!(entry.route,"settings-item");assert_eq!(entry.params["item_id"],expected);
-            host.settings.as_ref().unwrap().borrow_mut().select(expected).unwrap();
-            assert_eq!(host.settings.as_ref().unwrap().borrow().selected,expected);
-            assert!(host.settings.as_ref().unwrap().borrow().draft.dirty(),"corrected edits survive item publication");
-            assert!(!path.exists());drop(host);std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
-        }}
+                let expected = if marked {
+                    "reading/text"
+                } else {
+                    "reading/advanced"
+                };
+                assert_eq!(entry.route, "settings-item");
+                assert_eq!(entry.params["item_id"], expected);
+                host.settings
+                    .as_ref()
+                    .unwrap()
+                    .borrow_mut()
+                    .select(expected)
+                    .unwrap();
+                assert_eq!(host.settings.as_ref().unwrap().borrow().selected, expected);
+                assert!(
+                    host.settings.as_ref().unwrap().borrow().draft.dirty(),
+                    "corrected edits survive item publication"
+                );
+                assert!(!path.exists());
+                drop(host);
+                std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+            }
+        }
     }
     #[test]
     fn original_back_forward_producers_preserve_invalid_or_marked_then_allow_corrected_commands() {
-        for marked in [false,true] { for name in ["Back","Forward"] {
-            let (mut host,path)=fixture(marked);
-            let publication=host.content_accessibility_publication(true).unwrap();
-            let key=publication.nodes().iter().find(|n|n.label==name).unwrap().key;
-            let event=Event::Accessibility{target:key,action:AccessibilityAction::Press};
-            let (selected,text,composition)={let s=host.settings.as_ref().unwrap().borrow();(s.selected.clone(),s.form.host.focused_text().unwrap().input.text.clone(),s.form.host.focused_text().unwrap().input.marked.clone())};
-            assert!(host.settings_navigation_focus_guard(&event,Some(&publication)));
-            assert_retained(&host,&selected,&text,composition);
-            assert!(host.toolbar.host.drain_commands().is_empty(),"refusal creates no transport request payload");
-            correct(&mut host,marked);
-            let publication=host.content_accessibility_publication(true).unwrap();
-            assert!(publication.is_current());
-            assert!(!host.settings_navigation_focus_guard(&event,Some(&publication)));
-            assert!(publication.is_current(),"allowed toolbar AX preflight must not revoke form geometry");
-            let target=host.toolbar_ax.iter().find(|(k,_)|*k==key).unwrap().1;
-            assert!(host.toolbar.host.accessibility_action(target,ContentAction::Press).consumed);
-            let invocations=host.toolbar.host.drain_commands();
-            assert_eq!(invocations.len(),1);
-            assert_eq!(invocations[0].command,if name=="Back" {crate::navigation::BACK}else{crate::navigation::FORWARD});
-            assert!(matches!(&invocations[0].source,Source::Navigation(_)));
-            assert!(host.prepare_settings_item_navigation(),"same production pre-RPC admission accepts corrected input");
-            assert!(host.settings.as_ref().unwrap().borrow().draft.dirty());
-            assert!(!path.exists());drop(host);std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
-        }}
+        for marked in [false, true] {
+            for name in ["Back", "Forward"] {
+                let (mut host, path) = fixture(marked);
+                let publication = host.content_accessibility_publication(true).unwrap();
+                let key = publication
+                    .nodes()
+                    .iter()
+                    .find(|n| n.label == name)
+                    .unwrap()
+                    .key;
+                let event = Event::Accessibility {
+                    target: key,
+                    action: AccessibilityAction::Press,
+                };
+                let (selected, text, composition) = {
+                    let s = host.settings.as_ref().unwrap().borrow();
+                    (
+                        s.selected.clone(),
+                        s.form.host.focused_text().unwrap().input.text.clone(),
+                        s.form.host.focused_text().unwrap().input.marked.clone(),
+                    )
+                };
+                assert!(host.settings_navigation_focus_guard(&event, Some(&publication)));
+                assert_retained(&host, &selected, &text, composition);
+                assert!(
+                    host.toolbar.host.drain_commands().is_empty(),
+                    "refusal creates no transport request payload"
+                );
+                correct(&mut host, marked);
+                let publication = host.content_accessibility_publication(true).unwrap();
+                assert!(publication.is_current());
+                assert!(!host.settings_navigation_focus_guard(&event, Some(&publication)));
+                assert!(
+                    publication.is_current(),
+                    "allowed toolbar AX preflight must not revoke form geometry"
+                );
+                let target = host.toolbar_ax.iter().find(|(k, _)| *k == key).unwrap().1;
+                assert!(
+                    host.toolbar
+                        .host
+                        .accessibility_action(target, ContentAction::Press)
+                        .consumed
+                );
+                let invocations = host.toolbar.host.drain_commands();
+                assert_eq!(invocations.len(), 1);
+                assert_eq!(
+                    invocations[0].command,
+                    if name == "Back" {
+                        crate::navigation::BACK
+                    } else {
+                        crate::navigation::FORWARD
+                    }
+                );
+                assert!(matches!(&invocations[0].source, Source::Navigation(_)));
+                assert!(
+                    host.prepare_settings_item_navigation(),
+                    "same production pre-RPC admission accepts corrected input"
+                );
+                assert!(host.settings.as_ref().unwrap().borrow().draft.dirty());
+                assert!(!path.exists());
+                drop(host);
+                std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+            }
+        }
     }
     #[test]
     fn refused_navigation_keeps_other_committed_fields_scheduled_with_visible_feedback() {
-        let (mut host,path)=fixture(false);
+        let (mut host, path) = fixture(false);
         {
-            let mut state=host.settings.as_ref().unwrap().borrow_mut();
-            assert!(state.form.host.focus(Some(ComponentId(102)),true));
-            state.form.host.event(&ContentEvent::TextCommand("selectAll:".into()));
-            state.form.host.event(&ContentEvent::Commit{text:"18".into(),replacement:None});
+            let mut state = host.settings.as_ref().unwrap().borrow_mut();
+            assert!(state.form.host.focus(Some(ComponentId(102)), true));
+            state
+                .form
+                .host
+                .event(&ContentEvent::TextCommand("selectAll:".into()));
+            state.form.host.event(&ContentEvent::Commit {
+                text: "18".into(),
+                replacement: None,
+            });
             assert!(!state.draft.dirty());
         }
         assert!(!host.prepare_settings_item_navigation());
         {
-            let state=host.settings.as_ref().unwrap().borrow();
-            let field=state.schema.settings.iter().find(|f|f.id.ends_with("/extra-number")).unwrap();
-            assert_eq!(state.draft.display(field),"18");
+            let state = host.settings.as_ref().unwrap().borrow();
+            let field = state
+                .schema
+                .settings
+                .iter()
+                .find(|f| f.id.ends_with("/extra-number"))
+                .unwrap();
+            assert_eq!(state.draft.display(field), "18");
             assert!(state.draft.dirty());
-            assert!(state.needs_frame(),"valid partial commits keep original autosave scheduling");
-            assert!(state.form.host.get(ComponentId(2)).unwrap().component::<tekes_ui_controls::composition::TextContent>().unwrap().text.contains("修正数值"));
+            assert!(
+                state.needs_frame(),
+                "valid partial commits keep original autosave scheduling"
+            );
+            assert!(
+                state
+                    .form
+                    .host
+                    .get(ComponentId(2))
+                    .unwrap()
+                    .component::<tekes_ui_controls::composition::TextContent>()
+                    .unwrap()
+                    .text
+                    .contains("修正数值")
+            );
         }
-        assert!(!path.exists());drop(host);std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+        assert!(!path.exists());
+        drop(host);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }
     #[test]
     fn original_back_rejects_before_focus_then_activates_original_close_barrier() {
-        for marked in [false,true] { for channel in ["pointer","key","ax-focus","ax-press"] {
-            let (mut host,path)=fixture_mode(marked,SettingsDisplayMode::Exclusive);
-            if channel=="key" {
-                assert!(host.settings.as_ref().unwrap().borrow_mut().sidebar.host.focus(Some(ComponentId(4)),true));
-                render(&mut host);
-            }
-            let (point,mount)={let s=host.settings.as_ref().unwrap().borrow();(s.sidebar.host.get(ComponentId(4)).unwrap().frame().center(),s.sidebar.host.semantic_mount(ComponentId(4)).unwrap())};
-            let publication=host.content_accessibility_publication(true).unwrap();
-            let target=publication.nodes().iter().find(|n|n.key.component==mount && n.key.part.is_none()).unwrap().key;
-            let event=match channel {
-                "pointer"=>Event::Mouse(MouseEvent{kind:MouseEventKind::Down{button:MouseButton::Left,click_count:1},position:tekes_ui_platform_macos::Point{x:point.x as f64,y:point.y as f64},modifiers:Modifiers::NONE}),
-                "key"=>key(49),
-                _=>Event::Accessibility{target,action:if channel=="ax-focus"{AccessibilityAction::Focus}else{AccessibilityAction::Press}},
-            };
-            let (selected,text,composition)={let s=host.settings.as_ref().unwrap().borrow();(s.selected.clone(),s.form.host.focused_text().unwrap().input.text.clone(),s.form.host.focused_text().unwrap().input.marked.clone())};
-            assert!(host.settings_navigation_focus_guard(&event,Some(&publication)),"Back {channel} must preserve invalid/marked input before focus");
-            assert_retained(&host,&selected,&text,composition);
-            {let mut s=host.settings.as_ref().unwrap().borrow_mut();assert!(s.open);assert!(!s.sidebar.take_back());}
-            correct(&mut host,marked);
-            let publication=host.content_accessibility_publication(true).unwrap();
-            assert!(!host.settings_navigation_focus_guard(&event,Some(&publication)));
-            assert!(publication.is_current(),"accepted Back focus preflight is read-only");
-            match &event {
-                Event::Accessibility{target,action}=>{
-                    {let mut s=host.settings.as_ref().unwrap().borrow_mut();assert!(s.accessibility_input(&publication,ContentAccessibilityOwner(1),*target,action.clone(),true));assert!(s.take_item_navigation().unwrap().is_none(),"Back AX uses the original action consumption boundary without an item request");assert!(s.open);if channel=="ax-focus"{assert!(!s.sidebar.take_back(),"AX Focus does not activate Back");}}
-                    if channel=="ax-focus" {
-                        // A completed focus is a real input change; the next native
-                        // Press uses the subsequent ordinary rendered publication.
-                        render(&mut host);
-                        let next=host.content_accessibility_publication(true).unwrap();
-                        let press=Event::Accessibility{target:*target,action:AccessibilityAction::Press};
-                        assert!(!host.settings_navigation_focus_guard(&press,Some(&next)));
-                        assert!(next.is_current());
-                        assert!(host.settings.as_ref().unwrap().borrow_mut().accessibility_input(&next,ContentAccessibilityOwner(1),*target,AccessibilityAction::Press,true));
-                        assert!(host.settings.as_ref().unwrap().borrow_mut().take_item_navigation().unwrap().is_none());
+        for marked in [false, true] {
+            for channel in ["pointer", "key", "ax-focus", "ax-press"] {
+                let (mut host, path) = fixture_mode(marked, SettingsDisplayMode::Exclusive);
+                if channel == "key" {
+                    assert!(
+                        host.settings
+                            .as_ref()
+                            .unwrap()
+                            .borrow_mut()
+                            .sidebar
+                            .host
+                            .focus(Some(ComponentId(4)), true)
+                    );
+                    render(&mut host);
+                }
+                let (point, mount) = {
+                    let s = host.settings.as_ref().unwrap().borrow();
+                    (
+                        s.sidebar.host.get(ComponentId(4)).unwrap().frame().center(),
+                        s.sidebar.host.semantic_mount(ComponentId(4)).unwrap(),
+                    )
+                };
+                let publication = host.content_accessibility_publication(true).unwrap();
+                let target = publication
+                    .nodes()
+                    .iter()
+                    .find(|n| n.key.component == mount && n.key.part.is_none())
+                    .unwrap()
+                    .key;
+                let event = match channel {
+                    "pointer" => Event::Mouse(MouseEvent {
+                        kind: MouseEventKind::Down {
+                            button: MouseButton::Left,
+                            click_count: 1,
+                        },
+                        position: tekes_ui_platform_macos::Point {
+                            x: point.x as f64,
+                            y: point.y as f64,
+                        },
+                        modifiers: Modifiers::NONE,
+                    }),
+                    "key" => key(49),
+                    _ => Event::Accessibility {
+                        target,
+                        action: if channel == "ax-focus" {
+                            AccessibilityAction::Focus
+                        } else {
+                            AccessibilityAction::Press
+                        },
+                    },
+                };
+                let (selected, text, composition) = {
+                    let s = host.settings.as_ref().unwrap().borrow();
+                    (
+                        s.selected.clone(),
+                        s.form.host.focused_text().unwrap().input.text.clone(),
+                        s.form.host.focused_text().unwrap().input.marked.clone(),
+                    )
+                };
+                assert!(
+                    host.settings_navigation_focus_guard(&event, Some(&publication)),
+                    "Back {channel} must preserve invalid/marked input before focus"
+                );
+                assert_retained(&host, &selected, &text, composition);
+                {
+                    let mut s = host.settings.as_ref().unwrap().borrow_mut();
+                    assert!(s.open);
+                    assert!(!s.sidebar.take_back());
+                }
+                correct(&mut host, marked);
+                let publication = host.content_accessibility_publication(true).unwrap();
+                assert!(!host.settings_navigation_focus_guard(&event, Some(&publication)));
+                assert!(
+                    publication.is_current(),
+                    "accepted Back focus preflight is read-only"
+                );
+                match &event {
+                    Event::Accessibility { target, action } => {
+                        {
+                            let mut s = host.settings.as_ref().unwrap().borrow_mut();
+                            assert!(s.accessibility_input(
+                                &publication,
+                                ContentAccessibilityOwner(1),
+                                *target,
+                                action.clone(),
+                                true
+                            ));
+                            assert!(
+                                s.take_item_navigation().unwrap().is_none(),
+                                "Back AX uses the original action consumption boundary without an item request"
+                            );
+                            assert!(s.open);
+                            if channel == "ax-focus" {
+                                assert!(!s.sidebar.take_back(), "AX Focus does not activate Back");
+                            }
+                        }
+                        if channel == "ax-focus" {
+                            // A completed focus is a real input change; the next native
+                            // Press uses the subsequent ordinary rendered publication.
+                            render(&mut host);
+                            let next = host.content_accessibility_publication(true).unwrap();
+                            let press = Event::Accessibility {
+                                target: *target,
+                                action: AccessibilityAction::Press,
+                            };
+                            assert!(!host.settings_navigation_focus_guard(&press, Some(&next)));
+                            assert!(next.is_current());
+                            assert!(
+                                host.settings
+                                    .as_ref()
+                                    .unwrap()
+                                    .borrow_mut()
+                                    .accessibility_input(
+                                        &next,
+                                        ContentAccessibilityOwner(1),
+                                        *target,
+                                        AccessibilityAction::Press,
+                                        true
+                                    )
+                            );
+                            assert!(
+                                host.settings
+                                    .as_ref()
+                                    .unwrap()
+                                    .borrow_mut()
+                                    .take_item_navigation()
+                                    .unwrap()
+                                    .is_none()
+                            );
+                        }
+                    }
+                    _ => {
+                        assert!(
+                            host.settings_sidebar_input(
+                                &crate::window::window_toolbar_mount::native_toolbar_event(&event)
+                                    .unwrap()
+                            )
+                            .unwrap()
+                            .is_none(),
+                            "Back never creates an item request"
+                        );
+                        {
+                            let mut s = host.settings.as_ref().unwrap().borrow_mut();
+                            assert!(s.open);
+                            assert!(!s.sidebar.take_back(), "down does not activate or close");
+                        }
+                        let up = if channel == "pointer" {
+                            Event::Mouse(MouseEvent {
+                                kind: MouseEventKind::Up {
+                                    button: MouseButton::Left,
+                                    click_count: 1,
+                                },
+                                position: tekes_ui_platform_macos::Point {
+                                    x: point.x as f64,
+                                    y: point.y as f64,
+                                },
+                                modifiers: Modifiers::NONE,
+                            })
+                        } else {
+                            let Event::Key(mut k) = key(49) else {
+                                unreachable!()
+                            };
+                            k.kind = KeyEventKind::Up;
+                            Event::Key(k)
+                        };
+                        assert!(
+                            host.settings_sidebar_input(
+                                &crate::window::window_toolbar_mount::native_toolbar_event(&up)
+                                    .unwrap()
+                            )
+                            .unwrap()
+                            .is_none()
+                        );
                     }
                 }
-                _=>{
-                    assert!(host.settings_sidebar_input(&crate::window::window_toolbar_mount::native_toolbar_event(&event).unwrap()).unwrap().is_none(),"Back never creates an item request");
-                    {let mut s=host.settings.as_ref().unwrap().borrow_mut();assert!(s.open);assert!(!s.sidebar.take_back(),"down does not activate or close");}
-                    let up=if channel=="pointer" {
-                        Event::Mouse(MouseEvent{kind:MouseEventKind::Up{button:MouseButton::Left,click_count:1},position:tekes_ui_platform_macos::Point{x:point.x as f64,y:point.y as f64},modifiers:Modifiers::NONE})
-                    } else {
-                        let Event::Key(mut k)=key(49) else {unreachable!()};k.kind=KeyEventKind::Up;Event::Key(k)
-                    };
-                    assert!(host.settings_sidebar_input(&crate::window::window_toolbar_mount::native_toolbar_event(&up).unwrap()).unwrap().is_none());
+                {
+                    let mut s = host.settings.as_ref().unwrap().borrow_mut();
+                    assert!(
+                        s.open,
+                        "activation leaves close policy to original consumer"
+                    );
+                    assert!(
+                        s.sidebar.take_back(),
+                        "original Back producer activates: marked={marked} channel={channel}"
+                    );
+                    assert!(
+                        !s.close_requested(),
+                        "corrected edits await actual persistence, not an early focus-close"
+                    );
+                    assert!(s.open);
+                    assert!(s.draft.dirty());
                 }
+                assert!(!path.exists());
+                drop(host);
+                std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
             }
-            {let mut s=host.settings.as_ref().unwrap().borrow_mut();assert!(s.open,"activation leaves close policy to original consumer");assert!(s.sidebar.take_back(),"original Back producer activates: marked={marked} channel={channel}");assert!(!s.close_requested(),"corrected edits await actual persistence, not an early focus-close");assert!(s.open);assert!(s.draft.dirty());}
-            assert!(!path.exists());drop(host);std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
-        }}
+        }
     }
-
 }

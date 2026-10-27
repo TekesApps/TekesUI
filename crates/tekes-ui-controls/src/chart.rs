@@ -651,10 +651,18 @@ fn paint_chart_geometry(
         return geometry;
     }
     let inks = ChartInk {
-        baseline: theme.color("separator").expect("chart baseline semantic token"),
-        series: theme.color("c-chart-series-1").expect("chart series semantic token"),
-        selection: theme.color("row-selection").expect("chart selection semantic token"),
-        focus: theme.color("border-focused").expect("chart focus semantic token"),
+        baseline: theme
+            .color("separator")
+            .expect("chart baseline semantic token"),
+        series: theme
+            .color("c-chart-series-1")
+            .expect("chart series semantic token"),
+        selection: theme
+            .color("row-selection")
+            .expect("chart selection semantic token"),
+        focus: theme
+            .color("border-focused")
+            .expect("chart focus semantic token"),
     };
     paint_chart_geometry_with_inks(scene, chart, geometry, true, inks)
 }

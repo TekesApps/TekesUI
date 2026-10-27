@@ -142,7 +142,9 @@ impl ContentHost {
                 .filter(|id| eligible.contains(id))
                 .or_else(|| eligible.first().copied());
             self.focus(target, true);
-            if self.focused != target { return; }
+            if self.focused != target {
+                return;
+            }
         }
         self.overlay_scopes.last_mut().unwrap().focus_pending = false;
     }
@@ -151,13 +153,35 @@ impl ContentHost {
 impl ContentHost {
     // Pure original-owner staging for a request that leaves the active scope path
     // intact. Branches requiring close/open/restore preparation refuse explicitly.
-    pub(super) fn replacement_keeps_overlay_scope(&self,retired:&Content,replacement:Option<&Content>)->bool {
-        fn opens(c:&Content)->bool{(c.component.overlay_scope().is_some()&&c.component.overlay_open())||c.component.children().iter().any(opens)}
-        if replacement.is_some_and(opens){return false;}
-        let path=self.current_overlay_path();
-        if path.len()!=self.overlay_scopes.len()||path.iter().zip(&self.overlay_scopes).any(|((id,mount,_),s)|*id!=s.id||*mount!=s.mount||retired.find(*id).is_some()){return false;}
-        if self.captured.is_none()&&self.overlay_scopes.last().is_some_and(|s|s.focus_pending){
-            let mut eligible=Vec::new();self.scope().focus_ids(&mut eligible);if !eligible.is_empty(){return false;}
+    pub(super) fn replacement_keeps_overlay_scope(
+        &self,
+        retired: &Content,
+        replacement: Option<&Content>,
+    ) -> bool {
+        fn opens(c: &Content) -> bool {
+            (c.component.overlay_scope().is_some() && c.component.overlay_open())
+                || c.component.children().iter().any(opens)
+        }
+        if replacement.is_some_and(opens) {
+            return false;
+        }
+        let path = self.current_overlay_path();
+        if path.len() != self.overlay_scopes.len()
+            || path
+                .iter()
+                .zip(&self.overlay_scopes)
+                .any(|((id, mount, _), s)| {
+                    *id != s.id || *mount != s.mount || retired.find(*id).is_some()
+                })
+        {
+            return false;
+        }
+        if self.captured.is_none() && self.overlay_scopes.last().is_some_and(|s| s.focus_pending) {
+            let mut eligible = Vec::new();
+            self.scope().focus_ids(&mut eligible);
+            if !eligible.is_empty() {
+                return false;
+            }
         }
         true
     }

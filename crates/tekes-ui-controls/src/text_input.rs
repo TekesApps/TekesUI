@@ -274,7 +274,7 @@ impl TextInput {
         self.marked = Some(range);
         true
     }
-    pub(crate) fn preflight_unmark(&self,needed:bool)->bool {
+    pub(crate) fn preflight_unmark(&self, needed: bool) -> bool {
         !needed || self.can_unmark()
     }
     pub fn unmark(&mut self) {
@@ -418,7 +418,11 @@ impl TextInput {
     }
 }
 #[cfg(test)]
-impl TextInput {pub(crate) fn test_edit_epoch(&mut self,epoch:u64){self.edit_epoch=epoch;}}
+impl TextInput {
+    pub(crate) fn test_edit_epoch(&mut self, epoch: u64) {
+        self.edit_epoch = epoch;
+    }
+}
 
 #[cfg(test)]
 mod tests {

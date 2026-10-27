@@ -132,8 +132,15 @@ impl SettingsSurface {
             publication.dispatch(owner, &mut self.sidebar.host, target, action.clone())
         } else if owner.0 == 2 || owner.0 == u64::MAX {
             publication.dispatch(owner, &mut self.form.host, target, action.clone())
-        } else { return false; };
-        if response.consumed && matches!(action, AccessibilityAction::Focus | AccessibilityAction::Press) {
+        } else {
+            return false;
+        };
+        if response.consumed
+            && matches!(
+                action,
+                AccessibilityAction::Focus | AccessibilityAction::Press
+            )
+        {
             // The current original publication must authorize delivery first.
             // Its accepted owner keeps the focus semantics of that exact action.
             if owner.0 == 1 {
@@ -141,23 +148,37 @@ impl SettingsSurface {
                 if matches!(action, AccessibilityAction::Press)
                     && let Some(id) = self.sidebar.host.semantics().iter().find_map(|node| {
                         (self.sidebar.host.semantic_mount(node.id) == Some(target.component)
-                            && self.sidebar.host.get(node.id).is_some_and(|n| n.component::<tekes_ui_settings::SelectableListContent>().is_some()))
-                            .then_some(node.id)
+                            && self.sidebar.host.get(node.id).is_some_and(|n| {
+                                n.component::<tekes_ui_settings::SelectableListContent>()
+                                    .is_some()
+                            }))
+                        .then_some(node.id)
                     })
                 {
                     // Retain the original Settings List Press keyboard intent,
                     // after delivery, without overriding AX Focus visibility.
                     self.sidebar.host.focus(Some(id), false);
                 }
-            } else { self.sidebar.host.focus(None, false); }
+            } else {
+                self.sidebar.host.focus(None, false);
+            }
         }
         response.consumed
     }
-    pub fn prepare_item_navigation(&mut self) -> bool { self.prepare_navigation_input(false) }
-    pub fn prepare_back_focus(&mut self) -> bool { self.prepare_navigation_input(true) }
+    pub fn prepare_item_navigation(&mut self) -> bool {
+        self.prepare_navigation_input(false)
+    }
+    pub fn prepare_back_focus(&mut self) -> bool {
+        self.prepare_navigation_input(true)
+    }
     fn prepare_navigation_input(&mut self, back_focus: bool) -> bool {
         if self.composition_active() {
-            self.message = if back_focus { "请先完成输入法输入，再关闭设置。" } else { "请先完成输入法输入，再切换设置。" }.into();
+            self.message = if back_focus {
+                "请先完成输入法输入，再关闭设置。"
+            } else {
+                "请先完成输入法输入，再切换设置。"
+            }
+            .into();
             self.refresh();
             return false;
         }
@@ -165,7 +186,12 @@ impl SettingsSurface {
             // Other valid fields may already have committed. Preserve and
             // schedule their real Draft changes before restoring this feedback.
             self.edited();
-            self.message = if back_focus { "请修正数值，或按 Escape 取消当前输入。" } else { "请修正数值，或按 Escape 取消当前输入，再切换设置。" }.into();
+            self.message = if back_focus {
+                "请修正数值，或按 Escape 取消当前输入。"
+            } else {
+                "请修正数值，或按 Escape 取消当前输入，再切换设置。"
+            }
+            .into();
             self.refresh();
             return false;
         }
@@ -177,7 +203,9 @@ impl SettingsSurface {
         true
     }
     pub fn take_item_navigation(&mut self) -> Result<Option<crate::navigation::Entry>> {
-        let Some(item) = self.sidebar.take_selection() else { return Ok(None); };
+        let Some(item) = self.sidebar.take_selection() else {
+            return Ok(None);
+        };
         if !self.prepare_item_navigation() {
             self.sidebar.select(&self.selected);
             return Ok(None);
@@ -252,8 +280,10 @@ impl SettingsSurface {
         self.due.is_some() && !self.pending
     }
     pub fn clean_for_close(&self) -> bool {
-        !self.blocked() && !self.draft.dirty()
-            && !self.form.has_number_draft() && !self.composition_active()
+        !self.blocked()
+            && !self.draft.dirty()
+            && !self.form.has_number_draft()
+            && !self.composition_active()
     }
     pub fn close_requested(&mut self) -> bool {
         if self.composition_active() {

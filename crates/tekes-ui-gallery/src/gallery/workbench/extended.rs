@@ -2,8 +2,8 @@
 //!
 //! The story owns deterministic fixtures and scene placement. Interaction semantics
 //! are delegated to `tekes_ui_controls::extended` models.
-mod collections_adapter;
 mod button_specimen;
+mod collections_adapter;
 use button_specimen::ButtonSpecimen;
 mod feedback_adapter;
 pub(super) mod navigation_states;
@@ -15,8 +15,8 @@ use tekes_ui_controls::{
     BarChart, ButtonModel, ButtonSize, ButtonTextRenderer, ChartDatum, ControlKey, ControlState,
     RadioGroupView, SelectionEvent, SliderView, SwitchView, extended as controls,
     layout_view::{
-        BreadcrumbView, ComboBoxView, CommandPaletteView, DisclosureView, GridView,
-        LinkView, SegmentedControlView, SeparatorView, SplitViewView, StackView,
+        BreadcrumbView, ComboBoxView, CommandPaletteView, DisclosureView, GridView, LinkView,
+        SegmentedControlView, SeparatorView, SplitViewView, StackView,
     },
     paint,
 };
@@ -1390,15 +1390,21 @@ impl ExtendedStory {
                     );
                 }
                 "icon-button" => {
-                    let mut view=ButtonSpecimen::new("Create item");
-                    view.button_mut().button.state=state;
-                    let mut probe=Scene::new();
-                    let layout=view.render(&mut probe,ctx.text,control,Some(c),palette);
-                    if state.focused {view.focus(state.focus_visible);}
-                    if state.hovered {view.pointer_move(layout.frame.center());}
-                    if state.pressed {view.pointer_down(layout.frame.center());}
-                    view.render(scene,ctx.text,control,Some(c),palette);
-                    view.draw_icon(scene,&mut GalleryIconRenderer::native(ctx))
+                    let mut view = ButtonSpecimen::new("Create item");
+                    view.button_mut().button.state = state;
+                    let mut probe = Scene::new();
+                    let layout = view.render(&mut probe, ctx.text, control, Some(c), palette);
+                    if state.focused {
+                        view.focus(state.focus_visible);
+                    }
+                    if state.hovered {
+                        view.pointer_move(layout.frame.center());
+                    }
+                    if state.pressed {
+                        view.pointer_down(layout.frame.center());
+                    }
+                    view.render(scene, ctx.text, control, Some(c), palette);
+                    view.draw_icon(scene, &mut GalleryIconRenderer::native(ctx))
                         .expect("Native Gallery IconButton must emit artwork");
                 }
                 _ => {}
@@ -1695,10 +1701,7 @@ impl ExtendedStory {
             ("icon-button", 20) => {
                 let changed = self.icon_button_view.activate();
                 if changed {
-                    log(format!(
-                        "icon-button: {}",
-                        self.icon_button_view.name()
-                    ));
+                    log(format!("icon-button: {}", self.icon_button_view.name()));
                 }
                 changed
             }
@@ -2341,10 +2344,9 @@ impl ExtendedStory {
                             Some(control_clip),
                             palette,
                         );
-                        self.icon_button_view.draw_icon(
-                            scene,
-                            &mut GalleryIconRenderer::native(ctx),
-                        ).expect("Native Gallery IconButton must emit artwork");
+                        self.icon_button_view
+                            .draw_icon(scene, &mut GalleryIconRenderer::native(ctx))
+                            .expect("Native Gallery IconButton must emit artwork");
                         component
                     };
                     let r = component.frame;
@@ -2907,15 +2909,9 @@ impl ExtendedStory {
                 true
             }
             ("icon-button", Some(20)) => {
-                let activated = self
-                    .icon_button_view
-                    .pointer_up(point)
-                    && hit == Some(20);
+                let activated = self.icon_button_view.pointer_up(point) && hit == Some(20);
                 if activated {
-                    log(format!(
-                        "icon-button: {}",
-                        self.icon_button_view.name()
-                    ));
+                    log(format!("icon-button: {}", self.icon_button_view.name()));
                 }
                 activated
             }

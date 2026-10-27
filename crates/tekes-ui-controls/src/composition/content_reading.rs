@@ -247,30 +247,63 @@ impl ContentReadingState {
 
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct ReaderUnmountWrites {
-    pub(super) key:String, pub(super) revision:u64,
-    pub(super) original:ReadingDocumentVersion,
-    pending:Option<Anchor>, offset:Point,
+    pub(super) key: String,
+    pub(super) revision: u64,
+    pub(super) original: ReadingDocumentVersion,
+    pending: Option<Anchor>,
+    offset: Point,
 }
-pub(super) fn reader_preparation_work(state:&ContentReadingState,calls:usize)->Option<usize>{
-    let fallback=state.pending.as_ref().map_or(0,|a|a.fallback.len());
-    let per=state.frames.len().checked_add(fallback)?.checked_mul(std::mem::size_of::<ComponentId>())?.checked_add(state.version.key().len().checked_mul(4)?)?.checked_add(512)?;
+pub(super) fn reader_preparation_work(state: &ContentReadingState, calls: usize) -> Option<usize> {
+    let fallback = state.pending.as_ref().map_or(0, |a| a.fallback.len());
+    let per = state
+        .frames
+        .len()
+        .checked_add(fallback)?
+        .checked_mul(std::mem::size_of::<ComponentId>())?
+        .checked_add(state.version.key().len().checked_mul(4)?)?
+        .checked_add(512)?;
     per.checked_mul(calls)?.checked_mul(4)
 }
-pub(super) fn prepare_reader_writes(state:&ContentReadingState,scroll:&ScrollArea)->ReaderUnmountWrites {
-    ReaderUnmountWrites {key:state.version.key().into(),revision:state.version.revision(),original:state.version.clone(),pending:state.capture(scroll),offset:scroll.offset}
+pub(super) fn prepare_reader_writes(
+    state: &ContentReadingState,
+    scroll: &ScrollArea,
+) -> ReaderUnmountWrites {
+    ReaderUnmountWrites {
+        key: state.version.key().into(),
+        revision: state.version.revision(),
+        original: state.version.clone(),
+        pending: state.capture(scroll),
+        offset: scroll.offset,
+    }
 }
-pub(super) fn apply_reader_writes(state:&mut ContentReadingState,writes:ReaderUnmountWrites,version:ReadingDocumentVersion) {
-    state.pending=writes.pending;state.restore_offset=Some(writes.offset);
-    state.frames.clear();state.item_mounts.clear();state.explicit_reveal=None;
-    state.momentum_fenced=true;state.version=version;state.result=None;
+pub(super) fn apply_reader_writes(
+    state: &mut ContentReadingState,
+    writes: ReaderUnmountWrites,
+    version: ReadingDocumentVersion,
+) {
+    state.pending = writes.pending;
+    state.restore_offset = Some(writes.offset);
+    state.frames.clear();
+    state.item_mounts.clear();
+    state.explicit_reveal = None;
+    state.momentum_fenced = true;
+    state.version = version;
+    state.result = None;
 }
 impl ScrollContent {
     /// Initialize an unmounted original reader, including one retained by a public
     /// compliant wrapper. Mounted document changes use the existing Host transaction.
     /// Allocation here is caller preparation, before a checked Content request.
-    pub fn initialize_reading_document(&mut self,key:impl Into<String>,revision:u64,items:Vec<ComponentId>)->Result<ReadingDocumentVersion,ReadingUpdateError>{
-        if self.reading_mounted{return Err(ReadingUpdateError::InvalidDocument);}
-        self.attach_reading(key.into(),revision,items)
+    pub fn initialize_reading_document(
+        &mut self,
+        key: impl Into<String>,
+        revision: u64,
+        items: Vec<ComponentId>,
+    ) -> Result<ReadingDocumentVersion, ReadingUpdateError> {
+        if self.reading_mounted {
+            return Err(ReadingUpdateError::InvalidDocument);
+        }
+        self.attach_reading(key.into(), revision, items)
     }
 
     fn attach_reading(
@@ -354,7 +387,9 @@ impl ScrollContent {
     }
     /// Declared stable item IDs from the original current document.
     pub fn reading_items(&self) -> &[ComponentId] {
-        self.reading.as_ref().map_or(&[], |state| state.items.as_slice())
+        self.reading
+            .as_ref()
+            .map_or(&[], |state| state.items.as_slice())
     }
     pub fn reading_document_version(&self) -> Option<&ReadingDocumentVersion> {
         self.reading.as_ref().map(|s| &s.version)
@@ -390,11 +425,11 @@ impl ScrollContent {
             || changed
     }
     pub(super) fn reading_unmounted(&mut self) {
-        if let Some(state)=&mut self.reading {
-            let writes=prepare_reader_writes(state,&self.scroll);
-            match ReadingDocumentVersion::attach(writes.key.clone(),writes.revision) {
-                Ok(version)=>apply_reader_writes(state,writes,version),
-                Err(_)=>self.reading=None,
+        if let Some(state) = &mut self.reading {
+            let writes = prepare_reader_writes(state, &self.scroll);
+            match ReadingDocumentVersion::attach(writes.key.clone(), writes.revision) {
+                Ok(version) => apply_reader_writes(state, writes, version),
+                Err(_) => self.reading = None,
             }
         }
     }

@@ -148,7 +148,10 @@ impl Component for UnsupportedPreparedEffects {
 fn split_view_accepts_nested_panels_with_local_prepared_effects() {
     let nested = Content::new(
         ComponentId(8280),
-        panel(Content::new(ComponentId(8281), TextContent::new("nested")), true),
+        panel(
+            Content::new(ComponentId(8281), TextContent::new("nested")),
+            true,
+        ),
     );
     let leading = Content::new(
         ComponentId(8270),
@@ -156,7 +159,10 @@ fn split_view_accepts_nested_panels_with_local_prepared_effects() {
     );
     let trailing = Content::new(
         ComponentId(8260),
-        panel(Content::new(ComponentId(8261), Button::new("trailing")), true),
+        panel(
+            Content::new(ComponentId(8261), Button::new("trailing")),
+            true,
+        ),
     );
 
     assert!(SplitViewContent::try_new(split_input(leading, trailing)).is_ok());
@@ -168,21 +174,21 @@ fn split_view_rejects_unsupported_nested_panel_descendant_and_returns_full_input
     let nested = Content::new(unsupported_id, UnsupportedPreparedEffects);
     let leading = Content::new(
         ComponentId(8250),
-        panel(
-            Content::new(ComponentId(8251), stack(vec![nested])),
-            true,
-        ),
+        panel(Content::new(ComponentId(8251), stack(vec![nested])), true),
     );
     let trailing = Content::new(
         ComponentId(8240),
-        panel(Content::new(ComponentId(8241), Button::new("trailing")), true),
+        panel(
+            Content::new(ComponentId(8241), Button::new("trailing")),
+            true,
+        ),
     );
     let input = split_input(leading, trailing);
     let expected_slots = input.slots;
     let expected_config = input.config;
 
-    let rejected = SplitViewContent::try_new(input)
-        .expect_err("unknown descendant is not authorized");
+    let rejected =
+        SplitViewContent::try_new(input).expect_err("unknown descendant is not authorized");
     assert_eq!(
         rejected.error,
         SplitViewError::Effects(PreparedEffectsError::Unavailable)
@@ -509,7 +515,14 @@ fn prepared_primary_down_in_panel_commits_focus_before_capture() {
     assert!(response.consumed);
     assert_eq!(host.focused(), Some(CHILD));
     assert!(host.pointer_capture().is_some());
-    assert_eq!(host.get(CHILD).unwrap().component::<Button>().unwrap().activations, 0);
+    assert_eq!(
+        host.get(CHILD)
+            .unwrap()
+            .component::<Button>()
+            .unwrap()
+            .activations,
+        0
+    );
 }
 
 #[test]
@@ -518,7 +531,10 @@ fn same_id_remount_replaces_frozen_curve_mount_identity() {
     let stack = Content::new(
         stack_id,
         StackContent {
-            model: Stack { axis: Axis::Vertical, gap: 0. },
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: 0.,
+            },
             flexible_child: None,
             children: vec![Content::new(CHILD, Button::new("first mount"))],
         },
@@ -531,8 +547,11 @@ fn same_id_remount_replaces_frozen_curve_mount_identity() {
     assert_eq!(old_snapshot.identity(CHILD, None), Some(old_mount));
 
     host.remove(CHILD).unwrap();
-    host.insert(stack_id, Content::new(CHILD, Button::new("replacement mount")))
-        .unwrap();
+    host.insert(
+        stack_id,
+        Content::new(CHILD, Button::new("replacement mount")),
+    )
+    .unwrap();
     assert!(!old_snapshot.is_current());
     assert!(host.geometry_snapshot().is_none());
     assert!(host.pointer_hit_test(Point::new(50., 50.)).is_none());
@@ -541,7 +560,10 @@ fn same_id_remount_replaces_frozen_curve_mount_identity() {
     let new_mount = host.semantic_mount(CHILD).unwrap();
     assert_ne!(old_mount, new_mount);
     assert_eq!(old_snapshot.identity(CHILD, None), None);
-    assert_eq!(host.geometry_snapshot().unwrap().identity(CHILD, None), Some(new_mount));
+    assert_eq!(
+        host.geometry_snapshot().unwrap().identity(CHILD, None),
+        Some(new_mount)
+    );
 }
 
 #[test]
@@ -553,7 +575,10 @@ fn captured_button_uses_current_curve_after_legal_relayout() {
     .unwrap();
     let mut text = Text::new(true);
     render(&mut host, &mut text, Rect::new(0., 0., 100., 100.));
-    assert!(host.event(&ContentEvent::PointerDown(Point::new(50., 50.))).consumed);
+    assert!(
+        host.event(&ContentEvent::PointerDown(Point::new(50., 50.)))
+            .consumed
+    );
     let capture = host.pointer_capture().unwrap();
     let mount = host.semantic_mount(CHILD).unwrap();
     assert_eq!(capture.0, CHILD);
@@ -570,12 +595,35 @@ fn captured_button_uses_current_curve_after_legal_relayout() {
     .unwrap();
     assert_eq!(host.pointer_capture(), Some(capture));
     assert_eq!(host.pointer_hit_test(Point::new(60., 50.)), Some(CHILD));
-    assert!(host.event(&ContentEvent::PointerMove(Point::new(60., 50.))).changed);
-    assert!(host.get(CHILD).unwrap().component::<Button>().unwrap().button.state.hovered);
+    assert!(
+        host.event(&ContentEvent::PointerMove(Point::new(60., 50.)))
+            .changed
+    );
+    assert!(
+        host.get(CHILD)
+            .unwrap()
+            .component::<Button>()
+            .unwrap()
+            .button
+            .state
+            .hovered
+    );
 
     assert!(host.pointer_hit_test(Point::new(10., 0.)).is_none());
-    assert!(host.event(&ContentEvent::PointerMove(Point::new(10., 0.))).changed);
-    assert!(!host.get(CHILD).unwrap().component::<Button>().unwrap().button.state.hovered);
+    assert!(
+        host.event(&ContentEvent::PointerMove(Point::new(10., 0.)))
+            .changed
+    );
+    assert!(
+        !host
+            .get(CHILD)
+            .unwrap()
+            .component::<Button>()
+            .unwrap()
+            .button
+            .state
+            .hovered
+    );
     assert_eq!(host.pointer_capture(), Some(capture));
 }
 
@@ -759,25 +807,25 @@ fn ordinary_scroll_keeps_partial_oversized_reveal_with_margins() {
         (ScrollRevealPlacement::Nearest, false),
         (ScrollRevealPlacement::Start(Axis::Vertical), true),
     ] {
-        let mut scroll = ScrollContent::new(
-            ScrollArea::default(),
-            Content::new(target, TallRevealProbe),
-        );
+        let mut scroll =
+            ScrollContent::new(ScrollArea::default(), Content::new(target, TallRevealProbe));
         scroll.viewport_height = Some(60.);
         let mut host = ContentHost::new(Content::new(ROOT, scroll)).unwrap();
         let mut text = Text::new(true);
         render(&mut host, &mut text, Rect::new(0., 0., 100., 60.));
         assert!(host.get(target).unwrap().frame().size.height > 60.);
-        let plan = host.plan_host_reveal(
-            target,
-            ScrollRevealOptions {
-                placement,
-                margins: Insets::new(8., 0., 8., 0.),
-                animated: false,
-            },
-            &[],
-            HostRevealBudget::default(),
-        ).unwrap();
+        let plan = host
+            .plan_host_reveal(
+                target,
+                ScrollRevealOptions {
+                    placement,
+                    margins: Insets::new(8., 0., 8., 0.),
+                    animated: false,
+                },
+                &[],
+                HostRevealBudget::default(),
+            )
+            .unwrap();
         let outcome = host.commit_host_reveal(plan).unwrap();
         assert!(outcome.revealed && outcome.partial);
         assert_eq!(outcome.limit_clamped, expect_limit_clamp);
@@ -804,21 +852,36 @@ impl Component for FocusSpaceProbe {
             self.content_height.unwrap_or(available.height),
         ))
     }
-    fn focusable(&self) -> bool { true }
-    fn set_focus(&mut self, focused: bool, _: bool) { self.focused.set(focused); }
-    fn requires_focus_reveal(&self) -> bool { true }
-    fn required_focus_space(&self) -> RequiredFocusSpace { self.space.borrow().clone() }
+    fn focusable(&self) -> bool {
+        true
+    }
+    fn set_focus(&mut self, focused: bool, _: bool) {
+        self.focused.set(focused);
+    }
+    fn requires_focus_reveal(&self) -> bool {
+        true
+    }
+    fn required_focus_space(&self) -> RequiredFocusSpace {
+        self.space.borrow().clone()
+    }
 }
 
-fn focus_space_host(space: RequiredFocusSpace) -> (
+fn focus_space_host(
+    space: RequiredFocusSpace,
+) -> (
     ContentHost,
     std::rc::Rc<std::cell::RefCell<RequiredFocusSpace>>,
     std::rc::Rc<std::cell::Cell<bool>>,
 ) {
     let space = std::rc::Rc::new(std::cell::RefCell::new(space));
     let focused = std::rc::Rc::new(std::cell::Cell::new(false));
-    let target = FocusSpaceProbe { space: space.clone(), focused: focused.clone(), content_height: None };
-    let host = ContentHost::new(Content::new(ROOT, panel(Content::new(CHILD, target), true))).unwrap();
+    let target = FocusSpaceProbe {
+        space: space.clone(),
+        focused: focused.clone(),
+        content_height: None,
+    };
+    let host =
+        ContentHost::new(Content::new(ROOT, panel(Content::new(CHILD, target), true))).unwrap();
     (host, space, focused)
 }
 
@@ -828,7 +891,11 @@ fn visible_required_witness_survives_clamped_scroll_margins_without_curve() {
     let target_id = ComponentId(8153);
     let space = std::rc::Rc::new(std::cell::RefCell::new(RequiredFocusSpace::Unmeasured));
     let focused = std::rc::Rc::new(std::cell::Cell::new(false));
-    let probe = FocusSpaceProbe { space: space.clone(), focused, content_height: Some(180.) };
+    let probe = FocusSpaceProbe {
+        space: space.clone(),
+        focused,
+        content_height: Some(180.),
+    };
     let mut scroll = ScrollContent::new(ScrollArea::default(), Content::new(target_id, probe));
     scroll.viewport_height = Some(100.);
     let mut host = ContentHost::new(Content::new(ROOT, scroll)).unwrap();
@@ -847,19 +914,24 @@ fn visible_required_witness_survives_clamped_scroll_margins_without_curve() {
         witness,
         evidence: RequiredFocusEvidence::new(),
     };
-    let plan = host.plan_host_reveal(
-        target_id,
-        ScrollRevealOptions {
-            placement: ScrollRevealPlacement::Start(Axis::Vertical),
-            margins: Insets::new(60., 0., 20., 0.),
-            animated: false,
-        },
-        &[],
-        HostRevealBudget::default(),
-    ).unwrap();
+    let plan = host
+        .plan_host_reveal(
+            target_id,
+            ScrollRevealOptions {
+                placement: ScrollRevealPlacement::Start(Axis::Vertical),
+                margins: Insets::new(60., 0., 20., 0.),
+                animated: false,
+            },
+            &[],
+            HostRevealBudget::default(),
+        )
+        .unwrap();
     let result = host.commit_host_reveal(plan).unwrap();
     assert!(result.revealed && result.partial && result.limit_clamped);
-    assert!(host.focused().is_none(), "explicit reveal does not transfer focus");
+    assert!(
+        host.focused().is_none(),
+        "explicit reveal does not transfer focus"
+    );
 }
 
 #[test]
@@ -868,14 +940,29 @@ fn impossible_curved_scroll_witness_leaves_focus_and_offset_unchanged() {
     let scroll_id = ComponentId(8152);
     let space = std::rc::Rc::new(std::cell::RefCell::new(RequiredFocusSpace::Unmeasured));
     let focused = std::rc::Rc::new(std::cell::Cell::new(false));
-    let probe = FocusSpaceProbe { space: space.clone(), focused: focused.clone(), content_height: Some(180.) };
+    let probe = FocusSpaceProbe {
+        space: space.clone(),
+        focused: focused.clone(),
+        content_height: Some(180.),
+    };
     let mut scroll = ScrollContent::new(ScrollArea::default(), Content::new(CHILD, probe));
     scroll.viewport_height = Some(80.);
-    let mut host = ContentHost::new(Content::new(ROOT, panel(Content::new(scroll_id, scroll), true))).unwrap();
+    let mut host = ContentHost::new(Content::new(
+        ROOT,
+        panel(Content::new(scroll_id, scroll), true),
+    ))
+    .unwrap();
     let mut text = Text::new(true);
     render(&mut host, &mut text, Rect::new(0., 0., 120., 100.));
     let target = host.get(CHILD).unwrap().frame();
-    let shape = host.get(ROOT).unwrap().component::<PanelContent>().unwrap().geometry().unwrap().shape;
+    let shape = host
+        .get(ROOT)
+        .unwrap()
+        .component::<PanelContent>()
+        .unwrap()
+        .geometry()
+        .unwrap()
+        .shape;
     // The witness fills the viewport's full width and exactly 100 px vertically.
     // Its only vertical landing inside the Panel's 100 px outer bounds is y=0;
     // at that landing both x=5/95 top corners are outside the rounded domain.
@@ -883,11 +970,31 @@ fn impossible_curved_scroll_witness_leaves_focus_and_offset_unchanged() {
     assert_eq!(target.intersection(&witness), Some(witness));
     assert_eq!(shape.contains([f64::from(witness.min_x()), 0.]), Ok(false));
     assert_eq!(shape.contains([f64::from(witness.max_x()), 0.]), Ok(false));
-    *space.borrow_mut() = RequiredFocusSpace::Sufficient { witness, evidence: RequiredFocusEvidence::new() };
-    let before = host.get(scroll_id).unwrap().component::<ScrollContent>().unwrap().scroll.offset;
-    assert!(host.plan_host_reveal(CHILD, Default::default(), &[], HostRevealBudget::default()).is_err());
+    *space.borrow_mut() = RequiredFocusSpace::Sufficient {
+        witness,
+        evidence: RequiredFocusEvidence::new(),
+    };
+    let before = host
+        .get(scroll_id)
+        .unwrap()
+        .component::<ScrollContent>()
+        .unwrap()
+        .scroll
+        .offset;
+    assert!(
+        host.plan_host_reveal(CHILD, Default::default(), &[], HostRevealBudget::default())
+            .is_err()
+    );
     assert!(!host.focus(Some(CHILD), true));
-    assert_eq!(host.get(scroll_id).unwrap().component::<ScrollContent>().unwrap().scroll.offset, before);
+    assert_eq!(
+        host.get(scroll_id)
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .scroll
+            .offset,
+        before
+    );
     assert_eq!(host.focused(), None);
     assert!(!focused.get());
 }
@@ -904,13 +1011,30 @@ fn target_focus_evidence_remains_independent_from_certified_panel_boundary() {
         witness,
         evidence: RequiredFocusEvidence::new(),
     };
-    let plan = host.plan_host_reveal(CHILD, ScrollRevealOptions::default(), &[], HostRevealBudget::default());
-    assert!(plan.is_ok(), "target supplies its original witness; it does not supply Panel geometry");
+    let plan = host.plan_host_reveal(
+        CHILD,
+        ScrollRevealOptions::default(),
+        &[],
+        HostRevealBudget::default(),
+    );
+    assert!(
+        plan.is_ok(),
+        "target supplies its original witness; it does not supply Panel geometry"
+    );
 
-    for status in [RequiredFocusSpace::Insufficient, RequiredFocusSpace::Unmeasured] {
+    for status in [
+        RequiredFocusSpace::Insufficient,
+        RequiredFocusSpace::Unmeasured,
+    ] {
         *space.borrow_mut() = status;
         assert_eq!(
-            host.plan_host_reveal(CHILD, ScrollRevealOptions::default(), &[], HostRevealBudget::default()).unwrap_err(),
+            host.plan_host_reveal(
+                CHILD,
+                ScrollRevealOptions::default(),
+                &[],
+                HostRevealBudget::default()
+            )
+            .unwrap_err(),
             HostRevealError::NoFeasibleRegion,
         );
     }
@@ -922,18 +1046,39 @@ fn rounded_panel_corner_rejects_required_witness_inside_bbox_but_outside_curve()
     let (mut host, space, _) = focus_space_host(RequiredFocusSpace::Unmeasured);
     let mut text = Text::new(true);
     render(&mut host, &mut text, Rect::new(0., 0., 120., 100.));
-    let shape = host.get(ROOT).unwrap().component::<PanelContent>().unwrap().geometry().unwrap().shape;
+    let shape = host
+        .get(ROOT)
+        .unwrap()
+        .component::<PanelContent>()
+        .unwrap()
+        .geometry()
+        .unwrap()
+        .shape;
     let outer = shape.rect();
     let radius = shape.radii().top_left;
     assert!(radius > 0.);
-    let witness = Rect::new(outer.min_x() + radius * 0.05, outer.min_y() + radius * 0.05, 1., 1.);
-    assert!(outer.intersection(&witness).is_some(), "witness is in the rectangular bbox");
+    let witness = Rect::new(
+        outer.min_x() + radius * 0.05,
+        outer.min_y() + radius * 0.05,
+        1.,
+        1.,
+    );
+    assert!(
+        outer.intersection(&witness).is_some(),
+        "witness is in the rectangular bbox"
+    );
     *space.borrow_mut() = RequiredFocusSpace::Sufficient {
         witness,
         evidence: RequiredFocusEvidence::new(),
     };
     assert_eq!(
-        host.plan_host_reveal(CHILD, ScrollRevealOptions::default(), &[], HostRevealBudget::default()).unwrap_err(),
+        host.plan_host_reveal(
+            CHILD,
+            ScrollRevealOptions::default(),
+            &[],
+            HostRevealBudget::default()
+        )
+        .unwrap_err(),
         HostRevealError::NoFeasibleRegion,
     );
 }
@@ -946,10 +1091,26 @@ fn changed_target_focus_evidence_rejects_plan_before_focus_or_scroll_mutation() 
     render(&mut host, &mut text, Rect::new(0., 0., 120., 100.));
     let target = host.get(CHILD).unwrap().frame();
     let witness = Rect::new(target.min_x() + 40., target.min_y() + 25., 12., 10.);
-    *space.borrow_mut() = RequiredFocusSpace::Sufficient { witness, evidence: RequiredFocusEvidence::new() };
-    let plan = host.plan_host_reveal(CHILD, ScrollRevealOptions::default(), &[], HostRevealBudget::default()).unwrap();
-    *space.borrow_mut() = RequiredFocusSpace::Sufficient { witness, evidence: RequiredFocusEvidence::new() };
-    assert_eq!(host.commit_host_reveal(plan), Err(HostRevealError::StalePlan));
+    *space.borrow_mut() = RequiredFocusSpace::Sufficient {
+        witness,
+        evidence: RequiredFocusEvidence::new(),
+    };
+    let plan = host
+        .plan_host_reveal(
+            CHILD,
+            ScrollRevealOptions::default(),
+            &[],
+            HostRevealBudget::default(),
+        )
+        .unwrap();
+    *space.borrow_mut() = RequiredFocusSpace::Sufficient {
+        witness,
+        evidence: RequiredFocusEvidence::new(),
+    };
+    assert_eq!(
+        host.commit_host_reveal(plan),
+        Err(HostRevealError::StalePlan)
+    );
     assert!(!focused.get());
     assert_eq!(host.focused(), None);
 }

@@ -1,14 +1,14 @@
 //! Gallery placement/resource adapter; the original public Button/ContentHost
 //! exclusively own actions, focus, capture, key timing, availability and AX.
+use std::{cell::RefCell, rc::Rc};
 use tekes_ui_controls::{
     ButtonTextRenderer, ControlKey,
     composition::*,
-    layout_view::{ButtonComponentLayout, ComponentEvent, IconRenderer},
     layout::MeasuredChild,
+    layout_view::{ButtonComponentLayout, ComponentEvent, IconRenderer},
 };
 use tekes_ui_scene::{Point, Primitive, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
-use std::{cell::RefCell, rc::Rc};
 const OWNER: ComponentId = ComponentId(1);
 const ICON_SLOT: ComponentId = ComponentId(2);
 
@@ -39,10 +39,13 @@ impl Component for PassiveArtworkSlot {
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let role = proposal::TextRole::UiBody;
         let scale = text.resolved_font_size(role) / role.style().size;
-        let scale = if scale.is_finite() && scale > 0. { scale } else { 1. };
-        let side = proposal::metric("size", "size-icon-standard")
-            .expect("regular icon DS token")
-            * scale;
+        let scale = if scale.is_finite() && scale > 0. {
+            scale
+        } else {
+            1.
+        };
+        let side =
+            proposal::metric("size", "size-icon-standard").expect("regular icon DS token") * scale;
         MeasuredChild::new(Size::new(
             side.min(available.width.max(0.)).max(0.),
             side.min(available.height.max(0.)).max(0.),
@@ -87,13 +90,10 @@ fn is_drawable_icon_output(primitive: &Primitive) -> bool {
     match primitive {
         Primitive::Quad(quad) => {
             has_area(quad.rect)
-                && (quad.fill.a > 0.
-                    || (quad.border_width > 0. && quad.border_color.a > 0.))
+                && (quad.fill.a > 0. || (quad.border_width > 0. && quad.border_color.a > 0.))
         }
         Primitive::Image(image) => {
-            has_area(image.rect)
-                && image.opacity.is_finite()
-                && image.opacity > 0.
+            has_area(image.rect) && image.opacity.is_finite() && image.opacity > 0.
         }
         Primitive::TransformedImage(image) => {
             let bounds = image.bounds();
@@ -201,10 +201,15 @@ impl ButtonSpecimen {
         let paint = match *self.icon_paint.borrow() {
             Some(IconPaintState::Ready(paint)) => paint,
             Some(IconPaintState::Clipped) => return Ok(()),
-            Some(IconPaintState::MissingThemeInk) => return Err(ArtworkPaintError::MissingActionIconInk),
+            Some(IconPaintState::MissingThemeInk) => {
+                return Err(ArtworkPaintError::MissingActionIconInk);
+            }
             None => return Err(ArtworkPaintError::MissingSlotPaint),
         };
-        let Some(clip) = visible.intersection(&paint.clip).filter(|clip| has_area(*clip)) else {
+        let Some(clip) = visible
+            .intersection(&paint.clip)
+            .filter(|clip| has_area(*clip))
+        else {
             return Ok(());
         };
         let mut artwork = Scene::new();
@@ -307,7 +312,13 @@ mod tests {
 
     struct ImageBacked(Rc<RefCell<Option<tekes_ui_tokens::Rgba>>>);
     impl IconRenderer for ImageBacked {
-        fn draw_icon(&mut self, scene: &mut Scene, _: &str, frame: Rect, tint: tekes_ui_tokens::Rgba) {
+        fn draw_icon(
+            &mut self,
+            scene: &mut Scene,
+            _: &str,
+            frame: Rect,
+            tint: tekes_ui_tokens::Rgba,
+        ) {
             *self.0.borrow_mut() = Some(tint);
             scene.push_image(ImageQuad {
                 rect: frame,
@@ -364,7 +375,8 @@ mod tests {
         let scale = text.resolved_font_size(role) / role.style().size;
         let natural = proposal::metric("size", "size-icon-standard").unwrap() * scale;
         assert_eq!(
-            slot.measure_intrinsic(&mut text, Size::new(100., 100.)).size,
+            slot.measure_intrinsic(&mut text, Size::new(100., 100.))
+                .size,
             Size::new(natural, natural)
         );
         assert_eq!(
@@ -387,7 +399,8 @@ mod tests {
         );
         let mut scene = Scene::new();
         let tint = Rc::new(RefCell::new(None));
-        view.draw_icon(&mut scene, &mut ImageBacked(Rc::clone(&tint))).unwrap();
+        view.draw_icon(&mut scene, &mut ImageBacked(Rc::clone(&tint)))
+            .unwrap();
         assert!(scene.primitives().iter().any(|primitive| matches!(
             primitive,
             Primitive::Image(image)
@@ -415,10 +428,8 @@ mod tests {
             Palette::from(tekes_ui_tokens::Theme::LIGHT),
         );
         let mut disabled_scene = Scene::new();
-        view.draw_icon(
-            &mut disabled_scene,
-            &mut ImageBacked(Rc::clone(&tint)),
-        ).unwrap();
+        view.draw_icon(&mut disabled_scene, &mut ImageBacked(Rc::clone(&tint)))
+            .unwrap();
         let disabled = match *view.icon_paint.borrow() {
             Some(IconPaintState::Ready(paint)) => paint.tint,
             _ => panic!("disabled Button action child must resolve icon tint"),

@@ -122,12 +122,18 @@ impl<const LEADING: bool> PaneSlot<LEADING> {
     }
 }
 impl<const LEADING: bool> Component for PaneSlot<LEADING> {
-    fn lifecycle(&mut self, _: Lifecycle) { self.arranged = false; }
+    fn lifecycle(&mut self, _: Lifecycle) {
+        self.arranged = false;
+    }
 
     // These passive path owners have no local action reducer or action callbacks.
     // Their original mutable child access/focus hooks satisfy main #98's route contract.
-    fn action_transaction_compatibility(&self)->ActionTransactionCompatibility { ActionTransactionCompatibility::StableHooks }
-    fn prepare_action(&self,request:ComponentActionRequest<'_>)->ActionPreparation { action_preparation::ignored_pointer(request) }
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
 
     fn host_reveal_passthrough(&self) -> bool {
         self.arranged && self.intact()
@@ -485,12 +491,18 @@ impl SplitViewContent {
     }
 }
 impl Component for SplitViewContent {
-    fn lifecycle(&mut self, _: Lifecycle) { self.arranged_config = None; }
+    fn lifecycle(&mut self, _: Lifecycle) {
+        self.arranged_config = None;
+    }
 
     // These passive path owners have no local action reducer or action callbacks.
     // Their original mutable child access/focus hooks satisfy main #98's route contract.
-    fn action_transaction_compatibility(&self)->ActionTransactionCompatibility { ActionTransactionCompatibility::StableHooks }
-    fn prepare_action(&self,request:ComponentActionRequest<'_>)->ActionPreparation { action_preparation::ignored_pointer(request) }
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
 
     fn host_reveal_passthrough(&self) -> bool {
         self.arranged_config.is_some() && self.arranged_config == self.config()
@@ -595,7 +607,11 @@ impl Component for SplitViewContent {
                 clip
             },
         );
-        self.arranged_config = if valid_allocation(frame) && valid_allocation(clip) { self.config() } else { None };
+        self.arranged_config = if valid_allocation(frame) && valid_allocation(clip) {
+            self.config()
+        } else {
+            None
+        };
     }
 }
 // SplitView's original parent layout clips each Slot before arranging the Slot
@@ -1004,7 +1020,10 @@ impl ContentHost {
         if !prepared::at(&self.root, &plan.old).is_some_and(|retired| {
             self.replacement_keeps_overlay_scope(retired, Some(&input.replacement))
         }) {
-            return Err(Rejected { error: SplitViewError::UnsupportedScope, input: Box::new(input) });
+            return Err(Rejected {
+                error: SplitViewError::UnsupportedScope,
+                input: Box::new(input),
+            });
         }
         let restore_ready = if let Some((id, reveal)) = plan.restore.take() {
             if self
@@ -1031,7 +1050,11 @@ impl ContentHost {
         plan.effects.bind(&mut reading);
         plan.new.bind(&mut reading);
         // Original Host publication authority expires only after all refusals.
-        let _=self.reveal_clock.geometry_lease.fetch_update(std::sync::atomic::Ordering::AcqRel,std::sync::atomic::Ordering::Acquire,|n|Some(n.saturating_add(1)));
+        let _ = self.reveal_clock.geometry_lease.fetch_update(
+            std::sync::atomic::Ordering::AcqRel,
+            std::sync::atomic::Ordering::Acquire,
+            |n| Some(n.saturating_add(1)),
+        );
         self.reveal_clock.pending = true;
         // All ordinary refusal ends above. No callbacks, IDs or authorization were published.
         self.reading_transaction = true;
@@ -1105,8 +1128,18 @@ impl ContentHost {
         owner.revision += 1;
         owner.arranged_config = None;
         match input.pane {
-            Pane::Leading => owner.children[0].component_mut::<PaneSlot<true>>().unwrap().arranged = false,
-            Pane::Trailing => owner.children[1].component_mut::<PaneSlot<false>>().unwrap().arranged = false,
+            Pane::Leading => {
+                owner.children[0]
+                    .component_mut::<PaneSlot<true>>()
+                    .unwrap()
+                    .arranged = false
+            }
+            Pane::Trailing => {
+                owner.children[1]
+                    .component_mut::<PaneSlot<false>>()
+                    .unwrap()
+                    .arranged = false
+            }
         }
         refresh_local(prepared::at_mut(&mut self.root, &plan.owner).unwrap());
         plan.effects.commit_range(
@@ -1205,8 +1238,13 @@ impl ContentHost {
 
         let old_layout = split.layout().expect("intact layout");
         for (side, bounds) in [(Pane::Leading, projected.0), (Pane::Trailing, projected.2)] {
-            let old_bounds = if side == Pane::Leading { old_layout.leading.frame() } else { old_layout.trailing.frame() };
-            if old_bounds != bounds && !self.replacement_keeps_overlay_scope(split.pane(side), None) {
+            let old_bounds = if side == Pane::Leading {
+                old_layout.leading.frame()
+            } else {
+                old_layout.trailing.frame()
+            };
+            if old_bounds != bounds && !self.replacement_keeps_overlay_scope(split.pane(side), None)
+            {
                 return Err(SplitViewError::UnsupportedScope);
             }
         }
@@ -1288,7 +1326,11 @@ impl ContentHost {
         effects.validate(&self.root)?;
         effects.bind(&mut empty_reading);
         // No Keep/refusal path reaches this infallible original lease revoke.
-        let _=self.reveal_clock.geometry_lease.fetch_update(std::sync::atomic::Ordering::AcqRel,std::sync::atomic::Ordering::Acquire,|n|Some(n.saturating_add(1)));
+        let _ = self.reveal_clock.geometry_lease.fetch_update(
+            std::sync::atomic::Ordering::AcqRel,
+            std::sync::atomic::Ordering::Acquire,
+            |n| Some(n.saturating_add(1)),
+        );
         self.reveal_clock.pending = true;
         self.reading_transaction = true;
         effects.commit(&mut self.root, &mut empty_mounts);
@@ -1313,8 +1355,14 @@ impl ContentHost {
         split.revision += 1;
         split.allocation = None;
         split.arranged_config = None;
-        split.children[0].component_mut::<PaneSlot<true>>().unwrap().arranged = false;
-        split.children[1].component_mut::<PaneSlot<false>>().unwrap().arranged = false;
+        split.children[0]
+            .component_mut::<PaneSlot<true>>()
+            .unwrap()
+            .arranged = false;
+        split.children[1]
+            .component_mut::<PaneSlot<false>>()
+            .unwrap()
+            .arranged = false;
         let mut retired = BTreeSet::new();
         for (i, is_hidden) in hidden.into_iter().enumerate() {
             if is_hidden {
