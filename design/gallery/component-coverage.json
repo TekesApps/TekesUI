@@ -4241,7 +4241,44 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "e5369fc1c6ca954764de10c5fcf7ebff09dc91e7",
+        "scope": "Actual public CodeBlockView retained Theme/source wrap/clip/passivity and registered Gallery adapter own-ground text/geometry/lifecycle; tests only",
+        "claims": [
+          "Same public model/View through Theme::ALL and narrow/wide slots keeps original source IDs/empty-line/wrap/clip and actual each-line own-ground contrast4.5/7",
+          "Actual registered Gallery adapter component build retains real source layout/own surface/each-line text independent of footer across Themes",
+          "Original passive input/lifecycle and code_block regressions plus Gallery strict passed; no fabricated interactive/editor states"
+        ],
+        "source_identity": {
+          "scope": "Selected actual CodeBlock/View/adapter witnesses, not full dependency proof or native whole-window certification",
+          "sha256": {
+            "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "742dc6a4458167f5f3af7e19cad654683d19fca8703487382da156e60f555a68",
+            "examples/composition-consumer/tests/code_block_theme.rs": "f4dde225a14755b9fff62c792685b74c80fffd3fabf6891bb688a5e14de5bd96"
+          }
+        },
+        "exceptions": [
+          "Plain read-only source, no current syntax/edit/focus/disabled/Content API invented",
+          "Language remains caller data; ordinary widths/source indices remain data"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/whole-window/native AX/physicalIME/VoiceOver certification",
+          "Markdown/DiffView/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#124",
+            "component": "tui.code-block",
+            "commit": "e5369fc1c6ca954764de10c5fcf7ebff09dc91e7",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/code-block-mainbf518c0-candidate/main-intake/commit-receipt.json",
+            "sha256": "cdc4e732268aee16cbe6c6e9db14692139164549b47ca27917be52f15344d2eb",
+            "scope": "Actual public/Gallery component adapter/strict; original shared and raster evidence retains original identity"
+          }
+        ]
+      }
     },
     {
       "id": "tui.diff-view",
