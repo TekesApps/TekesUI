@@ -15,7 +15,7 @@ tekes-ui-module-runtime = { path = "../tekes-ui-module-runtime" }
 [target.'cfg(target_os = "macos")'.dependencies]
 wgpu = { version = "30.0.1", default-features = false, features = ["metal", "wgsl", "std"] }
 tekes-ui-render = { path = "../tekes-ui-render", features = ["macos-shared-surface"] }
-tekes-ui-platform-macos = { path = "../tekes-ui-platform-macos" }
+tekes-ui-platform-macos = { path = "../tekes-ui-platform-macos", features = ["content-accessibility"] }
 tekes-ui-controls = { path = "../tekes-ui-controls" }
 tekes-ui-scene = { path = "../tekes-ui-scene" }
 tekes-ui-tokens = { path = "../tekes-ui-tokens" }
