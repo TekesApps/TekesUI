@@ -3651,6 +3651,77 @@ mod tests {
     }
 
     #[test]
+    fn tooltip_render_consumes_theme_surface_and_text_roles() {
+        struct InkText(Vec<tekes_ui_tokens::Rgba>);
+        impl ButtonTextRenderer for InkText {
+            fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+                Size::new(
+                    (text.chars().count() as f32 * 8.).min(max_width.max(0.)),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                ink: tekes_ui_tokens::Rgba,
+            ) {
+                self.0.push(ink);
+            }
+        }
+
+        let viewport = Rect::new(0., 0., 320., 200.);
+        let anchor = Rect::new(24., 24., 120., 36.);
+        let model = Tooltip {
+            visible: true,
+            text: "Helpful detail".into(),
+        };
+        let mut view = TooltipView::default();
+        for theme in tekes_ui_tokens::Theme::ALL {
+            let palette = Palette::from(theme);
+            let mut scene = Scene::new();
+            let mut text = InkText(Vec::new());
+            let layout = view.render(
+                &mut scene,
+                &mut text,
+                &model,
+                anchor,
+                Size::new(180., 48.),
+                viewport,
+                None,
+                palette,
+                proposal::TextRole::UiBody,
+            );
+            assert_eq!(layout.visible, Some(layout.frame), "{theme:?}");
+            let background = scene
+                .primitives()
+                .iter()
+                .find_map(|primitive| match primitive {
+                    Primitive::Quad(quad) if quad.rect == layout.frame => Some(quad),
+                    _ => None,
+                })
+                .expect("public Tooltip consumer paints its background");
+            assert_eq!(
+                background.fill,
+                palette
+                    .color("surface-3")
+                    .expect("generated Tooltip surface role"),
+                "{theme:?}"
+            );
+            let radius =
+                proposal::metric("radius", "radius-floating").expect("generated Tooltip radius");
+            assert_eq!(background.corner_radii.top_left, radius, "{theme:?}");
+            assert_eq!(
+                text.0,
+                vec![palette.color("primary-text").expect("semantic text role")],
+                "{theme:?}"
+            );
+        }
+    }
+    #[test]
     fn tooltip_owns_hover_focus_escape_and_leave_state() {
         let anchor = Rect::new(20., 20., 120., 36.);
         let viewport = Rect::new(0., 0., 240., 160.);

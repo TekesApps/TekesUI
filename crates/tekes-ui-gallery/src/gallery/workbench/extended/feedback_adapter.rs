@@ -2846,6 +2846,78 @@ mod layout_tests {
         );
     }
     #[test]
+    fn real_tooltip_state_matrix_consumes_theme_palette_roles() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        for theme in Theme::ALL {
+            let mut text = TextEngine::new();
+            text.begin_frame();
+            let mut static_text = StaticText::new(None);
+            let mut ctx = context(&mut text, &mut static_text);
+            ctx.theme = theme;
+            let mut scene = Scene::new();
+            let mut y = 8.;
+            let bounds = Rect::new(8., 8., 360., 1600.);
+            let palette = Palette::from(theme);
+            matrix_tooltip(&mut ctx, &mut scene, bounds, &mut y, palette);
+            let tooltip_frames: Vec<_> = scene
+                .primitives()
+                .iter()
+                .filter_map(|primitive| match primitive {
+                    Primitive::Quad(quad)
+                        if quad.rect.size.width == bounded_fixture_width(bounds.size.width, 420.).min(240.)
+                            && quad.corner_radii.top_left
+                                == proposal::metric("radius", "radius-floating").unwrap()
+                            && quad.fill
+                            == palette
+                                .color("surface-3")
+                                .expect("generated Tooltip surface") =>
+                    {
+                        Some(quad.rect)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(
+                tooltip_frames.len(),
+                2,
+                "hover and focus-visible states in {theme:?}"
+            );
+            let tooltip_text = tooltip_frames.iter().all(|frame| {
+                let content = Rect::new(
+                    frame.min_x() + 12.,
+                    frame.min_y() + 8.,
+                    frame.size.width - 24.,
+                    frame.size.height - 16.,
+                );
+                scene.primitives().iter().any(|primitive| {
+                    let Primitive::Glyphs(run) = primitive else {
+                        return false;
+                    };
+                    run.color == palette.color("primary-text").expect("semantic text role")
+                        && !run.glyphs.is_empty()
+                        && run.glyphs.iter().all(|glyph| content.contains(glyph.origin))
+                })
+            });
+            assert!(
+                tooltip_text,
+                "real Gallery Tooltip body glyphs consume {theme:?} text palette"
+            );
+            assert!(
+                contrast_ratio(
+                    palette.color("primary-text").unwrap(),
+                    palette.color("surface-3").unwrap(),
+                ) >= if theme.is_increased() { 7. } else { 4.5 },
+                "Tooltip text/background contrast in {theme:?}"
+            );
+            assert!(
+                y > bounds.min_y(),
+                "the real Tooltip matrix lays out in {theme:?}"
+            );
+        }
+    }
+    #[test]
     fn actual_tooltip_forwarder_recovers_each_new_owner_without_reviving_old_requests() {
         use tekes_ui_tokens::{Palette, Theme};
         fn paint(v: &mut FeedbackViews, text: &mut TextEngine, palette: Palette) -> bool {
