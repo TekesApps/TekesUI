@@ -130,30 +130,36 @@
       "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/separator.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
-        "baseline_commit": "ceeee8a6e30092e0cf709cd14edea465ac3d1302",
-        "scope": "Retained existing public SeparatorView and actual Gallery playground/variants, four Themes, both axes, actual2x decorative stroke, original geometry/clip/hidden; tests only",
+        "baseline_commit": "c7b4e511e6842137b09cf4a5f033fe37427dc1b5",
+        "scope": "Current ordinary public SeparatorContent plus original SeparatorView; explicit current adapter/reading/marked/checked transaction and original8GPUframes256cases. Prior Gallery/View Theme evidence stays original identity.",
         "claims": [
-          "Public retained SeparatorView switches Theme::ALL across horizontal/vertical axes with original frame/ancestor clip and hidden no-paint",
-          "Actual Gallery playground View and variants painter use both decorative directions at actual2x scale with normal hairline/IC stroke-rule and stable centers/spans",
-          "Both new targets and Gallery strict passed under original source guard/build lock/SSD"
+          "Ordinary Text→Separator→Text public mounting, constrained both-axis scale/Theme/decorative behavior passed with original View sole painter",
+          "Original reading insertion/removal/reflow/user-priority/latest and marked Composer/binding/selection/focus/Enter gate preserved; new and retiring passive leaf works in actual checked pane transaction",
+          "Final actual headless GPU8frames256cases across original4modes/1x2x/default-blue-clay-blue-inputs:192normal entireROI zero pixel difference against original View,64tiny declared device-scissor contract,0 clip leaks; root viewed all8",
+          "Actual public9 plus affected CPU retest, originalscale5/current external API binding/Controls strict and final consumer strict passed; old failures kept"
         ],
         "source_identity": {
-          "scope": "Selected real consumer/render sources, not exhaustive dependency proof; actual full-source run identities retained in receipts.",
+          "scope": "Selected actual public adapter/View/consumer/GPU sources, not exhaustive dependency proof; exact full source/program/depinfo runs retained in receipt, including distinct test-lint reruns.",
           "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "2fca45295eda10da5593e7cfdf6960ee63de6516be20170c7161dcdf7c03bb45",
+            "crates/tekes-ui-controls/src/composition/separator.rs": "4fed31d0eb17470dadd33b7a3644ba922e06fa005a3feddb0f88379eed7f3397",
             "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
-            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
             "crates/tekes-ui-controls/src/paint.rs": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968",
-            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "81d61e1f0e9b7ebda581eab90ab760fd86f7b838d9741505d311e5e672ffddd4",
-            "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c"
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "examples/composition-consumer/tests/separator_content.rs": "a5de8eb506dcb0d328173626a82ed0627b3ac9da29d97a3043b3ed96e4bd0dba",
+            "examples/composition-consumer/tests/separator_content_gpu.rs": "86b777e62b46b7df26b8fb22672e9ced69c3b0ef7eb0f2ff3a7bff941ec215b5",
+            "examples/composition-consumer/tests/support/separator_fixture.rs": "13be213a700d498f1dce0b6374a4070affe566f87d35608ccf69393547ceb099",
+            "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71"
           }
         },
         "exceptions": [
-          "Original decorative grouping spec excludes required interaction boundaries; no invented text/interaction/disabled/focus states or contrast threshold. Current main has no SeparatorContent API.",
-          "Ordinary direction/placement geometry stays layout; shared brand/invalid-scale/1x/SplitView results reused unchanged"
+          "Same tui.separator identity; no new root, painter, Theme rules, action/focus/AX node or text/scroll owner",
+          "Ordinary constraints/direction/placement remain geometry; decorative role is not a required interactive boundary",
+          "Curved subtrees retain original default Unsupported; actual8GPU old normal/tiny/ancestor scenes are not a new curve or native certification"
         ],
         "gaps": [
-          "new full-brand/GPU/native-window/physicalIME/VoiceOver certification",
-          "other7 family roots/full52"
+          "#54 immutable public delivery and AgentKit exact pin/actual integration pending at this local checkpoint",
+          "Native window/physicalIME/VoiceOver/performance/fullGold7 not_run; not additional first3AC gates"
         ],
         "evidence": [
           {
@@ -163,6 +169,14 @@
             "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/separator-main0a389a9-candidate/main-intake/commit-receipt.json",
             "sha256": "010a23fada4c6f3cfd1bba560b5f98e95b215cc911d33cfb3f24302198376b0d",
             "scope": "Actual main retained decorative Theme/clip and Gallery dual implementation/scale tests; strict passed; exceptions and not_run preserved."
+          },
+          {
+            "issue": "#54",
+            "component": "tui.separator",
+            "commit": "c7b4e511e6842137b09cf4a5f033fe37427dc1b5",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-54/separator-content-main8de6c24-candidate/main-intake/commit-receipt.json",
+            "sha256": "72d6cc42d01b54cf4f45fe7f08d7a7dda8a23b2bab7b73ad5bb6efe5574a4eb6",
+            "scope": "Current ordinary Content/reading/marked/checked compatibility and original a2 GPU scope; prior Root/Gallery/scale evidence not re-signed."
           }
         ]
       }

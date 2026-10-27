@@ -156,7 +156,8 @@
       "api": "tekes_ui_controls::extended::Separator",
       "api_bindings": [
         "tekes_ui_controls::extended::Separator",
-        "tekes_ui_controls::layout_view::SeparatorView"
+        "tekes_ui_controls::layout_view::SeparatorView",
+        "tekes_ui_controls::composition::SeparatorContent"
       ]
     },
     {

@@ -21,7 +21,8 @@ images to palette-derived foregrounds. The fixture uses the production IconView,
 Button state/paint and shared Stack layout. It declares one action and explicit
 accessible name; its contents are decorative to accessibility and input.
 
-The library remains an uncommitted protocol experiment. The standalone test is
+The initial protocol fixtures remain historical evidence; current delivered scope
+and immutable checkpoints are recorded in their linked Issues. The standalone test is
 public-API evidence, not native interaction or VoiceOver evidence. Gallery's
 composition_acceptance test embeds this same consumer fixture with actual text,
 registered icon pixels and GPU rendering, but does not migrate Gallery routes.
@@ -38,3 +39,18 @@ The new scene adapters remain experimental: composed Dialog presence transitions
 physical IME/candidate acceptance and native control accessibility are pending.
 See `docs/design/composition-list-dialog-20261017.md` in the repository for the
 separate API, GPU, native and Gold7 evidence.
+
+## Ordinary decorative Separator (#54)
+
+`tests/support/separator_fixture.rs::build` is the minimal public consumer: a
+normal `StackContent` holds Text → `SeparatorContent` → Text. The parent owns
+business labels, axis and constraints; the original SDK View owns Theme ink and
+backing-scale hairlines. The separator creates no action, focus or AX owner.
+
+Run the `separator_content` integration target to exercise ordinary mounting,
+Theme/scale/constraints, unchanged reading/marked Composer and checked mount and
+retirement. The explicitly ignored `separator_content_gpu` target is the original
+8-frame/256-case full-ROI/clip comparison; it requires a fresh
+`TEKESUI_SEPARATOR_GPU_OUT` evidence directory and the repository's coordinated
+build lane. It opens no window. Source tests do not claim physical IME or
+VoiceOver acceptance. AgentKit pin adoption remains #54's separate delivery step.

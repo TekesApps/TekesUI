@@ -45,6 +45,8 @@ mod content_reading;
 mod content_reveal;
 mod status_badge;
 pub use status_badge::StatusBadgeContent;
+mod separator;
+pub use separator::SeparatorContent;
 mod skeleton;
 pub use skeleton::SkeletonContent;
 mod progress;

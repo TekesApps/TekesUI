@@ -1380,6 +1380,14 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::SeparatorContent",
+      "category": "component",
+      "components": [
+        "tui.separator"
+      ],
+      "reason": "Registered ordinary public Content presentation of the existing Separator; same component identity and route, original SeparatorView painter, decorative without input/focus/AX ownership."
+    },
+    {
       "api": "tekes_ui_controls::composition::SkeletonContent",
       "category": "component",
       "components": [
