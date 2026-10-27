@@ -10708,6 +10708,138 @@ mod interaction_tests {
     }
 
     #[test]
+    fn field_gallery_retained_themes_keep_metadata_roles_and_input_slot() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let v = c.to_linear();
+                0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        let mut gallery = Gallery::new();
+        let i = index("field-meta");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 1000.);
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        let original_value = gallery.workbench.state(i).input.query().to_owned();
+        let mut observed = Vec::new();
+        for error in [false, true] {
+            if gallery.workbench.state(i).error != error {
+                let point = gallery
+                    .workbench
+                    .state(i)
+                    .visible_for_id(12)
+                    .expect("real Error property control")
+                    .center();
+                gallery.handle_input(&mouse(point, true));
+                gallery.handle_input(&mouse(point, false));
+            }
+            assert_eq!(gallery.workbench.state(i).error, error);
+            let mut original = None;
+            for theme in Theme::ALL {
+                gallery.apply(Command::Appearance(if theme.is_dark() {
+                    AppearanceChoice::Dark
+                } else {
+                    AppearanceChoice::Light
+                }));
+                gallery.apply(Command::Contrast(if theme.is_increased() {
+                    ContrastChoice::On
+                } else {
+                    ContrastChoice::Off
+                }));
+                assert_eq!(gallery.theme(), theme);
+                let mut scene = Scene::new();
+                gallery.build_scene(&mut scene);
+                let state = gallery.workbench.state(i);
+                let layout = state.field_view.layout();
+                if let Some(original) = original {
+                    assert_eq!(layout, original);
+                } else {
+                    original = Some(layout);
+                }
+                assert_eq!(layout.has_error, error);
+                assert!(
+                    layout.required_mark.is_none(),
+                    "original Gallery Field is optional"
+                );
+                assert_eq!(
+                    state.field.message(),
+                    if error {
+                        "A name is required."
+                    } else {
+                        "Use a clear name for your workspace."
+                    }
+                );
+                assert_eq!(
+                    state.input.frame_at(0),
+                    Some(layout.slot),
+                    "metadata slot is used by the original real input"
+                );
+                assert_eq!(state.input.query(), original_value);
+                assert!(layout.label.max_y() <= layout.slot.min_y());
+                assert!(layout.slot.max_y() <= layout.message.min_y());
+                let input_paint = scene
+                    .primitives()
+                    .iter()
+                    .position(|p| matches!(p, Primitive::Quad(q) if q.rect == layout.slot))
+                    .expect("actual child input background");
+                // FieldView paints its label then message immediately before the input.
+                // This wide optional fixture has one actual GlyphRun for each metadata line.
+                let mut metadata = scene.primitives()[..input_paint]
+                    .iter()
+                    .rev()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run) => Some(run),
+                        _ => None,
+                    });
+                let palette = Palette::new(theme, 0).unwrap();
+                let background = Gallery::background(theme);
+                for (slot, role) in [
+                    (
+                        layout.message,
+                        if error {
+                            "status-failed"
+                        } else {
+                            "secondary-text"
+                        },
+                    ),
+                    (layout.label, "primary-text"),
+                ] {
+                    let run = metadata
+                        .next()
+                        .expect("complete original Field metadata paint");
+                    assert!(!run.glyphs.is_empty());
+                    // The original text host rounds label origins; it permits glyph bearings.
+                    assert!(
+                        run.glyphs
+                            .iter()
+                            .any(|g| slot.inset(-0.5).contains(g.origin)),
+                        "{theme:?} {role}: metadata run belongs to its original slot"
+                    );
+                    assert_eq!(run.color, palette.color(role).unwrap());
+                    assert!(
+                        contrast(run.color, background)
+                            >= if theme.is_increased() { 7. } else { 4.5 },
+                        "{theme:?} {role}: actual metadata/background contrast={}",
+                        contrast(run.color, background)
+                    );
+                    observed.push(run.color);
+                }
+            }
+        }
+        assert!(observed.chunks_exact(2).any(|inks| inks != &observed[..2]));
+    }
+
+    #[test]
     fn large_type_form_phase_and_event_log_glyphs_do_not_overlap_in_visible_preview() {
         use tekes_ui_scene::Primitive;
 
