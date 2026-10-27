@@ -6933,6 +6933,146 @@ mod interaction_tests {
     }
 
     #[test]
+    fn tree_theme_retains_actual_gallery_disclosure_hierarchy_and_row_ink() {
+        use tekes_ui_platform_macos::AccessibilityRole;
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("tree");
+        click(&mut w, i, 31, &mut text);
+        w.handle(i, &key(123, true), &mut text);
+        assert_eq!(w.state(i).extended.tree.selected, Some(0));
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut original_marks = [None, None];
+        for theme in Theme::ALL {
+            for expanded in [false, true] {
+                w.handle(i, &key(if expanded { 124 } else { 123 }, true), &mut text);
+                let root = w
+                    .state(i)
+                    .visible_for_id(30)
+                    .expect("real visible Tree root");
+                w.handle(i, &move_pointer(root.center()), &mut text);
+                text.begin_frame();
+                let mut static_text = super::super::static_text::StaticText::new(None);
+                let mut ctx = PageCtx {
+                    theme,
+                    text: &mut text,
+                    static_text: &mut static_text,
+                };
+                let mut scene = Scene::new();
+                w.build_clipped(i, &mut ctx, content, content, &mut scene);
+                assert!(scene.composition_error().is_none());
+                assert_eq!(w.state(i).extended.tree.selected, Some(0));
+                assert_eq!(w.state(i).focus, Some(30));
+                assert_eq!(w.state(i).extended.tree.nodes()[0].expanded, expanded);
+                let row = w.state(i).visible_for_id(30).unwrap();
+                let palette = Palette::new(theme, w.brand).unwrap();
+                let (index, ground) = scene
+                    .primitives()
+                    .iter()
+                    .enumerate()
+                    .find_map(|(index, p)| match p {
+                        Primitive::Quad(q) if q.rect == row => Some((index, q)),
+                        _ => None,
+                    })
+                    .expect("actual own Tree root ground");
+                assert_eq!(ground.fill, palette.color("row-selection-hover").unwrap());
+                let labels: Vec<_> = scene.primitives()[index + 1..]
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run)
+                            if !run.glyphs.is_empty()
+                                && run.glyphs.iter().all(|g| row.contains(g.origin)) =>
+                        {
+                            Some(run)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(!labels.is_empty());
+                let ink = palette.color("primary-text").unwrap();
+                assert!(labels.iter().all(|run| run.color == ink));
+                let slot = proposal::metric("size", "size-inline-action").unwrap()
+                    + 2. * proposal::metric("spacing", "space-relaxed").unwrap();
+                let marks: Vec<_> = scene.primitives()[index + 1..]
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Quad(q)
+                            if q.rect.min_x() >= row.min_x()
+                                && q.rect.max_x() <= row.min_x() + slot
+                                && q.rect.min_y() >= row.min_y()
+                                && q.rect.max_y() <= row.max_y() =>
+                        {
+                            Some(q)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(
+                    !marks.is_empty(),
+                    "actual production Gallery chevron, not row ground/focus or label glyphs"
+                );
+                assert!(marks.iter().all(|mark| mark.fill == ink));
+                let geometry: Vec<_> = marks.iter().map(|mark| mark.rect).collect();
+                let original = &mut original_marks[usize::from(expanded)];
+                if let Some(previous) = original.as_ref() {
+                    assert_eq!(&geometry, previous);
+                } else {
+                    *original = Some(geometry);
+                }
+                assert_eq!(
+                    (labels[0].color.a, marks[0].fill.a, ground.fill.a),
+                    (1., 1., 1.)
+                );
+                let luminance = |color: tekes_ui_tokens::Rgba| {
+                    let c = color.to_linear();
+                    0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                };
+                let contrast = |ink: tekes_ui_tokens::Rgba| {
+                    let (a, b) = (luminance(ink), luminance(ground.fill));
+                    (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                };
+                assert!(contrast(labels[0].color) >= if theme.is_increased() { 7. } else { 4.5 });
+                assert!(
+                    contrast(marks[0].fill) >= 3.,
+                    "necessary enabled branch disclosure mark"
+                );
+                assert!(scene.primitives().iter().any(|p|matches!(p,
+                    Primitive::Quad(q) if q.fill.a==0. && q.border_color==palette.color("border-focused").unwrap() && q.rect.intersection(&row).is_some()
+                )));
+                let nodes = w.accessibility_nodes(i);
+                let group = nodes
+                    .iter()
+                    .find(|node| node.role == AccessibilityRole::Tree)
+                    .unwrap();
+                let rows: Vec<_> = nodes
+                    .iter()
+                    .filter(|node| matches!(node.role, AccessibilityRole::TreeItem { .. }))
+                    .collect();
+                assert_eq!(rows.len(), if expanded { 3 } else { 1 });
+                let root = rows.iter().find(|node| node.label == "Workspace").unwrap();
+                assert_eq!(root.role, AccessibilityRole::TreeItem { level: 0 });
+                assert_eq!(root.parent, Some(group.key));
+                assert_eq!(root.expanded, Some(expanded));
+                assert!(root.selected && root.focused && root.enabled);
+                for child in rows.iter().filter(|node| node.label != "Workspace") {
+                    assert_eq!(child.role, AccessibilityRole::TreeItem { level: 1 });
+                    assert_eq!(child.parent, Some(root.key));
+                    assert!(!child.selected);
+                    assert_eq!(child.expanded, None);
+                }
+            }
+        }
+        assert_ne!(
+            original_marks[0], original_marks[1],
+            "original collapsed and expanded chevrons differ"
+        );
+    }
+
+    #[test]
     fn gallery_wholly_offscreen_collections_reveal_home_and_end_without_pointer_hits() {
         use super::super::Gallery;
         for renderer in ["list", "tree", "data-table", "chart"] {
@@ -8131,6 +8271,308 @@ mod interaction_tests {
             CheckState::Unchecked,
             "matching pointer release toggles Checked to Unchecked"
         );
+    }
+
+    #[test]
+    fn radio_group_gallery_theme_switch_repaints_own_indicator_and_preserves_roving_selection() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+        fn assert_radio(
+            scene: &Scene,
+            geometry: (Rect, Rect),
+            palette: Palette,
+            state: ControlState,
+            ground: &str,
+            backing: f32,
+            clear: Rgba,
+        ) {
+            let (indicator, label) = geometry;
+            let (index, outer) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == indicator => Some((i, *q)),
+                    _ => None,
+                })
+                .expect("actual radio indicator own background");
+            assert_eq!(outer.fill, palette.color(ground).unwrap());
+            assert_eq!(
+                outer.corner_radii,
+                tekes_ui_scene::CornerRadii::uniform(indicator.size.width * 0.5)
+            );
+            assert_eq!(
+                outer.border_color,
+                palette
+                    .color(if state.disabled {
+                        "disabled-text"
+                    } else {
+                        "border"
+                    })
+                    .unwrap()
+            );
+            let marks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a > 0.
+                            && q.rect.min_x() >= indicator.min_x()
+                            && q.rect.min_y() >= indicator.min_y()
+                            && q.rect.max_x() <= indicator.max_x()
+                            && q.rect.max_y() <= indicator.max_y() =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .collect();
+            if state.selected {
+                assert_eq!(marks.len(), 1, "selected radio emits exactly its own dot");
+                assert_eq!(
+                    marks[0],
+                    palette
+                        .color(if state.disabled {
+                            "disabled-text"
+                        } else {
+                            "c-radio-checked-mark"
+                        })
+                        .unwrap()
+                );
+                if !state.disabled {
+                    assert!(
+                        contrast(marks[0], outer.fill) >= 3.,
+                        "dot/own indicator ground contrast"
+                    );
+                }
+            } else {
+                assert!(marks.is_empty(), "unselected radio has no selection dot");
+            }
+            // Labels inherit actual painted parent ground, or the real renderer clear.
+            let parent = scene.primitives()[..index]
+                .iter()
+                .rev()
+                .find_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a == 1. && q.rect.intersection(&label) == Some(label) =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .unwrap_or(clear);
+            let inks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let a = g.glyph;
+                            label
+                                .intersection(&Rect::new(
+                                    g.origin.x + a.left as f32 / backing,
+                                    g.origin.y + a.top as f32 / backing,
+                                    a.width as f32 / backing,
+                                    a.height as f32 / backing,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "actual CoreText radio label glyphs after this indicator"
+            );
+            for ink in inks {
+                assert_eq!(
+                    ink,
+                    palette
+                        .color(if state.disabled {
+                            "disabled-text"
+                        } else {
+                            "primary-text"
+                        })
+                        .unwrap()
+                );
+                if !state.disabled {
+                    assert!(
+                        contrast(ink, parent)
+                            >= if palette.theme.is_increased() {
+                                7.
+                            } else {
+                                4.5
+                            },
+                        "actual label/parent ground contrast"
+                    );
+                }
+            }
+        }
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 900.);
+        assert!(gallery.open_route("component-radio-group/playground"));
+        let i = index("radio-group");
+        gallery.build_scene(&mut Scene::new());
+        gallery
+            .workbench
+            .state(i)
+            .extended
+            .radio
+            .set_enabled(1, false);
+        gallery.build_scene(&mut Scene::new());
+        let initial = gallery
+            .workbench
+            .state(i)
+            .extended
+            .radio_view
+            .layout()
+            .clone();
+        let background = Point::new(initial.frame.max_x() + 40., initial.frame.min_y());
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            gallery.handle_input(&move_pointer(background));
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            assert_eq!(gallery.theme(), theme);
+            let state = &gallery.workbench.state(i).extended;
+            assert_eq!(state.radio.selected, Some(0));
+            assert!(!state.radio.is_enabled(1));
+            let layout = state.radio_view.layout();
+            assert_eq!(layout, &initial);
+            for row in 0..3 {
+                assert_radio(
+                    &scene,
+                    (layout.indicators[row], layout.labels[row]),
+                    theme.into(),
+                    ControlState {
+                        selected: row == 0,
+                        disabled: row == 1,
+                        ..Default::default()
+                    },
+                    if row == 0 {
+                        "c-radio-checked-ground"
+                    } else if row == 1 {
+                        "surface-2"
+                    } else {
+                        "surface-0"
+                    },
+                    gallery.text.scale(),
+                    Gallery::background(theme),
+                );
+            }
+        }
+        let palette: Palette = Theme::DARK_INCREASED.into();
+        let clear = Gallery::background(Theme::DARK_INCREASED);
+        let point = initial.rows[0].frame().center();
+        gallery.handle_input(&move_pointer(point));
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        assert_radio(
+            &scene,
+            (initial.indicators[0], initial.labels[0]),
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "control-checked-hover",
+            gallery.text.scale(),
+            clear,
+        );
+        gallery.handle_input(&mouse(point, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_radio(
+            &scene,
+            (initial.indicators[0], initial.labels[0]),
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "control-checked-pressed",
+            gallery.text.scale(),
+            clear,
+        );
+        gallery.handle_input(&mouse(background, false));
+        gallery.handle_input(&move_pointer(background));
+        assert_eq!(gallery.workbench.state(i).extended.radio.selected, Some(0));
+        gallery.handle_input(&key(124, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        let state = &gallery.workbench.state(i).extended;
+        assert_eq!(state.radio.selected, Some(2));
+        assert_eq!(state.radio_view.focused(), Some(2));
+        assert_radio(
+            &scene,
+            (initial.indicators[2], initial.labels[2]),
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "c-radio-checked-ground",
+            gallery.text.scale(),
+            clear,
+        );
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && q.rect.center()==initial.indicators[2].center() && q.border_color==palette.color("border-focused").unwrap())));
+        let disabled = initial.rows[1].frame().center();
+        gallery.handle_input(&mouse(disabled, true));
+        gallery.handle_input(&mouse(disabled, false));
+        assert_eq!(gallery.workbench.state(i).extended.radio.selected, Some(2));
+        gallery.workbench.state(i).extended.disabled = true;
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        for row in 0..3 {
+            assert_radio(
+                &scene,
+                (initial.indicators[row], initial.labels[row]),
+                palette,
+                ControlState {
+                    selected: row == 2,
+                    disabled: true,
+                    ..Default::default()
+                },
+                "surface-2",
+                gallery.text.scale(),
+                clear,
+            );
+        }
+        assert_eq!(
+            gallery.workbench.state(i).extended.radio_view.focused(),
+            None
+        );
+        assert!(!scene.primitives().iter().any(
+            |p| matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && initial.indicators.iter().any(|indicator|indicator.center()==q.rect.center()))
+        ));
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        gallery.handle_input(&key(123, true));
+        assert_eq!(gallery.workbench.state(i).extended.radio.selected, Some(2));
+        gallery.workbench.state(i).extended.disabled = false;
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        assert_eq!(gallery.workbench.state(i).extended.radio.selected, Some(0));
     }
 
     #[test]
@@ -10011,6 +10453,147 @@ mod interaction_tests {
                 "{story}: retained Gallery consumes Theme ink"
             );
         }
+    }
+
+    #[test]
+    fn surface_gallery_theme_switch_keeps_panel_text_border_and_nested_action() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::{CornerRadii, Primitive};
+        use tekes_ui_tokens::{Palette, Theme};
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let v = c.to_linear();
+                0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        let mut gallery = Gallery::new();
+        let i = index("surface");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        gallery.text_mut().set_scale(2.);
+        gallery.set_reduced_motion(true);
+        gallery.animate(1. / 60.);
+        let mut original_layout = None;
+        let mut fills = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            let layout = state.surface_view.layout();
+            let geometry = (layout.frame, layout.content, layout.visible);
+            if let Some(original) = original_layout {
+                assert_eq!(geometry, original);
+            } else {
+                original_layout = Some(geometry);
+            }
+            let (panel_index, panel) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(index, p)| match p {
+                    Primitive::Quad(q) if q.rect == layout.frame => Some((index, q)),
+                    _ => None,
+                })
+                .expect("real Gallery SurfaceView panel");
+            let palette = Palette::new(theme, 0).unwrap();
+            assert_eq!(panel.fill, palette.color("surface-panel").unwrap());
+            assert_eq!(panel.border_color, palette.color("separator").unwrap());
+            assert_eq!(
+                panel.border_width,
+                if theme.is_increased() {
+                    proposal::metric("stroke", "stroke-rule").unwrap()
+                } else {
+                    1. / gallery.text.scale()
+                }
+            );
+            assert_eq!(
+                panel.corner_radii,
+                CornerRadii::uniform(proposal::metric("radius", "radius-panel").unwrap())
+            );
+            let heading = Rect::new(
+                layout.content.min_x(),
+                layout.content.min_y(),
+                layout.content.size.width,
+                36.,
+            );
+            let inks: Vec<_> = scene.primitives()[panel_index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| heading.contains(g.origin)) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "actual Gallery panel-heading CoreText glyphs"
+            );
+            for ink in inks {
+                assert_eq!(ink, palette.color("primary-text").unwrap());
+                assert!(contrast(ink, panel.fill) >= if theme.is_increased() { 7. } else { 4.5 });
+            }
+            fills.push(panel.fill);
+        }
+        assert!(
+            fills.windows(2).any(|w| w[0] != w[1]),
+            "same Gallery SurfaceView consumes Theme changes"
+        );
+        let state = gallery.workbench.state(i);
+        let panel = state.surface_view.layout().frame;
+        let action = state.buttons[&20].layout().unwrap().frame;
+        let before = state
+            .log
+            .iter()
+            .filter(|s| *s == "activate: primary action")
+            .count();
+        let decoration = Point::new(panel.max_x() - 5., panel.min_y() + 5.);
+        gallery.handle_input(&mouse(decoration, true));
+        gallery.handle_input(&mouse(decoration, false));
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .log
+                .iter()
+                .filter(|s| *s == "activate: primary action")
+                .count(),
+            before,
+            "passive container has no activation"
+        );
+        gallery.handle_input(&mouse(action.center(), true));
+        gallery.handle_input(&mouse(action.center(), false));
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .log
+                .iter()
+                .filter(|s| *s == "activate: primary action")
+                .count(),
+            before + 1,
+            "nested real Button retains its own action"
+        );
     }
 
     #[test]
