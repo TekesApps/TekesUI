@@ -10014,6 +10014,147 @@ mod interaction_tests {
     }
 
     #[test]
+    fn surface_gallery_theme_switch_keeps_panel_text_border_and_nested_action() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::{CornerRadii, Primitive};
+        use tekes_ui_tokens::{Palette, Theme};
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let v = c.to_linear();
+                0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        let mut gallery = Gallery::new();
+        let i = index("surface");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        gallery.text_mut().set_scale(2.);
+        gallery.set_reduced_motion(true);
+        gallery.animate(1. / 60.);
+        let mut original_layout = None;
+        let mut fills = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            let layout = state.surface_view.layout();
+            let geometry = (layout.frame, layout.content, layout.visible);
+            if let Some(original) = original_layout {
+                assert_eq!(geometry, original);
+            } else {
+                original_layout = Some(geometry);
+            }
+            let (panel_index, panel) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(index, p)| match p {
+                    Primitive::Quad(q) if q.rect == layout.frame => Some((index, q)),
+                    _ => None,
+                })
+                .expect("real Gallery SurfaceView panel");
+            let palette = Palette::new(theme, 0).unwrap();
+            assert_eq!(panel.fill, palette.color("surface-panel").unwrap());
+            assert_eq!(panel.border_color, palette.color("separator").unwrap());
+            assert_eq!(
+                panel.border_width,
+                if theme.is_increased() {
+                    proposal::metric("stroke", "stroke-rule").unwrap()
+                } else {
+                    1. / gallery.text.scale()
+                }
+            );
+            assert_eq!(
+                panel.corner_radii,
+                CornerRadii::uniform(proposal::metric("radius", "radius-panel").unwrap())
+            );
+            let heading = Rect::new(
+                layout.content.min_x(),
+                layout.content.min_y(),
+                layout.content.size.width,
+                36.,
+            );
+            let inks: Vec<_> = scene.primitives()[panel_index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| heading.contains(g.origin)) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "actual Gallery panel-heading CoreText glyphs"
+            );
+            for ink in inks {
+                assert_eq!(ink, palette.color("primary-text").unwrap());
+                assert!(contrast(ink, panel.fill) >= if theme.is_increased() { 7. } else { 4.5 });
+            }
+            fills.push(panel.fill);
+        }
+        assert!(
+            fills.windows(2).any(|w| w[0] != w[1]),
+            "same Gallery SurfaceView consumes Theme changes"
+        );
+        let state = gallery.workbench.state(i);
+        let panel = state.surface_view.layout().frame;
+        let action = state.buttons[&20].layout().unwrap().frame;
+        let before = state
+            .log
+            .iter()
+            .filter(|s| *s == "activate: primary action")
+            .count();
+        let decoration = Point::new(panel.max_x() - 5., panel.min_y() + 5.);
+        gallery.handle_input(&mouse(decoration, true));
+        gallery.handle_input(&mouse(decoration, false));
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .log
+                .iter()
+                .filter(|s| *s == "activate: primary action")
+                .count(),
+            before,
+            "passive container has no activation"
+        );
+        gallery.handle_input(&mouse(action.center(), true));
+        gallery.handle_input(&mouse(action.center(), false));
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .log
+                .iter()
+                .filter(|s| *s == "activate: primary action")
+                .count(),
+            before + 1,
+            "nested real Button retains its own action"
+        );
+    }
+
+    #[test]
     fn select_real_feedback_paints_before_its_popup_surface() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
