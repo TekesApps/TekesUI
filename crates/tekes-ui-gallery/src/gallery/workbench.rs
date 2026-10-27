@@ -8134,6 +8134,308 @@ mod interaction_tests {
     }
 
     #[test]
+    fn radio_group_gallery_theme_switch_repaints_own_indicator_and_preserves_roving_selection() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+        fn assert_radio(
+            scene: &Scene,
+            geometry: (Rect, Rect),
+            palette: Palette,
+            state: ControlState,
+            ground: &str,
+            backing: f32,
+            clear: Rgba,
+        ) {
+            let (indicator, label) = geometry;
+            let (index, outer) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == indicator => Some((i, *q)),
+                    _ => None,
+                })
+                .expect("actual radio indicator own background");
+            assert_eq!(outer.fill, palette.color(ground).unwrap());
+            assert_eq!(
+                outer.corner_radii,
+                tekes_ui_scene::CornerRadii::uniform(indicator.size.width * 0.5)
+            );
+            assert_eq!(
+                outer.border_color,
+                palette
+                    .color(if state.disabled {
+                        "disabled-text"
+                    } else {
+                        "border"
+                    })
+                    .unwrap()
+            );
+            let marks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a > 0.
+                            && q.rect.min_x() >= indicator.min_x()
+                            && q.rect.min_y() >= indicator.min_y()
+                            && q.rect.max_x() <= indicator.max_x()
+                            && q.rect.max_y() <= indicator.max_y() =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .collect();
+            if state.selected {
+                assert_eq!(marks.len(), 1, "selected radio emits exactly its own dot");
+                assert_eq!(
+                    marks[0],
+                    palette
+                        .color(if state.disabled {
+                            "disabled-text"
+                        } else {
+                            "c-radio-checked-mark"
+                        })
+                        .unwrap()
+                );
+                if !state.disabled {
+                    assert!(
+                        contrast(marks[0], outer.fill) >= 3.,
+                        "dot/own indicator ground contrast"
+                    );
+                }
+            } else {
+                assert!(marks.is_empty(), "unselected radio has no selection dot");
+            }
+            // Labels inherit actual painted parent ground, or the real renderer clear.
+            let parent = scene.primitives()[..index]
+                .iter()
+                .rev()
+                .find_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a == 1. && q.rect.intersection(&label) == Some(label) =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .unwrap_or(clear);
+            let inks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let a = g.glyph;
+                            label
+                                .intersection(&Rect::new(
+                                    g.origin.x + a.left as f32 / backing,
+                                    g.origin.y + a.top as f32 / backing,
+                                    a.width as f32 / backing,
+                                    a.height as f32 / backing,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "actual CoreText radio label glyphs after this indicator"
+            );
+            for ink in inks {
+                assert_eq!(
+                    ink,
+                    palette
+                        .color(if state.disabled {
+                            "disabled-text"
+                        } else {
+                            "primary-text"
+                        })
+                        .unwrap()
+                );
+                if !state.disabled {
+                    assert!(
+                        contrast(ink, parent)
+                            >= if palette.theme.is_increased() {
+                                7.
+                            } else {
+                                4.5
+                            },
+                        "actual label/parent ground contrast"
+                    );
+                }
+            }
+        }
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 900.);
+        assert!(gallery.open_route("component-radio-group/playground"));
+        let i = index("radio-group");
+        gallery.build_scene(&mut Scene::new());
+        gallery
+            .workbench
+            .state(i)
+            .extended
+            .radio
+            .set_enabled(1, false);
+        gallery.build_scene(&mut Scene::new());
+        let initial = gallery
+            .workbench
+            .state(i)
+            .extended
+            .radio_view
+            .layout()
+            .clone();
+        let background = Point::new(initial.frame.max_x() + 40., initial.frame.min_y());
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            gallery.handle_input(&move_pointer(background));
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            assert_eq!(gallery.theme(), theme);
+            let state = &gallery.workbench.state(i).extended;
+            assert_eq!(state.radio.selected, Some(0));
+            assert!(!state.radio.is_enabled(1));
+            let layout = state.radio_view.layout();
+            assert_eq!(layout, &initial);
+            for row in 0..3 {
+                assert_radio(
+                    &scene,
+                    (layout.indicators[row], layout.labels[row]),
+                    theme.into(),
+                    ControlState {
+                        selected: row == 0,
+                        disabled: row == 1,
+                        ..Default::default()
+                    },
+                    if row == 0 {
+                        "c-radio-checked-ground"
+                    } else if row == 1 {
+                        "surface-2"
+                    } else {
+                        "surface-0"
+                    },
+                    gallery.text.scale(),
+                    Gallery::background(theme),
+                );
+            }
+        }
+        let palette: Palette = Theme::DARK_INCREASED.into();
+        let clear = Gallery::background(Theme::DARK_INCREASED);
+        let point = initial.rows[0].frame().center();
+        gallery.handle_input(&move_pointer(point));
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        assert_radio(
+            &scene,
+            (initial.indicators[0], initial.labels[0]),
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "control-checked-hover",
+            gallery.text.scale(),
+            clear,
+        );
+        gallery.handle_input(&mouse(point, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_radio(
+            &scene,
+            (initial.indicators[0], initial.labels[0]),
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "control-checked-pressed",
+            gallery.text.scale(),
+            clear,
+        );
+        gallery.handle_input(&mouse(background, false));
+        gallery.handle_input(&move_pointer(background));
+        assert_eq!(gallery.workbench.state(i).extended.radio.selected, Some(0));
+        gallery.handle_input(&key(124, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        let state = &gallery.workbench.state(i).extended;
+        assert_eq!(state.radio.selected, Some(2));
+        assert_eq!(state.radio_view.focused(), Some(2));
+        assert_radio(
+            &scene,
+            (initial.indicators[2], initial.labels[2]),
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "c-radio-checked-ground",
+            gallery.text.scale(),
+            clear,
+        );
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && q.rect.center()==initial.indicators[2].center() && q.border_color==palette.color("border-focused").unwrap())));
+        let disabled = initial.rows[1].frame().center();
+        gallery.handle_input(&mouse(disabled, true));
+        gallery.handle_input(&mouse(disabled, false));
+        assert_eq!(gallery.workbench.state(i).extended.radio.selected, Some(2));
+        gallery.workbench.state(i).extended.disabled = true;
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        for row in 0..3 {
+            assert_radio(
+                &scene,
+                (initial.indicators[row], initial.labels[row]),
+                palette,
+                ControlState {
+                    selected: row == 2,
+                    disabled: true,
+                    ..Default::default()
+                },
+                "surface-2",
+                gallery.text.scale(),
+                clear,
+            );
+        }
+        assert_eq!(
+            gallery.workbench.state(i).extended.radio_view.focused(),
+            None
+        );
+        assert!(!scene.primitives().iter().any(
+            |p| matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && initial.indicators.iter().any(|indicator|indicator.center()==q.rect.center()))
+        ));
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        gallery.handle_input(&key(123, true));
+        assert_eq!(gallery.workbench.state(i).extended.radio.selected, Some(2));
+        gallery.workbench.state(i).extended.disabled = false;
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        assert_eq!(gallery.workbench.state(i).extended.radio.selected, Some(0));
+    }
+
+    #[test]
     fn checkbox_text_first_line_stays_centered_on_the_mark_at_large_scale_and_wrap() {
         let mut text = super::super::text::TextEngine::new();
         text.set_type_scale(1.5);

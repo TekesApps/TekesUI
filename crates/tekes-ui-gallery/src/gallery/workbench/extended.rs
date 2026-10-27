@@ -2035,7 +2035,9 @@ impl ExtendedStory {
                 self.radio_view
                     .focus(&self.radio, self.focused.map(|id| id - 30), focus_visible);
             }
-        } else {
+        } else if self.disabled || self.radio_view.focused().is_some() {
+            // Sync a real focus loss or disabled scope once; unfocused hover
+            // still belongs to the retained pointer runtime between frames.
             self.radio_view.blur();
         }
         self.icon_button_view.button_mut().button.state.disabled = self.disabled;
