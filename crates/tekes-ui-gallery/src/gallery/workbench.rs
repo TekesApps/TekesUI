@@ -6062,6 +6062,238 @@ mod interaction_tests {
     }
 
     #[test]
+    fn toast_gallery_retained_themes_preserve_mounted_clock_action_and_actual_ink() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme, surface_palette::resolve_surface};
+        let mut gallery = Gallery::new();
+        let i = index("toast");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(
+            gallery.workbench.state(i).extended.toast.remaining_ms(),
+            5000
+        );
+        assert!(gallery.animate(0.125));
+        gallery.build_scene(&mut Scene::new());
+        let retained = gallery.workbench.state(i).extended.toast.clone();
+        assert!(retained.visible && !retained.paused);
+        assert_eq!(retained.remaining_ms(), 4875);
+        assert_eq!(retained.message, "Changes saved");
+        assert_eq!(
+            retained.tone,
+            tekes_ui_controls::extended::NoticeTone::Success
+        );
+        let dismiss = gallery
+            .workbench
+            .state(i)
+            .visible_for_id(20)
+            .expect("mounted Toast action");
+        let rest = Point::new(dismiss.center().x, dismiss.max_y() + 64.);
+        let clock = gallery.text.motion_context().unwrap();
+        assert!(clock.reduced_motion);
+        let mut original_geometry = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            gallery.handle_input(&move_pointer(Point::new(-100., -100.)));
+            // A real Workbench-domain move clears the Toast's hover pause.
+            gallery.handle_input(&move_pointer(rest));
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            assert_eq!(
+                state.extended.toast, retained,
+                "Theme does not show/reset/expire the mounted Toast"
+            );
+            assert_eq!(state.visible_for_id(20), Some(dismiss));
+            assert_eq!(
+                state.button_labels.get(&20).map(String::as_str),
+                Some("Dismiss")
+            );
+            assert!(
+                state.log.is_empty(),
+                "Theme and paint produce no notice action"
+            );
+            assert!(
+                state.button_clip.is_some_and(|clip| clip.contains(rest)),
+                "rest move remains in the real Workbench input domain"
+            );
+            assert_eq!(gallery.text.motion_context(), Some(clock));
+            let primitives = scene.primitives();
+            let action_index = primitives
+                .iter()
+                .position(|p| matches!(p, Primitive::Quad(q) if q.rect == dismiss))
+                .expect("original Toast Quiet action Quad");
+            // Original ToastView paints frame, marker, message, then Dismiss.
+            // Anchor that own paint interval; captions/logs elsewhere are not body text.
+            let (marker_index, marker) = primitives[..action_index]
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(n, p)| match p {
+                    Primitive::Quad(q) => Some((n, q)),
+                    _ => None,
+                })
+                .expect("original Toast marker before action");
+            let frame = primitives[..marker_index]
+                .iter()
+                .rev()
+                .find_map(|p| match p {
+                    Primitive::Quad(q) => Some(q),
+                    _ => None,
+                })
+                .expect("original Toast panel before marker");
+            assert!(
+                frame.rect.contains(dismiss.center()) && frame.rect.contains(marker.rect.center())
+            );
+            assert!(
+                !frame.rect.contains(rest),
+                "rest move is outside the whole Toast so its clock is not hover-paused"
+            );
+            let geometry = (frame.rect, marker.rect, dismiss);
+            if let Some(original) = original_geometry {
+                assert_eq!(geometry, original);
+            } else {
+                original_geometry = Some(geometry);
+            }
+            let palette = Palette::new(theme, 0).unwrap();
+            // MountedToast creates an unannotated ContentHost: ContentTheme defaults
+            // to canvas, which ToastContent passes explicitly to its original View.
+            let frame_colors = resolve_surface(palette, "canvas", "surface-frame", "rest").unwrap();
+            let body = resolve_surface(palette, "canvas", "content", "rest").unwrap();
+            let status =
+                resolve_surface(palette, "canvas", "notice-marker-success", "rest").unwrap();
+            let action = resolve_surface(palette, "canvas", "action-quiet", "rest").unwrap();
+            assert_eq!(frame.fill, frame_colors.background);
+            assert_eq!(Some(frame.border_color), frame_colors.boundary);
+            assert_eq!(marker.fill, status.marker.unwrap());
+            let action_quad = match &primitives[action_index] {
+                Primitive::Quad(q) => q,
+                _ => unreachable!(),
+            };
+            assert_eq!(action_quad.fill, action.background);
+            let message: Vec<_> = primitives[marker_index + 1..action_index]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run) => Some(run),
+                    _ => None,
+                })
+                .collect();
+            assert!(!message.is_empty(), "actual mounted Toast message glyphs");
+            for run in &message {
+                assert!(!run.glyphs.is_empty());
+                assert!(
+                    run.glyphs
+                        .iter()
+                        .all(|g| frame.rect.contains(g.origin) && !dismiss.contains(g.origin))
+                );
+                assert_eq!(run.color, body.text);
+            }
+            let action_label = primitives[action_index + 1..]
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Glyphs(run) if !run.glyphs.is_empty() => Some(run),
+                    _ => None,
+                })
+                .expect("actual Toast Dismiss glyphs immediately after action Quad");
+            assert!(
+                action_label
+                    .glyphs
+                    .iter()
+                    .all(|g| dismiss.contains(g.origin))
+            );
+            assert_eq!(action_label.color, action.text);
+            let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+                let luminance = |c: tekes_ui_tokens::Rgba| {
+                    let c = c.to_linear();
+                    0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                };
+                let (a, b) = (luminance(a), luminance(b));
+                (a.max(b) + 0.05) / (a.min(b) + 0.05)
+            };
+            for (ink, ground) in message
+                .iter()
+                .map(|r| (r.color, frame.fill))
+                .chain(std::iter::once((action_label.color, action_quad.fill)))
+            {
+                assert!(
+                    contrast(ink, ground) >= if theme.is_increased() { 7. } else { 4.5 },
+                    "{theme:?}: real notice/action contrast {}",
+                    contrast(ink, ground)
+                );
+            }
+            assert!(contrast(marker.fill, frame.fill) >= 3.);
+            observed.push((frame.fill, body.text, marker.fill, action_label.color));
+            // Rebuilding at the same host time must not decrement or restart the timer.
+            gallery.build_scene(&mut Scene::new());
+            assert_eq!(gallery.workbench.state(i).extended.toast, retained);
+        }
+        assert!(observed.windows(2).any(|w| w[0] != w[1]));
+        assert!(gallery.animate(0.125));
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(
+            gallery.workbench.state(i).extended.toast.remaining_ms(),
+            4750
+        );
+        let advance = gallery
+            .workbench
+            .state(i)
+            .visible_for_id(21)
+            .expect("real Advance fixture timer button")
+            .center();
+        gallery.handle_input(&mouse(advance, true));
+        gallery.handle_input(&mouse(advance, false));
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(
+            gallery.workbench.state(i).extended.toast.remaining_ms(),
+            3750
+        );
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .log
+                .iter()
+                .filter(|s| s.as_str() == "toast timer: advanced 1 s")
+                .count(),
+            1
+        );
+        gallery.handle_input(&mouse(dismiss.center(), true));
+        gallery.handle_input(&mouse(dismiss.center(), false));
+        gallery.build_scene(&mut Scene::new());
+        assert!(!gallery.workbench.state(i).extended.toast.visible);
+        assert!(gallery.workbench.state(i).visible_for_id(20).is_none());
+        gallery.handle_input(&mouse(dismiss.center(), false));
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .log
+                .iter()
+                .filter(|s| s.as_str() == "toast: dismissed")
+                .count(),
+            1
+        );
+    }
+
+    #[test]
     fn narrow_large_text_state_matrix_allocates_wrapped_caption_and_real_control_extent() {
         use tekes_ui_scene::Primitive;
 
