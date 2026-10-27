@@ -393,7 +393,46 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "aec642fb69b339241205cab759e4ba0cf8ac7a25",
+        "scope": "Accepted retained public pure IconView canonical SVG callback and actual Gallery catalog production native adapter Theme/tint/geometry tests; not unified Button action owner.",
+        "claims": [
+          "Same public IconView and real canonical SVG raster callback switch Theme::ALL, consume default primary-text and explicit caller tint, and restore default without geometry reset",
+          "Preview-size metric, fitted geometry, real output coverage/tint/alpha/bounds and offclip non-rendering verified",
+          "Actual production Gallery catalog adapter paints native canonical Plus with current Theme tint, real preview parameters and existing DS stroke; geometry stable across modes",
+          "Gallery all-target strict passed; existing catalog/artwork/shared Button/brand results reused"
+        ],
+        "source_identity": {
+          "scope": "Selected public View/canonical consumer/actual catalog adapter sources, not a complete dependency proof; full frozen source/program identity remains in original receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-gallery/src/gallery/pages/icons.rs": "67a1afc5c6d2638642251de82cc2a3ffc37add1058e09d771d7c3e7a2d8af385",
+            "examples/composition-consumer/tests/icon_theme.rs": "49b5adb26de708799a14330a8a2b8d341150ab673cb4e07626187f5f3b8f0814"
+          }
+        },
+        "exceptions": [
+          "Pure Icon has no hover/pressed/focus/capture/disabled/text model; explicit disabled-text tint is caller choice, not an invented internal state",
+          "Actual catalog IconView/native adapter is distinct from unified Button image/artwork route and its action owner",
+          "Ordinary artwork geometry/path values remain canonical data; generic brand/full catalog and Button evidence reused"
+        ],
+        "gaps": [
+          "No new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver/text-contrast certification",
+          "No full catalog/cache replay; existing separate evidence keeps original identity",
+          "Remaining family/full52 practical coverage remains open"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.icon",
+            "commit": "aec642fb69b339241205cab759e4ba0cf8ac7a25",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/icon-main7a0f6e7-candidate/main-intake/commit-receipt.json",
+            "sha256": "55645ec1db2a370af51078869f6901e60c2dbe5b8561864ba93f707b4c67d7ac",
+            "scope": "Exact-main real canonical consumer/catalog adapter tests and strict, applicability exceptions and original unverified boundaries."
+          }
+        ]
+      }
     },
     {
       "id": "tui.button",
@@ -603,7 +642,48 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "b74e9f73b17a3c8864b75adc978ed27bf4d84f1c",
+        "scope": "Existing public unified Button image path and actual Gallery original decorative icon action, no separate IconButton API.",
+        "claims": [
+          "Same public registered-image Button switches Theme::ALL; actual headless Metal paints source artwork against its own semantic ground with >=3 icon contrast, geometry and accessible name retained",
+          "Actual Gallery Quiet/native Plus switches Theme::ALL rest and representative DARK_INCREASED hover/press/outside-cancel/focus/disabled semantic endpoints with own-ground contrast",
+          "Public image opacity/disabled-during-capture/blocked activation and loading key/AX refusal preserved; Gallery strict passed",
+          "Original unified Button DS Regular sizing/shape/scale/cancellation results reused without relabeling"
+        ],
+        "source_identity": {
+          "scope": "Selected semantic consumption and new test sources, not a complete dependency certificate; full actual source/program identity in original receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition/button.rs": "0a168f44280df2c4f615c243a32e4c8987fb526c8708e2b571d7f88b96f96f0e",
+            "crates/tekes-ui-controls/src/paint.rs": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/button_specimen.rs": "c384c866c9fa0f12e513478e0053e95ad8efaebdd2166cee6b0fa8df421a0580",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370",
+            "examples/composition-consumer/tests/icon_button_theme.rs": "0d9bc7273e23df0ca442cc1d9cc76999e487df144576c070f673ac31e48b0a5c"
+          }
+        },
+        "exceptions": [
+          "Artwork pixels are caller-owned; update_image with one retained resource is a representative fixture, not automatic recoloring or a new application lifecycle requirement",
+          "Original decorative Gallery slot and public registered-image route share the original action owner but use different real artwork backends",
+          "Ordinary geometry remains data; existing DS Regular/shared sizing replaces only explicitly approved old compact/20px API requirements"
+        ],
+        "gaps": [
+          "No new dedicated external Theme/native-window/physicalIME/VoiceOver/Gold7 certification",
+          "Representative image/interaction endpoints do not claim a full condition crossproduct or new animation timing certification",
+          "Remaining full52 practical coverage stays open"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.icon-button",
+            "commit": "b74e9f73b17a3c8864b75adc978ed27bf4d84f1c",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/icon-button-mainc4d956b-candidate/main-intake/commit-receipt.json",
+            "sha256": "2b865f247b56a49f773c0c058529665302e9324fd6bdb498ed6c6c50ad83534d",
+            "scope": "Exact-main actual public registered artwork Metal, Gallery native Plus/semantic-state tests, strict, explicit applicability exceptions and original shared results."
+          }
+        ]
+      }
     },
     {
       "id": "tui.link",
@@ -2307,7 +2387,48 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/command-async.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/command-async.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "975303260d4f573bfb01e26bdb52bb8a5dfef30c",
+        "scope": "Accepted public CommandPalette View/real Scenario and actual Gallery Theme/query/state/text contrast tests; no production/shared-rule change.",
+        "claims": [
+          "Same real Scenario preserves query, active original candidate, query selection/geometry/focus across Theme::ALL",
+          "Actual query/candidate backgrounds and CoreText glyphs consume semantic roles and meet4.5 standard and7 increased contrast; real execution/empty-result behavior preserved",
+          "Original public disabled synchronization closes popup and suppresses trigger focus/actions in all four Theme values",
+          "Actual Gallery route, pointer open/text commit/Down/Theme/Escape flow retains query/active and restores invoker; Gallery strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected public View/model/Scenario/test/Gallery sources, not a whole dependency certificate; actual full frozen runs/programs remain at original receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "examples/composition-consumer/src/command_status.rs": "309aedada5e9c30fc12898957b34ef44a487b6f2f4ec8763f79431b8c967cc86",
+            "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "48a6fe67d988f66a255dbc8cf8c5121ba8a284359df4c2944825af365c153d6c",
+            "examples/composition-consumer/tests/command_palette_theme.rs": "eadd793e9e828b460bebaae52fa3cd935c88095f8e408536c96617b75f19f7d2"
+          }
+        },
+        "exceptions": [
+          "Host owns the existing TextSurface query; no new component API or parallel text system",
+          "Shared Button/TextSurface/Palette/brand state results reused; ordinary geometry/indices remain layout",
+          "Own-paint-index glyph selection and explicit reduced-motion/input-domain fixture test semantic endpoints, not transition timing"
+        ],
+        "gaps": [
+          "No new dedicated external Theme/GPU/native/physicalIME/VoiceOver/motion-timing certification",
+          "Remaining family/full52 practical coverage and original product gaps remain open"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.command-palette",
+            "commit": "975303260d4f573bfb01e26bdb52bb8a5dfef30c",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/command-palette-main7a0f6e7-candidate/main-intake/commit-receipt.json",
+            "sha256": "ed3786096b1840e0ad1809e89411cb3a49bd6992a07d9a80f079f3d4538c1311",
+            "scope": "Exact-main public/Gallery runtime and strict, retained source identities and bounded unverified scope."
+          }
+        ]
+      }
     },
     {
       "id": "tui.list",
@@ -2732,7 +2853,47 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/menu-content.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/menu-content.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "57575e0b69e71aeb5b49a72eb4c09569f32ff939",
+        "scope": "Accepted retained public MenuContent and actual Gallery MenuView Theme/state/text-contrast tests; production unchanged.",
+        "claims": [
+          "Same mounted/open MenuContent switches Theme::ALL and retains active/checked independence; actual trigger/item glyphs and backgrounds meet4.5 standard and7 increased contrast",
+          "Real keyboard/hover/held press, disabled AX refusal and single selection/action behavior verified without new presentation flags",
+          "Actual Gallery uses existing Primary hovered invoker plus selected/hover Menu rows; all semantic fill/ink/focus/action assertions passed",
+          "Gallery strict passed; unchanged shared Button/brand/Theme/Surface results reused"
+        ],
+        "source_identity": {
+          "scope": "Selected public model/View/consumer/Gallery source subset only; full actual manifests/programs remain in original frozen receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composite.rs": "8931bb75dcfe576efe58ed15021b5b3394ae4b217eed10723693080d1b4db276",
+            "crates/tekes-ui-controls/src/composition/menu.rs": "a3a31367b992d86056aad8e405b90dc31080af4de04d028512add377ca5a0d4f",
+            "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "d6d241657d8f1ded0e5895a8e9b32110d64ecee8aac96001e32d32345f9d6954",
+            "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758"
+          }
+        },
+        "exceptions": [
+          "Public MenuContent default trigger is Quiet; application Gallery action(id20) is Primary and retains opening-click hover while Menu owns later pointer input",
+          "Own background paint indices distinguish real title/item glyphs from occluded underlay; full Scene retained",
+          "Ordinary layout/indices and shared brand/state results remain within existing contracts"
+        ],
+        "gaps": [
+          "No new dedicated external Theme/GPU/native/physicalIME/VoiceOver certification",
+          "Remaining family/full52 practical coverage and original product gaps remain on original Issues"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.menu",
+            "commit": "57575e0b69e71aeb5b49a72eb4c09569f32ff939",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/menu-main7a0f6e7-candidate/main-intake/commit-receipt.json",
+            "sha256": "81b4f913b704bf6a2e984afb8c870cb94da3f927b2dc9dadb4b0b0ef30419c5f",
+            "scope": "Exact-main public/Gallery checks, strict, all failure/source identities and bounded unverified scope."
+          }
+        ]
+      }
     },
     {
       "id": "tui.tooltip",

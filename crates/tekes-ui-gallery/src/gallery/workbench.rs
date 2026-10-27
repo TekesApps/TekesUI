@@ -8702,6 +8702,248 @@ mod interaction_tests {
         }
     }
     #[test]
+    fn icon_button_gallery_theme_switch_repaints_original_action_artwork_and_state_endpoints() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+
+        fn sample(
+            scene: &Scene,
+            frame: Rect,
+            artwork: Rect,
+            palette: Palette,
+            ground: &str,
+            foreground: &str,
+            active: bool,
+        ) -> (Rgba, Rgba) {
+            let (index, background) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == frame => Some((i, q)),
+                    _ => None,
+                })
+                .expect("actual original Gallery icon Button background");
+            assert_eq!(background.fill, palette.color(ground).unwrap());
+            let strokes: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a > 0. && artwork.intersection(&q.rect) == Some(q.rect) =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(
+                strokes.len(),
+                2,
+                "native Plus emits two real strokes after this Button's own ground"
+            );
+            for ink in &strokes {
+                assert_eq!(*ink, palette.color(foreground).unwrap());
+                if active {
+                    let luminance = |c: Rgba| {
+                        let c = c.to_linear();
+                        0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                    };
+                    let (a, b) = (luminance(*ink), luminance(background.fill));
+                    assert!(
+                        (a.max(b) + 0.05) / (a.min(b) + 0.05) >= 3.,
+                        "actual artwork/ground contrast"
+                    );
+                }
+            }
+            (background.fill, strokes[0])
+        }
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 900.);
+        assert!(gallery.open_route("component-icon-button/playground"));
+        let i = index("icon-button");
+        gallery.build_scene(&mut Scene::new());
+        let (frame, artwork) = {
+            let view = &gallery.workbench.state(i).extended.icon_button_view;
+            assert_eq!(view.button().variant, paint::ButtonVariant::Quiet);
+            (view.layout().frame, view.icon_frame())
+        };
+        let point = frame.center();
+        let background = Point::new(frame.max_x() + 60., frame.min_y());
+        let mut rest_colors = Vec::new();
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            gallery.handle_input(&move_pointer(background));
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            assert_eq!(gallery.theme(), theme);
+            let view = &gallery.workbench.state(i).extended.icon_button_view;
+            assert_eq!(view.layout().frame, frame);
+            assert_eq!(view.icon_frame(), artwork);
+            assert_eq!(view.button().activations, 0);
+            assert!(!view.button().button.state.hovered);
+            assert!(!view.button().button.state.pressed);
+            rest_colors.push(sample(
+                &scene,
+                frame,
+                artwork,
+                theme.into(),
+                "surface-2",
+                "primary-text",
+                true,
+            ));
+        }
+        assert_ne!(rest_colors[0], rest_colors[1]);
+        assert_ne!(rest_colors[2], rest_colors[3]);
+        let palette: Palette = Theme::DARK_INCREASED.into();
+        gallery.handle_input(&move_pointer(point));
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        assert!(
+            gallery
+                .workbench
+                .state(i)
+                .extended
+                .icon_button_view
+                .button()
+                .button
+                .state
+                .hovered
+        );
+        sample(
+            &scene,
+            frame,
+            artwork,
+            palette,
+            "button-hover",
+            "primary-text",
+            true,
+        );
+        gallery.handle_input(&mouse(point, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(
+            gallery
+                .workbench
+                .state(i)
+                .extended
+                .icon_button_view
+                .button()
+                .button
+                .state
+                .pressed
+        );
+        sample(
+            &scene,
+            frame,
+            artwork,
+            palette,
+            "button-pressed",
+            "primary-text",
+            true,
+        );
+        gallery.handle_input(&move_pointer(background));
+        gallery.handle_input(&mouse(background, false));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .extended
+                .icon_button_view
+                .button()
+                .activations,
+            0
+        );
+        assert!(
+            !gallery
+                .workbench
+                .state(i)
+                .extended
+                .icon_button_view
+                .button()
+                .button
+                .state
+                .pressed
+        );
+        sample(
+            &scene,
+            frame,
+            artwork,
+            palette,
+            "surface-2",
+            "primary-text",
+            true,
+        );
+        // Retained original host focus contract, with a real reduced-motion endpoint.
+        gallery
+            .workbench
+            .state(i)
+            .extended
+            .icon_button_view
+            .focus(true);
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(
+            scene
+                .primitives()
+                .iter()
+                .any(|p| matches!(p,Primitive::Quad(q)
+            if q.fill.a==0. && q.border_width>0. && q.rect.center()==frame.center()
+            && q.border_color==palette.color("border-focused").unwrap()))
+        );
+        gallery.workbench.state(i).extended.disabled = true;
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(
+            gallery
+                .workbench
+                .state(i)
+                .extended
+                .icon_button_view
+                .button()
+                .button
+                .state
+                .disabled
+        );
+        sample(
+            &scene,
+            frame,
+            artwork,
+            palette,
+            "surface-2",
+            "tertiary-text",
+            false,
+        );
+        assert!(
+            !scene
+                .primitives()
+                .iter()
+                .any(|p| matches!(p,Primitive::Quad(q)
+            if q.fill.a==0. && q.border_width>0. && q.rect.center()==frame.center()))
+        );
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .extended
+                .icon_button_view
+                .button()
+                .activations,
+            0
+        );
+    }
+
+    #[test]
     fn gallery_primary_button_theme_and_brand_changes_repaint_real_button_states() {
         use super::super::Gallery;
         use super::super::commands::Command;
@@ -9102,6 +9344,163 @@ mod interaction_tests {
         w.handle(i, &key(53, true), &mut text);
         assert!(!w.state(i).select.menu.open);
         assert_eq!(w.state(i).focus, Some(20));
+    }
+
+    #[test]
+    fn menu_gallery_theme_changes_keep_real_popup_title_items_and_navigation() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let v = c.to_linear();
+                0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        let mut gallery = Gallery::new();
+        let i = index("menu");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        gallery.set_reduced_motion(true);
+        gallery.animate(1. / 60.);
+        gallery.build_scene(&mut Scene::new());
+        let trigger = gallery.workbench.state(i).buttons[&20].layout().unwrap();
+        gallery.handle_input(&mouse(trigger.frame.center(), true));
+        gallery.handle_input(&mouse(trigger.frame.center(), false));
+        gallery.build_scene(&mut Scene::new());
+        assert!(gallery.workbench.state(i).menu_view.is_open());
+        let mut surfaces = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let popup = gallery.workbench.state(i).menu_layout.clone().unwrap();
+            // This gutter is inside the real Menu popup input domain; a window-exterior move does not reach its reducer.
+            gallery.handle_input(&move_pointer(popup.popup.origin));
+            gallery.handle_input(&key(115, true));
+            gallery.animate(1. / 60.);
+            for hovered in [false, true] {
+                if hovered {
+                    gallery.handle_input(&move_pointer(popup.items[1].frame.center()));
+                }
+                let mut scene = Scene::new();
+                gallery.build_scene(&mut scene);
+                let state = gallery.workbench.state(i);
+                let popup = state.menu_layout.as_ref().unwrap();
+                let selected = if hovered { 1 } else { 0 };
+                assert_eq!(popup.active_item, selected);
+                assert!(state.menu_view.is_open());
+                let palette = Palette::new(theme, 0).unwrap();
+                let surface = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect == popup.popup => Some(q.fill),
+                        _ => None,
+                    })
+                    .unwrap();
+                assert_eq!(surface, palette.color("surface-popover").unwrap());
+                if !hovered {
+                    surfaces.push(surface);
+                }
+                let trigger = state.buttons[&20].layout().unwrap();
+                // The menu owns pointer moves while open. Its original
+                // Primary invoker retains the hover from the real opening click.
+                assert!(state.buttons[&20].state.hovered);
+                assert!(!state.buttons[&20].state.pressed);
+                // Gallery's main action uses Primary; the separate public
+                // MenuContent fixture intentionally uses its Quiet trigger.
+                for (layout, expected_fill, expected_ink) in [
+                    (trigger, "action-primary-hover", "action-primary-foreground"),
+                    (
+                        popup.items[selected],
+                        if hovered {
+                            "row-selection-hover"
+                        } else {
+                            "row-selection"
+                        },
+                        "primary-text",
+                    ),
+                ] {
+                    let (background_index, fill) = scene
+                        .primitives()
+                        .iter()
+                        .enumerate()
+                        .find_map(|(index, p)| match p {
+                            Primitive::Quad(q) if q.rect == layout.frame => Some((index, q.fill)),
+                            _ => None,
+                        })
+                        .unwrap();
+                    assert_eq!(
+                        fill,
+                        palette.color(expected_fill).unwrap(),
+                        "{theme:?} actual Gallery {expected_fill}"
+                    );
+                    // Underlay text may occupy the same coordinates, but the
+                    // actual title/item glyphs paint after their own background.
+                    let inks: Vec<_> = scene.primitives()[background_index + 1..]
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Glyphs(run)
+                                if run.glyphs.iter().any(|g| layout.content.contains(g.origin)) =>
+                            {
+                                Some(run.color)
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    assert!(
+                        !inks.is_empty(),
+                        "actual Gallery title/item CoreText glyphs"
+                    );
+                    for ink in inks {
+                        assert_eq!(
+                            ink,
+                            palette.color(expected_ink).unwrap(),
+                            "{theme:?} {expected_fill} actual title/item after background {background_index}"
+                        );
+                        assert!(contrast(ink, fill) >= if theme.is_increased() { 7. } else { 4.5 });
+                    }
+                }
+                let focus = scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.rect.center() == popup.items[selected].frame.center() && q.border_color == palette.color("border-focused").unwrap()));
+                assert_eq!(focus, !hovered);
+            }
+        }
+        assert!(surfaces.windows(2).any(|w| w[0] != w[1]));
+        let before = gallery
+            .workbench
+            .state(i)
+            .log
+            .iter()
+            .filter(|s| *s == "menu action: 1")
+            .count();
+        gallery.handle_input(&key(36, true));
+        assert!(!gallery.workbench.state(i).menu_view.is_open());
+        assert_eq!(gallery.workbench.state(i).focus, Some(20));
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .log
+                .iter()
+                .filter(|s| *s == "menu action: 1")
+                .count(),
+            before + 1
+        );
     }
 
     #[test]
@@ -9955,6 +10354,172 @@ mod interaction_tests {
         click(&mut w, i, 1000, &mut text);
         assert!(w.state(i).extended.combo.open);
         assert!(w.state(i).hits.iter().any(|(id, _)| *id == 41));
+    }
+
+    #[test]
+    fn command_palette_gallery_theme_switch_keeps_query_active_row_and_real_text_contrast() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        fn assert_text(scene: &Scene, frame: Rect, scale: f32, palette: Palette, ground: &str) {
+            let (background_index, fill) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(index, p)| match p {
+                    Primitive::Quad(q) if q.rect == frame => Some((index, q.fill)),
+                    _ => None,
+                })
+                .expect("actual Gallery command component background");
+            assert_eq!(fill, palette.color(ground).unwrap());
+            assert_eq!(fill.a, 1.);
+            let inks: Vec<_> = scene.primitives()[background_index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let glyph = g.glyph;
+                            frame
+                                .intersection(&Rect::new(
+                                    g.origin.x + glyph.left as f32 / scale,
+                                    g.origin.y + glyph.top as f32 / scale,
+                                    glyph.width as f32 / scale,
+                                    glyph.height as f32 / scale,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(!inks.is_empty(), "actual Gallery query/candidate glyphs");
+            for ink in inks {
+                assert_eq!(ink, palette.color("primary-text").unwrap());
+                let luminance = |c: tekes_ui_tokens::Rgba| {
+                    let c = c.to_linear();
+                    0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                };
+                let (a, b) = (luminance(ink), luminance(fill));
+                assert!(
+                    (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                        >= if palette.theme.is_increased() {
+                            7.
+                        } else {
+                            4.5
+                        }
+                );
+            }
+        }
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 1000.);
+        assert!(gallery.open_route("component-command-palette/playground"));
+        let i = index("command-palette");
+        gallery.build_scene(&mut Scene::new());
+        let trigger = gallery
+            .workbench
+            .state(i)
+            .extended
+            .command_view
+            .trigger_layout()
+            .unwrap()
+            .frame;
+        gallery.handle_input(&mouse(trigger.center(), true));
+        gallery.handle_input(&mouse(trigger.center(), false));
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(gallery.workbench.state(i).focus, Some(1000));
+        gallery.handle_input(&Event::TextCommit {
+            text: "e".into(),
+            replacement: None,
+        });
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&key(125, true));
+        gallery.build_scene(&mut Scene::new());
+        let initial_query = gallery.workbench.state(i).input.frame_at(0).unwrap();
+        let initial_popup = gallery
+            .workbench
+            .state(i)
+            .extended
+            .command_view
+            .options
+            .layout()
+            .unwrap()
+            .clone();
+        // Actual Workbench input scope, outside both trigger and popup. Sidebar moves do not reach it.
+        let background = Point::new(initial_query.max_x() + 40., initial_query.min_y());
+        gallery.handle_input(&move_pointer(background));
+        let mut selected_fills = Vec::new();
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            assert!(state.extended.command.combo.open);
+            assert_eq!(state.focus, Some(1000));
+            assert_eq!(state.input.query(), "e");
+            assert_eq!(state.extended.command.combo.query, "e");
+            assert_eq!(state.extended.command.combo.active, Some(1));
+            assert_eq!(state.extended.command.combo.selected, None);
+            assert_eq!(state.input.frame_at(0), Some(initial_query));
+            let popup = state.extended.command_view.options.layout().unwrap();
+            assert_eq!(popup.popup, initial_popup.popup);
+            assert_eq!(popup.items.len(), 3);
+            assert_eq!(popup.active_item, 1);
+            let palette: Palette = theme.into();
+            assert_text(
+                &scene,
+                initial_query,
+                gallery.text.scale(),
+                palette,
+                "transcript-input",
+            );
+            assert!(
+                scene
+                    .primitives()
+                    .iter()
+                    .any(|p| matches!(p, Primitive::Quad(q)
+                if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == initial_query.center()
+                && q.border_color == palette.color("border-focused").unwrap()))
+            );
+            assert!(
+                scene
+                    .primitives()
+                    .iter()
+                    .any(|p| matches!(p, Primitive::Quad(q)
+                if q.rect == popup.popup && q.fill == palette.color("surface-popover").unwrap()
+                && q.corner_radii == tekes_ui_scene::CornerRadii::uniform(
+                    proposal::metric("radius", "radius-floating").unwrap())))
+            );
+            for (row, item) in popup.items.iter().enumerate() {
+                assert_text(
+                    &scene,
+                    item.frame,
+                    gallery.text.scale(),
+                    palette,
+                    if row == 1 {
+                        "row-selection"
+                    } else {
+                        "surface-2"
+                    },
+                );
+            }
+            selected_fills.push(palette.color("row-selection").unwrap());
+        }
+        assert_ne!(selected_fills[0], selected_fills[1]);
+        assert_ne!(selected_fills[2], selected_fills[3]);
+        gallery.handle_input(&key(53, true));
+        gallery.build_scene(&mut Scene::new());
+        assert!(!gallery.workbench.state(i).extended.command.combo.open);
+        assert_eq!(gallery.workbench.state(i).focus, Some(20));
     }
 
     #[test]

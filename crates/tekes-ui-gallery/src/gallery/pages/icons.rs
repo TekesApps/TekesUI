@@ -537,6 +537,94 @@ mod tests {
     use super::*;
 
     #[test]
+    fn icon_theme_switch_repaints_the_actual_catalog_native_adapter() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        let mut text = crate::gallery::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(std::time::Duration::ZERO, true);
+        let mut static_text = crate::gallery::static_text::StaticText::new(None);
+        let side = proposal::metric("size", "size-icon-preview").unwrap();
+        let frame = Rect::new(20., 30., side, side);
+        let mut original_geometry = None;
+        let mut previous_ink = None;
+        for theme in Theme::ALL {
+            text.begin_frame();
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            let mut scene = Scene::new();
+            // Exact helper used by build_catalog; this path is pure IconView,
+            // distinct from the unified Button image/artwork slot.
+            render_gallery_icon(
+                &mut ctx,
+                &mut scene,
+                "plus",
+                frame,
+                side,
+                frame,
+                GalleryIconArtwork::Native,
+            );
+            assert!(scene.composition_error().is_none());
+            let quads: Vec<_> = scene
+                .primitives()
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q) => Some(q),
+                    _ => None,
+                })
+                .collect();
+            assert!(!quads.is_empty(), "actual native catalog artwork paints");
+            let ink = Palette::from(theme).color("primary-text").unwrap();
+            assert!(
+                quads.iter().all(|q| q.fill == ink),
+                "Gallery adapter consumes current Theme tint"
+            );
+            let artboard = Rect::new(
+                frame.center().x - side / 2.,
+                frame.center().y - side / 2.,
+                side,
+                side,
+            );
+            let stroke =
+                tekes_ui_icons::REGULAR_STROKE_WIDTH * side / tekes_ui_icons::ARTBOARD_SIZE;
+            assert!(quads.iter().all(|q| {
+                q.rect.min_x() >= artboard.min_x()
+                    && q.rect.max_x() <= artboard.max_x()
+                    && q.rect.min_y() >= artboard.min_y()
+                    && q.rect.max_y() <= artboard.max_y()
+                    && q.rect.size.width.min(q.rect.size.height) == stroke
+            }));
+            let geometry: Vec<_> = quads.iter().map(|q| q.rect).collect();
+            if let Some(original) = &original_geometry {
+                assert_eq!(&geometry, original);
+            } else {
+                original_geometry = Some(geometry);
+            }
+            if let Some(previous) = previous_ink
+                && theme.is_dark()
+            {
+                assert_ne!(ink, previous);
+            }
+            previous_ink = Some(ink);
+            let mut hidden = Scene::new();
+            render_gallery_icon(
+                &mut ctx,
+                &mut hidden,
+                "plus",
+                frame,
+                side,
+                Rect::new(500., 500., 10., 10.),
+                GalleryIconArtwork::Native,
+            );
+            assert!(hidden.primitives().is_empty());
+        }
+    }
+
+    #[test]
     fn decorative_icon_cards_follow_renderer_backing_scale() {
         let mut text = crate::gallery::text::TextEngine::new();
         let mut static_text = crate::gallery::static_text::StaticText::new(None);
