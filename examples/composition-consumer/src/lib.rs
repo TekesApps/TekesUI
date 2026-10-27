@@ -267,3 +267,5 @@ pub mod status_badge_content;
 pub mod skeleton_content;
 
 pub mod empty_state_content;
+
+pub mod toolbar_mount;

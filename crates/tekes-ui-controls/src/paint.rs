@@ -16,6 +16,26 @@ pub enum SurfaceKind {
 pub fn color(theme: impl Into<Palette>, role: &str) -> Rgba {
     theme.into().color(role).expect("semantic control role")
 }
+/// Flat window-chrome ground, shared by Toolbar consumers and split seams.
+/// Reuse the existing window-base semantic; no panel boundary or elevation.
+/// The allocation, natural row and ancestor clip all bound this paint.
+pub(crate) fn toolbar_background(
+    scene: &mut Scene,
+    allocated: Rect,
+    clip: Option<Rect>,
+    row_height: f32,
+    palette: Palette,
+) {
+    let row = Rect::new(
+        allocated.min_x(), allocated.min_y(), allocated.size.width,
+        allocated.size.height.min(row_height),
+    );
+    let visible = clip.map_or(Some(row), |clip| row.intersection(&clip));
+    if let Some(rect) = visible.filter(|r| r.size.width > 0. && r.size.height > 0.) {
+        scene.push_quad(Quad::new(rect, color(palette, "surface-0")));
+    }
+}
+
 pub fn surface(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, panel: bool) {
     surface_at_scale(scene, rect, theme, panel, 1.0);
 }

@@ -182,7 +182,7 @@ fn declaration_update_cancels_old_popup_and_held_input_without_rebinding_queued_
     assert!(!menu(&mut h).menu.is_open());
     let r = h.drain_action_records();
     assert_eq!(r.len(), 1);
-    let ContentActionPayload::MenuSelection(s) = r[0].payload.as_ref().unwrap();
+    let ContentActionPayload::MenuSelection(s) = r[0].payload.as_ref().unwrap() else { panic!("expected original MenuSelection payload"); };
     assert_eq!(s.value_path().unwrap(), ["checked"]);
     assert!(!menu(&mut h).set_item_disabled(3, true));
     assert!(!menu(&mut h).set_item_separator(99, true));

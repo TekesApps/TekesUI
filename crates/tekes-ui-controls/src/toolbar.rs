@@ -33,6 +33,7 @@ pub(crate) fn metrics(
         row: ink * proposal::TOOLBAR_ROW_TO_VISIBLE_ICON,
         box_size: ink * proposal::TOOLBAR_BOX_TO_VISIBLE_ICON,
         inset: ink * proposal::TOOLBAR_INSET_TO_VISIBLE_ICON,
+
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -51,6 +52,8 @@ pub struct ToolbarIconAction {
 }
 #[derive(Debug)]
 pub struct ToolbarControl {
+    keep_group_together: bool,
+    embedded: bool,
     actions: Vec<ToolbarAction>,
     semantic_ids: std::collections::HashMap<u64, usize>,
     next_semantic_id: usize,
@@ -79,6 +82,8 @@ pub struct ToolbarControl {
 impl Default for ToolbarControl {
     fn default() -> Self {
         Self {
+            keep_group_together: false,
+            embedded: false,
             actions: Vec::new(),
             semantic_ids: Default::default(),
             next_semantic_id: 1,
@@ -107,6 +112,12 @@ impl Default for ToolbarControl {
     }
 }
 impl ToolbarControl {
+    pub(crate) fn set_embedded(&mut self, embedded: bool) {
+        self.embedded = embedded;
+    }
+    fn edge_inset(&self, m: ToolbarMetrics) -> f32 {
+        if self.embedded { 0. } else { m.inset }
+    }
     /// Native-window contribution styling is owned by this shared control and
     /// JSON Design System. Inline toolbar defaults remain unchanged.
     pub fn window() -> Self {
@@ -193,6 +204,21 @@ impl ToolbarControl {
         }
         true
     }
+    /// Keep a logical command group in one presentation: all buttons or one
+    /// original More menu. The same menu/action identities are retained.
+    pub fn set_group_together(&mut self, together: bool) {
+        if self.keep_group_together != together {
+            self.cancel();
+            self.keep_group_together = together;
+        }
+    }
+    pub(crate) fn minimum_width(&self, text: &mut dyn ButtonTextRenderer) -> f32 {
+        if self.actions.is_empty() { return 0.; }
+        {
+            let m = metrics(text, self.text_role);
+            self.overflow_size(&mut ToolbarText(text)).width + self.edge_inset(m) * 2.
+        }
+    }
     pub fn set_actions(&mut self, actions: Vec<ToolbarAction>) {
         self.icons.clear();
         self.update_actions(actions);
@@ -273,7 +299,7 @@ impl ToolbarControl {
             size.width += item.width;
             size.height = size.height.max(item.height);
         }
-        Size::new(size.width + pad * (self.actions.len() + 1) as f32, m.row)
+        Size::new(size.width + pad * self.actions.len().saturating_sub(1) as f32 + self.edge_inset(m) * 2., m.row)
     }
     pub fn render(
         &mut self,
@@ -307,11 +333,15 @@ impl ToolbarControl {
                     frame
                 }
             });
+        if !self.embedded {
+            crate::paint::toolbar_background(scene, allocated, Some(clip), m.row, palette);
+        }
         let pad = m.inset;
+        let edge = self.edge_inset(m);
         let inner = Rect::new(
-            frame.min_x() + pad,
+            frame.min_x() + edge,
             frame.min_y(),
-            (frame.size.width - pad * 2.).max(0.),
+            (frame.size.width - edge * 2.).max(0.),
             frame.size.height,
         );
         let sizes: Vec<_> = self
@@ -323,7 +353,7 @@ impl ToolbarControl {
         // loses low bits under typography zoom and can invent overflow even
         // at the exact natural width returned to a host.
         let natural_width =
-            sizes.iter().map(|s| s.width).sum::<f32>() + pad * (sizes.len() + 1) as f32;
+            sizes.iter().map(|s| s.width).sum::<f32>() + pad * sizes.len().saturating_sub(1) as f32 + edge * 2.;
         let needs_overflow = natural_width > frame.size.width;
         let mut overflow = self.overflow_size(text);
         overflow.height = overflow
@@ -332,8 +362,9 @@ impl ToolbarControl {
         let mut visible = Vec::new();
         let mut used = 0.;
         for (i, s) in sizes.iter().enumerate() {
+            if needs_overflow && self.keep_group_together { break; }
             let next = used + s.width;
-            let with_overflow = next + overflow.width + pad * (visible.len() + 3) as f32;
+            let with_overflow = next + overflow.width + pad * (visible.len() + 1) as f32 + edge * 2.;
             if needs_overflow && with_overflow > frame.size.width {
                 break;
             }
@@ -506,13 +537,16 @@ impl ToolbarControl {
         self.action_for(event)
     }
     pub fn cancel(&mut self) {
+        self.cancel_interaction();
+        self.last_action = None;
+    }
+    fn cancel_interaction(&mut self) {
         self.popup = None;
         for b in &mut self.buttons {
             b.button.cancel();
         }
         self.trigger.button.cancel();
         self.held = None;
-        self.last_action = None;
         self.menu.key(ControlKey::Escape, true);
         self.menu.clear_presentation();
     }
@@ -524,6 +558,19 @@ impl ToolbarControl {
 // The composition wrapper keeps the real Button input contract,
 // including explicit drag propagation, modifiers and primary-button ownership.
 impl crate::composition::Component for ToolbarControl {
+    fn validate(&self) -> Result<(), crate::composition::CompositionError> {
+        let mut ids = std::collections::BTreeSet::new();
+        for action in &self.actions {
+            if !ids.insert(action.id) { return Err(crate::composition::CompositionError::DuplicateId(crate::composition::ComponentId(action.id))); }
+            if action.title.trim().is_empty() { return Err(crate::composition::CompositionError::EmptyAccessibleName); }
+        }
+        Ok(())
+    }
+    fn action_payload(&self, kind: crate::composition::ContentActionKind) -> Option<crate::composition::ContentActionPayload> {
+        (kind == crate::composition::ContentActionKind::Activate)
+            .then_some(self.last_action).flatten()
+            .map(crate::composition::ContentActionPayload::ToolbarCommand)
+    }
     fn pointer_regions(&self, _: Rect, clip: Rect) -> Vec<Rect> {
         self.visible
             .iter()
@@ -577,6 +624,11 @@ impl crate::composition::Component for ToolbarControl {
     fn overlay_open(&self) -> bool {
         self.is_open()
     }
+    fn overlay_scope(&self) -> Option<crate::composition::OverlayScope> {
+        // Closed toolbars stay ordinary active Content. Only the open original
+        // menu acquires the shared input/Tab/AX barrier.
+        self.is_open().then_some(Default::default())
+    }
     fn overlay_event(
         &mut self,
         event: &crate::composition::ContentEvent,
@@ -610,7 +662,7 @@ impl crate::composition::Component for ToolbarControl {
             self.focused
         };
         if (!focused && self.has_focus) || next != self.focused {
-            self.cancel();
+            self.cancel_interaction();
         }
         self.focused = next;
         self.has_focus = focused;
@@ -620,6 +672,12 @@ impl crate::composition::Component for ToolbarControl {
         }
         self.trigger
             .set_focus(focused && self.focused == Some(self.actions.len()), visible);
+    }
+    fn set_focus_from_traversal(&mut self, reverse: bool) {
+        self.cancel();
+        let stops = self.focus_stops();
+        self.focused = if reverse { stops.last() } else { stops.first() }.copied();
+        self.set_focus(true, true);
     }
     fn key_event(
         &mut self,

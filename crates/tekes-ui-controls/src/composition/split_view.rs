@@ -789,6 +789,9 @@ impl ContentHost {
         let old_focus = host.focused.is_some_and(|id| oldpane.find(id).is_some());
         let old_capture = host.captured.is_some_and(|id| oldpane.find(id).is_some());
         let modal = host.modal.filter(|(id, _)| oldpane.find(*id).is_some());
+        if !host.replacement_keeps_overlay_scope(oldpane, Some(&input.replacement)) {
+            return Err(SplitViewError::UnsupportedScope);
+        }
         let restore = if let Some((_, Some((id, mount)))) = modal {
             let target = host.root.find_active(id).filter(|c| {
                 c.mount == mount && c.component.focusable() && !c.component.semantics().disabled
@@ -998,6 +1001,11 @@ impl ContentHost {
                 input: Box::new(input),
             });
         }
+        if !prepared::at(&self.root, &plan.old).is_some_and(|retired| {
+            self.replacement_keeps_overlay_scope(retired, Some(&input.replacement))
+        }) {
+            return Err(Rejected { error: SplitViewError::UnsupportedScope, input: Box::new(input) });
+        }
         let restore_ready = if let Some((id, reveal)) = plan.restore.take() {
             if self
                 .validate_host_reveal_in_scope(&reveal, &self.root)
@@ -1195,6 +1203,13 @@ impl ContentHost {
             }
         }
 
+        let old_layout = split.layout().expect("intact layout");
+        for (side, bounds) in [(Pane::Leading, projected.0), (Pane::Trailing, projected.2)] {
+            let old_bounds = if side == Pane::Leading { old_layout.leading.frame() } else { old_layout.trailing.frame() };
+            if old_bounds != bounds && !self.replacement_keeps_overlay_scope(split.pane(side), None) {
+                return Err(SplitViewError::UnsupportedScope);
+            }
+        }
         let divider_id = split.ids.divider;
         let mut effects = TreePlan::default();
         for depth in 0..=path.len() {

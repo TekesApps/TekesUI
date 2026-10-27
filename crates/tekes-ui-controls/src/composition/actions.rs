@@ -26,6 +26,8 @@ pub struct ContentAction {
 /// Owned data captured by the original component at delivery time.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ContentActionPayload {
+    /// Original toolbar command captured before menu-close focus cleanup.
+    ToolbarCommand(u64),
     MenuSelection(MenuSelection),
 }
 /// Item identity in one immutable model revision. Explicit values provide a
@@ -233,7 +235,7 @@ mod freshness_tests {
             Some(ContentActionPayload::MenuSelection(MenuSelection { index: 0, label: "item".into(), model_revision: self.revision.get(), value_path: None }))
         }
         fn action_payload_current(&self, payload: &ContentActionPayload) -> bool {
-            let ContentActionPayload::MenuSelection(value) = payload;
+            let ContentActionPayload::MenuSelection(value) = payload else { return false; };
             !self.filter || value.model_revision() == self.revision.get()
         }
     }

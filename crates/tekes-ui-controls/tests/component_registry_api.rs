@@ -1085,6 +1085,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::NumberValueError",
     );
+    public_type::<tekes_ui_controls::composition::OverlayScope>(
+        &mut actual,
+        "tekes_ui_controls::composition::OverlayScope",
+    );
     public_type::<tekes_ui_controls::composition::PanelContent>(
         &mut actual,
         "tekes_ui_controls::composition::PanelContent",
@@ -1110,7 +1114,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::PointerPhase",
     );
     #[allow(dead_code)]
-    fn public_trait_163<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    fn public_trait_164<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::PreparedActionEffect");
     public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
         &mut actual,
@@ -1260,6 +1264,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::ToastContent",
     );
+    public_type::<tekes_ui_controls::composition::ToolbarAccessibilityTarget>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarAccessibilityTarget",
+    );
+    public_type::<tekes_ui_controls::composition::ToolbarButtonDeclaration>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarButtonDeclaration",
+    );
+    public_type::<tekes_ui_controls::composition::ToolbarCommandBinding<()>>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarCommandBinding",
+    );
     public_type::<tekes_ui_controls::composition::ToolbarContent>(
         &mut actual,
         "tekes_ui_controls::composition::ToolbarContent",
@@ -1268,9 +1284,41 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::ToolbarGroup",
     );
+    public_type::<tekes_ui_controls::composition::ToolbarGroupOverflow>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarGroupOverflow",
+    );
+    public_type::<tekes_ui_controls::composition::ToolbarHost<()>>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarHost",
+    );
+    public_type::<tekes_ui_controls::composition::ToolbarInvocation<()>>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarInvocation",
+    );
     public_type::<tekes_ui_controls::composition::ToolbarPlacement>(
         &mut actual,
         "tekes_ui_controls::composition::ToolbarPlacement",
+    );
+    public_type::<tekes_ui_controls::composition::ToolbarRegion>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarRegion",
+    );
+    public_type::<tekes_ui_controls::composition::ToolbarRegionScope>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarRegionScope",
+    );
+    public_type::<tekes_ui_controls::composition::ToolbarRegistration<()>>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarRegistration",
+    );
+    public_type::<tekes_ui_controls::composition::ToolbarSemanticNode>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarSemanticNode",
+    );
+    public_type::<tekes_ui_controls::composition::ToolbarWindowEdge>(
+        &mut actual,
+        "tekes_ui_controls::composition::ToolbarWindowEdge",
     );
     public_type::<tekes_ui_controls::extended::Axis>(
         &mut actual,
@@ -1573,7 +1621,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_279<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_291<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

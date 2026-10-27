@@ -419,8 +419,12 @@ fn main() {
                     "menu-tree" | "toolbar" | "toolbar-groups" | "toolbar-split"
                 ) {
                     snapshot["menu_actions"]=serde_json::json!(self.menu_actions.iter().map(|record|{
-                        let selection=record.payload.as_ref().map(|tekes_ui_controls::composition::ContentActionPayload::MenuSelection(value)|serde_json::json!({"index":value.index(),"label":value.label(),"model_revision":value.model_revision(),"value_path":value.value_path()}));
-                        serde_json::json!({"target":record.action.target.0,"source":format!("{:?}",record.action.source),"kind":format!("{:?}",record.action.kind),"mount":record.mount,"selection":selection})
+                        let (selection, toolbar_command) = match record.payload.as_ref() {
+                            Some(tekes_ui_controls::composition::ContentActionPayload::MenuSelection(value)) => (Some(serde_json::json!({"index":value.index(),"label":value.label(),"model_revision":value.model_revision(),"value_path":value.value_path()})), None),
+                            Some(tekes_ui_controls::composition::ContentActionPayload::ToolbarCommand(command)) => (None, Some(*command)),
+                            None => (None, None),
+                        };
+                        serde_json::json!({"target":record.action.target.0,"source":format!("{:?}",record.action.source),"kind":format!("{:?}",record.action.kind),"mount":record.mount,"selection":selection,"toolbar_command":toolbar_command})
                     }).collect::<Vec<_>>());
                 }
                 if self.mode == "toolbar-groups" {

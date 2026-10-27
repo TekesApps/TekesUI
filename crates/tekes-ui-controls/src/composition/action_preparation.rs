@@ -94,9 +94,9 @@ struct EditorState {
 impl EditorState {
     fn read(host: &ContentHost) -> Self {
         Self {
-            binding: host.focused_text_binding(),
+            binding: host.focus_admission_text_surface().map(|s| s.input.controlled_binding()),
             composing: host.is_composing(),
-            text: host.focused_text().map(|s| s.input.action_snapshot()),
+            text: host.focus_admission_text_surface().map(|s| s.input.action_snapshot()),
         }
     }
 }
@@ -115,6 +115,12 @@ struct PreparedFocus {
     new: Option<ContentRoute>,
 }
 impl ContentHost {
+    // Focus transfer must authenticate the original mounted editor even when a
+    // newly opened scope excludes it from public native/AX text queries.
+    fn focus_admission_text_surface(&self) -> Option<&crate::TextSurface> {
+        self.focused.and_then(|id| self.root.find(id))
+            .and_then(|node| node.component.text_surface())
+    }
     fn prepare_focus(
         &self,
         id: Option<ComponentId>,
@@ -150,7 +156,7 @@ impl ContentHost {
         {
             return Err(HostRevealError::CompositionBarrier);
         }
-        if id != self.focused && self.focused_text().is_some_and(|s| !s.input.can_unmark()) {
+        if id != self.focused && self.focus_admission_text_surface().is_some_and(|s| !s.input.can_unmark()) {
             return Err(HostRevealError::IdentityExhausted);
         }
         let next_epoch = if id != self.focused {
@@ -213,7 +219,7 @@ impl ContentHost {
                     .find_active(id)
                     .is_some_and(|n| n.component.focusable() && !n.component.semantics().disabled)
             })
-            && (p.id == self.focused || self.focused_text().is_none_or(|s| s.input.can_unmark()))
+            && (p.id == self.focused || self.focus_admission_text_surface().is_none_or(|s| s.input.can_unmark()))
             && !(p.id.is_some()
                 && p.id != self.focused
                 && self.is_composing()
@@ -1134,5 +1140,100 @@ mod tests {
             assert_eq!(format!("{:?}", h.root), before);
             assert!(h.drain_actions().is_empty());
         }
+    }
+}
+
+#[cfg(test)]
+mod overlay_focus_admission_tests {
+    use super::*;
+    #[derive(Debug)]
+    struct Scope { open: bool, children: Vec<Content> }
+    impl Component for Scope {
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild { MeasuredChild::new(available) }
+        fn children(&self) -> &[Content] { &self.children }
+        fn children_mut(&mut self) -> Option<&mut Vec<Content>> { Some(&mut self.children) }
+        fn overlay_open(&self) -> bool { self.open }
+        fn overlay_scope(&self) -> Option<OverlayScope> { Some(OverlayScope::default()) }
+    }
+    #[test]
+    fn new_scope_cannot_hide_original_editor_from_focus_transfer_admission() {
+        let editor = ComponentId(80901);
+        let target = ComponentId(80903);
+        let field = TextFieldContent::new("Composer", "");
+        let mut host = ContentHost::new(Content::new(ComponentId(80900), StackContent {
+            model: Stack { axis: Axis::Vertical, gap: 0. }, flexible_child: None,
+            children: vec![Content::new(editor, field), Content::new(ComponentId(80902), Scope {
+                open: true, children: vec![Content::new(target, Button::new("Popup action"))],
+            })],
+        })).unwrap();
+        host.focused = Some(editor);
+        // Mount first: the real lifecycle establishes the original editor identity.
+        let field = host.root.find_mut(editor).unwrap().component_mut::<TextFieldContent>().unwrap();
+        field.set_focus(true, false);
+        field.event(&ContentEvent::Preedit { text: "中".into(), selection: 1..1, clauses: vec![], replacement: None });
+        field.surface.input.test_edit_epoch(u64::MAX);
+        let original = field.surface.input.action_snapshot();
+        let binding = field.surface.input.controlled_binding();
+        assert!(host.scope().find_active(editor).is_none());
+        assert!(host.focused_text().is_none());
+        let state = EditorState::read(&host);
+        assert_eq!(state.binding, Some(binding));
+        assert_eq!(state.text, Some(original));
+        assert!(state.composing);
+        assert!(matches!(host.prepare_focus(None, false, None, FocusOrigin::Direct), Err(HostRevealError::IdentityExhausted)));
+        for origin in [FocusOrigin::Traversal, FocusOrigin::Accessibility] {
+            assert!(matches!(host.prepare_focus(Some(target), true, None, origin), Err(HostRevealError::CompositionBarrier)));
+        }
+        assert_eq!(host.focused(), Some(editor));
+        assert!(host.focus_admission_text_surface().unwrap().input.marked.is_some());
+        // Restore the test-injected capacity after asserting refusal, so normal
+        // host destruction can unmark the still-focused original editor.
+        host.root.find_mut(editor).unwrap().component_mut::<TextFieldContent>().unwrap()
+            .surface.input.test_edit_epoch(0);
+    }
+
+    #[test]
+    fn scope_open_capacity_refusal_does_not_cancel_original_editor_scroll() {
+        let editor = ComponentId(80911);
+        let scope = ComponentId(80912);
+        let target = ComponentId(80913);
+        let field = TextFieldContent::new("Composer", "");
+        let mut host = ContentHost::new(Content::new(ComponentId(80910), StackContent {
+            model: Stack { axis: Axis::Vertical, gap: 0. }, flexible_child: None,
+            children: vec![Content::new(editor, field), Content::new(scope, Scope {
+                open: false, children: vec![Content::new(target, Button::new("Popup action"))],
+            })],
+        })).unwrap();
+        host.focused = Some(editor);
+        // Capacity exhaustion is an input after mounting, not a lifecycle failure.
+        let field = host.root.find_mut(editor).unwrap().component_mut::<TextFieldContent>().unwrap();
+        field.set_focus(true, false);
+        field.event(&ContentEvent::Preedit { text: "中".into(), selection: 1..1, clauses: vec![], replacement: None });
+        field.surface.input.test_edit_epoch(u64::MAX);
+        // This exercises the original focus admission before any target reveal
+        // work. The active original scope still has an eligible focus intent.
+        host.root.find_mut(target).unwrap().frame = Rect::new(10., 10., 80., 24.);
+        host.root.find_mut(editor).unwrap().component_mut::<TextFieldContent>().unwrap()
+            .surface.scroll.overscroll = Point::new(0., 8.);
+        let before_input = host.focus_admission_text_surface().unwrap().input.action_snapshot();
+        let before_scroll = format!("{:?}", host.focus_admission_text_surface().unwrap().scroll);
+        let before_epoch = host.focus_epoch();
+        host.root.find_mut(scope).unwrap().component_mut::<Scope>().unwrap().open = true;
+
+        host.reconcile_active_inputs();
+
+        assert_eq!(host.focused(), Some(editor));
+        assert_eq!(host.focus_epoch(), before_epoch);
+        let surface = host.focus_admission_text_surface().unwrap();
+        assert_eq!(surface.input.action_snapshot(), before_input);
+        assert_eq!(surface.scroll.overscroll, Point::new(0., 8.));
+        assert_eq!(format!("{:?}", surface.scroll), before_scroll);
+        assert!(surface.input.marked.is_some());
+        assert!(host.overlay_scopes.last().unwrap().focus_pending);
+        assert!(host.drain_actions().is_empty());
+        // Restore the test-injected capacity after asserting refusal, so normal
+        // host destruction can unmark the still-focused original editor.
+        host.root.find_mut(editor).unwrap().component_mut::<TextFieldContent>().unwrap()
+            .surface.input.test_edit_epoch(0);
     }
 }

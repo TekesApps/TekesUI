@@ -63,6 +63,7 @@ fn choose(h: &mut ContentHost, i: usize) {
 fn selection(r: &ContentActionRecord) -> &MenuSelection {
     match r.payload.as_ref().unwrap() {
         ContentActionPayload::MenuSelection(s) => s,
+        ContentActionPayload::ToolbarCommand(_) => panic!("expected original MenuSelection payload"),
     }
 }
 #[test]

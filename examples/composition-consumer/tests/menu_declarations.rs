@@ -159,7 +159,7 @@ fn key(h: &mut ContentHost, k: ControlKey) {
     paint(h);
 }
 fn selection(record: &ContentActionRecord) -> &MenuSelection {
-    let ContentActionPayload::MenuSelection(s) = record.payload.as_ref().unwrap();
+    let ContentActionPayload::MenuSelection(s) = record.payload.as_ref().unwrap() else { panic!("expected original MenuSelection payload"); };
     s
 }
 #[test]

@@ -1167,6 +1167,12 @@
       "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle."
     },
     {
+      "api": "tekes_ui_controls::composition::OverlayScope",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing WIP public contract, now explicitly inventoried; classification is not native acceptance or release approval."
+    },
+    {
       "api": "tekes_ui_controls::composition::PanelContent",
       "category": "component",
       "components": [
@@ -1474,6 +1480,33 @@
       "reason": "Public Content adapter retains the original Notice model/View, action owner and registered identity; no new queue or component."
     },
     {
+      "api": "tekes_ui_controls::composition::ToolbarAccessibilityTarget",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Opaque mount/layout-revision target for current Toolbar semantic callbacks; stale native actions are rejected."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarButtonDeclaration",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Standard Button content/help/availability declaration for original ToolbarControl commands."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarCommandBinding",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Original module/session/generation command binding retained across region placement.",
+      "type_arguments": [
+        "()"
+      ]
+    },
+    {
       "api": "tekes_ui_controls::composition::ToolbarContent",
       "category": "component",
       "components": [
@@ -1490,12 +1523,85 @@
       "reason": "Stable original Content group declaring toolbar placement while retaining child control and semantic ownership."
     },
     {
+      "api": "tekes_ui_controls::composition::ToolbarGroupOverflow",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Explicit Together or Split policy over the original ToolbarControl More menu."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarHost",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Window declaration and mount adapter over one original ContentHost; owns all registered groups without a parallel interaction state machine.",
+      "type_arguments": [
+        "()"
+      ]
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarInvocation",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Once-drained delivered command carrying original source, window, group and input identity.",
+      "type_arguments": [
+        "()"
+      ]
+    },
+    {
       "api": "tekes_ui_controls::composition::ToolbarPlacement",
       "category": "component-support",
       "components": [
         "tui.toolbar"
       ],
       "reason": "Semantic region policy for original Content groups inside the receiving toolbar; status and secondary actions remain distinct."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarRegion",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Consumer-supplied local allocation and native safety insets; semantic placement is resolved within the region."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarRegionScope",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Explicit container-owned versus window-owned registration scope; stable Toolbar group state stays SDK-owned. This is a helper, not another registered component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarRegistration",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Stable original ToolbarGroup Content and command bindings mounted through the original lifecycle.",
+      "type_arguments": [
+        "()"
+      ]
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarSemanticNode",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Current semantic owner/parts and opaque stamped native targets for ToolbarHost projection."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarWindowEdge",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Window-owned Toolbar edge allocation, independent of a pane's lifecycle; positions stay local to the declared region."
     },
     {
       "api": "tekes_ui_controls::extended::Axis",

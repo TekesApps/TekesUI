@@ -44,7 +44,10 @@ pub use number::{
 };
 mod pointer;
 mod text_query;
+mod overlay_scope;
+pub use overlay_scope::OverlayScope;
 mod toolbar_content;
+mod toolbar_host;
 use crate::extended::{Axis, Grid, Stack};
 use crate::layout::{AlignmentOverride, MeasuredChild, layout_measured_children};
 use crate::paint::ButtonVariant;
@@ -72,6 +75,11 @@ use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Rgba, proposal};
 pub use text_query::{ContentTextInput, ContentTextLayout};
 pub use toolbar_content::{ToolbarContent, ToolbarGroup, ToolbarPlacement};
+pub use toolbar_host::{
+    ToolbarAccessibilityTarget, ToolbarButtonDeclaration, ToolbarCommandBinding,
+    ToolbarGroupOverflow, ToolbarHost, ToolbarInvocation, ToolbarRegion, ToolbarRegionScope,
+    ToolbarRegistration, ToolbarSemanticNode, ToolbarWindowEdge, toolbar_commands,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ComponentId(pub u64);
@@ -459,6 +467,9 @@ pub trait Component: Debug + Any {
     fn overlay_open(&self) -> bool {
         false
     }
+    /// Interactive original Content overlays opt into input/focus/AX scope.
+    /// Paint-only exit presentation never acquires this authority.
+    fn overlay_scope(&self) -> Option<OverlayScope> { None }
     fn overlay_presented(&self) -> bool {
         self.overlay_open()
     }
@@ -632,7 +643,11 @@ pub struct Content {
     activity_parent: bool,
 }
 impl Content {
-    fn active(&self) -> bool { self.component.active() }
+    fn active(&self) -> bool {
+        self.component.active()
+            && (self.component.overlay_scope().is_none()
+                || self.component.overlay_open() && !self.component.semantics().disabled)
+    }
     pub fn new(id: ComponentId, component: impl Component) -> Self {
         Self::new_with_mount(id, component, actions::next_mount())
     }
@@ -729,6 +744,8 @@ impl Content {
     // Toolbar owns a single-line presentation policy, while every descendant
     // retains its source, semantics, mount identity and interaction state.
     fn toolbar_label_layouts(&mut self) {
+        if let Some(button) = self.component_mut::<Button>() { button.set_toolbar_presentation(true); }
+        if let Some(toolbar) = self.component_mut::<crate::ToolbarControl>() { toolbar.set_embedded(true); }
         if self.component::<TextContent>().is_some() || self.component::<Button>().is_some_and(Button::supports_label_layout)
         {
             let state = self.label.get_or_insert_with(|| {
@@ -745,6 +762,8 @@ impl Content {
         }
     }
     fn reset_label_layouts(&mut self) {
+        if let Some(button) = self.component_mut::<Button>() { button.set_toolbar_presentation(false); }
+        if let Some(toolbar) = self.component_mut::<crate::ToolbarControl>() { toolbar.set_embedded(false); }
         // Slot containers may only measure descendants during arrange. A new
         // host frame must not inspect a previous frame's failed capability or
         // replay a paragraph from a replaced font registry before that arrange.
@@ -758,7 +777,7 @@ impl Content {
         }
     }
     fn label_failure(&self) -> Option<ComponentId> {
-        if !(self.component.active()
+        if !(self.active()
             || self.component.paints_children() && self.component.overlay_presented())
         {
             return None;
@@ -867,7 +886,7 @@ impl Content {
         if skip == Some(self.id) {
             return;
         }
-        if !self.component.active() {
+        if !self.active() {
             return;
         }
         let curve_scope = self.push_curve_scope(scene);
@@ -923,7 +942,7 @@ impl Content {
             || self.component.children().iter().any(Content::has_focus_boundary))
     }
     fn has_raised_focus_decoration(&self) -> bool {
-        if !self.component.active() {
+        if !self.active() {
             return false;
         }
         self.component.focus_decoration_above_siblings()
@@ -944,7 +963,7 @@ impl Content {
         theme: ContentTheme,
     ) {
         let owned = self.component.paints_children();
-        if !(self.component.active() || owned && self.component.overlay_presented()) {
+        if !(self.active() || owned && self.component.overlay_presented()) {
             return;
         }
         let theme = self.resolved_theme(theme);
@@ -962,7 +981,7 @@ impl Content {
         }
     }
     fn overlay_id(&self) -> Option<ComponentId> {
-        if !self.component.active() {
+        if !self.active() {
             return None;
         }
         self.component
@@ -973,7 +992,7 @@ impl Content {
             .or_else(|| self.component.overlay_open().then_some(self.id))
     }
     fn needs_text(&self) -> Option<ComponentId> {
-        if !(self.component.active()
+        if !(self.active()
             || self.component.paints_children() && self.component.overlay_presented())
         {
             return None;
@@ -989,7 +1008,7 @@ impl Content {
     }
     fn find_active(&self, id: ComponentId) -> Option<&Content> {
         self.find_in_active_ancestors(id)
-            .filter(|node| node.component.active())
+            .filter(|node| node.active())
     }
     // Exit presentation may retain an inactive Dialog owner, but never bypass
     // an inactive ancestor such as a collapsed or replaced content panel.
@@ -997,7 +1016,7 @@ impl Content {
         if self.id == id {
             return Some(self);
         }
-        if !self.component.active() {
+        if !self.active() {
             return None;
         }
         self.component
@@ -1022,7 +1041,7 @@ impl Content {
             .find_map(|c| c.find_mut(id))
     }
     fn notify_presentation_runnable(&mut self, ancestor_active: bool) {
-        let active = ancestor_active && self.component.active();
+        let active = ancestor_active && self.active();
         self.component.presentation_runnable_changed(active && self.visible().is_some());
         if let Some(children) = self.component.children_mut() {
             for child in children { child.notify_presentation_runnable(active); }
@@ -1030,7 +1049,7 @@ impl Content {
     }
     // Withdraw only. Successful layout is the sole publisher of true.
     fn reconcile_presentation_runnable(&mut self, ancestor_active: bool) {
-        let active = ancestor_active && self.component.active();
+        let active = ancestor_active && self.active();
         if !active || self.visible().is_none() { self.component.presentation_runnable_changed(false); }
         if let Some(children) = self.component.children_mut() {
             for child in children { child.reconcile_presentation_runnable(active); }
@@ -1038,7 +1057,7 @@ impl Content {
     }
     fn refresh_activity(&mut self, parent_active: bool) {
         self.activity_parent = parent_active;
-        let active = parent_active && self.component.active();
+        let active = parent_active && self.active();
         // Notice visibility owns its runnable lifecycle. Its window authority
         // follows ancestry so a completed Dismiss can still drain once.
         let notification_active = if self.component::<ToastContent>().is_some()
@@ -1135,7 +1154,7 @@ impl Content {
         Ok(())
     }
     fn focus_ids(&self, ids: &mut Vec<ComponentId>) {
-        if !self.component.participates_in_focus_traversal() || !self.component.active() {
+        if !self.component.participates_in_focus_traversal() || !self.active() {
             return;
         }
         if self.component.focusable()
@@ -1156,7 +1175,7 @@ impl Content {
         position: Point,
         actions: &mut Option<Vec<actions::PendingAction>>,
     ) -> Option<(ComponentId, ContentResponse, bool)> {
-        if !self.component.active() || !self.curve_contains(position) {
+        if !self.active() || !self.curve_contains(position) {
             return None;
         }
         let action = self.component.semantics().role.is_action_owner();
@@ -1214,7 +1233,7 @@ impl Content {
         event: &ContentEvent,
         actions: &mut Option<Vec<actions::PendingAction>>,
     ) -> Option<(ComponentId, ContentResponse, bool)> {
-        if !self.component.active() {
+        if !self.active() {
             return None;
         }
         if self.id == id {
@@ -1236,7 +1255,7 @@ impl Content {
     // or currently unhandled real control shields its bounds from a parent's
     // decorative focus area. No coordinates are forwarded to the editor.
     fn padding_focus_at(&self, position: Point) -> PaddingFocusHit {
-        if !self.component.active() {
+        if !self.active() {
             return PaddingFocusHit::None;
         }
         if !self.component.semantics().disabled {
@@ -1269,7 +1288,7 @@ impl Content {
         PaddingFocusHit::None
     }
     fn padding_editor(&self, id: ComponentId) -> Option<&Content> {
-        if !self.component.active() || self.component.semantics().disabled {
+        if !self.active() || self.component.semantics().disabled {
             return None;
         }
         if self.id == id {
@@ -1291,7 +1310,7 @@ impl Content {
         position: Point,
         actions: &mut Option<Vec<actions::PendingAction>>,
     ) -> (Option<(ComponentId, ContentResponse, bool)>, bool) {
-        if !self.component.active() {
+        if !self.active() {
             return (None, false);
         }
         let mut hit = None;
@@ -1342,7 +1361,7 @@ impl Content {
         focused: Option<ComponentId>,
         out: &mut Vec<SemanticNode>,
     ) {
-        if !self.component.active() || self.component.semantic_subtree_hidden() {
+        if !self.active() || self.component.semantic_subtree_hidden() {
             return;
         }
         let hidden = self.component.semantic_hidden();
@@ -1438,6 +1457,8 @@ pub struct ContentHost {
     curve_shapes: Option<tekes_ui_scene::ShapeTable>,
     reveal_clock: content_reveal_plan::RevealClock,
     focused: Option<ComponentId>,
+    focus_wrap: bool,
+    overlay_scopes: Vec<overlay_scope::ScopedOverlay>,
     captured: Option<ComponentId>,
     captured_mount: Option<u64>,
     capture_epoch: u64,
@@ -1475,6 +1496,8 @@ impl ContentHost {
             curve_shapes: None,
             reveal_clock: Default::default(),
             focused: None,
+            focus_wrap: true,
+            overlay_scopes: Vec::new(),
             captured: None,
             captured_mount: None,
             capture_epoch: 0,
@@ -1549,7 +1572,7 @@ impl ContentHost {
     pub fn try_pointer_regions(&self) -> Result<Vec<Rect>, CompositionError> {
         if self.requires_curve_geometry() { return Err(CompositionError::CurvePointerRegionsUnsupported); }
         fn collect(node: &Content, regions: &mut Vec<Rect>) {
-            if !node.component.active() {
+            if !node.active() {
                 return;
             }
             regions.extend(node.component.pointer_regions(node.frame, node.clip));
@@ -1873,8 +1896,9 @@ impl ContentHost {
         {
             self.clear_dialog_presentation();
         }
+        self.reconcile_overlay_scopes();
         if self.captured.is_some_and(|id| {
-            self.scope()
+            self.root
                 .find_active(id)
                 .is_none_or(|c| self.captured_mount != Some(c.mount) || c.visible().is_none() || c.component.semantics().disabled)
         }) {
@@ -1884,21 +1908,29 @@ impl ContentHost {
             self.captured_mount = None;
             self.dirty = true;
         }
-        if self.focused.is_some_and(|id| {
-            self.scope()
-                .find_active(id)
-                .is_none_or(|c| !c.component.focusable() || c.component.semantics().disabled)
-        }) {
-            if let Some(c) = self.focused.and_then(|id| self.root.find_mut(id)) {
+        if let Some(id) = self.focused.filter(|id| {
+            self.captured != Some(*id)
+                && self.scope()
+                    .find_active(*id)
+                    .is_none_or(|c| !c.component.focusable() || c.component.semantics().disabled)
+        }) && matches!(
+            self.admit_ordinary_focus(None, false, None, action_preparation::FocusOrigin::Direct),
+            action_preparation::FocusAdmission::Accepted { .. }
+        ) {
+            // Cancel belongs to a committed departure. A refused unmark must
+            // preserve the original editor's pointer/scroll interaction too.
+            if let Some(c) = self.root.find_mut(id) {
                 c.component.event(&ContentEvent::Cancel);
             }
-            self.focus(None, false);
         }
     }
     pub fn focus(&mut self, id: Option<ComponentId>, visible: bool) -> bool {
         matches!(self.admit_ordinary_focus(id, visible, None, action_preparation::FocusOrigin::Direct),
             action_preparation::FocusAdmission::Accepted { changed: true })
     }
+    /// Disable ordinary boundary wrapping for an embedded host. Modal and
+    /// interactive overlay scopes still keep traversal inside their owner.
+    pub fn set_focus_wrap(&mut self, wrap: bool) { self.focus_wrap = wrap; }
     /// Enter the first/last eligible original owner in the current input scope.
     /// Composing editors retain their existing Tab/IME boundary; accepted entry
     /// uses the same focus/reveal admission and traversal direction as Tab.
@@ -1942,6 +1974,7 @@ impl ContentHost {
         if !self.window_active { return ContentResponse::default(); }
         self.reveal_clock.invalidate_input();
         self.event_bubbled = None;
+        let overlay_barrier = self.overlay_scope_id().is_some();
         let previous_caret = self.focused.and_then(|id| {
             self.focused_text()
                 .filter(|surface| {
@@ -1983,8 +2016,9 @@ impl ContentHost {
         }
         // Preserve the existing modal barrier for hosts which only inspect
         // consumed; explicit bubbling cannot expose background input.
-        if self.modal.is_some() {
+        if self.modal.is_some() || overlay_barrier {
             result.consumed = true;
+            self.event_bubbled = Some(false);
         }
         self.dirty |= result.changed;
         self.event_bubbled =
@@ -2199,6 +2233,11 @@ impl ContentHost {
                 .focused
                 .and_then(|id| ids.iter().position(|v| *v == id))
             {
+                Some(i) if !self.focus_wrap && self.modal.is_none()
+                    && self.overlay_scope_id().is_none()
+                    && ((*reverse && i == 0) || (!*reverse && i + 1 == ids.len())) => {
+                        return ContentResponse::default();
+                    }
                 Some(i) if *reverse => (i + ids.len() - 1) % ids.len(),
                 Some(i) => (i + 1) % ids.len(),
                 None if *reverse => ids.len() - 1,
@@ -2270,14 +2309,18 @@ impl ContentHost {
             }
         }
     }
-    fn scope(&self) -> &Content {
+    fn base_scope(&self) -> &Content {
         self.modal
             .and_then(|(id, _)| self.root.find(id))
             .unwrap_or(&self.root)
     }
+    fn scope(&self) -> &Content {
+        self.overlay_scope_id().and_then(|id| self.root.find_active(id))
+            .unwrap_or_else(|| self.base_scope())
+    }
     fn scope_with_actions(&mut self) -> (&mut Content, &mut Option<Vec<actions::PendingAction>>) {
-        let scope = if let Some((id, _)) = self.modal {
-            self.root.find_mut(id).expect("mounted modal")
+        let scope = if let Some(id) = self.overlay_scope_id().or(self.modal.map(|(id, _)| id)) {
+            self.root.find_mut(id).expect("mounted input scope")
         } else {
             &mut self.root
         };
@@ -2287,7 +2330,7 @@ impl ContentHost {
     /// painter has no input authority, and an inactive window publishes none.
     pub fn input_overlay_owner(&self) -> Option<(ComponentId, u64)> {
         if !self.window_active { return None; }
-        let id = self.modal.map(|(id, _)| id).or_else(|| self.scope().overlay_id())?;
+        let id = self.overlay_scope_id().or(self.modal.map(|(id, _)| id)).or_else(|| self.scope().overlay_id())?;
         let node = self.root.find_active(id)?;
         Some((id, node.mount))
     }
@@ -2391,6 +2434,12 @@ impl ContentHost {
         let Some(node) = self.root.find(id) else { return false; };
         let focus = self.focused.is_some_and(|id| node.find(id).is_some());
         let capture = self.captured.is_some_and(|id| node.find(id).is_some());
+        for scope in &mut self.overlay_scopes {
+            if node.find(scope.id).is_some() {
+                scope.restore = None;
+                scope.focus_pending = false;
+            }
+        }
         fn cancel(node: &mut Content) {
             node.component.event(&ContentEvent::Cancel);
             node.component.event(&ContentEvent::PointerMove(Point::new(f32::MIN, f32::MIN)));
@@ -2580,6 +2629,10 @@ impl ContentHost {
         true
     }
     pub fn cancel(&mut self) {
+        for scope in &mut self.overlay_scopes {
+            scope.restore = None;
+            scope.focus_pending = false;
+        }
         self.reading_scroll_source = None;
         self.help.clear();
         self.dirty = true;
@@ -2595,6 +2648,76 @@ impl ContentHost {
         cancel(&mut self.root);
         self.captured = None; self.captured_mount = None;
         self.focus(None, false);
+    }
+    /// Move the original mounted subtree, preserving its Content identities and
+    /// help declarations. Unlike remove/insert this is not an unmount/remount.
+    pub fn reparent(
+        &mut self,
+        id: ComponentId,
+        parent: ComponentId,
+    ) -> Result<(), CompositionError> {
+        let node = self.root.find(id).ok_or(CompositionError::MissingId(id))?;
+        if id == self.root.id || node.find(parent).is_some() {
+            return Err(CompositionError::InvalidOrder);
+        }
+        if let Some(action) = self.root.action_ancestor(parent)
+            && let Some(child) = node.interactive_id()
+        {
+            return Err(CompositionError::NestedInteractive { action, child });
+        }
+        if self.root.curve_ancestor(parent, false).unwrap_or(false) { node.validate_curve_tree(true)?; }
+        let target = self
+            .root
+            .find(parent)
+            .ok_or(CompositionError::MissingId(parent))?;
+        if target.component.fixed_slots() || target.component.semantics().role.is_action_owner() {
+            return Err(CompositionError::NotContainer(parent));
+        }
+        // Validate both mutable boundaries before touching the source.
+        if self
+            .root
+            .find_mut(parent)
+            .unwrap()
+            .component
+            .children_mut()
+            .is_none()
+        {
+            return Err(CompositionError::NotContainer(parent));
+        }
+        fn mutable_parent(node: &mut Content, id: ComponentId) -> bool {
+            let fixed =
+                node.component.fixed_slots() || node.component.semantics().role.is_action_owner();
+            let Some(children) = node.component.children_mut() else {
+                return false;
+            };
+            if children.iter().any(|c| c.id == id) {
+                return !fixed;
+            }
+            children.iter_mut().any(|c| mutable_parent(c, id))
+        }
+        if !mutable_parent(&mut self.root, id) {
+            return Err(CompositionError::MissingId(id));
+        }
+        self.cancel_subtree(id);
+        fn take(node: &mut Content, id: ComponentId) -> Option<Content> {
+            let children = node.component.children_mut()?;
+            if let Some(i) = children.iter().position(|c| c.id == id) {
+                return Some(children.remove(i));
+            }
+            children.iter_mut().find_map(|c| take(c, id))
+        }
+        let node = take(&mut self.root, id).expect("validated source parent");
+        self.root
+            .find_mut(parent)
+            .unwrap()
+            .component
+            .children_mut()
+            .unwrap()
+            .push(node);
+        self.reveal_clock.invalidate_input();
+        self.reveal_clock.pending = true;
+        self.dirty = true;
+        Ok(())
     }
     pub fn insert(&mut self, parent: ComponentId, mut child: Content) -> Result<(), CompositionError> {
         if let Some(action) = self.root.action_ancestor(parent)
