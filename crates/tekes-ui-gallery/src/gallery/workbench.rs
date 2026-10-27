@@ -7073,6 +7073,208 @@ mod interaction_tests {
     }
 
     #[test]
+    fn data_table_theme_preserves_actual_gallery_sort_identity_and_cell_semantics() {
+        use tekes_ui_platform_macos::{AccessibilityRole, AccessibilitySortDirection};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("data-table");
+        click(&mut w, i, 32, &mut text);
+        click(&mut w, i, 20, &mut text);
+        w.handle(i, &key(124, true), &mut text);
+        w.handle(i, &key(123, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).focus, Some(20));
+        let row = w
+            .state(i)
+            .visible_for_id(32)
+            .expect("actual original selected row");
+        w.handle(i, &move_pointer(row.center()), &mut text);
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut original_frames = None;
+        for theme in Theme::ALL {
+            text.begin_frame();
+            let mut static_text = super::super::static_text::StaticText::new(None);
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            let mut scene = Scene::new();
+            w.build_clipped(i, &mut ctx, content, content, &mut scene);
+            assert!(scene.composition_error().is_none());
+            assert_eq!(w.state(i).extended.table.selected_row, Some(2));
+            assert_eq!(w.state(i).focus, Some(20));
+            assert_eq!(w.state(i).extended.visible_rows, vec![3, 2, 1, 0, 4]);
+            let layout = w.state(i).extended.table_view().layout().clone();
+            let selected = layout.rows.iter().find(|row| row.id == 2).unwrap().frame;
+            let header = layout.headers[0].frame;
+            if let Some(original) = original_frames {
+                assert_eq!((header, selected), original);
+            } else {
+                original_frames = Some((header, selected));
+            }
+            let palette = Palette::new(theme, w.brand).unwrap();
+            for (bounds, is_header) in [(header, true), (selected, false)] {
+                let (index, ground) = scene
+                    .primitives()
+                    .iter()
+                    .enumerate()
+                    .find_map(|(index, p)| match p {
+                        Primitive::Quad(q) if q.rect == bounds => Some((index, q)),
+                        _ => None,
+                    })
+                    .expect("own actual Gallery table ground");
+                assert_eq!(
+                    ground.fill,
+                    palette
+                        .color(if is_header {
+                            "surface-2"
+                        } else {
+                            "row-selection-hover"
+                        })
+                        .unwrap()
+                );
+                let cells = if is_header {
+                    vec![header]
+                } else {
+                    layout
+                        .columns
+                        .iter()
+                        .map(|column| column.intersection(&selected).unwrap())
+                        .collect()
+                };
+                for cell in cells {
+                    let labels: Vec<_> = scene.primitives()[index + 1..]
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Glyphs(run)
+                                if !run.glyphs.is_empty()
+                                    && run.glyphs.iter().all(|g| cell.contains(g.origin)) =>
+                            {
+                                Some(run)
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    assert!(
+                        !labels.is_empty(),
+                        "actual header/cell glyphs, independently of captions"
+                    );
+                    assert!(
+                        labels
+                            .iter()
+                            .all(|run| run.color == palette.color("primary-text").unwrap())
+                    );
+                    assert_eq!((labels[0].color.a, ground.fill.a), (1., 1.));
+                    let luminance = |color: tekes_ui_tokens::Rgba| {
+                        let c = color.to_linear();
+                        0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                    };
+                    let (a, b) = (luminance(labels[0].color), luminance(ground.fill));
+                    assert!(
+                        (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                            >= if theme.is_increased() { 7. } else { 4.5 }
+                    );
+                }
+            }
+            assert!(scene.primitives().iter().any(|p|matches!(p,
+                Primitive::Quad(q) if q.fill.a==0.&&q.border_color==palette.color("border-focused").unwrap()&&q.rect.intersection(&header).is_some()
+            )));
+            let nodes = w.accessibility_nodes(i);
+            let table = nodes
+                .iter()
+                .find(|node| node.role == AccessibilityRole::Table)
+                .unwrap();
+            let columns: Vec<_> = nodes
+                .iter()
+                .filter(|node| matches!(node.role, AccessibilityRole::TableColumn { .. }))
+                .collect();
+            assert_eq!(columns.len(), 3);
+            assert!(columns.iter().all(|node| node.parent == Some(table.key)));
+            let header = nodes.iter().find(|node| node.key.part == Some(20)).unwrap();
+            assert_eq!(
+                header.role,
+                AccessibilityRole::TableColumnHeader {
+                    index: 0,
+                    sort: Some(AccessibilitySortDirection::Ascending)
+                }
+            );
+            assert!(header.focused && header.enabled);
+            assert_eq!(
+                header.parent,
+                Some(
+                    columns
+                        .iter()
+                        .find(|node| node.key.part == Some(100))
+                        .unwrap()
+                        .key
+                )
+            );
+            let row = nodes.iter().find(|node| node.key.part == Some(32)).unwrap();
+            assert_eq!(row.role, AccessibilityRole::TableRow { index: 1 });
+            assert!(row.selected);
+            assert_eq!(row.parent, Some(table.key));
+            let cells: Vec<_> = nodes
+                .iter()
+                .filter(|node| {
+                    matches!(node.role, AccessibilityRole::TableCell { .. })
+                        && node.parent == Some(row.key)
+                })
+                .collect();
+            assert_eq!(cells.len(), 3);
+            assert!(cells.iter().all(|node| node.read_only && !node.focused));
+            assert_eq!(
+                cells
+                    .iter()
+                    .find(|node| node.key.part == Some(2006))
+                    .unwrap()
+                    .value
+                    .as_deref(),
+                Some("Assets 3")
+            );
+        }
+        click(&mut w, i, 20, &mut text);
+        assert_eq!(
+            w.state(i).extended.table.sort,
+            Some((0, tekes_ui_controls::extended::SortDirection::Descending))
+        );
+        assert_eq!(w.state(i).extended.visible_rows, vec![4, 0, 1, 2, 3]);
+        assert_eq!(w.state(i).extended.table.selected_row, Some(2));
+        let nodes = w.accessibility_nodes(i);
+        assert_eq!(
+            nodes
+                .iter()
+                .find(|node| node.key.part == Some(20))
+                .unwrap()
+                .role,
+            AccessibilityRole::TableColumnHeader {
+                index: 0,
+                sort: Some(AccessibilitySortDirection::Descending)
+            }
+        );
+        assert_eq!(
+            nodes
+                .iter()
+                .find(|node| node.key.part == Some(32))
+                .unwrap()
+                .role,
+            AccessibilityRole::TableRow { index: 3 }
+        );
+        assert_eq!(
+            nodes
+                .iter()
+                .find(|node| node.key.part == Some(2006))
+                .unwrap()
+                .role,
+            AccessibilityRole::TableCell { row: 3, column: 0 }
+        );
+    }
+
+    #[test]
     fn gallery_wholly_offscreen_collections_reveal_home_and_end_without_pointer_hits() {
         use super::super::Gallery;
         for renderer in ["list", "tree", "data-table", "chart"] {
