@@ -83,7 +83,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "4d2044ec220ba85f2356a4cde89b494349ea868e4369db794c666e19a62c5819"
               }
             },
@@ -766,7 +766,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "8e6f1cda451afdfe5231f921503f63259d67f8eaf9fbf44b8b7c9009267e5936"
               }
             },
@@ -1460,7 +1460,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "81d61e1f0e9b7ebda581eab90ab760fd86f7b838d9741505d311e5e672ffddd4"
               }
             },
@@ -2182,7 +2182,12 @@
           ],
           "scope": "Local A prepared SplitViewContent retained capture/ratio/layout/clip/leaf Theme through both axes and real Gallery drag/pane labels/cancel/keyboard, tests only",
           "source_identity": {
-            "differences": {},
+            "differences": {
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
+                "expected": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728"
+              }
+            },
             "scope": "Selected actual local A split/pane/witness sources; public and corrected Gallery retain distinct observed source identities; not a B/full product certificate",
             "sha256": {
               "crates/tekes-ui-controls/src/composition/split_view.rs": "379caa197a2e449045fb17e9f3ffc67eefe8f6f27e552f4ffd539920ee269eb3",
@@ -2193,7 +2198,7 @@
               "examples/composition-consumer/tests/split_view_theme.rs": "2fabc2e68f51cf92a4780ad4741c8471b7d0b6b1985fbcf036442d59eb255864"
             }
           },
-          "status": "accepted-source-subset-matched"
+          "status": "accepted-source-subset-stale"
         },
         "profile": "split",
         "profile_exceptions": {},
@@ -2317,6 +2322,56 @@
           "at-start",
           "at-end"
         ],
+        "practical_intake": {
+          "baseline_commit": "5cc0063571efc89aa6409b8d925aa53c05df4dd2",
+          "claims": [
+            "Same public ScrollContent/ScrollArea with real Text/Button retains interior scroll offset/zero overscroll/range/child frame/visible clip/mount across Theme::ALL",
+            "Original declared Surface reaches exact real leaf semantic paint; no invented container painter or repeated leaf state matrix",
+            "Actual public Gallery component-scroll-area route keeps historical reading position/frame/visible thumb across Themes and actual opaque parent/thumb3/document text4.5/7; strict passed"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.scroll-area",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/scroll-area-main356ad1d-candidate/main-intake/commit-receipt.json",
+              "commit": "5cc0063571efc89aa6409b8d925aa53c05df4dd2",
+              "component": "tui.scroll-area",
+              "issue": "#121",
+              "scope": "Actual public/dedicated Gallery/strict; original generated scroll/clip/reveal/reading/editor results retain identity",
+              "sha256": "6b0df76de068b380eada2d9a9471c3cb3085e018cf7fa122eaedf49f20b29a21"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "ScrollArea/ScrollContent do not gain fabricated painter/Palette/state API; actual Gallery TextSurface owns thumb",
+            "Ordinary offsets/ranges/thumb ratios remain geometry; shared leaf matrices and original reveal/reading/selection results reused"
+          ],
+          "gaps": [
+            "new dedicated full editor/selection/native-window/physicalIME/VoiceOver/GPU certification",
+            "Toolbar/full52"
+          ],
+          "scope": "Geometry-only ScrollArea/ScrollContent retains offset/clip/layout/leaf Theme; actual dedicated Gallery readonly TextSurface thumb/text/parent contrast; tests only",
+          "source_identity": {
+            "differences": {
+              "crates/tekes-ui-gallery/src/gallery/text_demo.rs": {
+                "actual": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1",
+                "expected": "5377b74f83af60160af14ea69905b479ddca9a2952801bb31f6ce6eeaca2a946"
+              }
+            },
+            "scope": "Selected actual scroll/content/TextSurface/dedicated Gallery witnesses, not full dependency closure or native full-editor certificate",
+            "sha256": {
+              "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+              "crates/tekes-ui-controls/src/scroll_view.rs": "9e3176c67669075319e8e594c791333c6fa08f7c87f3744cbeafe56d77e33476",
+              "crates/tekes-ui-controls/src/text_surface.rs": "791439dcf9f778811e60af719458d8b871c82d4303a6727b28733bd840469825",
+              "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "5377b74f83af60160af14ea69905b479ddca9a2952801bb31f6ce6eeaca2a946",
+              "examples/composition-consumer/tests/scroll_area_theme.rs": "a64afa37f06ad160330a797166fe7e4eb3c25a15d1e3ef214a6dda9d0e9b5133"
+            }
+          },
+          "status": "accepted-source-subset-stale"
+        },
         "profile": "scroll",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -2463,6 +2518,57 @@
           "error",
           "empty"
         ],
+        "practical_intake": {
+          "baseline_commit": "146a1c822e95e17bec355daa0d1356cec46fca9c",
+          "claims": [
+            "Same actual public Disclosure model/View through Theme::ALL retains open/closed/body reveal/clip and necessary trigger rest/hover/press/focus/availability/re-enable with real header/body contrast4.5/7",
+            "Real key/matching press/drag-out cancel/Space release preserve original toggle semantics and caller body contract",
+            "Actual Workbench production native right/down chevron geometry/ink/contrast3 and header/body glyph states passed, Gallery strict passed; no fake glyph backend"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.disclosure",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/disclosure-main6594bad-candidate/main-intake/commit-receipt.json",
+              "commit": "146a1c822e95e17bec355daa0d1356cec46fca9c",
+              "component": "tui.disclosure",
+              "issue": "#121",
+              "scope": "Actual public/real Gallery native-icon Scene/strict; original shared Button/motion/ContentHost/IME evidence retains identity",
+              "sha256": "8f8cdddae9c7546ff35492746798928a465f7cf7410c1453ed29bbc5b1a032d1"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "No builtin DisclosureContent or public native-chevron alias invented; actual required icon path exercised in Gallery",
+            "Disabled trigger availability does not invent descendant policy; geometry remains data"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/whole-window/native AX/physicalIME/VoiceOver certification",
+            "other layout roots/full52"
+          ],
+          "scope": "Actual public Disclosure retained trigger/body Theme/state/input and real Gallery native chevron direction/necessary contrast/header/body; tests only",
+          "source_identity": {
+            "differences": {
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
+                "expected": "3c1f9a98e0aca1273ced35c7114584e3d0be31b99b960b4ce466fa8564ca37a2"
+              }
+            },
+            "scope": "Selected actual Disclosure/View/Gallery native adapter/witness sources, not full dependency closure or pixel/native-window certificate",
+            "sha256": {
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+              "crates/tekes-ui-gallery/src/gallery/pages/icons.rs": "67a1afc5c6d2638642251de82cc2a3ffc37add1058e09d771d7c3e7a2d8af385",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "3c1f9a98e0aca1273ced35c7114584e3d0be31b99b960b4ce466fa8564ca37a2",
+              "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "ab98fab1b0de4e7301d2fb0dcaee08ea0bade52b55b76ea25fa6b8c4b44a470f",
+              "examples/composition-consumer/tests/disclosure_theme.rs": "93c2ac8710945220a7fe4fe29ab12118c9509de08403842d1b339ef9ff3324b1"
+            }
+          },
+          "status": "accepted-source-subset-stale"
+        },
         "profile": "disclosure",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -5868,7 +5974,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "f5db1621a31dde4eab275c025c9fb46ce18a4707e8f394ad880de34c2622a496"
               }
             },
@@ -6538,6 +6644,53 @@
       "state_coverage": {
         "fixture_unverified": [],
         "historical_public_api_verified": [],
+        "practical_intake": {
+          "baseline_commit": "228f2c8e98730df07a97370ea75dd058893b4a27",
+          "claims": [
+            "Same real public ToolbarControl/ContentHost across Theme::ALL retains action geometry/selection/availability with original toolbar semantic packet/own-ground glyph4.5/7 and necessary focus/hover/press states",
+            "Original pointer command7 and grouped overflow command42 emit once-only correct payload and mount after explicit original Host action queue opt-in",
+            "Actual Gallery SurfaceView/ToolbarView Primary-first/Quiet-rest states/real title contrasts and Rename/Create pointer/key/cancel passed; original Gallery/strict pass identities retained"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.toolbar",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/toolbar-main511badf-candidate/main-intake/commit-receipt.json",
+              "commit": "228f2c8e98730df07a97370ea75dd058893b4a27",
+              "component": "tui.toolbar",
+              "issue": "#121",
+              "scope": "Actual corrected public/real Gallery/strict; original #69 and shared Surface/Button/Menu evidence retains identity, first public101 preserved",
+              "sha256": "e4992c60f9619bd19d0672dabd2d41c754ca42237c11597547a9c39b4ac1a079"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Palette-free Toolbar geometry helper is separate from actual public ToolbarControl and actual Gallery ToolbarView",
+            "Original public Host action records require set_action_events(true); not a new production contract",
+            "Different original Primary/Quiet policies preserved; ordinary widths/gaps/indices stay geometry"
+          ],
+          "gaps": [
+            "new dedicated #69 Host/overlay/window/IME/GPU certification",
+            "#127 original full combination/new native AX/VoiceOver/physicalIME",
+            "full52"
+          ],
+          "scope": "Actual public ToolbarControl retained Theme/states/own-ground text and original once-only pointer/overflow commands; actual Gallery distinct ToolbarView paths; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual two visual toolbar paths and witnesses; corrected public and unchanged Gallery/strict retain separate actual run identities, not full Host/#127 proof",
+            "sha256": {
+              "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+              "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+              "crates/tekes-ui-controls/src/toolbar.rs": "ebb1e0678cedf656af14a99d48a5eb77e4778e4db1dcb7e3f316856b012793f5",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
+              "examples/composition-consumer/tests/toolbar_theme.rs": "b81542fc6e3891c430d4e54e0e69acd42e364a442840ac9898598e22f4407557"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "button",
         "profile_exceptions": {
           "loading": "The action-group Toolbar is not an independently activatable action; busy state belongs to its child actions. Existing basic_states fixture explicitly excludes a group loading state."
@@ -7072,6 +7225,54 @@
         "fixture_unverified": [
           "rest"
         ],
+        "practical_intake": {
+          "baseline_commit": "9f4660eed322b2be72edb137ac19a384dd6eaac9",
+          "claims": [
+            "Primary registered public readonly TextSurface and real Page::Text through Theme::ALL preserve source/selection/clipboard query/read-only rejection/reflow/scroll and exact actual normal/selected ink4.5/7",
+            "Selected-text contrast uses actual emitted selection alpha and actual own ground under source-confirmed encoded-sRGB blend; no pixel/GPU/native certification claimed",
+            "Minimal real TextContent adapter semantic role/Canvas path and actual Gallery target passed; original Gallery/strict identities retained after only public trait import restoration"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.text",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/text-main6594bad-candidate/main-intake/commit-receipt.json",
+              "commit": "9f4660eed322b2be72edb137ac19a384dd6eaac9",
+              "component": "tui.text",
+              "issue": "#122",
+              "scope": "Actual corrected public two cases/real Gallery/strict; original native copy/edit/IME and shared results retain identity, false preflight/compiler failure preserved",
+              "sha256": "7e4773e386f456ec2ebb4ced5e1916b641fed342fd1e7c97fe7316fe3d150e8f"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Scene selection composition follows actual encoded-sRGB premul contract and actual emitted alpha, not new GPU/AA pixel evidence",
+            "No invented Text hover/loading/editor scope; new clipboard coverage is query"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/whole-window/physicalIME/VoiceOver certification",
+            "new host copy-command dispatch/OS clipboard write; original valid result reused",
+            "other controls/full52"
+          ],
+          "scope": "Actual primary TextSurface/real Page::Text plus TextContent adapter retained Theme/source/selection/query/readonly/reflow/scroll and real text/alpha-background contrast; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual primary TextSurface/Gallery/adapter and blend-contract witnesses; separate public correction and unchanged Gallery/strict actual identities, not full shader/dependency proof",
+            "sha256": {
+              "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+              "crates/tekes-ui-controls/src/text_surface.rs": "791439dcf9f778811e60af719458d8b871c82d4303a6727b28733bd840469825",
+              "crates/tekes-ui-gallery/src/gallery/text.rs": "7d32a99059494d8e5dbee04522dcfd5132d41e4b1d189323a19d3ea2f3d493f4",
+              "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1",
+              "crates/tekes-ui-render/src/common.rs": "9c287dedd02bcc7e590369b51eb161284ebe2a90fdb5f07da94c70830cf0d7cf",
+              "crates/tekes-ui-render/src/quad.wgsl": "f8a48768ec52fabb7fa3e8939425e20814557d9e4de0349a04461b8e40b03b61",
+              "examples/composition-consumer/tests/text_theme.rs": "d06f5da2ccd134369542047ad10ac91ac4bc835ee371f4713012265049a4b210"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "static",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -7320,7 +7521,7 @@
                 "expected": "37c640ce78bd2b1457dce070c1be6604f298335b1d38cde2aec6d03e9e84c723"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "0b3758ee22cc28c0ae0504c1e1fe0642d7d3bafa908a89b4b944c0f7ef4cabf1"
               }
             },
@@ -9028,7 +9229,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370"
               }
             },
@@ -21518,7 +21719,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "93dd9bf1596f4020f388fe205b24b8450f67d837a4213e255d711530a5dfde35"
               }
             },
@@ -24105,7 +24306,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "0e56c733d8dea7041a15bcf873708bcd4b3872dbccece905a46ef889a3286635"
               }
             },
@@ -25984,7 +26185,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "36847723fab9e5f2c239998540bade3095faad26f133ab7a4af2e3a07b29dac4"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": {
@@ -27703,7 +27904,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "31e6b667dc565eb8f1c47fb4f11571fa4aac0ddc7b87cf4ae08cc2afd272f3a6"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": {
@@ -29420,7 +29621,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "e0bdb74132f860c1ecf3472d377b2764f1a0f8bd1d77d381352137e4d7dfcc4a"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": {
@@ -36836,7 +37037,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "2981ebca2d8427000af1fb30f7ea57c9d08e5ba7973c6acbca50b0c3173d6547"
               }
             },
@@ -40318,7 +40519,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "7b25bc2f12a3be0d395a1ae06097afd3d93cb2ef9349a39c48114726e278105b"
               }
             },
@@ -42575,7 +42776,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "48a6fe67d988f66a255dbc8cf8c5121ba8a284359df4c2944825af365c153d6c"
               }
             },
@@ -46297,7 +46498,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": {
@@ -47619,7 +47820,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "5d1e46d54a9d10afafb9e914a1ded650a7b6d96adbd9fe9a7a2fe14c5bf99914"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": {
@@ -48949,7 +49150,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "eaeb3d1d0e268401ec77c359305d5bc13f4c727471d5286530ead46e9a5180f4"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": {
@@ -51334,7 +51535,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "d6d241657d8f1ded0e5895a8e9b32110d64ecee8aac96001e32d32345f9d6954"
               }
             },
@@ -54048,7 +54249,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "daf8bc496154e379a8b6a87fc8febea24c38f22e426d4bd6f9b68aec3a0f1879"
               }
             },
@@ -54287,7 +54488,7 @@
                 "expected": "d5cd8ee66361fdc3b6b9eec43b199c72057796431637a6216b997c44193ffca2"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "bf4b431faba91d567b81d85660dea2bf296988ad4139199bebff8b9c95782eb9"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": {
@@ -54518,7 +54719,7 @@
                 "expected": "d5cd8ee66361fdc3b6b9eec43b199c72057796431637a6216b997c44193ffca2"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "bf4b431faba91d567b81d85660dea2bf296988ad4139199bebff8b9c95782eb9"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": {
@@ -54745,7 +54946,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "6ef6a3fb4992df1cd38367ec423a7b7727482b2974a9fd947d11e7af72fc6fe1"
               }
             },
@@ -57103,7 +57304,7 @@
                 "expected": "28292051ab705f5eefb3d4344470456ed2332f05a8161d727e08e9e5763cf41c"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+                "actual": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
                 "expected": "21256c6bea0449670bd1ad1743a3fd3d2c82bfc6209c0d9d3a225cce5eaa711d"
               }
             },
@@ -58919,10 +59120,10 @@
     "crates/tekes-ui-gallery/src/gallery/static_text.rs": "69f07a0fbf1fbbb1d88bf9f024f03f9dd2c92dd517f5b0eab477cc6d8270cf5c",
     "crates/tekes-ui-gallery/src/gallery/symbol_assets.rs": "69163eaa0b5a993bd019ade551767e4db66bc1d460fc724c5eed037b256e44b9",
     "crates/tekes-ui-gallery/src/gallery/text.rs": "7d32a99059494d8e5dbee04522dcfd5132d41e4b1d189323a19d3ea2f3d493f4",
-    "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "652640370d62ef4e64906d8df3e5346012e06b5a6f3481a1d08b091686a4ac4f",
+    "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1",
     "crates/tekes-ui-gallery/src/gallery/theme.rs": "e1ede314548a0ae25ad633f1a86cefb7118473d7b61d0967dcb6bfbe551982d5",
     "crates/tekes-ui-gallery/src/gallery/viewport.rs": "d18ea19e94e33c67ef3bbfc2f7ad8ca1b5ec3ecda2a6ee18df327a26f8046918",
-    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
     "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "78618232299c5a7f994e159d5b6f80a90d2cbcb22fa817c8ea1c3e691d4fa231",
     "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs": "9f35f162c7e843faea590899b461e0231472826eaca9d53a2c3428b5fc60b59d",
     "crates/tekes-ui-gallery/src/gallery/workbench/brand_preview.rs": "f13d24a6b4b12f16b96c0ffc3df2542f8eadd95452dd1c18942d8214695d8f5a",
@@ -59025,6 +59226,7 @@
     "crates/tekes-ui-render/src/image_pass.rs": "fa3442cebe8cacc2ace692d7060b891efad029acbfc1775dde74f054e3aa61e5",
     "crates/tekes-ui-render/src/instance.rs": "b7c596a5f7e3ec41f3a5a9e78a6b3b76d6047dc68045aad6ff9d33db8da865bd",
     "crates/tekes-ui-render/src/lib.rs": "4e1743824970601004a32ef3ac76a2761103f3fcfc2876d04bc901337731abe5",
+    "crates/tekes-ui-render/src/quad.wgsl": "f8a48768ec52fabb7fa3e8939425e20814557d9e4de0349a04461b8e40b03b61",
     "crates/tekes-ui-render/src/quad_pass.rs": "ff0be858d034ff9cf6afba8dae19e4f420fdd47a31e694e8d6b53accda0dd21f",
     "crates/tekes-ui-render/src/renderer.rs": "37fc70d4aa8821b59f31bd1db0047a1a42f269250c5bcaf2c3f4784df8698ec8",
     "crates/tekes-ui-render/src/shared_surface_macos.rs": "5f0ebe2d0f92e9b5038b0c40277677a5d6bc3422c2a7d01d6b1ece08249b4002",
@@ -59113,7 +59315,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "5bf542f4763c28e3cdc45659264402be95466425f349f9a209b1915fb94a4d1e",
+    "design/gallery/component-coverage.json": "ded9d41912ba8750613510978b72b93f72190cb2e46d1a1bba088b12669569b3",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -59152,6 +59354,7 @@
     "examples/composition-consumer/tests/data_table_theme.rs": "4eb65e6676ec52269b1279fec17606320268488fe4724f398beed46a16b2bb2c",
     "examples/composition-consumer/tests/dialog_theme.rs": "6cf7b51a1c7393501f89b44551da8031712ca5054d5ada0e91e3fc2234a97953",
     "examples/composition-consumer/tests/diff_view_theme.rs": "e07a547d4478f1813bde26362a35544830303ebe2d0b80d9973da5697f2b6d1e",
+    "examples/composition-consumer/tests/disclosure_theme.rs": "93c2ac8710945220a7fe4fe29ab12118c9509de08403842d1b339ef9ff3324b1",
     "examples/composition-consumer/tests/grid_theme.rs": "1678e4537f3eddd3cb9216cbb20ce55d42a8734f61cb5123a53ba1d393221f53",
     "examples/composition-consumer/tests/icon_button_theme.rs": "0d9bc7273e23df0ca442cc1d9cc76999e487df144576c070f673ac31e48b0a5c",
     "examples/composition-consumer/tests/icon_theme.rs": "49b5adb26de708799a14330a8a2b8d341150ab673cb4e07626187f5f3b8f0814",
@@ -59159,6 +59362,7 @@
     "examples/composition-consumer/tests/markdown_theme.rs": "4de00576cc7f49fee977b433a4ddc30bcf100863e3991ab89fa66f281dd2fae0",
     "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758",
     "examples/composition-consumer/tests/radio_group_theme.rs": "6053b0b681fdb0053633ed05a25c863da6c5cbc401c1577be664d663a1f0560b",
+    "examples/composition-consumer/tests/scroll_area_theme.rs": "a64afa37f06ad160330a797166fe7e4eb3c25a15d1e3ef214a6dda9d0e9b5133",
     "examples/composition-consumer/tests/segmented_control_theme.rs": "f356a6c267fb6bb0f2429e749e131d6c84027fa0f6c342e7c0ba2c423b515397",
     "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",
     "examples/composition-consumer/tests/slider_theme.rs": "856cfec5dd414caf2f9c52f8e2bfd4f6ad5fd1a9f768b4de5da9c7717e0885cb",
@@ -59169,6 +59373,8 @@
     "examples/composition-consumer/tests/surface_theme.rs": "ea80660bf10c7af0092bf43ff8dca05c3414eedb21452e40be5c80b83aa9edbf",
     "examples/composition-consumer/tests/switch_theme.rs": "b3fabfc1f6340fa76148ed194787db52ba10ef36397994b8b1d90c4fcab27c9a",
     "examples/composition-consumer/tests/tabs_theme.rs": "88d4c4178f4caa4da2dea18dea8d62a7a186691e36b07048d9a48e76b88b935e",
+    "examples/composition-consumer/tests/text_theme.rs": "d06f5da2ccd134369542047ad10ac91ac4bc835ee371f4713012265049a4b210",
+    "examples/composition-consumer/tests/toolbar_theme.rs": "b81542fc6e3891c430d4e54e0e69acd42e364a442840ac9898598e22f4407557",
     "examples/composition-consumer/tests/tree_theme.rs": "01047607cc63d346bd67c1b490978477eace5a02009fa23b4b01c65a1d6921aa",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",
     "scripts/generate-component-capabilities.py": "b7cb6c0de297601b95755e2d8bdb74b42e3cf37475e77ebf52693c7379385d61"

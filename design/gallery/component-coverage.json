@@ -314,7 +314,45 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "5cc0063571efc89aa6409b8d925aa53c05df4dd2",
+        "scope": "Geometry-only ScrollArea/ScrollContent retains offset/clip/layout/leaf Theme; actual dedicated Gallery readonly TextSurface thumb/text/parent contrast; tests only",
+        "claims": [
+          "Same public ScrollContent/ScrollArea with real Text/Button retains interior scroll offset/zero overscroll/range/child frame/visible clip/mount across Theme::ALL",
+          "Original declared Surface reaches exact real leaf semantic paint; no invented container painter or repeated leaf state matrix",
+          "Actual public Gallery component-scroll-area route keeps historical reading position/frame/visible thumb across Themes and actual opaque parent/thumb3/document text4.5/7; strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected actual scroll/content/TextSurface/dedicated Gallery witnesses, not full dependency closure or native full-editor certificate",
+          "sha256": {
+            "crates/tekes-ui-controls/src/scroll_view.rs": "9e3176c67669075319e8e594c791333c6fa08f7c87f3744cbeafe56d77e33476",
+            "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+            "crates/tekes-ui-controls/src/text_surface.rs": "791439dcf9f778811e60af719458d8b871c82d4303a6727b28733bd840469825",
+            "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "5377b74f83af60160af14ea69905b479ddca9a2952801bb31f6ce6eeaca2a946",
+            "examples/composition-consumer/tests/scroll_area_theme.rs": "a64afa37f06ad160330a797166fe7e4eb3c25a15d1e3ef214a6dda9d0e9b5133"
+          }
+        },
+        "exceptions": [
+          "ScrollArea/ScrollContent do not gain fabricated painter/Palette/state API; actual Gallery TextSurface owns thumb",
+          "Ordinary offsets/ranges/thumb ratios remain geometry; shared leaf matrices and original reveal/reading/selection results reused"
+        ],
+        "gaps": [
+          "new dedicated full editor/selection/native-window/physicalIME/VoiceOver/GPU certification",
+          "Toolbar/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#121",
+            "component": "tui.scroll-area",
+            "commit": "5cc0063571efc89aa6409b8d925aa53c05df4dd2",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/scroll-area-main356ad1d-candidate/main-intake/commit-receipt.json",
+            "sha256": "6b0df76de068b380eada2d9a9471c3cb3085e018cf7fa122eaedf49f20b29a21",
+            "scope": "Actual public/dedicated Gallery/strict; original generated scroll/clip/reveal/reading/editor results retain identity"
+          }
+        ]
+      }
     },
     {
       "id": "tui.disclosure",
@@ -437,7 +475,46 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "146a1c822e95e17bec355daa0d1356cec46fca9c",
+        "scope": "Actual public Disclosure retained trigger/body Theme/state/input and real Gallery native chevron direction/necessary contrast/header/body; tests only",
+        "claims": [
+          "Same actual public Disclosure model/View through Theme::ALL retains open/closed/body reveal/clip and necessary trigger rest/hover/press/focus/availability/re-enable with real header/body contrast4.5/7",
+          "Real key/matching press/drag-out cancel/Space release preserve original toggle semantics and caller body contract",
+          "Actual Workbench production native right/down chevron geometry/ink/contrast3 and header/body glyph states passed, Gallery strict passed; no fake glyph backend"
+        ],
+        "source_identity": {
+          "scope": "Selected actual Disclosure/View/Gallery native adapter/witness sources, not full dependency closure or pixel/native-window certificate",
+          "sha256": {
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "ab98fab1b0de4e7301d2fb0dcaee08ea0bade52b55b76ea25fa6b8c4b44a470f",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "3c1f9a98e0aca1273ced35c7114584e3d0be31b99b960b4ce466fa8564ca37a2",
+            "crates/tekes-ui-gallery/src/gallery/pages/icons.rs": "67a1afc5c6d2638642251de82cc2a3ffc37add1058e09d771d7c3e7a2d8af385",
+            "examples/composition-consumer/tests/disclosure_theme.rs": "93c2ac8710945220a7fe4fe29ab12118c9509de08403842d1b339ef9ff3324b1"
+          }
+        },
+        "exceptions": [
+          "No builtin DisclosureContent or public native-chevron alias invented; actual required icon path exercised in Gallery",
+          "Disabled trigger availability does not invent descendant policy; geometry remains data"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/whole-window/native AX/physicalIME/VoiceOver certification",
+          "other layout roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#121",
+            "component": "tui.disclosure",
+            "commit": "146a1c822e95e17bec355daa0d1356cec46fca9c",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/disclosure-main6594bad-candidate/main-intake/commit-receipt.json",
+            "sha256": "8f8cdddae9c7546ff35492746798928a465f7cf7410c1453ed29bbc5b1a032d1",
+            "scope": "Actual public/real Gallery native-icon Scene/strict; original shared Button/motion/ContentHost/IME evidence retains identity"
+          }
+        ]
+      }
     },
     {
       "id": "tui.surface",
@@ -561,7 +638,47 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/toolbar.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/toolbar.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "228f2c8e98730df07a97370ea75dd058893b4a27",
+        "scope": "Actual public ToolbarControl retained Theme/states/own-ground text and original once-only pointer/overflow commands; actual Gallery distinct ToolbarView paths; tests only",
+        "claims": [
+          "Same real public ToolbarControl/ContentHost across Theme::ALL retains action geometry/selection/availability with original toolbar semantic packet/own-ground glyph4.5/7 and necessary focus/hover/press states",
+          "Original pointer command7 and grouped overflow command42 emit once-only correct payload and mount after explicit original Host action queue opt-in",
+          "Actual Gallery SurfaceView/ToolbarView Primary-first/Quiet-rest states/real title contrasts and Rename/Create pointer/key/cancel passed; original Gallery/strict pass identities retained"
+        ],
+        "source_identity": {
+          "scope": "Selected actual two visual toolbar paths and witnesses; corrected public and unchanged Gallery/strict retain separate actual run identities, not full Host/#127 proof",
+          "sha256": {
+            "crates/tekes-ui-controls/src/toolbar.rs": "ebb1e0678cedf656af14a99d48a5eb77e4778e4db1dcb7e3f316856b012793f5",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+            "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
+            "examples/composition-consumer/tests/toolbar_theme.rs": "b81542fc6e3891c430d4e54e0e69acd42e364a442840ac9898598e22f4407557"
+          }
+        },
+        "exceptions": [
+          "Palette-free Toolbar geometry helper is separate from actual public ToolbarControl and actual Gallery ToolbarView",
+          "Original public Host action records require set_action_events(true); not a new production contract",
+          "Different original Primary/Quiet policies preserved; ordinary widths/gaps/indices stay geometry"
+        ],
+        "gaps": [
+          "new dedicated #69 Host/overlay/window/IME/GPU certification",
+          "#127 original full combination/new native AX/VoiceOver/physicalIME",
+          "full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#121",
+            "component": "tui.toolbar",
+            "commit": "228f2c8e98730df07a97370ea75dd058893b4a27",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/toolbar-main511badf-candidate/main-intake/commit-receipt.json",
+            "sha256": "e4992c60f9619bd19d0672dabd2d41c754ca42237c11597547a9c39b4ac1a079",
+            "scope": "Actual corrected public/real Gallery/strict; original #69 and shared Surface/Button/Menu evidence retains identity, first public101 preserved"
+          }
+        ]
+      }
     },
     {
       "id": "tui.text",
@@ -573,7 +690,48 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "9f4660eed322b2be72edb137ac19a384dd6eaac9",
+        "scope": "Actual primary TextSurface/real Page::Text plus TextContent adapter retained Theme/source/selection/query/readonly/reflow/scroll and real text/alpha-background contrast; tests only",
+        "claims": [
+          "Primary registered public readonly TextSurface and real Page::Text through Theme::ALL preserve source/selection/clipboard query/read-only rejection/reflow/scroll and exact actual normal/selected ink4.5/7",
+          "Selected-text contrast uses actual emitted selection alpha and actual own ground under source-confirmed encoded-sRGB blend; no pixel/GPU/native certification claimed",
+          "Minimal real TextContent adapter semantic role/Canvas path and actual Gallery target passed; original Gallery/strict identities retained after only public trait import restoration"
+        ],
+        "source_identity": {
+          "scope": "Selected actual primary TextSurface/Gallery/adapter and blend-contract witnesses; separate public correction and unchanged Gallery/strict actual identities, not full shader/dependency proof",
+          "sha256": {
+            "crates/tekes-ui-controls/src/text_surface.rs": "791439dcf9f778811e60af719458d8b871c82d4303a6727b28733bd840469825",
+            "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+            "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1",
+            "crates/tekes-ui-gallery/src/gallery/text.rs": "7d32a99059494d8e5dbee04522dcfd5132d41e4b1d189323a19d3ea2f3d493f4",
+            "crates/tekes-ui-render/src/common.rs": "9c287dedd02bcc7e590369b51eb161284ebe2a90fdb5f07da94c70830cf0d7cf",
+            "crates/tekes-ui-render/src/quad.wgsl": "f8a48768ec52fabb7fa3e8939425e20814557d9e4de0349a04461b8e40b03b61",
+            "examples/composition-consumer/tests/text_theme.rs": "d06f5da2ccd134369542047ad10ac91ac4bc835ee371f4713012265049a4b210"
+          }
+        },
+        "exceptions": [
+          "Scene selection composition follows actual encoded-sRGB premul contract and actual emitted alpha, not new GPU/AA pixel evidence",
+          "No invented Text hover/loading/editor scope; new clipboard coverage is query"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/whole-window/physicalIME/VoiceOver certification",
+          "new host copy-command dispatch/OS clipboard write; original valid result reused",
+          "other controls/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.text",
+            "commit": "9f4660eed322b2be72edb137ac19a384dd6eaac9",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/text-main6594bad-candidate/main-intake/commit-receipt.json",
+            "sha256": "7e4773e386f456ec2ebb4ced5e1916b641fed342fd1e7c97fe7316fe3d150e8f",
+            "scope": "Actual corrected public two cases/real Gallery/strict; original native copy/edit/IME and shared results retain identity, false preflight/compiler failure preserved"
+          }
+        ]
+      }
     },
     {
       "id": "tui.icon",

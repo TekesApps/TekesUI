@@ -1379,6 +1379,130 @@ impl TextDemo {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn scroll_area_gallery_retained_themes_preserve_reading_offset_and_actual_thumb() {
+        use crate::gallery::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::Palette;
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let v = c.to_linear();
+                0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        let mut gallery = Gallery::new();
+        assert!(gallery.open_route("component-scroll-area/playground"));
+        assert!(matches!(
+            gallery.content_page(),
+            crate::gallery::Page::ScrollArea
+        ));
+        gallery.set_view_size(1440., 900.);
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        let limit = gallery.scroll_demo.surfaces[0].scroll.limit().y;
+        assert!(limit > 0.);
+        gallery.scroll_demo.scroll_to(713.25_f32.min(limit * 0.5));
+        gallery.build_scene(&mut Scene::new());
+        let offset = gallery.scroll_demo.surfaces[0].scroll.offset;
+        assert!(offset.y > 0. && offset.y < limit);
+        let mut original = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let surface = &gallery.scroll_demo.surfaces[0];
+            assert!(surface.input.read_only && !surface.input.disabled);
+            assert_eq!(surface.scroll.offset, offset);
+            assert!(surface.scroll.scrollbar_visible(true));
+            let visible = surface.visible_frame().unwrap();
+            let thumb = surface
+                .scroll
+                .thumb(
+                    true,
+                    surface.track(true),
+                    proposal::metric("size", "size-row-height").unwrap(),
+                )
+                .intersection(&visible)
+                .unwrap();
+            let geometry = (surface.outer, visible, thumb, surface.scroll.limit());
+            if let Some(original) = original {
+                assert_eq!(geometry, original);
+            } else {
+                original = Some(geometry);
+            }
+            let palette = Palette::from(theme);
+            let (background_index, background) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(index, p)| match p {
+                    Primitive::Quad(q) if q.rect == surface.outer => Some((index, q)),
+                    _ => None,
+                })
+                .expect("actual read-only TextSurface parent background");
+            let (thumb_index, painted_thumb) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(index, p)| match p {
+                    Primitive::Quad(q) if q.rect == thumb => Some((index, q)),
+                    _ => None,
+                })
+                .expect("actual visible ScrollArea fixture thumb");
+            assert_eq!(background.fill, palette.color("surface-1").unwrap());
+            assert_eq!(painted_thumb.fill, palette.color("secondary-text").unwrap());
+            assert!(
+                contrast(painted_thumb.fill, background.fill) >= 3.,
+                "{theme:?}: actual thumb/parent contrast"
+            );
+            assert!(background_index < thumb_index);
+            // Bind only the original TextSurface paint interval, not page-wide headings/buttons.
+            let own_content = &scene.primitives()[background_index + 1..thumb_index];
+            assert!(
+                own_content
+                    .iter()
+                    .any(|p| matches!(p, Primitive::PushClip(r) if *r == visible))
+            );
+            let inks: Vec<_> = own_content
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run) if !run.glyphs.is_empty() => Some(run.color),
+                    _ => None,
+                })
+                .collect();
+            assert!(!inks.is_empty(), "actual visible scrolled document glyphs");
+            for ink in inks {
+                assert_eq!(ink, palette.color("primary-text").unwrap());
+                assert!(
+                    contrast(ink, background.fill) >= if theme.is_increased() { 7. } else { 4.5 },
+                    "{theme:?}: actual reading text/parent contrast"
+                );
+            }
+            observed.push(painted_thumb.fill);
+        }
+        assert!(
+            observed.windows(2).any(|w| w[0] != w[1]),
+            "same real reading fixture switches thumb Theme without resetting offset"
+        );
+    }
+
+    #[test]
     fn scheduled_reading_updates_follow_explicit_intent_and_native_return_action() {
         let mut demo = TextDemo::scroll_only();
         let mut text = TextEngine::new();
@@ -2036,6 +2160,245 @@ mod tests {
                 assert!((surface.scroll.offset.y - initial_offset).abs() < 0.001);
             }
         }
+    }
+
+    #[test]
+    fn text_gallery_retained_themes_keep_readonly_selection_copy_and_real_ink() {
+        use crate::gallery::Gallery;
+        use crate::gallery::commands::Command;
+        use crate::gallery::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_controls::TextSurface;
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba};
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+        fn assert_readonly_scene(
+            scene: &Scene,
+            surface: &TextSurface,
+            palette: Palette,
+            backing: f32,
+        ) {
+            let (index, ground) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == surface.outer => Some((i, *q)),
+                    _ => None,
+                })
+                .expect("actual readonly TextSurface own Field ground");
+            assert_eq!(ground.fill, palette.color("surface-1").unwrap());
+            assert_eq!(ground.fill.a, 1.);
+            assert_eq!(
+                ground.corner_radii,
+                tekes_ui_scene::CornerRadii::uniform(
+                    proposal::metric("radius", "radius-input").unwrap()
+                )
+            );
+            let first_glyph = index
+                + 1
+                + scene.primitives()[index + 1..]
+                    .iter()
+                    .position(|p| matches!(p,Primitive::Glyphs(run)if !run.glyphs.is_empty()))
+                    .expect("real body glyphs after own ground");
+            let selections: Vec<_> = scene.primitives()[index + 1..first_glyph]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a > 0.
+                            && q.rect.min_x() >= surface.inner.min_x()
+                            && q.rect.max_x() <= surface.inner.max_x()
+                            && q.rect.min_y() >= surface.inner.min_y()
+                            && q.rect.max_y() <= surface.inner.max_y() =>
+                    {
+                        Some(*q)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(
+                selections.len(),
+                surface.selection_rects(surface.input.selection()).len()
+            );
+            assert!(!selections.is_empty());
+            for q in &selections {
+                assert_eq!(q.fill, palette.color("text-selection").unwrap());
+            }
+            // Existing non-Srgb target + premultiplied blend operates on encoded sRGB components.
+            let overlay = selections[0].fill;
+            let base = ground.fill;
+            let selected_ground = Rgba::new(
+                overlay.r * overlay.a + base.r * (1. - overlay.a),
+                overlay.g * overlay.a + base.g * (1. - overlay.a),
+                overlay.b * overlay.a + base.b * (1. - overlay.a),
+                1.,
+            );
+            let inks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let a = g.glyph;
+                            surface
+                                .inner
+                                .intersection(&Rect::new(
+                                    g.origin.x + a.left as f32 / backing,
+                                    g.origin.y + a.top as f32 / backing,
+                                    a.width as f32 / backing,
+                                    a.height as f32 / backing,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(!inks.is_empty());
+            let primary = palette.color("primary-text").unwrap();
+            let selected = palette.color("selected-text").unwrap();
+            assert!(inks.contains(&primary));
+            assert!(inks.contains(&selected));
+            for ink in inks {
+                assert!(
+                    ink == primary || ink == selected,
+                    "unexpected actual TextSurface glyph ink"
+                );
+                let adjacent = if ink == selected {
+                    selected_ground
+                } else {
+                    ground.fill
+                };
+                assert!(
+                    contrast(ink, adjacent)
+                        >= if palette.theme.is_increased() {
+                            7.
+                        } else {
+                            4.5
+                        },
+                    "actual text/own ground or composited selection contrast"
+                );
+            }
+        }
+
+        fn mouse(point: Point, down: bool) -> Event {
+            Event::Mouse(tekes_ui_platform_macos::MouseEvent {
+                position: tekes_ui_platform_macos::Point {
+                    x: point.x as f64,
+                    y: point.y as f64,
+                },
+                modifiers: Default::default(),
+                kind: if down {
+                    MouseEventKind::Down {
+                        button: MouseButton::Left,
+                        click_count: 1,
+                    }
+                } else {
+                    MouseEventKind::Up {
+                        button: MouseButton::Left,
+                        click_count: 1,
+                    }
+                },
+            })
+        }
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 1000.);
+        assert!(gallery.open_route("component-text/playground"));
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(
+            gallery.content_page(),
+            crate::gallery::Page::Text,
+            "registered root must reach the original live Text leaf"
+        );
+        let source = gallery.text_view.surfaces[0].input.text.clone();
+        let inner = gallery.text_view.surfaces[0].inner;
+        let point = Point::new(inner.min_x() + 4., inner.min_y() + 4.);
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        gallery.handle_input(&Event::TextCommand("moveToBeginningOfDocument:".into()));
+        for _ in 0..4 {
+            gallery.handle_input(&Event::TextCommand("moveRightAndModifySelection:".into()));
+        }
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(gallery.text_view.focus, Some(0));
+        let copy = source.chars().take(4).collect::<String>();
+        assert_eq!(gallery.text_view.clipboard_selection(), Some(copy.clone()));
+        let mut initial = None;
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            assert_eq!(gallery.theme(), theme);
+            let surface = &gallery.text_view.surfaces[0].view;
+            assert!(surface.input.read_only);
+            assert_eq!(surface.input.text, source);
+            assert_eq!(surface.input.selection(), 0..4);
+            assert_eq!(surface.input.selected_text(), copy);
+            assert_eq!(surface.role, proposal::TextRole::ComposerBody);
+            if let Some(before) = initial {
+                assert_eq!((surface.outer, surface.inner), before);
+            } else {
+                initial = Some((surface.outer, surface.inner));
+            }
+            assert_readonly_scene(&scene, surface, theme.into(), gallery.text.scale());
+            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+                && q.rect.center()==surface.outer.center() && q.border_color==Palette::from(theme).color("border-focused").unwrap())));
+            assert_eq!(gallery.text_view.clipboard_selection(), Some(copy.clone()));
+            let native = gallery
+                .text_view
+                .state()
+                .expect("original native text state");
+            assert!(native.read_only);
+            assert_eq!(native.selection, 0..4);
+            assert_eq!(native.text, source);
+        }
+        gallery.handle_input(&Event::TextCommit {
+            text: "forbidden".into(),
+            replacement: None,
+        });
+        gallery.handle_input(&Event::TextCommand("deleteBackward:".into()));
+        assert_eq!(gallery.text_view.surfaces[0].input.text, source);
+        let height = gallery.text_view.surfaces[0]
+            .paragraph
+            .as_ref()
+            .unwrap()
+            .height;
+        gallery.set_view_size(720., 1000.);
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        assert!(
+            gallery.text_view.surfaces[0]
+                .paragraph
+                .as_ref()
+                .unwrap()
+                .height
+                > height,
+            "original text reflows at narrower actual Gallery width"
+        );
+        assert_eq!(gallery.text_view.surfaces[0].input.selection(), 0..4);
+        assert_eq!(gallery.text_view.clipboard_selection(), Some(copy.clone()));
+        assert_readonly_scene(
+            &scene,
+            &gallery.text_view.surfaces[0].view,
+            Theme::DARK_INCREASED.into(),
+            gallery.text.scale(),
+        );
+        gallery.text_view.scroll_to(120.);
+        gallery.build_scene(&mut Scene::new());
+        assert!(gallery.text_view.surfaces[0].scroll.offset.y > 0.);
+        assert_eq!(gallery.text_view.surfaces[0].input.text, source);
+        assert_eq!(gallery.text_view.clipboard_selection(), Some(copy));
     }
 
     #[test]

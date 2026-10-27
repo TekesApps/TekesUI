@@ -12497,6 +12497,152 @@ mod interaction_tests {
     }
 
     #[test]
+    fn toolbar_gallery_retained_themes_keep_primary_quiet_states_and_real_actions() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("toolbar");
+        build(&mut w, i, &mut text);
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut original_geometry = None;
+        for theme in Theme::ALL {
+            for target in [0, 1] {
+                for state in ["rest", "hover", "pressed"] {
+                    let layouts = w.state(i).toolbar_view.layouts().to_vec();
+                    let outside =
+                        Point::new(layouts[2].frame.max_x() + 20., layouts[0].frame.center().y);
+                    w.handle(i, &move_pointer(outside), &mut text);
+                    assert!(w.focus_control(i, 20 + target).is_some());
+                    if state != "rest" {
+                        w.handle(i, &move_pointer(layouts[target].frame.center()), &mut text);
+                    }
+                    if state == "pressed" {
+                        w.handle(i, &mouse(layouts[target].frame.center(), true), &mut text);
+                    }
+                    text.begin_frame();
+                    let mut static_text = super::super::static_text::StaticText::new(None);
+                    let mut ctx = PageCtx {
+                        theme,
+                        text: &mut text,
+                        static_text: &mut static_text,
+                    };
+                    let mut scene = Scene::new();
+                    w.build_clipped(i, &mut ctx, content, content, &mut scene);
+                    assert!(scene.composition_error().is_none());
+                    let layouts = w.state(i).toolbar_view.layouts().to_vec();
+                    assert_eq!(layouts.len(), 3);
+                    let geometry: Vec<_> = layouts.iter().map(|l| (l.frame, l.visible)).collect();
+                    if let Some(original) = &original_geometry {
+                        assert_eq!(&geometry, original);
+                    } else {
+                        original_geometry = Some(geometry);
+                    }
+                    let surface = w.state(i).surface_view.layout().frame;
+                    let palette = Palette::new(theme, w.brand).unwrap();
+                    let panel = scene
+                        .primitives()
+                        .iter()
+                        .find_map(|p| match p {
+                            Primitive::Quad(q) if q.rect == surface => Some(q),
+                            _ => None,
+                        })
+                        .expect("actual Gallery SurfaceView panel");
+                    assert_eq!(panel.fill, palette.color("surface-panel").unwrap());
+                    for (n, layout) in layouts.iter().enumerate() {
+                        let state = if n == target { state } else { "rest" };
+                        let expected = match (n == 0, state) {
+                            (true, "hover") => "action-primary-hover",
+                            (true, "pressed") => "action-primary-pressed",
+                            (true, _) => "action-primary-ground",
+                            (false, "hover") => "button-hover",
+                            (false, "pressed") => "button-pressed",
+                            (false, _) => "surface-2",
+                        };
+                        let ground = scene
+                            .primitives()
+                            .iter()
+                            .find_map(|p| match p {
+                                Primitive::Quad(q) if q.rect == layout.frame => Some(q),
+                                _ => None,
+                            })
+                            .expect("actual child Button own ground");
+                        assert_eq!(ground.fill, palette.color(expected).unwrap());
+                        let labels: Vec<_> = scene
+                            .primitives()
+                            .iter()
+                            .filter_map(|p| match p {
+                                Primitive::Glyphs(r)
+                                    if !r.glyphs.is_empty()
+                                        && r.glyphs
+                                            .iter()
+                                            .all(|g| layout.content.contains(g.origin)) =>
+                                {
+                                    Some(r)
+                                }
+                                _ => None,
+                            })
+                            .collect();
+                        assert!(!labels.is_empty(), "each actual Gallery action title");
+                        let ink = palette
+                            .color(if n == 0 {
+                                "action-primary-foreground"
+                            } else {
+                                "primary-text"
+                            })
+                            .unwrap();
+                        assert!(labels.iter().all(|r| r.color == ink));
+                        assert_eq!((labels[0].color.a, ground.fill.a), (1., 1.));
+                        let luminance = |c: tekes_ui_tokens::Rgba| {
+                            let c = c.to_linear();
+                            0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                        };
+                        let (a, b) = (luminance(labels[0].color), luminance(ground.fill));
+                        assert!(
+                            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                                >= if theme.is_increased() { 7. } else { 4.5 }
+                        );
+                    }
+                    if state == "rest" {
+                        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.fill.a==0.&&q.border_color==palette.color("border-focused").unwrap()&&q.rect.intersection(&layouts[target].frame).is_some())));
+                    }
+                    if state == "pressed" {
+                        w.handle(i, &move_pointer(outside), &mut text);
+                        w.handle(i, &mouse(outside, false), &mut text);
+                    }
+                    assert!(
+                        w.state(i).log.is_empty(),
+                        "paint/hover/arming/drag cancellation has no action"
+                    );
+                }
+            }
+        }
+        click(&mut w, i, 21, &mut text);
+        assert_eq!(
+            w.state(i)
+                .log
+                .iter()
+                .filter(|s| s.as_str() == "toolbar: rename")
+                .count(),
+            1
+        );
+        assert!(w.focus_control(i, 20).is_some());
+        w.handle(i, &key(49, true), &mut text);
+        assert!(!w.state(i).log.iter().any(|s| s == "toolbar: create"));
+        w.handle(i, &key(49, false), &mut text);
+        assert_eq!(
+            w.state(i)
+                .log
+                .iter()
+                .filter(|s| s.as_str() == "toolbar: create")
+                .count(),
+            1
+        );
+    }
+
+    #[test]
     fn p0_gallery_controls_route_real_pointer_actions_through_owned_views() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
@@ -12648,6 +12794,203 @@ mod interaction_tests {
             );
         }
         assert!(observed.windows(2).any(|w| w[0] != w[1]));
+    }
+
+    #[test]
+    fn disclosure_gallery_retained_themes_keep_real_chevrons_body_and_input() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("disclosure");
+        build(&mut w, i, &mut text);
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut original_header = None;
+        let mut original_marks = [None, None];
+        for theme in Theme::ALL {
+            for open in [false, true] {
+                assert!(w.focus_control(i, 20).is_some());
+                if w.state(i).extended.disclosure.open != open {
+                    w.handle(i, &key(36, true), &mut text);
+                    w.handle(i, &key(36, false), &mut text);
+                }
+                assert_eq!(w.state(i).extended.disclosure.open, open);
+                for state in ["rest", "hover", "pressed"] {
+                    let row = w.state(i).extended.disclosure_view.layout().frame;
+                    let outside = Point::new(row.max_x() + 20., row.center().y);
+                    w.handle(i, &move_pointer(outside), &mut text);
+                    assert!(w.focus_control(i, 20).is_some());
+                    if state != "rest" {
+                        w.handle(i, &move_pointer(row.center()), &mut text);
+                    }
+                    if state == "pressed" {
+                        w.handle(i, &mouse(row.center(), true), &mut text);
+                    }
+                    text.begin_frame();
+                    let mut static_text = super::super::static_text::StaticText::new(None);
+                    let mut ctx = PageCtx {
+                        theme,
+                        text: &mut text,
+                        static_text: &mut static_text,
+                    };
+                    let mut scene = Scene::new();
+                    w.build_clipped(i, &mut ctx, content, content, &mut scene);
+                    assert!(scene.composition_error().is_none());
+                    assert_eq!(w.state(i).extended.disclosure.open, open);
+                    let view = &w.state(i).extended.disclosure_view;
+                    let layout = view.layout();
+                    let icon_frame = view.icon_frame();
+                    if let Some(original) = original_header {
+                        assert_eq!(layout, original);
+                    } else {
+                        original_header = Some(layout);
+                    }
+                    let palette = Palette::new(theme, w.brand).unwrap();
+                    let ground = scene
+                        .primitives()
+                        .iter()
+                        .find_map(|p| match p {
+                            Primitive::Quad(q) if q.rect == layout.frame => Some(q),
+                            _ => None,
+                        })
+                        .unwrap();
+                    assert_eq!(
+                        ground.fill,
+                        palette
+                            .color(match state {
+                                "hover" => "button-hover",
+                                "pressed" => "button-pressed",
+                                _ => "surface-2",
+                            })
+                            .unwrap()
+                    );
+                    let labels: Vec<_> = scene
+                        .primitives()
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Glyphs(r)
+                                if !r.glyphs.is_empty()
+                                    && r.glyphs
+                                        .iter()
+                                        .all(|g| layout.content.contains(g.origin)) =>
+                            {
+                                Some(r)
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    assert!(!labels.is_empty());
+                    let ink = palette.color("primary-text").unwrap();
+                    assert!(labels.iter().all(|r| r.color == ink));
+                    let marks: Vec<_> = scene
+                        .primitives()
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Quad(q)
+                                if icon_frame.intersection(&q.rect) == Some(q.rect) =>
+                            {
+                                Some(q)
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    assert!(
+                        !marks.is_empty(),
+                        "real production GalleryIconRenderer native chevron"
+                    );
+                    assert!(marks.iter().all(|q| q.fill == ink));
+                    assert_eq!(
+                        (labels[0].color.a, marks[0].fill.a, ground.fill.a),
+                        (1., 1., 1.)
+                    );
+                    let geometry: Vec<_> = marks.iter().map(|q| q.rect).collect();
+                    if let Some(original) = &original_marks[usize::from(open)] {
+                        assert_eq!(&geometry, original);
+                    } else {
+                        original_marks[usize::from(open)] = Some(geometry);
+                    }
+                    let luminance = |c: tekes_ui_tokens::Rgba| {
+                        let c = c.to_linear();
+                        0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                    };
+                    let contrast = |ink: tekes_ui_tokens::Rgba, ground: tekes_ui_tokens::Rgba| {
+                        let (a, b) = (luminance(ink), luminance(ground));
+                        (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                    };
+                    assert!(
+                        contrast(labels[0].color, ground.fill)
+                            >= if theme.is_increased() { 7. } else { 4.5 }
+                    );
+                    assert!(
+                        contrast(marks[0].fill, ground.fill) >= 3.,
+                        "necessary enabled disclosure direction mark"
+                    );
+                    if state == "rest" {
+                        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.fill.a==0.&&q.border_color==palette.color("border-focused").unwrap()&&q.rect.intersection(&layout.frame).is_some())));
+                    }
+                    let panel = scene.primitives().iter().find_map(|p| match p {
+                        Primitive::Quad(q)
+                            if q.rect.min_y() == layout.frame.max_y() + 8.
+                                && q.rect.size.width == layout.frame.size.width =>
+                        {
+                            Some(q)
+                        }
+                        _ => None,
+                    });
+                    assert_eq!(panel.is_some(), open, "body is painted only while open");
+                    if let Some(panel) = panel {
+                        assert_eq!(panel.fill, palette.color("surface-panel").unwrap());
+                        assert_eq!(panel.fill.a, 1.);
+                        let copy: Vec<_> = scene
+                            .primitives()
+                            .iter()
+                            .filter_map(|p| match p {
+                                Primitive::Glyphs(r)
+                                    if !r.glyphs.is_empty()
+                                        && r.glyphs
+                                            .iter()
+                                            .all(|g| panel.rect.contains(g.origin)) =>
+                                {
+                                    Some(r)
+                                }
+                                _ => None,
+                            })
+                            .collect();
+                        assert!(!copy.is_empty(), "real mounted Gallery body text");
+                        assert!(copy.iter().all(|r| r.color == ink));
+                        assert!(
+                            contrast(copy[0].color, panel.fill)
+                                >= if theme.is_increased() { 7. } else { 4.5 }
+                        );
+                    }
+                    if state == "pressed" {
+                        w.handle(i, &move_pointer(outside), &mut text);
+                        w.handle(i, &mouse(outside, false), &mut text);
+                        assert_eq!(
+                            w.state(i).extended.disclosure.open,
+                            open,
+                            "drag-out cancels original press"
+                        );
+                    }
+                }
+            }
+        }
+        assert_ne!(
+            original_marks[0], original_marks[1],
+            "native right/down artwork differs"
+        );
+        click(&mut w, i, 20, &mut text);
+        assert!(!w.state(i).extended.disclosure.open);
+        assert!(w.focus_control(i, 20).is_some());
+        w.handle(i, &key(49, true), &mut text);
+        assert!(
+            !w.state(i).extended.disclosure.open,
+            "Space arms until release"
+        );
+        w.handle(i, &key(49, false), &mut text);
+        assert!(w.state(i).extended.disclosure.open);
     }
 
     #[test]
