@@ -34,7 +34,7 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 
 工作区最终 Rust 测试 897 passed、0 failed、1 原有 ignored；两个计时测试按用户范围显式过滤。fmt、严格 workspace Clippy、DS、纯 Rust、Gold7 mechanical、reference alignment 及生成清单检查通过。既有 CI 已运行该生成检查和 workspace tests，因此新编译绑定会进入同一门禁；无需另增一条只看声明存在的检查，也没有修改或绕过原门禁。
 
-## 原 Issue 未完成项
+## 2026-10-17 原 Issue 未完成项（历史记录，当前状态见原 Issue）
 
 #8 仍为部分完成：编译绑定、45 项主 API 补齐与完整历史身份说明已交付；全体 public/helper 类型的反向分类、每个组件必需状态的覆盖，以及完整 token 依赖映射仍未闭合。新增未登记类型仍需这一反向清单才能精确指出缺项，不能声称本批已经解决全部公开面治理。所有组件继续 experimental，体验状态未自动改为 pass。
 
@@ -42,7 +42,7 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 
 ## 2026-10-26 实用 Theme 覆盖清单（现行审计范围）
 
-本节对应 #113/#114 及 #121–#125，取自现有 `design/gallery/workbench.json` 的52根，登记仍以该文件为唯一来源。上文2026-10-17的45项测试与历史统计保持原身份，不是当前52根全量通过。基线为本地 main `3d7ff9eade945390131028a22a915603d5a8829b`；本次仅核对已知接收范围，不重新全面审计或为未知项补造通过。
+本节对应 #113/#114 及 #121–#125，取自现有 `design/gallery/workbench.json` 的52根，登记仍以该文件为唯一来源。上文2026-10-17的45项测试与历史统计保持原身份，不是当前52根全量通过。起点为本地 main `3d7ff9eade945390131028a22a915603d5a8829b`。截至已验源码 `fc2f81a3983474e21b03041bf4dfa090409fcd6f`，本表52根已逐项完成当前实用 Theme 消费与适用集成接收；各自实际验证仍只属于原收据源码/程序身份，不把这一汇总提交当作重跑或全产品认证。最后#125批次的常规CI/远端交付另在原Issue记录，尚未交付的不冒称已进入origin/main。
 
 验收条款见 [Theme foundation 的现行审计契约](theme-foundation-main-intake-20261026.md)。每根只补消费、状态和实际集成差异；Palette是合格语义入口，不强制为统一形式而迁移Surface。未知状态标待核对；不把没有登记例外当作已证明零硬编码。无障碍/原生及完整产品能力仍归原票，不由审计简化自动通过。
 
@@ -57,6 +57,10 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 本族票 #124 的七个数据/只读文档根已在 PR147、checkpoint-20261028-7 按四条实用 Theme AC 完成并关闭；各根实际运行/远端交付保持各自提交与收据身份。只读 subset、透明父背景和未验 GPU/原生等适用边界仍保留在原行与原票，不表示完整文档编辑器、全52根或旧闭包证明完成。
 
 本族票 #121 的八个布局/容器根已在 PR148、checkpoint-20261028-8 按四条实用 Theme AC 完成并关闭。实际语义消费、必要状态/布局/捕获/滚动/动作和适用Gallery证据保留各自提交身份；#103 B Splitter当前main补交付、#12整页观察及全库原生等原目标仍由原票承担，不由此关闭或冒签。
+
+#122十三根已随PR152／`checkpoint-20261028-12`完成实用AC并关闭。#125十三根本地接收已齐：复用Progress/Skeleton/EmptyState/Banner/StatusBadge既有成果，只补Toast与实际Form/Filter/Async/Settings的独立集成差异；Master补真实行到只读详情断言，Danger原组合具名运行，Scene3D两个原真实GPU测试显式执行通过（2 passed、0 ignored）。3D材质/灯光是场景数据，不强制UI token化。原#12布局、#81 B2、#103 B、#127组合与原生/a11y等产品缺口继续原票，不由本审计豁免。
+
+机器边界保持明确：原coverage ledger投影45组件；5pattern与2example使用原登记route和experimental maturity，实际接收写本表/原Issue，不造component ID或扩生成框架。`accepted-bounded-evidence`不是全面runtime/native或maturity晋级。
 
 | 登记根 | 公开入口/主题消费 | 已验状态与身份 | 合理例外 | 未完成项 | 证据/Issue |
 |---|---|---|---|---|---|
@@ -113,6 +117,9 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 | `example-settings` | Actual Gallery settings example through shared FieldView/TextDemo/Button/notification model; separate from #70 AppWindow Settings | Real edited name/preference/Save Failed instance retains values/phase/log/actions/geometry through four Themes and actual input/metadata Palette roles; strict passed | Shared Form ab5869c necessary own-ground contrast and original Gallery Error/Disabled/Reset/retry reused; no duplicate child matrix or SettingsContent/store invented | No new AppWindow/store/physicalIME/VoiceOver/native/GPU/performance certification; #70 original completed delivery not reopened | #125/#113; SSD artifacts/issue-125/example-settings-mainfa8bcc0-candidate/main-intake/commit-receipt.json; one actual Gallery Theme integration test, #70 evidence remains separate |
 | `component-scene3d` | Actual Gallery Preview3D uses Theme chrome/background, public SecondaryText instruction and PrimaryText error roles; real GPU image from glTF scene data | Both original real-wgpu Gallery tests explicitly enabled and passed: image composition/animation/off-page stop and clipped camera input/stable GPU geometry/blur; real1280x900 capture retained; strict passed | Scene material/base/emissive/light/model colors are scene data, not UI tokens; UI semantic roles and existing shared Gallery Theme chain reused, no PBR expansion | No new full PBR/native-window/physicalIME/VoiceOver/performance/external-brand Scene3D certification; old ignored result remains not_run | #125/#113; SSD artifacts/issue-125/master-danger-scene3d-final-intake-20261028/scene3d-commit-receipt.json and scene3d-default.png; actual2 passed/0 ignored, not source-only inference |
 
+<details>
+<summary>早期有限投影批次（历史身份；当前范围以上方52根表和原Issue为准）</summary>
+
 ### 已接收的有限实证投影
 
 现有 `component-coverage.json` 对 `tui.button`、`tui.chart` 和 `tui.progress` 增加了 `practical_intake`，生成器将其投影到各自的 `state_coverage.practical_intake`。 本批沿同一入口增加 `tui.link` 的有限语义消费、保留实例换肤和真实 Gallery 结果；原生候选已撤回，投影只取已接收 main 源码，旧状态与 maturity 不晋级。它记录原 Issue、接受提交、证据文件 SHA-256、明确范围、未声明范围，以及本次冻结基线下可核对的有限源码路径哈希。Chart 项保留历史 V5 证据，并加入 b763469 的 ChartContent/Host 及默认/外部成对 GPU 接收；当前7条源码路径仅是可核对子集，完整运行身份仍由冻结清单和原锁内收据约束。它只提供已接收证据的定位，不替代原状态矩阵、根验收或 maturity。
@@ -141,3 +148,5 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 #83/#93 的测试证明 shared Theme 规则、生成产物、Rust 校验与外部拒绝/合法消费边界；它们不替代组件 adapter acceptance。组件行把共享用途映射到便于查阅的消费入口，不等于该组件已消费这些用途。未在本批重跑旧 GPU，也未扩展 52 根状态。
 
 本次补录后，#114按2026-10-26明确简化的四项AC完成：复用52根登记及原API/route/state/maturity；八个有界接收入口保留scope/claims/exceptions/gaps和证据；历史观察与当前源码不符有定位诊断；实际生成/context/公开编译绑定检查通过。新补录运行五个context查询、receipt字节核对及三项受影响Python检查，未重跑未变化的Rust/GPU。隔离检查曾发现examples源码未列入生成输入，现将既有source_identity路径纳入原输入清单并验证修复。完整组件主题接入、#8其余原AC、native/视觉成熟度均未因此完成；后续每批接收继续更新同一记录。
+
+</details>
