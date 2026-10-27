@@ -1742,7 +1742,45 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/combo-async.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/combo-async.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "5227ff7d7a8233830e8f65f6eb5e019fded11137",
+        "scope": "Actual ComboBox original public caller-owned composition and real Gallery filtered query/selection/Theme integration; tests only",
+        "claims": [
+          "Real existing caller-owned Scenario retains query/open popup/original source indices/active versus committed value across four Themes; own-ground CoreText4.5/7 and once-only pointer/repeated keyboard/Escape passed",
+          "Original ComboBoxView cancels disabled arm and rejects empty/stale presentation without renumbering source IDs",
+          "Real Gallery native editor query/AX source keys/keyboard-hover/Theme own grounds and actual native-selector+pointer confirmation/empty/cancel passed; strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected actual ComboBox model/View/caller-owned public fixture and unique real integration witnesses; no recursive source proof",
+          "sha256": {
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "examples/composition-consumer/src/combo_status.rs": "1e36d6989f56ed61eb67f2ab1b56c751164f2e1726c486eb65dd5430f9f40166",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "8e1788f550971a66100f8cb64e0cbbfa9c8d6e293e5ab5f785eabf4513de0b7d",
+            "examples/composition-consumer/tests/combo_box_theme.rs": "3389d699f9449779fb00c97f34327fd50f9fe067458ada5425c564d8790cd977"
+          }
+        },
+        "exceptions": [
+          "No new ComboBoxContent/icon/filter engine; original caller-owned composition and geometry preserved",
+          "Shared unchanged TextField/Menu/Select/Button/IME functional matrices retain original identities; no duplicate permutations"
+        ],
+        "gaps": [
+          "New dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+          "Full52 and unrelated product gaps"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.combo-box",
+            "commit": "5227ff7d7a8233830e8f65f6eb5e019fded11137",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/combo-box-main9048146-candidate/main-intake/commit-receipt.json",
+            "sha256": "c977717212dc9e0b08b439c5022d96eac0c7a5e31f90034189a0efaf8e106bbb",
+            "scope": "Actual public2/Gallery1/strict at recorded main source; unchanged shared parser/editor/Menu/IME evidence retains identities"
+          }
+        ]
+      }
     },
     {
       "id": "tui.slider",
