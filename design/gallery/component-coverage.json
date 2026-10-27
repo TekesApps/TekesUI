@@ -2131,7 +2131,47 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "0608cb64ec7382fcea72e1265ddcd7bcb446e470",
+        "scope": "Accepted retained public Breadcrumb and actual Gallery Theme/state/contrast/navigation tests; no production or shared rule changes.",
+        "claims": [
+          "Same public BreadcrumbView retained across four Theme values with actual rest/hover/pressed/focus/disabled role consumption",
+          "Real CoreText ancestor/current glyphs and actual backgrounds meet4.5 standard and7 increased contrast",
+          "Current page remains noninteractive; disabled input and original mouse/keyboard activation/cancellation contracts retained",
+          "Actual Gallery keeps path and real navigation while Theme changes; Gallery all-target strict and owned-format check passed"
+        ],
+        "source_identity": {
+          "scope": "Selected public model/View/consumer/Gallery source subset, not full dependency proof; actual full source manifests/programs remain in original run receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "7b25bc2f12a3be0d395a1ae06097afd3d93cb2ef9349a39c48114726e278105b",
+            "examples/composition-consumer/tests/breadcrumb_theme.rs": "0da781dd1b0dd19ad1b68bfc1fa399cc69a5949fe15b556202c4b1f17aa9c6b5"
+          }
+        },
+        "exceptions": [
+          "Current page intentionally uses existing disabled/tertiary-text path for nonactivation; real contrast passes, no independent current-color contract invented",
+          "Shared brand/Button results reused rather than full component brand cross product; ordinary geometry remains layout",
+          "Role endpoint test explicitly uses reduced motion and real Workbench pointer input scope; no out-of-window routing claim"
+        ],
+        "gaps": [
+          "No new dedicated external Theme/GPU/native/physicalIME/VoiceOver certification",
+          "Remaining original family/full52 practical coverage stays open"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.breadcrumb",
+            "commit": "0608cb64ec7382fcea72e1265ddcd7bcb446e470",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/breadcrumb-main5634d2a-candidate/main-intake/commit-receipt.json",
+            "sha256": "63266659f54ee1499d6169be5dc214d63f15274e83626a10ec764d19bde8c8a5",
+            "scope": "Exact-main public/Gallery tests and strict, actual glyph contrast, original input protection and bounded unverified scope."
+          }
+        ]
+      }
     },
     {
       "id": "tui.command-palette",
