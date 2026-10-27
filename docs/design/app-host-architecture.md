@@ -21,6 +21,9 @@
 尚未交付：SettingsSurface、自动保存窗口、后台Client协调器与UndoRedo的完整UI链、原生/PR#52公开固定依赖验证。共享UI通过不代表这些能力通过，#70继续开放。完整既有Settings设计和历史原型保留在Gallery Root的 `docs/design/apphost-settings.md` 与 `apphost-settings-prototype-20261022.md`，后续接收沿原契约，不把历史实现转签为当前main完成。
 
 
+平台Settings前置接收（2026-10-27，#70）：真实WindowHandle、普通/Exclusive子窗口、可见窗口恢复、key-window菜单/焦点分发和dirty退出通知已接入；重复present保留首次恢复名单与key，按身份去重。原47平台契约、strict及AppHost接口检查通过；定向真实AppKit回归验证实际激活/key前提、四窗口重复present、关闭恢复两可见窗口且不显示原隐藏者、恢复原焦点。证据SSD `artifacts/issue-136/settings70-window-main3e37ff7-intake/round02` 的exclusive-native及平台各round；早期harness缺正常生命周期而失败，记录保留。此有限原生结果不是完整Settings自动保存/Independent/物理IME/VoiceOver验收。
+
+
 ## 1. 目标与范围
 
 维护一套共享 App Host 源码，按构建 profile 预定模块组合、平台能力和发行资源，构建并打包成不同 target apps。Host 的 toolbar、Panel 容器和 splitter 均使用 native TekesUI 组件，由 Host 组合并管理其布局状态；每个 Panel 通过 ProcessContainer 承载独立的带 View ProcessComponent，模块声明 content/toolbar 并输出画面、事件和请求。另可固定装配无 View 的导航 ProcessComponent：它独占 nav.json 和导航历史，Host 只执行导航，成功后回报，由导航模块提交历史。

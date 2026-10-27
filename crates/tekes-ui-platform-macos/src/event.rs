@@ -472,6 +472,8 @@ pub enum Event {
     /// Active keyboard scope: application active AND window key. Application
     /// deactivation emits false even if this application's key window is retained.
     Focus(bool),
+    /// Application quit was deferred by a window with pending work.
+    QuitRequested,
     /// 菜单项被选中。
     Command(CommandId),
     /// VoiceOver 或其他辅助技术请求对宿主发布的节点执行动作。

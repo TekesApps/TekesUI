@@ -25,7 +25,7 @@ objc2-foundation = { workspace = true, features = ["NSObject", "NSString", "NSGe
 objc2-app-kit = { workspace = true, features = [
     "NSCursor", "NSButton", "NSAttributedString", "NSTextInputClient", "NSTextInputContext", "NSPasteboard", "NSApplication", "NSResponder", "NSView", "NSWindow", "NSToolbar", "NSEvent", "NSMenu", "NSMenuItem",
     "NSTrackingArea", "NSWorkspace", "NSAppearance", "NSScreen", "NSAccessibility", "NSAccessibilityElement", "NSAccessibilityProtocols", "NSAccessibilityConstants", "NSControl",
-    "NSGraphics", "NSRunningApplication", "NSCell", "NSGraphicsContext", "objc2-quartz-core", "objc2-core-foundation",
+    "NSAnimationContext", "NSGraphics", "NSRunningApplication", "NSCell", "NSGraphicsContext", "objc2-quartz-core", "objc2-core-foundation",
 ] }
 objc2-quartz-core = { workspace = true, features = ["CALayer", "CAMetalLayer", "CADisplayLink", "CAMetalDisplayLink", "CAFrameRateRange", "CABase", "objc2-core-foundation", "objc2-core-graphics", "objc2-metal"] }
 block2 = "0.6.2"
@@ -58,4 +58,8 @@ harness = false
 
 [[test]]
 name = "titlebar_native"
+harness = false
+
+[[test]]
+name = "exclusive_native"
 harness = false

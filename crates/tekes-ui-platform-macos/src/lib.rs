@@ -50,7 +50,7 @@ mod shared;
 mod view;
 
 #[cfg(target_os = "macos")]
-pub use app::App;
+pub use app::{App, WindowHandle};
 #[cfg(target_os = "macos")]
 pub use shared::{Window, WindowHandler};
 
