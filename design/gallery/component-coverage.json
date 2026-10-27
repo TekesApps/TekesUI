@@ -2709,7 +2709,45 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/number.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/number.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "398ac4e3fa74531a679becb75a3c4356d80e3c1d",
+        "scope": "Editable NumberFieldContent retained validation/drafts and real noneditable Gallery bounded stepper; existing disabled property/release route",
+        "claims": [
+          "Real editable Content retains valid/incomplete/invalid drafts, committed value/focus/mount/geometry across four Themes with actual ink4.5/7/boundary3 and exact Submit/Step/Escape changes",
+          "Real Gallery bounded stepper retains normal/upper/disabled Theme/value/layout, negative actions and actual reenabled decrement; existing Disabled property routes real release before adapter",
+          "Original Gallery pointer routing and strict passed; unchanged public consumer original pass retained, initial missing property/release failures preserved"
+        ],
+        "source_identity": {
+          "scope": "Selected actual editable numeric content/stepper and real Gallery integration witnesses, no full dependency proof",
+          "sha256": {
+            "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+            "crates/tekes-ui-controls/src/composition/number.rs": "d0c7c6cdb0b1eb94a56709213069ed8756b47b26917b7fd1ec5c63d4bcf4a91f",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "cc3c0331b69a863940f6ed56b8c0c86338737eb3f0834d86a35b9d02a3eb1d5d",
+            "examples/composition-consumer/tests/number_field_theme.rs": "e24cab838a65de38b396f0e90e43a3ff60fdc08d741b1fcba9bf7e7c8eeff84a"
+          }
+        },
+        "exceptions": [
+          "Disabled-only text contrast exception; invalid/incomplete editable draft text is not exempt",
+          "Gallery remains bounded stepper; public editable numeric content is separately exercised",
+          "Ordinary numeric layout remains data; existing shared parser/IME/TextField/Button checks retain original identity"
+        ],
+        "gaps": [
+          "New parser/locale/physicalIME/VO/native/GPU certification",
+          "ComboBox/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.number-field",
+            "commit": "398ac4e3fa74531a679becb75a3c4356d80e3c1d",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/number-field-mainfc261e4-candidate/main-intake/commit-receipt.json",
+            "sha256": "eddfa625992e5075d5cccd0c67b326e99ea813987e599628f59662bf54f0d7cb",
+            "scope": "Public original pass; final changed Gallery/strict/original pointer routing actual pass at recorded sources; old failures retained"
+          }
+        ]
+      }
     },
     {
       "id": "tui.tabs",

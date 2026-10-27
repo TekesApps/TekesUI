@@ -35903,6 +35903,51 @@
           "focus",
           "disabled"
         ],
+        "practical_intake": {
+          "baseline_commit": "398ac4e3fa74531a679becb75a3c4356d80e3c1d",
+          "claims": [
+            "Real editable Content retains valid/incomplete/invalid drafts, committed value/focus/mount/geometry across four Themes with actual ink4.5/7/boundary3 and exact Submit/Step/Escape changes",
+            "Real Gallery bounded stepper retains normal/upper/disabled Theme/value/layout, negative actions and actual reenabled decrement; existing Disabled property routes real release before adapter",
+            "Original Gallery pointer routing and strict passed; unchanged public consumer original pass retained, initial missing property/release failures preserved"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.number-field",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/number-field-mainfc261e4-candidate/main-intake/commit-receipt.json",
+              "commit": "398ac4e3fa74531a679becb75a3c4356d80e3c1d",
+              "component": "tui.number-field",
+              "issue": "#122",
+              "scope": "Public original pass; final changed Gallery/strict/original pointer routing actual pass at recorded sources; old failures retained",
+              "sha256": "eddfa625992e5075d5cccd0c67b326e99ea813987e599628f59662bf54f0d7cb"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Disabled-only text contrast exception; invalid/incomplete editable draft text is not exempt",
+            "Gallery remains bounded stepper; public editable numeric content is separately exercised",
+            "Ordinary numeric layout remains data; existing shared parser/IME/TextField/Button checks retain original identity"
+          ],
+          "gaps": [
+            "New parser/locale/physicalIME/VO/native/GPU certification",
+            "ComboBox/full52"
+          ],
+          "scope": "Editable NumberFieldContent retained validation/drafts and real noneditable Gallery bounded stepper; existing disabled property/release route",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual editable numeric content/stepper and real Gallery integration witnesses, no full dependency proof",
+            "sha256": {
+              "crates/tekes-ui-controls/src/composition/number.rs": "d0c7c6cdb0b1eb94a56709213069ed8756b47b26917b7fd1ec5c63d4bcf4a91f",
+              "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "cc3c0331b69a863940f6ed56b8c0c86338737eb3f0834d86a35b9d02a3eb1d5d",
+              "examples/composition-consumer/tests/number_field_theme.rs": "e24cab838a65de38b396f0e90e43a3ff60fdc08d741b1fcba9bf7e7c8eeff84a"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "split",
         "profile_exceptions": {
           "dragging": "The existing NumberField is a bounded +/- stepper, not a draggable splitter or editable numeric field."
@@ -59568,7 +59613,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "4b62ad64298df2a92ec16f2d8cdcad93ecc103e143cd03f7bdcf569e4e3acc11",
+    "design/gallery/component-coverage.json": "4d7b426c8213c38adcaae52a712d14d72d01fc99cafe839b757aeb2dc2ee750f",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -59615,6 +59660,7 @@
     "examples/composition-consumer/tests/list_theme.rs": "3f73caabbba6fff3368f54470ec3704b8935f8f9d2a25d019db2a82025033304",
     "examples/composition-consumer/tests/markdown_theme.rs": "4de00576cc7f49fee977b433a4ddc30bcf100863e3991ab89fa66f281dd2fae0",
     "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758",
+    "examples/composition-consumer/tests/number_field_theme.rs": "e24cab838a65de38b396f0e90e43a3ff60fdc08d741b1fcba9bf7e7c8eeff84a",
     "examples/composition-consumer/tests/radio_group_theme.rs": "6053b0b681fdb0053633ed05a25c863da6c5cbc401c1577be664d663a1f0560b",
     "examples/composition-consumer/tests/scroll_area_theme.rs": "a64afa37f06ad160330a797166fe7e4eb3c25a15d1e3ef214a6dda9d0e9b5133",
     "examples/composition-consumer/tests/search_theme.rs": "2f3ce69ed081f1bb2fb3892f1bd6fb575720e4bed7869e818ec0faf5e8a5867f",
