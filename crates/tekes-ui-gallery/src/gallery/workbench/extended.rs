@@ -2979,6 +2979,53 @@ mod tests {
     }
 
     #[test]
+    fn real_link_state_matrix_repaints_semantic_inks_when_theme_changes() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::Theme;
+
+        let index = index("link");
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut workbench = Workbench::default();
+        workbench.select_route(index, &format!("{}/states", entries()[index].slug()));
+        let mut text = TextEngine::new();
+        let mut static_text = StaticText::new(None);
+        let mut seen_by_theme = Vec::new();
+
+        for theme in Theme::ALL {
+            text.begin_frame();
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            let mut scene = Scene::new();
+            workbench.build_clipped(index, &mut ctx, content, content, &mut scene);
+            let inks: Vec<_> = scene
+                .primitives()
+                .iter()
+                .filter_map(|primitive| match primitive {
+                    Primitive::Glyphs(run) => Some(run.color),
+                    _ => None,
+                })
+                .collect();
+            let palette = Palette::from(theme);
+            for role in [
+                "c-link-foreground",
+                "c-link-hover",
+                "c-link-pressed",
+                "disabled-text",
+            ] {
+                let ink = palette.color(role).expect("generated Link semantic color");
+                assert!(
+                    inks.contains(&ink),
+                    "real Link state matrix must draw {role} under {theme:?}"
+                );
+            }
+            seen_by_theme.push(inks);
+        }
+        assert_eq!(seen_by_theme.len(), Theme::ALL.len());
+    }
+    #[test]
     fn navigation_link_space_never_falls_back_to_gallery_button_activation() {
         for renderer in ["link", "breadcrumb"] {
             let mut workbench = Workbench::default();

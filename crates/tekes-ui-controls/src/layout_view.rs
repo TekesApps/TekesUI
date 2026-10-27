@@ -3682,6 +3682,47 @@ mod tests {
     }
 
     #[test]
+    fn link_render_consumes_palette_inks_for_interaction_states_and_theme_changes() {
+        for (state, role, focused) in [
+            ("normal", "c-link-foreground", false),
+            ("hover", "c-link-hover", false),
+            ("pressed", "c-link-pressed", false),
+            ("disabled", "disabled-text", false),
+            ("focus-visible", "c-link-foreground", true),
+        ] {
+            let mut view = LinkView::default();
+            let mut model = Link::default();
+            let frame = Rect::new(8., 8., 120., 36.);
+            model.button.state.disabled = state == "disabled";
+            if focused { view.focus(true); }
+            view.render(
+                &mut Scene::new(), &mut FixedText, &mut model, "Open", frame,
+                None, Palette::from(Theme::LIGHT), proposal::TextRole::UiBody,
+            );
+            if state == "hover" { view.pointer_move(frame.center()); }
+            else if state == "pressed" { assert!(view.pointer_down(frame.center())); }
+            // Keep the same model, view and held input while changing palettes.
+            for theme in Theme::ALL {
+                let palette = Palette::from(theme);
+                let mut scene = Scene::new();
+                view.render(
+                    &mut scene, &mut FixedText, &mut model, "Open", frame,
+                    None, palette, proposal::TextRole::UiBody,
+                );
+                let underline = scene.primitives().iter().find_map(|primitive| match primitive {
+                    tekes_ui_scene::Primitive::Quad(quad)
+                        if quad.rect.size.height <= 2. && quad.rect.size.width == frame.size.width => Some(quad.fill),
+                    _ => None,
+                }).expect("Link render emits its semantic underline");
+                assert_eq!(underline, palette.color(role).expect("generated Link semantic color"), "{state} in {theme:?}");
+                let has_keyboard_focus = scene.primitives().iter().any(|primitive| {
+                    matches!(primitive, tekes_ui_scene::Primitive::Quad(quad) if quad.border_width == 2.)
+                });
+                assert_eq!(has_keyboard_focus, focused, "{state} in {theme:?}");
+            }
+        }
+    }
+    #[test]
     fn link_focus_ring_uses_ancestor_clip_while_text_keeps_its_frame_clip() {
         for theme in Theme::ALL {
             let mut view = LinkView::default();
