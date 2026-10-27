@@ -79,7 +79,7 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 | `tui.field` | `tekes_ui_controls::Field`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
 | `tui.select` | `tekes_ui_controls::Select`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
 | `tui.number-field` | `tekes_ui_controls::NumberField`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
-| `tui.tabs` | `tekes_ui_controls::Tabs`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.tabs` | TabsView→共享Quiet Button→Palette的row-selection/row-selection-hover/surface-2/button-hover/button-pressed及文字/焦点角色 | 同一实例四Theme选择/hover/pressed/disabled/focus、拖出取消及键盘；真实Gallery路由选择、换肤、正文4.5/7与panel保留已验 | selected Quiet按原共享契约复用selected-hover；普通几何不token化 | 无新增external Theme/GPU/native/物理IME/VoiceOver认证；不声明侧栏跨scope hover退出通过 | #123；SSD `artifacts/issue-123/tabs-main5634d2a-candidate/main-intake/commit-receipt.json`；main f7f43fe加本组件差量 |
 | `tui.breadcrumb` | `tekes_ui_controls::extended::Breadcrumb`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
 | `tui.command-palette` | `tekes_ui_controls::extended::CommandPalette`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
 | `tui.list` | `tekes_ui_controls::extended::List`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |

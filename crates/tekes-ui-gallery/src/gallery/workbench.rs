@@ -7998,6 +7998,119 @@ mod interaction_tests {
     }
 
     #[test]
+    fn tabs_gallery_theme_switch_preserves_selected_panel_and_repaints_real_tab_text() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        assert!(gallery.open_route("component-tabs/playground"));
+        gallery.set_view_size(1440., 900.);
+        gallery.set_reduced_motion(true);
+        let i = index("tabs");
+        gallery.build_scene(&mut Scene::new());
+        let target = gallery
+            .workbench
+            .state(i)
+            .tabs_layout
+            .as_ref()
+            .unwrap()
+            .items[1]
+            .frame
+            .center();
+        gallery.handle_input(&mouse(target, true));
+        gallery.handle_input(&mouse(target, false));
+        assert_eq!(gallery.workbench.state(i).tabs_view.selected(), 1);
+        gallery.handle_input(&move_pointer(Point::new(0., 0.)));
+        // The sidebar owns (0, 0); request tab rest through the real Workbench
+        // background so the existing Tabs pointer reducer receives the move.
+        let tab_frame = gallery.workbench.state(i).tabs_layout.as_ref().unwrap().frame;
+        gallery.handle_input(&move_pointer(Point::new(
+            tab_frame.center().x,
+            tab_frame.max_y() + 4.,
+        )));
+        gallery.build_scene(&mut Scene::new());
+        let initial = gallery.workbench.state(i).tabs_layout.clone().unwrap();
+        let mut fills = Vec::new();
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            assert_eq!(state.tabs_view.selected(), 1);
+            let layout = state.tabs_layout.as_ref().unwrap();
+            assert_eq!(
+                layout, &initial,
+                "Theme change preserves selected tab layout"
+            );
+            let selected = &layout.items[1];
+            let palette: Palette = theme.into();
+            let fill = scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Quad(q) if q.rect == selected.frame => Some(q.fill),
+                    _ => None,
+                })
+                .expect("actual Gallery selected tab background");
+            assert_eq!(fill, palette.color("row-selection").unwrap());
+            fills.push(fill);
+            let inks: Vec<_> = scene
+                .primitives()
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|positioned| {
+                            let glyph = positioned.glyph;
+                            let scale = gallery.text.scale();
+                            let bounds = Rect::new(
+                                positioned.origin.x + glyph.left as f32 / scale,
+                                positioned.origin.y + glyph.top as f32 / scale,
+                                glyph.width as f32 / scale,
+                                glyph.height as f32 / scale,
+                            );
+                            selected.content.intersection(&bounds).is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "Gallery emits selected tab CoreText glyphs"
+            );
+            for ink in inks {
+                assert_eq!(ink, palette.color("primary-text").unwrap());
+                let luminance = |c: tekes_ui_tokens::Rgba| {
+                    let c = c.to_linear();
+                    0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                };
+                let (a, b) = (luminance(ink), luminance(fill));
+                let ratio = (a.max(b) + 0.05) / (a.min(b) + 0.05);
+                assert!(ratio >= if theme.is_increased() { 7. } else { 4.5 });
+            }
+            assert!(
+                scene.primitives().iter().any(|p| matches!(p,
+                        Primitive::Glyphs(run) if run.glyphs.iter().any(|g|
+                            g.origin.y > layout.frame.max_y() + 20.
+                            && g.origin.y < layout.frame.max_y() + 100.
+                            && g.origin.x >= layout.frame.min_x()
+                            && g.origin.x < layout.frame.max_x()))),
+                "selected settings panel remains rendered below the tabs"
+            );
+        }
+        assert_ne!(fills[0], fills[1]);
+        assert_ne!(fills[2], fills[3]);
+    }
+
+    #[test]
     fn tabs_use_one_roving_tabstop_and_pointer_release_cancels_selection() {
         let mut w = Workbench::default();
         let mut t = super::super::text::TextEngine::new();
