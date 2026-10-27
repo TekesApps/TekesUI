@@ -336,7 +336,44 @@
           "note": "Actual public Stack geometry scope has asserted zero lookups; SurfaceView paint is captured separately,4themes/3brands/real scales/Canvas,Panel/ancestor clip. Caller scale forwarding has216real Gallery GPU cases and independent consumer tests; page/native maturity remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/layout-surface.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/layout-surface.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "7840faa7cfa15848b553ab5aea78e95841617ec3",
+        "scope": "Existing passive SurfaceView canvas/panel with real retained TextContent and actual Gallery panel/title/nested action across Theme::ALL, geometry/clip and actual text contrast; tests only",
+        "claims": [
+          "Same original SurfaceView canvas/panel and real public TextContent/ContentHost/CoreText switch Theme::ALL with semantic fill/border/radius/inset/clip and actual text-ground contrast4.5/7",
+          "Actual Gallery retained panel/title Theme mapping/contrast passed; passive panel has no activation while original nested Button keeps its own single action",
+          "Both new targets and Gallery strict passed under original SSD/source guard/lock; no production/schema/generator changes"
+        ],
+        "source_identity": {
+          "scope": "Selected actual consumer/paint/Surface/test sources, not exhaustive dependency proof; full source/program run identities preserved.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+            "crates/tekes-ui-controls/src/paint.rs": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "f5db1621a31dde4eab275c025c9fb46ce18a4707e8f394ad880de34c2622a496",
+            "examples/composition-consumer/tests/surface_theme.rs": "ea80660bf10c7af0092bf43ff8dca05c3414eedb21452e40be5c80b83aa9edbf"
+          }
+        },
+        "exceptions": [
+          "Passive container has no independent action/hover/disabled/focus states. Original decorative border is not necessary control boundary. Ordinary geometry stays layout. Gallery variants prose not misrepresented as render instance.",
+          "Original #62 default/inherited/override/clear and shared brands/scale results reused unchanged; own-paint-index sampler retains complete Scene"
+        ],
+        "gaps": [
+          "new full-brand/GPU/native-window/physicalIME/VoiceOver certification",
+          "other6 layout roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#121",
+            "component": "tui.surface",
+            "commit": "7840faa7cfa15848b553ab5aea78e95841617ec3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/surface-maine90220b-candidate/main-intake/commit-receipt.json",
+            "sha256": "fc65819a7bcb559097fae05eb86d84c8c64d867ef83cf9af6d56d86ad4abbc7e",
+            "scope": "Actual public/Gallery retained Surface Theme, content ink/ground/passive composition and strict; original shared evidence and boundaries retained."
+          }
+        ]
+      }
     },
     {
       "id": "tui.toolbar",
