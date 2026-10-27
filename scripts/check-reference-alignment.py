@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Audit color relationships against the live compiler, not reference HEX values.
 
-Read-only unless --output is supplied. Does not generate tokens or alter imports.
+Read-only unless --output is supplied. The default also checks the active saved
+report against current inputs; --output explicitly produces its replacement.
+Does not generate tokens or alter imports.
 Run with target/design-tools-venv/bin/python (jsonschema is required).
 """
 from __future__ import annotations
@@ -108,6 +110,7 @@ def audit():
     base = read('design/source/base.tokens.json')
     policy = read('design/brand/policy.json')
     metadata = read('design/source/token-metadata.json')
+    layout = read('design/source/layout.json')
     active = read('design/tokens.json')['proposal']['tokens']
     gallery = read('design/gallery/brands.json')
     registry = read('design/brand/gallery.json')
@@ -118,7 +121,8 @@ def audit():
     known = {item['id'] for item in components + recipes} | local_ids
     errors = []
     inputs = [Path('design/behavior/reference-alignment.json'), Path('design/source/base.tokens.json'),
-              Path('design/source/token-metadata.json'), Path('design/brand/policy.json'),
+              Path('design/source/token-metadata.json'), Path('design/source/layout.json'),
+              Path('design/brand/policy.json'),
               Path('design/brand/config.json'), Path('design/tokens.json'),
               Path('design/gallery/brands.json'), Path('scripts/check-reference-alignment.py'),
               Path('docs/design/reference-alignment-20261016.md'),
@@ -187,6 +191,12 @@ def audit():
             for item in reference['color']['tokens']
         ),
         'components': contract['components'],
+        'elevation_contract': {
+            'source': 'design/source/layout.json',
+            'shadow_policy': layout['shadow'],
+            'definition': layout['elevation'],
+            'scope': 'Declared design policy; not renderer, pixel or native acceptance',
+        },
         'differences_requiring_review': ['brand seed versus fixed Clay', 'theme-paired on-solid foreground',
                                    'neutral focus', 'opaque constrained subtle tones versus alpha tint',
                                    'semantic elevation differs from the reference; current roles are defined in design/source/layout.json', 'no press scaling', 'typography and composer sizes'],
@@ -197,6 +207,24 @@ def audit():
         'errors': errors,
         'contrast_checks': all_pairs,
     }
+
+
+def saved_report_errors(current, saved):
+    errors = []
+    expected = current['inputs_sha256']
+    actual = saved.get('inputs_sha256', {})
+    for path in sorted(set(expected) | set(actual)):
+        if expected.get(path) != actual.get(path):
+            errors.append('active reference report has stale input: ' + path)
+    # Compare consumer policy, not Git/host attachment provenance or floating
+    # samples. A new commit or unavailable local attachment does not stale inputs.
+    for field in ['format', 'date', 'static_result',
+                  'profiles', 'brand_independent_role_count', 'components',
+                  'elevation_contract', 'differences_requiring_review',
+                  'native_result', 'limitations', 'errors']:
+        if saved.get(field) != current[field]:
+            errors.append('active reference report differs from current policy: ' + field)
+    return errors
 
 
 def self_test():
@@ -223,7 +251,19 @@ def self_test():
     assert all(p['status'] == 'pass' for p in local_contrast_results(tokens, local_pairs))
     assert any(p['status'] == 'fail' for p in local_contrast_results(
         changed('c-status-badge-foreground', '#151515'), local_pairs))
+    current = audit()
+    assert not saved_report_errors(current, copy.deepcopy(current))
+    stale = copy.deepcopy(current)
+    stale['inputs_sha256']['design/source/layout.json'] = '0' * 64
+    assert any('design/source/layout.json' in e for e in saved_report_errors(current, stale))
+    old_policy = copy.deepcopy(current)
+    old_policy['elevation_contract']['shadow_policy'] = 'none'
+    assert any('elevation_contract' in e for e in saved_report_errors(current, old_policy))
+    false_claim = copy.deepcopy(current)
+    false_claim['native_result'] = 'pass'
+    assert any('native_result' in e for e in saved_report_errors(current, false_claim))
     print('PASS: baseline plus surface-order, state-collapse, brand-leakage and status-label contrast negative cases')
+    print('PASS: active-report input, elevation policy and native-claim negative cases')
 
 
 def main():
@@ -238,6 +278,15 @@ def main():
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + '\n')
+    else:
+        reference = read('design/behavior/reference-alignment.json')['acceptance']['report']['$ref']
+        path = ROOT / 'design/behavior' / reference
+        if not path.is_file():
+            report['errors'].append('active reference report is missing: ' + reference)
+        else:
+            report['errors'].extend(saved_report_errors(report, json.loads(path.read_text())))
+        if report['errors']:
+            report['static_result'] = 'fail'
     print(f"{report['static_result'].upper()}: 15 component mappings; {len(report['profiles'])} brand profiles × 4 themes; {len(report['contrast_checks'])} declared contrast checks. Native acceptance: unverified.")
     for error in report['errors']:
         print('FAIL:', error, file=sys.stderr)
