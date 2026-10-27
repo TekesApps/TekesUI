@@ -2147,6 +2147,54 @@
           "disabled",
           "dragging"
         ],
+        "practical_intake": {
+          "baseline_commit": "2753d52ff5e344bec4492d9046b1c0933e56593b",
+          "claims": [
+            "Original prepared SplitViewContent retains capture/ratio/geometry/clip/focus/mount and actual pane leaf Theme during both axes; exact old public pass source reused, Cancel restores original ratio",
+            "Actual Gallery original drag across Themes preserves pane/scale-aware divider paint and own label ink, then Escape/Right/Enter contract; corrected named Gallery and strict passed",
+            "Production/scene/assertions remain; initial whole-pane sampler included later helper/log roles and is preserved as failed identity, only own label paint interval corrected"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.split-view",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/split-view-main97bd424-candidate/main-intake/commit-receipt.json",
+              "commit": "2753d52ff5e344bec4492d9046b1c0933e56593b",
+              "component": "tui.split-view",
+              "issue": "#121",
+              "scope": "Actual corrected Gallery/strict plus exact original public pass reuse; #103 B/#12/native gaps remain separate",
+              "sha256": "e6004f228b87bef1e2ebfc0d80148df057b221d7c4284e049e1dec9ba67cda44"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Original divider uses decorative separator, no own new state palette or fake Splitter semantics",
+            "Ordinary ratio/constraints/hit widths remain geometry; unchanged leaf/clip/reveal/editor states reuse old identities"
+          ],
+          "gaps": [
+            "#103 B semantic Splitter/platform-wire/default-externalTheme/GPU main delivery",
+            "new dedicated native-window/physicalIME/VoiceOver certification",
+            "#12 tall pane/helper-log whole-page pixel/native readability",
+            "other layout roots/full52"
+          ],
+          "scope": "Local A prepared SplitViewContent retained capture/ratio/layout/clip/leaf Theme through both axes and real Gallery drag/pane labels/cancel/keyboard, tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual local A split/pane/witness sources; public and corrected Gallery retain distinct observed source identities; not a B/full product certificate",
+            "sha256": {
+              "crates/tekes-ui-controls/src/composition/split_view.rs": "379caa197a2e449045fb17e9f3ffc67eefe8f6f27e552f4ffd539920ee269eb3",
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+              "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "ab98fab1b0de4e7301d2fb0dcaee08ea0bade52b55b76ea25fa6b8c4b44a470f",
+              "examples/composition-consumer/tests/split_view_theme.rs": "2fabc2e68f51cf92a4780ad4741c8471b7d0b6b1985fbcf036442d59eb255864"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "split",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -59065,7 +59113,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "565cb256ed547c67ccd0fd641e661596aa6eb72a7fa4f5fdd2b8e6efc600b12f",
+    "design/gallery/component-coverage.json": "5bf542f4763c28e3cdc45659264402be95466425f349f9a209b1915fb94a4d1e",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -59114,6 +59162,7 @@
     "examples/composition-consumer/tests/segmented_control_theme.rs": "f356a6c267fb6bb0f2429e749e131d6c84027fa0f6c342e7c0ba2c423b515397",
     "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",
     "examples/composition-consumer/tests/slider_theme.rs": "856cfec5dd414caf2f9c52f8e2bfd4f6ad5fd1a9f768b4de5da9c7717e0885cb",
+    "examples/composition-consumer/tests/split_view_theme.rs": "2fabc2e68f51cf92a4780ad4741c8471b7d0b6b1985fbcf036442d59eb255864",
     "examples/composition-consumer/tests/stack_theme.rs": "50aebbe938dac79bac99d88b983a0c77bc85e4c5450e86877d052c51f2116a30",
     "examples/composition-consumer/tests/status_badge_theme.rs": "aaee4018f5c32e374ffe2d219b0156f91aff8a46f0e821e72d0237a301461543",
     "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",

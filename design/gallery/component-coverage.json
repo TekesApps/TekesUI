@@ -212,7 +212,48 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "2753d52ff5e344bec4492d9046b1c0933e56593b",
+        "scope": "Local A prepared SplitViewContent retained capture/ratio/layout/clip/leaf Theme through both axes and real Gallery drag/pane labels/cancel/keyboard, tests only",
+        "claims": [
+          "Original prepared SplitViewContent retains capture/ratio/geometry/clip/focus/mount and actual pane leaf Theme during both axes; exact old public pass source reused, Cancel restores original ratio",
+          "Actual Gallery original drag across Themes preserves pane/scale-aware divider paint and own label ink, then Escape/Right/Enter contract; corrected named Gallery and strict passed",
+          "Production/scene/assertions remain; initial whole-pane sampler included later helper/log roles and is preserved as failed identity, only own label paint interval corrected"
+        ],
+        "source_identity": {
+          "scope": "Selected actual local A split/pane/witness sources; public and corrected Gallery retain distinct observed source identities; not a B/full product certificate",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition/split_view.rs": "379caa197a2e449045fb17e9f3ffc67eefe8f6f27e552f4ffd539920ee269eb3",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "ab98fab1b0de4e7301d2fb0dcaee08ea0bade52b55b76ea25fa6b8c4b44a470f",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "88b31682558e517e611b405f9afafdab473511fde6d29172f2ba0fcb01c13728",
+            "examples/composition-consumer/tests/split_view_theme.rs": "2fabc2e68f51cf92a4780ad4741c8471b7d0b6b1985fbcf036442d59eb255864"
+          }
+        },
+        "exceptions": [
+          "Original divider uses decorative separator, no own new state palette or fake Splitter semantics",
+          "Ordinary ratio/constraints/hit widths remain geometry; unchanged leaf/clip/reveal/editor states reuse old identities"
+        ],
+        "gaps": [
+          "#103 B semantic Splitter/platform-wire/default-externalTheme/GPU main delivery",
+          "new dedicated native-window/physicalIME/VoiceOver certification",
+          "#12 tall pane/helper-log whole-page pixel/native readability",
+          "other layout roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#121",
+            "component": "tui.split-view",
+            "commit": "2753d52ff5e344bec4492d9046b1c0933e56593b",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/split-view-main97bd424-candidate/main-intake/commit-receipt.json",
+            "sha256": "e6004f228b87bef1e2ebfc0d80148df057b221d7c4284e049e1dec9ba67cda44",
+            "scope": "Actual corrected Gallery/strict plus exact original public pass reuse; #103 B/#12/native gaps remain separate"
+          }
+        ]
+      }
     },
     {
       "id": "tui.scroll-area",
