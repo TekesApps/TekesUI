@@ -1440,11 +1440,12 @@
           "rest"
         ],
         "practical_intake": {
-          "baseline_commit": "ceeee8a6e30092e0cf709cd14edea465ac3d1302",
+          "baseline_commit": "c7b4e511e6842137b09cf4a5f033fe37427dc1b5",
           "claims": [
-            "Public retained SeparatorView switches Theme::ALL across horizontal/vertical axes with original frame/ancestor clip and hidden no-paint",
-            "Actual Gallery playground View and variants painter use both decorative directions at actual2x scale with normal hairline/IC stroke-rule and stable centers/spans",
-            "Both new targets and Gallery strict passed under original source guard/build lock/SSD"
+            "Ordinary Text→Separator→Text public mounting, constrained both-axis scale/Theme/decorative behavior passed with original View sole painter",
+            "Original reading insertion/removal/reflow/user-priority/latest and marked Composer/binding/selection/focus/Enter gate preserved; new and retiring passive leaf works in actual checked pane transaction",
+            "Final actual headless GPU8frames256cases across original4modes/1x2x/default-blue-clay-blue-inputs:192normal entireROI zero pixel difference against original View,64tiny declared device-scissor contract,0 clip leaks; root viewed all8",
+            "Actual public9 plus affected CPU retest, originalscale5/current external API binding/Controls strict and final consumer strict passed; old failures kept"
           ],
           "consumer_entry": {
             "invocation": "--component tui.separator",
@@ -1459,35 +1460,43 @@
               "issue": "#121",
               "scope": "Actual main retained decorative Theme/clip and Gallery dual implementation/scale tests; strict passed; exceptions and not_run preserved.",
               "sha256": "010a23fada4c6f3cfd1bba560b5f98e95b215cc911d33cfb3f24302198376b0d"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-54/separator-content-main8de6c24-candidate/main-intake/commit-receipt.json",
+              "commit": "c7b4e511e6842137b09cf4a5f033fe37427dc1b5",
+              "component": "tui.separator",
+              "issue": "#54",
+              "scope": "Current ordinary Content/reading/marked/checked compatibility and original a2 GPU scope; prior Root/Gallery/scale evidence not re-signed.",
+              "sha256": "72d6cc42d01b54cf4f45fe7f08d7a7dda8a23b2bab7b73ad5bb6efe5574a4eb6"
             }
           ],
           "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
           "exceptions": [
-            "Original decorative grouping spec excludes required interaction boundaries; no invented text/interaction/disabled/focus states or contrast threshold. Current main has no SeparatorContent API.",
-            "Ordinary direction/placement geometry stays layout; shared brand/invalid-scale/1x/SplitView results reused unchanged"
+            "Same tui.separator identity; no new root, painter, Theme rules, action/focus/AX node or text/scroll owner",
+            "Ordinary constraints/direction/placement remain geometry; decorative role is not a required interactive boundary",
+            "Curved subtrees retain original default Unsupported; actual8GPU old normal/tiny/ancestor scenes are not a new curve or native certification"
           ],
           "gaps": [
-            "new full-brand/GPU/native-window/physicalIME/VoiceOver certification",
-            "other7 family roots/full52"
+            "#54 immutable public delivery and AgentKit exact pin/actual integration pending at this local checkpoint",
+            "Native window/physicalIME/VoiceOver/performance/fullGold7 not_run; not additional first3AC gates"
           ],
-          "scope": "Retained existing public SeparatorView and actual Gallery playground/variants, four Themes, both axes, actual2x decorative stroke, original geometry/clip/hidden; tests only",
+          "scope": "Current ordinary public SeparatorContent plus original SeparatorView; explicit current adapter/reading/marked/checked transaction and original8GPUframes256cases. Prior Gallery/View Theme evidence stays original identity.",
           "source_identity": {
-            "differences": {
-              "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "b0e41628349242c3b91ae8c3c125fda3fbee2d462d1c4c19daad0b214104b37e",
-                "expected": "81d61e1f0e9b7ebda581eab90ab760fd86f7b838d9741505d311e5e672ffddd4"
-              }
-            },
-            "scope": "Selected real consumer/render sources, not exhaustive dependency proof; actual full-source run identities retained in receipts.",
+            "differences": {},
+            "scope": "Selected actual public adapter/View/consumer/GPU sources, not exhaustive dependency proof; exact full source/program/depinfo runs retained in receipt, including distinct test-lint reruns.",
             "sha256": {
+              "crates/tekes-ui-controls/src/composition.rs": "2fca45295eda10da5593e7cfdf6960ee63de6516be20170c7161dcdf7c03bb45",
+              "crates/tekes-ui-controls/src/composition/separator.rs": "4fed31d0eb17470dadd33b7a3644ba922e06fa005a3feddb0f88379eed7f3397",
               "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
               "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
               "crates/tekes-ui-controls/src/paint.rs": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968",
-              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "81d61e1f0e9b7ebda581eab90ab760fd86f7b838d9741505d311e5e672ffddd4",
-              "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c"
+              "examples/composition-consumer/tests/separator_content.rs": "a5de8eb506dcb0d328173626a82ed0627b3ac9da29d97a3043b3ed96e4bd0dba",
+              "examples/composition-consumer/tests/separator_content_gpu.rs": "86b777e62b46b7df26b8fb22672e9ced69c3b0ef7eb0f2ff3a7bff941ec215b5",
+              "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
+              "examples/composition-consumer/tests/support/separator_fixture.rs": "13be213a700d498f1dce0b6374a4070affe566f87d35608ccf69393547ceb099"
             }
           },
-          "status": "accepted-source-subset-stale"
+          "status": "accepted-source-subset-matched"
         },
         "profile": "static",
         "profile_exceptions": {},
@@ -59708,7 +59717,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "965aad6bdb6b58576640cb57a2fc5e663d10afc2a9307aa30d6cc3a2017957b7",
+    "design/gallery/component-coverage.json": "250369e7b362d54822a457d0dd18e583c5e3ceb4b99f34bad097b72a0d6417d5",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "859e6833424dba2f34b28a379a087ea147234e1df2c8b4865a931f0570352210",
@@ -59764,12 +59773,14 @@
     "examples/composition-consumer/tests/search_theme.rs": "2f3ce69ed081f1bb2fb3892f1bd6fb575720e4bed7869e818ec0faf5e8a5867f",
     "examples/composition-consumer/tests/segmented_control_theme.rs": "f356a6c267fb6bb0f2429e749e131d6c84027fa0f6c342e7c0ba2c423b515397",
     "examples/composition-consumer/tests/select_theme.rs": "6f6026b4e183961ad86c49f287536090c29e8a0450a5772befe06fc9d32f7c0e",
-    "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",
+    "examples/composition-consumer/tests/separator_content.rs": "a5de8eb506dcb0d328173626a82ed0627b3ac9da29d97a3043b3ed96e4bd0dba",
+    "examples/composition-consumer/tests/separator_content_gpu.rs": "86b777e62b46b7df26b8fb22672e9ced69c3b0ef7eb0f2ff3a7bff941ec215b5",
     "examples/composition-consumer/tests/slider_theme.rs": "856cfec5dd414caf2f9c52f8e2bfd4f6ad5fd1a9f768b4de5da9c7717e0885cb",
     "examples/composition-consumer/tests/split_view_theme.rs": "2fabc2e68f51cf92a4780ad4741c8471b7d0b6b1985fbcf036442d59eb255864",
     "examples/composition-consumer/tests/stack_theme.rs": "50aebbe938dac79bac99d88b983a0c77bc85e4c5450e86877d052c51f2116a30",
     "examples/composition-consumer/tests/status_badge_theme.rs": "aaee4018f5c32e374ffe2d219b0156f91aff8a46f0e821e72d0237a301461543",
     "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
+    "examples/composition-consumer/tests/support/separator_fixture.rs": "13be213a700d498f1dce0b6374a4070affe566f87d35608ccf69393547ceb099",
     "examples/composition-consumer/tests/surface_theme.rs": "ea80660bf10c7af0092bf43ff8dca05c3414eedb21452e40be5c80b83aa9edbf",
     "examples/composition-consumer/tests/switch_theme.rs": "b3fabfc1f6340fa76148ed194787db52ba10ef36397994b8b1d90c4fcab27c9a",
     "examples/composition-consumer/tests/tabs_theme.rs": "88d4c4178f4caa4da2dea18dea8d62a7a186691e36b07048d9a48e76b88b935e",
