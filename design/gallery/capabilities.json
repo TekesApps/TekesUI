@@ -1325,6 +1325,56 @@
         "historical_public_api_verified": [
           "rest"
         ],
+        "practical_intake": {
+          "baseline_commit": "ceeee8a6e30092e0cf709cd14edea465ac3d1302",
+          "claims": [
+            "Public retained SeparatorView switches Theme::ALL across horizontal/vertical axes with original frame/ancestor clip and hidden no-paint",
+            "Actual Gallery playground View and variants painter use both decorative directions at actual2x scale with normal hairline/IC stroke-rule and stable centers/spans",
+            "Both new targets and Gallery strict passed under original source guard/build lock/SSD"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.separator",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/separator-main0a389a9-candidate/main-intake/commit-receipt.json",
+              "commit": "ceeee8a6e30092e0cf709cd14edea465ac3d1302",
+              "component": "tui.separator",
+              "issue": "#121",
+              "scope": "Actual main retained decorative Theme/clip and Gallery dual implementation/scale tests; strict passed; exceptions and not_run preserved.",
+              "sha256": "010a23fada4c6f3cfd1bba560b5f98e95b215cc911d33cfb3f24302198376b0d"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Original decorative grouping spec excludes required interaction boundaries; no invented text/interaction/disabled/focus states or contrast threshold. Current main has no SeparatorContent API.",
+            "Ordinary direction/placement geometry stays layout; shared brand/invalid-scale/1x/SplitView results reused unchanged"
+          ],
+          "gaps": [
+            "new full-brand/GPU/native-window/physicalIME/VoiceOver certification",
+            "other7 family roots/full52"
+          ],
+          "scope": "Retained existing public SeparatorView and actual Gallery playground/variants, four Themes, both axes, actual2x decorative stroke, original geometry/clip/hidden; tests only",
+          "source_identity": {
+            "differences": {
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
+                "actual": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
+                "expected": "81d61e1f0e9b7ebda581eab90ab760fd86f7b838d9741505d311e5e672ffddd4"
+              }
+            },
+            "scope": "Selected real consumer/render sources, not exhaustive dependency proof; actual full-source run identities retained in receipts.",
+            "sha256": {
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+              "crates/tekes-ui-controls/src/paint.rs": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "81d61e1f0e9b7ebda581eab90ab760fd86f7b838d9741505d311e5e672ffddd4",
+              "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c"
+            }
+          },
+          "status": "accepted-source-subset-stale"
+        },
         "profile": "static",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -7073,7 +7123,7 @@
                 "expected": "37c640ce78bd2b1457dce070c1be6604f298335b1d38cde2aec6d03e9e84c723"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370",
+                "actual": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
                 "expected": "0b3758ee22cc28c0ae0504c1e1fe0642d7d3bafa908a89b4b944c0f7ef4cabf1"
               }
             },
@@ -8779,7 +8829,12 @@
           ],
           "scope": "Existing public unified Button image path and actual Gallery original decorative icon action, no separate IconButton API.",
           "source_identity": {
-            "differences": {},
+            "differences": {
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
+                "actual": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
+                "expected": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370"
+              }
+            },
             "scope": "Selected semantic consumption and new test sources, not a complete dependency certificate; full actual source/program identity in original receipts.",
             "sha256": {
               "crates/tekes-ui-controls/src/composition/button.rs": "0a168f44280df2c4f615c243a32e4c8987fb526c8708e2b571d7f88b96f96f0e",
@@ -8789,7 +8844,7 @@
               "examples/composition-consumer/tests/icon_button_theme.rs": "0d9bc7273e23df0ca442cc1d9cc76999e487df144576c070f673ac31e48b0a5c"
             }
           },
-          "status": "accepted-source-subset-matched"
+          "status": "accepted-source-subset-stale"
         },
         "profile": "button",
         "profile_exceptions": {},
@@ -23768,6 +23823,55 @@
           "error",
           "mixed"
         ],
+        "practical_intake": {
+          "baseline_commit": "293b75127a66716bd4fb872e84d5de7f333466ab",
+          "claims": [
+            "Same public Checkbox and actual Gallery retain Unchecked/Checked/Mixed across Theme::ALL with real indicator/mark/label semantic ink and own-ground contrast3/4.5/7",
+            "Representative actual hover/pressed/outside-cancel/Space-release/Enter-refusal/focus/disabled-during-capture/re-enable behavior passed",
+            "Both new targets and Gallery strict passed under original SSD/source guard/lock; static helper arity repaired before first build without weakening checks"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.checkbox",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/checkbox-main0a389a9-candidate/main-intake/commit-receipt.json",
+              "commit": "293b75127a66716bd4fb872e84d5de7f333466ab",
+              "component": "tui.checkbox",
+              "issue": "#122",
+              "scope": "Exact-main actual public CoreText/Gallery check states, semantic ink/ground and input contracts, strict, explicit bounded applicability.",
+              "sha256": "95d4329871f5a1d60a7846286fc9eee605344369166f3e07c9207da5ea27ba29"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Normal row/mark geometry stays layout, disabled tertiary text is not active-text contrast claim; actual Gallery transparent preview uses real renderer clear, no fabricated background or cropped scene. Static8-arg helper issue corrected before first build.",
+            "Original shared generation/AX/activation/clip/geometry results reused without replay or relabeling"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver/motion-timing certification",
+            "other12 family roots/full52"
+          ],
+          "scope": "Existing public Checkbox and real Gallery three retained check states across Theme::ALL, own indicator/mark/real CoreText label semantics and contrast, representative input/unavailability/focus; tests only",
+          "source_identity": {
+            "differences": {
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
+                "actual": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
+                "expected": "0e56c733d8dea7041a15bcf873708bcd4b3872dbccece905a46ef889a3286635"
+              }
+            },
+            "scope": "Selected real consumer/paint/test sources, not exhaustive dependency proof; actual full-source run identities retained in receipts.",
+            "sha256": {
+              "crates/tekes-ui-controls/src/paint.rs": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968",
+              "crates/tekes-ui-controls/src/widgets.rs": "39e9bdce57eacfb93020954e72581a005eaaf2ec86bca69dff5ddd7d64921d86",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "0e56c733d8dea7041a15bcf873708bcd4b3872dbccece905a46ef889a3286635",
+              "examples/composition-consumer/tests/checkbox_theme.rs": "849080ccac69b56bdaa6f751e708f91ed93e8383143414cccbb0baa2dc2969fc"
+            }
+          },
+          "status": "accepted-source-subset-stale"
+        },
         "profile": "check",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -36320,7 +36424,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370",
+                "actual": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
                 "expected": "2981ebca2d8427000af1fb30f7ea57c9d08e5ba7973c6acbca50b0c3173d6547"
               }
             },
@@ -39802,7 +39906,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370",
+                "actual": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
                 "expected": "7b25bc2f12a3be0d395a1ae06097afd3d93cb2ef9349a39c48114726e278105b"
               }
             },
@@ -42059,7 +42163,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370",
+                "actual": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
                 "expected": "48a6fe67d988f66a255dbc8cf8c5121ba8a284359df4c2944825af365c153d6c"
               }
             },
@@ -45746,6 +45850,51 @@
           "disabled",
           "selected"
         ],
+        "practical_intake": {
+          "baseline_commit": "c40f147c206c5bd744509b137c2bddda858356ac",
+          "claims": [
+            "Same public selectable ListView retains selection across Theme::ALL with actual selected/hovered/disabled/restored grounds, real CoreText ink4.5/7 and focus indicator",
+            "Original disabled input rejection and Down/Home/End/Up/Enter behavior preserved",
+            "Actual Gallery retains selected/hover/focus state across four Themes, own-row glyph contrast, five ListItem semantics and real Home/End navigation; Gallery strict passed"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.list",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/list-main0a389a9-candidate/main-intake/commit-receipt.json",
+              "commit": "c40f147c206c5bd744509b137c2bddda858356ac",
+              "component": "tui.list",
+              "issue": "#124",
+              "scope": "Exact-main actual public/Gallery retained selectable List Theme, real ink/ground/input/semantics, strict, original applicability boundaries.",
+              "sha256": "c31e561d3a42f649e74f3d4f7192ffb8b569ec0218d106ab24fe3f7e57322b92"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Non-selecting ListContent remains layout, Gallery has no List disabled toggle; public disabled behavior verified. Disabled tertiary not active contrast. Ordinary geometry stays layout; CoreText cfg macOS explicit before first build.",
+            "Original shared generation and Row/List/Settings/selection regressions reused unchanged"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+            "other5 family roots/full52"
+          ],
+          "scope": "Public retained selectable ListView and real Gallery adapter across Theme::ALL, own-row CoreText contrast and actual selection/navigation/AX; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected real consumer/collection/Gallery sources, not exhaustive dependency proof; actual full-source/program identities retained in receipts.",
+            "sha256": {
+              "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
+              "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "ab7fd37894079c213053c7f084a16eab2c515b638659be0da4688bb5597a217b",
+              "examples/composition-consumer/tests/list_theme.rs": "3f73caabbba6fff3368f54470ec3704b8935f8f9d2a25d019db2a82025033304"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "select",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -50654,7 +50803,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370",
+                "actual": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
                 "expected": "d6d241657d8f1ded0e5895a8e9b32110d64ecee8aac96001e32d32345f9d6954"
               }
             },
@@ -53368,7 +53517,7 @@
           "source_identity": {
             "differences": {
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370",
+                "actual": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
                 "expected": "daf8bc496154e379a8b6a87fc8febea24c38f22e426d4bd6f9b68aec3a0f1879"
               }
             },
@@ -53607,7 +53756,7 @@
                 "expected": "d5cd8ee66361fdc3b6b9eec43b199c72057796431637a6216b997c44193ffca2"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370",
+                "actual": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
                 "expected": "bf4b431faba91d567b81d85660dea2bf296988ad4139199bebff8b9c95782eb9"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": {
@@ -53838,7 +53987,7 @@
                 "expected": "d5cd8ee66361fdc3b6b9eec43b199c72057796431637a6216b997c44193ffca2"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370",
+                "actual": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
                 "expected": "bf4b431faba91d567b81d85660dea2bf296988ad4139199bebff8b9c95782eb9"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": {
@@ -56416,7 +56565,7 @@
                 "expected": "28292051ab705f5eefb3d4344470456ed2332f05a8161d727e08e9e5763cf41c"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370",
+                "actual": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
                 "expected": "21256c6bea0449670bd1ad1743a3fd3d2c82bfc6209c0d9d3a225cce5eaa711d"
               }
             },
@@ -58091,7 +58240,7 @@
     "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "652640370d62ef4e64906d8df3e5346012e06b5a6f3481a1d08b091686a4ac4f",
     "crates/tekes-ui-gallery/src/gallery/theme.rs": "e1ede314548a0ae25ad633f1a86cefb7118473d7b61d0967dcb6bfbe551982d5",
     "crates/tekes-ui-gallery/src/gallery/viewport.rs": "d18ea19e94e33c67ef3bbfc2f7ad8ca1b5ec3ecda2a6ee18df327a26f8046918",
-    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "7973a9dd21e8e236cee23e5f488ad554509fde05bb6cfdab90b757256f97c737",
     "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "78618232299c5a7f994e159d5b6f80a90d2cbcb22fa817c8ea1c3e691d4fa231",
     "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs": "9f35f162c7e843faea590899b461e0231472826eaca9d53a2c3428b5fc60b59d",
     "crates/tekes-ui-gallery/src/gallery/workbench/brand_preview.rs": "f13d24a6b4b12f16b96c0ffc3df2542f8eadd95452dd1c18942d8214695d8f5a",
@@ -58282,7 +58431,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "585db2b6bae9563bcb4aa7be3ae1d4a0626bdb8ccc299e3d9f29d8dfa450c4a7",
+    "design/gallery/component-coverage.json": "698192566aaba61bbf64e59bc3f06e5ca7f96b1aea3a74ef54dd420b23b61ac7",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58316,11 +58465,14 @@
     "examples/composition-consumer/src/status_badge_content.rs": "58006b3eb44e1cb7261c25ebd8bbd8819591a22f5ac53ae48fec6379b62b3a9c",
     "examples/composition-consumer/tests/breadcrumb_theme.rs": "0da781dd1b0dd19ad1b68bfc1fa399cc69a5949fe15b556202c4b1f17aa9c6b5",
     "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80",
+    "examples/composition-consumer/tests/checkbox_theme.rs": "849080ccac69b56bdaa6f751e708f91ed93e8383143414cccbb0baa2dc2969fc",
     "examples/composition-consumer/tests/command_palette_theme.rs": "eadd793e9e828b460bebaae52fa3cd935c88095f8e408536c96617b75f19f7d2",
     "examples/composition-consumer/tests/dialog_theme.rs": "6cf7b51a1c7393501f89b44551da8031712ca5054d5ada0e91e3fc2234a97953",
     "examples/composition-consumer/tests/icon_button_theme.rs": "0d9bc7273e23df0ca442cc1d9cc76999e487df144576c070f673ac31e48b0a5c",
     "examples/composition-consumer/tests/icon_theme.rs": "49b5adb26de708799a14330a8a2b8d341150ab673cb4e07626187f5f3b8f0814",
+    "examples/composition-consumer/tests/list_theme.rs": "3f73caabbba6fff3368f54470ec3704b8935f8f9d2a25d019db2a82025033304",
     "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758",
+    "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",
     "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
     "examples/composition-consumer/tests/tabs_theme.rs": "88d4c4178f4caa4da2dea18dea8d62a7a186691e36b07048d9a48e76b88b935e",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",

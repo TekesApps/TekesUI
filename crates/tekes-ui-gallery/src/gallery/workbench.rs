@@ -6823,6 +6823,116 @@ mod interaction_tests {
     }
 
     #[test]
+    fn list_theme_retains_actual_gallery_selection_hover_focus_and_semantics() {
+        use tekes_ui_platform_macos::AccessibilityRole;
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("list");
+        click(&mut w, i, 31, &mut text);
+        w.handle(i, &key(125, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).extended.list.selected, Some(2));
+        let selected = w
+            .state(i)
+            .visible_for_id(32)
+            .expect("real visible List row");
+        w.handle(i, &move_pointer(selected.center()), &mut text);
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut original_frame = None;
+        for theme in Theme::ALL {
+            text.begin_frame();
+            let mut static_text = super::super::static_text::StaticText::new(None);
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            let mut scene = Scene::new();
+            w.build_clipped(i, &mut ctx, content, content, &mut scene);
+            assert!(scene.composition_error().is_none());
+            assert_eq!(w.state(i).extended.list.selected, Some(2));
+            assert_eq!(w.state(i).focus, Some(32));
+            let row = w.state(i).visible_for_id(32).unwrap();
+            if let Some(original) = original_frame {
+                assert_eq!(row, original);
+            } else {
+                original_frame = Some(row);
+            }
+            let palette = Palette::new(theme, w.brand).unwrap();
+            let (surface_index, surface) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(index, p)| match p {
+                    Primitive::Quad(q) if q.rect == row => Some((index, q)),
+                    _ => None,
+                })
+                .expect("own actual Gallery selected row ground");
+            assert_eq!(surface.fill, palette.color("row-selection-hover").unwrap());
+            let copies: Vec<_> = scene.primitives()[surface_index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if !run.glyphs.is_empty()
+                            && run.glyphs.iter().all(|g| row.contains(g.origin)) =>
+                    {
+                        Some(run)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !copies.is_empty(),
+                "actual Gallery row glyphs, not a header or caption"
+            );
+            assert!(
+                copies
+                    .iter()
+                    .all(|run| run.color == palette.color("primary-text").unwrap())
+            );
+            assert_eq!((copies[0].color.a, surface.fill.a), (1., 1.));
+            let luminance = |color: tekes_ui_tokens::Rgba| {
+                let c = color.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (luminance(copies[0].color), luminance(surface.fill));
+            assert!(
+                (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                    >= if theme.is_increased() { 7. } else { 4.5 }
+            );
+            assert!(scene.primitives().iter().any(|p| matches!(p,
+                Primitive::Quad(q) if q.fill.a == 0. && q.border_color == palette.color("border-focused").unwrap()
+                    && q.rect.intersection(&row).is_some()
+            )));
+            let nodes = w.accessibility_nodes(i);
+            let list = nodes
+                .iter()
+                .find(|node| node.role == AccessibilityRole::List)
+                .expect("real List semantic group");
+            let rows: Vec<_> = nodes
+                .iter()
+                .filter(|node| {
+                    node.role == AccessibilityRole::ListItem && node.parent == Some(list.key)
+                })
+                .collect();
+            assert_eq!(rows.len(), 5);
+            assert_eq!(rows.iter().filter(|row| row.selected).count(), 1);
+            let selected = rows.iter().find(|row| row.selected).unwrap();
+            assert_eq!(selected.label, "Images");
+            assert!(selected.focused && selected.enabled);
+        }
+        for (code, selected) in [(115, 0), (119, 4)] {
+            w.handle(i, &key(code, true), &mut text);
+            assert_eq!(w.state(i).extended.list.selected, Some(selected));
+            assert_eq!(w.state(i).focus, Some(30 + selected));
+        }
+    }
+
+    #[test]
     fn gallery_wholly_offscreen_collections_reveal_home_and_end_without_pointer_hits() {
         use super::super::Gallery;
         for renderer in ["list", "tree", "data-table", "chart"] {
@@ -7731,6 +7841,295 @@ mod interaction_tests {
         assert_eq!(
             keyboard_workbench.state(i).checkbox.checked,
             CheckState::Unchecked
+        );
+    }
+
+    #[test]
+    fn checkbox_gallery_theme_switch_keeps_check_state_and_repaints_actual_mark_and_label() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+        fn assert_checkbox(
+            scene: &Scene,
+            geometry: (Rect, Rect),
+            palette: Palette,
+            checked: CheckState,
+            ground: &str,
+            disabled: bool,
+            backing: f32,
+        ) -> Rect {
+            let (row, label) = geometry;
+            let side = proposal::metric("size", "c-checkbox-size").unwrap();
+            let (index, control) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q)
+                        if q.rect.min_x() == row.min_x()
+                            && q.rect.size == tekes_ui_scene::Size::new(side, side)
+                            && row.intersection(&q.rect) == Some(q.rect) =>
+                    {
+                        Some((i, *q))
+                    }
+                    _ => None,
+                })
+                .expect("actual Checkbox indicator background");
+            assert_eq!(control.fill, palette.color(ground).unwrap());
+            assert_eq!(
+                control.corner_radii,
+                tekes_ui_scene::CornerRadii::uniform(
+                    proposal::metric("radius", "c-checkbox-radius").unwrap()
+                )
+            );
+            assert_eq!(control.border_color, palette.color("border").unwrap());
+            let parent = scene.primitives()[..index]
+                .iter()
+                .rev()
+                .find_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a == 1. && q.rect.intersection(&label) == Some(label) =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .unwrap_or_else(|| {
+                    // This Gallery preview is transparent to the real renderer's clear color.
+                    // No synthetic background quad is inserted into the complete scene.
+                    Gallery::background(palette.theme)
+                });
+            let marks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a > 0. && control.rect.intersection(&q.rect) == Some(q.rect) =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .collect();
+            if checked == CheckState::Unchecked {
+                assert!(marks.is_empty());
+            } else {
+                assert!(!marks.is_empty(), "checked/mixed emits real mark quads");
+                if checked == CheckState::Mixed {
+                    assert_eq!(marks.len(), 1);
+                }
+                let role = if disabled {
+                    "tertiary-text"
+                } else {
+                    "control-checked-mark"
+                };
+                for ink in marks {
+                    assert_eq!(ink, palette.color(role).unwrap());
+                    if !disabled {
+                        assert!(contrast(ink, control.fill) >= 3., "actual mark/own ground");
+                    }
+                }
+            }
+            let inks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let a = g.glyph;
+                            label
+                                .intersection(&Rect::new(
+                                    g.origin.x + a.left as f32 / backing,
+                                    g.origin.y + a.top as f32 / backing,
+                                    a.width as f32 / backing,
+                                    a.height as f32 / backing,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "real CoreText label glyphs after this Checkbox paint"
+            );
+            for ink in inks {
+                assert_eq!(
+                    ink,
+                    palette
+                        .color(if disabled {
+                            "tertiary-text"
+                        } else {
+                            "primary-text"
+                        })
+                        .unwrap()
+                );
+                if !disabled {
+                    assert!(
+                        contrast(ink, parent)
+                            >= if palette.theme.is_increased() {
+                                7.
+                            } else {
+                                4.5
+                            },
+                        "actual label/parent ground"
+                    );
+                }
+            }
+            control.rect
+        }
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 900.);
+        assert!(gallery.open_route("component-checkbox/playground"));
+        let i = index("checkbox");
+        gallery.build_scene(&mut Scene::new());
+        let initial = gallery.workbench.state(i).checkbox.layout().unwrap();
+        let background = Point::new(initial.frame.max_x() + 40., initial.frame.min_y());
+        for checked in [
+            CheckState::Unchecked,
+            CheckState::Checked,
+            CheckState::Mixed,
+        ] {
+            gallery.workbench.state(i).checkbox.checked = checked;
+            for theme in Theme::ALL {
+                gallery.set_system_theme(theme);
+                gallery.handle_input(&move_pointer(background));
+                let mut scene = Scene::new();
+                gallery.build_scene(&mut scene);
+                assert_eq!(gallery.theme(), theme);
+                let checkbox = &gallery.workbench.state(i).checkbox;
+                assert_eq!(checkbox.checked, checked);
+                assert!(!checkbox.button.state.hovered);
+                assert!(!checkbox.button.state.pressed);
+                let layout = checkbox.layout().unwrap();
+                assert_eq!(layout, initial);
+                assert_checkbox(
+                    &scene,
+                    (layout.frame, layout.content),
+                    theme.into(),
+                    checked,
+                    if checked == CheckState::Unchecked {
+                        "surface-2"
+                    } else {
+                        "control-checked-ground"
+                    },
+                    false,
+                    gallery.text.scale(),
+                );
+            }
+        }
+        let palette: Palette = Theme::DARK_INCREASED.into();
+        let point = initial.frame.center();
+        gallery.handle_input(&move_pointer(point));
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        assert!(gallery.workbench.state(i).checkbox.button.state.hovered);
+        assert_checkbox(
+            &scene,
+            (initial.frame, initial.content),
+            palette,
+            CheckState::Mixed,
+            "control-checked-hover",
+            false,
+            gallery.text.scale(),
+        );
+        gallery.handle_input(&mouse(point, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(gallery.workbench.state(i).checkbox.button.state.pressed);
+        assert_checkbox(
+            &scene,
+            (initial.frame, initial.content),
+            palette,
+            CheckState::Mixed,
+            "control-checked-pressed",
+            false,
+            gallery.text.scale(),
+        );
+        gallery.handle_input(&mouse(background, false));
+        gallery.handle_input(&move_pointer(background));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Mixed
+        );
+        gallery.handle_input(&key(36, true));
+        gallery.handle_input(&key(36, false));
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Mixed,
+            "Enter never toggles"
+        );
+        gallery.handle_input(&key(49, true));
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Mixed,
+            "Space activates on release"
+        );
+        gallery.handle_input(&key(49, false));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Checked
+        );
+        let control = assert_checkbox(
+            &scene,
+            (initial.frame, initial.content),
+            palette,
+            CheckState::Checked,
+            "control-checked-ground",
+            false,
+            gallery.text.scale(),
+        );
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && q.rect.center()==control.center() && q.border_color==palette.color("border-focused").unwrap())));
+        gallery.workbench.state(i).disabled = true;
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_checkbox(
+            &scene,
+            (initial.frame, initial.content),
+            palette,
+            CheckState::Checked,
+            "surface-2",
+            true,
+            gallery.text.scale(),
+        );
+        assert!(!scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0. && q.rect.center()==control.center())));
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        gallery.handle_input(&key(49, true));
+        gallery.handle_input(&key(49, false));
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Checked
+        );
+        gallery.workbench.state(i).disabled = false;
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Unchecked,
+            "matching pointer release toggles Checked to Unchecked"
         );
     }
 
@@ -9519,6 +9918,97 @@ mod interaction_tests {
             assert!(
                 w.state(i).buttons[&20].state.focus_visible,
                 "caller-owned Menu trigger restores keyboard modality after {close}"
+            );
+        }
+    }
+
+    #[test]
+    fn separator_gallery_theme_switch_keeps_both_decorative_directions_and_scale() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut gallery = Gallery::new();
+        let i = index("separator");
+        gallery.set_view_size(1440., 960.);
+        gallery.text_mut().set_scale(2.);
+        // Playground uses SeparatorView; variants use the original at-scale painter.
+        for story in ["playground", "variants"] {
+            assert!(gallery.open_route(&format!("{}/{story}", entry(i).slug())));
+            let mut original_frames = None;
+            let mut colors = Vec::new();
+            for theme in Theme::ALL {
+                gallery.apply(Command::Appearance(if theme.is_dark() {
+                    AppearanceChoice::Dark
+                } else {
+                    AppearanceChoice::Light
+                }));
+                gallery.apply(Command::Contrast(if theme.is_increased() {
+                    ContrastChoice::On
+                } else {
+                    ContrastChoice::Off
+                }));
+                assert_eq!(gallery.theme(), theme);
+                let mut scene = Scene::new();
+                gallery.build_scene(&mut scene);
+                let state = gallery.workbench.state(i);
+                let palette = Palette::new(theme, 0).unwrap();
+                let color = palette.color("separator").unwrap();
+                let width = if theme.is_increased() {
+                    proposal::metric("stroke", "stroke-rule").unwrap()
+                } else {
+                    1. / gallery.text.scale()
+                };
+                let lines: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Quad(q)
+                            if q.fill == color
+                                && q.border_width == 0.
+                                && state.preview.contains(q.rect.center())
+                                && ((q.rect.size.width > 100. && q.rect.size.height <= 1.)
+                                    || (q.rect.size.height > 100. && q.rect.size.width <= 1.)) =>
+                        {
+                            Some(q.rect)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(
+                    lines.len(),
+                    2,
+                    "{story}: both real standalone separator directions"
+                );
+                assert_eq!(
+                    lines[0].size.height, width,
+                    "{story}: horizontal scale policy"
+                );
+                assert_eq!(lines[1].size.width, width, "{story}: vertical scale policy");
+                // Theme changes may change decorative thickness, but not the allocated span or center.
+                let frames = [
+                    (lines[0].center(), lines[0].size.width),
+                    (lines[1].center(), lines[1].size.height),
+                ];
+                if let Some(original) = original_frames {
+                    assert_eq!(frames, original);
+                } else {
+                    original_frames = Some(frames);
+                }
+                if story == "playground" {
+                    let layout = state.extended.separator_view.layout();
+                    assert_eq!(layout.frame.center(), lines[1].center());
+                    assert_eq!(layout.frame.size.height, lines[1].size.height);
+                    assert!(layout.visible.is_some());
+                }
+                colors.push(color);
+            }
+            assert!(
+                colors.windows(2).any(|w| w[0] != w[1]),
+                "{story}: retained Gallery consumes Theme ink"
             );
         }
     }
