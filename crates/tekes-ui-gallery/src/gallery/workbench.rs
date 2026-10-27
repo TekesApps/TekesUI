@@ -7073,6 +7073,208 @@ mod interaction_tests {
     }
 
     #[test]
+    fn data_table_theme_preserves_actual_gallery_sort_identity_and_cell_semantics() {
+        use tekes_ui_platform_macos::{AccessibilityRole, AccessibilitySortDirection};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("data-table");
+        click(&mut w, i, 32, &mut text);
+        click(&mut w, i, 20, &mut text);
+        w.handle(i, &key(124, true), &mut text);
+        w.handle(i, &key(123, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).focus, Some(20));
+        let row = w
+            .state(i)
+            .visible_for_id(32)
+            .expect("actual original selected row");
+        w.handle(i, &move_pointer(row.center()), &mut text);
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut original_frames = None;
+        for theme in Theme::ALL {
+            text.begin_frame();
+            let mut static_text = super::super::static_text::StaticText::new(None);
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            let mut scene = Scene::new();
+            w.build_clipped(i, &mut ctx, content, content, &mut scene);
+            assert!(scene.composition_error().is_none());
+            assert_eq!(w.state(i).extended.table.selected_row, Some(2));
+            assert_eq!(w.state(i).focus, Some(20));
+            assert_eq!(w.state(i).extended.visible_rows, vec![3, 2, 1, 0, 4]);
+            let layout = w.state(i).extended.table_view().layout().clone();
+            let selected = layout.rows.iter().find(|row| row.id == 2).unwrap().frame;
+            let header = layout.headers[0].frame;
+            if let Some(original) = original_frames {
+                assert_eq!((header, selected), original);
+            } else {
+                original_frames = Some((header, selected));
+            }
+            let palette = Palette::new(theme, w.brand).unwrap();
+            for (bounds, is_header) in [(header, true), (selected, false)] {
+                let (index, ground) = scene
+                    .primitives()
+                    .iter()
+                    .enumerate()
+                    .find_map(|(index, p)| match p {
+                        Primitive::Quad(q) if q.rect == bounds => Some((index, q)),
+                        _ => None,
+                    })
+                    .expect("own actual Gallery table ground");
+                assert_eq!(
+                    ground.fill,
+                    palette
+                        .color(if is_header {
+                            "surface-2"
+                        } else {
+                            "row-selection-hover"
+                        })
+                        .unwrap()
+                );
+                let cells = if is_header {
+                    vec![header]
+                } else {
+                    layout
+                        .columns
+                        .iter()
+                        .map(|column| column.intersection(&selected).unwrap())
+                        .collect()
+                };
+                for cell in cells {
+                    let labels: Vec<_> = scene.primitives()[index + 1..]
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Glyphs(run)
+                                if !run.glyphs.is_empty()
+                                    && run.glyphs.iter().all(|g| cell.contains(g.origin)) =>
+                            {
+                                Some(run)
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    assert!(
+                        !labels.is_empty(),
+                        "actual header/cell glyphs, independently of captions"
+                    );
+                    assert!(
+                        labels
+                            .iter()
+                            .all(|run| run.color == palette.color("primary-text").unwrap())
+                    );
+                    assert_eq!((labels[0].color.a, ground.fill.a), (1., 1.));
+                    let luminance = |color: tekes_ui_tokens::Rgba| {
+                        let c = color.to_linear();
+                        0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                    };
+                    let (a, b) = (luminance(labels[0].color), luminance(ground.fill));
+                    assert!(
+                        (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                            >= if theme.is_increased() { 7. } else { 4.5 }
+                    );
+                }
+            }
+            assert!(scene.primitives().iter().any(|p|matches!(p,
+                Primitive::Quad(q) if q.fill.a==0.&&q.border_color==palette.color("border-focused").unwrap()&&q.rect.intersection(&header).is_some()
+            )));
+            let nodes = w.accessibility_nodes(i);
+            let table = nodes
+                .iter()
+                .find(|node| node.role == AccessibilityRole::Table)
+                .unwrap();
+            let columns: Vec<_> = nodes
+                .iter()
+                .filter(|node| matches!(node.role, AccessibilityRole::TableColumn { .. }))
+                .collect();
+            assert_eq!(columns.len(), 3);
+            assert!(columns.iter().all(|node| node.parent == Some(table.key)));
+            let header = nodes.iter().find(|node| node.key.part == Some(20)).unwrap();
+            assert_eq!(
+                header.role,
+                AccessibilityRole::TableColumnHeader {
+                    index: 0,
+                    sort: Some(AccessibilitySortDirection::Ascending)
+                }
+            );
+            assert!(header.focused && header.enabled);
+            assert_eq!(
+                header.parent,
+                Some(
+                    columns
+                        .iter()
+                        .find(|node| node.key.part == Some(100))
+                        .unwrap()
+                        .key
+                )
+            );
+            let row = nodes.iter().find(|node| node.key.part == Some(32)).unwrap();
+            assert_eq!(row.role, AccessibilityRole::TableRow { index: 1 });
+            assert!(row.selected);
+            assert_eq!(row.parent, Some(table.key));
+            let cells: Vec<_> = nodes
+                .iter()
+                .filter(|node| {
+                    matches!(node.role, AccessibilityRole::TableCell { .. })
+                        && node.parent == Some(row.key)
+                })
+                .collect();
+            assert_eq!(cells.len(), 3);
+            assert!(cells.iter().all(|node| node.read_only && !node.focused));
+            assert_eq!(
+                cells
+                    .iter()
+                    .find(|node| node.key.part == Some(2006))
+                    .unwrap()
+                    .value
+                    .as_deref(),
+                Some("Assets 3")
+            );
+        }
+        click(&mut w, i, 20, &mut text);
+        assert_eq!(
+            w.state(i).extended.table.sort,
+            Some((0, tekes_ui_controls::extended::SortDirection::Descending))
+        );
+        assert_eq!(w.state(i).extended.visible_rows, vec![4, 0, 1, 2, 3]);
+        assert_eq!(w.state(i).extended.table.selected_row, Some(2));
+        let nodes = w.accessibility_nodes(i);
+        assert_eq!(
+            nodes
+                .iter()
+                .find(|node| node.key.part == Some(20))
+                .unwrap()
+                .role,
+            AccessibilityRole::TableColumnHeader {
+                index: 0,
+                sort: Some(AccessibilitySortDirection::Descending)
+            }
+        );
+        assert_eq!(
+            nodes
+                .iter()
+                .find(|node| node.key.part == Some(32))
+                .unwrap()
+                .role,
+            AccessibilityRole::TableRow { index: 3 }
+        );
+        assert_eq!(
+            nodes
+                .iter()
+                .find(|node| node.key.part == Some(2006))
+                .unwrap()
+                .role,
+            AccessibilityRole::TableCell { row: 3, column: 0 }
+        );
+    }
+
+    #[test]
     fn gallery_wholly_offscreen_collections_reveal_home_and_end_without_pointer_hits() {
         use super::super::Gallery;
         for renderer in ["list", "tree", "data-table", "chart"] {
@@ -8923,6 +9125,362 @@ mod interaction_tests {
         gallery.handle_input(&mouse(point, true));
         gallery.handle_input(&mouse(point, false));
         assert!(!gallery.workbench.state(i).extended.switch.checked);
+    }
+
+    #[test]
+    fn segmented_control_gallery_theme_switch_preserves_pointer_modality_and_keyboard_roving() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_controls::layout_view::SegmentedLayout;
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+        fn assert_segment(
+            scene: &Scene,
+            layout: &SegmentedLayout,
+            index: usize,
+            palette: Palette,
+            state: ControlState,
+            ground: &str,
+            backing: f32,
+        ) {
+            let item = &layout.items[index];
+            let (paint_index, quad) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == item.frame => Some((i, *q)),
+                    _ => None,
+                })
+                .expect("actual segment own Button ground");
+            assert_eq!(quad.fill, palette.color(ground).unwrap());
+            assert_eq!(quad.fill.a, 1.);
+            assert_eq!(
+                quad.corner_radii,
+                tekes_ui_scene::CornerRadii::uniform(
+                    proposal::metric("radius", "c-button-md-radius").unwrap()
+                )
+            );
+            if state.selected && !state.disabled {
+                assert_eq!(
+                    quad.border_width,
+                    proposal::metric("stroke", "stroke-rule").unwrap()
+                );
+                assert_eq!(quad.border_color, palette.color("border").unwrap());
+                assert!(
+                    contrast(quad.border_color, quad.fill) >= 3.,
+                    "selection boundary/own ground"
+                );
+                let peer = layout
+                    .items
+                    .iter()
+                    .enumerate()
+                    .find(|(i, _)| *i != index)
+                    .unwrap()
+                    .1;
+                let peer_ground = scene
+                    .primitives()
+                    .iter()
+                    .rev()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect == peer.frame => Some(q.fill),
+                        _ => None,
+                    })
+                    .unwrap();
+                assert!(
+                    contrast(quad.border_color, peer_ground) >= 3.,
+                    "selection boundary/actual neighboring ground"
+                );
+            } else {
+                assert_eq!(quad.border_width, 0.);
+            }
+            let inks: Vec<_> = scene.primitives()[paint_index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let a = g.glyph;
+                            item.content
+                                .intersection(&Rect::new(
+                                    g.origin.x + a.left as f32 / backing,
+                                    g.origin.y + a.top as f32 / backing,
+                                    a.width as f32 / backing,
+                                    a.height as f32 / backing,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "actual CoreText text after this segment's own paint"
+            );
+            for ink in inks {
+                assert_eq!(
+                    ink,
+                    palette
+                        .color(if state.disabled {
+                            "tertiary-text"
+                        } else {
+                            "primary-text"
+                        })
+                        .unwrap()
+                );
+                if !state.disabled {
+                    assert!(
+                        contrast(ink, quad.fill)
+                            >= if palette.theme.is_increased() {
+                                7.
+                            } else {
+                                4.5
+                            },
+                        "actual text/own segment ground"
+                    );
+                }
+            }
+        }
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 900.);
+        assert!(gallery.open_route("component-segmented-control/playground"));
+        let i = index("segmented-control");
+        gallery.build_scene(&mut Scene::new());
+        gallery
+            .workbench
+            .state(i)
+            .extended
+            .segmented
+            .set_enabled(1, false);
+        gallery.build_scene(&mut Scene::new());
+        let initial = gallery
+            .workbench
+            .state(i)
+            .extended
+            .segmented_view
+            .layout()
+            .clone();
+        let background = Point::new(initial.frame.max_x() + 40., initial.frame.min_y());
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            gallery.handle_input(&move_pointer(background));
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            assert_eq!(gallery.theme(), theme);
+            let state = &gallery.workbench.state(i).extended;
+            assert_eq!(state.segmented.selected, 0);
+            assert!(!state.segmented.is_enabled(1));
+            assert_eq!(state.segmented_view.focused(), None);
+            let layout = state.segmented_view.layout();
+            assert_eq!(layout, &initial);
+            for row in 0..3 {
+                assert_segment(
+                    &scene,
+                    layout,
+                    row,
+                    theme.into(),
+                    ControlState {
+                        selected: row == 0,
+                        disabled: row == 1,
+                        ..Default::default()
+                    },
+                    if row == 0 {
+                        "row-selection"
+                    } else {
+                        "surface-2"
+                    },
+                    gallery.text.scale(),
+                );
+            }
+        }
+        let palette: Palette = Theme::DARK_INCREASED.into();
+        let point = initial.items[2].frame.center();
+        gallery.handle_input(&move_pointer(point));
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        assert_eq!(
+            gallery.workbench.state(i).extended.segmented_view.focused(),
+            None,
+            "hover starts without focus"
+        );
+        assert_segment(
+            &scene,
+            &initial,
+            2,
+            palette,
+            ControlState::default(),
+            "button-hover",
+            gallery.text.scale(),
+        );
+        gallery.handle_input(&mouse(point, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_segment(
+            &scene,
+            &initial,
+            2,
+            palette,
+            ControlState::default(),
+            "button-pressed",
+            gallery.text.scale(),
+        );
+        assert_eq!(
+            gallery.workbench.state(i).extended.segmented.selected,
+            0,
+            "pointer activates on release"
+        );
+        assert_eq!(
+            gallery.workbench.state(i).extended.segmented_view.focused(),
+            Some(2)
+        );
+        assert!(
+            !scene.primitives().iter().any(
+                |p| matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && initial.items.iter().any(|item|item.frame.center()==q.rect.center()))
+            ),
+            "mouse press must not become keyboard-visible during draw"
+        );
+        let Event::Mouse(mut drag) = mouse(background, true) else {
+            unreachable!("mouse fixture")
+        };
+        drag.kind = MouseEventKind::Dragged {
+            button: MouseButton::Left,
+        };
+        gallery.handle_input(&Event::Mouse(drag));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_segment(
+            &scene,
+            &initial,
+            2,
+            palette,
+            ControlState::default(),
+            "surface-2",
+            gallery.text.scale(),
+        );
+        gallery.handle_input(&mouse(background, false));
+        assert_eq!(gallery.workbench.state(i).extended.segmented.selected, 0);
+        gallery.handle_input(&key(115, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(
+            gallery.workbench.state(i).extended.segmented_view.focused(),
+            Some(0),
+            "Home's no-change selection still transfers roving focus"
+        );
+        assert_eq!(gallery.workbench.state(i).focus, Some(30));
+        gallery.handle_input(&key(124, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(gallery.workbench.state(i).extended.segmented.selected, 2);
+        assert_eq!(
+            gallery.workbench.state(i).extended.segmented_view.focused(),
+            Some(2)
+        );
+        assert_eq!(gallery.workbench.state(i).focus, Some(32));
+        assert_segment(
+            &scene,
+            &initial,
+            2,
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "row-selection",
+            gallery.text.scale(),
+        );
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && q.rect.center()==initial.items[2].frame.center() && q.border_color==palette.color("border-focused").unwrap())),"keyboard navigation paints its actual ring");
+        gallery.handle_input(&move_pointer(point));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_segment(
+            &scene,
+            &initial,
+            2,
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "row-selection-hover",
+            gallery.text.scale(),
+        );
+        gallery.handle_input(&mouse(point, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        // Existing Quiet selected pressed keeps the selected-hover ground.
+        assert_segment(
+            &scene,
+            &initial,
+            2,
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "row-selection-hover",
+            gallery.text.scale(),
+        );
+        assert!(!scene.primitives().iter().any(
+            |p| matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && q.rect.center()==initial.items[2].frame.center())
+        ));
+        gallery.handle_input(&mouse(point, false));
+        assert_eq!(gallery.workbench.state(i).extended.segmented.selected, 2);
+        gallery.handle_input(&move_pointer(background));
+        gallery.workbench.state(i).extended.disabled = true;
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        for row in 0..3 {
+            assert_segment(
+                &scene,
+                &initial,
+                row,
+                palette,
+                ControlState {
+                    selected: row == 2,
+                    disabled: true,
+                    ..Default::default()
+                },
+                "surface-2",
+                gallery.text.scale(),
+            );
+        }
+        assert_eq!(
+            gallery.workbench.state(i).extended.segmented_view.focused(),
+            None
+        );
+        assert!(!scene.primitives().iter().any(
+            |p| matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && initial.items.iter().any(|item|item.frame.center()==q.rect.center()))
+        ));
+        gallery.handle_input(&mouse(initial.items[0].frame.center(), true));
+        gallery.handle_input(&mouse(initial.items[0].frame.center(), false));
+        gallery.handle_input(&key(123, true));
+        assert_eq!(gallery.workbench.state(i).extended.segmented.selected, 2);
+        gallery.workbench.state(i).extended.disabled = false;
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&mouse(initial.items[0].frame.center(), true));
+        gallery.handle_input(&mouse(initial.items[0].frame.center(), false));
+        assert_eq!(gallery.workbench.state(i).extended.segmented.selected, 0);
     }
 
     #[test]
@@ -11064,6 +11622,107 @@ mod interaction_tests {
                 .chunks_exact(4)
                 .any(|fills| fills != &observed[..4]),
             "retained Gallery consumes changed Theme solids"
+        );
+    }
+
+    #[test]
+    fn stack_gallery_retained_themes_keep_child_semantics_and_equal_cell_geometry() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut gallery = Gallery::new();
+        let i = index("stack");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        let mut original = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            let stack = &state.extended.stack_view;
+            let layout = stack.layout();
+            assert_eq!(layout.items.len(), 3);
+            assert!(layout.visible.is_some());
+            assert_eq!(
+                stack.model().axis,
+                tekes_ui_controls::extended::Axis::Horizontal
+            );
+            assert_eq!(stack.model().gap, 8.);
+            let cells: Vec<_> = layout
+                .items
+                .iter()
+                .map(|item| (item.frame(), item.visible_frame()))
+                .collect();
+            if let Some(original) = &original {
+                assert_eq!(&cells, original);
+            } else {
+                original = Some(cells);
+            }
+            assert!(
+                layout
+                    .items
+                    .windows(2)
+                    .all(|w| w[0].frame().max_x() <= w[1].frame().min_x())
+            );
+            let palette = Palette::new(theme, 0).unwrap();
+            for item in &layout.items {
+                let frame = item.frame();
+                let panel = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect == frame.inset(0.5) => Some(q),
+                        _ => None,
+                    })
+                    .expect("real Stack Gallery child surface");
+                assert_eq!(panel.fill, palette.color("surface-panel").unwrap());
+                let label = frame.inset(10.);
+                let inks: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run)
+                            if run.glyphs.iter().any(|g| label.contains(g.origin)) =>
+                        {
+                            Some(run.color)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(
+                    !inks.is_empty(),
+                    "each actual Stack child emits label glyphs"
+                );
+                assert!(
+                    inks.iter()
+                        .all(|ink| *ink == palette.color("primary-text").unwrap())
+                );
+            }
+            assert!(
+                state.logical_tab_ids().into_iter().all(|id| id < 20),
+                "layout-only Stack adds no interactive target"
+            );
+            observed.push(palette.color("primary-text").unwrap());
+        }
+        assert!(
+            observed.windows(2).any(|w| w[0] != w[1]),
+            "same Gallery layout forwards changed Theme to real child paint"
         );
     }
 

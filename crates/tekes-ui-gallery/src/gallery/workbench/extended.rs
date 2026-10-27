@@ -1806,11 +1806,15 @@ impl ExtendedStory {
                 self.disclosure_view
                     .key_event(key, down, &mut self.disclosure),
             ),
-            "segmented-control" => Some(self.segmented_view.key_event(
-                key,
-                down,
-                &mut self.segmented,
-            )),
+            "segmented-control" => {
+                let event = self
+                    .segmented_view
+                    .key_event(key, down, &mut self.segmented);
+                if event.consumed {
+                    self.focused = self.segmented_view.focused().map(|index| 30 + index);
+                }
+                Some(event)
+            }
             "breadcrumb" => {
                 let (consumed, activated) =
                     self.breadcrumb_view.key_event(key, down, &self.breadcrumb);
@@ -2494,7 +2498,9 @@ impl ExtendedStory {
                         .focused
                         .and_then(|id| id.checked_sub(30))
                         .filter(|i| *i < 3)
+                        && self.segmented_view.focused() != Some(id)
                     {
+                        // Preserve the modality already synchronized by the original host/runtime.
                         self.segmented_view.focus(id);
                     }
                     let layout = self.segmented_view.render(
