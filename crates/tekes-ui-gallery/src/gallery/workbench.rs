@@ -14353,6 +14353,16 @@ mod interaction_tests {
         );
         let mut original_layout = None;
         let mut observed = Vec::new();
+        let mut capture = std::env::var_os("TEKESUI_GOLD7_PAGE_OUT").map(|output| {
+            let root = std::path::PathBuf::from(output);
+            std::fs::create_dir_all(&root).unwrap();
+            let output = root.join("split-view-drag-full");
+            std::fs::create_dir(&output)
+                .expect("fresh SplitView capture subdirectory must not exist");
+            let renderer = tekes_ui_render::Renderer::new_headless()
+                .expect("actual GPU required only for explicitly requested SplitView capture");
+            (output, renderer)
+        });
         for theme in Theme::ALL {
             gallery.apply(Command::Appearance(if theme.is_dark() {
                 AppearanceChoice::Dark
@@ -14465,6 +14475,42 @@ mod interaction_tests {
                 pane_runs.any(|run| !run.glyphs.is_empty()),
                 "help/log glyphs remain in the complete Scene after the two pane labels"
             );
+            if let Some((output, renderer)) = capture.as_mut() {
+                // Keep the original 2x atlas and the complete 1440x1100 logical page in sync.
+                let scale = gallery.text.scale();
+                let (width, height) = ((1440. * scale) as u32, (1100. * scale) as u32);
+                let rgba = renderer
+                    .render_to_rgba8(
+                        &scene,
+                        gallery.atlas_mut(),
+                        (width, height),
+                        scale,
+                        Gallery::background(theme),
+                    )
+                    .unwrap();
+                assert!(
+                    rgba.chunks_exact(4).any(|pixel| pixel != &rgba[0..4]),
+                    "blank full SplitView page for {theme:?}"
+                );
+                let path = output.join(format!(
+                    "split-view-{}-{}-1440x1100@{scale}x-drag-full.png",
+                    if theme.is_dark() { "dark" } else { "light" },
+                    if theme.is_increased() {
+                        "increased"
+                    } else {
+                        "standard"
+                    }
+                ));
+                let mut encoder =
+                    png::Encoder::new(std::fs::File::create(path).unwrap(), width, height);
+                encoder.set_color(png::ColorType::Rgba);
+                encoder.set_depth(png::BitDepth::Eight);
+                encoder
+                    .write_header()
+                    .unwrap()
+                    .write_image_data(&rgba)
+                    .unwrap();
+            }
             observed.push(ink);
         }
         assert!(observed.windows(2).any(|w| w[0] != w[1]));
