@@ -16109,6 +16109,51 @@
           "composing",
           "selection"
         ],
+        "practical_intake": {
+          "baseline_commit": "c28228b1a0f0f95feb6a727a2864b64ca276811a",
+          "claims": [
+            "Same real inline Search content input through Theme::ALL preserves query/geometry/semantic name with actual CoreText/own-ground4.5/7 and representative edit/delete/reinsert",
+            "Actual retained Gallery search query survives Theme then original real Clear query pointer22 acts once; empty-unfocused placeholder contrast/focus suppression and real new input passed",
+            "Strict passed; accepted single-line TextField full states/AX/font/native results reused exactly for unchanged production rather than copied matrices"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.search-field",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/search-mainfc261e4-candidate/main-intake/commit-receipt.json",
+              "commit": "c28228b1a0f0f95feb6a727a2864b64ca276811a",
+              "component": "tui.search-field",
+              "issue": "#122",
+              "scope": "Actual inline public/real Gallery Clear+placeholder/strict; unchanged TextField/shared producer results retain actual identities",
+              "sha256": "85ed5270966f0fc8fe1b568fffecbe721a2761f962bff4d277a3abc372221928"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "No Search-specific constructor/results/icon/public placeholder invented; original Gallery wrapper owns placeholder and Clear text Button",
+            "Shared TextField full state/AX/font/IME matrices reused without duplicate or resigning; ordinary inline frame remains data"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+            "search filtering/results/copy-command engine; outside actual root",
+            "remaining controls/full52"
+          ],
+          "scope": "Actual tui.search-field existing inline TextFieldContent retained query/Theme/real ink and actual Gallery placeholder/Clear action differences; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual shared input/inline adapter and unique Gallery integration witnesses, not a new search engine or full dependency proof",
+            "sha256": {
+              "crates/tekes-ui-controls/src/composition/adapters.rs": "6d16b70de8d8002de347abc319892b3066a3fd4041efe6ada0a0c4d4da35af4d",
+              "crates/tekes-ui-controls/src/text_surface.rs": "791439dcf9f778811e60af719458d8b871c82d4303a6727b28733bd840469825",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "63cc81eda46e4d7109414fe3d6c2208c70fe0e816c3e56fbc217fac03a5b278d",
+              "examples/composition-consumer/tests/search_theme.rs": "2f3ce69ed081f1bb2fb3892f1bd6fb575720e4bed7869e818ec0faf5e8a5867f"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "input",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -59469,7 +59514,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "3d7b4f617cf616e94c8585fc3f6844d857fec89b2d18d837a9e93dd4db8234b7",
+    "design/gallery/component-coverage.json": "1c0b6e0dd606ff38c261c9e0cb1a191ce4193bb755861f6591a09f8854918b07",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -59518,6 +59563,7 @@
     "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758",
     "examples/composition-consumer/tests/radio_group_theme.rs": "6053b0b681fdb0053633ed05a25c863da6c5cbc401c1577be664d663a1f0560b",
     "examples/composition-consumer/tests/scroll_area_theme.rs": "a64afa37f06ad160330a797166fe7e4eb3c25a15d1e3ef214a6dda9d0e9b5133",
+    "examples/composition-consumer/tests/search_theme.rs": "2f3ce69ed081f1bb2fb3892f1bd6fb575720e4bed7869e818ec0faf5e8a5867f",
     "examples/composition-consumer/tests/segmented_control_theme.rs": "f356a6c267fb6bb0f2429e749e131d6c84027fa0f6c342e7c0ba2c423b515397",
     "examples/composition-consumer/tests/select_theme.rs": "6f6026b4e183961ad86c49f287536090c29e8a0450a5772befe06fc9d32f7c0e",
     "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",

@@ -1531,7 +1531,45 @@
         "owner": "tui.text-field",
         "reason": "These input variants already share the public TextSurface editor and input boundary roles. Reuse the existing text-field JSON contract as a partial family reference; this does not assert complete per-variant runtime dependencies."
       },
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/input.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/input.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "c28228b1a0f0f95feb6a727a2864b64ca276811a",
+        "scope": "Actual tui.search-field existing inline TextFieldContent retained query/Theme/real ink and actual Gallery placeholder/Clear action differences; tests only",
+        "claims": [
+          "Same real inline Search content input through Theme::ALL preserves query/geometry/semantic name with actual CoreText/own-ground4.5/7 and representative edit/delete/reinsert",
+          "Actual retained Gallery search query survives Theme then original real Clear query pointer22 acts once; empty-unfocused placeholder contrast/focus suppression and real new input passed",
+          "Strict passed; accepted single-line TextField full states/AX/font/native results reused exactly for unchanged production rather than copied matrices"
+        ],
+        "source_identity": {
+          "scope": "Selected actual shared input/inline adapter and unique Gallery integration witnesses, not a new search engine or full dependency proof",
+          "sha256": {
+            "crates/tekes-ui-controls/src/text_surface.rs": "791439dcf9f778811e60af719458d8b871c82d4303a6727b28733bd840469825",
+            "crates/tekes-ui-controls/src/composition/adapters.rs": "6d16b70de8d8002de347abc319892b3066a3fd4041efe6ada0a0c4d4da35af4d",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "63cc81eda46e4d7109414fe3d6c2208c70fe0e816c3e56fbc217fac03a5b278d",
+            "examples/composition-consumer/tests/search_theme.rs": "2f3ce69ed081f1bb2fb3892f1bd6fb575720e4bed7869e818ec0faf5e8a5867f"
+          }
+        },
+        "exceptions": [
+          "No Search-specific constructor/results/icon/public placeholder invented; original Gallery wrapper owns placeholder and Clear text Button",
+          "Shared TextField full state/AX/font/IME matrices reused without duplicate or resigning; ordinary inline frame remains data"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+          "search filtering/results/copy-command engine; outside actual root",
+          "remaining controls/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.search-field",
+            "commit": "c28228b1a0f0f95feb6a727a2864b64ca276811a",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/search-mainfc261e4-candidate/main-intake/commit-receipt.json",
+            "sha256": "85ed5270966f0fc8fe1b568fffecbe721a2761f962bff4d277a3abc372221928",
+            "scope": "Actual inline public/real Gallery Clear+placeholder/strict; unchanged TextField/shared producer results retain actual identities"
+          }
+        ]
+      }
     },
     {
       "id": "tui.combo-box",
