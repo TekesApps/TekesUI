@@ -9921,6 +9921,249 @@ mod interaction_tests {
     }
 
     #[test]
+    fn text_field_gallery_retained_themes_keep_native_value_and_real_declared_state_ink() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+        fn assert_input(
+            scene: &Scene,
+            frame: Rect,
+            palette: Palette,
+            state: (bool, bool, bool),
+            ink_role: &str,
+            backing: f32,
+        ) {
+            let (read_only, disabled, invalid) = state;
+            let (index, ground) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == frame => Some((i, *q)),
+                    _ => None,
+                })
+                .expect("actual original TextField input ground");
+            assert_eq!(
+                ground.fill,
+                palette
+                    .color(if read_only {
+                        "surface-1"
+                    } else {
+                        "transcript-input"
+                    })
+                    .unwrap()
+            );
+            assert_eq!(
+                ground.corner_radii,
+                tekes_ui_scene::CornerRadii::uniform(
+                    proposal::metric("radius", "radius-input").unwrap()
+                )
+            );
+            assert_eq!(
+                ground.border_color,
+                palette
+                    .color(
+                        proposal::control_boundary(
+                            if invalid { "error" } else { "required-input" },
+                            palette.theme
+                        )
+                        .unwrap()
+                    )
+                    .unwrap()
+            );
+            if invalid && !disabled {
+                assert!(
+                    contrast(ground.border_color, ground.fill) >= 3.,
+                    "actual invalid boundary/input ground"
+                );
+            }
+            let inks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let a = g.glyph;
+                            frame
+                                .intersection(&Rect::new(
+                                    g.origin.x + a.left as f32 / backing,
+                                    g.origin.y + a.top as f32 / backing,
+                                    a.width as f32 / backing,
+                                    a.height as f32 / backing,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "real CoreText input or declared Gallery placeholder glyphs after own input ground"
+            );
+            for ink in inks {
+                assert_eq!(ink, palette.color(ink_role).unwrap());
+                if !disabled {
+                    assert!(
+                        contrast(ink, ground.fill)
+                            >= if palette.theme.is_increased() {
+                                7.
+                            } else {
+                                4.5
+                            },
+                        "actual TextField glyph/input ground contrast"
+                    );
+                }
+            }
+        }
+        fn has_ring(scene: &Scene, frame: Rect, palette: Palette) -> bool {
+            scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+                && q.rect.center()==frame.center() && q.border_color==palette.color("border-focused").unwrap()))
+        }
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 1000.);
+        gallery.set_system_theme(Theme::LIGHT);
+        assert!(gallery.open_route("component-text-field/playground"));
+        let i = index("field");
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        let frame = gallery.workbench.state(i).input.frame_at(0).unwrap();
+        assert_input(
+            &scene,
+            frame,
+            Theme::LIGHT.into(),
+            (false, false, false),
+            "primary-text",
+            gallery.text.scale(),
+        );
+        assert!(!has_ring(&scene, frame, Theme::LIGHT.into()));
+        gallery.handle_input(&mouse(frame.center(), true));
+        gallery.handle_input(&mouse(frame.center(), false));
+        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommit {
+            text: "Renamed project".into(),
+            replacement: None,
+        });
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(gallery.workbench.state(i).input.query(), "Renamed project");
+        let selection = gallery
+            .text_input_state()
+            .expect("actual native field state after real focus/commit")
+            .selection;
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            scene.clear();
+            gallery.build_scene(&mut scene);
+            assert_eq!(gallery.theme(), theme);
+            let current = gallery.workbench.state(i).input.frame_at(0).unwrap();
+            assert_eq!(current, frame);
+            assert_eq!(gallery.workbench.state(i).input.query(), "Renamed project");
+            let native = gallery.text_input_state().unwrap();
+            assert_eq!(native.text, "Renamed project");
+            assert_eq!(native.selection, selection);
+            assert!(!native.read_only);
+            assert_input(
+                &scene,
+                current,
+                theme.into(),
+                (false, false, false),
+                "primary-text",
+                gallery.text.scale(),
+            );
+            assert!(has_ring(&scene, current, theme.into()));
+        }
+        let palette: Palette = Theme::DARK_INCREASED.into();
+        gallery.workbench.state(i).error = true;
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_input(
+            &scene,
+            frame,
+            palette,
+            (false, false, true),
+            "primary-text",
+            gallery.text.scale(),
+        );
+        assert!(has_ring(&scene, frame, palette));
+        gallery.workbench.state(i).error = false;
+        gallery.workbench.state(i).disabled = true;
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_input(
+            &scene,
+            frame,
+            palette,
+            (false, true, false),
+            "disabled-text",
+            gallery.text.scale(),
+        );
+        assert!(!has_ring(&scene, frame, palette));
+        gallery.handle_input(&Event::TextCommit {
+            text: "blocked".into(),
+            replacement: None,
+        });
+        assert_eq!(gallery.workbench.state(i).input.query(), "Renamed project");
+        gallery.workbench.state(i).disabled = false;
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&mouse(frame.center(), true));
+        gallery.handle_input(&mouse(frame.center(), false));
+        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommit {
+            text: String::new(),
+            replacement: None,
+        });
+        let background = Point::new(frame.max_x() + 40., frame.center().y);
+        gallery.handle_input(&mouse(background, true));
+        gallery.handle_input(&mouse(background, false));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(gallery.workbench.state(i).input.query().is_empty());
+        // Existing Gallery build_search_clipped placeholder appears only for empty, unfocused input.
+        assert_input(
+            &scene,
+            frame,
+            palette,
+            (false, false, false),
+            "secondary-text",
+            gallery.text.scale(),
+        );
+        assert!(!has_ring(&scene, frame, palette));
+        gallery.handle_input(&mouse(frame.center(), true));
+        gallery.handle_input(&mouse(frame.center(), false));
+        gallery.handle_input(&Event::TextCommit {
+            text: "Ready".into(),
+            replacement: None,
+        });
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(gallery.workbench.state(i).input.query(), "Ready");
+        assert_input(
+            &scene,
+            frame,
+            palette,
+            (false, false, false),
+            "primary-text",
+            gallery.text.scale(),
+        );
+    }
+
+    #[test]
     fn clipped_workbench_text_field_measures_scaled_line_and_only_focuses_visible_area() {
         let mut workbench = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
@@ -10708,6 +10951,138 @@ mod interaction_tests {
     }
 
     #[test]
+    fn field_gallery_retained_themes_keep_metadata_roles_and_input_slot() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let v = c.to_linear();
+                0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        let mut gallery = Gallery::new();
+        let i = index("field-meta");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 1000.);
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        let original_value = gallery.workbench.state(i).input.query().to_owned();
+        let mut observed = Vec::new();
+        for error in [false, true] {
+            if gallery.workbench.state(i).error != error {
+                let point = gallery
+                    .workbench
+                    .state(i)
+                    .visible_for_id(12)
+                    .expect("real Error property control")
+                    .center();
+                gallery.handle_input(&mouse(point, true));
+                gallery.handle_input(&mouse(point, false));
+            }
+            assert_eq!(gallery.workbench.state(i).error, error);
+            let mut original = None;
+            for theme in Theme::ALL {
+                gallery.apply(Command::Appearance(if theme.is_dark() {
+                    AppearanceChoice::Dark
+                } else {
+                    AppearanceChoice::Light
+                }));
+                gallery.apply(Command::Contrast(if theme.is_increased() {
+                    ContrastChoice::On
+                } else {
+                    ContrastChoice::Off
+                }));
+                assert_eq!(gallery.theme(), theme);
+                let mut scene = Scene::new();
+                gallery.build_scene(&mut scene);
+                let state = gallery.workbench.state(i);
+                let layout = state.field_view.layout();
+                if let Some(original) = original {
+                    assert_eq!(layout, original);
+                } else {
+                    original = Some(layout);
+                }
+                assert_eq!(layout.has_error, error);
+                assert!(
+                    layout.required_mark.is_none(),
+                    "original Gallery Field is optional"
+                );
+                assert_eq!(
+                    state.field.message(),
+                    if error {
+                        "A name is required."
+                    } else {
+                        "Use a clear name for your workspace."
+                    }
+                );
+                assert_eq!(
+                    state.input.frame_at(0),
+                    Some(layout.slot),
+                    "metadata slot is used by the original real input"
+                );
+                assert_eq!(state.input.query(), original_value);
+                assert!(layout.label.max_y() <= layout.slot.min_y());
+                assert!(layout.slot.max_y() <= layout.message.min_y());
+                let input_paint = scene
+                    .primitives()
+                    .iter()
+                    .position(|p| matches!(p, Primitive::Quad(q) if q.rect == layout.slot))
+                    .expect("actual child input background");
+                // FieldView paints its label then message immediately before the input.
+                // This wide optional fixture has one actual GlyphRun for each metadata line.
+                let mut metadata = scene.primitives()[..input_paint]
+                    .iter()
+                    .rev()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run) => Some(run),
+                        _ => None,
+                    });
+                let palette = Palette::new(theme, 0).unwrap();
+                let background = Gallery::background(theme);
+                for (slot, role) in [
+                    (
+                        layout.message,
+                        if error {
+                            "status-failed"
+                        } else {
+                            "secondary-text"
+                        },
+                    ),
+                    (layout.label, "primary-text"),
+                ] {
+                    let run = metadata
+                        .next()
+                        .expect("complete original Field metadata paint");
+                    assert!(!run.glyphs.is_empty());
+                    // The original text host rounds label origins; it permits glyph bearings.
+                    assert!(
+                        run.glyphs
+                            .iter()
+                            .any(|g| slot.inset(-0.5).contains(g.origin)),
+                        "{theme:?} {role}: metadata run belongs to its original slot"
+                    );
+                    assert_eq!(run.color, palette.color(role).unwrap());
+                    assert!(
+                        contrast(run.color, background)
+                            >= if theme.is_increased() { 7. } else { 4.5 },
+                        "{theme:?} {role}: actual metadata/background contrast={}",
+                        contrast(run.color, background)
+                    );
+                    observed.push(run.color);
+                }
+            }
+        }
+        assert!(observed.chunks_exact(2).any(|inks| inks != &observed[..2]));
+    }
+
+    #[test]
     fn large_type_form_phase_and_event_log_glyphs_do_not_overlap_in_visible_preview() {
         use tekes_ui_scene::Primitive;
 
@@ -11426,6 +11801,230 @@ mod interaction_tests {
                 .get(&20)
                 .is_some_and(|button| button.state.pressed)
         );
+    }
+
+    #[test]
+    fn select_gallery_retained_themes_keep_popup_value_focus_and_real_option_identity() {
+        use tekes_ui_platform_macos::AccessibilityRole;
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut w = Workbench::default();
+        w.apply_reduced_motion(true);
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("select");
+        click(&mut w, i, 20, &mut text);
+        w.handle(i, &key(125, true), &mut text);
+        w.handle(i, &key(36, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).select.selected, 1);
+        let trigger = w.state(i).select_view.layout().trigger;
+        w.handle(
+            i,
+            &move_pointer(Point::new(
+                trigger.frame.max_x() + 20.,
+                trigger.frame.center().y,
+            )),
+            &mut text,
+        );
+        assert!(w.focus_control(i, 20).is_some());
+        w.handle(i, &key(36, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert!(w.state(i).select.menu.open);
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut original_geometry = None;
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        for theme in Theme::ALL {
+            let popup = w.state(i).select_view.layout().popup.clone().unwrap();
+            w.handle(i, &move_pointer(popup.popup.origin), &mut text);
+            w.handle(i, &key(115, true), &mut text);
+            for hovered in [false, true] {
+                if hovered {
+                    w.handle(i, &move_pointer(popup.items[2].frame.center()), &mut text);
+                }
+                text.begin_frame();
+                let mut static_text = super::super::static_text::StaticText::new(None);
+                let mut ctx = PageCtx {
+                    theme,
+                    text: &mut text,
+                    static_text: &mut static_text,
+                };
+                let mut scene = Scene::new();
+                w.build_clipped(i, &mut ctx, content, content, &mut scene);
+                assert!(scene.composition_error().is_none());
+                let state = w.state(i);
+                let layout = state.select_view.layout();
+                let popup = layout.popup.as_ref().unwrap();
+                let active = if hovered { 2 } else { 0 };
+                assert!(state.select.menu.open);
+                assert_eq!(
+                    state.select.selected, 1,
+                    "highlight does not replace original committed option"
+                );
+                assert_eq!(state.select.menu.items.selected, active);
+                assert_eq!(popup.active_item, active);
+                let geometry = (
+                    layout.trigger.frame,
+                    popup.popup,
+                    popup.items.iter().map(|l| l.frame).collect::<Vec<_>>(),
+                );
+                if let Some(original) = &original_geometry {
+                    assert_eq!(&geometry, original);
+                } else {
+                    original_geometry = Some(geometry);
+                }
+                let palette = Palette::new(theme, 0).unwrap();
+                let surface = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect == popup.popup => Some(q),
+                        _ => None,
+                    })
+                    .unwrap();
+                assert_eq!(surface.fill, palette.color("surface-popover").unwrap());
+                for (slot, fill, ink) in [
+                    (
+                        layout.trigger,
+                        "action-primary-ground",
+                        "action-primary-foreground",
+                    ),
+                    (
+                        popup.items[active],
+                        if hovered {
+                            "row-selection-hover"
+                        } else {
+                            "row-selection"
+                        },
+                        "primary-text",
+                    ),
+                ] {
+                    let (index, ground) = scene
+                        .primitives()
+                        .iter()
+                        .enumerate()
+                        .find_map(|(i, p)| match p {
+                            Primitive::Quad(q) if q.rect == slot.frame => Some((i, q)),
+                            _ => None,
+                        })
+                        .unwrap();
+                    assert_eq!(ground.fill, palette.color(fill).unwrap());
+                    let labels: Vec<_> = scene.primitives()[index + 1..]
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Glyphs(r)
+                                if !r.glyphs.is_empty()
+                                    && r.glyphs.iter().all(|g| slot.content.contains(g.origin)) =>
+                            {
+                                Some(r)
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    assert!(
+                        !labels.is_empty(),
+                        "actual Select title/option after own ground, independent of underlay"
+                    );
+                    assert!(
+                        labels
+                            .iter()
+                            .all(|r| r.color == palette.color(ink).unwrap())
+                    );
+                    assert_eq!((labels[0].color.a, ground.fill.a), (1., 1.));
+                    assert!(
+                        contrast(labels[0].color, ground.fill)
+                            >= if theme.is_increased() { 7. } else { 4.5 }
+                    );
+                }
+                let ring = scene.primitives().iter().find_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a == 0.
+                            && q.rect.center() == popup.items[active].frame.center()
+                            && q.border_color == palette.color("border-focused").unwrap() =>
+                    {
+                        Some(q)
+                    }
+                    _ => None,
+                });
+                assert_eq!(ring.is_some(), !hovered);
+                if let Some(ring) = ring {
+                    assert!(contrast(ring.border_color, surface.fill) >= 3.);
+                }
+                let nodes = w.accessibility_nodes(i);
+                let invoker = nodes.iter().find(|n| n.key.part == Some(20)).unwrap();
+                assert_eq!(invoker.role, AccessibilityRole::MenuButton);
+                assert_eq!(invoker.value.as_deref(), Some("Compact"));
+                assert_eq!(invoker.expanded, Some(true));
+                let menu = nodes
+                    .iter()
+                    .find(|n| n.role == AccessibilityRole::Menu)
+                    .unwrap();
+                assert_eq!(menu.parent, Some(invoker.key));
+                let options: Vec<_> = nodes
+                    .iter()
+                    .filter(|n| n.role == AccessibilityRole::MenuItem)
+                    .collect();
+                assert_eq!(options.len(), 3);
+                assert!(options.iter().all(|n| n.parent == Some(menu.key)));
+                assert_eq!(options.iter().filter(|n| n.selected).count(), 1);
+                assert!(
+                    options
+                        .iter()
+                        .find(|n| n.key.part == Some(61))
+                        .unwrap()
+                        .selected
+                );
+                assert!(
+                    options
+                        .iter()
+                        .find(|n| n.key.part == Some(60 + active))
+                        .unwrap()
+                        .focused
+                );
+            }
+        }
+        w.handle(i, &key(36, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).select.selected, 2);
+        assert!(!w.state(i).select.menu.open);
+        assert_eq!(
+            w.state(i)
+                .log
+                .iter()
+                .filter(|s| s.as_str() == "select: 2")
+                .count(),
+            1
+        );
+        assert_eq!(w.state(i).focus, Some(20));
+        let nodes = w.accessibility_nodes(i);
+        let invoker = nodes.iter().find(|n| n.key.part == Some(20)).unwrap();
+        assert_eq!(invoker.value.as_deref(), Some("Comfortable"));
+        assert_eq!(invoker.expanded, Some(false));
+        assert!(!nodes.iter().any(|n| n.role == AccessibilityRole::MenuItem));
+        click(&mut w, i, 20, &mut text);
+        w.handle(i, &key(115, true), &mut text);
+        w.handle(i, &key(53, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).select.selected, 2);
+        assert!(!w.state(i).select.menu.open);
+        click(&mut w, i, 20, &mut text);
+        let trigger = w.state(i).select_view.layout().trigger;
+        w.handle(i, &mouse(trigger.frame.center(), true), &mut text);
+        w.handle(i, &mouse(trigger.frame.center(), false), &mut text);
+        build(&mut w, i, &mut text);
+        assert!(
+            !w.state(i).select.menu.open,
+            "outside-popup dismiss cannot reopen on same release"
+        );
+        assert_eq!(w.state(i).select.selected, 2);
     }
 
     #[test]
