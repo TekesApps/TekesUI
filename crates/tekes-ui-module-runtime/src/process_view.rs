@@ -22,6 +22,19 @@ enum Event {
     Failure(String),
     Rendered(GlyphAtlas),
 }
+fn emit_curve_refusal(
+    request: u64,
+    envelope: &tekes_ui_app_protocol::component::curve::Envelope,
+    attached_view: Option<u64>,
+    emit: impl FnOnce(Output) -> Result<()>,
+) -> Result<()> {
+    // No module, ContentHost, renderer, frame queue, or grant owner is in this seam.
+    emit(tekes_ui_app_protocol::component::curve::rejection_output(
+        request,
+        envelope,
+        attached_view,
+    ))
+}
 pub(crate) fn run(
     mut module: Box<dyn ProcessModule>,
     emitter: ComponentEmitter,
@@ -138,6 +151,11 @@ pub(crate) fn run(
                 );
                 last = id;
                 match body {
+                    RequestBody::CurveV1(envelope) => {
+                        emit_curve_refusal(id, &envelope, Some(attach.view), |output| {
+                            emitter.output(output)
+                        })?;
+                    }
                     RequestBody::Stop => {
                         emitter.output(Output::Response {
                             request: id,

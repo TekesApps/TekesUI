@@ -40,6 +40,9 @@ impl ProcessModule for Counter {
                 }
             }
             RequestBody::Message { .. } | RequestBody::Invoke { .. } => self.0 += 1,
+            RequestBody::CurveV1(_) => {
+                anyhow::bail!("Curve V1 is unsupported by this example module")
+            }
             RequestBody::Stop | RequestBody::Render { .. } => unreachable!(),
         }
         Ok(json!(self.0))
@@ -161,6 +164,117 @@ fn invalid_peer(mode: &str) -> Result<()> {
         std::thread::park();
     }
 }
+fn raw_headless_curve_rejection() -> Result<u32> {
+    use std::io::{BufRead, BufReader, Write};
+    use std::process::{Command, Stdio};
+    let mut child = Command::new(std::env::current_exe()?)
+        .args(["--tekesui-component", "counter"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()?;
+    let pid = child.id();
+    let mut input = child.stdin.take().unwrap();
+    let mut output = BufReader::new(child.stdout.take().unwrap());
+    let session = Session {
+        module: "counter".into(),
+        instance: 1001,
+        host_epoch: 49,
+    };
+    let packets = [
+        ClientMessage::Start {
+            version: VERSION,
+            session: session.clone(),
+            required: Capabilities::HEADLESS,
+        },
+        ClientMessage::Request {
+            version: VERSION,
+            session: session.clone(),
+            id: 1,
+            body: RequestBody::CurveV1(curve::Envelope {
+                protocol_major: 1,
+                wire_revision: 1,
+                view: 77,
+                transaction_id: 81,
+                ttl_ms: 0,
+                body: curve::RequestBodyV1::TransactionStatus,
+            }),
+        },
+        ClientMessage::Request {
+            version: VERSION,
+            session: session.clone(),
+            id: 2,
+            body: RequestBody::Message {
+                topic: "after-curve-rejection".into(),
+                payload: Value::Null,
+            },
+        },
+        ClientMessage::Request {
+            version: VERSION,
+            session: session.clone(),
+            id: 3,
+            body: RequestBody::Stop,
+        },
+    ];
+    for packet in packets {
+        serde_json::to_writer(&mut input, &packet)?;
+        input.write_all(b"\n")?;
+    }
+    input.flush()?;
+    drop(input);
+    let (mut rejected, mut unchanged, mut stopped, mut saw_frame) = (false, false, false, false);
+    loop {
+        let mut line = String::new();
+        if output.read_line(&mut line)? == 0 {
+            break;
+        }
+        let packet: ServerMessage = serde_json::from_str(&line)?;
+        ensure!(packet.session == session, "wrong Curve worker session");
+        match packet.output {
+            Output::Ready {
+                pid: worker,
+                capabilities,
+            } => {
+                ensure!(
+                    worker == pid && capabilities == Capabilities::HEADLESS,
+                    "wrong headless Ready"
+                );
+            }
+            Output::Event(_) => (),
+            Output::CurveReplyV1 {
+                request: 1,
+                view: 0,
+                reply:
+                    curve::CurveReply::Rejected {
+                        transaction_id: 81,
+                        code: curve::CurveErrorCode::NotReady,
+                    },
+            } => rejected = true,
+            Output::Response {
+                request: 2,
+                result: Ok(value),
+            } => {
+                ensure!(
+                    value == json!(1),
+                    "Curve request reached or mutated business handler"
+                );
+                unchanged = true;
+            }
+            Output::Response {
+                request: 3,
+                result: Ok(Value::Null),
+            } => stopped = true,
+            Output::Frame { .. } => saw_frame = true,
+            Output::Fatal { message } => anyhow::bail!("worker fatal: {message}"),
+            other => anyhow::bail!("unexpected Curve/headless output: {other:?}"),
+        }
+    }
+    ensure!(
+        child.wait()?.success() && rejected && unchanged && stopped && !saw_frame,
+        "headless Curve request was not refused before business/frame dispatch"
+    );
+    Ok(pid)
+}
 fn main() -> Result<()> {
     let arguments: Vec<String> = std::env::args().collect();
     if arguments.get(1).map(String::as_str) == Some("--tekesui-component")
@@ -179,6 +293,7 @@ fn main() -> Result<()> {
         return Ok(());
     }
     ensure!(!CREATED.load(Ordering::SeqCst), "factory ran in parent");
+    let raw_curve_pid = raw_headless_curve_rejection()?;
     let first = ProcessComponent::spawn(ProcessComponentOptions::new("counter", 42), || {})?;
     let second = ProcessComponent::spawn(ProcessComponentOptions::new("counter", 42), || {})?;
     let a = ready(&first)?;
@@ -298,7 +413,7 @@ fn main() -> Result<()> {
     until(|| scoped_b.status() == ProcessStatus::Closed)?;
     println!(
         "{}",
-        json!({"result":"passed", "pids":[a,b,c],"headless":true,"factory_in_parent":false,"separate_state":true,"toolbar_without_frame":true,"hung_close_reaped":true,"drop_reaped":true,"graceful_stop":true,"other_worker_survived":true,"performance_test":false,"bounded_requests":true,"invalid_session_rejected":true,"unknown_response_rejected":true,"output_overflow_rejected":true,"oversized_output_rejected":true,"bound_headless_windows":[11,29],"foreign_window_and_view_rejected":true,"stale_owner_rejected":true})
+        json!({"result":"passed", "pids":[a,b,c,raw_curve_pid],"headless":true,"curve_headless_rejection":true,"factory_in_parent":false,"separate_state":true,"toolbar_without_frame":true,"hung_close_reaped":true,"drop_reaped":true,"graceful_stop":true,"other_worker_survived":true,"performance_test":false,"bounded_requests":true,"invalid_session_rejected":true,"unknown_response_rejected":true,"output_overflow_rejected":true,"oversized_output_rejected":true,"bound_headless_windows":[11,29],"foreign_window_and_view_rejected":true,"stale_owner_rejected":true})
     );
     Ok(())
 }
