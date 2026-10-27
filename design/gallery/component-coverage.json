@@ -1502,7 +1502,44 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/selection.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/selection.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "293b75127a66716bd4fb872e84d5de7f333466ab",
+        "scope": "Existing public Checkbox and real Gallery three retained check states across Theme::ALL, own indicator/mark/real CoreText label semantics and contrast, representative input/unavailability/focus; tests only",
+        "claims": [
+          "Same public Checkbox and actual Gallery retain Unchecked/Checked/Mixed across Theme::ALL with real indicator/mark/label semantic ink and own-ground contrast3/4.5/7",
+          "Representative actual hover/pressed/outside-cancel/Space-release/Enter-refusal/focus/disabled-during-capture/re-enable behavior passed",
+          "Both new targets and Gallery strict passed under original SSD/source guard/lock; static helper arity repaired before first build without weakening checks"
+        ],
+        "source_identity": {
+          "scope": "Selected real consumer/paint/test sources, not exhaustive dependency proof; actual full-source run identities retained in receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/widgets.rs": "39e9bdce57eacfb93020954e72581a005eaaf2ec86bca69dff5ddd7d64921d86",
+            "crates/tekes-ui-controls/src/paint.rs": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "0e56c733d8dea7041a15bcf873708bcd4b3872dbccece905a46ef889a3286635",
+            "examples/composition-consumer/tests/checkbox_theme.rs": "849080ccac69b56bdaa6f751e708f91ed93e8383143414cccbb0baa2dc2969fc"
+          }
+        },
+        "exceptions": [
+          "Normal row/mark geometry stays layout, disabled tertiary text is not active-text contrast claim; actual Gallery transparent preview uses real renderer clear, no fabricated background or cropped scene. Static8-arg helper issue corrected before first build.",
+          "Original shared generation/AX/activation/clip/geometry results reused without replay or relabeling"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver/motion-timing certification",
+          "other12 family roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.checkbox",
+            "commit": "293b75127a66716bd4fb872e84d5de7f333466ab",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/checkbox-main0a389a9-candidate/main-intake/commit-receipt.json",
+            "sha256": "95d4329871f5a1d60a7846286fc9eee605344369166f3e07c9207da5ea27ba29",
+            "scope": "Exact-main actual public CoreText/Gallery check states, semantic ink/ground and input contracts, strict, explicit bounded applicability."
+          }
+        ]
+      }
     },
     {
       "id": "tui.radio-group",
