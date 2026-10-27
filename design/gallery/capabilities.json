@@ -41928,6 +41928,54 @@
           "open",
           "empty"
         ],
+        "practical_intake": {
+          "baseline_commit": "975303260d4f573bfb01e26bdb52bb8a5dfef30c",
+          "claims": [
+            "Same real Scenario preserves query, active original candidate, query selection/geometry/focus across Theme::ALL",
+            "Actual query/candidate backgrounds and CoreText glyphs consume semantic roles and meet4.5 standard and7 increased contrast; real execution/empty-result behavior preserved",
+            "Original public disabled synchronization closes popup and suppresses trigger focus/actions in all four Theme values",
+            "Actual Gallery route, pointer open/text commit/Down/Theme/Escape flow retains query/active and restores invoker; Gallery strict passed"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.command-palette",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/command-palette-main7a0f6e7-candidate/main-intake/commit-receipt.json",
+              "commit": "975303260d4f573bfb01e26bdb52bb8a5dfef30c",
+              "component": "tui.command-palette",
+              "issue": "#123",
+              "scope": "Exact-main public/Gallery runtime and strict, retained source identities and bounded unverified scope.",
+              "sha256": "ed3786096b1840e0ad1809e89411cb3a49bd6992a07d9a80f079f3d4538c1311"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Host owns the existing TextSurface query; no new component API or parallel text system",
+            "Shared Button/TextSurface/Palette/brand state results reused; ordinary geometry/indices remain layout",
+            "Own-paint-index glyph selection and explicit reduced-motion/input-domain fixture test semantic endpoints, not transition timing"
+          ],
+          "gaps": [
+            "No new dedicated external Theme/GPU/native/physicalIME/VoiceOver/motion-timing certification",
+            "Remaining family/full52 practical coverage and original product gaps remain open"
+          ],
+          "scope": "Accepted public CommandPalette View/real Scenario and actual Gallery Theme/query/state/text contrast tests; no production/shared-rule change.",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected public View/model/Scenario/test/Gallery sources, not a whole dependency certificate; actual full frozen runs/programs remain at original receipts.",
+            "sha256": {
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "48a6fe67d988f66a255dbc8cf8c5121ba8a284359df4c2944825af365c153d6c",
+              "examples/composition-consumer/src/command_status.rs": "309aedada5e9c30fc12898957b34ef44a487b6f2f4ec8763f79431b8c967cc86",
+              "examples/composition-consumer/tests/command_palette_theme.rs": "eadd793e9e828b460bebaae52fa3cd935c88095f8e408536c96617b75f19f7d2",
+              "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "choice",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -58135,7 +58183,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "f3327e0df070023a8cadf80d871763cb6cff168641f615b62e1396a08157bc29",
+    "design/gallery/component-coverage.json": "1ee5ce55a308134f08212d8a2c5c72bcd93e6de03a58d949d3c721b7aab737da",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58163,11 +58211,13 @@
     "design/reviews/number-field-release-20261022/probes-final/toolbar.json": "db79c58d569dc82c7715999713a6dce62c4716bb55d9eb5239b354c2cbe6f043",
     "design/reviews/number-field-release-20261022/probes-final/tooltip.json": "3dfec5cdc4a4d49815c84eaf933de25dd9b263ef238b5b0f71ee24d2c466ae59",
     "design/tokens.json": "6aabbcdad574a0fac10fcde2841063f74438048ca2f086aaebcb387d391d64ac",
+    "examples/composition-consumer/src/command_status.rs": "309aedada5e9c30fc12898957b34ef44a487b6f2f4ec8763f79431b8c967cc86",
     "examples/composition-consumer/src/empty_state_content.rs": "a73d1bb24db806e91efadedcad79225ca0a4339ff212b8a85a446c6330ca61cb",
     "examples/composition-consumer/src/skeleton_content.rs": "80d44ba5650da213609eeb1a778bed69237550d17e6c5fed2ac91be16eaa6932",
     "examples/composition-consumer/src/status_badge_content.rs": "58006b3eb44e1cb7261c25ebd8bbd8819591a22f5ac53ae48fec6379b62b3a9c",
     "examples/composition-consumer/tests/breadcrumb_theme.rs": "0da781dd1b0dd19ad1b68bfc1fa399cc69a5949fe15b556202c4b1f17aa9c6b5",
     "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80",
+    "examples/composition-consumer/tests/command_palette_theme.rs": "eadd793e9e828b460bebaae52fa3cd935c88095f8e408536c96617b75f19f7d2",
     "examples/composition-consumer/tests/dialog_theme.rs": "6cf7b51a1c7393501f89b44551da8031712ca5054d5ada0e91e3fc2234a97953",
     "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758",
     "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",

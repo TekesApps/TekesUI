@@ -2307,7 +2307,48 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/command-async.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/command-async.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "975303260d4f573bfb01e26bdb52bb8a5dfef30c",
+        "scope": "Accepted public CommandPalette View/real Scenario and actual Gallery Theme/query/state/text contrast tests; no production/shared-rule change.",
+        "claims": [
+          "Same real Scenario preserves query, active original candidate, query selection/geometry/focus across Theme::ALL",
+          "Actual query/candidate backgrounds and CoreText glyphs consume semantic roles and meet4.5 standard and7 increased contrast; real execution/empty-result behavior preserved",
+          "Original public disabled synchronization closes popup and suppresses trigger focus/actions in all four Theme values",
+          "Actual Gallery route, pointer open/text commit/Down/Theme/Escape flow retains query/active and restores invoker; Gallery strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected public View/model/Scenario/test/Gallery sources, not a whole dependency certificate; actual full frozen runs/programs remain at original receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "examples/composition-consumer/src/command_status.rs": "309aedada5e9c30fc12898957b34ef44a487b6f2f4ec8763f79431b8c967cc86",
+            "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "48a6fe67d988f66a255dbc8cf8c5121ba8a284359df4c2944825af365c153d6c",
+            "examples/composition-consumer/tests/command_palette_theme.rs": "eadd793e9e828b460bebaae52fa3cd935c88095f8e408536c96617b75f19f7d2"
+          }
+        },
+        "exceptions": [
+          "Host owns the existing TextSurface query; no new component API or parallel text system",
+          "Shared Button/TextSurface/Palette/brand state results reused; ordinary geometry/indices remain layout",
+          "Own-paint-index glyph selection and explicit reduced-motion/input-domain fixture test semantic endpoints, not transition timing"
+        ],
+        "gaps": [
+          "No new dedicated external Theme/GPU/native/physicalIME/VoiceOver/motion-timing certification",
+          "Remaining family/full52 practical coverage and original product gaps remain open"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.command-palette",
+            "commit": "975303260d4f573bfb01e26bdb52bb8a5dfef30c",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/command-palette-main7a0f6e7-candidate/main-intake/commit-receipt.json",
+            "sha256": "ed3786096b1840e0ad1809e89411cb3a49bd6992a07d9a80f079f3d4538c1311",
+            "scope": "Exact-main public/Gallery runtime and strict, retained source identities and bounded unverified scope."
+          }
+        ]
+      }
     },
     {
       "id": "tui.list",
