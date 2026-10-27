@@ -57630,7 +57630,7 @@
             "experience": "unverified",
             "fixture": "unverified",
             "historical_runtime": "public-api-verified",
-            "note": "Actual public passive paint API, asserted geometry and runtime token reads across4themes/3brands/ancestor clip. Existing Progress loading consumer and StatusBadge shaped-label Gallery checks verified separately. Host composition, native, VoiceOver and matched ClientKit/Gold7 remain unverified; no maturity promotion.",
+            "note": "Historical passive-painter observation: Actual public passive paint API, asserted geometry and runtime token reads across4themes/3brands/ancestor clip. Existing Progress loading consumer and StatusBadge shaped-label Gallery checks verified separately. Subsequent mixed-Host SkeletonContent acceptance is recorded separately by #77/b4fbed1 and practical_intake; native window, VoiceOver and matched ClientKit/Gold7 remain unverified. Original observation/source identity and maturity are unchanged.",
             "runtime": "unverified",
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
@@ -59613,7 +59613,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "4d7b426c8213c38adcaae52a712d14d72d01fc99cafe839b757aeb2dc2ee750f",
+    "design/gallery/component-coverage.json": "0556ab4288c335483ded0d2b566f95670a329a524e9e1926a16ff49b541d79c2",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
