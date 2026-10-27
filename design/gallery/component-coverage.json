@@ -393,7 +393,46 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "aec642fb69b339241205cab759e4ba0cf8ac7a25",
+        "scope": "Accepted retained public pure IconView canonical SVG callback and actual Gallery catalog production native adapter Theme/tint/geometry tests; not unified Button action owner.",
+        "claims": [
+          "Same public IconView and real canonical SVG raster callback switch Theme::ALL, consume default primary-text and explicit caller tint, and restore default without geometry reset",
+          "Preview-size metric, fitted geometry, real output coverage/tint/alpha/bounds and offclip non-rendering verified",
+          "Actual production Gallery catalog adapter paints native canonical Plus with current Theme tint, real preview parameters and existing DS stroke; geometry stable across modes",
+          "Gallery all-target strict passed; existing catalog/artwork/shared Button/brand results reused"
+        ],
+        "source_identity": {
+          "scope": "Selected public View/canonical consumer/actual catalog adapter sources, not a complete dependency proof; full frozen source/program identity remains in original receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-gallery/src/gallery/pages/icons.rs": "67a1afc5c6d2638642251de82cc2a3ffc37add1058e09d771d7c3e7a2d8af385",
+            "examples/composition-consumer/tests/icon_theme.rs": "49b5adb26de708799a14330a8a2b8d341150ab673cb4e07626187f5f3b8f0814"
+          }
+        },
+        "exceptions": [
+          "Pure Icon has no hover/pressed/focus/capture/disabled/text model; explicit disabled-text tint is caller choice, not an invented internal state",
+          "Actual catalog IconView/native adapter is distinct from unified Button image/artwork route and its action owner",
+          "Ordinary artwork geometry/path values remain canonical data; generic brand/full catalog and Button evidence reused"
+        ],
+        "gaps": [
+          "No new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver/text-contrast certification",
+          "No full catalog/cache replay; existing separate evidence keeps original identity",
+          "Remaining family/full52 practical coverage remains open"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.icon",
+            "commit": "aec642fb69b339241205cab759e4ba0cf8ac7a25",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/icon-main7a0f6e7-candidate/main-intake/commit-receipt.json",
+            "sha256": "55645ec1db2a370af51078869f6901e60c2dbe5b8561864ba93f707b4c67d7ac",
+            "scope": "Exact-main real canonical consumer/catalog adapter tests and strict, applicability exceptions and original unverified boundaries."
+          }
+        ]
+      }
     },
     {
       "id": "tui.button",

@@ -372,12 +372,13 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
                 (root / path).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(ROOT / path, root / path)
             for row in capabilities.read_json(capabilities.COVERAGE)['components']:
+                paths = set(row.get('practical_intake', {}).get('source_identity', {}).get('sha256', {}))
                 artifact = row.get('runtime_token_observation')
                 if artifact:
-                    paths = [artifact, *json.loads((ROOT / artifact).read_text())['inputs_sha256']]
-                    for path in paths:
-                        (root / path).parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(ROOT / path, root / path)
+                    paths.update([artifact, *json.loads((ROOT / artifact).read_text())['inputs_sha256']])
+                for path in paths:
+                    (root / path).parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT / path, root / path)
             yield root
 
     def test_required_states_are_accounted_without_promoting_fixture_or_native_acceptance(self):
