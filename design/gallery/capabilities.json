@@ -29237,6 +29237,52 @@
           "disabled",
           "selected"
         ],
+        "practical_intake": {
+          "baseline_commit": "59ffc6e9557e6cc217cae29813c6cec69e151292",
+          "claims": [
+            "Same public retained Segmented model/View through Theme::ALL keeps selection/availability/geometry; own actual text4.5/7, selected boundary3 and real pointer/key/cancel/disabled/focus passed",
+            "Actual Gallery retains pointer focus-visible modality and consumed-key host roving identity, including Home without selection change and disabled-peer skip",
+            "Affected original segmented Gallery selection/AX/focus regressions and Gallery strict passed"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.segmented-control",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/segmented-control-main8253390-candidate/main-intake/commit-receipt.json",
+              "commit": "59ffc6e9557e6cc217cae29813c6cec69e151292",
+              "component": "tui.segmented-control",
+              "issue": "#122",
+              "scope": "Actual final-main public/Gallery/strict and precise two host synchronization fixes; original old evidence not re-signed",
+              "sha256": "1e256dd09149a2d6ea0236564129c36d04c3f3ae37cccadbd338e9cab44801d8"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Ordinary cell allocation/indices remain layout data; disabled semantic text exact roles without active contrast threshold",
+            "Shared Button/schema/generator/brand/scale results retain original identities"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver/motion certification",
+            "other roots/full52"
+          ],
+          "scope": "Existing public Segmented model/View and actual Gallery Theme/state/text/boundary; two precise host synchronization fixes",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected current actual component/adapter and finite witnesses; not recursive dependency closure",
+            "sha256": {
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+              "crates/tekes-ui-controls/src/widgets.rs": "39e9bdce57eacfb93020954e72581a005eaaf2ec86bca69dff5ddd7d64921d86",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "e0bdb74132f860c1ecf3472d377b2764f1a0f8bd1d77d381352137e4d7dfcc4a",
+              "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "12fb4805cd23ccd01c46a3c0adfd41a8b7b037b24fdb40c76ce7a714f93e2280",
+              "examples/composition-consumer/tests/segmented_control_theme.rs": "f356a6c267fb6bb0f2429e749e131d6c84027fa0f6c342e7c0ba2c423b515397"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "segmented",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -58702,7 +58748,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "0f80c476c64c60dfdc8e9b7df710a0a3152696fff24a6116a4cc66ce6d1c47d8",
+    "design/gallery/component-coverage.json": "36865f878af9c808b5091ae3da1cdc75ab96125af4dfd85bdf44922b109b0152",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58743,6 +58789,7 @@
     "examples/composition-consumer/tests/list_theme.rs": "3f73caabbba6fff3368f54470ec3704b8935f8f9d2a25d019db2a82025033304",
     "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758",
     "examples/composition-consumer/tests/radio_group_theme.rs": "6053b0b681fdb0053633ed05a25c863da6c5cbc401c1577be664d663a1f0560b",
+    "examples/composition-consumer/tests/segmented_control_theme.rs": "f356a6c267fb6bb0f2429e749e131d6c84027fa0f6c342e7c0ba2c423b515397",
     "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",
     "examples/composition-consumer/tests/stack_theme.rs": "50aebbe938dac79bac99d88b983a0c77bc85e4c5450e86877d052c51f2116a30",
     "examples/composition-consumer/tests/status_badge_theme.rs": "aaee4018f5c32e374ffe2d219b0156f91aff8a46f0e821e72d0237a301461543",

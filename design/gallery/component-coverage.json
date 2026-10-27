@@ -1956,7 +1956,46 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "59ffc6e9557e6cc217cae29813c6cec69e151292",
+        "scope": "Existing public Segmented model/View and actual Gallery Theme/state/text/boundary; two precise host synchronization fixes",
+        "claims": [
+          "Same public retained Segmented model/View through Theme::ALL keeps selection/availability/geometry; own actual text4.5/7, selected boundary3 and real pointer/key/cancel/disabled/focus passed",
+          "Actual Gallery retains pointer focus-visible modality and consumed-key host roving identity, including Home without selection change and disabled-peer skip",
+          "Affected original segmented Gallery selection/AX/focus regressions and Gallery strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected current actual component/adapter and finite witnesses; not recursive dependency closure",
+          "sha256": {
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-controls/src/widgets.rs": "39e9bdce57eacfb93020954e72581a005eaaf2ec86bca69dff5ddd7d64921d86",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "12fb4805cd23ccd01c46a3c0adfd41a8b7b037b24fdb40c76ce7a714f93e2280",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "e0bdb74132f860c1ecf3472d377b2764f1a0f8bd1d77d381352137e4d7dfcc4a",
+            "examples/composition-consumer/tests/segmented_control_theme.rs": "f356a6c267fb6bb0f2429e749e131d6c84027fa0f6c342e7c0ba2c423b515397"
+          }
+        },
+        "exceptions": [
+          "Ordinary cell allocation/indices remain layout data; disabled semantic text exact roles without active contrast threshold",
+          "Shared Button/schema/generator/brand/scale results retain original identities"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver/motion certification",
+          "other roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.segmented-control",
+            "commit": "59ffc6e9557e6cc217cae29813c6cec69e151292",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/segmented-control-main8253390-candidate/main-intake/commit-receipt.json",
+            "sha256": "1e256dd09149a2d6ea0236564129c36d04c3f3ae37cccadbd338e9cab44801d8",
+            "scope": "Actual final-main public/Gallery/strict and precise two host synchronization fixes; original old evidence not re-signed"
+          }
+        ]
+      }
     },
     {
       "id": "tui.field",
