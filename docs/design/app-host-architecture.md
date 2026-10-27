@@ -8,6 +8,15 @@
 
 本次修订纳入 advisor 对 `503e3ac` 的只读审查结论及后续讨论，并补齐对 `f99bf9e` 复审提出的几何身份、切换终态和文本/几何独立发布规则。整体架构可进入受控原型；公共接口冻结前必须验证这些契约。以下约定是设计要求，不表示技术原型或原生体验已经通过验证。
 
+## 当前 Settings 基础交付（2026-10-27，#70/#136）
+
+本地 main 基线 `a6e9debdbfdaf1142ee5f70720070fdac2dba3f6` 接收现有 `tekes-ui-settings` 的 Schema/Group/Item/Field、typed Draft/Submission 和单写者 FileProvider。仅解析、校验、草稿和本地文件持久化，不依赖 Controls/AppHost/平台；原 TOML 类型及未知键保留，late receipt 只退休原批次，不清除新编辑。临时文件 fsync/rename/目录同步、revision 检查、原 commit 查询/去重沿既有实现。Provider 仅承诺串行本地最近未退休提交，不宣称完整远端崩溃恢复协议。
+
+原10项model/store测试与all-target strict在最终接收差量上通过，锁文件使用原registry版本并经 `--locked --offline` 验证。证据为 SSD `artifacts/issue-136/settings70-foundation-maina6e9deb-intake/round01`；测试临时文件与构建输出均沿原SSD规则。该批不改模型/store原正文，原UI测试保留待后续接收。
+
+尚未交付：SettingsForm/Sidebar、SettingsSurface、自动保存窗口、独立配置UndoRedo及原生/PR#52公开固定依赖验证。基础通过不代表这些能力通过，#70继续开放。完整既有Settings设计和历史原型保留在Gallery Root的 `docs/design/apphost-settings.md` 与 `apphost-settings-prototype-20261022.md`，后续接收沿原契约，不把历史实现转签为当前main完成。
+
+
 ## 1. 目标与范围
 
 维护一套共享 App Host 源码，按构建 profile 预定模块组合、平台能力和发行资源，构建并打包成不同 target apps。Host 的 toolbar、Panel 容器和 splitter 均使用 native TekesUI 组件，由 Host 组合并管理其布局状态；每个 Panel 通过 ProcessContainer 承载独立的带 View ProcessComponent，模块声明 content/toolbar 并输出画面、事件和请求。另可固定装配无 View 的导航 ProcessComponent：它独占 nav.json 和导航历史，Host 只执行导航，成功后回报，由导航模块提交历史。
