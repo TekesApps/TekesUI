@@ -8702,6 +8702,248 @@ mod interaction_tests {
         }
     }
     #[test]
+    fn icon_button_gallery_theme_switch_repaints_original_action_artwork_and_state_endpoints() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+
+        fn sample(
+            scene: &Scene,
+            frame: Rect,
+            artwork: Rect,
+            palette: Palette,
+            ground: &str,
+            foreground: &str,
+            active: bool,
+        ) -> (Rgba, Rgba) {
+            let (index, background) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == frame => Some((i, q)),
+                    _ => None,
+                })
+                .expect("actual original Gallery icon Button background");
+            assert_eq!(background.fill, palette.color(ground).unwrap());
+            let strokes: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a > 0. && artwork.intersection(&q.rect) == Some(q.rect) =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(
+                strokes.len(),
+                2,
+                "native Plus emits two real strokes after this Button's own ground"
+            );
+            for ink in &strokes {
+                assert_eq!(*ink, palette.color(foreground).unwrap());
+                if active {
+                    let luminance = |c: Rgba| {
+                        let c = c.to_linear();
+                        0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                    };
+                    let (a, b) = (luminance(*ink), luminance(background.fill));
+                    assert!(
+                        (a.max(b) + 0.05) / (a.min(b) + 0.05) >= 3.,
+                        "actual artwork/ground contrast"
+                    );
+                }
+            }
+            (background.fill, strokes[0])
+        }
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 900.);
+        assert!(gallery.open_route("component-icon-button/playground"));
+        let i = index("icon-button");
+        gallery.build_scene(&mut Scene::new());
+        let (frame, artwork) = {
+            let view = &gallery.workbench.state(i).extended.icon_button_view;
+            assert_eq!(view.button().variant, paint::ButtonVariant::Quiet);
+            (view.layout().frame, view.icon_frame())
+        };
+        let point = frame.center();
+        let background = Point::new(frame.max_x() + 60., frame.min_y());
+        let mut rest_colors = Vec::new();
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            gallery.handle_input(&move_pointer(background));
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            assert_eq!(gallery.theme(), theme);
+            let view = &gallery.workbench.state(i).extended.icon_button_view;
+            assert_eq!(view.layout().frame, frame);
+            assert_eq!(view.icon_frame(), artwork);
+            assert_eq!(view.button().activations, 0);
+            assert!(!view.button().button.state.hovered);
+            assert!(!view.button().button.state.pressed);
+            rest_colors.push(sample(
+                &scene,
+                frame,
+                artwork,
+                theme.into(),
+                "surface-2",
+                "primary-text",
+                true,
+            ));
+        }
+        assert_ne!(rest_colors[0], rest_colors[1]);
+        assert_ne!(rest_colors[2], rest_colors[3]);
+        let palette: Palette = Theme::DARK_INCREASED.into();
+        gallery.handle_input(&move_pointer(point));
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        assert!(
+            gallery
+                .workbench
+                .state(i)
+                .extended
+                .icon_button_view
+                .button()
+                .button
+                .state
+                .hovered
+        );
+        sample(
+            &scene,
+            frame,
+            artwork,
+            palette,
+            "button-hover",
+            "primary-text",
+            true,
+        );
+        gallery.handle_input(&mouse(point, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(
+            gallery
+                .workbench
+                .state(i)
+                .extended
+                .icon_button_view
+                .button()
+                .button
+                .state
+                .pressed
+        );
+        sample(
+            &scene,
+            frame,
+            artwork,
+            palette,
+            "button-pressed",
+            "primary-text",
+            true,
+        );
+        gallery.handle_input(&move_pointer(background));
+        gallery.handle_input(&mouse(background, false));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .extended
+                .icon_button_view
+                .button()
+                .activations,
+            0
+        );
+        assert!(
+            !gallery
+                .workbench
+                .state(i)
+                .extended
+                .icon_button_view
+                .button()
+                .button
+                .state
+                .pressed
+        );
+        sample(
+            &scene,
+            frame,
+            artwork,
+            palette,
+            "surface-2",
+            "primary-text",
+            true,
+        );
+        // Retained original host focus contract, with a real reduced-motion endpoint.
+        gallery
+            .workbench
+            .state(i)
+            .extended
+            .icon_button_view
+            .focus(true);
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(
+            scene
+                .primitives()
+                .iter()
+                .any(|p| matches!(p,Primitive::Quad(q)
+            if q.fill.a==0. && q.border_width>0. && q.rect.center()==frame.center()
+            && q.border_color==palette.color("border-focused").unwrap()))
+        );
+        gallery.workbench.state(i).extended.disabled = true;
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(
+            gallery
+                .workbench
+                .state(i)
+                .extended
+                .icon_button_view
+                .button()
+                .button
+                .state
+                .disabled
+        );
+        sample(
+            &scene,
+            frame,
+            artwork,
+            palette,
+            "surface-2",
+            "tertiary-text",
+            false,
+        );
+        assert!(
+            !scene
+                .primitives()
+                .iter()
+                .any(|p| matches!(p,Primitive::Quad(q)
+            if q.fill.a==0. && q.border_width>0. && q.rect.center()==frame.center()))
+        );
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        assert_eq!(
+            gallery
+                .workbench
+                .state(i)
+                .extended
+                .icon_button_view
+                .button()
+                .activations,
+            0
+        );
+    }
+
+    #[test]
     fn gallery_primary_button_theme_and_brand_changes_repaint_real_button_states() {
         use super::super::Gallery;
         use super::super::commands::Command;
