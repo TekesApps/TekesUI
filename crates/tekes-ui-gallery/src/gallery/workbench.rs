@@ -2057,25 +2057,15 @@ impl Workbench {
             {
                 continue;
             }
-            let button_width = (text
-                .proposal_label(title, proposal::TextRole::UiBody, None)
-                .width as f32
-                + 28.0)
-                .min(width);
+            let measured =
+                text.measure_button(title, width, ButtonSize::Body, proposal::TextRole::UiBody);
+            let button_width = measured.width;
             if row_width > 0.0 && row_width + button_width > width {
                 tab_bottom += (row_height - density_inset).max(24.0) + 8.0;
                 row_width = 0.0;
                 row_height = base_tab_h;
             }
-            let measured = text
-                .measure_button(
-                    title,
-                    button_width,
-                    ButtonSize::Body,
-                    proposal::TextRole::UiBody,
-                )
-                .height;
-            row_height = row_height.max((measured + density_inset).max(24.0));
+            row_height = row_height.max((measured.height + density_inset).max(24.0));
             row_width += button_width + 8.0;
         }
         tab_bottom += (row_height - density_inset).max(24.0) + 24.0;
@@ -2403,21 +2393,15 @@ impl Workbench {
                     continue;
                 }
                 let id = if n == 6 { 0 } else { n + 1 };
-                let tw = (ctx
-                    .text
-                    .proposal_label(title, proposal::TextRole::UiBody, None)
-                    .width as f32
-                    + 28.)
-                    .min(w);
+                let measured =
+                    ctx.text
+                        .measure_button(title, w, ButtonSize::Body, proposal::TextRole::UiBody);
+                let tw = measured.width;
                 if !tab_rows.last().is_none_or(Vec::is_empty) && tab_x + tw > c.max_x() {
                     tab_rows.push(Vec::new());
                     tab_x = x;
                 }
-                let measured_h = ctx
-                    .text
-                    .measure_button(title, tw, ButtonSize::Body, proposal::TextRole::UiBody)
-                    .height;
-                let required_frame_h = (measured_h + density_inset).max(24.0);
+                let required_frame_h = (measured.height + density_inset).max(24.0);
                 tab_rows.last_mut().expect("tab row").push((
                     id,
                     n,
@@ -8272,6 +8256,114 @@ mod interaction_tests {
         w.handle(i, &mouse(p, false), t);
         build(w, i, t);
     }
+    #[test]
+    fn progress_story_navigation_uses_ds_width_and_keeps_routes_scroll_and_reset() {
+        use super::super::Gallery;
+        fn click(gallery: &mut Gallery, i: usize, id: usize) {
+            gallery.scroll_page_to(0.);
+            state_capture::stabilize_document(gallery);
+            let frame = gallery.workbench.state(i).buttons[&id]
+                .layout()
+                .unwrap()
+                .frame;
+            gallery.reveal_focused_frame(frame);
+            gallery.build_scene(&mut Scene::new());
+            let point = gallery
+                .workbench
+                .state(i)
+                .visible_for_id(id)
+                .expect("real revealed navigation/action hit")
+                .center();
+            gallery.handle_input(&mouse(point, true));
+            gallery.handle_input(&mouse(point, false));
+            state_capture::stabilize_document(gallery);
+        }
+        for (width, height, type_scale) in [(720., 512., 2), (1440., 960., 0)] {
+            let mut gallery = Gallery::new();
+            let i = index("progress");
+            assert!(gallery.open_route("component-progress/variants"));
+            gallery.set_view_size(width, height);
+            gallery.set_reduced_motion(true);
+            gallery.workbench.text_scale = type_scale;
+            state_capture::stabilize_document(&mut gallery);
+            let mut frames = Vec::new();
+            for (id, title) in [
+                (1, "Docs"),
+                (2, "Playground"),
+                (4, "Behaviors"),
+                (6, "Variants / sizes"),
+                (0, "Reset"),
+            ] {
+                let layout = gallery.workbench.state(i).buttons[&id].layout().unwrap();
+                let natural = gallery
+                    .text
+                    .proposal_label(title, proposal::TextRole::UiBody, None);
+                assert!(
+                    layout.content.size.width + 0.01 >= natural.width as f32,
+                    "{width} {title}: DS insets must leave the full label width"
+                );
+                assert!(
+                    layout.label_size.height <= natural.height as f32 + 0.01,
+                    "{width} {title}: fitting story words must not wrap within the button"
+                );
+                let viewport = gallery.viewport.bounds();
+                assert!(
+                    layout.frame.min_x() >= viewport.min_x()
+                        && layout.frame.max_x() <= viewport.max_x()
+                );
+                for previous in &frames {
+                    assert!(
+                        layout.frame.intersection(previous).is_none(),
+                        "whole story buttons wrap into separate rows without overlap"
+                    );
+                }
+                frames.push(layout.frame);
+            }
+            if width == 720. {
+                assert!(
+                    frames
+                        .windows(2)
+                        .any(|pair| pair[0].min_y() != pair[1].min_y()),
+                    "narrow navigation wraps whole buttons"
+                );
+            }
+            for (id, section) in [(1, 0), (2, 1), (4, 3), (6, 5)] {
+                click(&mut gallery, i, id);
+                let state = gallery.workbench.state(i);
+                assert_eq!(state.section, section);
+                assert!(state.buttons[&id].state.selected);
+            }
+            click(&mut gallery, i, 2);
+            let original = gallery.workbench.state(i).extended.progress.value();
+            click(&mut gallery, i, 20);
+            assert!(gallery.workbench.state(i).extended.progress.value() > original);
+            click(&mut gallery, i, 0);
+            let state = gallery.workbench.state(i);
+            assert_eq!(state.section, 1);
+            assert_eq!(state.extended.progress.value(), original);
+            assert!(
+                state
+                    .log
+                    .iter()
+                    .any(|line| line == "reset: initial fixture")
+            );
+            let extent = gallery.page_document_height();
+            gallery.scroll_page_to(f32::MAX);
+            state_capture::stabilize_document(&mut gallery);
+            if width == 720. {
+                assert!(gallery.page_scroll_range() > 0.);
+            }
+            assert!((gallery.viewport.offset.y - gallery.page_scroll_range()).abs() < 0.5);
+            for _ in 0..4 {
+                gallery.build_scene(&mut Scene::new());
+                assert!(
+                    (gallery.page_document_height() - extent).abs() < 0.01,
+                    "navigation reflow retains stable document extent at bottom"
+                );
+            }
+        }
+    }
+
     #[test]
     fn extended_story_headers_switch_through_real_pointer_dispatch() {
         let mut text = super::super::text::TextEngine::new();
