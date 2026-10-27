@@ -674,7 +674,45 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "be952dede5716f107801df2523aa5e8a69bb9d20",
+        "scope": "Accepted public Link/LinkView semantic ink and retained Theme-state consumption, plus actual Workbench Link states glyph inks. Tests-only intake; no new production or pixel claim.",
+        "claims": [
+          "Original public LinkView normal/hover/pressed/disabled/focus-visible consumes generated Palette semantic roles",
+          "One retained view and model keep their real interaction state while switching all default Theme values",
+          "Actual Workbench Link states repaint glyph inks under default Theme changes",
+          "Controls/Gallery all-target strict passed; Gallery result reused after the retained-view test-only adjustment"
+        ],
+        "source_identity": {
+          "scope": "Four selected Link producer/View/paint/Gallery files are compared; this is a bounded source subset, not a full dependency certificate. Exact execution source remains the original round01/round02 frozen manifests.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/extended.rs": "c202afc3b711f1b24d44af78f5d5614643c3de63df26cd3727e97fcb8a82080f",
+            "crates/tekes-ui-controls/src/layout_view.rs": "cb807ec1f82f92f3b2cb88127e96b052495838f53536ef0b54c9d7a201f4a9ae",
+            "crates/tekes-ui-controls/src/paint.rs": "4250a0c9ea352ede330fa380b96717a68d99d06c64b40bf3a20c416f9e8996ee",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "99eaae86e832e824a33f584e48fcbd2959074f4bb040df0f8b8bb2e9d7e60ea1"
+          }
+        },
+        "exceptions": [
+          "Original geometry and index values do not require tokenization; shared generator/contrast guards unchanged",
+          "These are semantic production render and actual Gallery wiring assertions, not new GPU/pixel results"
+        ],
+        "gaps": [
+          "Dedicated external Theme Link, GPU/pixel/native/physical input/VoiceOver not rerun or newly certified",
+          "Other #123 family roots and full52 obligations remain open; root maturity unchanged"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.link",
+            "commit": "be952dede5716f107801df2523aa5e8a69bb9d20",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/link-main113c0f9/commit-receipt.json",
+            "sha256": "32dffefe88685d67be4f8d965c0af568ba2184aa3832b7978e7ebee089086fe5",
+            "scope": "Actual public retained-state/Theme and real Gallery results, strict and explicit unverified scope in accepted local-main receipt."
+          }
+        ]
+      }
     },
     {
       "id": "tui.text-field",
