@@ -6933,6 +6933,146 @@ mod interaction_tests {
     }
 
     #[test]
+    fn tree_theme_retains_actual_gallery_disclosure_hierarchy_and_row_ink() {
+        use tekes_ui_platform_macos::AccessibilityRole;
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("tree");
+        click(&mut w, i, 31, &mut text);
+        w.handle(i, &key(123, true), &mut text);
+        assert_eq!(w.state(i).extended.tree.selected, Some(0));
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut original_marks = [None, None];
+        for theme in Theme::ALL {
+            for expanded in [false, true] {
+                w.handle(i, &key(if expanded { 124 } else { 123 }, true), &mut text);
+                let root = w
+                    .state(i)
+                    .visible_for_id(30)
+                    .expect("real visible Tree root");
+                w.handle(i, &move_pointer(root.center()), &mut text);
+                text.begin_frame();
+                let mut static_text = super::super::static_text::StaticText::new(None);
+                let mut ctx = PageCtx {
+                    theme,
+                    text: &mut text,
+                    static_text: &mut static_text,
+                };
+                let mut scene = Scene::new();
+                w.build_clipped(i, &mut ctx, content, content, &mut scene);
+                assert!(scene.composition_error().is_none());
+                assert_eq!(w.state(i).extended.tree.selected, Some(0));
+                assert_eq!(w.state(i).focus, Some(30));
+                assert_eq!(w.state(i).extended.tree.nodes()[0].expanded, expanded);
+                let row = w.state(i).visible_for_id(30).unwrap();
+                let palette = Palette::new(theme, w.brand).unwrap();
+                let (index, ground) = scene
+                    .primitives()
+                    .iter()
+                    .enumerate()
+                    .find_map(|(index, p)| match p {
+                        Primitive::Quad(q) if q.rect == row => Some((index, q)),
+                        _ => None,
+                    })
+                    .expect("actual own Tree root ground");
+                assert_eq!(ground.fill, palette.color("row-selection-hover").unwrap());
+                let labels: Vec<_> = scene.primitives()[index + 1..]
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run)
+                            if !run.glyphs.is_empty()
+                                && run.glyphs.iter().all(|g| row.contains(g.origin)) =>
+                        {
+                            Some(run)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(!labels.is_empty());
+                let ink = palette.color("primary-text").unwrap();
+                assert!(labels.iter().all(|run| run.color == ink));
+                let slot = proposal::metric("size", "size-inline-action").unwrap()
+                    + 2. * proposal::metric("spacing", "space-relaxed").unwrap();
+                let marks: Vec<_> = scene.primitives()[index + 1..]
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Quad(q)
+                            if q.rect.min_x() >= row.min_x()
+                                && q.rect.max_x() <= row.min_x() + slot
+                                && q.rect.min_y() >= row.min_y()
+                                && q.rect.max_y() <= row.max_y() =>
+                        {
+                            Some(q)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(
+                    !marks.is_empty(),
+                    "actual production Gallery chevron, not row ground/focus or label glyphs"
+                );
+                assert!(marks.iter().all(|mark| mark.fill == ink));
+                let geometry: Vec<_> = marks.iter().map(|mark| mark.rect).collect();
+                let original = &mut original_marks[usize::from(expanded)];
+                if let Some(previous) = original.as_ref() {
+                    assert_eq!(&geometry, previous);
+                } else {
+                    *original = Some(geometry);
+                }
+                assert_eq!(
+                    (labels[0].color.a, marks[0].fill.a, ground.fill.a),
+                    (1., 1., 1.)
+                );
+                let luminance = |color: tekes_ui_tokens::Rgba| {
+                    let c = color.to_linear();
+                    0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                };
+                let contrast = |ink: tekes_ui_tokens::Rgba| {
+                    let (a, b) = (luminance(ink), luminance(ground.fill));
+                    (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                };
+                assert!(contrast(labels[0].color) >= if theme.is_increased() { 7. } else { 4.5 });
+                assert!(
+                    contrast(marks[0].fill) >= 3.,
+                    "necessary enabled branch disclosure mark"
+                );
+                assert!(scene.primitives().iter().any(|p|matches!(p,
+                    Primitive::Quad(q) if q.fill.a==0. && q.border_color==palette.color("border-focused").unwrap() && q.rect.intersection(&row).is_some()
+                )));
+                let nodes = w.accessibility_nodes(i);
+                let group = nodes
+                    .iter()
+                    .find(|node| node.role == AccessibilityRole::Tree)
+                    .unwrap();
+                let rows: Vec<_> = nodes
+                    .iter()
+                    .filter(|node| matches!(node.role, AccessibilityRole::TreeItem { .. }))
+                    .collect();
+                assert_eq!(rows.len(), if expanded { 3 } else { 1 });
+                let root = rows.iter().find(|node| node.label == "Workspace").unwrap();
+                assert_eq!(root.role, AccessibilityRole::TreeItem { level: 0 });
+                assert_eq!(root.parent, Some(group.key));
+                assert_eq!(root.expanded, Some(expanded));
+                assert!(root.selected && root.focused && root.enabled);
+                for child in rows.iter().filter(|node| node.label != "Workspace") {
+                    assert_eq!(child.role, AccessibilityRole::TreeItem { level: 1 });
+                    assert_eq!(child.parent, Some(root.key));
+                    assert!(!child.selected);
+                    assert_eq!(child.expanded, None);
+                }
+            }
+        }
+        assert_ne!(
+            original_marks[0], original_marks[1],
+            "original collapsed and expanded chevrons differ"
+        );
+    }
+
+    #[test]
     fn gallery_wholly_offscreen_collections_reveal_home_and_end_without_pointer_hits() {
         use super::super::Gallery;
         for renderer in ["list", "tree", "data-table", "chart"] {
