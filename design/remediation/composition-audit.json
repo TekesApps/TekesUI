@@ -1575,7 +1575,7 @@
         {
           "api": "tekes_ui_controls::feedback_view::StatusBadgeView",
           "path": "crates/tekes-ui-controls/src/feedback_view.rs",
-          "line": 2228,
+          "line": 2234,
           "anchor": "pub struct StatusBadgeView {"
         },
         {
@@ -1618,7 +1618,7 @@
         {
           "api": "tekes_ui_controls::feedback_view::ProgressView",
           "path": "crates/tekes-ui-controls/src/feedback_view.rs",
-          "line": 2372,
+          "line": 2378,
           "anchor": "pub struct ProgressView {"
         },
         {
@@ -1663,7 +1663,7 @@
         {
           "api": "tekes_ui_controls::feedback_view::EmptyStateView",
           "path": "crates/tekes-ui-controls/src/feedback_view.rs",
-          "line": 2415,
+          "line": 2421,
           "anchor": "pub struct EmptyStateView {"
         },
         {
@@ -1706,7 +1706,7 @@
         {
           "api": "tekes_ui_controls::feedback_view::SkeletonView",
           "path": "crates/tekes-ui-controls/src/feedback_view.rs",
-          "line": 2731,
+          "line": 2737,
           "anchor": "pub struct SkeletonView {"
         },
         {
@@ -1851,7 +1851,7 @@
     "crates/tekes-ui-controls/src/composition/toolbar_content.rs": "4c2ec24e1c5fa3a653c21fc5914268f0c72998111886078d25eff775087ec87f",
     "crates/tekes-ui-controls/src/control_motion.rs": "e4ea756801ec1684f92ab1e57f5a57ec49c95aacd475a857726f1cb5bd4ad312",
     "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
-    "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+    "crates/tekes-ui-controls/src/feedback_view.rs": "2d57cc6389d306fa6fcec03b4bc4b356d496cd47e4c1894f70d7a019ef68d392",
     "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
     "crates/tekes-ui-controls/src/lib.rs": "caa61135ac4b83ba076b3baa381599f983fd3575c0466a295c4e1970e96e1b16",
     "crates/tekes-ui-controls/src/reading.rs": "65fae5533cfe23601197b33fcf8521b5e68999138dad658d6de67c00bad14d82",
