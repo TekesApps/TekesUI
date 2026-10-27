@@ -6447,6 +6447,165 @@ mod interaction_tests {
     }
 
     #[test]
+    fn settings_gallery_retained_themes_keep_fixture_values_and_actual_palette() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        fn click(gallery: &mut Gallery, i: usize, id: usize) {
+            let p = gallery
+                .workbench
+                .state(i)
+                .visible_for_id(id)
+                .expect("real Settings fixture input/action")
+                .center();
+            gallery.handle_input(&mouse(p, true));
+            gallery.handle_input(&mouse(p, false));
+            gallery.build_scene(&mut Scene::new());
+        }
+        let mut gallery = Gallery::new();
+        let i = index("settings");
+        assert_eq!(entry(i).slug(), "example-settings");
+        assert!(gallery.open_route("example-settings/playground"));
+        gallery.set_view_size(1440., 1100.);
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        click(&mut gallery, i, 1000);
+        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommit {
+            text: "Settings Theme draft".into(),
+            replacement: None,
+        });
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(
+            gallery.workbench.state(i).input.query(),
+            "Settings Theme draft"
+        );
+        click(&mut gallery, i, 25);
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Checked
+        );
+        click(&mut gallery, i, 20);
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Pending);
+        click(&mut gallery, i, 21);
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Failed);
+        let original = gallery.workbench.state(i).field_view.layout();
+        let original_actions = [
+            gallery.workbench.state(i).visible_for_id(25),
+            gallery.workbench.state(i).visible_for_id(20),
+        ];
+        let events = gallery.workbench.state(i).log.clone();
+        let rest = Point::new(original.frame.max_x() + 8., original.frame.center().y);
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            gallery.handle_input(&move_pointer(Point::new(-100., -100.)));
+            gallery.handle_input(&move_pointer(rest));
+            gallery.animate(1. / 60.);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            assert_eq!(gallery.theme(), theme);
+            let state = gallery.workbench.state(i);
+            assert_eq!(state.input.query(), "Settings Theme draft");
+            assert_eq!(state.checkbox.checked, CheckState::Checked);
+            assert_eq!(state.phase, Phase::Failed);
+            assert!(!state.error && !state.disabled);
+            assert_eq!(
+                state.log, events,
+                "Theme does not reset or submit the fixture"
+            );
+            assert!(
+                state.draft_fixture.is_none(),
+                "Gallery Settings does not attach the durable Form store or AppWindow Settings"
+            );
+            assert_eq!(state.field_view.layout(), original);
+            assert_eq!(state.input.frame_at(0), Some(original.slot));
+            assert_eq!(
+                [state.visible_for_id(25), state.visible_for_id(20)],
+                original_actions
+            );
+            assert_eq!(state.button_labels[&20], "Retry save");
+            assert!(!state.buttons[&20].state.disabled && !state.buttons[&25].state.disabled);
+            assert!(state.button_clip.is_some_and(|clip| clip.contains(rest)));
+            let palette = Palette::new(theme, 0).unwrap();
+            assert_eq!(
+                Gallery::background(theme),
+                palette.color("document-canvas").unwrap()
+            );
+            let (input_index, input) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(n, p)| match p {
+                    Primitive::Quad(q) if q.rect == original.slot => Some((n, q)),
+                    _ => None,
+                })
+                .expect("original Settings TextDemo input ground");
+            assert_eq!(input.fill, palette.color("transcript-input").unwrap());
+            assert_eq!(
+                input.border_color,
+                palette
+                    .color(proposal::control_boundary("required-input", theme).unwrap())
+                    .unwrap()
+            );
+            // Same production FieldView/TextDemo path as accepted Form contrast checks.
+            // Keep this example's delta to actual role wiring and retained fixture state.
+            let mut metadata =
+                scene.primitives()[..input_index]
+                    .iter()
+                    .rev()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run) => Some(run),
+                        _ => None,
+                    });
+            for (slot, role) in [
+                (original.message, "secondary-text"),
+                (original.label, "primary-text"),
+            ] {
+                let run = metadata
+                    .next()
+                    .expect("own Field metadata immediately before input");
+                assert!(!run.glyphs.is_empty());
+                assert!(
+                    run.glyphs
+                        .iter()
+                        .any(|g| slot.inset(-0.5).contains(g.origin))
+                );
+                assert_eq!(run.color, palette.color(role).unwrap());
+            }
+            let text = scene.primitives()[input_index + 1..]
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Glyphs(run) if !run.glyphs.is_empty() => Some(run),
+                    _ => None,
+                })
+                .expect("own Settings input glyphs after input ground");
+            assert!(text.glyphs.iter().any(|g| original.slot.contains(g.origin)));
+            assert_eq!(text.color, palette.color("primary-text").unwrap());
+            observed.push((input.fill, text.color));
+        }
+        assert!(observed.windows(2).any(|w| w[0] != w[1]));
+        assert_eq!(
+            gallery.workbench.state(i).input.query(),
+            "Settings Theme draft"
+        );
+        assert_eq!(gallery.workbench.state(i).phase, Phase::Failed);
+    }
+
+    #[test]
     fn settings_disabled_error_and_reset_controls_drive_real_models() {
         let i = index("settings");
         let mut workbench = Workbench::default();
