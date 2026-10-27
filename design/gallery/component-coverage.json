@@ -1256,7 +1256,46 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/input.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/input.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "33b74b88d35c5d199fd826bca1f1d14d2fb74129",
+        "scope": "Actual single-line TextSurface/TextInput and real TextFieldContent with proper services, retained Theme/value/selection/declared states and real Gallery placeholder/input/contrast; tests only",
+        "claims": [
+          "Actual registered single-line TextSurface/TextInput and existing TextFieldContent retain value/selection/geometry through Theme::ALL with real text-host services, actual glyph4.5/7/input grounds/radius/invalid boundary3",
+          "Original declared focus/invalid/readonly/disabled edit and AX SetValue rejection/re-enable behavior preserved without fake wrapper or dropped assertions",
+          "Actual Gallery route native-event payload/value/selection/error/disabled/empty-unfocused placeholder/edit and strict passed; no physical/native-window certification implied"
+        ],
+        "source_identity": {
+          "scope": "Selected actual primary input/adapter/Gallery witnesses, not full editor/dependency proof",
+          "sha256": {
+            "crates/tekes-ui-controls/src/text_surface.rs": "791439dcf9f778811e60af719458d8b871c82d4303a6727b28733bd840469825",
+            "crates/tekes-ui-controls/src/text_input.rs": "a0756f73cd28f52191b2c721eae8b97bbb49359eacbd727c2125a85b614cbbdb",
+            "crates/tekes-ui-controls/src/composition/adapters.rs": "6d16b70de8d8002de347abc319892b3066a3fd4041efe6ada0a0c4d4da35af4d",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "6cbcb67d5861659d1f44ac5f4984609ed900d0775e50919d015ec526a2016b8d",
+            "examples/composition-consumer/tests/text_field_theme.rs": "7964f0012443389bc4efcc9129c98c59e0873eefda7f3c6537a6ad1fd11ceabb"
+          }
+        },
+        "exceptions": [
+          "No standalone TextField/public placeholder or hover/pressed skin invented; actual Gallery owns existing placeholder branch",
+          "Separate Field metadata matrix reused; ordinary frames/slots remain data"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+          "new host copy-command/OS clipboard write; old valid results retained",
+          "remaining controls/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.text-field",
+            "commit": "33b74b88d35c5d199fd826bca1f1d14d2fb74129",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/text-field-main2c6d7db-candidate/main-intake/commit-receipt.json",
+            "sha256": "c2530ef6f923d22acd50a783f5ee1b73c9447fd142e6e32dd554d18d17661d8e",
+            "scope": "Actual public primary+adapter/real Gallery/strict; accepted Text/Field and old native/font/producer evidence retain original identities"
+          }
+        ]
+      }
     },
     {
       "id": "tui.text-area",
