@@ -4218,7 +4218,45 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "781f2ab65ce7ba8b2c2c331565fc232f6aebe8ec",
+        "scope": "Actual readonly Markdown subset retained Theme/block IDs/wrap/clip/passivity and registered Gallery adapter transparent clear-ground text; tests only",
+        "claims": [
+          "Same public retained Markdown model/View through Theme::ALL keeps supported block parse/IDs/order, real narrow/wide wrap/clip and each-block caller-ground contrast4.5/7",
+          "Actual registered Gallery component build uses exact Gallery DocumentCanvas clear input and retains real blocks/layout/footer distinction across Themes",
+          "Original passive input/lifecycle and Gallery strict passed; no invented own surface/interaction/editor or full-window certification"
+        ],
+        "source_identity": {
+          "scope": "Selected actual Markdown/View/adapter/clear-source witnesses, not recursive closure or pixel/native certificate",
+          "sha256": {
+            "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "d71b574c3f31e2cecf2d1dba4266c7719af736075a1f395cdfa1cf274fb9af2a",
+            "crates/tekes-ui-gallery/src/gallery/mod.rs": "18cec888b4b7fc85a239ed065a32140d78ef281e8a9aa4834765b6ca4afde2ca",
+            "examples/composition-consumer/tests/markdown_theme.rs": "4de00576cc7f49fee977b433a4ddc30bcf100863e3991ab89fa66f281dd2fae0"
+          }
+        },
+        "exceptions": [
+          "Original supported readonly heading/paragraph/bullet/fenced-code subset, no full editor/Content/interactive API invented",
+          "Transparent component uses actual caller Quad or Gallery DocumentCanvas clear input; no own surface/pixel claim"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/whole-window/native AX/physicalIME/VoiceOver certification",
+          "DiffView/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#124",
+            "component": "tui.markdown",
+            "commit": "781f2ab65ce7ba8b2c2c331565fc232f6aebe8ec",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/markdown-maineb94677-candidate/main-intake/commit-receipt.json",
+            "sha256": "b5882e70941efa105117d4857e0fe81bcd7c44b5518a1dc5c2e524971600fe7a",
+            "scope": "Actual public/Gallery component/strict; unchanged parser/shared text/generator evidence retained with original identities"
+          }
+        ]
+      }
     },
     {
       "id": "tui.code-block",
