@@ -648,14 +648,15 @@ impl ClipFrame {
                         }
                     }
                 }
-                Primitive::Image(q) => {
+                Primitive::Image(q) | Primitive::ControlledImage { quad: q, .. } => {
                     images += 1;
                     if analytic {
                         validate_opacity(q.opacity)?;
                         normalize(q.rect, CornerRadii::ZERO, scale)?;
                     }
                 }
-                Primitive::TransformedImage(q) => {
+                Primitive::TransformedImage(q)
+                | Primitive::ControlledTransformedImage { quad: q, .. } => {
                     images += 1;
                     if analytic {
                         validate_opacity(q.quad.opacity)?;

@@ -21,6 +21,7 @@ OUTPUT = Path('design/gallery/capabilities.json')
 BINDING_OUTPUT = Path('crates/tekes-ui-controls/tests/component_registry_api.rs')
 HISTORICAL_MAP = Path('design/gallery/historical-component-map.json')
 PUBLIC_SURFACE = Path('design/gallery/public-api-surface.json')
+CONTROLS_MANIFEST = Path('crates/tekes-ui-controls/Cargo.toml')
 HISTORICAL_REGISTRY = Path('design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json')
 CRATE_SRC = Path('crates')
 COVERAGE = Path('design/gallery/component-coverage.json')
@@ -231,6 +232,10 @@ def reverse_coverage(registry: dict) -> dict:
     if missing or stale:
         raise ValueError(f'public API classification missing={missing}, stale/private={stale}')
     components = {e['component']: e for e in registry['entries'] if e['kind'] == 'component'}
+    optional_components = {e['api']: e for e in entries if e.get('category') == 'optional-component'}
+    feature_section = re.search(r'(?ms)^\[features\][ \t]*\n(.*?)(?=^\[|\Z)',
+                                (ROOT / CONTROLS_MANIFEST).read_text())
+    declared_features = set(re.findall(r'(?m)^([A-Za-z0-9_-]+)\s*=', feature_section[1])) if feature_section else set()
     owners = {}
     for identity, entry in components.items():
         if not isinstance(entry.get('slug'), str) or not entry['slug']:
@@ -239,7 +244,7 @@ def reverse_coverage(registry: dict) -> dict:
             owners.setdefault(api, set()).add(identity)
     for entry in entries:
         api, category = entry['api'], entry.get('category')
-        if category not in {'component', 'component-adapter', 'component-alias', 'component-support', 'composition', 'shared-support'} or not isinstance(entry.get('reason'), str) or not entry['reason'].strip():
+        if category not in {'component', 'component-adapter', 'component-alias', 'component-support', 'composition', 'shared-support', 'optional-component', 'optional-component-support'} or not isinstance(entry.get('reason'), str) or not entry['reason'].strip():
             raise ValueError(f'{api}: explicit category and reason required')
         arguments = entry.get('type_arguments', [])
         if (not isinstance(arguments, list)
@@ -249,6 +254,18 @@ def reverse_coverage(registry: dict) -> dict:
         ids = entry.get('components', [])
         if not isinstance(ids, list) or len(ids) != len(set(ids)) or not set(ids) <= set(components):
             raise ValueError(f'{api}: unknown/duplicate component identity')
+        feature = entry.get('feature')
+        if category in {'optional-component', 'optional-component-support'}:
+            if ids or api in owners:
+                raise ValueError(f'{api}: optional non-Gallery API cannot replace a registered component binding')
+            if not isinstance(feature, str) or feature not in declared_features:
+                raise ValueError(f'{api}: optional API needs a declared Cargo feature')
+            if category == 'optional-component-support':
+                owner = optional_components.get(entry.get('owner_api'))
+                if owner is None or owner.get('feature') != feature:
+                    raise ValueError(f'{api}: optional support needs its component owner and matching feature')
+        elif feature is not None or 'owner_api' in entry:
+            raise ValueError(f'{api}: feature/optional owner requires an explicit optional category')
         if category == 'component':
             if not ids or set(ids) != owners.get(api, set()):
                 raise ValueError(f'{api}: component binding/route coverage mismatch; classified={ids}, registered={sorted(owners.get(api, set()))}')
@@ -264,7 +281,7 @@ def reverse_coverage(registry: dict) -> dict:
             raise ValueError(f'{api}: shared/composition support must not claim component identity')
     if set(owners) - set(paths):
         raise ValueError(f'component bindings absent from public surface: {sorted(set(owners) - set(paths))}')
-    return {'scope': 'tekes_ui_controls public type paths, including aliases; functions/constants and other crates are outside this type audit',
+    return {'scope': 'tekes_ui_controls public type paths, including aliases and explicitly feature-gated non-Gallery components; compiler bindings follow selected Cargo features; functions/constants and other crates are outside this type audit',
             'source': PUBLIC_SURFACE.as_posix(), 'status': 'classified; compiler bindings and runtime acceptance remain separate',
             'counts': {'paths': len(surface), 'categories': {category: sum(e['category'] == category for e in entries) for category in sorted({e['category'] for e in entries})}},
             'types': [{**entry, **surface[entry['api']], 'routes': [components[identity]['slug'] for identity in entry.get('components', [])]} for entry in sorted(entries, key=lambda e: e['api'])]}
@@ -292,6 +309,7 @@ def api_source(api: str) -> dict:
 def binding_test(registry: dict) -> str:
     surface = reverse_coverage(registry)
     surface_calls = []
+    features = sorted({entry['feature'] for entry in surface['types'] if entry.get('feature')})
     for index, entry in enumerate(surface['types']):
         api = entry['api']
         if entry['kind'] == 'trait':
@@ -302,6 +320,11 @@ def binding_test(registry: dict) -> str:
             bound = api + ('<' + ', '.join(arguments) + '>' if arguments else '')
             call = f'    public_type::<{bound}>(&mut actual, {json.dumps(api)});'
             surface_calls.append(call if len(call) <= 100 else f'    public_type::<{bound}>(\n        &mut actual,\n        {json.dumps(api)},\n    );')
+        if entry.get('feature'):
+            call = surface_calls[-1]
+            surface_calls[-1] = ('    #[cfg(feature = ' + json.dumps(entry['feature']) + ')]\n    {\n'
+                                 + '\n'.join('    ' + line for line in call.splitlines()) + '\n    }')
+    enabled_features = '\n'.join('        #[cfg(feature = ' + json.dumps(feature) + ')]\n        ' + json.dumps(feature) + ',' for feature in features)
     calls = []
     for entry in registry['entries']:
         if entry.get('kind') != 'component':
@@ -371,10 +394,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "/../../design/gallery/public-api-surface.json"
     )))
     .unwrap();
+    let enabled_features: &[&str] = &[
+''' + enabled_features + '''
+    ];
     let expected: Vec<_> = surface["types"]
         .as_array()
         .unwrap()
         .iter()
+        .filter(|entry| {
+            entry["feature"]
+                .as_str()
+                .is_none_or(|feature| enabled_features.contains(&feature))
+        })
         .map(|entry| entry["api"].as_str().unwrap())
         .collect();
     assert_eq!(
@@ -934,7 +965,7 @@ def generate(binding_override: bytes | None = None) -> dict:
     observation_paths = [Path(row['runtime_token_observation']) for row in read_json(COVERAGE)['components'] if row.get('runtime_token_observation')]
     practical_paths = [Path(source) for row in read_json(COVERAGE)['components']
                        for source in row.get('practical_intake', {}).get('source_identity', {}).get('sha256', {})]
-    input_paths = [*observation_paths, *practical_paths, REGISTRY, REVIEWS, COVERAGE, STATE_PROFILES, COMPONENT_CONTRACTS, TOKENS, PUBLIC_SURFACE, HISTORICAL_MAP, historical_path, Path('scripts/generate-component-capabilities.py'), Path('scripts/component-context.py'), Path('design/integration.json'), Path('design/gallery/navigation.json'), *files]
+    input_paths = [*observation_paths, *practical_paths, REGISTRY, REVIEWS, COVERAGE, STATE_PROFILES, COMPONENT_CONTRACTS, TOKENS, PUBLIC_SURFACE, CONTROLS_MANIFEST, HISTORICAL_MAP, historical_path, Path('scripts/generate-component-capabilities.py'), Path('scripts/component-context.py'), Path('design/integration.json'), Path('design/gallery/navigation.json'), *files]
     return {
         'format': 'tekesui-component-capabilities/1',
         'source_state': 'content-addressed by input SHA-256 hashes; Git HEAD is intentionally excluded',

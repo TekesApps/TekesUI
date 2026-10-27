@@ -72,12 +72,13 @@ fn enrich(
         add_slider_range(host, id, semantics, node);
         // Preserve the existing value/selection contract before shaping. Complete
         // geometry is still published only from the original shaped layout below.
-        if semantics.role == ContentRole::TextInput
+        if matches!(semantics.role, ContentRole::TextInput | ContentRole::Image)
             && let Some(input) = host.semantic_text_input_snapshot(id)
         {
-            if host
-                .text_surface(id)
-                .is_some_and(|surface| surface.input.multiline)
+            if semantics.role != ContentRole::Image
+                && host
+                    .text_surface(id)
+                    .is_some_and(|surface| surface.input.multiline)
             {
                 node.role = AccessibilityRole::TextArea;
             }
@@ -87,7 +88,7 @@ fn enrich(
         }
     }
     if let Some(layout) = host.semantic_text_layout_snapshot(id, part) {
-        if layout.multiline {
+        if node.role != AccessibilityRole::Image && layout.multiline {
             node.role = AccessibilityRole::TextArea;
         }
         node.value = Some(layout.input.text.clone());
@@ -107,6 +108,9 @@ fn project_content_nodes(host: &ContentHost) -> Vec<AccessibilityNode> {
     }
     let mut nodes = Vec::new();
     for n in host.semantics() {
+        if n.semantics.role == ContentRole::Image && n.semantics.name.is_empty() {
+            continue;
+        }
         let Some(key) = content_key(host, n.id, None) else {
             continue;
         };
@@ -120,6 +124,9 @@ fn project_content_nodes(host: &ContentHost) -> Vec<AccessibilityNode> {
         enrich(host, n.id, None, &n.semantics, &mut owner);
         nodes.push(owner);
         for part in n.parts {
+            if part.semantics.role == ContentRole::Image && part.semantics.name.is_empty() {
+                continue;
+            }
             let key = AccessibilityKey {
                 part: Some(part.index),
                 ..key
@@ -191,6 +198,7 @@ fn project(
         role: match semantics.role {
             Role::Group => NativeRole::Group,
             Role::Text => NativeRole::StaticText,
+            Role::Image => NativeRole::Image,
             Role::Button => NativeRole::Button,
             Role::Link => NativeRole::Link,
             Role::TextInput => NativeRole::TextField,
@@ -516,3 +524,82 @@ impl ContentAccessibilitySnapshot {
 
 mod publication;
 pub use publication::{ContentAccessibilityOwner, WindowAccessibilityPublication};
+
+#[cfg(test)]
+mod image_role_local_port_tests {
+    use super::*;
+    use tekes_ui_controls::{
+        ButtonTextRenderer, TextSurface,
+        composition::{Component, Content},
+        layout::MeasuredChild,
+    };
+    #[derive(Debug)]
+    struct ImageWithTextSurface(TextSurface);
+    impl Component for ImageWithTextSurface {
+        fn measure(
+            &mut self,
+            _: &mut dyn ButtonTextRenderer,
+            _: tekes_ui_scene::Size,
+        ) -> MeasuredChild {
+            MeasuredChild::new(tekes_ui_scene::Size::new(20., 10.))
+        }
+        fn semantics(&self) -> ContentSemantics {
+            ContentSemantics::image_alt("Informative image").unwrap()
+        }
+        fn text_surface(&self) -> Option<&TextSurface> {
+            Some(&self.0)
+        }
+    }
+    #[test]
+    fn local_image_alt_role_and_invalid_text_owner_preserve_atomic_native_acceptance() {
+        assert!(ContentSemantics::image_alt(" \n").is_none());
+        let decorative = ContentSemantics::decorative_image();
+        assert_eq!(decorative.role, ContentRole::Image);
+        assert!(decorative.name.is_empty());
+        let semantics = ContentSemantics::image_alt("Informative image").unwrap();
+        let key = AccessibilityKey {
+            component: 120,
+            part: None,
+        };
+        let mut image = project(
+            key,
+            None,
+            tekes_ui_scene::Rect::new(0., 0., 20., 10.),
+            false,
+            &semantics,
+        );
+        assert_eq!(image.role, AccessibilityRole::Image);
+        assert_eq!(image.label, "Informative image");
+        assert_eq!(
+            crate::accessibility::accept_accessibility_nodes(vec![image.clone()]),
+            vec![image.clone()]
+        );
+        let host = ContentHost::new(Content::new(
+            ComponentId(120),
+            ImageWithTextSurface(TextSurface::new("not image alt", true, false)),
+        ))
+        .unwrap();
+        enrich(&host, ComponentId(120), None, &semantics, &mut image);
+        assert_eq!(
+            image.role,
+            AccessibilityRole::Image,
+            "multiline metadata cannot downgrade the real Image role"
+        );
+        assert!(image.text_selection.is_some());
+        let prefix = project(
+            AccessibilityKey {
+                component: 1,
+                part: None,
+            },
+            None,
+            tekes_ui_scene::Rect::new(0., 0., 20., 10.),
+            false,
+            &ContentSemantics::new(ContentRole::Text, "valid prefix"),
+        );
+        assert_eq!(
+            crate::accessibility::accept_accessibility_nodes(vec![prefix.clone()]),
+            vec![prefix.clone()]
+        );
+        assert!(crate::accessibility::accept_accessibility_nodes(vec![prefix, image]).is_empty());
+    }
+}

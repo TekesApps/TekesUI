@@ -45,6 +45,7 @@ pub enum AccessibilityRole {
     Slider(AccessibilityRange),
     Group,
     StaticText,
+    Image,
     Button,
     Link,
     Switch,
@@ -324,6 +325,16 @@ fn text_in_range(text: &str, range: std::ops::Range<usize>) -> Option<String> {
     String::from_utf16(units.get(range)?).ok()
 }
 
+/// The actual raw Window snapshot admission policy, shared with headless tests.
+/// Invalid snapshots are rejected as a whole, without retaining a valid prefix.
+pub(crate) fn accept_accessibility_nodes(nodes: Vec<AccessibilityNode>) -> Vec<AccessibilityNode> {
+    if validate_accessibility_nodes(&nodes) {
+        nodes
+    } else {
+        Vec::new()
+    }
+}
+
 /// Reject malformed host snapshots before they reach AppKit. Keeping this
 /// validator platform independent makes tree integrity testable without AX.
 pub(crate) fn validate_accessibility_nodes(nodes: &[AccessibilityNode]) -> bool {
@@ -361,6 +372,10 @@ pub(crate) fn validate_accessibility_nodes_with_geometry(
                     AccessibilityRole::TextField | AccessibilityRole::TextArea
                 ) || text_in_range(node.value.as_deref().unwrap_or(""), range.clone()).is_none()
             })
+            || (node.role == AccessibilityRole::Image
+                && (node.label.trim().is_empty()
+                    || node.value.is_some()
+                    || node.text_selection.is_some()))
         {
             return false;
         }
@@ -453,6 +468,7 @@ pub(crate) mod native {
                         AccessibilityRole::StaticText => {
                             objc2_app_kit::NSAccessibilityStaticTextRole
                         }
+                        AccessibilityRole::Image => objc2_app_kit::NSAccessibilityImageRole,
                         AccessibilityRole::Button => objc2_app_kit::NSAccessibilityButtonRole,
                         AccessibilityRole::Link => objc2_app_kit::NSAccessibilityLinkRole,
                         AccessibilityRole::Switch | AccessibilityRole::Checkbox => {
@@ -1557,6 +1573,40 @@ mod tests {
         n.value = None;
         assert!(!validate_accessibility_nodes(&[n]));
         assert!(AccessibilityRange::new(5., 5.).is_some());
+    }
+
+    #[test]
+    fn image_snapshot_rejects_blank_alt_and_text_capabilities_as_a_whole() {
+        let mut image = node(
+            2,
+            None,
+            Some(AccessibilityKey {
+                component: 1,
+                part: None,
+            }),
+        );
+        image.role = AccessibilityRole::Image;
+        image.label = "Chart summary".into();
+        let mut prefix = node(1, None, None);
+        prefix.role = AccessibilityRole::StaticText;
+        prefix.label = "prefix".into();
+        assert_eq!(
+            accept_accessibility_nodes(vec![prefix.clone(), image.clone()]),
+            vec![prefix.clone(), image.clone()]
+        );
+
+        for blank in ["", " \t\n"] {
+            let mut invalid = image.clone();
+            invalid.label = blank.into();
+            assert!(accept_accessibility_nodes(vec![prefix.clone(), invalid]).is_empty());
+        }
+
+        let mut text_owner = image.clone();
+        text_owner.text_selection = Some(0..0);
+        assert!(accept_accessibility_nodes(vec![prefix.clone(), text_owner]).is_empty());
+        let mut valued = image;
+        valued.value = Some("not image alt".into());
+        assert!(accept_accessibility_nodes(vec![prefix, valued]).is_empty());
     }
 
     fn node(

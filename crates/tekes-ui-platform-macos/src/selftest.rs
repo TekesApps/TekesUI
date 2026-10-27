@@ -1357,3 +1357,69 @@ pub fn exclusive_reentry_contract() {
         "EXCLUSIVE_REENTRY_NATIVE_OK windows=4 repeated_present=2 restore_visible=2 restore_originally_hidden=0 original_focus=true"
     );
 }
+
+/// Issue #120 actual AppKit object mapping for image role and alternate text.
+/// Creates one retained NSObject subclass, without an application or window.
+pub fn image_role_contract() -> usize {
+    use crate::accessibility::NativeAccessibilityElement;
+    use crate::shared::Shared;
+    use crate::{
+        AccessibilityKey, AccessibilityNode, AccessibilityRole, Event, Window, WindowHandler,
+    };
+    use objc2::msg_send;
+    use objc2::rc::Retained;
+    use objc2_foundation::NSString;
+
+    struct Noop;
+    impl WindowHandler for Noop {
+        fn handle(&mut self, _: Event, _: &mut Window) {}
+    }
+
+    let mtm = MainThreadMarker::new().expect("Image probe main thread");
+    let shared = Shared::new(mtm, Box::new(Noop));
+    let key = AccessibilityKey {
+        component: 120,
+        part: None,
+    };
+    let element = NativeAccessibilityElement::new(mtm, &shared, key);
+    shared
+        .accessibility_elements
+        .borrow_mut()
+        .insert(key, element.clone());
+    let node = AccessibilityNode {
+        key,
+        parent: None,
+        role: AccessibilityRole::Image,
+        frame: crate::Rect {
+            origin: crate::Point::default(),
+            size: crate::Size {
+                width: 24.,
+                height: 16.,
+            },
+        },
+        label: "Alt text".into(),
+        value: None,
+        description: None,
+        enabled: false,
+        focused: false,
+        selected: false,
+        expanded: None,
+        invalid: false,
+        required: false,
+        text_selection: None,
+        read_only: false,
+    };
+    assert!(crate::accessibility::validate_accessibility_nodes(
+        std::slice::from_ref(&node)
+    ));
+    *shared.accessibility_nodes.borrow_mut() = vec![node];
+
+    let role: Retained<NSString> = unsafe { msg_send![&*element, accessibilityRole] };
+    assert_eq!(&*role, unsafe { objc2_app_kit::NSAccessibilityImageRole });
+    let label: Retained<NSString> = unsafe { msg_send![&*element, accessibilityLabel] };
+    assert_eq!(label.to_string(), "Alt text");
+    let is_element: bool = unsafe { msg_send![&*element, isAccessibilityElement] };
+    assert!(is_element);
+    shared.finish();
+    3
+}

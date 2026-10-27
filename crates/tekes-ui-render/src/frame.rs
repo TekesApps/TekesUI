@@ -95,9 +95,10 @@ impl Pipelines {
         rgba8_premul: &[u8],
         width: u32,
         height: u32,
+        owner: u64,
     ) -> Result<ImageId, RenderError> {
         self.image
-            .register(device, queue, rgba8_premul, width, height)
+            .register(device, queue, rgba8_premul, width, height, owner)
     }
 
     /// 把 scene 编码进 `encoder`：先同步 atlas，再一个 render pass，清屏后按批顺序画。
@@ -188,7 +189,7 @@ impl Pipelines {
                         push_batch(&mut self.batches, Kind::Glyphs, start, end);
                     }
                 }
-                Primitive::Image(q) => {
+                Primitive::Image(q) | Primitive::ControlledImage { quad: q, .. } => {
                     // 没登记（或已注销）的图像不画。
                     if !self.image.contains(q.image) {
                         continue;
@@ -197,7 +198,8 @@ impl Pipelines {
                     self.image.staging.push(ImageInstance::from_quad(q));
                     push_batch(&mut self.batches, Kind::Image(q.image), start, start + 1);
                 }
-                Primitive::TransformedImage(q) => {
+                Primitive::TransformedImage(q)
+                | Primitive::ControlledTransformedImage { quad: q, .. } => {
                     if !self.image.contains(q.quad.image) {
                         continue;
                     }

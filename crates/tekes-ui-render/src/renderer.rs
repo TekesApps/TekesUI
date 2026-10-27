@@ -8,7 +8,7 @@ use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
-use tekes_ui_scene::{GlyphAtlas, ImageId, Scene};
+use tekes_ui_scene::{GlyphAtlas, ImageId, Primitive, Scene};
 use tekes_ui_tokens::Rgba;
 
 /// Triple buffering leaves a drawable available while the compositor owns the
@@ -32,6 +32,12 @@ fn frame_latency() -> u32 {
 
 /// 渲染器编号。atlas 靠它区分是哪个渲染器取走了脏区（见 `GlyphAtlas::take_dirty`）。
 static NEXT_RENDERER_ID: AtomicU64 = AtomicU64::new(1);
+
+fn next_renderer_id() -> Result<u64, RenderError> {
+    NEXT_RENDERER_ID
+        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |id| id.checked_add(1))
+        .map_err(|_| RenderError::InvalidArgument("renderer identity space exhausted"))
+}
 
 struct SurfaceState {
     surface: wgpu::Surface<'static>,
@@ -58,7 +64,7 @@ pub struct Renderer {
     device: wgpu::Device,
     queue: wgpu::Queue,
     gpu: Pipelines,
-    retired_images: std::sync::Arc<std::sync::Mutex<Vec<ImageId>>>,
+    retired_images: std::sync::Arc<std::sync::Mutex<Vec<crate::gpu::RetiredImage>>>,
     /// 最近一帧各类图元的实例数，测试用。
     last_frame: FrameCounts,
     surface: Option<SurfaceState>,
@@ -178,7 +184,7 @@ impl Renderer {
         }
         .map_err(|e| RenderError::Surface(e.to_string()))?;
         let (device, queue, gpu_timestamps) = request_device(&instance, Some(&surface))?;
-        let id = NEXT_RENDERER_ID.fetch_add(1, Ordering::Relaxed);
+        let id = next_renderer_id()?;
         let gpu = Pipelines::new(&device, id);
         let mut r = Renderer {
             id,
@@ -207,7 +213,7 @@ impl Renderer {
     pub fn new_headless() -> Result<Renderer, RenderError> {
         let instance = new_instance();
         let (device, queue, gpu_timestamps) = request_device(&instance, None)?;
-        let id = NEXT_RENDERER_ID.fetch_add(1, Ordering::Relaxed);
+        let id = next_renderer_id()?;
         let gpu = Pipelines::new(&device, id);
         Ok(Renderer {
             id,
@@ -312,6 +318,7 @@ impl Renderer {
         if let Some(error) = scene.composition_error() {
             return Err(RenderError::SceneComposition(error));
         }
+        self.validate_controlled_images(scene)?;
         self.collect_retired_images();
         let Some(s) = &self.surface else {
             return Err(RenderError::Surface("这个渲染器没有 surface".into()));
@@ -479,6 +486,7 @@ impl Renderer {
         if let Some(error) = scene.composition_error() {
             return Err(RenderError::SceneComposition(error));
         }
+        self.validate_controlled_images(scene)?;
         self.collect_retired_images();
         let size = (texture.width(), texture.height());
         check_size(size, scale)?;
@@ -534,6 +542,7 @@ impl Renderer {
         if let Some(error) = scene.composition_error() {
             return Err(RenderError::SceneComposition(error));
         }
+        self.validate_controlled_images(scene)?;
         self.collect_retired_images();
         check_size(size_px, scale)?;
         self.gpu
@@ -723,8 +732,35 @@ impl Renderer {
         width: u32,
         height: u32,
     ) -> Result<ImageId, RenderError> {
-        self.gpu
-            .register_image(&self.device, &self.queue, rgba8_premul, width, height)
+        self.gpu.register_image(
+            &self.device,
+            &self.queue,
+            rgba8_premul,
+            width,
+            height,
+            self.id,
+        )
+    }
+
+    /// Register immutable CPU bitmap pixels and return a cloneable process-local lease.
+    /// Scene retains the lease and the original Renderer authenticates it before submission.
+    pub fn register_bitmap_image(
+        &mut self,
+        rgba8_premul: &[u8],
+        width: u32,
+        height: u32,
+    ) -> Result<crate::gpu::BitmapImageLease, RenderError> {
+        self.collect_retired_images();
+        let id = self.register_image(rgba8_premul, width, height)?;
+        let identity = self
+            .gpu
+            .image
+            .identity(id)
+            .expect("registered image identity");
+        Ok(crate::gpu::BitmapImageLease::new(
+            identity,
+            std::sync::Arc::downgrade(&self.retired_images),
+        ))
     }
 
     /// Update pixels in an existing image of the same dimensions, preserving its
@@ -744,6 +780,52 @@ impl Renderer {
         self.gpu.image.len()
     }
 
+    fn validate_controlled_images(&self, scene: &Scene) -> Result<(), RenderError> {
+        for primitive in scene.primitives() {
+            let (quad, lease) = match primitive {
+                Primitive::ControlledImage { quad, lease } => (quad, lease),
+                Primitive::ControlledTransformedImage { quad, lease } => (&quad.quad, lease),
+                _ => continue,
+            };
+            let credential = lease
+                .downcast_ref::<crate::gpu::BitmapLeaseCredential>()
+                .ok_or(RenderError::InvalidArgument(
+                    "invalid controlled bitmap lease",
+                ))?;
+            let owner = &credential.owner;
+            let identity = &owner.identity;
+            let entry = self
+                .gpu
+                .image
+                .identity(quad.image)
+                .ok_or(RenderError::InvalidArgument(
+                    "stale controlled bitmap lease",
+                ))?;
+            let entry_size =
+                self.gpu
+                    .image
+                    .size(quad.image)
+                    .ok_or(RenderError::InvalidArgument(
+                        "stale controlled bitmap lease",
+                    ))?;
+            if quad.image != identity.id
+                || identity.owner != self.id
+                || !identity.active.load(Ordering::Acquire)
+                || entry.owner != identity.owner
+                || entry.incarnation != identity.incarnation
+                || entry.revision.load(Ordering::Acquire) != credential.revision
+                || !std::sync::Arc::ptr_eq(identity, &entry)
+                || *identity.size.lock().unwrap() != credential.size
+                || entry_size != credential.size
+            {
+                return Err(RenderError::InvalidArgument(
+                    "stale or foreign controlled bitmap lease",
+                ));
+            }
+        }
+        Ok(())
+    }
+
     /// Opt into wgpu interop on this renderer's device and submission queue.
     pub fn gpu_context(&self) -> crate::gpu::GpuContext {
         crate::gpu::GpuContext {
@@ -760,7 +842,7 @@ impl Renderer {
         image: &crate::gpu::GpuImage,
     ) -> Result<ImageId, RenderError> {
         self.check_gpu_image(image)?;
-        Ok(self.gpu.image.register_gpu(&self.device, image))
+        self.gpu.image.register_gpu(&self.device, image, self.id)
     }
 
     /// Register storage with a component-owned lifetime. No borrowed Renderer
@@ -771,10 +853,16 @@ impl Renderer {
     ) -> Result<crate::gpu::GpuImageRegistration, RenderError> {
         self.collect_retired_images();
         let id = self.register_gpu_image(image)?;
+        let identity = self
+            .gpu
+            .image
+            .identity(id)
+            .expect("registered image identity");
         Ok(crate::gpu::GpuImageRegistration {
-            id,
-            owner: self.id,
-            retired: std::sync::Arc::downgrade(&self.retired_images),
+            lease: crate::gpu::BitmapImageLease::new(
+                identity,
+                std::sync::Arc::downgrade(&self.retired_images),
+            ),
         })
     }
     pub fn replace_owned_gpu_image(
@@ -782,12 +870,12 @@ impl Renderer {
         registration: &crate::gpu::GpuImageRegistration,
         image: &crate::gpu::GpuImage,
     ) -> Result<(), RenderError> {
-        if registration.owner != self.id {
+        if registration.lease.owner() != self.id {
             return Err(RenderError::InvalidArgument(
                 "GPU registration belongs to a different renderer",
             ));
         }
-        self.replace_gpu_image(registration.id, image)
+        self.replace_gpu_image(registration.id(), image)
     }
     /// Collect component registrations retired since the last render. Also safe
     /// to call when a host removes content while it does not submit a frame.
@@ -795,7 +883,13 @@ impl Renderer {
         let retired = std::mem::take(&mut *self.retired_images.lock().unwrap());
         retired
             .into_iter()
-            .filter(|id| self.gpu.image.unregister(*id))
+            .filter(|retired| {
+                self.gpu
+                    .image
+                    .identity(retired.id)
+                    .is_some_and(|identity| identity.incarnation == retired.incarnation)
+                    && self.gpu.image.unregister(retired.id)
+            })
             .count()
     }
 
@@ -845,4 +939,33 @@ unsafe fn set_srgb_colorspace(layer: NonNull<c_void>) {
     let layer: &CAMetalLayer = unsafe { layer.cast::<CAMetalLayer>().as_ref() };
     let space = CGColorSpace::with_name(Some(unsafe { kCGColorSpaceSRGB }));
     layer.setColorspace(space.as_deref());
+}
+
+#[cfg(test)]
+mod bitmap_retirement_tests {
+    use super::*;
+
+    #[test]
+    fn queued_retirement_for_a_different_incarnation_cannot_remove_live_entry() {
+        let mut renderer = Renderer::new_headless().expect("actual headless GPU required");
+        let lease = renderer
+            .register_bitmap_image(&[10, 20, 30, 255], 1, 1)
+            .unwrap();
+        let id = lease.id();
+        let current_incarnation = renderer.gpu.image.identity(id).unwrap().incarnation;
+        let retired_incarnation = current_incarnation.saturating_sub(1);
+        assert_ne!(retired_incarnation, current_incarnation);
+        renderer
+            .retired_images
+            .lock()
+            .unwrap()
+            .push(crate::gpu::RetiredImage {
+                id,
+                incarnation: retired_incarnation,
+            });
+
+        assert_eq!(renderer.collect_retired_images(), 0);
+        assert_eq!(renderer.image_count(), 1);
+        assert!(renderer.gpu.image.identity(id).is_some());
+    }
 }

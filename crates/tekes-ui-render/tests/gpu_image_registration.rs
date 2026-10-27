@@ -1,4 +1,4 @@
-use tekes_ui_render::Renderer;
+use tekes_ui_render::{RenderError, Renderer};
 use tekes_ui_scene::{GlyphAtlas, ImageQuad, Rect, Scene};
 use tekes_ui_tokens::Rgba;
 #[test]
@@ -7,6 +7,12 @@ fn owned_registration_releases_on_render_and_rejects_cross_renderer_rebinding() 
     let context = renderer.gpu_context();
     let image = context.create_image((8, 8)).unwrap();
     let registration = renderer.register_owned_gpu_image(&image).unwrap();
+    assert_eq!(
+        registration.bitmap_lease().unwrap_err(),
+        RenderError::InvalidArgument(
+            "externally mutable GPU image cannot provide an immutable bitmap lease"
+        )
+    );
     let old = registration.id();
     assert_eq!(renderer.image_count(), 1);
     let mut other = Renderer::new_headless().unwrap();

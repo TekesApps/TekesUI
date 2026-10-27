@@ -256,6 +256,7 @@ class CapabilityTests(unittest.TestCase):
             root = Path(folder)
             shutil.copytree(ROOT / 'crates/tekes-ui-controls/src', root / 'crates/tekes-ui-controls/src')
             shutil.copy2(ROOT / 'crates/tekes-ui-controls/build.rs', root / 'crates/tekes-ui-controls/build.rs')
+            shutil.copy2(ROOT / capabilities.CONTROLS_MANIFEST, root / capabilities.CONTROLS_MANIFEST)
             for path in [capabilities.REGISTRY, capabilities.PUBLIC_SURFACE]:
                 (root / path).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(ROOT / path, root / path)
@@ -267,13 +268,50 @@ class CapabilityTests(unittest.TestCase):
         self.assertEqual(len(surface), len(capabilities.public_type_surface()))
         self.assertEqual(len({e['api'] for e in surface}), len(surface))
         self.assertEqual({e['category'] for e in surface},
-                         {'component', 'component-support', 'component-alias', 'component-adapter', 'composition', 'shared-support'})
+                         {'component', 'component-support', 'component-alias', 'component-adapter', 'composition', 'shared-support', 'optional-component', 'optional-component-support'})
         button = next(e for e in surface if e['api'] == 'tekes_ui_controls::composition::Button')
         self.assertEqual(button['components'], ['tui.button', 'tui.icon-button'])
         self.assertEqual(button['category'], 'component-adapter')
         removed = {'ButtonContent', 'CompoundButton', 'IconButton', 'IconButtonView'}
         self.assertFalse(any(e['api'].split('::')[-1] in removed for e in surface))
         self.assertEqual(self.data['counts']['components'], 45)
+
+    def test_optional_bitmap_public_types_keep_feature_owner_without_gallery_roots(self):
+        surface = self.data['public_type_surface']['types']
+        optional = [entry for entry in surface if entry.get('feature') == 'bitmap-images']
+        owner = 'tekes_ui_controls::composition::ImageContent'
+        self.assertEqual(len(optional), 8)
+        self.assertEqual([entry['api'] for entry in optional if entry['category'] == 'optional-component'], [owner])
+        for entry in optional:
+            self.assertEqual(entry['components'], [])
+            self.assertEqual(entry['routes'], [])
+            if entry['api'] != owner:
+                self.assertEqual(entry['category'], 'optional-component-support')
+                self.assertEqual(entry['owner_api'], owner)
+        self.assertEqual(self.data['counts'], {'components': 45, 'patterns': 5, 'examples': 2})
+
+    def test_optional_feature_owner_and_registered_binding_cannot_be_falsified(self):
+        registry = capabilities.read_json(capabilities.REGISTRY)
+        good = capabilities.read_json(capabilities.PUBLIC_SURFACE)
+        for mutation, message in [('unknown-feature', 'declared Cargo feature'),
+                                  ('wrong-owner', 'component owner'),
+                                  ('wrong-feature', 'matching feature'),
+                                  ('registered-binding', 'cannot replace a registered')]:
+            bad = copy.deepcopy(good)
+            entry = next(e for e in bad['types'] if e.get('category') == 'optional-component-support')
+            if mutation == 'unknown-feature':
+                entry['feature'] = 'not-a-cargo-feature'
+            elif mutation == 'wrong-owner':
+                entry['owner_api'] = 'tekes_ui_controls::composition::ContentHost'
+            elif mutation == 'wrong-feature':
+                entry['feature'] = 'token-audit'
+            else:
+                entry = next(e for e in bad['types'] if e['category'] == 'component')
+                entry.update(category='optional-component', feature='bitmap-images', components=[])
+            with self.subTest(mutation=mutation), self.source_fixture() as root:
+                (root / capabilities.PUBLIC_SURFACE).write_text(json.dumps(bad))
+                with self.assertRaisesRegex(ValueError, message):
+                    capabilities.reverse_coverage(registry)
 
     def test_new_public_types_and_reexport_aliases_report_the_exact_missing_path(self):
         for file, declaration, missing in [

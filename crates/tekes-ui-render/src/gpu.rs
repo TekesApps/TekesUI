@@ -4,6 +4,91 @@
 //! component passes before UI sampling in one submission; standalone producers
 //! may also submit before UI rendering.
 use crate::RenderError;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct RetiredImage {
+    pub id: tekes_ui_scene::ImageId,
+    pub incarnation: u64,
+}
+
+pub(crate) struct RegistrationIdentity {
+    pub owner: u64,
+    pub id: tekes_ui_scene::ImageId,
+    pub incarnation: u64,
+    pub size: std::sync::Mutex<(u32, u32)>,
+    pub revision: AtomicU64,
+    pub active: AtomicBool,
+}
+
+pub(crate) struct RegistrationOwner {
+    pub identity: std::sync::Arc<RegistrationIdentity>,
+    retired: std::sync::Weak<std::sync::Mutex<Vec<RetiredImage>>>,
+}
+impl Drop for RegistrationOwner {
+    fn drop(&mut self) {
+        if let Some(retired) = self.retired.upgrade() {
+            retired.lock().unwrap().push(RetiredImage {
+                id: self.identity.id,
+                incarnation: self.identity.incarnation,
+            });
+        }
+    }
+}
+
+pub(crate) struct BitmapLeaseCredential {
+    pub owner: std::sync::Arc<RegistrationOwner>,
+    pub revision: u64,
+    pub size: (u32, u32),
+}
+
+/// Cloneable, immutable process-local ownership for one registered bitmap
+/// incarnation, content revision, and pixel size. Raw mutation makes it stale.
+#[derive(Clone)]
+pub struct BitmapImageLease {
+    credential: std::sync::Arc<BitmapLeaseCredential>,
+}
+impl BitmapImageLease {
+    pub(crate) fn new(
+        identity: std::sync::Arc<RegistrationIdentity>,
+        retired: std::sync::Weak<std::sync::Mutex<Vec<RetiredImage>>>,
+    ) -> Self {
+        let owner = std::sync::Arc::new(RegistrationOwner { identity, retired });
+        let revision = owner.identity.revision.load(Ordering::Acquire);
+        let size = *owner.identity.size.lock().unwrap();
+        Self {
+            credential: std::sync::Arc::new(BitmapLeaseCredential {
+                owner,
+                revision,
+                size,
+            }),
+        }
+    }
+    /// The raw lookup id, for constructing the controlled image primitive.
+    pub fn id(&self) -> tekes_ui_scene::ImageId {
+        self.credential.owner.identity.id
+    }
+    /// The immutable pixel dimensions captured by this lease.
+    pub fn size(&self) -> (u32, u32) {
+        self.credential.size
+    }
+    /// Build a Scene token which retains this registration and is authenticated
+    /// by the original Renderer at every submission entry point.
+    pub fn scene_token(&self) -> tekes_ui_scene::OpaqueImageLease {
+        tekes_ui_scene::OpaqueImageLease::from_owner(self.credential.clone())
+    }
+    pub(crate) fn owner(&self) -> u64 {
+        self.credential.owner.identity.owner
+    }
+}
+impl std::fmt::Debug for BitmapImageLease {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BitmapImageLease")
+            .field("id", &self.id())
+            .field("size", &self.size())
+            .finish_non_exhaustive()
+    }
+}
 
 /// Shared UI device/queue and registration identity. Cloning retains GPU handles;
 /// it does not create a second device or queue. Follow the host render-thread policy.
@@ -115,24 +200,24 @@ impl GpuImage {
 }
 
 /// Own a Renderer registration without borrowing the Renderer across component
-/// callbacks. Drop queues unregistration on that Renderer; its next render or
-/// explicit collection releases storage. Submitted GPU work retains its normal
-/// wgpu resource lifetime. This handle is not cloneable and cannot be rebound.
+/// callbacks. The final registration or bitmap lease drop queues retirement on
+/// the original Renderer; its next render or explicit collection releases
+/// storage. Submitted GPU work retains its normal wgpu resource lifetime.
 #[derive(Debug)]
 pub struct GpuImageRegistration {
-    pub(crate) id: tekes_ui_scene::ImageId,
-    pub(crate) owner: u64,
-    pub(crate) retired: std::sync::Weak<std::sync::Mutex<Vec<tekes_ui_scene::ImageId>>>,
+    pub(crate) lease: BitmapImageLease,
 }
 impl GpuImageRegistration {
+    /// The id in the original Renderer namespace.
     pub fn id(&self) -> tekes_ui_scene::ImageId {
-        self.id
+        self.lease.id()
     }
-}
-impl Drop for GpuImageRegistration {
-    fn drop(&mut self) {
-        if let Some(retired) = self.retired.upgrade() {
-            retired.lock().unwrap().push(self.id);
-        }
+    /// GPU textures can be written without going through Renderer and therefore
+    /// cannot provide the immutable pixel guarantee required by a bitmap lease.
+    /// Keep this rejection explicit while preserving the raw GPU registration API.
+    pub fn bitmap_lease(&self) -> Result<BitmapImageLease, RenderError> {
+        Err(RenderError::InvalidArgument(
+            "externally mutable GPU image cannot provide an immutable bitmap lease",
+        ))
     }
 }

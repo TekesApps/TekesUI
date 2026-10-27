@@ -3,6 +3,38 @@
 use crate::glyph::{GlyphRun, ImageQuad, TransformedImageQuad};
 use crate::quad::Quad;
 use crate::shadow::ShadowQuad;
+use std::any::Any;
+use std::sync::Arc;
+
+/// Process-local opaque ownership token carried with a controlled bitmap
+/// primitive. Render backends must authenticate the concrete token before use.
+#[derive(Clone)]
+pub struct OpaqueImageLease(Arc<dyn Any + Send + Sync>);
+
+impl OpaqueImageLease {
+    pub fn from_owner<T: Any + Send + Sync>(owner: Arc<T>) -> Self {
+        Self(owner)
+    }
+    pub fn downcast_ref<T: Any>(&self) -> Option<&T> {
+        self.0.downcast_ref::<T>()
+    }
+    pub fn same_owner(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+impl std::fmt::Debug for OpaqueImageLease {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("OpaqueImageLease")
+            .field(&(Arc::as_ptr(&self.0) as *const () as usize))
+            .finish()
+    }
+}
+impl PartialEq for OpaqueImageLease {
+    fn eq(&self, other: &Self) -> bool {
+        self.same_owner(other)
+    }
+}
+impl Eq for OpaqueImageLease {}
 
 /// 一个绘制图元。见 crate 文档里关于扩展方式的说明。
 #[derive(Clone, Debug, PartialEq)]
@@ -28,6 +60,16 @@ pub enum Primitive {
     /// 渲染层登记过的图像，画进矩形。
     Image(ImageQuad),
     TransformedImage(TransformedImageQuad),
+    /// Image carrying a process-local opaque lease which the selected renderer authenticates.
+    /// This primitive cannot be serialized or replayed on another process without its lease.
+    ControlledImage {
+        quad: ImageQuad,
+        lease: OpaqueImageLease,
+    },
+    ControlledTransformedImage {
+        quad: TransformedImageQuad,
+        lease: OpaqueImageLease,
+    },
 }
 
 /// 一帧要画的内容，按 painter's order 排列：先加入的在下，后加入的在上。
@@ -125,6 +167,20 @@ impl Scene {
 
     pub fn push_transformed_image(&mut self, image: TransformedImageQuad) {
         self.primitives.push(Primitive::TransformedImage(image));
+    }
+
+    pub fn push_controlled_image(&mut self, image: ImageQuad, lease: OpaqueImageLease) {
+        self.primitives
+            .push(Primitive::ControlledImage { quad: image, lease });
+    }
+
+    pub fn push_controlled_transformed_image(
+        &mut self,
+        image: TransformedImageQuad,
+        lease: OpaqueImageLease,
+    ) {
+        self.primitives
+            .push(Primitive::ControlledTransformedImage { quad: image, lease });
     }
 
     pub fn push_clip(&mut self, rect: crate::Rect) {

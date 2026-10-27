@@ -61,5 +61,7 @@ pub use glyph::{
     RasterGlyph, TransformedImageQuad,
 };
 pub use quad::{CornerRadii, Quad};
-pub use scene::{FragmentBudget, FragmentError, FragmentTransform, Primitive, Scene};
+pub use scene::{
+    FragmentBudget, FragmentError, FragmentTransform, OpaqueImageLease, Primitive, Scene,
+};
 pub use shadow::ShadowQuad;

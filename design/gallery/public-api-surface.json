@@ -1,7 +1,7 @@
 {
   "format": "tekesui-public-api-surface/1",
   "scope": "All reachable public struct/enum/trait/type paths of tekes_ui_controls, including explicit aliases. Functions/constants and other crates are outside this type audit.",
-  "review_policy": "Every new public type path requires explicit classification and rationale. Component implementations bind existing registry identity/routes; composition adapters and aliases use existing family routes, not new components. Public implementation helpers remain publicly callable, not private APIs. Classification is a reviewed semantic decision, not inferred from a name or a compiler pass.",
+  "review_policy": "Every new public type path requires explicit classification and rationale. Component implementations bind existing registry identity/routes; composition adapters and aliases use existing family routes, not new components. Public implementation helpers remain publicly callable, not private APIs. Classification is a reviewed semantic decision, not inferred from a name or a compiler pass. Optional non-Gallery components and owner-local support stay explicit with their actual Cargo feature; generated public bindings follow selected features. This is a reviewed feature boundary, not a general cfg proof.",
   "types": [
     {
       "api": "tekes_ui_controls::BarChart",
@@ -1099,6 +1099,69 @@
       "category": "composition",
       "components": [],
       "reason": "Current source-visible R1 immutable finite reveal preparation; API classification only, #98 execution acceptance remains pending."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ImageAlignment",
+      "category": "optional-component-support",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Normalized layout alignment for the optional ImageContent owner.",
+      "owner_api": "tekes_ui_controls::composition::ImageContent"
+    },
+    {
+      "api": "tekes_ui_controls::composition::ImageContent",
+      "category": "optional-component",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Optional public bitmap component on ordinary Content; feature-gated with no Gallery route or extra registered root."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ImageContentError",
+      "category": "optional-component-support",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Configuration or generation error of the optional ImageContent owner.",
+      "owner_api": "tekes_ui_controls::composition::ImageContent"
+    },
+    {
+      "api": "tekes_ui_controls::composition::ImageFit",
+      "category": "optional-component-support",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Contain/cover layout input for the optional ImageContent owner.",
+      "owner_api": "tekes_ui_controls::composition::ImageContent"
+    },
+    {
+      "api": "tekes_ui_controls::composition::ImageLoadOutcome",
+      "category": "optional-component-support",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Host completion result for the optional ImageContent owner.",
+      "owner_api": "tekes_ui_controls::composition::ImageContent"
+    },
+    {
+      "api": "tekes_ui_controls::composition::ImageLoadRequest",
+      "category": "optional-component-support",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Owner/generation-bound completion request for optional ImageContent; not an I/O service.",
+      "owner_api": "tekes_ui_controls::composition::ImageContent"
+    },
+    {
+      "api": "tekes_ui_controls::composition::ImageLoadStatus",
+      "category": "optional-component-support",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Host-managed load status for the optional ImageContent owner.",
+      "owner_api": "tekes_ui_controls::composition::ImageContent"
+    },
+    {
+      "api": "tekes_ui_controls::composition::ImageSemantics",
+      "category": "optional-component-support",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Alternative/decorative declaration for the optional ImageContent owner.",
+      "owner_api": "tekes_ui_controls::composition::ImageContent"
     },
     {
       "api": "tekes_ui_controls::composition::InputModifiers",
