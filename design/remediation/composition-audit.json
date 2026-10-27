@@ -1894,7 +1894,7 @@
     "crates/tekes-ui-gallery/src/gallery/quality_effects.rs": "b99730312721bf8eec15f3b10255c977ba444c4ea064fdb8537186f3271e7d85",
     "crates/tekes-ui-gallery/src/gallery/text.rs": "7d32a99059494d8e5dbee04522dcfd5132d41e4b1d189323a19d3ea2f3d493f4",
     "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "652640370d62ef4e64906d8df3e5346012e06b5a6f3481a1d08b091686a4ac4f",
-    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "d6d241657d8f1ded0e5895a8e9b32110d64ecee8aac96001e32d32345f9d6954",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "48a6fe67d988f66a255dbc8cf8c5121ba8a284359df4c2944825af365c153d6c",
     "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "78618232299c5a7f994e159d5b6f80a90d2cbcb22fa817c8ea1c3e691d4fa231",
     "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs": "2b3262d539c063b91493ee29db9aa13c8cdefacb3259c2efb6cdded337120588",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "5fe264170727bd9716ca93e7c99e9a600df3a83bb7de384ad6f477ff05c55fc3",

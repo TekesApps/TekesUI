@@ -10115,6 +10115,172 @@ mod interaction_tests {
     }
 
     #[test]
+    fn command_palette_gallery_theme_switch_keeps_query_active_row_and_real_text_contrast() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        fn assert_text(scene: &Scene, frame: Rect, scale: f32, palette: Palette, ground: &str) {
+            let (background_index, fill) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(index, p)| match p {
+                    Primitive::Quad(q) if q.rect == frame => Some((index, q.fill)),
+                    _ => None,
+                })
+                .expect("actual Gallery command component background");
+            assert_eq!(fill, palette.color(ground).unwrap());
+            assert_eq!(fill.a, 1.);
+            let inks: Vec<_> = scene.primitives()[background_index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let glyph = g.glyph;
+                            frame
+                                .intersection(&Rect::new(
+                                    g.origin.x + glyph.left as f32 / scale,
+                                    g.origin.y + glyph.top as f32 / scale,
+                                    glyph.width as f32 / scale,
+                                    glyph.height as f32 / scale,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(!inks.is_empty(), "actual Gallery query/candidate glyphs");
+            for ink in inks {
+                assert_eq!(ink, palette.color("primary-text").unwrap());
+                let luminance = |c: tekes_ui_tokens::Rgba| {
+                    let c = c.to_linear();
+                    0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                };
+                let (a, b) = (luminance(ink), luminance(fill));
+                assert!(
+                    (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                        >= if palette.theme.is_increased() {
+                            7.
+                        } else {
+                            4.5
+                        }
+                );
+            }
+        }
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 1000.);
+        assert!(gallery.open_route("component-command-palette/playground"));
+        let i = index("command-palette");
+        gallery.build_scene(&mut Scene::new());
+        let trigger = gallery
+            .workbench
+            .state(i)
+            .extended
+            .command_view
+            .trigger_layout()
+            .unwrap()
+            .frame;
+        gallery.handle_input(&mouse(trigger.center(), true));
+        gallery.handle_input(&mouse(trigger.center(), false));
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(gallery.workbench.state(i).focus, Some(1000));
+        gallery.handle_input(&Event::TextCommit {
+            text: "e".into(),
+            replacement: None,
+        });
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&key(125, true));
+        gallery.build_scene(&mut Scene::new());
+        let initial_query = gallery.workbench.state(i).input.frame_at(0).unwrap();
+        let initial_popup = gallery
+            .workbench
+            .state(i)
+            .extended
+            .command_view
+            .options
+            .layout()
+            .unwrap()
+            .clone();
+        // Actual Workbench input scope, outside both trigger and popup. Sidebar moves do not reach it.
+        let background = Point::new(initial_query.max_x() + 40., initial_query.min_y());
+        gallery.handle_input(&move_pointer(background));
+        let mut selected_fills = Vec::new();
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            assert!(state.extended.command.combo.open);
+            assert_eq!(state.focus, Some(1000));
+            assert_eq!(state.input.query(), "e");
+            assert_eq!(state.extended.command.combo.query, "e");
+            assert_eq!(state.extended.command.combo.active, Some(1));
+            assert_eq!(state.extended.command.combo.selected, None);
+            assert_eq!(state.input.frame_at(0), Some(initial_query));
+            let popup = state.extended.command_view.options.layout().unwrap();
+            assert_eq!(popup.popup, initial_popup.popup);
+            assert_eq!(popup.items.len(), 3);
+            assert_eq!(popup.active_item, 1);
+            let palette: Palette = theme.into();
+            assert_text(
+                &scene,
+                initial_query,
+                gallery.text.scale(),
+                palette,
+                "transcript-input",
+            );
+            assert!(
+                scene
+                    .primitives()
+                    .iter()
+                    .any(|p| matches!(p, Primitive::Quad(q)
+                if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == initial_query.center()
+                && q.border_color == palette.color("border-focused").unwrap()))
+            );
+            assert!(
+                scene
+                    .primitives()
+                    .iter()
+                    .any(|p| matches!(p, Primitive::Quad(q)
+                if q.rect == popup.popup && q.fill == palette.color("surface-popover").unwrap()
+                && q.corner_radii == tekes_ui_scene::CornerRadii::uniform(
+                    proposal::metric("radius", "radius-floating").unwrap())))
+            );
+            for (row, item) in popup.items.iter().enumerate() {
+                assert_text(
+                    &scene,
+                    item.frame,
+                    gallery.text.scale(),
+                    palette,
+                    if row == 1 {
+                        "row-selection"
+                    } else {
+                        "surface-2"
+                    },
+                );
+            }
+            selected_fills.push(palette.color("row-selection").unwrap());
+        }
+        assert_ne!(selected_fills[0], selected_fills[1]);
+        assert_ne!(selected_fills[2], selected_fills[3]);
+        gallery.handle_input(&key(53, true));
+        gallery.build_scene(&mut Scene::new());
+        assert!(!gallery.workbench.state(i).extended.command.combo.open);
+        assert_eq!(gallery.workbench.state(i).focus, Some(20));
+    }
+
+    #[test]
     fn command_palette_measured_trigger_leaves_search_and_popup_regions_separate() {
         for width in [240., 360., 800.] {
             let mut w = Workbench::default();
