@@ -2732,7 +2732,47 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/menu-content.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/menu-content.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "57575e0b69e71aeb5b49a72eb4c09569f32ff939",
+        "scope": "Accepted retained public MenuContent and actual Gallery MenuView Theme/state/text-contrast tests; production unchanged.",
+        "claims": [
+          "Same mounted/open MenuContent switches Theme::ALL and retains active/checked independence; actual trigger/item glyphs and backgrounds meet4.5 standard and7 increased contrast",
+          "Real keyboard/hover/held press, disabled AX refusal and single selection/action behavior verified without new presentation flags",
+          "Actual Gallery uses existing Primary hovered invoker plus selected/hover Menu rows; all semantic fill/ink/focus/action assertions passed",
+          "Gallery strict passed; unchanged shared Button/brand/Theme/Surface results reused"
+        ],
+        "source_identity": {
+          "scope": "Selected public model/View/consumer/Gallery source subset only; full actual manifests/programs remain in original frozen receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composite.rs": "8931bb75dcfe576efe58ed15021b5b3394ae4b217eed10723693080d1b4db276",
+            "crates/tekes-ui-controls/src/composition/menu.rs": "a3a31367b992d86056aad8e405b90dc31080af4de04d028512add377ca5a0d4f",
+            "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "d6d241657d8f1ded0e5895a8e9b32110d64ecee8aac96001e32d32345f9d6954",
+            "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758"
+          }
+        },
+        "exceptions": [
+          "Public MenuContent default trigger is Quiet; application Gallery action(id20) is Primary and retains opening-click hover while Menu owns later pointer input",
+          "Own background paint indices distinguish real title/item glyphs from occluded underlay; full Scene retained",
+          "Ordinary layout/indices and shared brand/state results remain within existing contracts"
+        ],
+        "gaps": [
+          "No new dedicated external Theme/GPU/native/physicalIME/VoiceOver certification",
+          "Remaining family/full52 practical coverage and original product gaps remain on original Issues"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.menu",
+            "commit": "57575e0b69e71aeb5b49a72eb4c09569f32ff939",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/menu-main7a0f6e7-candidate/main-intake/commit-receipt.json",
+            "sha256": "81b4f913b704bf6a2e984afb8c870cb94da3f927b2dc9dadb4b0b0ef30419c5f",
+            "scope": "Exact-main public/Gallery checks, strict, all failure/source identities and bounded unverified scope."
+          }
+        ]
+      }
     },
     {
       "id": "tui.tooltip",
