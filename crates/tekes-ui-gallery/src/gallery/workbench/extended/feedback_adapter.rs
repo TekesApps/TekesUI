@@ -3310,6 +3310,76 @@ mod layout_tests {
         }
     }
     #[test]
+    fn real_popover_state_matrix_consumes_theme_surface_and_body_text_roles() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        for theme in Theme::ALL {
+            let mut text = TextEngine::new();
+            text.begin_frame();
+            let mut static_text = StaticText::new(None);
+            let mut ctx = context(&mut text, &mut static_text);
+            ctx.theme = theme;
+            let mut scene = Scene::new();
+            let mut y = 8.;
+            let bounds = Rect::new(8., 8., 360., 1600.);
+            let palette = Palette::from(theme);
+            matrix_popover(&mut ctx, &mut scene, bounds, &mut y, palette);
+
+            let popover_frames: Vec<_> = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .filter_map(|(index, primitive)| match primitive {
+                    Primitive::Quad(quad)
+                        if quad.fill == palette.color("surface-popover").unwrap()
+                            && quad.corner_radii.top_left
+                                == proposal::metric("radius", "radius-floating").unwrap() =>
+                    {
+                        Some((index, quad.rect))
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(popover_frames.len(), 2, "open states in {theme:?}");
+
+            let body_text = palette.color("primary-text").unwrap();
+            for (surface_index, frame) in &popover_frames {
+                // The fixture body is above the bottom dismiss action. Inspect
+                // its first glyph run after this surface, regardless of ink.
+                let body = Rect::new(
+                    frame.min_x() + 4.,
+                    frame.min_y() + 4.,
+                    frame.size.width - 8.,
+                    frame.size.height * 0.5 - 4.,
+                );
+                let body_run = scene.primitives()[*surface_index + 1..]
+                    .iter()
+                    .find_map(|primitive| match primitive {
+                        Primitive::Glyphs(run)
+                            if !run.glyphs.is_empty()
+                                && run.glyphs.iter().all(|glyph| body.contains(glyph.origin)) =>
+                        {
+                            Some(run)
+                        }
+                        _ => None,
+                    })
+                    .expect("actual Popover body glyphs above its dismiss action");
+                assert_eq!(body_run.color, body_text, "Popover body text in {theme:?}");
+                assert!(
+                    contrast_ratio(body_text, palette.color("surface-popover").unwrap())
+                        >= if theme.is_increased() { 7. } else { 4.5 },
+                    "Popover body text/background contrast in {theme:?}"
+                );
+            }
+            assert!(
+                y > bounds.min_y(),
+                "real Gallery matrix laid out in {theme:?}"
+            );
+        }
+    }
+
+    #[test]
     fn actual_tooltip_forwarder_recovers_each_new_owner_without_reviving_old_requests() {
         use tekes_ui_tokens::{Palette, Theme};
         fn paint(v: &mut FeedbackViews, text: &mut TextEngine, palette: Palette) -> bool {

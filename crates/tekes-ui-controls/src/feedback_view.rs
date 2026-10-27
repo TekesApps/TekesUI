@@ -4279,12 +4279,12 @@ mod tests {
 
     #[test]
     fn popover_surface_uses_floating_role_and_text_backend_scale() {
+        let mut model = Popover::default();
+        let mut view = PopoverView::default();
+        view.show(&mut model, 7);
         for theme in tekes_ui_tokens::Theme::ALL {
             for scale in [1.0, 2.0] {
                 let palette = Palette::from(theme);
-                let mut model = Popover::default();
-                let mut view = PopoverView::default();
-                view.show(&mut model, 7);
                 let mut text = ScaledText(scale);
                 let mut scene = Scene::new();
                 let layout = view.render_with_content(
