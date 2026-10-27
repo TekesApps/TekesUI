@@ -33,6 +33,8 @@ const MIN_COLUMN: f32 = 120.;
 mod window_accessibility;
 #[path = "window_settings.rs"]
 mod window_settings;
+#[path = "window_acceptance.rs"]
+mod window_acceptance;
 #[path = "window_columns.rs"]
 mod window_columns;
 #[path = "window_toolbar_mount.rs"]
@@ -463,6 +465,7 @@ pub struct Host {
     completion: Option<SyncSender<Vec<SyncSender<()>>>>,
     order: Vec<usize>,
     acceptance: bool,
+    acceptance_shared: Option<window_acceptance::Shared>,
     step: u32,
 }
 impl Host {
@@ -516,6 +519,7 @@ impl Host {
             completion: None,
             order: (0..n).collect(),
             acceptance,
+            acceptance_shared: None,
             step: 0,
         }
     }
@@ -1088,9 +1092,48 @@ impl Host {
         }
         Ok(())
     }
+    fn accept_settings_window_parent(
+        &mut self,
+        w: &Window,
+        shared: &window_acceptance::Shared,
+    ) -> Result<()> {
+        match shared.stage() {
+            window_acceptance::Stage::Main => {
+                if !w.is_active() || !w.is_key_window() || w.is_occluded() {
+                    w.request_redraw();
+                    return Ok(());
+                }
+                if let Ok(mut result) = shared.0.lock() {
+                    result.parent_window = w.native_window_number();
+                }
+                shared.transition(window_acceptance::Stage::Opening);
+                eprintln!("SETTINGS_ACCEPTANCE_SCOPE scope=settings-window-only env=1 main-resize=not_run panel-frame=not_run parent_window={}", w.native_window_number());
+                w.request_redraw();
+            }
+            window_acceptance::Stage::Closing
+                if self.settings_child.as_ref().is_some_and(|child| child.is_closed())
+                    && w.is_active() && w.is_key_window() && !w.is_occluded() =>
+            {
+                shared.transition(window_acceptance::Stage::Done);
+                eprintln!("SETTINGS_ACCEPTANCE_PASS parent_window={} child_window={:?} mode={:?} shown_active_key_non_occluded=true saved=true undo_restored=true closed=true parent_restored=true physical_input=false", w.native_window_number(), shared.0.lock().ok().and_then(|s|s.child_window), shared.0.lock().ok().and_then(|s|s.mode));
+                w.close();
+            }
+            window_acceptance::Stage::Failed
+                if self.settings_child.as_ref().is_none_or(|child| child.is_closed()) =>
+            {
+                eprintln!("SETTINGS_ACCEPTANCE_FAIL child_closed=true parent_active={} parent_key={} error={:?}", w.is_active(), w.is_key_window(), shared.0.lock().ok().and_then(|s|s.error.clone()));
+                w.close();
+            }
+            _ => {}
+        }
+        Ok(())
+    }
     fn accept(&mut self, w: &Window) -> Result<()> {
         if !self.acceptance {
             return Ok(());
+        }
+        if let Some(shared) = self.acceptance_shared.clone() {
+            return self.accept_settings_window_parent(w, &shared);
         }
         if self.panels.iter().any(|p| {
             p.bounds.size.width > 0.
@@ -1129,6 +1172,43 @@ impl Host {
         Ok(())
     }
     fn event(&mut self, event: Event, w: &mut Window) -> Result<()> {
+        if !self.is_settings_window && matches!(&event, Event::Created)
+            && let Some(shared) = self.acceptance_shared.clone() {
+                let start_watchdog = if let Ok(mut result) = shared.0.lock() {
+                    result.parent_window = w.native_window_number();
+                    result.parent_wake = Some(w.wake_proxy());
+                    result.started = std::time::Instant::now();
+                    !std::mem::replace(&mut result.watchdog_started, true)
+                } else { false };
+                if start_watchdog {
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_secs(30));
+                        if shared.stage() != window_acceptance::Stage::Done {
+                            shared.fail("30s total Settings-only acceptance timeout");
+                            if let Ok(result) = shared.0.lock() {
+                                if let Some(wake) = &result.child_wake { let _ = wake.wake(); }
+                                if let Some(wake) = &result.parent_wake { let _ = wake.wake(); }
+                            }
+                        }
+                    });
+                }
+        }
+        if self.acceptance_shared.as_ref().is_some_and(|s| s.stage() == window_acceptance::Stage::Opening)
+            && !self.is_settings_window
+            && matches!(&event, Event::Redraw | Event::Wake)
+        {
+            self.event(Event::Command(tekes_ui_platform_macos::CommandId(0x534554)), w)?;
+            if let Some(shared) = &self.acceptance_shared {
+                shared.transition(window_acceptance::Stage::AwaitingShown);
+            }
+            w.request_redraw();
+            return Ok(());
+        }
+        if self.is_settings_window && self.acceptance_shared.is_some()
+            && matches!(&event, Event::Redraw | Event::Wake | Event::AnimationFrame(_))
+        {
+            self.drive_settings_acceptance(w)?;
+        }
         if let Event::Accessibility{target,..}=&event
             && w.content_accessibility_publication().and_then(|p|p.owner(*target)).is_none(){return Ok(());}
 
@@ -1418,7 +1498,12 @@ impl WindowHandler for Host {
     fn handle(&mut self, event: Event, w: &mut Window) {
         if let Err(e) = self.event(event, w) {
             eprintln!("HOST_ERROR {e:#}");
+            if let Some(shared) = &self.acceptance_shared {
+                shared.fail(format!("HOST_ERROR {e:#}"));
+                if let Ok(result) = shared.0.lock() && let Some(wake) = &result.parent_wake { let _ = wake.wake(); }
+            }
             w.set_title(&format!("AppHost error: {e}"));
+            if self.acceptance_shared.is_some() { w.close(); }
         }
     }
 }
@@ -1439,6 +1524,10 @@ pub fn run(
         Host::new(module_ids, acceptance, navigation)
     };
     let has_settings = settings.is_some();
+    let settings_window_acceptance = acceptance
+        && has_settings
+        && std::env::var("TEKESUI_SETTINGS_WINDOW_ACCEPTANCE").as_deref() == Ok("1");
+    if settings_window_acceptance { host.acceptance_shared = Some(window_acceptance::Shared::new()); }
     host.settings_provider = settings
         .as_ref()
         .map(|s| tekes_ui_settings::FileProvider::open(s.file.clone(), s.schema.namespace.clone()))

@@ -26,7 +26,11 @@ Settings List 本地输入适配已以 `1fd83df7ef73990310a45c74c8a1d76095765487
 
 本次窗口源码已完成有限接收验证：真实侧栏 pointer/key/AX、同份 publication 准入前后有效、成功后的旧焦点退休和原 List 键盘所有权、Back/Forward 拒绝与纠正后可用、原 Back 的 pointer/key/AX Focus/Press 及关闭保存屏障通过；Settings/AppHost strict 通过。证据 SSD `artifacts/issue-136/settings70-navigation-main5992b2d-intake/round04`、`round06`；原 partial autosave、Row/close、List 和 IPC/迁移证据保持其源码身份。Back 测试遗漏原动作消费步骤的失败与修正保留，未改变生产契约或删除断言。
 
-尚未验收：完整 Settings 原生窗口、物理 IME/VoiceOver 及 PR#52 独立 checkout 的公开固定依赖/同源 CI。有限模型/真实公共组件和平台窗口测试不代替这些层，#70继续开放。完整既有Settings设计和历史原型保留在Gallery Root的 `docs/design/apphost-settings.md` 与 `apphost-settings-prototype-20261022.md`，后续接收沿原契约，不把历史实现转签为当前main完成。
+有限原生 Settings 验收追加：仅既有 `--window-acceptance` 加 `TEKESUI_SETTINGS_WINDOW_ACCEPTANCE=1` 启用私有 `settings-window-only` 驱动；正常产品入口和无 env 的旧 Main23 路径保持。真实 Main 模块及原 Settings 命令均保留，子 Host 自己等待导航、有效 AX publication 与启用输入框，再经原输入提交、自动保存、Toolbar Undo IPC 和原关闭路径执行。Exclusive 显示→保存110→Undo回100/实际字段100%→Back关闭/父窗及焦点恢复通过；Independent 同二进制无截图旁路重放也通过，其此前截图已实际检查。证据 SSD `artifacts/issue-70/native-window-main113c0f9/exclusive-round05`、`independent-round06`、`independent-round07-no-capture`。截图只证明实际看到的窗口内容，不替代完整像素验收。
+
+原失败保留：旧 Main23 `exclusive-round03` 50秒超时，无首帧/READY；本 scope 的 Main resize/panel-frame 为 not_run，不转签。scope04 异步字段未就绪的驱动误报已修；Independent 首次在关闭前失活，焦点终态失败，同程序重放成功不抹除该失败，也不推定具体失活来源。Main 首帧现象仍须归因到实际启动/传输/导入边界，#70继续开放。
+
+原 #70 AC3 的最终 PR 独立 checkout、精确公开依赖和同源 CI 尚未完成。AC4 要求关联 #48/Toolbar 剩余项并明确本 PR 不承诺的一般远端、多窗口与 VoiceOver 范围；物理 IME/完整 VoiceOver 并非 #70 明文规定的独立全量关闭门禁。本批只证明程序驱动输入与语义 AX，未宣称物理输入/IME/VoiceOver通过；#48 等原能力目标继续保留，不因本次范围说明被删除。完整既有Settings设计和历史原型保留在Gallery Root的 `docs/design/apphost-settings.md` 与 `apphost-settings-prototype-20261022.md`，后续接收沿原契约，不把历史实现转签为当前main完成。
 
 
 平台Settings前置接收（2026-10-27，#70）：真实WindowHandle、普通/Exclusive子窗口、可见窗口恢复、key-window菜单/焦点分发和dirty退出通知已接入；重复present保留首次恢复名单与key，按身份去重。原47平台契约、strict及AppHost接口检查通过；定向真实AppKit回归验证实际激活/key前提、四窗口重复present、关闭恢复两可见窗口且不显示原隐藏者、恢复原焦点。证据SSD `artifacts/issue-136/settings70-window-main3e37ff7-intake/round02` 的exclusive-native及平台各round；早期harness缺正常生命周期而失败，记录保留。此有限原生结果不是完整Settings自动保存/Independent/物理IME/VoiceOver验收。

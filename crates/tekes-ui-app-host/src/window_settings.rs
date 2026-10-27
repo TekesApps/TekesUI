@@ -174,6 +174,8 @@ impl Host {
             .navigation(surface.borrow().navigation_options());
         let mut host = app.into_host(false);
         host.is_settings_window = true;
+        host.acceptance_shared = self.acceptance_shared.clone();
+        if self.acceptance_shared.is_some() { host.settings_options = self.settings_options.clone(); }
         host.leading_visible = true;
         host.trailing_visible = false;
         host.sidebar_motion = crate::sidebar_motion::SidebarMotion::new(true, false);
@@ -206,6 +208,166 @@ impl Host {
         self.settings_child = Some(child);
         Ok(())
     }
+    pub(super) fn drive_settings_acceptance(&mut self, w: &mut Window) -> Result<()> {
+        let Some(shared) = self.acceptance_shared.clone() else { return Ok(()); };
+        let stage = shared.stage();
+        if matches!(stage, window_acceptance::Stage::Done | window_acceptance::Stage::Main) { return Ok(()); }
+        if shared.0.lock().is_ok_and(|s| s.phase_started.elapsed() > std::time::Duration::from_secs(10)) {
+            if stage == window_acceptance::Stage::AwaitingShown {
+                let nav = self.navigation.as_ref();
+                let publication = w.content_accessibility_publication();
+                let text_size_targets: Vec<String> = publication.as_ref().map(|p| {
+                    p.nodes().iter().filter(|n| n.label == "文字大小").map(|n| format!("label={:?},role={:?},enabled={},owner={:?}", n.label, n.role, n.enabled, p.owner(n.key).map(|owner| owner.0))).collect()
+                }).unwrap_or_default();
+                let text_field_count = publication.as_ref().map_or(0, |p| p.nodes().iter().filter(|n| n.role == tekes_ui_platform_macos::AccessibilityRole::TextField).count());
+                let text_fields: Vec<String> = publication.as_ref().map(|p| {
+                    p.nodes().iter().filter(|n| n.role == tekes_ui_platform_macos::AccessibilityRole::TextField).take(12)
+                        .map(|n| format!("label={:?},role={:?},enabled={},owner={:?}", n.label, n.role, n.enabled, p.owner(n.key).map(|owner| owner.0))).collect()
+                }).unwrap_or_default();
+                eprintln!("SETTINGS_ACCEPTANCE_WAIT_TIMEOUT phase=AwaitingShown nav_present={} nav_busy={} nav_input_open={} nav_error={:?} active={} key={} occluded={} publication_present={} publication_current={} publication_valid={} publication_nodes={} text_size_targets={:?} text_field_count={} text_fields_first12={:?}",
+                    nav.is_some(), nav.is_some_and(|n| n.busy), nav.is_some_and(|n| n.host.input_open), nav.and_then(|n| n.error.as_deref()),
+                    w.is_active(), w.is_key_window(), w.is_occluded(), publication.is_some(),
+                    publication.as_ref().is_some_and(|p| p.is_current()), publication.as_ref().is_some_and(|p| p.is_valid()),
+                    publication.as_ref().map_or(0, |p| p.nodes().len()), text_size_targets, text_field_count, text_fields);
+            }
+            shared.fail(format!("10s timeout in {stage:?}"));
+            w.close();
+            if let Ok(s) = shared.0.lock() && let Some(wake) = &s.parent_wake { let _ = wake.wake(); }
+            return Ok(());
+        }
+        if stage == window_acceptance::Stage::Failed {
+            w.close();
+            if let Ok(s) = shared.0.lock() && let Some(wake) = &s.parent_wake { let _ = wake.wake(); }
+            return Ok(());
+        }
+        if shared.0.lock().is_ok_and(|s| s.started.elapsed() > std::time::Duration::from_secs(30)) {
+            shared.fail("30s total acceptance timeout");
+            w.close();
+            return Ok(());
+        }
+        if let Ok(mut result) = shared.0.lock() { result.child_wake = Some(w.wake_proxy()); }
+        let publication = w.content_accessibility_publication();
+        match stage {
+            window_acceptance::Stage::AwaitingShown => {
+                let options = self.settings_options.as_ref().ok_or_else(|| anyhow::anyhow!("acceptance settings options absent"))?;
+                let field = options.schema.settings.iter().find(|f| f.label == "文字大小")
+                    .ok_or_else(|| anyhow::anyhow!("acceptance requires demo text-size field `文字大小`"))?;
+                let nav_ready = self.navigation.as_ref().is_some_and(|nav| nav.host.input_open && !nav.busy && nav.error.is_none());
+                if !w.is_active() || !w.is_key_window() || w.is_occluded() || !nav_ready {
+                    w.request_redraw();
+                    return Ok(());
+                }
+                let Some(publication) = publication else { w.request_redraw(); return Ok(()); };
+                if !publication.is_current() || !publication.is_valid() {
+                    w.request_redraw();
+                    return Ok(());
+                }
+                let owner = tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner(2);
+                let Some(node) = publication.nodes().iter().find(|n| n.label == field.label
+                    && n.enabled
+                    && n.role == tekes_ui_platform_macos::AccessibilityRole::TextField
+                    && publication.owner(n.key) == Some(owner)) else {
+                    w.request_redraw();
+                    return Ok(());
+                };
+                let original = self.settings.as_ref().unwrap().borrow().draft.display(field);
+                let current: i64 = original.parse().map_err(|_| anyhow::anyhow!("text-size AX value is not integer: {original}"))?;
+                let edited = if current + 10 <= 300 { current + 10 } else { current - 10 };
+                {
+                    let mut result = shared.0.lock().map_err(|e| anyhow::anyhow!("acceptance lock: {e}"))?;
+                    result.child_window = Some(w.native_window_number());
+                    result.mode = Some(options.display_mode);
+                    result.field_path = field.path.clone();
+                    result.original = Some(original);
+                    result.edited = Some(edited.to_string());
+                    result.stage = window_acceptance::Stage::Shown;
+                    result.phase_started = std::time::Instant::now();
+                }
+                eprintln!("SETTINGS_ACCEPTANCE_SHOWN parent_window={} child_window={} active={} key={} occluded={} ax_nodes={} mode={:?} physical_input=false", shared.0.lock().unwrap().parent_window, w.native_window_number(), w.is_active(), w.is_key_window(), w.is_occluded(), publication.nodes().len(), options.display_mode);
+                self.event(Event::Accessibility { target: node.key, action: tekes_ui_platform_macos::AccessibilityAction::Focus }, w)?;
+                w.request_redraw();
+            }
+            window_acceptance::Stage::Shown => {
+                let Some(publication) = publication else { return Ok(()); };
+                let node = publication.nodes().iter().find(|n| n.label == "文字大小" && n.enabled && n.role == tekes_ui_platform_macos::AccessibilityRole::TextField)
+                    .ok_or_else(|| anyhow::anyhow!("Settings AX field disappeared after Focus"))?;
+                self.event(Event::Accessibility { target: node.key, action: tekes_ui_platform_macos::AccessibilityAction::Focus }, w)?;
+                self.event(Event::TextCommand("selectAll:".into()), w)?;
+                shared.transition(window_acceptance::Stage::Editing);
+                w.request_redraw();
+            }
+            window_acceptance::Stage::Editing => {
+                let value = shared.0.lock().unwrap().edited.clone().ok_or_else(|| anyhow::anyhow!("acceptance edited value missing"))?;
+                self.event(Event::TextCommit { text: value, replacement: None }, w)?;
+                self.event(Event::TextCommand("insertNewline:".into()), w)?;
+                shared.transition(window_acceptance::Stage::Saving);
+                w.request_redraw();
+            }
+            window_acceptance::Stage::Saving => {
+                let options = self.settings_options.as_ref().ok_or_else(|| anyhow::anyhow!("acceptance settings options absent"))?;
+                let (field_path, edited) = { let s = shared.0.lock().unwrap(); (s.field_path.clone(), s.edited.clone().unwrap()) };
+                let source = match std::fs::read_to_string(&options.file) {
+                    Ok(source) => source,
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => { w.request_redraw(); return Ok(()); },
+                    Err(e) => return Err(anyhow::anyhow!("read settings file: {e}")),
+                };
+                let saved = window_acceptance::read_integer_override(&source, &field_path).map_err(anyhow::Error::msg)?;
+                let clean = self.settings.as_ref().is_some_and(|s| !s.borrow().draft.dirty() && !s.borrow().blocked());
+                if saved.as_deref() == Some(edited.as_str()) && clean
+                    && let Some(undo) = self.toolbar.host.semantics().into_iter().flat_map(|n| n.parts.into_iter()).find(|(_, p)| p.semantics.name == "Undo" && !p.semantics.disabled).map(|(_, p)| p.frame) {
+                        eprintln!("SETTINGS_ACCEPTANCE_SAVED path={} value={} draft_clean=true undo_enabled=true", options.file.display(), edited);
+                        shared.transition(window_acceptance::Stage::Undoing);
+                        let point = tekes_ui_platform_macos::Point { x: undo.center().x as f64, y: undo.center().y as f64 };
+                        for kind in [MouseEventKind::Down { button: MouseButton::Left, click_count: 1 }, MouseEventKind::Up { button: MouseButton::Left, click_count: 1 }] {
+                            self.event(Event::Mouse(tekes_ui_platform_macos::MouseEvent { kind, position: point, modifiers: tekes_ui_platform_macos::Modifiers::default() }), w)?;
+                        }
+                        shared.transition(window_acceptance::Stage::Restoring);
+                }
+            }
+            window_acceptance::Stage::Undoing => { w.request_redraw(); }
+            window_acceptance::Stage::Restoring => {
+                let options = self.settings_options.as_ref().ok_or_else(|| anyhow::anyhow!("acceptance settings options absent"))?;
+                let s = shared.0.lock().unwrap();
+                let original = s.original.clone().ok_or_else(|| anyhow::anyhow!("acceptance original value missing"))?;
+                let source = match std::fs::read_to_string(&options.file) {
+                    Ok(source) => source,
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => String::new(),
+                    Err(e) => return Err(e.into()),
+                };
+                let field = options.schema.settings.iter().find(|f| f.label == "文字大小").ok_or_else(|| anyhow::anyhow!("text-size field disappeared"))?;
+                let saved = window_acceptance::read_integer_override(&source, &s.field_path).map_err(anyhow::Error::msg)?.unwrap_or_else(|| field.display(&field.default));
+                let (form_value, edit, clean) = {
+                    let settings = self.settings.as_ref().unwrap().borrow();
+                    let edit = settings.form.host.semantics().iter().find_map(|node| {
+                        if node.semantics.name != field.label { return None; }
+                        settings.form.host.get(node.id)
+                            .and_then(|n| n.component::<tekes_ui_controls::composition::NumberFieldContent>())
+                            .map(|number| number.edit_state())
+                    }).ok_or_else(|| anyhow::anyhow!("actual Settings NumberField absent"))?;
+                    (settings.draft.display(field), edit, !settings.draft.dirty() && !settings.blocked())
+                };
+                drop(s);
+                if saved == original && form_value == original && edit.text == format!("{original}{}", field.suffix)
+                    && !edit.dirty && !edit.composing && clean {
+                    eprintln!("SETTINGS_ACCEPTANCE_UNDO_RESTORED path={} value={} form_value={} field_text={:?} draft_clean=true", options.file.display(), saved, form_value, edit.text);
+                    let mode = shared.0.lock().unwrap().mode.unwrap();
+                    if mode == crate::SettingsDisplayMode::Exclusive {
+                        let back = publication.as_ref().and_then(|p| p.nodes().iter().find(|n| n.label == "Back" || n.label == "返回")).ok_or_else(|| anyhow::anyhow!("published original Settings Back action absent"))?;
+                        shared.transition(window_acceptance::Stage::Closing);
+                        self.event(Event::Accessibility { target: back.key, action: tekes_ui_platform_macos::AccessibilityAction::Press }, w)?;
+                    } else {
+                        shared.transition(window_acceptance::Stage::Closing);
+                        self.event(Event::CloseRequested, w)?;
+                    }
+                    if let Some(wake) = shared.0.lock().unwrap().parent_wake.clone() { let _ = wake.wake(); }
+                } else { w.request_redraw(); }
+            }
+            window_acceptance::Stage::Closing => { }
+            _ => {}
+        }
+        Ok(())
+    }
+
     pub(super) fn draw_settings(&mut self, w: &Window) -> Result<()> {
         let progress = self.sidebar_motion.sample(
             self.motion_epoch.elapsed(),
@@ -413,7 +575,8 @@ impl Host {
                 })
                 .collect(),
         );
-        let animate = (self.sidebar_motion.needs_frame()
+        let animate = (self.acceptance_shared.as_ref().is_some_and(|s| !matches!(s.stage(), window_acceptance::Stage::Done | window_acceptance::Stage::Failed))
+            || self.sidebar_motion.needs_frame()
             || self.toolbar.host.needs_render()
             || self.text.animation_requested()
             || self.settings.as_ref().unwrap().borrow().needs_frame())
