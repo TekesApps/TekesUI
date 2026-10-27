@@ -1666,7 +1666,46 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/selection.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/selection.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "e89447f822e9c438da965dcc8b73efcea9ae5c71",
+        "scope": "Public retained RadioGroup and actual Gallery selected/unselected/item/group availability Theme/dot/text contracts; fixes repeated no-focus draw blur erasing real hover",
+        "claims": [
+          "Same public RadioGroup/View Theme::ALL selected/unselected/item-disabled, actual dot3/text4.5/7, representative hover/press/cancel/roving-skip/group-disabled/re-enable passed",
+          "Real Gallery retained input paths and affected original radio/AX/unique-hit regressions passed with strict after fixing draw-time unfocused hover erasure",
+          "Actual dot count/color/contrast assertions retained; false float Rect-equality containment oracle corrected to direct bounds, original failures preserved"
+        ],
+        "source_identity": {
+          "scope": "Selected real public/Gallery consumer/test sources, not exhaustive dependency proof; public correction01 and Gallery correction02 retain distinct actual program/source identities in receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/selection.rs": "84be6fb77fdbbf88c7855959f73dc84ac17e8f9e16f59f7b7f34ea7f98f853c3",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "bbe14d3a70628fca4b8c088880b198e33dcbc0e5e612937dcbc504d19bb636ce",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "36847723fab9e5f2c239998540bade3095faad26f133ab7a4af2e3a07b29dac4",
+            "examples/composition-consumer/tests/radio_group_theme.rs": "6053b0b681fdb0053633ed05a25c863da6c5cbc401c1577be664d663a1f0560b"
+          }
+        },
+        "exceptions": [
+          "Ordinary circle/row geometry stays data, disabled ink not active contrast. Caller parent/real renderer clear, no synthetic background or scene crop. No automatic complete shared/native claim.",
+          "Original explicit host/window blur, real focus loss/disabled guards and all original assertions preserved; ordinary geometry stays data"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver/motion-timing certification",
+          "remaining11 input roots/full52",
+          "cross-sidebar hover exit beyond original Workbench scope"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.radio-group",
+            "commit": "e89447f822e9c438da965dcc8b73efcea9ae5c71",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/radio-group-maine90220b-candidate/main-intake/commit-receipt.json",
+            "sha256": "5de9d158ffc9cc38a41e2d12d8eb7d8859c52dbc16a601b3f635b870ca72c020",
+            "scope": "Actual public retained Theme pass and subsequent Gallery-only corrected affected regressions/strict, original failures/identities and precise unverified scope."
+          }
+        ]
+      }
     },
     {
       "id": "tui.switch",

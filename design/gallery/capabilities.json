@@ -25750,6 +25750,52 @@
           "checked",
           "error"
         ],
+        "practical_intake": {
+          "baseline_commit": "e89447f822e9c438da965dcc8b73efcea9ae5c71",
+          "claims": [
+            "Same public RadioGroup/View Theme::ALL selected/unselected/item-disabled, actual dot3/text4.5/7, representative hover/press/cancel/roving-skip/group-disabled/re-enable passed",
+            "Real Gallery retained input paths and affected original radio/AX/unique-hit regressions passed with strict after fixing draw-time unfocused hover erasure",
+            "Actual dot count/color/contrast assertions retained; false float Rect-equality containment oracle corrected to direct bounds, original failures preserved"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.radio-group",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/radio-group-maine90220b-candidate/main-intake/commit-receipt.json",
+              "commit": "e89447f822e9c438da965dcc8b73efcea9ae5c71",
+              "component": "tui.radio-group",
+              "issue": "#122",
+              "scope": "Actual public retained Theme pass and subsequent Gallery-only corrected affected regressions/strict, original failures/identities and precise unverified scope.",
+              "sha256": "5de9d158ffc9cc38a41e2d12d8eb7d8859c52dbc16a601b3f635b870ca72c020"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Ordinary circle/row geometry stays data, disabled ink not active contrast. Caller parent/real renderer clear, no synthetic background or scene crop. No automatic complete shared/native claim.",
+            "Original explicit host/window blur, real focus loss/disabled guards and all original assertions preserved; ordinary geometry stays data"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver/motion-timing certification",
+            "remaining11 input roots/full52",
+            "cross-sidebar hover exit beyond original Workbench scope"
+          ],
+          "scope": "Public retained RadioGroup and actual Gallery selected/unselected/item/group availability Theme/dot/text contracts; fixes repeated no-focus draw blur erasing real hover",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected real public/Gallery consumer/test sources, not exhaustive dependency proof; public correction01 and Gallery correction02 retain distinct actual program/source identities in receipts.",
+            "sha256": {
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-controls/src/selection.rs": "84be6fb77fdbbf88c7855959f73dc84ac17e8f9e16f59f7b7f34ea7f98f853c3",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "36847723fab9e5f2c239998540bade3095faad26f133ab7a4af2e3a07b29dac4",
+              "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "bbe14d3a70628fca4b8c088880b198e33dcbc0e5e612937dcbc504d19bb636ce",
+              "examples/composition-consumer/tests/radio_group_theme.rs": "6053b0b681fdb0053633ed05a25c863da6c5cbc401c1577be664d663a1f0560b"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "radio",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -58485,7 +58531,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "a75514677fda7eb19f42cbdc49fa0efc5a96800bb589d63aadbbb99e91d218e6",
+    "design/gallery/component-coverage.json": "d86bb65b67665e26515f2a08f53f16d4729537f2e1448ec949bfe9f03ee3a2cb",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58526,6 +58572,7 @@
     "examples/composition-consumer/tests/icon_theme.rs": "49b5adb26de708799a14330a8a2b8d341150ab673cb4e07626187f5f3b8f0814",
     "examples/composition-consumer/tests/list_theme.rs": "3f73caabbba6fff3368f54470ec3704b8935f8f9d2a25d019db2a82025033304",
     "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758",
+    "examples/composition-consumer/tests/radio_group_theme.rs": "6053b0b681fdb0053633ed05a25c863da6c5cbc401c1577be664d663a1f0560b",
     "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",
     "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
     "examples/composition-consumer/tests/surface_theme.rs": "ea80660bf10c7af0092bf43ff8dca05c3414eedb21452e40be5c80b83aa9edbf",
