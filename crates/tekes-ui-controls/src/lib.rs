@@ -3,6 +3,7 @@ pub mod collections_view;
 mod composite;
 pub mod composition;
 pub use composition::{Button, ButtonContents, ButtonImagePosition, ButtonActivationPhase};
+pub use composition::{ChartContent, ChartContentError, RequiredFocusEvidence, RequiredFocusSpace, RequiredFocusResult};
 mod control_motion;
 mod draft;
 pub mod feedback_view;
@@ -52,7 +53,7 @@ pub use widgets::Toolbar;
 mod chart;
 pub mod extended;
 pub use chart::{
-    BarChart, BarGeometry, ChartDatum, ChartGeometry, paint_bar_chart,
+    BarChart, BarGeometry, ChartDataUpdateError, ChartDatum, ChartGeometry, paint_bar_chart,
     paint_bar_chart_with_text_scale,
 };
 

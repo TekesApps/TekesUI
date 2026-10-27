@@ -1517,6 +1517,7 @@ impl ChartView {
     pub fn set_window_active(&mut self, active: bool, model: &mut BarChart) {
         self.window_active = active;
         if !active {
+            self.clear_hover(model);
             self.blur(model);
         }
     }
@@ -1600,6 +1601,26 @@ impl ChartView {
         };
         self.layout.clone()
     }
+    /// Retire the original View's hover together with its model on cancellation.
+    pub(crate) fn clear_hover(&mut self, model: &mut BarChart) -> bool {
+        let changed = self.hovered.take().is_some() || model.hovered().is_some();
+        model.set_hovered(None);
+        changed
+    }
+    pub(crate) fn pointer_move_in_region(
+        &mut self,
+        point: Point,
+        model: &mut BarChart,
+        region_contains: bool,
+    ) -> bool {
+        if region_contains {
+            return self.pointer_move(point, model);
+        }
+        if !self.owner_data_current(model) {
+            return false;
+        }
+        self.clear_hover(model)
+    }
     pub fn pointer_move(&mut self, point: Point, model: &mut BarChart) -> bool {
         if !self.owner_data_current(model) {
             return false;
@@ -1670,7 +1691,7 @@ impl ChartView {
 }
 
 fn chart_label_metrics(
-    text: &mut impl ButtonTextRenderer,
+    text: &mut (impl ButtonTextRenderer + ?Sized),
     model: &BarChart,
     frame: Rect,
 ) -> (f32, f32, bool) {

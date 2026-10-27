@@ -85,7 +85,7 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 | `tui.list` | `tekes_ui_controls::extended::List`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
 | `tui.tree` | `tekes_ui_controls::extended::Tree`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
 | `tui.data-table` | `tekes_ui_controls::extended::DataTable`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
-| `tui.chart` | ChartView → Theme/Palette/Surface；ChartContent另属#92 | ChartView有限CPU/strict/外部consumer/GPU已入main `3bd9f00` | 无新增豁免；普通几何/索引数字不要求token化 | ChartContent及必要Host/Scene依赖接收；不转签View验证 | chart-content-20261024.md；#104/#92；#124 |
+| `tui.chart` | ChartContent → original ChartView → Theme/Palette/Surface | View `3bd9f00` plus current #92 main intake: public Host, default/external Metal and original paired focus/blur gate passed | 普通几何/索引数字不要求token化；normal /1 不声明 /2 sidecar | 原生窗口/发布未验；不转签旧Root证据 | chart-content-20261024.md；SSD chart92-main909130a-intake；#104/#92/#124 |
 | `tui.menu` | `tekes_ui_controls::Menu`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
 | `tui.tooltip` | `tekes_ui_controls::extended::Tooltip`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
 | `tui.popover` | `tekes_ui_controls::extended::Popover`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |

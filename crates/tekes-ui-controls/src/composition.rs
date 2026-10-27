@@ -22,6 +22,8 @@ pub use action_preparation::{ActionPreparation, ActionTransactionCompatibility, 
 mod content_reveal_plan;
 pub use content_reveal_plan::{HostRevealBudget, HostRevealError, HostRevealOutcome, HostRevealPlan};
 mod adapters;
+mod chart_content;
+pub use chart_content::{ChartContent, ChartContentError};
 mod button;
 pub use button::{Button, ButtonContents, ButtonImagePosition, ButtonActivationPhase};
 use button::{resolve_action_slot, measure_action_slot, action_child_theme};
@@ -1424,6 +1426,7 @@ pub enum CompositionError {
 pub struct RequiredFocusEvidence(std::sync::Arc<()>);
 impl RequiredFocusEvidence {
     pub fn new() -> Self { Self(std::sync::Arc::new(())) }
+    pub(crate) fn from_owner(token: std::sync::Arc<()>) -> Self { Self(token) }
 }
 impl Default for RequiredFocusEvidence { fn default() -> Self { Self::new() } }
 impl PartialEq for RequiredFocusEvidence {

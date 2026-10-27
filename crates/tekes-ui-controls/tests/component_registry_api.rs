@@ -606,6 +606,15 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     #[allow(dead_code)]
     fn public_trait_11<T: tekes_ui_controls::ButtonTextRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::ButtonTextRenderer");
+    public_type::<tekes_ui_controls::ChartContent>(&mut actual, "tekes_ui_controls::ChartContent");
+    public_type::<tekes_ui_controls::ChartContentError>(
+        &mut actual,
+        "tekes_ui_controls::ChartContentError",
+    );
+    public_type::<tekes_ui_controls::ChartDataUpdateError>(
+        &mut actual,
+        "tekes_ui_controls::ChartDataUpdateError",
+    );
     public_type::<tekes_ui_controls::ChartDatum>(&mut actual, "tekes_ui_controls::ChartDatum");
     public_type::<tekes_ui_controls::ChartGeometry>(
         &mut actual,
@@ -701,6 +710,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::ReadingUpdateError",
     );
     public_type::<tekes_ui_controls::ReflowAnchor>(&mut actual, "tekes_ui_controls::ReflowAnchor");
+    public_type::<tekes_ui_controls::RequiredFocusEvidence>(
+        &mut actual,
+        "tekes_ui_controls::RequiredFocusEvidence",
+    );
+    public_type::<tekes_ui_controls::RequiredFocusResult>(
+        &mut actual,
+        "tekes_ui_controls::RequiredFocusResult",
+    );
+    public_type::<tekes_ui_controls::RequiredFocusSpace>(
+        &mut actual,
+        "tekes_ui_controls::RequiredFocusSpace",
+    );
     public_type::<tekes_ui_controls::ScrollArea>(&mut actual, "tekes_ui_controls::ScrollArea");
     public_type::<tekes_ui_controls::ScrollGeometry>(
         &mut actual,
@@ -750,14 +771,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::TextSurfaceAlignment",
     );
     #[allow(dead_code)]
-    fn public_trait_71<T: tekes_ui_controls::TextSurfaceHost + ?Sized>() {}
+    fn public_trait_77<T: tekes_ui_controls::TextSurfaceHost + ?Sized>() {}
     actual.push("tekes_ui_controls::TextSurfaceHost");
     public_type::<tekes_ui_controls::TextSurfacePresentation>(
         &mut actual,
         "tekes_ui_controls::TextSurfacePresentation",
     );
     #[allow(dead_code)]
-    fn public_trait_73<T: tekes_ui_controls::TextSurfaceTextRenderer + ?Sized>() {}
+    fn public_trait_79<T: tekes_ui_controls::TextSurfaceTextRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::TextSurfaceTextRenderer");
     public_type::<tekes_ui_controls::TickingNumber>(
         &mut actual,
@@ -845,7 +866,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::collections_view::MarkdownView",
     );
     #[allow(dead_code)]
-    fn public_trait_96<T: tekes_ui_controls::collections_view::PassiveCollectionView + ?Sized>() {}
+    fn public_trait_102<T: tekes_ui_controls::collections_view::PassiveCollectionView + ?Sized>() {}
     actual.push("tekes_ui_controls::collections_view::PassiveCollectionView");
     public_type::<tekes_ui_controls::collections_view::TreeView>(
         &mut actual,
@@ -883,8 +904,16 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::ButtonImagePosition",
     );
+    public_type::<tekes_ui_controls::composition::ChartContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::ChartContent",
+    );
+    public_type::<tekes_ui_controls::composition::ChartContentError>(
+        &mut actual,
+        "tekes_ui_controls::composition::ChartContentError",
+    );
     #[allow(dead_code)]
-    fn public_trait_106<T: tekes_ui_controls::composition::Component + ?Sized>() {}
+    fn public_trait_114<T: tekes_ui_controls::composition::Component + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::Component");
     public_type::<tekes_ui_controls::composition::ComponentActionRequest<'_>>(
         &mut actual,
@@ -1067,7 +1096,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_152<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_160<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1114,7 +1143,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::PointerPhase",
     );
     #[allow(dead_code)]
-    fn public_trait_164<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    fn public_trait_172<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::PreparedActionEffect");
     public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
         &mut actual,
@@ -1621,7 +1650,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_291<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_299<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

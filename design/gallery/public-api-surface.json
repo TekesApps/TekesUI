@@ -94,6 +94,30 @@
       "reason": "Shared layout, event/state and host rendering contracts reused by multiple controls; public implementation support, not private and not separate Gallery components."
     },
     {
+      "api": "tekes_ui_controls::ChartContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Composition adapter mounts the existing BarChart through ContentHost and preserves the original ChartView owner, identity and route; no separate component or state owner."
+    },
+    {
+      "api": "tekes_ui_controls::ChartContentError",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Construction validation error for ChartContent; supporting API for the existing chart adapter, not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::ChartDataUpdateError",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Atomic BarChart data replacement validation error; it reports a rejected update without introducing a separate component or route."
+    },
+    {
       "api": "tekes_ui_controls::ChartDatum",
       "category": "component-support",
       "components": [
@@ -381,6 +405,24 @@
         "tui.search-field"
       ],
       "reason": "Shared editor state, reflow anchor and host shaping/painting interfaces; presentation remains TextSurface."
+    },
+    {
+      "api": "tekes_ui_controls::RequiredFocusEvidence",
+      "category": "composition",
+      "components": [],
+      "reason": "Owner-local identity for arranged required-focus evidence, shared by ContentHost and focus/reveal runtime; not a component API."
+    },
+    {
+      "api": "tekes_ui_controls::RequiredFocusResult",
+      "category": "composition",
+      "components": [],
+      "reason": "Host-visible outcome for the arranged required-focus region, shared by ContentHost and focus/reveal runtime; not a component API."
+    },
+    {
+      "api": "tekes_ui_controls::RequiredFocusSpace",
+      "category": "composition",
+      "components": [],
+      "reason": "Host-visible required-focus space contract used by ContentHost and focus/reveal runtime; not a component API."
     },
     {
       "api": "tekes_ui_controls::ScrollArea",
@@ -816,6 +858,22 @@
       "category": "composition",
       "components": [],
       "reason": "Relative image/text arrangement on the same Button, using existing DS measurement."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ChartContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Composition adapter mounts the existing BarChart through ContentHost and preserves the original ChartView owner, identity and route; no separate component or state owner."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ChartContentError",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Construction validation error for ChartContent; supporting API for the existing chart adapter, not an independent component."
     },
     {
       "api": "tekes_ui_controls::composition::Component",

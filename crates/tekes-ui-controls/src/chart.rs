@@ -25,6 +25,12 @@ impl ChartDatum {
     }
 }
 
+/// Atomic replacement failure for an updated finite chart data set.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ChartDataUpdateError {
+    pub index: usize,
+}
+
 /// Controlled state for a single-series vertical bar chart.
 ///
 /// The data is bounded by the consumer before construction. Non-finite values are
@@ -52,8 +58,33 @@ impl BarChart {
         &self.data
     }
 
+    /// Replace the finite data set without replacing this model or its owner.
+    /// Category labels, including blank and duplicate labels, remain literal data.
+    /// Existing selection is retained by slot when that slot remains finite;
+    /// otherwise selection advances to the next finite slot. Hover is cleared.
+    /// Validation completes before any model state changes.
+    pub fn try_update_data(&mut self, data: Vec<ChartDatum>) -> Result<(), ChartDataUpdateError> {
+        if let Some((index, _)) = data.iter().enumerate().find(|(_, d)| !d.value.is_finite()) {
+            return Err(ChartDataUpdateError { index });
+        }
+        let previous = self.selected;
+        self.data = data;
+        self.selected = previous
+            .filter(|&index| self.is_valid(index))
+            .or_else(|| {
+                previous.and_then(|index| self.next_valid(index.min(self.data.len()), 1, true))
+            })
+            .or_else(|| self.next_valid(0, 1, true));
+        self.hovered = None;
+        Ok(())
+    }
+
     pub fn selected(&self) -> Option<usize> {
         self.selected
+    }
+
+    pub(crate) fn selectable(&self, index: usize) -> bool {
+        self.is_valid(index)
     }
 
     pub fn is_focused(&self) -> bool {
@@ -1040,5 +1071,32 @@ mod tests {
             assert!(geometry.plot.min_y() >= bounds.min_y() + value_height);
             assert!(geometry.plot.max_y() <= bounds.max_y() - category_height);
         }
+    }
+    #[test]
+    fn finite_update_is_atomic_and_keeps_legal_category_labels() {
+        let mut chart = BarChart::new(vec![
+            ChartDatum::new("", 1.0),
+            ChartDatum::new("same", 2.0),
+            ChartDatum::new("same", 3.0),
+        ]);
+        chart.select(1);
+        chart.set_hovered(Some(2));
+        assert_eq!(
+            chart.try_update_data(vec![ChartDatum::new("", 4.0), ChartDatum::new("", 5.0)]),
+            Ok(())
+        );
+        assert_eq!(chart.selected(), Some(1));
+        assert_eq!(chart.hovered(), None);
+        let before = chart.clone();
+        assert_eq!(
+            chart.try_update_data(vec![
+                ChartDatum::new("x", 8.0),
+                ChartDatum::new("bad", f64::INFINITY)
+            ]),
+            Err(ChartDataUpdateError { index: 1 })
+        );
+        assert_eq!(chart, before);
+        assert_eq!(chart.try_update_data(Vec::new()), Ok(()));
+        assert_eq!(chart.selected(), None);
     }
 }

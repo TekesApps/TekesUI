@@ -45,6 +45,7 @@ pub(super) struct OwnerBand {
     label_extent: Option<Size>,
     // Exact layout provenance only, never another mutable data/selection model.
     data: Vec<(String, u64)>,
+    evidence: std::sync::Arc<()>,
 }
 impl OwnerBand {
     fn matches(&self, model: &BarChart) -> bool {
@@ -59,7 +60,14 @@ impl OwnerBand {
     }
 
     fn visible_witness(&self) -> Option<Rect> {
-        let clip = self.focus_clip?;
+        self.focus_clip.and_then(|clip| self.witness_in(clip))
+    }
+
+    fn required_witness(&self) -> Option<Rect> {
+        self.witness_in(self.allocation)
+    }
+
+    fn witness_in(&self, clip: Rect) -> Option<Rect> {
         let m = self.metrics;
         let outer = self.target.inset(-m.outset());
         let inner_clip = clip.inset(m.antialias_guard);
@@ -129,7 +137,7 @@ fn contains(outer: Rect, inner: Rect) -> bool {
 }
 
 fn prepare_owner(
-    text: &mut impl ButtonTextRenderer,
+    text: &mut (impl ButtonTextRenderer + ?Sized),
     model: &BarChart,
     allocation: Rect,
     clip: Option<Rect>,
@@ -148,6 +156,7 @@ fn prepare_owner(
             .iter()
             .map(|d| (d.label.clone(), d.value.to_bits()))
             .collect(),
+        evidence: std::sync::Arc::new(()),
     };
     let mut layout = ChartViewLayout::default();
     if !positive(allocation) {
@@ -195,7 +204,7 @@ impl ChartView {
     /// text measurement and budget. No geometry or focus is published here.
     pub fn measure_owner(
         &self,
-        text: &mut impl ButtonTextRenderer,
+        text: &mut (impl ButtonTextRenderer + ?Sized),
         model: &BarChart,
         width: f32,
         preferred_height: f32,
@@ -218,12 +227,13 @@ impl ChartView {
     /// geometry; owner allocation/paint internals remain private.
     pub fn arrange_owner(
         &mut self,
-        text: &mut impl ButtonTextRenderer,
+        text: &mut (impl ButtonTextRenderer + ?Sized),
         model: &mut BarChart,
         allocation: Rect,
         clip: Option<Rect>,
     ) -> ChartOwnerCapacity {
-        let (owner, layout) = prepare_owner(text, model, allocation, clip);
+        let (mut owner, layout) = prepare_owner(text, model, allocation, clip);
+        owner.evidence = std::sync::Arc::new(());
         if layout.visible.is_none() {
             self.hovered = None;
             model.set_hovered(None);
@@ -237,6 +247,10 @@ impl ChartView {
 
     /// Pure current-layout/sufficiency/one-witness query for later Host use.
     /// A missing plot with legal data/selection is not "no target".
+    pub fn window_active(&self) -> bool {
+        self.window_active
+    }
+
     pub fn owner_focus_space(&self, model: &BarChart) -> ChartOwnerFocusSpace {
         let Some(owner) = &self.owner_band else {
             return ChartOwnerFocusSpace::Unmeasured;
@@ -260,6 +274,40 @@ impl ChartView {
                 .map_or(ChartOwnerFocusSpace::NoVisibleWitness, |witness| {
                     ChartOwnerFocusSpace::Visible { witness }
                 }),
+            capacity => ChartOwnerFocusSpace::Insufficient(capacity),
+        }
+    }
+
+    pub(crate) fn owner_focus_evidence(&self, model: &BarChart) -> Option<std::sync::Arc<()>> {
+        let owner = self.owner_band.as_ref()?;
+        (owner.matches(model) && owner.capacity == ChartOwnerCapacity::Sufficient)
+            .then(|| owner.evidence.clone())
+    }
+
+    /// Current original-owner requirement, independent of parent clipping. This
+    /// is the deterministic target for the original Host reveal planner; actual
+    /// visibility remains owner_focus_space() after the parent has laid out again.
+    pub fn owner_required_focus_space(&self, model: &BarChart) -> ChartOwnerFocusSpace {
+        let Some(owner) = &self.owner_band else {
+            return ChartOwnerFocusSpace::Unmeasured;
+        };
+        if !owner.matches(model) {
+            return ChartOwnerFocusSpace::Unmeasured;
+        }
+        if model.selected().is_none() {
+            return ChartOwnerFocusSpace::NotRequired;
+        }
+        match owner.capacity {
+            ChartOwnerCapacity::Sufficient => {
+                let witness = match self.owner_focus_space(model) {
+                    ChartOwnerFocusSpace::Visible { witness } => Some(witness),
+                    _ => owner.required_witness(),
+                };
+                witness.map_or(ChartOwnerFocusSpace::NoVisibleWitness, |witness| {
+                    ChartOwnerFocusSpace::Visible { witness }
+                })
+            }
+            ChartOwnerCapacity::Unmeasured => ChartOwnerFocusSpace::Unmeasured,
             capacity => ChartOwnerFocusSpace::Insufficient(capacity),
         }
     }
@@ -326,24 +374,27 @@ impl ChartView {
         colors: tekes_ui_tokens::surface_palette::DataPlotSurfaceColors,
     ) -> ChartOwnerFocusSpace {
         let space = self.owner_focus_space(model);
+        let witness_visible = matches!(space, ChartOwnerFocusSpace::Visible { .. });
+        let Some(owner) = self.owner_band.as_ref() else {
+            return ChartOwnerFocusSpace::Unmeasured;
+        };
+        if !owner.matches(model) {
+            return ChartOwnerFocusSpace::Unmeasured;
+        }
         // Missing focus space must not hide otherwise legal visible body ink.
         // The required-focus query stays insufficient; no ring is fabricated.
         let body_only = matches!(space, ChartOwnerFocusSpace::NoVisibleWitness)
-            && self
-                .owner_band
-                .as_ref()
-                .is_some_and(|owner| owner.capacity == ChartOwnerCapacity::Sufficient)
+            && owner.capacity == ChartOwnerCapacity::Sufficient
             && self.layout.visible.is_some();
-        if !matches!(space, ChartOwnerFocusSpace::Visible { .. }) && !body_only {
+        if !witness_visible && !body_only {
             return space;
         }
-        let owner = self.owner_band.as_ref().expect("current owner arrangement");
         let scale = text.backing_scale();
         if !scale.is_finite() || scale <= 0.0 || FocusRingMetrics::new(scale) != owner.metrics {
             return ChartOwnerFocusSpace::Unmeasured;
         }
         let target = owner.target;
-        let focus_clip = owner.focus_clip.expect("visible owner allocation or body");
+        let focus_clip = if witness_visible { owner.focus_clip } else { None };
         model.set_focused(self.focused && self.window_active, self.focus_visible);
         model.set_hovered(self.hovered);
         let mut geometry: ChartGeometry = self.layout.geometry.clone();
@@ -366,7 +417,7 @@ impl ChartView {
             });
             scene.pop_clip();
         }
-        if model.focus_visible() && matches!(space, ChartOwnerFocusSpace::Visible { .. }) {
+        if model.focus_visible() && let Some(focus_clip) = focus_clip {
             scene.push_clip(focus_clip);
             crate::paint::focus_ring_with_color(
                 scene,
