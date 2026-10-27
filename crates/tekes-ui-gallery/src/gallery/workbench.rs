@@ -8926,6 +8926,362 @@ mod interaction_tests {
     }
 
     #[test]
+    fn segmented_control_gallery_theme_switch_preserves_pointer_modality_and_keyboard_roving() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_controls::layout_view::SegmentedLayout;
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+        fn assert_segment(
+            scene: &Scene,
+            layout: &SegmentedLayout,
+            index: usize,
+            palette: Palette,
+            state: ControlState,
+            ground: &str,
+            backing: f32,
+        ) {
+            let item = &layout.items[index];
+            let (paint_index, quad) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == item.frame => Some((i, *q)),
+                    _ => None,
+                })
+                .expect("actual segment own Button ground");
+            assert_eq!(quad.fill, palette.color(ground).unwrap());
+            assert_eq!(quad.fill.a, 1.);
+            assert_eq!(
+                quad.corner_radii,
+                tekes_ui_scene::CornerRadii::uniform(
+                    proposal::metric("radius", "c-button-md-radius").unwrap()
+                )
+            );
+            if state.selected && !state.disabled {
+                assert_eq!(
+                    quad.border_width,
+                    proposal::metric("stroke", "stroke-rule").unwrap()
+                );
+                assert_eq!(quad.border_color, palette.color("border").unwrap());
+                assert!(
+                    contrast(quad.border_color, quad.fill) >= 3.,
+                    "selection boundary/own ground"
+                );
+                let peer = layout
+                    .items
+                    .iter()
+                    .enumerate()
+                    .find(|(i, _)| *i != index)
+                    .unwrap()
+                    .1;
+                let peer_ground = scene
+                    .primitives()
+                    .iter()
+                    .rev()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect == peer.frame => Some(q.fill),
+                        _ => None,
+                    })
+                    .unwrap();
+                assert!(
+                    contrast(quad.border_color, peer_ground) >= 3.,
+                    "selection boundary/actual neighboring ground"
+                );
+            } else {
+                assert_eq!(quad.border_width, 0.);
+            }
+            let inks: Vec<_> = scene.primitives()[paint_index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let a = g.glyph;
+                            item.content
+                                .intersection(&Rect::new(
+                                    g.origin.x + a.left as f32 / backing,
+                                    g.origin.y + a.top as f32 / backing,
+                                    a.width as f32 / backing,
+                                    a.height as f32 / backing,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "actual CoreText text after this segment's own paint"
+            );
+            for ink in inks {
+                assert_eq!(
+                    ink,
+                    palette
+                        .color(if state.disabled {
+                            "tertiary-text"
+                        } else {
+                            "primary-text"
+                        })
+                        .unwrap()
+                );
+                if !state.disabled {
+                    assert!(
+                        contrast(ink, quad.fill)
+                            >= if palette.theme.is_increased() {
+                                7.
+                            } else {
+                                4.5
+                            },
+                        "actual text/own segment ground"
+                    );
+                }
+            }
+        }
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 900.);
+        assert!(gallery.open_route("component-segmented-control/playground"));
+        let i = index("segmented-control");
+        gallery.build_scene(&mut Scene::new());
+        gallery
+            .workbench
+            .state(i)
+            .extended
+            .segmented
+            .set_enabled(1, false);
+        gallery.build_scene(&mut Scene::new());
+        let initial = gallery
+            .workbench
+            .state(i)
+            .extended
+            .segmented_view
+            .layout()
+            .clone();
+        let background = Point::new(initial.frame.max_x() + 40., initial.frame.min_y());
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            gallery.handle_input(&move_pointer(background));
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            assert_eq!(gallery.theme(), theme);
+            let state = &gallery.workbench.state(i).extended;
+            assert_eq!(state.segmented.selected, 0);
+            assert!(!state.segmented.is_enabled(1));
+            assert_eq!(state.segmented_view.focused(), None);
+            let layout = state.segmented_view.layout();
+            assert_eq!(layout, &initial);
+            for row in 0..3 {
+                assert_segment(
+                    &scene,
+                    layout,
+                    row,
+                    theme.into(),
+                    ControlState {
+                        selected: row == 0,
+                        disabled: row == 1,
+                        ..Default::default()
+                    },
+                    if row == 0 {
+                        "row-selection"
+                    } else {
+                        "surface-2"
+                    },
+                    gallery.text.scale(),
+                );
+            }
+        }
+        let palette: Palette = Theme::DARK_INCREASED.into();
+        let point = initial.items[2].frame.center();
+        gallery.handle_input(&move_pointer(point));
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        assert_eq!(
+            gallery.workbench.state(i).extended.segmented_view.focused(),
+            None,
+            "hover starts without focus"
+        );
+        assert_segment(
+            &scene,
+            &initial,
+            2,
+            palette,
+            ControlState::default(),
+            "button-hover",
+            gallery.text.scale(),
+        );
+        gallery.handle_input(&mouse(point, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_segment(
+            &scene,
+            &initial,
+            2,
+            palette,
+            ControlState::default(),
+            "button-pressed",
+            gallery.text.scale(),
+        );
+        assert_eq!(
+            gallery.workbench.state(i).extended.segmented.selected,
+            0,
+            "pointer activates on release"
+        );
+        assert_eq!(
+            gallery.workbench.state(i).extended.segmented_view.focused(),
+            Some(2)
+        );
+        assert!(
+            !scene.primitives().iter().any(
+                |p| matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && initial.items.iter().any(|item|item.frame.center()==q.rect.center()))
+            ),
+            "mouse press must not become keyboard-visible during draw"
+        );
+        let Event::Mouse(mut drag) = mouse(background, true) else {
+            unreachable!("mouse fixture")
+        };
+        drag.kind = MouseEventKind::Dragged {
+            button: MouseButton::Left,
+        };
+        gallery.handle_input(&Event::Mouse(drag));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_segment(
+            &scene,
+            &initial,
+            2,
+            palette,
+            ControlState::default(),
+            "surface-2",
+            gallery.text.scale(),
+        );
+        gallery.handle_input(&mouse(background, false));
+        assert_eq!(gallery.workbench.state(i).extended.segmented.selected, 0);
+        gallery.handle_input(&key(115, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(
+            gallery.workbench.state(i).extended.segmented_view.focused(),
+            Some(0),
+            "Home's no-change selection still transfers roving focus"
+        );
+        assert_eq!(gallery.workbench.state(i).focus, Some(30));
+        gallery.handle_input(&key(124, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(gallery.workbench.state(i).extended.segmented.selected, 2);
+        assert_eq!(
+            gallery.workbench.state(i).extended.segmented_view.focused(),
+            Some(2)
+        );
+        assert_eq!(gallery.workbench.state(i).focus, Some(32));
+        assert_segment(
+            &scene,
+            &initial,
+            2,
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "row-selection",
+            gallery.text.scale(),
+        );
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && q.rect.center()==initial.items[2].frame.center() && q.border_color==palette.color("border-focused").unwrap())),"keyboard navigation paints its actual ring");
+        gallery.handle_input(&move_pointer(point));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_segment(
+            &scene,
+            &initial,
+            2,
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "row-selection-hover",
+            gallery.text.scale(),
+        );
+        gallery.handle_input(&mouse(point, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        // Existing Quiet selected pressed keeps the selected-hover ground.
+        assert_segment(
+            &scene,
+            &initial,
+            2,
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "row-selection-hover",
+            gallery.text.scale(),
+        );
+        assert!(!scene.primitives().iter().any(
+            |p| matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && q.rect.center()==initial.items[2].frame.center())
+        ));
+        gallery.handle_input(&mouse(point, false));
+        assert_eq!(gallery.workbench.state(i).extended.segmented.selected, 2);
+        gallery.handle_input(&move_pointer(background));
+        gallery.workbench.state(i).extended.disabled = true;
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        for row in 0..3 {
+            assert_segment(
+                &scene,
+                &initial,
+                row,
+                palette,
+                ControlState {
+                    selected: row == 2,
+                    disabled: true,
+                    ..Default::default()
+                },
+                "surface-2",
+                gallery.text.scale(),
+            );
+        }
+        assert_eq!(
+            gallery.workbench.state(i).extended.segmented_view.focused(),
+            None
+        );
+        assert!(!scene.primitives().iter().any(
+            |p| matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && initial.items.iter().any(|item|item.frame.center()==q.rect.center()))
+        ));
+        gallery.handle_input(&mouse(initial.items[0].frame.center(), true));
+        gallery.handle_input(&mouse(initial.items[0].frame.center(), false));
+        gallery.handle_input(&key(123, true));
+        assert_eq!(gallery.workbench.state(i).extended.segmented.selected, 2);
+        gallery.workbench.state(i).extended.disabled = false;
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&mouse(initial.items[0].frame.center(), true));
+        gallery.handle_input(&mouse(initial.items[0].frame.center(), false));
+        assert_eq!(gallery.workbench.state(i).extended.segmented.selected, 0);
+    }
+
+    #[test]
     fn checkbox_text_first_line_stays_centered_on_the_mark_at_large_scale_and_wrap() {
         let mut text = super::super::text::TextEngine::new();
         text.set_type_scale(1.5);
