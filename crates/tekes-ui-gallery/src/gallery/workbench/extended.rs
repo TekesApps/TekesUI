@@ -2026,7 +2026,10 @@ impl ExtendedStory {
                 );
             }
         } else {
-            self.slider_view.blur();
+            if self.disabled || self.slider_view.is_focused() {
+                // Preserve unfocused pointer hover; synchronize a real focus loss once.
+                self.slider_view.blur();
+            }
             if self.disabled || self.switch_view.is_focused() {
                 // Preserve unfocused pointer hover; synchronize a real focus loss once.
                 self.switch_view.blur();
