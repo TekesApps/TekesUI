@@ -1513,7 +1513,45 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/slider-composition.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/slider-composition.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "b57d5806a9c19820c074502250f9feb5fad88326",
+        "scope": "Real public Slider retained Theme/value/state/graphical contrast and Gallery real Value/AX/input; only Slider draw blur guard changes production",
+        "claims": [
+          "Same public retained Slider/model through Theme::ALL preserves value/geometry and exact track/fill/thumb/necessary graphical contrast",
+          "Real pointer unfocused hover/pressed/drag/cancel, keyboard bounds/focus, disabled/inactive capture cleanup/re-enable and original Gallery slider/AX/traversal regressions pass",
+          "Actual Gallery real Value glyph/parent-ground4.5/7 and strict pass; only Slider-specific real-focus-loss/disabled blur guard changed, Switch original bytes unchanged"
+        ],
+        "source_identity": {
+          "scope": "Selected actual Slider/host/witness sources, not full dependency closure",
+          "sha256": {
+            "crates/tekes-ui-controls/src/selection.rs": "84be6fb77fdbbf88c7855959f73dc84ac17e8f9e16f59f7b7f34ea7f98f853c3",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "ab98fab1b0de4e7301d2fb0dcaee08ea0bade52b55b76ea25fa6b8c4b44a470f",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "93dd9bf1596f4020f388fe205b24b8450f67d837a4213e255d711530a5dfde35",
+            "examples/composition-consumer/tests/slider_theme.rs": "856cfec5dd414caf2f9c52f8e2bfd4f6ad5fd1a9f768b4de5da9c7717e0885cb"
+          }
+        },
+        "exceptions": [
+          "Public Slider has no text/Content API; original Gallery Value owns real text",
+          "Ordinary range/value/track geometry remains data; cancel preserves live value"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver/motion certification",
+          "other family roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.slider",
+            "commit": "b57d5806a9c19820c074502250f9feb5fad88326",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/slider-maina8e985b-candidate/main-intake/commit-receipt.json",
+            "sha256": "480ada8dfdff028e466570542f805f2ea9bf9b1991bbacba83b46ebb18c85ba2",
+            "scope": "Actual final main public/Gallery original state/AX/disabled traversal and strict; source-confirmed old defect is not an executed red claim"
+          }
+        ]
+      }
     },
     {
       "id": "tui.checkbox",

@@ -21435,6 +21435,51 @@
           "disabled",
           "dragging"
         ],
+        "practical_intake": {
+          "baseline_commit": "b57d5806a9c19820c074502250f9feb5fad88326",
+          "claims": [
+            "Same public retained Slider/model through Theme::ALL preserves value/geometry and exact track/fill/thumb/necessary graphical contrast",
+            "Real pointer unfocused hover/pressed/drag/cancel, keyboard bounds/focus, disabled/inactive capture cleanup/re-enable and original Gallery slider/AX/traversal regressions pass",
+            "Actual Gallery real Value glyph/parent-ground4.5/7 and strict pass; only Slider-specific real-focus-loss/disabled blur guard changed, Switch original bytes unchanged"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.slider",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/slider-maina8e985b-candidate/main-intake/commit-receipt.json",
+              "commit": "b57d5806a9c19820c074502250f9feb5fad88326",
+              "component": "tui.slider",
+              "issue": "#122",
+              "scope": "Actual final main public/Gallery original state/AX/disabled traversal and strict; source-confirmed old defect is not an executed red claim",
+              "sha256": "480ada8dfdff028e466570542f805f2ea9bf9b1991bbacba83b46ebb18c85ba2"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Public Slider has no text/Content API; original Gallery Value owns real text",
+            "Ordinary range/value/track geometry remains data; cancel preserves live value"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver/motion certification",
+            "other family roots/full52"
+          ],
+          "scope": "Real public Slider retained Theme/value/state/graphical contrast and Gallery real Value/AX/input; only Slider draw blur guard changes production",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual Slider/host/witness sources, not full dependency closure",
+            "sha256": {
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-controls/src/selection.rs": "84be6fb77fdbbf88c7855959f73dc84ac17e8f9e16f59f7b7f34ea7f98f853c3",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "93dd9bf1596f4020f388fe205b24b8450f67d837a4213e255d711530a5dfde35",
+              "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "ab98fab1b0de4e7301d2fb0dcaee08ea0bade52b55b76ea25fa6b8c4b44a470f",
+              "examples/composition-consumer/tests/slider_theme.rs": "856cfec5dd414caf2f9c52f8e2bfd4f6ad5fd1a9f768b4de5da9c7717e0885cb"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "split",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -58915,7 +58960,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "1673452bd1ad4bdf4a3234eb3fa2927a55fae624c9a3f09479d2146ea629af16",
+    "design/gallery/component-coverage.json": "a99195f8c1ce57760a6792e14a265369a258c86408dbde89bb9093222c69c8c4",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58961,6 +59006,7 @@
     "examples/composition-consumer/tests/radio_group_theme.rs": "6053b0b681fdb0053633ed05a25c863da6c5cbc401c1577be664d663a1f0560b",
     "examples/composition-consumer/tests/segmented_control_theme.rs": "f356a6c267fb6bb0f2429e749e131d6c84027fa0f6c342e7c0ba2c423b515397",
     "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",
+    "examples/composition-consumer/tests/slider_theme.rs": "856cfec5dd414caf2f9c52f8e2bfd4f6ad5fd1a9f768b4de5da9c7717e0885cb",
     "examples/composition-consumer/tests/stack_theme.rs": "50aebbe938dac79bac99d88b983a0c77bc85e4c5450e86877d052c51f2116a30",
     "examples/composition-consumer/tests/status_badge_theme.rs": "aaee4018f5c32e374ffe2d219b0156f91aff8a46f0e821e72d0237a301461543",
     "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
