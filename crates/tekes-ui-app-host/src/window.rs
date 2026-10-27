@@ -447,6 +447,7 @@ pub struct Host {
     navigation: Option<WindowNavigation>,
     navigation_ack: Option<Receiver<()>>,
     navigation_order: Option<Vec<usize>>,
+    navigation_content_seq: Option<(usize, u64)>,
     navigation_noticed: bool,
     navigation_title: Option<String>,
     module_ids: Vec<String>,
@@ -501,6 +502,7 @@ impl Host {
             navigation: None,
             navigation_ack: None,
             navigation_order: None,
+            navigation_content_seq: None,
             navigation_noticed: false,
             navigation_title: None,
             module_ids,
@@ -615,6 +617,7 @@ impl Host {
             {
                 self.navigation_ack = None;
                 self.navigation_order = None;
+                self.navigation_content_seq = None;
                 nav.published()?;
             }
             if let Err(error) = nav.poll() {
@@ -635,7 +638,14 @@ impl Host {
                 w.set_title(&title);
                 self.navigation_title = Some(title);
                 self.navigation_order = Some(self.order.clone());
-
+                if let Some(command) = nav.publication_view_command()? {
+                    let index = self.order[if self.panels.len() >= 2 { 1 } else { 0 }];
+                    let panel = &mut self.panels[index];
+                    // Route application is independent of visible toolbar actions.
+                    panel.enqueue(InputKind::Command, 0., 0., Some(command))?;
+                    self.navigation_content_seq = Some((index, panel.seq));
+                    nav.trace(serde_json::json!({"event":"navigation-view-command","panel":index,"command":command,"seq":panel.seq}));
+                }
             }
         }
         self.outer.min_pane = MIN_COLUMN;
@@ -940,6 +950,9 @@ impl Host {
         }
         if self.navigation_order.is_some()
             && self.navigation_ack.is_none()
+            && self
+                .navigation_content_seq
+                .is_none_or(|(index, seq)| self.panels[index].frame_seq >= seq)
             && self.panels.iter().all(|p| {
                 p.bounds.size.width <= 0.
                     || ((p.local.is_some() || p.image.is_some())
@@ -1135,6 +1148,11 @@ impl Host {
         }
         if let Some(shared) = self.acceptance_shared.clone() {
             return self.accept_settings_window_parent(w, &shared);
+        }
+        if self.step >= 24 && self.panels.len() == 3
+            && std::env::var("TEKESUI_COLUMNS_WINDOW_ACCEPTANCE").as_deref() == Ok("1")
+        {
+            return self.accept_columns(w);
         }
         if self.panels.iter().any(|p| {
             p.bounds.size.width > 0.

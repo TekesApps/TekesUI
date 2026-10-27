@@ -946,10 +946,11 @@ dependencies = [
  "serde_json",
  "tekes-ui-app-host",
  "tekes-ui-app-protocol",
+ "tekes-ui-controls",
  "tekes-ui-panel-module-demo",
- "tekes-ui-settings",
  "tekes-ui-render",
  "tekes-ui-scene",
+ "tekes-ui-settings",
  "tekes-ui-tokens",
 ]
 

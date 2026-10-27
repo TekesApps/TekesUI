@@ -235,6 +235,7 @@ impl SettingsSurface {
             directory: self.provider.path().parent().unwrap().join("navigation"),
             history_id: format!("settings:{}", self.schema.namespace),
             initial_entries: vec![self.entry(&self.selected).expect("validated item")],
+            view_command: None,
         }
     }
     pub fn show(&mut self) {

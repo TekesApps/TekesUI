@@ -10,7 +10,7 @@ fn main() -> anyhow::Result<()> {
     }
     let mut modules = tekes_ui_panel_module_demo::definitions();
     if !cfg!(feature = "three-panels") {
-        modules.truncate(1);
+        modules.truncate(if cfg!(feature = "two-panels") { 2 } else { 1 });
     }
     #[cfg(target_os = "macos")]
     if matches!(std::env::args().nth(1).as_deref(), Some("--tekesui-component" | "--worker")) {
@@ -27,7 +27,22 @@ fn main() -> anyhow::Result<()> {
         return verify::run(&modules.iter().map(|m| m.id.to_owned()).collect::<Vec<_>>());
     }
     #[cfg(target_os = "macos")]
+    let mut columns: Vec<tekes_ui_app_host::Column> = modules
+        .into_iter()
+        .map(|module| tekes_ui_app_host::ProcessContainer::new(module).into())
+        .collect();
+    #[cfg(target_os = "macos")]
     if cfg!(feature = "three-panels") {
+        if cfg!(feature = "mixed-columns") {
+            use tekes_ui_controls::composition::{ComponentId, Content, TextFieldContent};
+            columns[2] = tekes_ui_app_host::Container::new(
+                "local-notes",
+                Content::new(ComponentId(1), TextFieldContent::new(
+                    "本地备注",
+                    "普通 Container：在这里输入文字，验证本地输入。",
+                )),
+            )?.into();
+        }
         let entries = (0..3)
             .map(|i| {
                 let document_id = ["a", "b", "c"][i];
@@ -41,18 +56,23 @@ fn main() -> anyhow::Result<()> {
         // Keep the older panel-layout demonstration history untouched.
         let directory = std::path::PathBuf::from(std::env::var("HOME")?)
             .join("Library/Application Support/TekesUI AppHost Prototype/navigation-documents");
-        return tekes_ui_app_host::run_with_settings(
-            tekes_ui_app_host::AppProfile { modules },
-            Some(tekes_ui_app_host::NavigationOptions {
+        return tekes_ui_app_host::AppWindow::from_columns(columns)?
+            .navigation(tekes_ui_app_host::NavigationOptions {
                 directory,
                 history_id: "three-panel-documents".into(),
                 initial_entries: entries,
-            }),
-            settings()?,
-        );
+                view_command: Some(|entry| match entry.params.get("document_id").and_then(serde_json::Value::as_str) {
+                    Some("a") => Ok(tekes_ui_panel_module_demo::DOCUMENT_A),
+                    Some("b") => Ok(tekes_ui_panel_module_demo::DOCUMENT_B),
+                    Some("c") => Ok(tekes_ui_panel_module_demo::DOCUMENT_C),
+                    _ => anyhow::bail!("unknown demo document"),
+                }),
+            })
+            .settings(settings()?)
+            .run();
     }
     #[cfg(target_os = "macos")]
-    { tekes_ui_app_host::run_with_settings(tekes_ui_app_host::AppProfile { modules }, None, settings()?) }
+    { tekes_ui_app_host::AppWindow::from_columns(columns)?.settings(settings()?).run() }
     #[cfg(not(target_os = "macos"))]
     { tekes_ui_app_host::run(tekes_ui_app_host::AppProfile { modules }) }
 }

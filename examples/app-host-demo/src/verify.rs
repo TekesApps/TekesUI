@@ -27,6 +27,7 @@ pub fn run(module_ids: &[String]) -> Result<()> {
         let mut label_digests = Vec::new();
         let mut count = 0;
         let mut text_pixels = 0;
+        let mut counter_toolbar = Vec::new();
         let steps = [
             (InputKind::Layout, 0),
             (InputKind::PointerDown, 0),
@@ -65,6 +66,9 @@ pub fn run(module_ids: &[String]) -> Result<()> {
                 frame.toolbar.first().is_some_and(|item| item.id == 1),
                 "no toolbar registered by native module"
             );
+            counter_toolbar = frame.toolbar.iter()
+                .map(|item| (item.id, item.title.clone(), item.enabled, item.geometry_dependent))
+                .collect::<Vec<_>>();
             let texture = import_frame(&context, &mut frame)?;
             let image = context.import_image(texture)?;
             let id = renderer.register_gpu_image(&image)?;
@@ -112,7 +116,52 @@ pub fn run(module_ids: &[String]) -> Result<()> {
             label_digests[0] != label_digests[2],
             "native module change did not reach shared GPU image"
         );
-        proof.push(serde_json::json!({"pid":c.pid(),"module":module_ids[i],"counter":count,"text_pixels":text_pixels,"samples":samples,"label_digests":label_digests}));
+        let mut document_frames = Vec::new();
+        let mut document_digests = Vec::new();
+        for (document, command) in [
+            tekes_ui_panel_module_demo::DOCUMENT_A,
+            tekes_ui_panel_module_demo::DOCUMENT_B,
+            tekes_ui_panel_module_demo::DOCUMENT_C,
+        ].into_iter().enumerate() {
+            let seq = steps.len() as u64 + document as u64;
+            let mut frame = c.request(&Request {
+                version: VERSION,
+                command: Some(command),
+                seq,
+                viewport: 3,
+                kind: InputKind::Command,
+                x: 0., y: 0., width: 360, height: 360,
+                identity: i as u32,
+                scale: 1.,
+            })?;
+            ensure!(frame.revision == count, "document command changed counter revision");
+            let toolbar = frame.toolbar.iter()
+                .map(|item| (item.id, item.title.clone(), item.enabled, item.geometry_dependent))
+                .collect::<Vec<_>>();
+            ensure!(toolbar == counter_toolbar, "document command changed counter toolbar");
+            let texture = import_frame(&context, &mut frame)?;
+            let image = context.import_image(texture)?;
+            let id = renderer.register_gpu_image(&image)?;
+            let mut scene = Scene::new();
+            scene.push_image(ImageQuad {
+                rect: Rect::new(0., 0., 360., 360.), image: id, opacity: 1.,
+            });
+            let pixels = renderer.render_to_rgba8(&scene, &mut atlas, (360, 360), 1., Rgba::gray(0.))?;
+            renderer.unregister_image(id);
+            // Exclude the counter/status (including layout timing); compare only
+            // the actual imported document body, using the original body bounds.
+            let mut body_hash = 0xcbf29ce484222325u64;
+            for y in 120..336usize {
+                for byte in &pixels[(y * 360 + 24) * 4..(y * 360 + 336) * 4] {
+                    body_hash = (body_hash ^ *byte as u64).wrapping_mul(0x100000001b3);
+                }
+            }
+            document_digests.push(body_hash);
+            document_frames.push(serde_json::json!({"command":command,"seq":seq,"body_digest":body_hash}));
+        }
+        ensure!(document_digests.iter().collect::<std::collections::HashSet<_>>().len() == 3,
+            "document commands did not produce three distinct imported GPU bodies");
+        proof.push(serde_json::json!({"pid":c.pid(),"module":module_ids[i],"counter":count,"text_pixels":text_pixels,"samples":samples,"label_digests":label_digests,"document_frames":document_frames}));
     }
     println!(
         "{}",

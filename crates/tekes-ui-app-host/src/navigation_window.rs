@@ -16,6 +16,9 @@ pub struct NavigationOptions {
     pub history_id: String,
     /// Demo routes, navigated normally only when the history is empty.
     pub initial_entries: Vec<Entry>,
+    /// Consumer route adapter for the center column's existing command channel.
+    /// None keeps navigation independent of View data.
+    pub view_command: Option<fn(&Entry) -> Result<u64>>,
 }
 #[derive(Clone)]
 pub enum Publication {
@@ -189,6 +192,15 @@ impl WindowNavigation {
             return Ok(None);
         };
         document_label(publication.target()).map(Some)
+    }
+
+    pub fn publication_view_command(&self) -> Result<Option<u64>> {
+        self.publication
+            .as_ref()
+            .and_then(|p| p.target())
+            .zip(self.options.view_command)
+            .map(|(target, command)| command(target))
+            .transpose()
     }
 
     pub fn title(&self) -> Option<&str> {
