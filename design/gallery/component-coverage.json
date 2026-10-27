@@ -70,7 +70,45 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/grid-layout.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/grid-layout.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "7120d5d272fc432950b622563481a4aa5ce7a90d",
+        "scope": "Pure Grid retained measured layout forwards Theme/declared Surface to real Text/Button leaves; actual Gallery9cell paint/geometry/clip; tests only",
+        "claims": [
+          "Same retained measured GridContent through Theme::ALL preserves original row max measured height/columns/visible clips/semantic mount/sole child focus target",
+          "Declared panel Surface and Theme reach real Text/Button with original exact leaf-specific ink/background; no invented container states or repeated leaf matrix",
+          "Actual public Gallery GridView nine cells/labels/model/clip/semantic paint and Gallery strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected actual Grid/layout/witness sources, not recursive closure",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+            "crates/tekes-ui-controls/src/layout.rs": "1fb04f0f3061b0439dded808949aa7dd89d03e6fef6084c53bfb9707062d6e35",
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "8e6f1cda451afdfe5231f921503f63259d67f8eaf9fbf44b8b7c9009267e5936",
+            "examples/composition-consumer/tests/grid_theme.rs": "1678e4537f3eddd3cb9216cbb20ce55d42a8734f61cb5123a53ba1d393221f53"
+          }
+        },
+        "exceptions": [
+          "Layout owns no own paint/interactive states; ordinary gap/indices/column geometry remains data",
+          "Text uses primary-text; declared-Surface Button uses original packet.text/background; shared leaf matrices reused"
+        ],
+        "gaps": [
+          "new dedicated external Theme/brand/scale/GPU/native-window/physicalIME/VoiceOver certification",
+          "other layout roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#121",
+            "component": "tui.grid",
+            "commit": "7120d5d272fc432950b622563481a4aa5ce7a90d",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/grid-maina8e985b-candidate/main-intake/commit-receipt.json",
+            "sha256": "9cff1e1a8aa0c57e3f9e2b5334835831926662de6c3dfdcc37effe449b1cd106",
+            "scope": "Actual public/Gallery/strict; old inheritance/clip/reveal/leaf evidence retains original identity"
+          }
+        ]
+      }
     },
     {
       "id": "tui.separator",

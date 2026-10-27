@@ -731,6 +731,51 @@
         "historical_public_api_verified": [
           "rest"
         ],
+        "practical_intake": {
+          "baseline_commit": "7120d5d272fc432950b622563481a4aa5ce7a90d",
+          "claims": [
+            "Same retained measured GridContent through Theme::ALL preserves original row max measured height/columns/visible clips/semantic mount/sole child focus target",
+            "Declared panel Surface and Theme reach real Text/Button with original exact leaf-specific ink/background; no invented container states or repeated leaf matrix",
+            "Actual public Gallery GridView nine cells/labels/model/clip/semantic paint and Gallery strict passed"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.grid",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/grid-maina8e985b-candidate/main-intake/commit-receipt.json",
+              "commit": "7120d5d272fc432950b622563481a4aa5ce7a90d",
+              "component": "tui.grid",
+              "issue": "#121",
+              "scope": "Actual public/Gallery/strict; old inheritance/clip/reveal/leaf evidence retains original identity",
+              "sha256": "9cff1e1a8aa0c57e3f9e2b5334835831926662de6c3dfdcc37effe449b1cd106"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Layout owns no own paint/interactive states; ordinary gap/indices/column geometry remains data",
+            "Text uses primary-text; declared-Surface Button uses original packet.text/background; shared leaf matrices reused"
+          ],
+          "gaps": [
+            "new dedicated external Theme/brand/scale/GPU/native-window/physicalIME/VoiceOver certification",
+            "other layout roots/full52"
+          ],
+          "scope": "Pure Grid retained measured layout forwards Theme/declared Surface to real Text/Button leaves; actual Gallery9cell paint/geometry/clip; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual Grid/layout/witness sources, not recursive closure",
+            "sha256": {
+              "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+              "crates/tekes-ui-controls/src/layout.rs": "1fb04f0f3061b0439dded808949aa7dd89d03e6fef6084c53bfb9707062d6e35",
+              "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "8e6f1cda451afdfe5231f921503f63259d67f8eaf9fbf44b8b7c9009267e5936",
+              "examples/composition-consumer/tests/grid_theme.rs": "1678e4537f3eddd3cb9216cbb20ce55d42a8734f61cb5123a53ba1d393221f53"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "static",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -58805,7 +58850,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "70100f443e5521e84a5fe283cd8e6534b4b28c0a424417f1c19ff4d1a5dce3f1",
+    "design/gallery/component-coverage.json": "0c7c91d7774048c497a2c0bbec8b50b9220ff30806465781bad24fcbb0b73693",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58842,6 +58887,7 @@
     "examples/composition-consumer/tests/command_palette_theme.rs": "eadd793e9e828b460bebaae52fa3cd935c88095f8e408536c96617b75f19f7d2",
     "examples/composition-consumer/tests/data_table_theme.rs": "4eb65e6676ec52269b1279fec17606320268488fe4724f398beed46a16b2bb2c",
     "examples/composition-consumer/tests/dialog_theme.rs": "6cf7b51a1c7393501f89b44551da8031712ca5054d5ada0e91e3fc2234a97953",
+    "examples/composition-consumer/tests/grid_theme.rs": "1678e4537f3eddd3cb9216cbb20ce55d42a8734f61cb5123a53ba1d393221f53",
     "examples/composition-consumer/tests/icon_button_theme.rs": "0d9bc7273e23df0ca442cc1d9cc76999e487df144576c070f673ac31e48b0a5c",
     "examples/composition-consumer/tests/icon_theme.rs": "49b5adb26de708799a14330a8a2b8d341150ab673cb4e07626187f5f3b8f0814",
     "examples/composition-consumer/tests/list_theme.rs": "3f73caabbba6fff3368f54470ec3704b8935f8f9d2a25d019db2a82025033304",
