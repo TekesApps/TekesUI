@@ -2762,7 +2762,45 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "8db310b3d887eeaf92604b3da483652e640a6c91",
+        "scope": "Public retained TreeView and actual Gallery production native chevron/row Theme paths, hierarchy, collapse/expand/hidden children AX and navigation; tests only",
+        "claims": [
+          "Same public retained TreeView Theme::ALL preserves selection/hover/node and whole-view disabled/restore with real CoreText row ink4.5/7 and original navigation",
+          "Actual Gallery production native collapsed/expanded chevrons have own-ground contrast3, stable geometry per state, distinct two-state artwork and retained selected/hover/focus across four Themes",
+          "Actual AX Tree/TreeItem parent/level/expanded/selection/focus and folded-child disappearance, both new targets and Gallery strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected actual Tree/collection/icon/Gallery consumer sources, not exhaustive dependency proof; full source/program frozen run identities retained.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "ab7fd37894079c213053c7f084a16eab2c515b638659be0da4688bb5597a217b",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "5d1e46d54a9d10afafb9e914a1ded650a7b6d96adbd9fe9a7a2fe14c5bf99914",
+            "examples/composition-consumer/tests/tree_theme.rs": "01047607cc63d346bd67c1b490978477eace5a02009fa23b4b01c65a1d6921aa"
+          }
+        },
+        "exceptions": [
+          "Node IDs/depth/ordinary geometry stays data; disabled ink not active contrast; no selecting passive TreeContent/Settings/Disclosure/#38 expansion or fake renderer.",
+          "Accepted RadioGroup-only adapter source delta reviewed outside Tree paths; shared Row/List/text/generator evidence reused without resigning"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+          "remaining4 data/content roots/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#124",
+            "component": "tui.tree",
+            "commit": "8db310b3d887eeaf92604b3da483652e640a6c91",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/tree-maine90220b-candidate/main-intake/commit-receipt.json",
+            "sha256": "126daaf1e7fb6bd3aea825d49137653ffcb82a024cb44f1e6fdb9e0db125be70",
+            "scope": "Exact-main real public/Gallery Theme text/chevron/hierarchy/input/semantics and strict with explicit applicability boundaries."
+          }
+        ]
+      }
     },
     {
       "id": "tui.data-table",

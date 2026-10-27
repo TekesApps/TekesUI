@@ -47268,6 +47268,51 @@
           "disabled",
           "selected"
         ],
+        "practical_intake": {
+          "baseline_commit": "8db310b3d887eeaf92604b3da483652e640a6c91",
+          "claims": [
+            "Same public retained TreeView Theme::ALL preserves selection/hover/node and whole-view disabled/restore with real CoreText row ink4.5/7 and original navigation",
+            "Actual Gallery production native collapsed/expanded chevrons have own-ground contrast3, stable geometry per state, distinct two-state artwork and retained selected/hover/focus across four Themes",
+            "Actual AX Tree/TreeItem parent/level/expanded/selection/focus and folded-child disappearance, both new targets and Gallery strict passed"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.tree",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/tree-maine90220b-candidate/main-intake/commit-receipt.json",
+              "commit": "8db310b3d887eeaf92604b3da483652e640a6c91",
+              "component": "tui.tree",
+              "issue": "#124",
+              "scope": "Exact-main real public/Gallery Theme text/chevron/hierarchy/input/semantics and strict with explicit applicability boundaries.",
+              "sha256": "126daaf1e7fb6bd3aea825d49137653ffcb82a024cb44f1e6fdb9e0db125be70"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "Node IDs/depth/ordinary geometry stays data; disabled ink not active contrast; no selecting passive TreeContent/Settings/Disclosure/#38 expansion or fake renderer.",
+            "Accepted RadioGroup-only adapter source delta reviewed outside Tree paths; shared Row/List/text/generator evidence reused without resigning"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+            "remaining4 data/content roots/full52"
+          ],
+          "scope": "Public retained TreeView and actual Gallery production native chevron/row Theme paths, hierarchy, collapse/expand/hidden children AX and navigation; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual Tree/collection/icon/Gallery consumer sources, not exhaustive dependency proof; full source/program frozen run identities retained.",
+            "sha256": {
+              "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "5d1e46d54a9d10afafb9e914a1ded650a7b6d96adbd9fe9a7a2fe14c5bf99914",
+              "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "ab7fd37894079c213053c7f084a16eab2c515b638659be0da4688bb5597a217b",
+              "examples/composition-consumer/tests/tree_theme.rs": "01047607cc63d346bd67c1b490978477eace5a02009fa23b4b01c65a1d6921aa"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "tree",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -58536,7 +58581,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "d86bb65b67665e26515f2a08f53f16d4729537f2e1448ec949bfe9f03ee3a2cb",
+    "design/gallery/component-coverage.json": "a11e8a2ad449e4674be006c854d2d25f7f63262aceeee44067b082ce5815788d",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58582,6 +58627,7 @@
     "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
     "examples/composition-consumer/tests/surface_theme.rs": "ea80660bf10c7af0092bf43ff8dca05c3414eedb21452e40be5c80b83aa9edbf",
     "examples/composition-consumer/tests/tabs_theme.rs": "88d4c4178f4caa4da2dea18dea8d62a7a186691e36b07048d9a48e76b88b935e",
+    "examples/composition-consumer/tests/tree_theme.rs": "01047607cc63d346bd67c1b490978477eace5a02009fa23b4b01c65a1d6921aa",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",
     "scripts/generate-component-capabilities.py": "b7cb6c0de297601b95755e2d8bdb74b42e3cf37475e77ebf52693c7379385d61"
   },
