@@ -2674,7 +2674,44 @@
           "note": "Public TooltipView actual render,12asserted lifecycle scenarios across4themes/3brands; closed rest explicitly has zero dynamic reads. Fixture/native/Gold7 visual acceptance remain unverified."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/tooltip.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/tooltip.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "80e9c7bee554521c6e838665e4aa422d3d5477d0",
+        "scope": "Accepted local-main public Tooltip semantic Palette/Theme consumption and actual Gallery state matrix; test-only change, production unchanged.",
+        "claims": [
+          "One retained TooltipView consumes generated surface-3, primary-text and radius-floating while switching all four default Theme values",
+          "Actual Gallery hidden/hover/focus-visible/Escape matrix paints two real Tooltip backgrounds and matching body glyph inks",
+          "Actual Tooltip text/background pair satisfies 4.5 normal and 7 increased contrast across Theme::ALL",
+          "Controls/Gallery strict passed; Controls pass reused after Gallery-only fixture selection correction"
+        ],
+        "source_identity": {
+          "scope": "Selected public model, real View and Gallery source subset only; full execution identity remains in frozen main manifests and run receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/extended.rs": "c202afc3b711f1b24d44af78f5d5614643c3de63df26cd3727e97fcb8a82080f",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "c23097114cefd23a4e8c226c24b90f07b9e10c0ad75443eab851ee2e8cb7768e",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "d2f73217dcb0c095a74b7f8aa5ecc22958c0aedf4e6092e32570169b219bb794"
+          }
+        },
+        "exceptions": [
+          "Tooltip has no separate pressed/disabled appearance; hover/focus/Escape control visibility",
+          "Existing positioning and inset geometry is retained; shared generator and underlying rendering were unchanged"
+        ],
+        "gaps": [
+          "No new GPU, dedicated external Theme, physical input, IME or VoiceOver certification",
+          "Dynamic row-help native scope remains open in #35; other family roots and full52 remain incomplete"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.tooltip",
+            "commit": "80e9c7bee554521c6e838665e4aa422d3d5477d0",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/tooltip-maincd27d0b/main-intake/commit-receipt.json",
+            "sha256": "3e1941c07cd0afbde4a8c3a1ca648bd456ea9b88c3e9e55eb0cb97334bcf3022",
+            "scope": "Local main source/test acceptance, corrected fixture assertions, retained failures and explicit unverified scope."
+          }
+        ]
+      }
     },
     {
       "id": "tui.popover",
