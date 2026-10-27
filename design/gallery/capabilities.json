@@ -2355,7 +2355,12 @@
           ],
           "scope": "Geometry-only ScrollArea/ScrollContent retains offset/clip/layout/leaf Theme; actual dedicated Gallery readonly TextSurface thumb/text/parent contrast; tests only",
           "source_identity": {
-            "differences": {},
+            "differences": {
+              "crates/tekes-ui-gallery/src/gallery/text_demo.rs": {
+                "actual": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1",
+                "expected": "5377b74f83af60160af14ea69905b479ddca9a2952801bb31f6ce6eeaca2a946"
+              }
+            },
             "scope": "Selected actual scroll/content/TextSurface/dedicated Gallery witnesses, not full dependency closure or native full-editor certificate",
             "sha256": {
               "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
@@ -2365,7 +2370,7 @@
               "examples/composition-consumer/tests/scroll_area_theme.rs": "a64afa37f06ad160330a797166fe7e4eb3c25a15d1e3ef214a6dda9d0e9b5133"
             }
           },
-          "status": "accepted-source-subset-matched"
+          "status": "accepted-source-subset-stale"
         },
         "profile": "scroll",
         "profile_exceptions": {},
@@ -59067,7 +59072,7 @@
     "crates/tekes-ui-gallery/src/gallery/static_text.rs": "69f07a0fbf1fbbb1d88bf9f024f03f9dd2c92dd517f5b0eab477cc6d8270cf5c",
     "crates/tekes-ui-gallery/src/gallery/symbol_assets.rs": "69163eaa0b5a993bd019ade551767e4db66bc1d460fc724c5eed037b256e44b9",
     "crates/tekes-ui-gallery/src/gallery/text.rs": "7d32a99059494d8e5dbee04522dcfd5132d41e4b1d189323a19d3ea2f3d493f4",
-    "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "5377b74f83af60160af14ea69905b479ddca9a2952801bb31f6ce6eeaca2a946",
+    "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1",
     "crates/tekes-ui-gallery/src/gallery/theme.rs": "e1ede314548a0ae25ad633f1a86cefb7118473d7b61d0967dcb6bfbe551982d5",
     "crates/tekes-ui-gallery/src/gallery/viewport.rs": "d18ea19e94e33c67ef3bbfc2f7ad8ca1b5ec3ecda2a6ee18df327a26f8046918",
     "crates/tekes-ui-gallery/src/gallery/workbench.rs": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0",
