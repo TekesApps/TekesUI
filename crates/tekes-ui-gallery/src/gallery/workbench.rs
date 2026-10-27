@@ -11429,6 +11429,230 @@ mod interaction_tests {
     }
 
     #[test]
+    fn select_gallery_retained_themes_keep_popup_value_focus_and_real_option_identity() {
+        use tekes_ui_platform_macos::AccessibilityRole;
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut w = Workbench::default();
+        w.apply_reduced_motion(true);
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("select");
+        click(&mut w, i, 20, &mut text);
+        w.handle(i, &key(125, true), &mut text);
+        w.handle(i, &key(36, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).select.selected, 1);
+        let trigger = w.state(i).select_view.layout().trigger;
+        w.handle(
+            i,
+            &move_pointer(Point::new(
+                trigger.frame.max_x() + 20.,
+                trigger.frame.center().y,
+            )),
+            &mut text,
+        );
+        assert!(w.focus_control(i, 20).is_some());
+        w.handle(i, &key(36, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert!(w.state(i).select.menu.open);
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut original_geometry = None;
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        for theme in Theme::ALL {
+            let popup = w.state(i).select_view.layout().popup.clone().unwrap();
+            w.handle(i, &move_pointer(popup.popup.origin), &mut text);
+            w.handle(i, &key(115, true), &mut text);
+            for hovered in [false, true] {
+                if hovered {
+                    w.handle(i, &move_pointer(popup.items[2].frame.center()), &mut text);
+                }
+                text.begin_frame();
+                let mut static_text = super::super::static_text::StaticText::new(None);
+                let mut ctx = PageCtx {
+                    theme,
+                    text: &mut text,
+                    static_text: &mut static_text,
+                };
+                let mut scene = Scene::new();
+                w.build_clipped(i, &mut ctx, content, content, &mut scene);
+                assert!(scene.composition_error().is_none());
+                let state = w.state(i);
+                let layout = state.select_view.layout();
+                let popup = layout.popup.as_ref().unwrap();
+                let active = if hovered { 2 } else { 0 };
+                assert!(state.select.menu.open);
+                assert_eq!(
+                    state.select.selected, 1,
+                    "highlight does not replace original committed option"
+                );
+                assert_eq!(state.select.menu.items.selected, active);
+                assert_eq!(popup.active_item, active);
+                let geometry = (
+                    layout.trigger.frame,
+                    popup.popup,
+                    popup.items.iter().map(|l| l.frame).collect::<Vec<_>>(),
+                );
+                if let Some(original) = &original_geometry {
+                    assert_eq!(&geometry, original);
+                } else {
+                    original_geometry = Some(geometry);
+                }
+                let palette = Palette::new(theme, 0).unwrap();
+                let surface = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect == popup.popup => Some(q),
+                        _ => None,
+                    })
+                    .unwrap();
+                assert_eq!(surface.fill, palette.color("surface-popover").unwrap());
+                for (slot, fill, ink) in [
+                    (
+                        layout.trigger,
+                        "action-primary-ground",
+                        "action-primary-foreground",
+                    ),
+                    (
+                        popup.items[active],
+                        if hovered {
+                            "row-selection-hover"
+                        } else {
+                            "row-selection"
+                        },
+                        "primary-text",
+                    ),
+                ] {
+                    let (index, ground) = scene
+                        .primitives()
+                        .iter()
+                        .enumerate()
+                        .find_map(|(i, p)| match p {
+                            Primitive::Quad(q) if q.rect == slot.frame => Some((i, q)),
+                            _ => None,
+                        })
+                        .unwrap();
+                    assert_eq!(ground.fill, palette.color(fill).unwrap());
+                    let labels: Vec<_> = scene.primitives()[index + 1..]
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Glyphs(r)
+                                if !r.glyphs.is_empty()
+                                    && r.glyphs.iter().all(|g| slot.content.contains(g.origin)) =>
+                            {
+                                Some(r)
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    assert!(
+                        !labels.is_empty(),
+                        "actual Select title/option after own ground, independent of underlay"
+                    );
+                    assert!(
+                        labels
+                            .iter()
+                            .all(|r| r.color == palette.color(ink).unwrap())
+                    );
+                    assert_eq!((labels[0].color.a, ground.fill.a), (1., 1.));
+                    assert!(
+                        contrast(labels[0].color, ground.fill)
+                            >= if theme.is_increased() { 7. } else { 4.5 }
+                    );
+                }
+                let ring = scene.primitives().iter().find_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a == 0.
+                            && q.rect.center() == popup.items[active].frame.center()
+                            && q.border_color == palette.color("border-focused").unwrap() =>
+                    {
+                        Some(q)
+                    }
+                    _ => None,
+                });
+                assert_eq!(ring.is_some(), !hovered);
+                if let Some(ring) = ring {
+                    assert!(contrast(ring.border_color, surface.fill) >= 3.);
+                }
+                let nodes = w.accessibility_nodes(i);
+                let invoker = nodes.iter().find(|n| n.key.part == Some(20)).unwrap();
+                assert_eq!(invoker.role, AccessibilityRole::MenuButton);
+                assert_eq!(invoker.value.as_deref(), Some("Compact"));
+                assert_eq!(invoker.expanded, Some(true));
+                let menu = nodes
+                    .iter()
+                    .find(|n| n.role == AccessibilityRole::Menu)
+                    .unwrap();
+                assert_eq!(menu.parent, Some(invoker.key));
+                let options: Vec<_> = nodes
+                    .iter()
+                    .filter(|n| n.role == AccessibilityRole::MenuItem)
+                    .collect();
+                assert_eq!(options.len(), 3);
+                assert!(options.iter().all(|n| n.parent == Some(menu.key)));
+                assert_eq!(options.iter().filter(|n| n.selected).count(), 1);
+                assert!(
+                    options
+                        .iter()
+                        .find(|n| n.key.part == Some(61))
+                        .unwrap()
+                        .selected
+                );
+                assert!(
+                    options
+                        .iter()
+                        .find(|n| n.key.part == Some(60 + active))
+                        .unwrap()
+                        .focused
+                );
+            }
+        }
+        w.handle(i, &key(36, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).select.selected, 2);
+        assert!(!w.state(i).select.menu.open);
+        assert_eq!(
+            w.state(i)
+                .log
+                .iter()
+                .filter(|s| s.as_str() == "select: 2")
+                .count(),
+            1
+        );
+        assert_eq!(w.state(i).focus, Some(20));
+        let nodes = w.accessibility_nodes(i);
+        let invoker = nodes.iter().find(|n| n.key.part == Some(20)).unwrap();
+        assert_eq!(invoker.value.as_deref(), Some("Comfortable"));
+        assert_eq!(invoker.expanded, Some(false));
+        assert!(!nodes.iter().any(|n| n.role == AccessibilityRole::MenuItem));
+        click(&mut w, i, 20, &mut text);
+        w.handle(i, &key(115, true), &mut text);
+        w.handle(i, &key(53, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).select.selected, 2);
+        assert!(!w.state(i).select.menu.open);
+        click(&mut w, i, 20, &mut text);
+        let trigger = w.state(i).select_view.layout().trigger;
+        w.handle(i, &mouse(trigger.frame.center(), true), &mut text);
+        w.handle(i, &mouse(trigger.frame.center(), false), &mut text);
+        build(&mut w, i, &mut text);
+        assert!(
+            !w.state(i).select.menu.open,
+            "outside-popup dismiss cannot reopen on same release"
+        );
+        assert_eq!(w.state(i).select.selected, 2);
+    }
+
+    #[test]
     fn select_story_uses_its_owned_popup_keyboard_runtime() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
