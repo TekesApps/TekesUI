@@ -3637,34 +3637,37 @@
       "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
-        "baseline_commit": "437b5b6b41019389368c81f969bedc763875fe6b",
-        "scope": "Local main baseline plus exact received StatusBadge delta: shared solid painter/View/Content, mixed Host and actual Gallery/GPU. Not native or whole-library acceptance.",
+        "baseline_commit": "f6085f869ead269981fcee13d8b44efc38fdd510",
+        "scope": "Retained current public/Gallery Theme supplement to the originally accepted StatusBadge solid/View/Content/mixed-host/default-external GPU/readability delivery; original scopes remain distinct.",
         "claims": [
-          "Four original tones consume seven Surface packets in default brands and external blue/blue-inputs themes",
-          "Passive named/decorative semantics, original Composer/reading preservation and invalid-input rejection passed",
-          "Actual default/external GPU parity, clipping, normal-label readability and real Gallery page/variants passed"
-        ],
-        "exceptions": [
-          "Parent supplies finite allocation; pill radius is original half-height geometry, not a new token",
-          "Normal label readability is distinct from legal narrow clipping; no arbitrary-width full-text readability claim"
-        ],
-        "gaps": [
-          "native window/VoiceOver/physical IME/performance/release",
-          "historical icon_foreground override is unavailable in current ContentTheme; foreground override was tested",
-          "full text readability in arbitrary narrow allocations",
-          "Other registered roots and complete Gold7 acceptance remain separate"
+          "New same ContentHost/StatusBadgeContent keeps four original tones through Theme::ALL with real CoreText label4.5/7, solid-parent3, original pill geometry and passive semantics",
+          "New actual public Gallery route retains same instance/four-tone geometry through Themes, own-paint label contrast and no new action/focus targets; necessary strict passed",
+          "Historical original scope (not new program identity): Four original tones consume seven Surface packets in default brands and external blue/blue-inputs themes",
+          "Historical original scope (not new program identity): Passive named/decorative semantics, original Composer/reading preservation and invalid-input rejection passed",
+          "Historical original scope (not new program identity): Actual default/external GPU parity, clipping, normal-label readability and real Gallery page/variants passed"
         ],
         "source_identity": {
-          "scope": "Exact integrated production inputs for this bounded StatusBadge batch; full runtime manifests remain in SSD receipts.",
+          "scope": "Selected current Badge/consumer/new Gallery witness sources for retained-instance supplement; old integrated source subset is archived verbatim in prior-practical-intake.json and original immutable receipts, not re-signed.",
           "sha256": {
-            "crates/tekes-ui-controls/src/composition.rs": "f335285b35c4dce31d5a406c37e20ddc757551a546b7e2e32f748981c3b45817",
             "crates/tekes-ui-controls/src/composition/status_badge.rs": "55160ac8e5f901e644b09dcedb11f5b227e36a6aec7ff91706e6d3b422007f41",
-            "crates/tekes-ui-controls/src/extended.rs": "6025448e349502c3011b90960f67efe990c6fc2eb2aa18c588cdec133c1cfcbf",
-            "crates/tekes-ui-controls/src/feedback_view.rs": "c7a0bc565690e2deeda891459c8de2cf68dd00f9ba9c906b83c081f7d91a8192",
-            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "259a952b1750821fbf7d2832b175845be6a512a86d543ff30e65f885f92dad9c",
-            "examples/composition-consumer/src/status_badge_content.rs": "58006b3eb44e1cb7261c25ebd8bbd8819591a22f5ac53ae48fec6379b62b3a9c"
+            "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "632635143cefc7531cba5f88e92e6d2d9939534f5217a3183a7d57ee434b3144",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "6ef6a3fb4992df1cd38367ec423a7b7727482b2974a9fd947d11e7af72fc6fe1",
+            "examples/composition-consumer/tests/status_badge_theme.rs": "aaee4018f5c32e374ffe2d219b0156f91aff8a46f0e821e72d0237a301461543"
           }
         },
+        "exceptions": [
+          "Parent supplies finite allocation; pill radius is original half-height geometry, not a new token",
+          "Normal label readability is distinct from legal narrow clipping; no arbitrary-width full-text readability claim",
+          "Passive badge has no hover/pressed/focus/disabled; original shared generated badge-purpose rows/full Content module remain identical, bounded View/painter source formatting differences are recorded separately",
+          "Unrelated Switch assertion wrapping after actual checks does not change StatusBadge body/production/config/feature inputs; raw original check identity preserved"
+        ],
+        "gaps": [
+          "native window/VoiceOver/physicalIME/performance remain unverified in this supplement",
+          "historical icon_foreground override is unavailable in current ContentTheme; foreground override was tested in original scope",
+          "full text readability in arbitrary narrow allocations remains unclaimed",
+          "other12 family roots/full52/Gold7 not implied by this supplement"
+        ],
         "evidence": [
           {
             "issue": "#83",
@@ -3697,6 +3700,22 @@
             "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status76-main437b5b6-intake/root-review.json",
             "sha256": "36e90c7bc59a4fc086610bca8be6c44a9218e94a1d77a9de5c2ba59cd74b1e5e",
             "scope": "Baseline 437b5b6 plus frozen integration delta; review indexes actual final-main consumer/Gallery/strict/GPU rounds, preserving earlier failures."
+          },
+          {
+            "issue": "#125",
+            "component": "tui.status-badge",
+            "commit": "437b5b6b41019389368c81f969bedc763875fe6b",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-125/status-badge-main9f827c2-candidate/main-intake/prior-practical-intake.json",
+            "sha256": "691f9d923a6ea32f22babfab8902229bfc3109683b2740f0ebbaf39c4247641b",
+            "scope": "Verbatim prior bounded intake record/input identity/claims/gaps archived; provenance only, not new runtime verification."
+          },
+          {
+            "issue": "#125",
+            "component": "tui.status-badge",
+            "commit": "f6085f869ead269981fcee13d8b44efc38fdd510",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-125/status-badge-main9f827c2-candidate/main-intake/commit-receipt.json",
+            "sha256": "20963da4a85ec240c121777e8915465d60cef85bd73bbb878a8ac95cbc7b9c60",
+            "scope": "Actual current retained public/Gallery Theme supplement, strict, original unchanged/format-only source review and precise unverified boundaries."
           }
         ]
       }

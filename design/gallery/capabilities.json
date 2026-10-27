@@ -54344,11 +54344,13 @@
           "success"
         ],
         "practical_intake": {
-          "baseline_commit": "437b5b6b41019389368c81f969bedc763875fe6b",
+          "baseline_commit": "f6085f869ead269981fcee13d8b44efc38fdd510",
           "claims": [
-            "Four original tones consume seven Surface packets in default brands and external blue/blue-inputs themes",
-            "Passive named/decorative semantics, original Composer/reading preservation and invalid-input rejection passed",
-            "Actual default/external GPU parity, clipping, normal-label readability and real Gallery page/variants passed"
+            "New same ContentHost/StatusBadgeContent keeps four original tones through Theme::ALL with real CoreText label4.5/7, solid-parent3, original pill geometry and passive semantics",
+            "New actual public Gallery route retains same instance/four-tone geometry through Themes, own-paint label contrast and no new action/focus targets; necessary strict passed",
+            "Historical original scope (not new program identity): Four original tones consume seven Surface packets in default brands and external blue/blue-inputs themes",
+            "Historical original scope (not new program identity): Passive named/decorative semantics, original Composer/reading preservation and invalid-input rejection passed",
+            "Historical original scope (not new program identity): Actual default/external GPU parity, clipping, normal-label readability and real Gallery page/variants passed"
           ],
           "consumer_entry": {
             "invocation": "--component tui.status-badge",
@@ -54387,50 +54389,50 @@
               "issue": "#76",
               "scope": "Baseline 437b5b6 plus frozen integration delta; review indexes actual final-main consumer/Gallery/strict/GPU rounds, preserving earlier failures.",
               "sha256": "36e90c7bc59a4fc086610bca8be6c44a9218e94a1d77a9de5c2ba59cd74b1e5e"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-125/status-badge-main9f827c2-candidate/main-intake/prior-practical-intake.json",
+              "commit": "437b5b6b41019389368c81f969bedc763875fe6b",
+              "component": "tui.status-badge",
+              "issue": "#125",
+              "scope": "Verbatim prior bounded intake record/input identity/claims/gaps archived; provenance only, not new runtime verification.",
+              "sha256": "691f9d923a6ea32f22babfab8902229bfc3109683b2740f0ebbaf39c4247641b"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-125/status-badge-main9f827c2-candidate/main-intake/commit-receipt.json",
+              "commit": "f6085f869ead269981fcee13d8b44efc38fdd510",
+              "component": "tui.status-badge",
+              "issue": "#125",
+              "scope": "Actual current retained public/Gallery Theme supplement, strict, original unchanged/format-only source review and precise unverified boundaries.",
+              "sha256": "20963da4a85ec240c121777e8915465d60cef85bd73bbb878a8ac95cbc7b9c60"
             }
           ],
           "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
           "exceptions": [
             "Parent supplies finite allocation; pill radius is original half-height geometry, not a new token",
-            "Normal label readability is distinct from legal narrow clipping; no arbitrary-width full-text readability claim"
+            "Normal label readability is distinct from legal narrow clipping; no arbitrary-width full-text readability claim",
+            "Passive badge has no hover/pressed/focus/disabled; original shared generated badge-purpose rows/full Content module remain identical, bounded View/painter source formatting differences are recorded separately",
+            "Unrelated Switch assertion wrapping after actual checks does not change StatusBadge body/production/config/feature inputs; raw original check identity preserved"
           ],
           "gaps": [
-            "native window/VoiceOver/physical IME/performance/release",
-            "historical icon_foreground override is unavailable in current ContentTheme; foreground override was tested",
-            "full text readability in arbitrary narrow allocations",
-            "Other registered roots and complete Gold7 acceptance remain separate"
+            "native window/VoiceOver/physicalIME/performance remain unverified in this supplement",
+            "historical icon_foreground override is unavailable in current ContentTheme; foreground override was tested in original scope",
+            "full text readability in arbitrary narrow allocations remains unclaimed",
+            "other12 family roots/full52/Gold7 not implied by this supplement"
           ],
-          "scope": "Local main baseline plus exact received StatusBadge delta: shared solid painter/View/Content, mixed Host and actual Gallery/GPU. Not native or whole-library acceptance.",
+          "scope": "Retained current public/Gallery Theme supplement to the originally accepted StatusBadge solid/View/Content/mixed-host/default-external GPU/readability delivery; original scopes remain distinct.",
           "source_identity": {
-            "differences": {
-              "crates/tekes-ui-controls/src/composition.rs": {
-                "actual": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
-                "expected": "f335285b35c4dce31d5a406c37e20ddc757551a546b7e2e32f748981c3b45817"
-              },
-              "crates/tekes-ui-controls/src/extended.rs": {
-                "actual": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
-                "expected": "6025448e349502c3011b90960f67efe990c6fc2eb2aa18c588cdec133c1cfcbf"
-              },
-              "crates/tekes-ui-controls/src/feedback_view.rs": {
-                "actual": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
-                "expected": "c7a0bc565690e2deeda891459c8de2cf68dd00f9ba9c906b83c081f7d91a8192"
-              },
-              "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": {
-                "actual": "632635143cefc7531cba5f88e92e6d2d9939534f5217a3183a7d57ee434b3144",
-                "expected": "259a952b1750821fbf7d2832b175845be6a512a86d543ff30e65f885f92dad9c"
-              }
-            },
-            "scope": "Exact integrated production inputs for this bounded StatusBadge batch; full runtime manifests remain in SSD receipts.",
+            "differences": {},
+            "scope": "Selected current Badge/consumer/new Gallery witness sources for retained-instance supplement; old integrated source subset is archived verbatim in prior-practical-intake.json and original immutable receipts, not re-signed.",
             "sha256": {
-              "crates/tekes-ui-controls/src/composition.rs": "f335285b35c4dce31d5a406c37e20ddc757551a546b7e2e32f748981c3b45817",
               "crates/tekes-ui-controls/src/composition/status_badge.rs": "55160ac8e5f901e644b09dcedb11f5b227e36a6aec7ff91706e6d3b422007f41",
-              "crates/tekes-ui-controls/src/extended.rs": "6025448e349502c3011b90960f67efe990c6fc2eb2aa18c588cdec133c1cfcbf",
-              "crates/tekes-ui-controls/src/feedback_view.rs": "c7a0bc565690e2deeda891459c8de2cf68dd00f9ba9c906b83c081f7d91a8192",
-              "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "259a952b1750821fbf7d2832b175845be6a512a86d543ff30e65f885f92dad9c",
-              "examples/composition-consumer/src/status_badge_content.rs": "58006b3eb44e1cb7261c25ebd8bbd8819591a22f5ac53ae48fec6379b62b3a9c"
+              "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "6ef6a3fb4992df1cd38367ec423a7b7727482b2974a9fd947d11e7af72fc6fe1",
+              "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "632635143cefc7531cba5f88e92e6d2d9939534f5217a3183a7d57ee434b3144",
+              "examples/composition-consumer/tests/status_badge_theme.rs": "aaee4018f5c32e374ffe2d219b0156f91aff8a46f0e821e72d0237a301461543"
             }
           },
-          "status": "accepted-source-subset-stale"
+          "status": "accepted-source-subset-matched"
         },
         "profile": "status",
         "profile_exceptions": {},
@@ -58641,7 +58643,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "9d2f4a8037bf1e30e9b1015e4dfed55c00a7061f47967f8d49fa2c4a89437637",
+    "design/gallery/component-coverage.json": "1d5864ad3260db49d660208fdb835726c9f5792e2b7b7a348a5f5e596d8f199a",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58672,7 +58674,6 @@
     "examples/composition-consumer/src/command_status.rs": "309aedada5e9c30fc12898957b34ef44a487b6f2f4ec8763f79431b8c967cc86",
     "examples/composition-consumer/src/empty_state_content.rs": "a73d1bb24db806e91efadedcad79225ca0a4339ff212b8a85a446c6330ca61cb",
     "examples/composition-consumer/src/skeleton_content.rs": "80d44ba5650da213609eeb1a778bed69237550d17e6c5fed2ac91be16eaa6932",
-    "examples/composition-consumer/src/status_badge_content.rs": "58006b3eb44e1cb7261c25ebd8bbd8819591a22f5ac53ae48fec6379b62b3a9c",
     "examples/composition-consumer/tests/breadcrumb_theme.rs": "0da781dd1b0dd19ad1b68bfc1fa399cc69a5949fe15b556202c4b1f17aa9c6b5",
     "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80",
     "examples/composition-consumer/tests/checkbox_theme.rs": "849080ccac69b56bdaa6f751e708f91ed93e8383143414cccbb0baa2dc2969fc",
@@ -58684,6 +58685,7 @@
     "examples/composition-consumer/tests/menu_theme.rs": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758",
     "examples/composition-consumer/tests/radio_group_theme.rs": "6053b0b681fdb0053633ed05a25c863da6c5cbc401c1577be664d663a1f0560b",
     "examples/composition-consumer/tests/separator_theme.rs": "81d141e8d823bcd19cd7bd5e11dbffde8fdfea0848d1668cd1785c4726b4ea6c",
+    "examples/composition-consumer/tests/status_badge_theme.rs": "aaee4018f5c32e374ffe2d219b0156f91aff8a46f0e821e72d0237a301461543",
     "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
     "examples/composition-consumer/tests/surface_theme.rs": "ea80660bf10c7af0092bf43ff8dca05c3414eedb21452e40be5c80b83aa9edbf",
     "examples/composition-consumer/tests/switch_theme.rs": "b3fabfc1f6340fa76148ed194787db52ba10ef36397994b8b1d90c4fcab27c9a",
