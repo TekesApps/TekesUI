@@ -10947,6 +10947,127 @@ mod interaction_tests {
     }
 
     #[test]
+    fn status_badge_gallery_retained_theme_switch_keeps_four_tones_readable_and_passive() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::{CornerRadii, Primitive};
+        use tekes_ui_tokens::{Palette, Theme, surface_palette::resolve_surface};
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let v = c.to_linear();
+                0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        let mut gallery = Gallery::new();
+        let i = index("status-badge");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        let mut original_frames = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            let palette = Palette::new(theme, 0).unwrap();
+            let ground = Gallery::background(theme);
+            assert_eq!(
+                ground,
+                resolve_surface(palette, "canvas", "content", "rest")
+                    .unwrap()
+                    .background
+            );
+            let mut frames = Vec::new();
+            for usage in [
+                "status-badge-info",
+                "status-badge-running",
+                "status-badge-succeeded",
+                "status-badge-failed",
+            ] {
+                let packet = resolve_surface(palette, "canvas", usage, "rest").unwrap();
+                let badges: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, p)| match p {
+                        Primitive::Quad(q)
+                            if q.fill == packet.background
+                                && q.corner_radii
+                                    == CornerRadii::uniform(q.rect.size.height * 0.5)
+                                && state.preview.contains(q.rect.center()) =>
+                        {
+                            Some((index, q))
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(badges.len(), 1, "one real Gallery {usage} badge");
+                let (badge_index, badge) = badges[0];
+                assert_eq!(badge.border_width, 0.);
+                let label_frame = badge.rect.inset(5.);
+                let inks: Vec<_> = scene.primitives()[badge_index + 1..]
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run)
+                            if run.glyphs.iter().any(|g| label_frame.contains(g.origin)) =>
+                        {
+                            Some(run.color)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(!inks.is_empty(), "actual Gallery {usage} label glyphs");
+                for ink in inks {
+                    assert_eq!(ink, packet.text);
+                    assert_eq!(ink, palette.color("c-status-badge-foreground").unwrap());
+                    assert!(
+                        contrast(ink, badge.fill) >= if theme.is_increased() { 7. } else { 4.5 },
+                        "{theme:?} {usage} label contrast={}",
+                        contrast(ink, badge.fill)
+                    );
+                }
+                assert!(
+                    contrast(badge.fill, ground) >= 3.,
+                    "{theme:?} {usage} status solid/parent contrast={}",
+                    contrast(badge.fill, ground)
+                );
+                frames.push(badge.rect);
+                observed.push(badge.fill);
+            }
+            if let Some(original) = &original_frames {
+                assert_eq!(&frames, original);
+            } else {
+                original_frames = Some(frames);
+            }
+            assert!(
+                state.logical_tab_ids().into_iter().all(|id| id < 20),
+                "badges add no action/focus target"
+            );
+        }
+        assert!(
+            observed
+                .chunks_exact(4)
+                .any(|fills| fills != &observed[..4]),
+            "retained Gallery consumes changed Theme solids"
+        );
+    }
+
+    #[test]
     fn select_real_feedback_paints_before_its_popup_surface() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
