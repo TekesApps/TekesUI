@@ -109,7 +109,7 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 
 ### 已接收的有限实证投影
 
-现有 `component-coverage.json` 对 `tui.button`、`tui.chart` 和 `tui.progress` 增加了 `practical_intake`，生成器将其投影到各自的 `state_coverage.practical_intake`。它记录原 Issue、接受提交、证据文件 SHA-256、明确范围、未声明范围，以及本次冻结基线下可核对的有限源码路径哈希。Chart 项明确标注这是 V5 21 文件收据中的 producer 子集；完整运行身份仍由原不可变收据约束。它只提供已接收证据的定位，不替代原状态矩阵、根验收或 maturity。
+现有 `component-coverage.json` 对 `tui.button`、`tui.chart` 和 `tui.progress` 增加了 `practical_intake`，生成器将其投影到各自的 `state_coverage.practical_intake`。它记录原 Issue、接受提交、证据文件 SHA-256、明确范围、未声明范围，以及本次冻结基线下可核对的有限源码路径哈希。Chart 项保留历史 V5 证据，并加入 b763469 的 ChartContent/Host 及默认/外部成对 GPU 接收；当前7条源码路径仅是可核对子集，完整运行身份仍由冻结清单和原锁内收据约束。它只提供已接收证据的定位，不替代原状态矩阵、根验收或 maturity。
 
 - Button 当前投影包括 #113 的 72 组公共 ink/fill 对比和实际 Gallery theme/brand 切换代表状态回归；GPU、原生/VoiceOver、完整 #136 统一Button接收／#69 Host/content 与全部 52 根仍未由这些记录证明。
 - Chart 当前投影包括 #104 的有限 Theme/Surface 与 focus GPU 门禁；#92 Host/reveal/paired、#112 `/2` sidecar、native/IME/AX 和发布仍明确未证明。

@@ -2470,20 +2470,25 @@
       "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
-        "baseline_commit": "63214beacbd3461d7c46cb70a1ca31df645b9bf4",
-        "scope": "Accepted #104 Chart surface/focus work with exact V5 GPU pixel gate and its recorded producer/source identity. Does not imply ChartContent Host integration or paired #92 acceptance.",
+        "baseline_commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
+        "scope": "Accepted #104 original ChartView and #92 public ChartContent/Host integration. Latest paired GPU/CPU acceptance belongs to main909130a plus frozen intake, committed b763469; earlier V5 evidence retains its own identity.",
         "claims": [
           "#104 Chart owner surface and focus behavior within the accepted 4-theme/7-surface/1x-2x bounded matrix",
-          "V5 view-only pixel gate passed for 112 matrix rows, 10 structural rows and 2 clip-negative rows"
+          "V5 view-only pixel gate passed for 112 matrix rows, 10 structural rows and 2 clip-negative rows",
+          "#92 public Host and independent owner consumers passed; atomic updates and cancel/inactive hover regression passed",
+          "Default/external real Metal: original four structural cases including tiny refusal, 112 View/Content pairs and 224 focus/blur analyses passed all18 gates"
         ],
         "source_identity": {
           "sha256": {
-            "crates/tekes-ui-controls/src/chart.rs": "dd80e7f914a39e662399a8d0945443c91589caa6dffc4c551caa1fd2cdf3e8c7",
-            "crates/tekes-ui-controls/src/collections_view.rs": "449a98399c102e0568aee9dc3d7dc38b40ae85d9d45174c7525a38bab35f7e08",
-            "crates/tekes-ui-controls/src/collections_view/chart_owner.rs": "5b338d53b75e4f06d15cd44e46331fad15a363d7727fba6f5ead41257f32a411",
-            "crates/tekes-ui-controls/src/paint.rs": "19a39cc5ff189ac0ce6775bd47b2cdf7b05253d5d21bc0fd06c51beed6ae1597"
+            "crates/tekes-ui-controls/src/chart.rs": "d581f9e87c9b1b2b765b1409f96c1af195d5ee64696031ca68b78dfed8b1956c",
+            "crates/tekes-ui-controls/src/collections_view.rs": "de44b875f6f5929d96d5e51623f500a2f2fc4ad44ccd8983ff8b97e8c30b8dd8",
+            "crates/tekes-ui-controls/src/collections_view/chart_owner.rs": "3cfdcb6ac573ac7851e8e38fa436e458b2d40a9ef992c699911a1a6873c55aa1",
+            "crates/tekes-ui-controls/src/composition.rs": "888f63191f8e322eba91eb88ca24715dbb34d26b65578ebd04dac616cfe7853f",
+            "crates/tekes-ui-controls/src/composition/chart_content.rs": "42a86f0cb0ca677e7527d37330ccbd2d01d811381cb91b5cac49eecf5c0ba348",
+            "crates/tekes-ui-controls/src/paint.rs": "4250a0c9ea352ede330fa380b96717a68d99d06c64b40bf3a20c416f9e8996ee",
+            "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80"
           },
-          "scope": "Four available Chart producer paths from the 21-file V5 receipt are hash-checked in this projection. The immutable root acceptance and V5 source receipt retain the full 21-file run identity; untracked/absent source snapshot paths are not claimed as rechecked here."
+          "scope": "Seven current Chart producer/integration/harness paths are checked by this projection; full exact build/run identities remain in the linked frozen manifest and locked receipts. No claim that this subset proves the entire runtime."
         },
         "evidence": [
           {
@@ -2501,16 +2506,39 @@
             "sha256": "f324eba851d17235b7d7e85ff24bebcf9a1124170c38b9eb1d33ad77134d2d6f",
             "scope": "exact V5 source identity for bounded default/external GPU capture; 112 matrix + 10 structural + 2 negatives",
             "component": "tui.chart"
+          },
+          {
+            "issue": "#92",
+            "commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart92-main909130a-intake/commit-receipt.json",
+            "sha256": "e59f3a9ae8a1b383230c4498a64f6fc6a3cc0784ee45bdbaba4f56307d9455b3",
+            "scope": "Local main received14 paths; preserves original runtime identities and unverified scope",
+            "component": "tui.chart"
+          },
+          {
+            "issue": "#92",
+            "commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart92-main909130a-intake/candidate/offline-ready/gate-final.json",
+            "sha256": "a58572b156d9da58013b6458c4e4ca43ea823e06140dd6d28944819fc19b52e5",
+            "scope": "All18 offline gates passed using actual default/external archived programs and captures",
+            "component": "tui.chart"
+          },
+          {
+            "issue": "#92",
+            "commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart92-main909130a-intake/round01/main-source-manifest.json",
+            "sha256": "cff9f17f5f626a92dd73421d51eeced257c7e37b418fa0a77cd40df9352525a5",
+            "scope": "Complete frozen source input map for this intake; later documentation edits are not runtime changes",
+            "component": "tui.chart"
           }
         ],
         "exceptions": [
-          "The recorded results cover only the listed bounded public/Gallery tests and their stated source identities."
+          "The recorded results cover only the listed bounded public/Gallery tests and their stated source identities.",
+          "Normal /1 has no #112 /2 sidecar; this is explicit non-coverage, not a remaining prerequisite for practical Theme acceptance."
         ],
         "gaps": [
-          "#92 Host/reveal/paired gate",
-          "#112 /2 sidecar",
-          "native/IME/AX",
-          "public release"
+          "native windows/physical IME/VoiceOver not certified by this bounded intake",
+          "public release not performed"
         ]
       }
     },

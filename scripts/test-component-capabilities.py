@@ -574,7 +574,8 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
             self.assertEqual(component['maturity'], 'experimental')
             self.assertEqual(component['state_coverage']['public_api_verified'], [])
         self.assertEqual(len(button['state_coverage']['practical_intake']['evidence']), 2)
-        self.assertEqual(len(chart['state_coverage']['practical_intake']['evidence']), 2)
+        self.assertEqual(len(chart['state_coverage']['practical_intake']['evidence']), 5)
+        self.assertEqual({e['issue'] for e in chart['state_coverage']['practical_intake']['evidence']}, {'#104', '#92'})
         self.assertEqual(len(chart['state_coverage']['required']), 8)
         self.assertEqual(chart['state_coverage']['runtime_observation_status'], 'historical-stale')
 

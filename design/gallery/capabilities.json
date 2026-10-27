@@ -49175,10 +49175,12 @@
           "selected"
         ],
         "practical_intake": {
-          "baseline_commit": "63214beacbd3461d7c46cb70a1ca31df645b9bf4",
+          "baseline_commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
           "claims": [
             "#104 Chart owner surface and focus behavior within the accepted 4-theme/7-surface/1x-2x bounded matrix",
-            "V5 view-only pixel gate passed for 112 matrix rows, 10 structural rows and 2 clip-negative rows"
+            "V5 view-only pixel gate passed for 112 matrix rows, 10 structural rows and 2 clip-negative rows",
+            "#92 public Host and independent owner consumers passed; atomic updates and cancel/inactive hover regression passed",
+            "Default/external real Metal: original four structural cases including tiny refusal, 112 View/Content pairs and 224 focus/blur analyses passed all18 gates"
           ],
           "consumer_entry": {
             "invocation": "--component tui.chart",
@@ -49201,47 +49203,56 @@
               "issue": "#104",
               "scope": "exact V5 source identity for bounded default/external GPU capture; 112 matrix + 10 structural + 2 negatives",
               "sha256": "f324eba851d17235b7d7e85ff24bebcf9a1124170c38b9eb1d33ad77134d2d6f"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart92-main909130a-intake/commit-receipt.json",
+              "commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
+              "component": "tui.chart",
+              "issue": "#92",
+              "scope": "Local main received14 paths; preserves original runtime identities and unverified scope",
+              "sha256": "e59f3a9ae8a1b383230c4498a64f6fc6a3cc0784ee45bdbaba4f56307d9455b3"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart92-main909130a-intake/candidate/offline-ready/gate-final.json",
+              "commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
+              "component": "tui.chart",
+              "issue": "#92",
+              "scope": "All18 offline gates passed using actual default/external archived programs and captures",
+              "sha256": "a58572b156d9da58013b6458c4e4ca43ea823e06140dd6d28944819fc19b52e5"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart92-main909130a-intake/round01/main-source-manifest.json",
+              "commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
+              "component": "tui.chart",
+              "issue": "#92",
+              "scope": "Complete frozen source input map for this intake; later documentation edits are not runtime changes",
+              "sha256": "cff9f17f5f626a92dd73421d51eeced257c7e37b418fa0a77cd40df9352525a5"
             }
           ],
           "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
           "exceptions": [
-            "The recorded results cover only the listed bounded public/Gallery tests and their stated source identities."
+            "The recorded results cover only the listed bounded public/Gallery tests and their stated source identities.",
+            "Normal /1 has no #112 /2 sidecar; this is explicit non-coverage, not a remaining prerequisite for practical Theme acceptance."
           ],
           "gaps": [
-            "#92 Host/reveal/paired gate",
-            "#112 /2 sidecar",
-            "native/IME/AX",
-            "public release"
+            "native windows/physical IME/VoiceOver not certified by this bounded intake",
+            "public release not performed"
           ],
-          "scope": "Accepted #104 Chart surface/focus work with exact V5 GPU pixel gate and its recorded producer/source identity. Does not imply ChartContent Host integration or paired #92 acceptance.",
+          "scope": "Accepted #104 original ChartView and #92 public ChartContent/Host integration. Latest paired GPU/CPU acceptance belongs to main909130a plus frozen intake, committed b763469; earlier V5 evidence retains its own identity.",
           "source_identity": {
-            "differences": {
-              "crates/tekes-ui-controls/src/chart.rs": {
-                "actual": "d581f9e87c9b1b2b765b1409f96c1af195d5ee64696031ca68b78dfed8b1956c",
-                "expected": "dd80e7f914a39e662399a8d0945443c91589caa6dffc4c551caa1fd2cdf3e8c7"
-              },
-              "crates/tekes-ui-controls/src/collections_view.rs": {
-                "actual": "de44b875f6f5929d96d5e51623f500a2f2fc4ad44ccd8983ff8b97e8c30b8dd8",
-                "expected": "449a98399c102e0568aee9dc3d7dc38b40ae85d9d45174c7525a38bab35f7e08"
-              },
-              "crates/tekes-ui-controls/src/collections_view/chart_owner.rs": {
-                "actual": "3cfdcb6ac573ac7851e8e38fa436e458b2d40a9ef992c699911a1a6873c55aa1",
-                "expected": "5b338d53b75e4f06d15cd44e46331fad15a363d7727fba6f5ead41257f32a411"
-              },
-              "crates/tekes-ui-controls/src/paint.rs": {
-                "actual": "4250a0c9ea352ede330fa380b96717a68d99d06c64b40bf3a20c416f9e8996ee",
-                "expected": "19a39cc5ff189ac0ce6775bd47b2cdf7b05253d5d21bc0fd06c51beed6ae1597"
-              }
-            },
-            "scope": "Four available Chart producer paths from the 21-file V5 receipt are hash-checked in this projection. The immutable root acceptance and V5 source receipt retain the full 21-file run identity; untracked/absent source snapshot paths are not claimed as rechecked here.",
+            "differences": {},
+            "scope": "Seven current Chart producer/integration/harness paths are checked by this projection; full exact build/run identities remain in the linked frozen manifest and locked receipts. No claim that this subset proves the entire runtime.",
             "sha256": {
-              "crates/tekes-ui-controls/src/chart.rs": "dd80e7f914a39e662399a8d0945443c91589caa6dffc4c551caa1fd2cdf3e8c7",
-              "crates/tekes-ui-controls/src/collections_view.rs": "449a98399c102e0568aee9dc3d7dc38b40ae85d9d45174c7525a38bab35f7e08",
-              "crates/tekes-ui-controls/src/collections_view/chart_owner.rs": "5b338d53b75e4f06d15cd44e46331fad15a363d7727fba6f5ead41257f32a411",
-              "crates/tekes-ui-controls/src/paint.rs": "19a39cc5ff189ac0ce6775bd47b2cdf7b05253d5d21bc0fd06c51beed6ae1597"
+              "crates/tekes-ui-controls/src/chart.rs": "d581f9e87c9b1b2b765b1409f96c1af195d5ee64696031ca68b78dfed8b1956c",
+              "crates/tekes-ui-controls/src/collections_view.rs": "de44b875f6f5929d96d5e51623f500a2f2fc4ad44ccd8983ff8b97e8c30b8dd8",
+              "crates/tekes-ui-controls/src/collections_view/chart_owner.rs": "3cfdcb6ac573ac7851e8e38fa436e458b2d40a9ef992c699911a1a6873c55aa1",
+              "crates/tekes-ui-controls/src/composition.rs": "888f63191f8e322eba91eb88ca24715dbb34d26b65578ebd04dac616cfe7853f",
+              "crates/tekes-ui-controls/src/composition/chart_content.rs": "42a86f0cb0ca677e7527d37330ccbd2d01d811381cb91b5cac49eecf5c0ba348",
+              "crates/tekes-ui-controls/src/paint.rs": "4250a0c9ea352ede330fa380b96717a68d99d06c64b40bf3a20c416f9e8996ee",
+              "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80"
             }
           },
-          "status": "accepted-source-subset-stale"
+          "status": "accepted-source-subset-matched"
         },
         "profile": "chart",
         "profile_exceptions": {},
@@ -57395,18 +57406,23 @@
     "crates/tekes-ui-app-host/examples/navigation_prototype.rs": "8fe1c2dbc6f28301bc81b236dac6089ed9a9f12c237654a414f50daa647ac922",
     "crates/tekes-ui-app-host/examples/text_sharpness.rs": "0166220f8ebda4221d7d8616c52a5d98a86b6c0e6f8e55c01cc1dcd64efc083b",
     "crates/tekes-ui-app-host/examples/toolbar_artwork_metrics.rs": "105082460111126efbd6a232cb4d8cc4c73ade89f7be054213cdd203a4c5ce03",
+    "crates/tekes-ui-app-host/src/columns.rs": "f69ac44a565fcd80a982a48a7e41110226851aebe9dabbf2c4fea35262776ebe",
     "crates/tekes-ui-app-host/src/gpu.rs": "7c06c1e8eb52319ba8c2211bff31bf7f5819ac02328992e74837631334371111",
-    "crates/tekes-ui-app-host/src/lib.rs": "860edb798da1bcf807191d32edd594814928b0abd338a11304e4cce555363237",
+    "crates/tekes-ui-app-host/src/lib.rs": "0223654b6320cb73255d3b4735864f961d76f40b765f9dade32ed31d48664f23",
     "crates/tekes-ui-app-host/src/module_process.rs": "6f052cb33081edad27cd901f1c493ddc7da22dcd1a10a07718b8866f2244782d",
     "crates/tekes-ui-app-host/src/navigation/host.rs": "356fd20b80140bc4b2fc719cd37223067a0456c8c8c93837b686086fe9934725",
     "crates/tekes-ui-app-host/src/navigation/mod.rs": "f7ac122be60332b8a14310d74120c96ed3152c0efbb9d1ef76f41ad92cad996f",
     "crates/tekes-ui-app-host/src/navigation/model.rs": "9d3f6f2bb468f8a5dc6943ce26f0de5a09c06d68019f1b08e2cc1c08a752a407",
     "crates/tekes-ui-app-host/src/navigation/store.rs": "dd1087e50b7c87b280fa9d88091cbc38b6085a305041c2377d70bf4730dfb060",
-    "crates/tekes-ui-app-host/src/navigation_window.rs": "95beac7f94840156690cb040d29ed07c46c64cc803b4fb5d0a3db2992f560efc",
+    "crates/tekes-ui-app-host/src/navigation_window.rs": "ad880894c21778c35d54fdce17858b2972ee42472d9d0beedb7e11974546b3f7",
     "crates/tekes-ui-app-host/src/sidebar_motion.rs": "26a26e146502520ceec897c1282294e189794834d49d63787dea6264b347a8e2",
-    "crates/tekes-ui-app-host/src/text.rs": "cdac32bf97b68751ccf11684d8753f3338c545d4781d3e465718e6207bbbf983",
-    "crates/tekes-ui-app-host/src/window.rs": "fd142a48433f145fa6687e62c766c7fd825a4e196000481a987c3f16b98a9d1d",
-    "crates/tekes-ui-app-host/src/window_toolbar.rs": "2d93b8a7abbfab4083457f16311db80c96fdffe3e3cbe98281d2d87302d517f5",
+    "crates/tekes-ui-app-host/src/text.rs": "57789cfbeb24b0823f4c5958b7fdde79c5eefe149b1c484fab0b06794b6b4c1e",
+    "crates/tekes-ui-app-host/src/toolbar_source.rs": "32ca789466235c78cbe2244a396c7c0f9037ef722684374809f8e8e6838e33bb",
+    "crates/tekes-ui-app-host/src/window.rs": "ec7979523786d6645749bd44a559e76eea2373e21181b746ff775459998b5e3e",
+    "crates/tekes-ui-app-host/src/window_accessibility.rs": "80c10024f61189f92f4f87a6b13caaa28eb50b5b407b98ce9f2321a18c273035",
+    "crates/tekes-ui-app-host/src/window_columns.rs": "8b619f781633caf7b3832298d55c7521a0b0a307df6439043148a23aac878491",
+    "crates/tekes-ui-app-host/src/window_toolbar.rs": "bbab6583d28cbb3103f5efe809eb7abf194ae817f46a6ed148a12b57db7657e6",
+    "crates/tekes-ui-app-host/src/window_toolbar_mount.rs": "996489810891b7cd08728360e7b442e59d0c36561152f9b312612ae9fa7112e9",
     "crates/tekes-ui-app-protocol/src/component.rs": "5c7967dd63923af293f02177a87561722203a3ef02c97292c033c7297114b59e",
     "crates/tekes-ui-app-protocol/src/component/curve.rs": "eed9434603d6fcdb6af0c3017538d0bbc4bf120dbf3a8562406f4e1ecd87bddc",
     "crates/tekes-ui-app-protocol/src/lib.rs": "8ac9b81443446d35d3ab1054f9aeed6cc6bcbcbfd8753d0ddc8fd141fe08a3cb",
@@ -57733,7 +57749,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "a6ed1c9f50bc555dce10fd76b4fcc631fce9f20909d922c747b1d173db2068db",
+    "design/gallery/component-coverage.json": "7138247c64231491b4b5bffe9e8d31c309b71f9623f9703785963b3886603afb",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -57764,6 +57780,7 @@
     "examples/composition-consumer/src/empty_state_content.rs": "a73d1bb24db806e91efadedcad79225ca0a4339ff212b8a85a446c6330ca61cb",
     "examples/composition-consumer/src/skeleton_content.rs": "80d44ba5650da213609eeb1a778bed69237550d17e6c5fed2ac91be16eaa6932",
     "examples/composition-consumer/src/status_badge_content.rs": "58006b3eb44e1cb7261c25ebd8bbd8819591a22f5ac53ae48fec6379b62b3a9c",
+    "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80",
     "examples/composition-consumer/tests/scene_fragment.rs": "912c2761b46cd3c32fd7c8779116dc81b0b14ee5fb752ba265edfcdd1b5e1813",
     "examples/composition-consumer/tests/surface_dialog_inheritance.rs": "4a0758a1ca478231b6edae3f56f110cbd5910416adb1eb9ebdbb3f7a11d146b8",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",
