@@ -54757,12 +54757,11 @@
           "restricted"
         ],
         "practical_intake": {
-          "baseline_commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
+          "baseline_commit": "fa8bcc09866d803caa3f70aad098a10e13b6993b",
           "claims": [
-            "Original single action owner and prepared geometry; correct shared content/marker/frame and Quiet/Primary state consumption",
-            "Dismiss delivery and observed inactivity revocation verified with mixed Composer/reading preservation",
-            "All-Toast clock failure/sampling/no-catch-up and AC5 optional-context restoration verified",
-            "Actual default/external Theme GPU, mounted Gallery and static variants/alignment passed"
+            "Historical #79 public/mixedHost/lifecycle/default-external GPU/144 Gallery cases remain at exact original source; full prior record and receipt hashes preserved",
+            "New same real mounted Gallery Toast preserves full model/action slot/geometry/host clock across four Themes; actual inherited canvas frame/content/marker/action roles and text4.5/7/marker3 passed",
+            "Real host tick, explicit fixture timer action and once-only Dismiss passed; corrected Surface-oracle initial failure retained; strict passed"
           ],
           "consumer_entry": {
             "invocation": "--component tui.toast",
@@ -54801,67 +54800,49 @@
               "issue": "#79",
               "scope": "Baseline 08d845f plus frozen integration delta, actual CPU/strict/AC5/GPU review; historical Root receipts not transferred.",
               "sha256": "af6e9894389584e44a51f60546f9a5fa9f9c315b098fc1b12fe759f56240ccd6"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-125/toast-maind706eca-candidate/main-intake/prior-practical-intake.json",
+              "commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
+              "component": "tui.toast",
+              "issue": "#125",
+              "scope": "Verbatim historical practical record, not resigned to current source",
+              "sha256": "d853f43050ec9b21d5d4e7c708434db870dd2a6d9a175a8a8d7d924499d68613"
+            },
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-125/toast-maind706eca-candidate/main-intake/commit-receipt.json",
+              "commit": "fa8bcc09866d803caa3f70aad098a10e13b6993b",
+              "component": "tui.toast",
+              "issue": "#125",
+              "scope": "Only actual retained mounted Gallery Theme/clock/action/paint plus strict newly run; #79 public/default-external GPU evidence remains historical",
+              "sha256": "01f17ced7352ee3472f24432ed96656c47521bc76a85f63e01737a3473122b92"
             }
           ],
           "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
           "exceptions": [
-            "Original geometry and parent allocations retained; no new ticker, queue or animation engine",
-            "Snapshot ZERO sample is supplied only at the explicit fixture boundary; missing SDK clock still fails"
+            "Actual inherited canvas Surface, not bare ToastView panel fallback; success fixture only, no unrelated tone/brand matrix",
+            "Original #79 public/mixedHost/lifecycle/GPU and shared Button migration retained; no duplicate bottom-layer checks",
+            "Ordinary layout stays data; no invented loading/restricted Toast states"
           ],
           "gaps": [
             "Native window, physical IME, VoiceOver, performance and publication",
             "New-base module-runtime wire bridge; unchanged shared artifact/generator checks reused, no new external-artifact build claim",
-            "Whole Design System/all52 root acceptance"
+            "Whole Design System/all52 root acceptance",
+            "New GPU/native-window/physicalIME/VoiceOver/performance certification",
+            "Other patterns/examples/full52"
           ],
-          "scope": "Local main baseline plus exact #79 delta: original Notice model/View, shared Surface anatomy, public Content, lifecycle/actions, actual default/external GPU and Gallery AC5. Not native/wire or whole-library acceptance.",
+          "scope": "New real retained Gallery Toast Theme/clock/action own-paint difference; original #79 public/mixed/lifecycle/default-external GPU/144 captures reused at original identity",
           "source_identity": {
-            "differences": {
-              "crates/tekes-ui-controls/src/composition.rs": {
-                "actual": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
-                "expected": "87374073f784dd168991f8a12f72a9bf71ec5dd727e7941d98d34957be28a5e7"
-              },
-              "crates/tekes-ui-controls/src/composition/actions.rs": {
-                "actual": "6d7a2569853c1b783c3f9c5af5b8df4029a3880311ac47eac12310cd6ebb8e7b",
-                "expected": "d9c78614e1b1cbe2cdc406c0c67ca350c93bd2f73fc4cff0307e4e8fa21af39b"
-              },
-              "crates/tekes-ui-controls/src/composition/notice.rs": {
-                "actual": "cc6dded89400f9bafa405ed499592f8f331792a68c746e501cb3e2768097c245",
-                "expected": "e2976439dca772bb03c9992b8c3771c598eac089a59bc93ced3597232e46b297"
-              },
-              "crates/tekes-ui-controls/src/feedback_view.rs": {
-                "actual": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
-                "expected": "e17b4b063aa07760df034be2480b016641c4bae0c9ef6f17a6ab3daf8b703f26"
-              },
-              "crates/tekes-ui-controls/src/paint.rs": {
-                "actual": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968",
-                "expected": "0ad0c749f7da5393ad2e9c4afff5b2710ed3a4f72ff1f6f0741bf3fc3548cee8"
-              },
-              "crates/tekes-ui-controls/src/widgets.rs": {
-                "actual": "39e9bdce57eacfb93020954e72581a005eaaf2ec86bca69dff5ddd7d64921d86",
-                "expected": "d5cd8ee66361fdc3b6b9eec43b199c72057796431637a6216b997c44193ffca2"
-              },
-              "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
-                "actual": "0193a3c37fa7c5776e2850f76868a09ab341b0a76bccef06ebc5f8635a854ea3",
-                "expected": "bf4b431faba91d567b81d85660dea2bf296988ad4139199bebff8b9c95782eb9"
-              },
-              "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": {
-                "actual": "632635143cefc7531cba5f88e92e6d2d9939534f5217a3183a7d57ee434b3144",
-                "expected": "df1baadc8554e6d62919fe2d31c97cc6b3ba1b5298b0e645e08e5e6a7cde7ccb"
-              }
-            },
-            "scope": "Exact received production inputs; source/config/program identities remain in original runtime receipts.",
+            "differences": {},
+            "scope": "Selected current original Notice/View/mounted adapter and unique Gallery witness for new bounded result; no new GPU/full-closure claim",
             "sha256": {
-              "crates/tekes-ui-controls/src/composition.rs": "87374073f784dd168991f8a12f72a9bf71ec5dd727e7941d98d34957be28a5e7",
-              "crates/tekes-ui-controls/src/composition/actions.rs": "d9c78614e1b1cbe2cdc406c0c67ca350c93bd2f73fc4cff0307e4e8fa21af39b",
-              "crates/tekes-ui-controls/src/composition/notice.rs": "e2976439dca772bb03c9992b8c3771c598eac089a59bc93ced3597232e46b297",
-              "crates/tekes-ui-controls/src/feedback_view.rs": "e17b4b063aa07760df034be2480b016641c4bae0c9ef6f17a6ab3daf8b703f26",
-              "crates/tekes-ui-controls/src/paint.rs": "0ad0c749f7da5393ad2e9c4afff5b2710ed3a4f72ff1f6f0741bf3fc3548cee8",
-              "crates/tekes-ui-controls/src/widgets.rs": "d5cd8ee66361fdc3b6b9eec43b199c72057796431637a6216b997c44193ffca2",
-              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "bf4b431faba91d567b81d85660dea2bf296988ad4139199bebff8b9c95782eb9",
-              "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "df1baadc8554e6d62919fe2d31c97cc6b3ba1b5298b0e645e08e5e6a7cde7ccb"
+              "crates/tekes-ui-controls/src/composition/notice.rs": "cc6dded89400f9bafa405ed499592f8f331792a68c746e501cb3e2768097c245",
+              "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "0193a3c37fa7c5776e2850f76868a09ab341b0a76bccef06ebc5f8635a854ea3",
+              "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "632635143cefc7531cba5f88e92e6d2d9939534f5217a3183a7d57ee434b3144"
             }
           },
-          "status": "accepted-source-subset-stale"
+          "status": "accepted-source-subset-matched"
         },
         "profile": "feedback",
         "profile_exceptions": {},
@@ -59668,7 +59649,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "825014743c31c42828af2f5fa33a56e51491c57113a3a466352c0a4065c62cb8",
+    "design/gallery/component-coverage.json": "f91a295290f8d4708cf71a13eea35fdee076ce480016d71c46b4ba0987b97a9f",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
