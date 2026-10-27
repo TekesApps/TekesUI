@@ -2323,7 +2323,9 @@ impl ExtendedStory {
                     }
                     label(ctx, scene, leading.inset(12.), "Master pane", false);
                     label(ctx, scene, trailing.inset(12.), "Detail pane", false);
-                    wrapped_caption(ctx, scene, bx, bounds.max_y() + 8., bw, &split_help);
+                    let help =
+                        wrapped_caption(ctx, scene, bx, bounds.max_y() + 8., bw, &split_help);
+                    s.document_bottom = help.max_y();
                 }
                 "icon-button" | "link" => {
                     let is_link = e.renderer() == "link";
