@@ -642,7 +642,48 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "b74e9f73b17a3c8864b75adc978ed27bf4d84f1c",
+        "scope": "Existing public unified Button image path and actual Gallery original decorative icon action, no separate IconButton API.",
+        "claims": [
+          "Same public registered-image Button switches Theme::ALL; actual headless Metal paints source artwork against its own semantic ground with >=3 icon contrast, geometry and accessible name retained",
+          "Actual Gallery Quiet/native Plus switches Theme::ALL rest and representative DARK_INCREASED hover/press/outside-cancel/focus/disabled semantic endpoints with own-ground contrast",
+          "Public image opacity/disabled-during-capture/blocked activation and loading key/AX refusal preserved; Gallery strict passed",
+          "Original unified Button DS Regular sizing/shape/scale/cancellation results reused without relabeling"
+        ],
+        "source_identity": {
+          "scope": "Selected semantic consumption and new test sources, not a complete dependency certificate; full actual source/program identity in original receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition/button.rs": "0a168f44280df2c4f615c243a32e4c8987fb526c8708e2b571d7f88b96f96f0e",
+            "crates/tekes-ui-controls/src/paint.rs": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/button_specimen.rs": "c384c866c9fa0f12e513478e0053e95ad8efaebdd2166cee6b0fa8df421a0580",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "85f855ee81c4cd40287fc863dbf2a9b640721b9ac3a16616f44272c1e8d27370",
+            "examples/composition-consumer/tests/icon_button_theme.rs": "0d9bc7273e23df0ca442cc1d9cc76999e487df144576c070f673ac31e48b0a5c"
+          }
+        },
+        "exceptions": [
+          "Artwork pixels are caller-owned; update_image with one retained resource is a representative fixture, not automatic recoloring or a new application lifecycle requirement",
+          "Original decorative Gallery slot and public registered-image route share the original action owner but use different real artwork backends",
+          "Ordinary geometry remains data; existing DS Regular/shared sizing replaces only explicitly approved old compact/20px API requirements"
+        ],
+        "gaps": [
+          "No new dedicated external Theme/native-window/physicalIME/VoiceOver/Gold7 certification",
+          "Representative image/interaction endpoints do not claim a full condition crossproduct or new animation timing certification",
+          "Remaining full52 practical coverage stays open"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.icon-button",
+            "commit": "b74e9f73b17a3c8864b75adc978ed27bf4d84f1c",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/icon-button-mainc4d956b-candidate/main-intake/commit-receipt.json",
+            "sha256": "2b865f247b56a49f773c0c058529665302e9324fd6bdb498ed6c6c50ad83534d",
+            "scope": "Exact-main actual public registered artwork Metal, Gallery native Plus/semantic-state tests, strict, explicit applicability exceptions and original shared results."
+          }
+        ]
+      }
     },
     {
       "id": "tui.link",
