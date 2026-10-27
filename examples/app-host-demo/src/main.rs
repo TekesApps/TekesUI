@@ -2,6 +2,10 @@
 #[cfg(target_os = "macos")]
 mod verify;
 fn main() -> anyhow::Result<()> {
+    #[cfg(target_os = "macos")]
+    if std::env::args().nth(1).as_deref() == Some("--verify-settings-undo") {
+        return tekes_ui_app_host::settings_undo::verify();
+    }
     let mut modules = tekes_ui_panel_module_demo::definitions();
     if !cfg!(feature = "three-panels") {
         modules.truncate(1);

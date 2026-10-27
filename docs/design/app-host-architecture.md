@@ -16,7 +16,9 @@
 
 共享UI追加接收（基线 `07f69be7750879425696433880d59678ae43c671`）：SettingsForm/Sidebar复用真实Button、TextField、Switch、Menu、NumberField、Scroll和List/ListView；保留编辑mount、无自动保存底栏、错误/Retry、help说明与固定header。原6项form/sidebar、2项number及1项row测试与all-target strict通过，证据SSD `artifacts/issue-136/settings70-ui-main07f69be-intake/round01`。基础model/store输入未变，不重复执行原10测试。这里的有限CPU行为不是完整Theme/GPU/native Settings验收；Sidebar兼容适配不等于全List根已接收。
 
-尚未交付：SettingsSurface、自动保存窗口、独立配置UndoRedo及原生/PR#52公开固定依赖验证。共享UI通过不代表这些能力通过，#70继续开放。完整既有Settings设计和历史原型保留在Gallery Root的 `docs/design/apphost-settings.md` 与 `apphost-settings-prototype-20261022.md`，后续接收沿原契约，不把历史实现转签为当前main完成。
+配置UndoRedo基础追加接收（验证基线95573a7）：原journal/module、真实Worker与完整demo验证入口已接入固定child registry。原3项journal测试、AppHost strict与真实子进程验证通过，覆盖未写prepare、丢confirm后重启、保存后的Undo/Redo及旧registration/window/session拒绝。证据SSD `artifacts/issue-136/settings70-undo-main95573a7-intake/`；两次demo锁文件拒绝保留原身份，最终按原锁内离线metadata修正精确feature依赖，未改变版本或重跑有效journal检查。
+
+尚未交付：SettingsSurface、自动保存窗口、后台Client协调器与UndoRedo的完整UI链、原生/PR#52公开固定依赖验证。共享UI通过不代表这些能力通过，#70继续开放。完整既有Settings设计和历史原型保留在Gallery Root的 `docs/design/apphost-settings.md` 与 `apphost-settings-prototype-20261022.md`，后续接收沿原契约，不把历史实现转签为当前main完成。
 
 
 ## 1. 目标与范围

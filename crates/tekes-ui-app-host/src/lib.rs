@@ -4,6 +4,7 @@ pub mod gpu;
 #[cfg(target_os = "macos")]
 pub mod module_process;
 pub mod navigation;
+pub mod settings_undo;
 #[cfg(target_os = "macos")]
 mod navigation_window;
 #[cfg(target_os = "macos")]
@@ -127,7 +128,7 @@ fn run_columns(profile: AppProfile, columns: Option<Vec<Column>>, navigation: Op
     if let Some(columns) = &columns { columns::validate(columns)?; } else { validate(&profile)?; }
     let args: Vec<String> = std::env::args().collect();
     if tekes_ui_module_runtime::run_component_worker_from_args(
-        &[crate::navigation::definition()],
+        &[crate::navigation::definition(), crate::settings_undo::definition()],
         &args,
     )? {
         return Ok(());

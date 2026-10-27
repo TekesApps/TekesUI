@@ -1073,6 +1073,7 @@ dependencies = [
  "tekes-ui-platform-macos",
  "tekes-ui-render",
  "tekes-ui-scene",
+ "tekes-ui-settings",
  "tekes-ui-text",
  "tekes-ui-tokens",
  "wgpu",
