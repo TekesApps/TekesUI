@@ -54,6 +54,8 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 
 本族票 #123 的十个动作/导航根已在 PR141、checkpoint-20261028-1 按四条实用 Theme AC 完成。各行旧批次中的“本族未完成”保留当时证据身份；当前整族结论见原 Issue。此收口不表示 #113 全52根、旧闭包证明或全库原生验收完成。
 
+本族票 #124 的七个数据/只读文档根已在 PR147、checkpoint-20261028-7 按四条实用 Theme AC 完成并关闭；各根实际运行/远端交付保持各自提交与收据身份。只读 subset、透明父背景和未验 GPU/原生等适用边界仍保留在原行与原票，不表示完整文档编辑器、全52根或旧闭包证明完成。
+
 | 登记根 | 公开入口/主题消费 | 已验状态与身份 | 合理例外 | 未完成项 | 证据/Issue |
 |---|---|---|---|---|---|
 | `tui.stack` | Existing Stack geometric model/StackView and measured StackContent ROW/COLUMN policy; original ContentTheme forwards declared panel Surface to real Text/Button children | Same retained StackContent/Host across both axes and Theme::ALL preserves child frame/visible/mount, exact child semantic text/Button packet ink and sole child focus target; actual Gallery three-cell StackView Theme/layout/labels and strict passed | Pure layout has no own background/hover/pressed/disabled/selected/focus state; caller gap/equal division/index geometry stays data; shared leaf contrast/states and #62 inheritance reused | No new dedicated brand/scale/GPU/native-window/IME/VoiceOver certification; old clipping/reveal/geometry evidence retains identity | #121/#113; SSD artifacts/issue-121/stack-main8253390-candidate/main-intake/commit-receipt.json; public test fixture corrected leaf-specific ink, no production changes |
