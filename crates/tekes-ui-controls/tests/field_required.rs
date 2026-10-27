@@ -9,7 +9,7 @@ fn ordinary_semantics_default_to_optional_without_creating_validation() {
     assert!(semantics.required);
     assert!(!semantics.invalid);
     assert_eq!(semantics.value.as_deref(), Some(""));
-    assert!(!ButtonContent::new("Submit").semantics().required);
+    assert!(!Button::new("Submit").semantics().required);
 }
 #[test]
 fn required_is_independent_of_readonly_disabled_error_and_multiline_policies() {

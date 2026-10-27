@@ -39,3 +39,99 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 #8 仍为部分完成：编译绑定、45 项主 API 补齐与完整历史身份说明已交付；全体 public/helper 类型的反向分类、每个组件必需状态的覆盖，以及完整 token 依赖映射仍未闭合。新增未登记类型仍需这一反向清单才能精确指出缺项，不能声称本批已经解决全部公开面治理。所有组件继续 experimental，体验状态未自动改为 pass。
 
 后续继续原 Issue 的反向类型分类和状态/token 审计；#7 消费方品牌入口、#10 公共阅读控制器、#11 草稿协议仍按现有 WIP 补公共边界，不重做已有 Gallery 实现。#5/#12 的候选窗和 VoiceOver 验收也继续保留。未自动提交、推送、打 tag、关闭 Issue 或发布，原 WIP 与历史证据保持保护。
+
+## 2026-10-26 实用 Theme 覆盖清单（现行审计范围）
+
+本节对应 #113/#114 及 #121–#125，取自现有 `design/gallery/workbench.json` 的52根，登记仍以该文件为唯一来源。上文2026-10-17的45项测试与历史统计保持原身份，不是当前52根全量通过。基线为本地 main `3d7ff9eade945390131028a22a915603d5a8829b`；本次仅核对已知接收范围，不重新全面审计或为未知项补造通过。
+
+验收条款见 [Theme foundation 的现行审计契约](theme-foundation-main-intake-20261026.md)。每根只补消费、状态和实际集成差异；Palette是合格语义入口，不强制为统一形式而迁移Surface。未知状态标待核对；不把没有登记例外当作已证明零硬编码。无障碍/原生及完整产品能力仍归原票，不由审计简化自动通过。
+
+### #114 机器投影的历史观察规则（已接收）
+
+现有 `capabilities.json` 继续消费 Workbench、coverage、公开 API surface 与来源 SHA；不新增登记表。Runtime observation 的 artifact、原 `inputs_sha256`、cases、tokens 与范围说明原样保留。若当前源码哈希与历史观察不一致，context 只显示 `historical-stale`、原/当前 SHA 差异及受影响状态；这些状态的当前 `public_api_verified` 置空，原历史声明放在 `historical_public_api_verified`，maturity 不变。该身份过期只表示旧观察不能证明当前源码状态，不表示组件功能失败，也不要求把所有旧探针重跑；新的 Button/Chart 证据继续按各自真实范围独立投影。`--context` 生成临时当前投影并注明与落盘清单是否一致，不写文件；`--check` 继续严格检查落盘清单；投影已由唯一负责人生成并在 `71c3d21`、`a7aae42` 接收。损坏的观察格式、身份哈希、路径、缺失来源、跨组件用例或状态记录仍拒绝，不把它们降级成 stale。
+
+证据简写：候选89位于SSD `artifacts/issue-113/button-layout-producer89-20261026-01`；其他main批次见相关设计文档与原Issue收据。此表是现有registry的人工验收说明，不是第二套ID或机器登记。#114机器投影已按简化 AC 验收并关闭，具体接收范围见下文；本表中其余组件的未完成项不因此消失。
+
+| 登记根 | 公开入口/主题消费 | 已验状态与身份 | 合理例外 | 未完成项 | 证据/Issue |
+|---|---|---|---|---|---|
+| `tui.stack` | `tekes_ui_controls::extended::Stack`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.grid` | `tekes_ui_controls::extended::Grid`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.separator` | `tekes_ui_controls::extended::Separator`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.split-view` | `tekes_ui_controls::extended::SplitView`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.scroll-area` | `tekes_ui_controls::ScrollArea`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.disclosure` | `tekes_ui_controls::extended::Disclosure`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.surface` | `tekes_ui_controls::feedback_view::SurfaceView`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.toolbar` | `tekes_ui_controls::Toolbar`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#121 |
+| `tui.text` | `tekes_ui_controls::TextSurface`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.icon` | `tekes_ui_controls::layout_view::IconView`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.button` | `Button → ButtonModel → existing Palette/declared Surface` | Unified public shapes, original state/center/cancel, real Gallery regressions and finite Metal/CoreText passed; exact round identities retained | DS Regular artwork/shared size explicitly replaces old compact/caller20px; ordinary geometry is not tokenized | Full AppHost/native/Gold7 and existing Dialog/Scroll/marked-IME failures remain separate | SSD issue-136/unified-button-main36dd132-intake/root-review.json; previous issue-113 receipts remain historical; #113/#136/#69 |
+| `tui.icon-button` | Unified `Button::new(ImageId)` or original decorative Content; same action owner | DS natural/explicit frame, center, unavailable/capture/cancel, actual Gallery Icon and finite GPU shapes passed | Historical route retained; no separate IconButton API or per-button icon size | Native/Gold7/full theme-state matrix remains unclaimed; historical evidence not relabeled | SSD issue-136/unified-button-main36dd132-intake/root-review.json; #123/#136 |
+| `tui.link` | 公共 Link → LinkView::render → link_underline → Palette：c-link-foreground/hover/pressed、disabled-text；原 focus outline | 当前 main 批次：同一 View/model 保持 normal/hover/pressed/disabled/focus 并切换 Theme::ALL；真实 Gallery Link states 文字 ink/换肤及 strict 通过 | 原 View 布局与几何不新增 token 要求；共享生成/对比守卫未变 | 本批未新增 GPU/外部 Theme/原生结论；#114 已准确投影该有限范围，族中其他根未完成 | SSD artifacts/issue-123/link-main113c0f9/{round01,round02,commit-receipt.json}；#123/#113/#114 |
+| `tui.text-field` | `tekes_ui_controls::TextSurface`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.text-area` | `tekes_ui_controls::TextSurface`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.search-field` | `tekes_ui_controls::TextSurface`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.combo-box` | `tekes_ui_controls::extended::ComboBox`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.slider` | `tekes_ui_controls::extended::Slider`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.checkbox` | `tekes_ui_controls::Checkbox`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.radio-group` | `tekes_ui_controls::extended::RadioGroup`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.switch` | `tekes_ui_controls::extended::Switch`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.segmented-control` | `tekes_ui_controls::extended::SegmentedControl`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.field` | `tekes_ui_controls::Field`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.select` | `tekes_ui_controls::Select`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.number-field` | `tekes_ui_controls::NumberField`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#122 |
+| `tui.tabs` | `tekes_ui_controls::Tabs`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.breadcrumb` | `tekes_ui_controls::extended::Breadcrumb`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.command-palette` | `tekes_ui_controls::extended::CommandPalette`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.list` | `tekes_ui_controls::extended::List`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
+| `tui.tree` | `tekes_ui_controls::extended::Tree`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
+| `tui.data-table` | `tekes_ui_controls::extended::DataTable`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
+| `tui.chart` | ChartContent → original ChartView → Theme/Palette/Surface | View `3bd9f00` plus current #92 main intake: public Host, default/external Metal and original paired focus/blur gate passed | 普通几何/索引数字不要求token化；normal /1 不声明 /2 sidecar | 原生窗口/发布未验；不转签旧Root证据 | chart-content-20261024.md；SSD chart92-main909130a-intake；#104/#92/#124 |
+| `tui.menu` | `tekes_ui_controls::Menu`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#123 |
+| `tui.tooltip` | 公共 Tooltip → TooltipView::render → Palette surface-3 / primary-text；proposal radius-floating 与 UiBody | 本地 main 批次：保留 View 切换 Theme::ALL；真实 Gallery hidden/hover/focus-visible/Escape 矩阵的两处提示背景、正文 ink 与标准/增强文字对比通过；Controls/Gallery strict 通过 | 普通定位、宽度及内边距为原布局几何；Tooltip 无独立 pressed/disabled 外观状态；共享生成输入未变 | 本批未新增 GPU/外部 Theme/物理输入/VoiceOver；动态行帮助原生缺口留 #35；全族仍未完成，机器投影仅汇总本有限范围 | SSD artifacts/issue-123/tooltip-maincd27d0b/main-intake/commit-receipt.json；#123/#113/#114/#35 |
+| `tui.popover` | 公共 Popover → PopoverView/render_with_content → Palette surface-popover、radius-floating/scale hairline；正文由公开 callback 消费 Theme primary-text | 当前本地 main：同一 model/View 保持 open 跨 Theme::ALL 与 scale1/2；真实 Gallery closed/open/focus-visible 样本的两处浮层、独立于 Dismiss 的正文 ink 及普通4.5/增强7对比通过；Controls/Gallery strict 通过 | 原定位/尺寸为普通布局；Dismiss 复用原 Button 语义与共享检查，未重复全排列；正文 callback 由消费者持有 | 本批无新 GPU/专门外部 Theme/native/physicalIME/VoiceOver结论；原 lifecycle/焦点恢复/外部点击/Escape 证据保留身份；全族仍未完成，机器入口按实际投影范围记录 | SSD artifacts/issue-123/popover-main1ca-candidate/main-intake/commit-receipt.json；#123/#113/#114 |
+| `tui.dialog` | retained Dialog → ContentTheme.surface；继承祖先/Host Surface，支持显式覆盖与清除 | 有限继承与公开场景回归已入本地main `8e4c01d`；不等于完整Dialog主题/原生验收 | 无新增豁免；普通几何/索引数字不要求token化 | 补核Dialog自身状态/切换/对比及原票剩余项，不重跑输入未变的继承回归 | #62/#97；SSD `artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/commit-receipt.json`；#123 |
+| `tui.toast` | `ToastContent → original Notice View/Button → Surface` | local main: lifecycle/action/clock, mixed Host, default/external GPU and actual Gallery AC5 passed | Original geometry; no new ticker/queue; explicit snapshot clock boundary | Native/wire/IME/performance and full-page experience remain | SSD notice79-main08d845f-intake/root-review.json; #79/#125/#136 |
+| `tui.banner` | `BannerContent → original Notice View/Button → Surface` | local main: lifecycle/action/clock, mixed Host, default/external GPU and actual Gallery AC5 passed | Original geometry; no new ticker/queue; explicit snapshot clock boundary | Native/wire/IME/performance and Banner narrow action word-wrap (#12) remain | SSD notice79-main08d845f-intake/root-review.json; #79/#125/#136 |
+| `tui.status-badge` | `StatusBadgeContent → StatusBadgeView → status_badge_on_surface → Surface` | local main: passive semantics, dynamic mixed Host, default/external Theme GPU, normal-label readability and actual Gallery verified | Parent owns allocation; narrow clipping does not promise full-text readability | Native/VoiceOver/physical IME/performance and other roots remain unverified | SSD status76-main437b5b6-intake/root-review.json; #76/#125/#136 |
+| `tui.progress` | Progress painter/View/ProgressContent → progress-track/rest via Palette/Surface | 本地main基线63214be接收批：公共消费者、原Gallery、默认/外部Theme GPU与strict已验；证据保持各轮原身份 | 父布局提供有限尺寸；未知进度保留静态片段，不新增动画 | 原生专用role/VoiceOver属#5；整页文案/窄宽导航布局属#12，不声称全库完成 | SSD `artifacts/issue-136/progress72-main-63214be-intake/`；#71/#72/#125 |
+| `tui.empty-state` | `EmptyStateContent → original EmptyStateView/Button → Surface` | local main: original action/geometry, stale authorization, mixed Composer/reading, default/external GPU and original Gallery body passed | Parent supplies finite allocation; original View owns action and layout | Native/VoiceOver/physical IME/performance/wire and other roots remain unverified | SSD empty78-mainb4fbed1-intake/root-review.json; #78/#125/#136 |
+| `tui.skeleton` | `SkeletonContent → SkeletonView → skeleton_on_surface → Surface` | local main: passive/named semantics, mixed Composer/reading, default/external GPU and original Gallery route passed | Parent owns extent; original radius4 retained; static, no ticker | Native/VoiceOver/physical IME/performance and other roots remain unverified | SSD skeleton77-main23447d2-intake/root-review.json; #77/#125/#136 |
+| `tui.markdown` | `tekes_ui_controls::extended::Markdown`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
+| `tui.code-block` | `tekes_ui_controls::extended::CodeBlock`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
+| `tui.diff-view` | `tekes_ui_controls::extended::DiffView`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#124 |
+| `pattern-form` | `form`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `pattern-filter` | `filter`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `pattern-master` | `master`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `pattern-async` | `async`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `pattern-danger` | `danger`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `example-settings` | `settings`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+| `component-scene3d` | `scene3d`；语义消费入口待逐项核对 | 未在本批复验；既有证据保留原身份 | 无新增豁免；普通几何/索引数字不要求token化 | 核对原票候选、消费映射及必要状态/切换/对比 | 原族票；本批不声明通过；#125 |
+
+### 已接收的有限实证投影
+
+现有 `component-coverage.json` 对 `tui.button`、`tui.chart` 和 `tui.progress` 增加了 `practical_intake`，生成器将其投影到各自的 `state_coverage.practical_intake`。 本批沿同一入口增加 `tui.link` 的有限语义消费、保留实例换肤和真实 Gallery 结果；原生候选已撤回，投影只取已接收 main 源码，旧状态与 maturity 不晋级。它记录原 Issue、接受提交、证据文件 SHA-256、明确范围、未声明范围，以及本次冻结基线下可核对的有限源码路径哈希。Chart 项保留历史 V5 证据，并加入 b763469 的 ChartContent/Host 及默认/外部成对 GPU 接收；当前7条源码路径仅是可核对子集，完整运行身份仍由冻结清单和原锁内收据约束。它只提供已接收证据的定位，不替代原状态矩阵、根验收或 maturity。
+
+- Button 当前投影包括 #113 的 72 组公共 ink/fill 对比和实际 Gallery theme/brand 切换代表状态回归；GPU、原生/VoiceOver、完整 #136 统一Button接收／#69 Host/content 与全部 52 根仍未由这些记录证明。
+- Chart 当前投影包括 #104 的有限 Theme/Surface 与 focus GPU 门禁；#92 Host/reveal/paired、#112 `/2` sidecar、native/IME/AX 和发布仍明确未证明。
+- 证据 commit、receipt 和原始哈希保持原身份。源码哈希匹配只说明该有限证据输入仍对应当前投影源码；不把旧 18 组观察改签为当前证据，也不将 16 个输入差异解释成功能失败。
+- 若投影源码发生变化，`practical_intake.status` 会变成 `accepted-source-subset-stale` 并给出逐路径差异；旧证据保留，但不再称为当前源码身份匹配。损坏的状态、路径、哈希或跨组件证据会被拒绝。
+
+- Progress 当前投影引用本地 `3f13a1e` 的原公共组件/Gallery/实际GPU及严格检查，必要共享查询与平台投影已接收；专用原生role、VoiceOver、全Gold7及Gallery文案/窄宽布局仍未声明完成。
+- 生成器核对源码子集哈希和字段结构；receipt字段是保留的不可变引用，不声称自动认证其内容。本次主协调另核实了全部五份receipt字节与记录SHA一致，记录在SSD `artifacts/issue-114/main3f13-intake/receipt-reference-check.json`。
+- 当前main实际验证：48项Python测试、生成器一致性、公开API编译绑定与strict；Button/Chart/Progress机器入口查询。未重跑生产Rust/GPU；未把其余49根标complete。首批未包含的Dialog等记录由下节补齐；pattern/example继续保留原registry状态，投影完成不代表所有组件范围完成。
+
+### 其余已接收 Theme 批次
+
+以下记录复用既有 `practical_intake` 字段。`accepted-bounded-evidence` 标识原批次按其验收边界被接收；记录保留原提交和 receipts，生成器会在最终主线输入上逐路径比较源哈希。后续批次改动同一文件时会显示源码身份差异；这既不表示旧批次功能失败，也不把旧证据改签为当前源码验证。
+
+| 组件入口 | 已接收范围 | 该记录不证明 |
+| --- | --- | --- |
+| `tui.dialog` | #62，`8e4c01de5fae9a429016a039f53034b5737a0a2b`：Surface 默认、继承、显式覆盖/清除及真实 retained Dialog 祖先链；公共 fragment/Dialog regressions 通过。 | 这条只投影 2026-10-26 Surface 批次；native/VoiceOver、ProgressContent 完整验收、Panel 450/18 集成。 |
+| `tui.status-badge` | `StatusBadgeContent → StatusBadgeView → status_badge_on_surface → Surface` | local main: passive semantics, dynamic mixed Host, default/external Theme GPU, normal-label readability and actual Gallery verified | Parent owns allocation; narrow clipping does not promise full-text readability | Native/VoiceOver/physical IME/performance and other roots remain unverified | SSD status76-main437b5b6-intake/root-review.json; #76/#125/#136 |
+| `tui.skeleton` | #83，同一提交：一个 rest-only shared Surface 用途及 boundary 对比守卫。 | 只证明共享规则与 handoff；不证明 #77 Skeleton Content/View/Gallery/GPU 消费。 |
+| `tui.toast` | #93，`3e989f1a6d05466d157b60209d2194348ab131ce`：仅 rest-only `toast-warning` marker 共享 Theme 用途。 | 不证明 #79 Toast Content/View/Gallery/GPU 消费。 |
+| `tui.banner` | #93，同一提交：仅 rest-only `banner-warning` marker 共享 Theme 用途。 | 不证明 #79 Banner Content/View/Gallery/GPU 消费。 |
+
+#83/#93 的测试证明 shared Theme 规则、生成产物、Rust 校验与外部拒绝/合法消费边界；它们不替代组件 adapter acceptance。组件行把共享用途映射到便于查阅的消费入口，不等于该组件已消费这些用途。未在本批重跑旧 GPU，也未扩展 52 根状态。
+
+本次补录后，#114按2026-10-26明确简化的四项AC完成：复用52根登记及原API/route/state/maturity；八个有界接收入口保留scope/claims/exceptions/gaps和证据；历史观察与当前源码不符有定位诊断；实际生成/context/公开编译绑定检查通过。新补录运行五个context查询、receipt字节核对及三项受影响Python检查，未重跑未变化的Rust/GPU。隔离检查曾发现examples源码未列入生成输入，现将既有source_identity路径纳入原输入清单并验证修复。完整组件主题接入、#8其余原AC、native/视觉成熟度均未因此完成；后续每批接收继续更新同一记录。

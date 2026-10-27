@@ -35,14 +35,14 @@ fn host() -> ContentHost {
             },
             flexible_child: None,
             children: vec![
-                Content::new(CALLER, ButtonContent::new("Original caller")),
+                Content::new(CALLER, Button::new("Original caller")),
                 Content::new(
                     DIALOG,
                     DialogContent::new(
                         "Dialog",
                         Content::new(ComponentId(13), TextContent::new("Header")),
-                        Content::new(ComponentId(14), ButtonContent::new("Body action")),
-                        Content::new(ComponentId(15), ButtonContent::new("Close")),
+                        Content::new(ComponentId(14), Button::new("Body action")),
+                        Content::new(ComponentId(15), Button::new("Close")),
                     ),
                 ),
             ],
@@ -65,7 +65,7 @@ fn dialog_restoration_rejects_a_new_caller_with_the_same_component_id() {
     let _original = h.remove(CALLER).unwrap();
     h.insert(
         ROOT,
-        Content::new(CALLER, ButtonContent::new("Replacement caller")),
+        Content::new(CALLER, Button::new("Replacement caller")),
     )
     .unwrap();
     assert!(h.close_dialog());
@@ -109,7 +109,7 @@ fn dialog_restoration_keeps_the_same_mount_after_reorder_and_rejects_unavailable
             2 => {
                 h.get_mut(CALLER)
                     .unwrap()
-                    .component_mut::<ButtonContent>()
+                    .component_mut::<Button>()
                     .unwrap()
                     .button
                     .state
@@ -133,7 +133,7 @@ fn dialog_does_not_capture_an_already_ineligible_programmatic_caller() {
     h.focus(Some(CALLER), true);
     h.get_mut(CALLER)
         .unwrap()
-        .component_mut::<ButtonContent>()
+        .component_mut::<Button>()
         .unwrap()
         .button
         .state
@@ -141,7 +141,7 @@ fn dialog_does_not_capture_an_already_ineligible_programmatic_caller() {
     h.show_dialog(DIALOG).unwrap();
     h.get_mut(CALLER)
         .unwrap()
-        .component_mut::<ButtonContent>()
+        .component_mut::<Button>()
         .unwrap()
         .button
         .state

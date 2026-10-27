@@ -419,8 +419,12 @@ fn main() {
                     "menu-tree" | "toolbar" | "toolbar-groups" | "toolbar-split"
                 ) {
                     snapshot["menu_actions"]=serde_json::json!(self.menu_actions.iter().map(|record|{
-                        let selection=record.payload.as_ref().map(|tekes_ui_controls::composition::ContentActionPayload::MenuSelection(value)|serde_json::json!({"index":value.index(),"label":value.label(),"model_revision":value.model_revision(),"value_path":value.value_path()}));
-                        serde_json::json!({"target":record.action.target.0,"source":format!("{:?}",record.action.source),"kind":format!("{:?}",record.action.kind),"mount":record.mount,"selection":selection})
+                        let (selection, toolbar_command) = match record.payload.as_ref() {
+                            Some(tekes_ui_controls::composition::ContentActionPayload::MenuSelection(value)) => (Some(serde_json::json!({"index":value.index(),"label":value.label(),"model_revision":value.model_revision(),"value_path":value.value_path()})), None),
+                            Some(tekes_ui_controls::composition::ContentActionPayload::ToolbarCommand(command)) => (None, Some(*command)),
+                            None => (None, None),
+                        };
+                        serde_json::json!({"target":record.action.target.0,"source":format!("{:?}",record.action.source),"kind":format!("{:?}",record.action.kind),"mount":record.mount,"selection":selection,"toolbar_command":toolbar_command})
                     }).collect::<Vec<_>>());
                 }
                 if self.mode == "toolbar-groups" {
@@ -549,13 +553,13 @@ fn main() {
                 }
                 if self.mode == "label" {
                     use tekes_ui_controls::composition::{
-                        ButtonContent, ComponentId, CompoundButton,
+                        Button, ComponentId,
                     };
                     snapshot["label_review"] = serde_json::json!({
                         "type_scale": self.text.type_scale, "width": w.size().width,
                         "buttons": ([9902,9903].into_iter().map(|id| {
                             let node=self.tree.get(ComponentId(id)).unwrap();
-                            let button=node.component::<ButtonContent>().or_else(|| node.component::<CompoundButton>().map(|c| &c.action)).unwrap();
+                            let button=node.component::<Button>().unwrap();
                             serde_json::json!({"id":id,"activations":button.activations,"hovered":button.button.state.hovered,"pressed":button.button.state.pressed,"focused":button.button.state.focused,"focus_visible":button.button.state.focus_visible,"disabled":button.button.state.disabled,"loading":button.button.state.loading})
                         }).collect::<Vec<_>>())
                     });
@@ -915,7 +919,7 @@ fn main() {
                     self.tree
                         .get(id)
                         .and_then(|c| {
-                            c.component::<tekes_ui_controls::composition::ButtonContent>()
+                            c.component::<tekes_ui_controls::composition::Button>()
                         })
                         .map_or(0, |b| b.activations)
                 };
@@ -1253,18 +1257,13 @@ fn main() {
                         20 => self.text.type_scale = 2.,
                         code => {
                             use tekes_ui_controls::composition::{
-                                ButtonContent, ComponentId, CompoundButton,
+                                Button, ComponentId,
                             };
                             for id in [9902, 9903] {
                                 let node = self.tree.get_mut(ComponentId(id)).unwrap();
-                                if let Some(button) = node.component_mut::<ButtonContent>() {
+                                if let Some(button) = node.component_mut::<Button>() {
                                     button.button.state.disabled = code == 21;
                                     button.button.state.loading = code == 23;
-                                } else if let Some(compound) =
-                                    node.component_mut::<CompoundButton>()
-                                {
-                                    compound.action.button.state.disabled = code == 21;
-                                    compound.action.button.state.loading = code == 23;
                                 }
                             }
                         }

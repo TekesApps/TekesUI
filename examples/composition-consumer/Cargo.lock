@@ -943,6 +943,8 @@ dependencies = [
  "objc2-foundation",
  "objc2-metal",
  "objc2-quartz-core",
+ "tekes-ui-controls",
+ "tekes-ui-scene",
 ]
 
 [[package]]

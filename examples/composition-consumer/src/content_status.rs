@@ -2,7 +2,7 @@
 //! These are application fixtures, not new built-in controls or status protocols.
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
-    Button, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, TabsView,
+    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, TabsView,
     composition::*,
     extended::{Axis, Banner, Disclosure, EmptyState, NoticeTone, Progress, Stack},
     feedback_view::{BannerView, EmptyStateView, ProgressView},
@@ -74,7 +74,7 @@ impl Component for Header {
         let h = ["Content", "History", "Activity"]
             .into_iter()
             .map(|s| {
-                Button::measure(
+                ButtonModel::measure(
                     &mut &mut *t,
                     s,
                     width.max(0.),

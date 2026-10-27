@@ -100,7 +100,9 @@ impl GlyphPass {
     ) -> GlyphPass {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("tekes glyph shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("glyph.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                concat!(include_str!("clip.wgsl"), "\n", include_str!("glyph.wgsl")).into(),
+            ),
         });
         let atlas_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("tekes atlas layout"),

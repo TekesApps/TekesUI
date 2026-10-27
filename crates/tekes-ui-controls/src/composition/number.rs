@@ -1,5 +1,5 @@
 //! Editable numeric Content. TextFieldContent owns all text editing and IME;
-//! NumberField owns bounded arithmetic; ordinary ButtonContent owns activation.
+//! NumberField owns bounded arithmetic; ordinary Button owns activation.
 use super::*;
 use crate::{NumberField, TextSurface, TextSurfaceAlignment, TextSurfacePresentation};
 use std::collections::VecDeque;
@@ -107,7 +107,7 @@ pub struct NumberFieldContent {
     min: f64,
     max: f64,
     format: Box<dyn NumberFormat>,
-    buttons: [ButtonContent; 2],
+    buttons: [Button; 2],
     frames: [Rect; 2],
     editor_frame: Rect,
     captured: Option<usize>,
@@ -138,7 +138,7 @@ impl NumberFieldContent {
         editor.submit_policy = TextSubmitPolicy::Enter;
         editor.show_metadata = false;
 
-        let mut buttons = [ButtonContent::new("−"), ButtonContent::new("+")];
+        let mut buttons = [Button::new("−"), Button::new("+")];
         for button in &mut buttons {
             button.button.frame_policy = crate::ButtonFramePolicy::Exact;
         }
@@ -371,6 +371,10 @@ impl NumberFieldContent {
     }
 }
 impl Component for NumberFieldContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
+
     fn requires_text_services(&self) -> bool {
         true
     }

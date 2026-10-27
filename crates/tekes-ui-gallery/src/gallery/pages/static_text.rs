@@ -27,7 +27,7 @@
 //! - 窗格 2：参照图（见 `static_text.rs` 的说明），没有时写明原因；
 //! - 窗格 3：差异热图，下面是三个数字和通过与否（`DiffOptions::for_scale`）。
 
-use tekes_ui_controls::{Button, ButtonSize, ButtonTextAlign, paint};
+use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, paint};
 use tekes_ui_scene::{ImageQuad, Point, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{ColorRole, Contrast, CornerRadius, Stroke, TextRole, Theme, proposal};
 
@@ -235,7 +235,7 @@ pub fn numbers_line(n: &crate::gallery::static_text::Numbers) -> String {
 fn button(
     scene: &mut Scene,
     renderer: (&mut crate::gallery::text::TextEngine, Theme),
-    button: &mut Button,
+    button: &mut ButtonModel,
     rect: Rect,
     clip: Rect,
     label: &str,
@@ -248,10 +248,7 @@ fn button(
         label,
         rect,
         Some(clip),
-        tekes_ui_tokens::Palette {
-            theme: renderer.1,
-            brand: 0,
-        },
+        tekes_ui_tokens::Palette::new(renderer.1, 0).expect("registered Gallery brand"),
         paint::ButtonVariant::Quiet,
         ButtonSize::Xs,
         proposal::TextRole::UiCaption,
@@ -772,12 +769,12 @@ mod tests {
                 let fixtures: Vec<_> = st
                     .fixture_buttons()
                     .iter()
-                    .filter_map(Button::layout)
+                    .filter_map(ButtonModel::layout)
                     .collect();
                 let widths: Vec<_> = st
                     .width_buttons()
                     .iter()
-                    .filter_map(Button::layout)
+                    .filter_map(ButtonModel::layout)
                     .collect();
                 assert_eq!(fixtures.len(), FIXTURES.len());
                 assert!(!widths.is_empty());
@@ -895,7 +892,7 @@ mod tests {
                 .fixture_buttons()
                 .iter()
                 .chain(st.width_buttons())
-                .filter_map(Button::layout)
+                .filter_map(ButtonModel::layout)
                 .map(|layout| layout.frame.max_y())
                 .fold(0.0, f32::max);
             assert!(selector_bottom < pane_bottom, "width={width}");

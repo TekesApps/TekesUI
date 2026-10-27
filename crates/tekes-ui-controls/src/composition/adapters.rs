@@ -31,6 +31,16 @@ impl ListContent {
     }
 }
 impl Component for ListContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
         self.rows.measure(t, a)
     }
@@ -67,6 +77,31 @@ impl SwitchContent {
     }
 }
 impl Component for SwitchContent {
+    fn pointer_event_in_region(&mut self, event: &ContentEvent, inside: bool) -> ContentResponse {
+        if !event.is_primary_pointer() {
+            return event.deliver(self);
+        }
+        let mut response = ContentResponse::default();
+        match event.routing_event().as_ref() {
+            ContentEvent::PointerMove(point) => {
+                response.changed = self.view.pointer_move_in_region(*point, inside)
+            }
+            ContentEvent::PointerUp(point) => {
+                let result = self
+                    .view
+                    .pointer_up_in_region(*point, &mut self.model, inside);
+                response.consumed = result != SelectionEvent::Ignored;
+                response.changed = result == SelectionEvent::Changed;
+            }
+            _ => return event.deliver(self),
+        }
+        response
+    }
+
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
+
     fn accessibility_action(
         &mut self,
         part: Option<usize>,
@@ -187,6 +222,7 @@ pub struct TextFieldContent {
     /// Hide visible form label/help layout for inline controls. Semantic field
     /// metadata and the original TextSurface chrome/editing remain available.
     pub show_metadata: bool,
+    inline_width_em: Option<f32>,
     focused: bool,
 }
 impl TextFieldContent {
@@ -203,9 +239,23 @@ impl TextFieldContent {
             submit_policy: TextSubmitPolicy::None,
             viewport: TextViewport::Form,
             show_metadata: true,
+            inline_width_em: None,
             focused: false,
         }
     }
+    /// A single-line original editor for compact rows. Width follows body
+    /// typography and the receiving allocation; editing/IME stay in TextSurface.
+    pub fn inline(name: impl Into<String>, value: &str, width_em: f32) -> Self {
+        let mut content = Self::new(name, value);
+        content.show_metadata = false;
+        content.inline_width_em = Some(if width_em.is_finite() {
+            width_em.max(0.)
+        } else {
+            0.
+        });
+        content
+    }
+
     /// Selectable document text without a visible form label, help, input
     /// background or border. The parent supplies decoration and document scroll.
     /// Native text services, controlled updates and selection reuse this field.
@@ -318,6 +368,46 @@ impl TextFieldContent {
     }
 }
 impl Component for TextFieldContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
+    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
+        PreparedEffects::local_work(n)?
+            .checked_add(
+                self.surface
+                    .input
+                    .text
+                    .len()
+                    .checked_add(self.field.label.len())
+                    .and_then(|v| v.checked_add(self.field.message().len()))
+                    .and_then(|v| v.checked_mul(n.max(1)))
+                    .ok_or(PreparedEffectsError::CounterCapacity)?,
+            )
+            .ok_or(PreparedEffectsError::CounterCapacity)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        let mut focused = self.focused;
+        let mut unmark = false;
+        for h in hooks {
+            if let PreparedHookKind::Focus { focused: next, .. } = h.kind {
+                if focused && !next {
+                    unmark = true;
+                }
+                focused = next;
+            }
+        }
+        if !self.surface.input.preflight_unmark(unmark) {
+            return Err(PreparedEffectsError::CounterCapacity);
+        }
+        Ok(PreparedEffects::local(self, hooks))
+    }
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+
     fn action_kinds(&self, result: &ContentResponse) -> Vec<ContentActionKind> {
         if result.activated {
             vec![ContentActionKind::Submit]
@@ -382,6 +472,15 @@ impl Component for TextFieldContent {
         Some(&self.surface)
     }
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
+        let a = if let Some(em) = self.inline_width_em {
+            Size::new(
+                a.width
+                    .min(t.resolved_font_size(proposal::TextRole::UiBody) * em),
+                a.height,
+            )
+        } else {
+            a
+        };
         let l = self.field_layout(
             t,
             Rect::new(0., 0., a.width, a.height),
@@ -794,7 +893,7 @@ impl DialogContent {
     pub fn clear_presentation(&mut self) {
         self.presence.clear();
     }
-    pub(super) fn present(
+    pub(super) fn try_present(
         &mut self,
         destination: &mut Scene,
         text: &mut dyn ButtonTextRenderer,
@@ -802,18 +901,58 @@ impl DialogContent {
         clip: Rect,
         palette: Palette,
         current: Option<Scene>,
-    ) {
+    ) -> Result<(), tekes_ui_scene::FragmentError> {
         let context = format!("{frame:?}{clip:?}{palette:?}{}", text.backing_scale());
-        self.presence.paint(
+        self.presence.try_paint(
             destination,
             &mut TextAdapter(text),
             self.model.open,
             context,
             current,
-        );
+        )
     }
 }
 impl Component for DialogContent {
+    // Arranged semantic slots translate with their original modal frame. This
+    // qualifies the Dialog ancestor of a Scroll body for read-only focus reveal.
+    fn host_reveal_passthrough(&self) -> bool {
+        self.model.open && !self.modal.is_empty()
+    }
+    fn host_reveal_local_clip(&self) -> Option<Rect> {
+        Some(self.modal)
+    }
+
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
+    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
+        PreparedEffects::local_work(n)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        if self.presence.preflight_clears(
+            hooks
+                .iter()
+                .filter(|h| h.kind == PreparedHookKind::Lifecycle(Lifecycle::Unmounted))
+                .count(),
+        ) {
+            Ok(PreparedEffects::local(self, hooks))
+        } else {
+            Err(PreparedEffectsError::CounterCapacity)
+        }
+    }
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn semantic_frame(&self, _: Rect) -> Rect {
         self.modal
     }
@@ -927,6 +1066,10 @@ impl SliderContent {
     }
 }
 impl Component for SliderContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
+
     fn validate(&self) -> Result<(), CompositionError> {
         if self.name.trim().is_empty() {
             Err(CompositionError::EmptyAccessibleName)

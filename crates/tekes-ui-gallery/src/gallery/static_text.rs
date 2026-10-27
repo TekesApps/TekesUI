@@ -23,7 +23,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::OnceLock;
 
-use tekes_ui_controls::{Button, ControlKey};
+use tekes_ui_controls::{ButtonModel, ControlKey};
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{ImageId, Point};
 use tekes_ui_text::compare::{DiffOptions, diff_rgba8};
@@ -507,8 +507,8 @@ const CACHE_CAP: usize = 6;
 pub struct StaticText {
     fixture: usize,
     width: u32,
-    fixture_buttons: Vec<Button>,
-    width_buttons: Vec<Button>,
+    fixture_buttons: Vec<ButtonModel>,
+    width_buttons: Vec<ButtonModel>,
     focus_index: Option<usize>,
     reference_dir: Option<PathBuf>,
     shaped: HashMap<(usize, u32), Rc<ShapedFixture>>,
@@ -522,9 +522,11 @@ impl StaticText {
         StaticText {
             fixture: 0,
             width: DEFAULT_WIDTH,
-            fixture_buttons: (0..FIXTURES.len()).map(|_| Button::default()).collect(),
+            fixture_buttons: (0..FIXTURES.len())
+                .map(|_| ButtonModel::default())
+                .collect(),
             width_buttons: (0..manifest_widths().iter().map(Vec::len).max().unwrap_or(0))
-                .map(|_| Button::default())
+                .map(|_| ButtonModel::default())
                 .collect(),
             focus_index: None,
             reference_dir,
@@ -592,19 +594,19 @@ impl StaticText {
         }
     }
 
-    pub fn fixture_button_mut(&mut self, index: usize) -> Option<&mut Button> {
+    pub fn fixture_button_mut(&mut self, index: usize) -> Option<&mut ButtonModel> {
         self.fixture_buttons.get_mut(index)
     }
 
-    pub fn width_button_mut(&mut self, index: usize) -> Option<&mut Button> {
+    pub fn width_button_mut(&mut self, index: usize) -> Option<&mut ButtonModel> {
         self.width_buttons.get_mut(index)
     }
 
-    pub(super) fn fixture_buttons_mut(&mut self) -> &mut [Button] {
+    pub(super) fn fixture_buttons_mut(&mut self) -> &mut [ButtonModel] {
         &mut self.fixture_buttons
     }
 
-    pub(super) fn width_buttons_mut(&mut self) -> &mut [Button] {
+    pub(super) fn width_buttons_mut(&mut self) -> &mut [ButtonModel] {
         &mut self.width_buttons
     }
 
@@ -612,11 +614,11 @@ impl StaticText {
         self.focus_index
     }
 
-    pub fn fixture_buttons(&self) -> &[Button] {
+    pub fn fixture_buttons(&self) -> &[ButtonModel] {
         &self.fixture_buttons
     }
 
-    pub fn width_buttons(&self) -> &[Button] {
+    pub fn width_buttons(&self) -> &[ButtonModel] {
         &self.width_buttons
     }
 
@@ -642,7 +644,7 @@ impl StaticText {
         let order = self.focus_order();
         let index = order.iter().position(|pick| {
             self.button(*pick)
-                .and_then(Button::layout)
+                .and_then(ButtonModel::layout)
                 .is_some_and(|layout| layout.hit_test(point))
         });
         let Some(index) = index else {
@@ -711,7 +713,7 @@ impl StaticText {
             .collect()
     }
 
-    fn button_mut(&mut self, pick: Pick) -> Option<&mut Button> {
+    fn button_mut(&mut self, pick: Pick) -> Option<&mut ButtonModel> {
         match pick {
             Pick::Fixture(index) => self.fixture_buttons.get_mut(index),
             Pick::Width(width) => {
@@ -724,7 +726,7 @@ impl StaticText {
         }
     }
 
-    fn button(&self, pick: Pick) -> Option<&Button> {
+    fn button(&self, pick: Pick) -> Option<&ButtonModel> {
         match pick {
             Pick::Fixture(index) => self.fixture_buttons.get(index),
             Pick::Width(width) => {

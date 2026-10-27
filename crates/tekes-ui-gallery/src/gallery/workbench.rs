@@ -21,7 +21,7 @@ use std::{
     time::Duration,
 };
 use tekes_ui_controls::{
-    Button, ButtonSize, ButtonTextAlign, ButtonTextRenderer, CheckState, Checkbox, ControlKey,
+    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, CheckState, Checkbox, ControlKey,
     ControlState, DialogEvent, DialogView, Field, MenuEvent, MenuLayout, MenuView, MenuWheelEvent,
     MenuWheelInput, NumberField, Select, TabsLayout, TabsView,
     extended::{Axis, ControlFrame},
@@ -209,7 +209,7 @@ pub struct StoryState {
     menu_layout: Option<MenuLayout>,
     select_menu_layout: Option<MenuLayout>,
     dialog_layout: Option<tekes_ui_controls::DialogLayout>,
-    buttons: HashMap<usize, Button>,
+    buttons: HashMap<usize, ButtonModel>,
     button_labels: HashMap<usize, String>,
     log: VecDeque<String>,
     phase_frame: Option<Rect>,
@@ -410,7 +410,7 @@ impl StoryState {
                     .get(id - 40)?
                     .frame
             }
-            _ => self.buttons.get(&id).and_then(Button::layout)?.frame,
+            _ => self.buttons.get(&id).and_then(ButtonModel::layout)?.frame,
         };
         Some(frame)
     }
@@ -449,7 +449,7 @@ impl StoryState {
             if self.button_hits.contains(id) {
                 self.buttons
                     .get(id)
-                    .and_then(Button::layout)
+                    .and_then(ButtonModel::layout)
                     .is_some_and(|layout| layout.hit_test(point) && rect.contains(point))
                     .then_some(*id)
             } else {
@@ -1582,10 +1582,7 @@ fn action(
         title,
         r,
         state.button_clip,
-        tekes_ui_tokens::Palette {
-            theme: ctx.theme,
-            brand: state.brand,
-        },
+        tekes_ui_tokens::Palette::new(ctx.theme, state.brand).expect("registered Gallery brand"),
         if id == 20 {
             paint::ButtonVariant::Primary
         } else {
@@ -1680,10 +1677,7 @@ fn quiet_action(
         title,
         rect,
         state.button_clip,
-        tekes_ui_tokens::Palette {
-            theme: ctx.theme,
-            brand: state.brand,
-        },
+        tekes_ui_tokens::Palette::new(ctx.theme, state.brand).expect("registered Gallery brand"),
         paint::ButtonVariant::Quiet,
         ButtonSize::Body,
         proposal::TextRole::UiBody,
@@ -1789,9 +1783,6 @@ impl Workbench {
         }
         if extended::supports(renderer) {
             state.extended.host_focus_changed(renderer, target, true);
-            if renderer == "icon-button" {
-                state.extended.icon_button.button.state.focused = true;
-            }
             if renderer == "link" {
                 state.extended.link.button.state.focused = true;
             }
@@ -1881,6 +1872,8 @@ impl Workbench {
             w.state(i).extended.combo.open = true;
         }
         let mut text = super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, false);
         text.begin_frame();
         let mut st = super::static_text::StaticText::new(None);
         let mut ctx = PageCtx {
@@ -2229,6 +2222,31 @@ impl Workbench {
     /// Build a story whose document geometry may be translated while the actual host viewport
     /// remains fixed in window coordinates. Component hit geometry and drawing share this clip.
     pub fn build_clipped(
+        &mut self,
+        i: usize,
+        ctx: &mut PageCtx<'_>,
+        content: Rect,
+        viewport_clip: Rect,
+        scene: &mut Scene,
+    ) {
+        // Snapshot stories have no window frame loop. Borrow an explicit,
+        // deterministic frame sample and restore the caller's exact context.
+        if self.snapshot {
+            let host_clock = ctx.text.motion_context();
+            ctx.text.replace_fixture_motion_context(Some(
+                tekes_ui_controls::ControlMotionContext {
+                    now: host_clock.map_or(Duration::ZERO, |clock| clock.now),
+                    reduced_motion: true,
+                },
+            ));
+            self.build_clipped_story(i, ctx, content, viewport_clip, scene);
+            ctx.text.replace_fixture_motion_context(host_clock);
+        } else {
+            self.build_clipped_story(i, ctx, content, viewport_clip, scene);
+        }
+    }
+
+    fn build_clipped_story(
         &mut self,
         i: usize,
         ctx: &mut PageCtx<'_>,
@@ -2930,10 +2948,8 @@ impl Workbench {
                     &field,
                     Rect::new(0.0, 0.0, cell_width, 4096.0),
                     None,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                     FieldPresentation::emphasized_form(),
                 );
@@ -2966,10 +2982,8 @@ impl Workbench {
         }
         let (cells, document_bottom) =
             matrix_cell_geometries(layout_bounds, columns, explanation_height, &measurements);
-        let palette = tekes_ui_tokens::Palette {
-            theme: ctx.theme,
-            brand: s.brand,
-        };
+        let palette =
+            tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         for (n, (name, state, check_state)) in states.into_iter().enumerate() {
             let cell = cells[n];
             let r = cell.control;
@@ -3020,7 +3034,7 @@ impl Workbench {
                 }
                 input.build_search_clipped(ctx, r, Some(c), scene);
             } else if checkbox {
-                let mut button = Button::default();
+                let mut button = ButtonModel::default();
                 button.state = state;
                 let mut control = Checkbox {
                     button,
@@ -3036,7 +3050,7 @@ impl Workbench {
                     proposal::TextRole::UiBody,
                 );
             } else {
-                let mut fixture = Button::default();
+                let mut fixture = ButtonModel::default();
                 fixture.state = state;
                 let title = if state.loading {
                     "Loading…"
@@ -3073,10 +3087,8 @@ impl Workbench {
             extended::navigation_states::matrix(e, s, ctx, scene, c);
             return;
         }
-        let palette = tekes_ui_tokens::Palette {
-            theme: ctx.theme,
-            brand: s.brand,
-        };
+        let palette =
+            tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         let role = proposal::TextRole::UiBody;
         let mut y = c.min_y();
         let titles: &[&str] = match e.renderer() {
@@ -3266,17 +3278,15 @@ impl Workbench {
             .enumerate()
             {
                 let r = Rect::new(c.min_x(), row_y, c.size.width.min(200.), height);
-                let mut button = Button::default();
+                let mut button = ButtonModel::default();
                 ctx.text.render_button(
                     scene,
                     &mut button,
                     title,
                     r,
                     Some(c),
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     paint::ButtonVariant::Primary,
                     [ButtonSize::Sm, ButtonSize::Md, ButtonSize::Lg][n],
                     proposal::TextRole::UiBody,
@@ -3292,7 +3302,7 @@ impl Workbench {
                 } else {
                     Rect::new(r.min_x(), primary_bottom + 12., r.size.width, r.size.height)
                 };
-                let mut quiet_button = Button::default();
+                let mut quiet_button = ButtonModel::default();
                 ctx.text.render_button(
                     scene,
                     &mut quiet_button,
@@ -3517,10 +3527,8 @@ impl Workbench {
                     title,
                     row,
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                 );
                 s.buttons.insert(20, s.checkbox.button.clone());
@@ -3546,10 +3554,8 @@ impl Workbench {
                     &["General", "Security", "Advanced"],
                     Rect::new(x, body_y, w, 34.),
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                     s.density == 1,
                 );
@@ -3634,10 +3640,8 @@ impl Workbench {
                     trigger_frame,
                     s.preview,
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                     s.density == 1,
                 );
@@ -3679,10 +3683,8 @@ impl Workbench {
                     &s.field,
                     Rect::new(x, body_y, w.min(600.), 118.),
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                     FieldPresentation::emphasized_form(),
                 );
@@ -3943,10 +3945,8 @@ impl Workbench {
                     scene,
                     Rect::new(x, body_y, w.min(660.), 150.),
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     true,
                     backing_scale,
                 );
@@ -3984,10 +3984,8 @@ impl Workbench {
                     scene,
                     frame,
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     true,
                     backing_scale,
                 );
@@ -4002,10 +4000,8 @@ impl Workbench {
                     &["Create", "Rename", "Remove"],
                     surface.frame,
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                 );
                 for (index, layout) in layouts.into_iter().enumerate() {
@@ -4031,10 +4027,8 @@ impl Workbench {
                     &s.number,
                     Rect::new(x, body_y, w.min(198.), 36.),
                     s.button_clip,
-                    tekes_ui_tokens::Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                     proposal::TextRole::UiBody,
                 );
                 s.buttons.entry(23).or_default().state.disabled =
@@ -4083,10 +4077,8 @@ impl Workbench {
                             18.,
                         ),
                         s.button_clip,
-                        tekes_ui_tokens::Palette {
-                            theme: ctx.theme,
-                            brand: s.brand,
-                        },
+                        tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                            .expect("registered Gallery brand"),
                     );
                     let _ = layout;
                 }
@@ -4097,14 +4089,12 @@ impl Workbench {
             .max(body_y + 100.)
             .max(content_bottom.map_or(f32::NEG_INFINITY, |bottom| bottom + 24.));
         s.event_log_frame = Some(event_log(ctx, scene, x, logy, w, &s.log, false));
-        let palette = tekes_ui_tokens::Palette {
-            theme: ctx.theme,
-            brand: s.brand,
-        };
+        let palette =
+            tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         let trigger = s
             .buttons
             .get(&20)
-            .and_then(Button::layout)
+            .and_then(ButtonModel::layout)
             .map(|layout| layout.frame);
         if (s.menu_view.is_open() || s.menu_view.is_presented())
             && let Some(trigger) = trigger
@@ -4184,7 +4174,7 @@ impl Workbench {
                 "Resolve fixture",
                 (false, false),
             );
-            if let Some(button) = s.buttons.get(&21).and_then(Button::layout) {
+            if let Some(button) = s.buttons.get(&21).and_then(ButtonModel::layout) {
                 let left = occupied.min_x().min(button.frame.min_x());
                 let top = occupied.min_y().min(button.frame.min_y());
                 let right = occupied.max_x().max(button.frame.max_x());
@@ -4260,10 +4250,8 @@ impl Workbench {
                     super::pages::tokens::build(ctx, r, scene);
                     return;
                 }
-                let palette = tekes_ui_tokens::Palette {
-                    theme: ctx.theme,
-                    brand: s.brand,
-                };
+                let palette = tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                    .expect("registered Gallery brand");
                 let roles = [
                     "surface-0",
                     "surface-1",
@@ -4972,9 +4960,6 @@ impl Workbench {
                         }
                         if extended::supports(renderer) {
                             s.extended.host_focus_changed(renderer, ids[n], true);
-                            if renderer == "icon-button" {
-                                s.extended.icon_button.button.state.focused = true;
-                            }
                             if renderer == "link" {
                                 s.extended.link.button.state.focused = true;
                             }
@@ -5415,7 +5400,7 @@ impl Workbench {
                         if extended::supports(renderer) {
                             s.extended.focused = Some(id);
                             if renderer == "icon-button" {
-                                s.extended.icon_button.button.state.focused = true;
+                                s.extended.icon_button_view.focus(false);
                             }
                             if renderer == "link" {
                                 s.extended.link.button.state.focused = true;
@@ -5744,7 +5729,7 @@ mod tests {
 
         let state = workbench.state(i);
         let tab_frames: Vec<_> = (0..=6)
-            .filter_map(|id| state.buttons.get(&id).and_then(Button::layout))
+            .filter_map(|id| state.buttons.get(&id).and_then(ButtonModel::layout))
             .map(|layout| layout.frame)
             .collect();
         assert!(!tab_frames.is_empty());
@@ -5996,6 +5981,11 @@ mod interaction_tests {
         content: Rect,
         viewport_clip: Rect,
     ) -> Scene {
+        // Interactive fixtures start at zero; tests explicitly advance time.
+        if t.motion_context().is_none() {
+            t.set_motion_enabled(true);
+            t.set_motion_context(Duration::ZERO, false);
+        }
         t.begin_frame();
         let mut st = super::super::static_text::StaticText::new(None);
         let mut ctx = PageCtx {
@@ -6006,6 +5996,63 @@ mod interaction_tests {
         let mut scene = Scene::new();
         w.build_clipped(i, &mut ctx, content, viewport_clip, &mut scene);
         scene
+    }
+
+    #[test]
+    fn issue79_snapshot_clock_is_explicit_and_restores_the_caller() {
+        let i = index("toast");
+        let mut text = super::super::text::TextEngine::new();
+        for clock in [
+            None,
+            Some(tekes_ui_controls::ControlMotionContext {
+                now: Duration::from_secs(42),
+                reduced_motion: false,
+            }),
+        ] {
+            text.replace_fixture_motion_context(clock);
+            let mut w = Workbench::fixture();
+            let mut st = super::super::static_text::StaticText::new(None);
+            let mut ctx = PageCtx {
+                theme: tekes_ui_tokens::Theme::LIGHT,
+                text: &mut text,
+                static_text: &mut st,
+            };
+            ctx.text.begin_frame();
+            let mut first = Scene::new();
+            w.build(i, &mut ctx, Rect::new(312., 70., 1000., 820.), &mut first);
+            assert_eq!(ctx.text.motion_context(), clock);
+            ctx.text.begin_frame();
+            let mut second = Scene::new();
+            w.build(i, &mut ctx, Rect::new(312., 70., 1000., 820.), &mut second);
+            assert_eq!(ctx.text.motion_context(), clock);
+            assert_eq!(first, second);
+            assert_eq!(w.state(i).extended.toast.remaining_ms(), 5000);
+        }
+    }
+
+    #[test]
+    fn issue79_real_gallery_retains_toast_and_advances_the_frame_clock() {
+        let i = index("toast");
+        let mut gallery = super::super::Gallery::new();
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(
+            gallery.workbench.state(i).extended.toast.remaining_ms(),
+            5000
+        );
+        assert!(gallery.text.motion_frame_requested());
+        assert!(gallery.animate(0.125));
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(
+            gallery.workbench.state(i).extended.toast.remaining_ms(),
+            4875
+        );
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(
+            gallery.workbench.state(i).extended.toast.remaining_ms(),
+            4875
+        );
     }
 
     #[test]
@@ -6061,10 +6108,8 @@ mod interaction_tests {
 
         let mut scene = Scene::new();
         let mut checkbox = Checkbox::default();
-        let palette = tekes_ui_tokens::Palette {
-            theme: tekes_ui_tokens::Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = tekes_ui_tokens::Palette::new(tekes_ui_tokens::Theme::LIGHT, 0)
+            .expect("registered Gallery brand");
         let layout = checkbox.render(
             &mut scene,
             &mut text,
@@ -6116,6 +6161,8 @@ mod interaction_tests {
                         let mut text = super::super::text::TextEngine::new();
                         text.set_scale(1.);
                         text.set_type_scale(type_scale);
+                        text.set_motion_enabled(true);
+                        text.set_motion_context(Duration::ZERO, false);
                         text.begin_frame();
                         let mut static_text = super::super::static_text::StaticText::new(None);
                         let mut ctx = PageCtx {
@@ -7357,17 +7404,21 @@ mod interaction_tests {
         let i = index("matrix");
         click_brand_preview(&mut w, i, 700, &mut t);
         click_brand_preview(&mut w, i, 721, &mut t);
+        // Start the real 150ms presence transition, then inspect its stable frame.
+        build(&mut w, i, &mut t);
+        t.set_motion_context(Duration::from_secs(1), false);
         let scene = build(&mut w, i, &mut t);
         let layout = w.brand_preview.dialog_layout().unwrap();
         assert!(layout.visible.is_some());
-        let candidate = tekes_ui_tokens::Palette {
-            theme: tekes_ui_tokens::Theme::LIGHT,
-            brand: tekes_ui_tokens::palette::gallery_brand_presets()
+        let candidate = tekes_ui_tokens::Palette::new(
+            tekes_ui_tokens::Theme::LIGHT,
+            tekes_ui_tokens::palette::gallery_brand_presets()
                 .iter()
                 .find(|preset| preset.id == "rose")
                 .unwrap()
                 .palette_index,
-        };
+        )
+        .expect("registered Gallery brand");
         // This Dialog uses quiet actions, so its surface stays neutral. A
         // branded button behind the scrim must not count as modal evidence.
         let modal_ground = candidate.color("surface-popover").unwrap();
@@ -8430,6 +8481,165 @@ mod interaction_tests {
         }
     }
     #[test]
+    fn gallery_primary_button_theme_and_brand_changes_repaint_real_button_states() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        fn sample_button(
+            scene: &Scene,
+            frame: Rect,
+            content: Rect,
+            scale: f32,
+        ) -> (tekes_ui_tokens::Rgba, Vec<tekes_ui_tokens::Rgba>) {
+            let fill = scene
+                .primitives()
+                .iter()
+                .find_map(|primitive| match primitive {
+                    Primitive::Quad(quad) if quad.rect == frame => Some(quad.fill),
+                    _ => None,
+                })
+                .expect("real Gallery Button background quad");
+            let inks = scene
+                .primitives()
+                .iter()
+                .filter_map(|primitive| match primitive {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|positioned| {
+                            let glyph = positioned.glyph;
+                            let bounds = Rect::new(
+                                positioned.origin.x + glyph.left as f32 / scale,
+                                positioned.origin.y + glyph.top as f32 / scale,
+                                glyph.width as f32 / scale,
+                                glyph.height as f32 / scale,
+                            );
+                            content.intersection(&bounds).is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            (fill, inks)
+        }
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::Light));
+        gallery.apply(Command::Contrast(ContrastChoice::Off));
+        assert_eq!(gallery.theme(), Theme::LIGHT);
+        assert!(gallery.open_route("component-button/playground"));
+        gallery.set_view_size(1440., 900.);
+        let i = index("button");
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        let (button_frame, button_content) = {
+            let layout = gallery.workbench.state(i).buttons[&20]
+                .layout()
+                .expect("public Gallery primary Button is laid out");
+            (layout.frame, layout.content)
+        };
+        let point = button_frame.center();
+
+        gallery.handle_input(&move_pointer(point));
+        assert!(gallery.workbench.state(i).buttons[&20].state.hovered);
+        gallery.animate(0.001);
+        gallery.build_scene(&mut Scene::new());
+        gallery.animate(0.1);
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(gallery.workbench.state(i).buttons[&20].needs_animation());
+        let (mid_hover_fill, _) =
+            sample_button(&scene, button_frame, button_content, gallery.text.scale());
+        let light_palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
+        assert_ne!(
+            mid_hover_fill,
+            light_palette.color("action-primary-ground").unwrap()
+        );
+        assert_ne!(
+            mid_hover_fill,
+            light_palette.color("action-primary-hover").unwrap()
+        );
+
+        gallery.apply(Command::Appearance(AppearanceChoice::Dark));
+        gallery.apply(Command::Contrast(ContrastChoice::On));
+        assert_eq!(gallery.theme(), Theme::DARK_INCREASED);
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        let (pending_hover_animation, current_frame) = {
+            let button = &gallery.workbench.state(i).buttons[&20];
+            (
+                button.needs_animation(),
+                button.layout().expect("real Gallery Button layout").frame,
+            )
+        };
+        assert!(!pending_hover_animation);
+        assert_eq!(current_frame, button_frame, "theme change preserves layout");
+        let palette = Palette::new(Theme::DARK_INCREASED, 0).expect("registered Gallery brand");
+        let (fill, inks) =
+            sample_button(&scene, button_frame, button_content, gallery.text.scale());
+        assert_eq!(
+            fill,
+            palette
+                .color("action-primary-hover")
+                .expect("primary hover role")
+        );
+        assert!(
+            !inks.is_empty(),
+            "real Button label glyphs are in the Gallery scene"
+        );
+        assert!(inks.iter().all(|ink| {
+            *ink == palette
+                .color("action-primary-foreground")
+                .expect("primary ink role")
+        }));
+
+        gallery.handle_input(&mouse(point, true));
+        assert!(gallery.workbench.state(i).buttons[&20].state.pressed);
+        gallery.animate(0.001);
+        gallery.build_scene(&mut Scene::new());
+        gallery.animate(0.028);
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(gallery.workbench.state(i).buttons[&20].needs_animation());
+        let dark_palette =
+            Palette::new(Theme::DARK_INCREASED, 0).expect("registered Gallery brand");
+        let (mid_press_fill, _) =
+            sample_button(&scene, button_frame, button_content, gallery.text.scale());
+        assert_ne!(
+            mid_press_fill,
+            dark_palette.color("action-primary-hover").unwrap()
+        );
+        assert_ne!(
+            mid_press_fill,
+            dark_palette.color("action-primary-pressed").unwrap()
+        );
+
+        gallery.apply(Command::Brand(1));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        let pending_press_animation = gallery.workbench.state(i).buttons[&20].needs_animation();
+        assert!(!pending_press_animation);
+        let palette = Palette::new(Theme::DARK_INCREASED, 1).expect("registered Gallery brand");
+        let (fill, inks) =
+            sample_button(&scene, button_frame, button_content, gallery.text.scale());
+        assert_eq!(
+            fill,
+            palette
+                .color("action-primary-pressed")
+                .expect("primary pressed role")
+        );
+        assert!(!inks.is_empty(), "real Button label glyphs remain rendered");
+        assert!(inks.iter().all(|ink| {
+            *ink == palette
+                .color("action-primary-foreground")
+                .expect("primary ink role")
+        }));
+    }
+
+    #[test]
     fn preview_density_brand_and_font_scale_change_actual_scene() {
         let mut w = Workbench::default();
         let mut t = super::super::text::TextEngine::new();
@@ -8700,6 +8910,8 @@ mod interaction_tests {
         let i = index("select");
         click(&mut w, i, 12, &mut text);
         click(&mut w, i, 20, &mut text);
+        build(&mut w, i, &mut text);
+        text.set_motion_context(Duration::from_secs(1), false);
         let scene = build(&mut w, i, &mut text);
         let trigger = w.state(i).select_view.layout().trigger.frame;
         let popup = w.state(i).select_menu_layout.as_ref().unwrap().popup;
@@ -9436,7 +9648,7 @@ mod interaction_tests {
             let viewport = Rect::new(0., 0., width, 1600.);
             build_in(&mut w, i, &mut text, viewport);
             let trigger = w.state(i).extended.command_view.trigger_layout().unwrap();
-            let expected = Button::measure(
+            let expected = ButtonModel::measure(
                 &mut text,
                 "Open command palette",
                 trigger.frame.size.width,
@@ -9517,6 +9729,11 @@ mod interaction_tests {
             let mut text = super::super::text::TextEngine::new();
             text.set_type_scale(scale);
             text.set_motion_enabled(false);
+            // Explicit static feedback sample; the fixture must not enable motion.
+            text.replace_fixture_motion_context(Some(tekes_ui_controls::ControlMotionContext {
+                now: Duration::ZERO,
+                reduced_motion: true,
+            }));
             let i = index("command-palette");
             let rest = build(&mut w, i, &mut text);
             let frame = w
@@ -9866,10 +10083,12 @@ mod interaction_tests {
         }
 
         let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
         let mut workbench = Workbench::default();
         for renderer in ["menu", "select"] {
             let i = index(renderer);
             workbench.apply_reduced_motion(true);
+            text.set_motion_context(Duration::ZERO, true);
             click(&mut workbench, i, 20, &mut text);
             let layout = if renderer == "menu" {
                 assert!(workbench.state(i).menu_view.is_open());
@@ -9899,6 +10118,7 @@ mod interaction_tests {
 
         let combo = index("combo-box");
         workbench.apply_reduced_motion(true);
+        text.set_motion_context(Duration::ZERO, true);
         build(&mut workbench, combo, &mut text);
         workbench.state(combo).extended.combo.items =
             (0..24).map(|n| format!("Com candidate {n:02}")).collect();
@@ -9947,6 +10167,7 @@ mod interaction_tests {
             0.0
         );
         workbench.apply_reduced_motion(false);
+        text.set_motion_context(Duration::ZERO, false);
         assert!(workbench.handle(combo, &wheel(position, 2.02, false), &mut text));
         assert!(workbench.handle(combo, &wheel(position, 2.03, true), &mut text));
         build(&mut workbench, combo, &mut text);
@@ -9972,6 +10193,7 @@ mod interaction_tests {
 
         let command = index("command-palette");
         workbench.apply_reduced_motion(true);
+        text.set_motion_context(Duration::ZERO, true);
         build(&mut workbench, command, &mut text);
         workbench.state(command).extended.command.combo.items = (0..24)
             .map(|n| format!("Command candidate {n:02}"))
@@ -10012,6 +10234,7 @@ mod interaction_tests {
             0.0
         );
         workbench.apply_reduced_motion(false);
+        text.set_motion_context(Duration::ZERO, false);
         assert!(workbench.handle(command, &wheel(position, 3.02, false), &mut text));
         assert!(workbench.handle(command, &wheel(position, 3.03, true), &mut text));
         build(&mut workbench, command, &mut text);
@@ -10052,5 +10275,91 @@ mod scene3d_contract {
         workbench.state(i).activate(0, "scene3d");
         assert!(workbench.take_scene3d_reset(i));
         assert!(!workbench.take_scene3d_reset(i));
+    }
+}
+
+#[cfg(test)]
+mod skeleton_gpu_acceptance {
+    use super::*;
+    #[test]
+    #[ignore = "explicit Gallery GPU acceptance requires a fresh SSD output directory"]
+    fn skeleton_original_gallery_route_gpu() {
+        let out = std::path::PathBuf::from(
+            std::env::var_os("TEKESUI_SKELETON_GALLERY_OUT").expect("fresh GPU output"),
+        );
+        std::fs::create_dir(&out).unwrap();
+        let mut gpu = tekes_ui_render::Renderer::new_headless().unwrap();
+        let mut cases = vec![];
+        let i = entries()
+            .iter()
+            .position(|e| e.renderer() == "skeleton")
+            .unwrap();
+        for (mode, theme) in tekes_ui_tokens::Theme::ALL.into_iter().enumerate() {
+            for brand in [0, 1, 2] {
+                for scale in [1_u32, 2] {
+                    for (width, height) in [(1440_u32, 960_u32), (720, 480)] {
+                        let mut g = super::super::Gallery::new();
+                        g.set_system_theme(theme);
+                        g.text.set_scale(scale as f32);
+                        g.set_reduced_motion(true);
+                        g.workbench.brand = brand;
+                        assert!(g.open_route("component-skeleton/playground"));
+                        g.set_view_size(width as f32, height as f32);
+                        let mut scene = Scene::new();
+                        g.build_scene(&mut scene);
+                        let f = g.workbench.state(i).skeleton_view.layout().frame;
+                        assert_eq!(f.size.height, 18.);
+                        let p = tekes_ui_tokens::Palette::new(theme, brand).unwrap();
+                        let packet = tekes_ui_tokens::surface_palette::resolve_surface(
+                            p, "canvas", "skeleton", "rest",
+                        )
+                        .unwrap();
+                        assert!(scene.primitives().iter().any(|p|matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==f&&q.fill==packet.background)));
+                        assert!(scene.primitives().iter().any(|p|matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==f&&q.border_color==packet.boundary.unwrap()&&q.border_width>0.)));
+                        let size = (width * scale, height * scale);
+                        let rgba = gpu
+                            .render_to_rgba8(
+                                &scene,
+                                g.atlas_mut(),
+                                size,
+                                scale as f32,
+                                super::super::Gallery::background(theme),
+                            )
+                            .unwrap();
+                        let key = format!("mode{mode}-brand{brand}-{width}x{height}@{scale}x");
+                        let file = format!("{key}.png");
+                        let mut png = png::Encoder::new(
+                            std::fs::File::create(out.join(&file)).unwrap(),
+                            size.0,
+                            size.1,
+                        );
+                        png.set_color(png::ColorType::Rgba);
+                        png.set_depth(png::BitDepth::Eight);
+                        png.write_header().unwrap().write_image_data(&rgba).unwrap();
+                        // Count ink variation on the final original 18pt fixture row. It
+                        // must contain actual boundary/fill pixels, not just page chrome.
+                        let mut colors = std::collections::BTreeSet::new();
+                        for y in ((f.min_y() * scale as f32).ceil() as u32)
+                            ..((f.max_y() * scale as f32).floor() as u32).min(size.1)
+                        {
+                            for x in ((f.min_x() * scale as f32).ceil() as u32)
+                                ..((f.max_x() * scale as f32).floor() as u32).min(size.0)
+                            {
+                                let off = ((y * size.0 + x) * 4) as usize;
+                                colors.insert(rgba[off..off + 4].to_vec());
+                            }
+                        }
+                        assert!(colors.len() > 1, "original row missing visible boundary");
+                        cases.push(serde_json::json!({"case":key,"file":file,"row_distinct_colors":colors.len(),"original_gallery_route":true,"actual_GPU":true,"fixture_height":18,"SDK_default_height":false}));
+                    }
+                }
+            }
+        }
+        std::fs::write(
+            out.join("receipt.json"),
+            serde_json::to_vec_pretty(&serde_json::json!({"cases":cases,"native_window":false}))
+                .unwrap(),
+        )
+        .unwrap();
     }
 }

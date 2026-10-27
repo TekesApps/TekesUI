@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "brand_config": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "type": "string"
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "shared_contract_ref",
+        "overrides"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": "1.0.0"
+        },
+        "shared_contract_ref": {
+          "const": "design/system.json#/theme_system/theme_input_contract"
+        },
+        "overrides": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "neutral_base",
+            "status_base"
+          ],
+          "properties": {
+            "neutral_base": {
+              "$ref": "#/$defs/overrideMap"
+            },
+            "status_base": {
+              "$ref": "#/$defs/overrideMap"
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "version",
+    "brand_config",
+    "inputs"
+  ],
+  "type": "object",
+  "$defs": {
+    "opaqueHex": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "modeValues": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "properties": {
+        "light": {
+          "$ref": "#/$defs/opaqueHex"
+        },
+        "dark": {
+          "$ref": "#/$defs/opaqueHex"
+        },
+        "light-ic": {
+          "$ref": "#/$defs/opaqueHex"
+        },
+        "dark-ic": {
+          "$ref": "#/$defs/opaqueHex"
+        }
+      }
+    },
+    "overrideMap": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/modeValues"
+      }
+    }
+  }
+}

@@ -114,18 +114,14 @@ fn node(kind: usize) -> Content {
         0 => Content::new(ComponentId(1), TextContent::new(ORIGINAL))
             .with_label_layout(options)
             .unwrap(),
-        1 => Content::new(ComponentId(1), ButtonContent::new(ORIGINAL))
+        1 => Content::new(ComponentId(1), Button::new(ORIGINAL))
             .with_label_layout(options)
             .unwrap(),
         _ => Content::new(
             ComponentId(1),
-            CompoundButton::new(
-                ORIGINAL,
-                Content::new(ComponentId(2), TextContent::new(ORIGINAL))
+            Button::new(Content::new(ComponentId(2), TextContent::new(ORIGINAL))
                     .with_label_layout(options)
-                    .unwrap(),
-            )
-            .unwrap(),
+                    .unwrap()).with_accessible_name(ORIGINAL),
         ),
     }
 }
@@ -211,7 +207,7 @@ fn opt_in_does_not_replace_button_activation_focus_or_disabled_loading_isolation
         let button = host
             .get_mut(ComponentId(1))
             .unwrap()
-            .component_mut::<ButtonContent>()
+            .component_mut::<Button>()
             .unwrap();
         button.button.state.disabled = !loading;
         button.button.state.loading = loading;
@@ -229,7 +225,7 @@ fn opt_in_does_not_replace_button_activation_focus_or_disabled_loading_isolation
     let button = host
         .get(ComponentId(1))
         .unwrap()
-        .component::<ButtonContent>()
+        .component::<Button>()
         .unwrap();
     assert_eq!(button.activations, 1);
     assert_eq!(button.label, ORIGINAL);
@@ -329,7 +325,7 @@ fn toolbar_defaults_to_single_line_for_original_text_and_button_at_narrow_widths
                         ComponentId(603),
                         ToolbarGroup::new(
                             ToolbarPlacement::PrimaryAction,
-                            vec![Content::new(ComponentId(604), ButtonContent::new(ORIGINAL))],
+                            vec![Content::new(ComponentId(604), Button::new(ORIGINAL))],
                         ),
                     ),
                 ]),
@@ -355,7 +351,7 @@ fn toolbar_defaults_to_single_line_for_original_text_and_button_at_narrow_widths
                 assert_eq!(
                     node.component::<TextContent>()
                         .map(|c| c.text.as_str())
-                        .or_else(|| node.component::<ButtonContent>().map(|c| c.label.as_str()))
+                        .or_else(|| node.component::<Button>().map(|c| c.label.as_str()))
                         .unwrap(),
                     ORIGINAL
                 );

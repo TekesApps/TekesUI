@@ -506,10 +506,7 @@ pub(super) fn matrix(
         )
         .height as f32
         + 18.0;
-    let palette = Palette {
-        theme: ctx.theme,
-        brand: s.brand,
-    };
+    let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
     let scale = ctx.text.type_scale();
     match e.renderer() {
         "list" => matrix_list(ctx, scene, bounds, viewport, &mut y, palette, scale),

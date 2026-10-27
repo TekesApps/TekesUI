@@ -1,8 +1,128 @@
-# 平台层边界：tekes-ui-platform-macos
+# 架构与平台边界
 
-本文说明 `tekes-ui-platform-macos` 向引擎暴露的窄接口、事件约定、帧节奏与实时缩放的设计、重入处理、窗口摆放规则，以及 F0 阶段的验证记录。分层与边界原则见 [charter.md](charter.md) 第 4、8 节，阶段范围见 [roadmap.md](roadmap.md) F0。
+## 阅读基线与文档职责
 
-原则：平台层负责窗口、事件泵、菜单、系统外观，向引擎投递规整的事件；引擎不接触任何 objc2 类型，也不依赖这个 crate 的内部。这个 crate 不依赖 `tekes-ui-render`，只通过一个原始的 CAMetalLayer 指针与渲染层衔接。
+2026-10-26，架构事实绑定本地 main **`e39bfaa1785dbedd9672081a8877e27047155885`**。这是代码基线；后续仅文档提交不把未接收源码加入该身份。审计入口 [#137](https://github.com/TekesApps/TekesUI/issues/137)，本轮不做生产代码重构。
+
+[章程](charter.md) 保留定位和长期原则；本文说明实际职责、公共边界、建议演进及其代价；[DESIGN.md](../DESIGN.md) 和 [design/system.json](../design/system.json) 继续拥有设计体系及机器输入；[AppHost 设计](design/app-host-architecture.md) 只拥有宿主契约；[路线图](roadmap.md) 保留功能目标。本文不建立另一套 token、组件规范或动态能力真源。
+
+| 源身份 | 本轮可以证明什么 | 不能推导什么 |
+|---|---|---|
+| 本地 main `e39bfaa` | 已提交的代码与公共 API；#81、#99/#130、#60、#62 foundation、#115 各批按原收据接收的范围 | 远端已更新、整库/原生/Design System 已完成 |
+| Gallery Root `4d09a57282db67519bc89b6a05a2bcdc6ab4828a` 加 WIP | 各 Root 收据所绑定的特定输入；#104/#92 等已交付候选的接收依据 | WIP 等于上述 main；历史 GPU 证明后续源码 |
+| #113 私有 `current387-B-derived-button-label-cache88`，manifest `6830c89572f01fc52de590a415205f0da22816492d7651ddfcf60ffe67964214` | 实际 Gallery/Public Button witness、来源绑定及两缓存负例已通过 | 完整首根、全部 52 根或 main 分支通过 |
+| 未接收审查笔记/候选 | 作为下一次差量审查输入，保留各自源身份 | 凭笔记数量、测试成功或提交赋予 graph `reviewed` |
+
+当前验证已安全结束。#113 离线证据绑定的首次失败及第二次成功均保留；独立清单仍未证明完整引用全集，14 个 render 首切口的笔记不是可整合片段。详细来源放 SSD `artifacts/architecture-audit-20261026/` 及原 Issue 产物目录；本轮不运行 Cargo/GPU/native、不清理缓存或 worktree，不启动新的实施任务。
+
+## 当前实际职责与依赖
+
+下图只列主要内部依赖，箭头从使用者指向依赖。`build` 边不是运行时依赖；测试边未画入。实际 manifests 及 cfg 优先于示意图。
+
+```mermaid
+flowchart TD
+    Gallery[Gallery] -->|macOS| Controls[controls]
+    Gallery -->|macOS| Text[text]
+    Gallery -->|macOS| Render[render]
+    Gallery -->|macOS| Platform[platform-macos]
+    Controls --> Text
+    Controls --> Scene[scene]
+    Controls --> Tokens[tokens]
+    Controls --> Motion[motion]
+    Text --> Scene
+    Text --> Tokens
+    Render --> Scene
+    Render --> Tokens
+    Scene --> Tokens
+    Tokens -. build .-> Export[design-export]
+    Host[app-host] --> Runtime[module-runtime]
+    Host -->|macOS| Controls
+    Host -->|macOS| Render
+    Host -->|macOS| Platform
+    Runtime --> Scene
+    Runtime -->|macOS| Controls
+    Runtime -->|macOS| Render
+```
+
+| 层与依据 | 真实责任和公共边界 | 收益、代价与差距 |
+|---|---|---|
+| [tokens manifest](../crates/tekes-ui-tokens/Cargo.toml)、[build.rs](../crates/tekes-ui-tokens/build.rs)、[design-export](../crates/tekes-ui-design-export/src/lib.rs) | design-export 是离线/构建期编译和校验工具；tokens 的 build-dependency 使用它，运行时使用生成的 Rust。Palette 显式区分 GalleryBrand 与 ThemeDefinition | 类型化且能拒绝陈旧输入；Python、Rust validator 和 build.rs 分担生成职责，需要一个共享 owner，不能另做颜色引擎 |
+| [controls lib](../crates/tekes-ui-controls/src/lib.rs)、[layout](../crates/tekes-ui-controls/src/layout.rs)、[layout_view](../crates/tekes-ui-controls/src/layout_view.rs)、[paint](../crates/tekes-ui-controls/src/paint.rs) | 公开模型/状态、有限布局几何、View 输入/绘制及组合接口；生产依赖 scene/tokens/text/motion，没有 platform-macos、render 或 AppHost | 复用原状态、paint/hit 几何；控件专有布局与状态存在实际耦合。按职责审查有价值，按文件大小拆 crate 不会自动解除耦合 |
+| [composition](../crates/tekes-ui-controls/src/composition.rs)、[text_input](../crates/tekes-ui-controls/src/text_input.rs)、[text_surface](../crates/tekes-ui-controls/src/text_surface.rs)、[reading](../crates/tekes-ui-controls/src/reading.rs) | Component/ContentHost 管布局、焦点/capture、事件、语义及生命周期；TextInput 拥有 UTF-16 selection/preedit、undo 和受控更新；TextSurface/reading 管几何与阅读事务 | 避免第二编辑/选择 reducer。组合和文本能力共用事务，提取公共协议有兼容成本；现有这些类型不等于通用 rope/Markdown 文档引擎 |
+| [scene](../crates/tekes-ui-scene/Cargo.toml)、[atlas](../crates/tekes-ui-scene/src/atlas.rs) | display list、几何与 glyph atlas，生产依赖 tokens，不依赖 GPU API | 可独立构造/检查绘制数据；它并非连 tokens 都不依赖的完全空白绘图内核，不应为追求“纯分层”另复制颜色/几何类型 |
+| [text traits](../crates/tekes-ui-text/src/traits.rs)、[push](../crates/tekes-ui-text/src/push.rs)、[text manifest](../crates/tekes-ui-text/Cargo.toml) | FontFallback/Shaper/Rasterizer；macOS cfg 中有 CoreText 实现；把 Paragraph 字形经 atlas 放入 Scene。render 是 dev-dependency | 协议与平台实现可区分；仍是 mac 优先实现，不证明 DirectWrite/Parley 已支持。无第二使用场景时提取后端 crate 会增加公共类型和生命周期接口 |
+| [render manifest](../crates/tekes-ui-render/Cargo.toml)、[renderer](../crates/tekes-ui-render/src/renderer.rs)、[frame](../crates/tekes-ui-render/src/frame.rs) | wgpu 消费 Scene/atlas；生产依赖 scene/tokens，不依赖 text。已有 macOS CAMetalLayer/CoreGraphics surface 接口 | 实际 mac surface 集成明确；“整个 render 无平台类型”不属现状。是否提取 adapter 由第二平台/后端的真实阻塞触发 |
+| [platform manifest](../crates/tekes-ui-platform-macos/Cargo.toml)、[view](../crates/tekes-ui-platform-macos/src/view.rs)、[event](../crates/tekes-ui-platform-macos/src/event.rs) | AppKit 窗口/事件/菜单、NSTextInputClient 回调、中性文本快照及系统桥。生产不依赖 controls/render；controls 仅是 native-oracle dev-dependency | 没有生产 `platform → controls` 依赖环。事件/查询与应用状态的接线仍需实际 IME 及窗口验收，不能从 trait 存在推导通过 |
+| [component semantics](../crates/tekes-ui-controls/src/composition.rs)、[platform accessibility](../crates/tekes-ui-platform-macos/src/accessibility.rs) | controls 声明真实语义/动作；平台 crate 提供 AccessibilityNode 等快照类型及原生桥；应用负责两种表示的映射 | 当前已有 native adapter，但中性角色/动作到系统节点的完整映射、通知和残留节点是具体风险，需沿 #5 验证。新建 a11y crate 本身不能解决它 |
+| [Gallery manifest](../crates/tekes-ui-gallery/Cargo.toml)、[consumer example](../examples/composition-consumer/Cargo.toml) | Gallery 为 publish=false 的消费者/展示与验收应用，正常 macOS 依赖中也包含独立 composition-consumer。examples 为消费者、适配样例或测试夹具 | 能暴露公共 API 缺口；Gallery 与示例耦合需如实说明。基础 controls/text/scene/render 不得反向依赖 Gallery/examples，不能把 Gallery 私有 TextEngine 当公共组件契约 |
+| [app-host](../crates/tekes-ui-app-host/Cargo.toml)、[module-runtime](../crates/tekes-ui-module-runtime/Cargo.toml)、[protocol](../crates/tekes-ui-app-protocol/src/lib.rs) | 实验宿主、固定原生模块进程、序列化数据/资源及窗口集成；runtime 的 PanelModule 是子进程内 Rust 接口，macOS 层组合 controls/render | 是同仓可选的集成层，不是基础库必须采用的 App 框架；进程故障边界不等于安全沙箱、任意插件或完整远端交互。#48 原 AC 不因“可选”降低 |
+| [scene3d](../crates/tekes-ui-scene3d/Cargo.toml)、[3d app](../crates/tekes-ui-3d/Cargo.toml)、[city](../crates/tekes-ui-city/Cargo.toml) | 可选 3D/glTF 预览及专门夹具/应用；scene3d 实际依赖 render/wgpu，不是另一个纯 Scene 数据层 | 可独立消费与展示；不把城市/产品场景的需求反向变成每个 UI 控件的依赖 |
+
+实际数据流与 Cargo 依赖方向不同：平台事件由应用 handler 转为控件/ContentHost 操作；状态 owner 提交布局/paint，文本适配器用 shaper/rasterizer/atlas 向 Scene 写入字形；renderer 消费 Scene/atlas。平台提供窗口/layer，应用负责将它与 renderer 连接。这里描述职责，不重签任何原生验收。
+
+## Design System：统一体系与尚未交付的消费闭环
+
+Gold7、Theme Schema、具体 Theme、Surface 规则、组件契约属于同一 Design System，但不是一种数据或一个通过条件。`design/system.json#/theme_system/root_concept` 已明确 Design System 同时拥有 Theme Schema、定义、生成校验和组件契约；本轮不缩减这个范围。
+
+作者 JSON / BrandConfig / policy → 离线合并 token 投影与 Theme instances → 正常 Cargo freshness/Theme verifier → typed Rust、品牌/Theme 表 → Palette / Surface resolver → 真实组件。依据 [生成入口](../design/README.md)、[build.rs](../crates/tekes-ui-tokens/build.rs)、[Theme validator](../crates/tekes-ui-design-export/src/theme_system.rs)、[Palette](../crates/tekes-ui-tokens/src/palette.rs)、[Surface resolver](../crates/tekes-ui-tokens/src/surface_palette.rs)。token 颜色消费不在运行时调用 Python 或编译 Theme JSON；这不表示 Gallery 不解析自己的 registry 等数据。
+
+main 的 `delivery_status` 明确是 `foundation-api-only`。当前 controls 尚无 `resolve_surface*` 调用，仍有直接 proposal/Palette 绘制；Root 已验收的组件迁移不得改签为 main 已闭合。差距首先是 **#136 接收已有产出**，而非重新开发 #62/#104/#92 已有成果。
+
+已有原则继续执行：声明 Surface 解剖/语义用途的组件绘制必须消费完整共享结果，不能维护组件私有状态色表或由 RGB 反推身份。typed metric/layout/motion API 仍是生成投影的一部分；文本颜色也不自动豁免其实际 Surface 契约。组件行为、状态、输入和生命周期属于组件契约，不能被主题 JSON 或静态颜色检查替代。Gold7 验设计、接线和实际体验；#113 的依赖闭包也不能代替 Gold7/原生验收。
+
+## 架构决定、代价与确认边界
+
+A1–A3 已于 2026-10-26 获用户确认，决策入口 #137。以下是认可的演进方向，不是已实现能力或立即重构授权。原 Issue 功能 AC 保留；其他实质变更须单独展示变更及影响并获确认。
+
+| 决定 | 方向与收益 | 代价、触发条件与唯一入口 |
+|---|---|---|
+| 继续：控件状态、布局/paint/hit、编辑与语义 owner 不复制 | 先按 controls 内模型/交互、布局、绘制、组合和文本编辑划清责任；公共 Consumer 验证边界 | 大模块仍有耦合，不能因不拆 crate 而忽略事务/兼容风险；具体功能继续原票，不建通用框架 |
+| **A1 已确认：按实际能力边界演进** | 不为匹配旧图立即建 doc/edit/layout/a11y crate；减少类型迁移、版本与依赖成本 | 独立消费者、真实依赖环/平台阻塞、独立事务或可测构建/测试需求可触发提取，不机械要求两个消费者。先明确模块职责、公共接口和依赖方向，不再要求固定 crate 拆分顺序，也不允许职责混杂；具体设计继续 #131/#132/#135 |
+| **A2 已确认：基础语义先行，AccessKit 选型与接入后置** | 框架解耦的基础接口先明确；核心组件/组合接口稳定后，以按钮、输入框和一个组合控件做真实无障碍验证，提前暴露结构缺口 | 后期比较 AccessKit 与现有原生适配，再确定路线并完成完整验收；现有 bridge 和小范围验证均不等于 #5 完成。唯一入口 #5，具体分期见下文 |
+| **A3 已确认：文档/完整编辑器为可选能力层** | 基础文本显示、输入与正常交互仍属 UI 库能力；rope、虚拟文档、Markdown 映射按真实需要设计 | 不取消 F3–F5；需要源文档、持久化、事务和投影映射的新协议仍须独立设计。#131（文档/规模）、#132（Markdown）保留后置原 AC |
+| 继续并如实标注：mac 优先的 text/render adapter | 保留现有位置，不为无消费者的跨平台抽象增加公共 API | #135 的第二平台/后端阻塞实际出现时再决定提取；不把重构当控件验收前置 |
+| 继续：宿主是可选集成层 | foundation 不反向依赖 AppHost；消费方可选择普通 Content 或 ProcessContainer | 不能降低 #48 的固定公开 SHA、独立 consumer、真实 IPC、IME/AX/生命周期验收；不变成全库必备沙箱/插件框架 |
+
+### 无障碍基础接口与分期（#5）
+
+这是目标边界与待验要求，不声明当前 main 已全部实现，不新建平行权威票：
+
+- **组件/组合层**拥有语义角色、名称/值、稳定节点身份及父子关系、可用操作、焦点及状态。重排、复用、隐藏/模态与移除时的身份和焦点行为必须明确，不能由 adapter 临时生成不稳定身份。
+- **布局/宿主边界**提供实际几何、坐标转换和 clip/可见性；语义与几何更新应对应同一可识别状态，避免平台读到过期节点。平台操作经组件行为入口执行，不能旁路状态 owner。
+- **适配层**将中立语义、焦点、操作及几何/状态变化映射为系统树和通知。基础接口不暴露 AccessKit 或 AppKit 类型；当前 native bridge 只证明已有路径，不证明全部要求已验。
+- **早期有限验证**依赖核心组件与组合接口稳定，由 #5 明确唯一实施 owner、冻结按钮/输入框/一个组合控件及源基线，在真实系统无障碍路径检查身份、焦点、动作、几何和状态更新；记录实际结果与结构缺口。具体夹具及允许文件在实施前写入 #5，本轮不启动代码或原生运行。
+- **后期选型与完整验收**比较 AccessKit 和原生适配的功能覆盖、维护成本与平台扩展，再确定接入路线；保留原文本导航、选区、朗读及全部功能 AC。有限验证不能替代完整验收，全库无障碍也不追加为当前 Design System 单票关闭前提。
+
+## 差距、原计划去向与后续执行队列
+
+下表是原 AC 的投递与调度索引，不替换其完整条款。root 为唯一主工作树整合者；Theme/schema/生成器/共享规则、#113 共享接口各保持单一负责人；组件族实施者仅能写各自冻结的私有候选。实施 owner 未重新分配；本轮没有新生产任务。
+
+| 差距 / 原计划 | 去向与理由 | 唯一入口、负责人、依赖与允许范围 | 下一交付 / 原验收索引 |
+|---|---|---|---|
+| 章程图与 e39 职责不符 | 事实说明与 A1–A3 已获确认 | #137，root；仅本轮明确文档 hunks | 记录用户决定与文档/Issue 对齐；不自动关闭其他票或改写原 AC |
+| Root 产出尚未进入 main | 继续接收，优先于重新开发 | #136，root；冻结原票 source/hunks 与不可拆依赖，禁止整目录复制 | 优先只读冻结 #104 共享 Theme 链及 #92 ChartContent 的最小依赖批；#115 已在 main。完整可解释批才实施/验证/提交，不预先声称两票单独可拆 |
+| 组件语义色及整体系迁移 | 继续既定契约，基础 API 不替代消费 | #1（父 #55），Theme owner；仅适用组件/共享用途，依赖实际已接收接口 | 分批组件消费、原视觉/输入标准；不得追加整个 DS 为单票前提 |
+| Button 首根与 52 根闭包 | 继续原范围，本轮冻结在途交接 | #113，原共享 owner；实际88 evidence binder、独立引用清单、完整 owned 源审，不改规则开脱未知边 | 完整条件公共模板＋具名 action20 原闭包/负例；保留其他 callsite 与 52 根义务；完整方法冻结前 #121–#125 不启动 |
+| 机器能力报告 | 继续，但只投影已接收范围 | #114，投影 owner 之后指定；依赖 #113 被接收的闭包，父 #8 | partial 不能 complete；旧刷新及程序证据保原身份 |
+| 真实语义树/平台映射 | 继续，crate 拆分不能替代功能 | #5，原语义/平台 owner；只改对应映射/通知/真实行为，依赖已交付组件 | 先明确中立基础接口；稳定后做三个控件的真实有限验证；后置选型与完整原 AC，当前不接 AccessKit |
+| 文档、虚拟化、编辑器、系统服务、终端、其他平台 | #131–#135 继续后置，不取消原目标；本轮不启动 | 各原票是唯一设计入口，协调 root、实施 owner 未分配 | #131 稳定 key/回收/驱逐锚点；#132 源文档/编辑映射；#133 系统服务；#134 许可/一致性；#135 平台矩阵；按原 AC 设计后再去重拆实施 |
+| 现有输入/数值明确缺陷 | 继续独立跟踪，不靠架构重构掩盖 | #128 / #129 各自唯一入口，原 owner/依赖保持；本轮未派新实施 | 原连续组字/字素及禁用同步值反例与回归，不能以改架构关闭 |
+| ProcessContainer 与现有有限远端/图像候选 | 保留完整交互及公开交付要求 | #48（完整交互）；#127（有限边界）；#117（图像原交付）分别唯一入口 | 不把有限 Class B 改称完整 Toolbar 组合通过；公开不可变版本未授权则仍留原票，不重复本地功能开发 |
+| 整页/原生/Gold7体验 | 继续原验收，不作为所有子票统一门槛 | #12；图标风格独立 #57 | 固定 Gallery、原 IME/VO/性能等实际范围；不因架构文档或闭包报告更新成熟度 |
+
+本轮审计及随后原范围收口的推荐顺序（A1–A3 不成为全部既有工作的前提）：
+
+1. **本轮批次**：完成 #137 的事实/文档/Issue 对齐、本地文档提交和已确认决定回填；不启动新实施或缓存切换。
+2. **只读接收准备可并行**：root 审 #113 已交付 binder/清单/源审笔记；另一条准备 #136 Theme/Chart 的源差量、API 依赖、允许 hunks、原证据及真正失效检查。审查不等于接收，14 个 pending 不能批量置 reviewed。
+3. **本轮审计完成后，沿既有授权收口**：优先完整既有 main 接收批，在最终落点集中必要验证；无法闭合的依赖明确退回原票。#113 只补首根原缺口，不再扩通用分析器。等待构建锁时做审查/准备，不增加重复验证。A1–A3 已确认但不立即启动生产重构；具体实施范围与依赖留对应 Issue，其他原 AC 实质变更另行确认，不能成为 #136/#113 原范围的统一前提。
+4. **首根方法/共享接口冻结后**：#121–#125 按独立组件族分批并行，数量以 root 可及时接收为限；共享 schema/生成器/规则不分叉。#114 随已接收闭包准确投影。
+5. #131–#135、无关新功能及重大重构仍后置；公开交付沿原票等待具体授权，不借架构审计 push/发布。
+
+## F0 历史接口与验证记录（不是当前 API 清单）
+
+以下保留 F0 当时的接口、事件、帧节奏和实测记录；其中“现在”“将来”“F5 再做”等措辞只指该历史阶段。当前已存在 NSTextInputClient、display-link 等实现，不能由下文旧预留推断它们不存在，也不能由旧实测宣布 e39 全部通过。当前 API 以对应提交的源码为准，现状及目标边界以上述章节为准。
+
+F0 当时的边界是：平台负责窗口、事件泵、菜单和外观，以 CAMetalLayer 指针与 renderer 衔接。当前平台 crate 仍不生产依赖 render；但 renderer 自身已有 macOS surface 代码，不能扩写成全引擎都不接触 objc2。
 
 ## 接口一览
 

@@ -3,7 +3,7 @@ mod text;
 use anyhow::Result;
 use tekes_ui_app_protocol::{InputKind, Request, ToolbarItem};
 use tekes_ui_controls::{
-    Button, ButtonSize, ButtonTextAlign,
+    ButtonModel, ButtonSize, ButtonTextAlign,
     composition::{Component, ContentEvent, TextContent, TextFieldContent},
     paint::ButtonVariant,
 };
@@ -14,9 +14,18 @@ use text::{Fonts, TextRenderer};
 const CHINESE: &str = "中文长文 · 城市的一天\n\n清晨，街角的面包店打开了门。骑车的人从树荫下经过，河边有人读书，也有人停下来听风。窗户慢慢变窄时，句子自然换行；窗户变宽时，文字重新铺开。\n\n“标点会不会落在不合适的位置？”她问。我们观察逗号、句号、引号与括号（包括这一段说明），也观察连续数字：2026 年 10 月 21 日，上午 09:30。\n\n段落之间留着停顿。短句。长一点的句子则描述远处的山、近处的树，以及每一扇窗里不同的生活。\n\n";
 const ENGLISH: &str = "English prose · A small observatory\n\nAt sunset, the observatory opens its wooden doors. A visitor places a notebook beside the telescope and writes down the first stars. Resizing this column should change the line breaks while preserving the words and paragraph boundaries.\n\nShort sentence. A much longer sentence follows, with punctuation, parentheses (and a nested thought), numbers such as 123,456.78, and words like extraordinary, internationalization, and counterclockwise.\n\nThe next morning, nothing about the document has changed except the space available to read it.\n\n";
 const MIXED: &str = "混排 / Unicode · 开发笔记\n\nTekesUI 的 Text 组件处理中文、English words 与数字 12345。版本 v0.1.0，路径 /projects/notes/readme.md，邮件 hello@example.com。\n\nEmoji：😀 🌍 🚀 👨‍👩‍👧‍👦 👍🏽；组合字符：café / cafe\u{301}；日本語：今日は良い天気です。한국어: 반갑습니다.\n\nRTL: العربية مرحبًا بالعالم — עברית שלום עולם\n\n长连续内容用于观察边界处理：abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ。最后回到普通中文，检查字体回退和基线是否自然。\n\n";
+/// Demo-specific document commands, carried by the existing module channel.
+pub const DOCUMENT_A: u64 = 0x444f_4300;
+pub const DOCUMENT_B: u64 = DOCUMENT_A + 1;
+pub const DOCUMENT_C: u64 = DOCUMENT_A + 2;
+const TITLES: [&str; 3] = [
+    "文档 A · 城市的一天",
+    "文档 B · A small observatory",
+    "文档 C · Unicode 开发笔记",
+];
 struct Demo {
     identity: u32,
-    button: Button,
+    button: ButtonModel,
     count: u64,
     fonts: Fonts,
     body: TextFieldContent,
@@ -27,7 +36,7 @@ impl Demo {
         let passage = [CHINESE, ENGLISH, MIXED][identity as usize].repeat(4);
         Self {
             identity,
-            button: Button::default(),
+            button: ButtonModel::default(),
             count: 0,
             fonts: Fonts::new(),
             body: TextFieldContent::read_only_content(
@@ -63,6 +72,21 @@ impl PanelModule for Demo {
             }
             InputKind::Command if r.command == Some(2) => {
                 self.count = 0;
+            }
+            InputKind::Command => {
+                if let Some(command) = r.command
+                    && (DOCUMENT_A..=DOCUMENT_C).contains(&command)
+                {
+                    let document = (command - DOCUMENT_A) as u32;
+                    if document != self.identity {
+                        self.identity = document;
+                        self.body = TextFieldContent::read_only_content(
+                            TITLES[document as usize],
+                            &[CHINESE, ENGLISH, MIXED][document as usize].repeat(4),
+                            proposal::TextRole::UiBody,
+                        );
+                    }
+                }
             }
             InputKind::Cancel => {
                 self.button.cancel();

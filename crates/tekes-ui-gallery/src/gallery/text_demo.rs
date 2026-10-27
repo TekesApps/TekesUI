@@ -1,7 +1,7 @@
 //! Live Text and TextEditor surfaces share shaping, selection, scrolling and IME data.
 use super::{PageCtx, text::TextEngine};
 use tekes_ui_controls::{
-    Button, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, ReadingController,
+    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, ReadingController,
     TextInput,
 };
 use tekes_ui_platform_macos::{
@@ -139,7 +139,7 @@ pub struct TextDemo {
     scroll_target: Option<usize>,
     caret_on: bool,
     reveal_pending: bool,
-    reading_buttons: [Button; 2],
+    reading_buttons: [ButtonModel; 2],
     reading_button_focus: Option<usize>,
     motion_now: std::time::Duration,
 }
@@ -164,7 +164,7 @@ impl Default for TextDemo {
             scroll_target: None,
             caret_on: true,
             reveal_pending: false,
-            reading_buttons: std::array::from_fn(|_| Button::default()),
+            reading_buttons: std::array::from_fn(|_| ButtonModel::default()),
             reading_button_focus: None,
             motion_now: std::time::Duration::ZERO,
         }
@@ -432,7 +432,7 @@ impl TextDemo {
                 .iter()
                 .enumerate()
                 .map(|(i, label)| {
-                    Button::measure(
+                    ButtonModel::measure(
                         ctx.text,
                         label,
                         widths[i],
@@ -588,7 +588,7 @@ impl TextDemo {
             scroll_target: None,
             caret_on: true,
             reveal_pending: false,
-            reading_buttons: std::array::from_fn(|_| Button::default()),
+            reading_buttons: std::array::from_fn(|_| ButtonModel::default()),
             reading_button_focus: None,
             motion_now: std::time::Duration::ZERO,
         }
@@ -971,10 +971,16 @@ impl TextDemo {
     pub fn needs_animation(&self) -> bool {
         self.surfaces.iter().any(|s| s.scroll.needs_animation())
             || (self.window_active && self.surfaces[0].stream_remaining > 0)
-            || self.reading_buttons.iter().any(Button::needs_animation)
+            || self
+                .reading_buttons
+                .iter()
+                .any(ButtonModel::needs_animation)
     }
     pub fn animate(&mut self, dt: f32) -> bool {
-        let mut changed = self.reading_buttons.iter().any(Button::needs_animation);
+        let mut changed = self
+            .reading_buttons
+            .iter()
+            .any(ButtonModel::needs_animation);
         for surface in &mut self.surfaces {
             changed |= surface.scroll.tick(dt);
         }

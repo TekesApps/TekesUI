@@ -61,8 +61,8 @@ fn paint(h: &mut ContentHost) {
     h.render(&mut Scene::new(), &mut Text, f, f, Theme::LIGHT.into())
         .unwrap();
 }
-fn act(h: &ContentHost, id: ComponentId) -> &CompoundButton {
-    h.get(id).unwrap().component::<CompoundButton>().unwrap()
+fn act(h: &ContentHost, id: ComponentId) -> &Button {
+    h.get(id).unwrap().component::<Button>().unwrap()
 }
 fn event(h: &mut ContentHost, e: ContentEvent) -> Vec<ContentAction> {
     h.event(&e);
@@ -78,7 +78,7 @@ fn exact_frame_hit_ax_and_decoration_are_one_nonoverlapping_action() {
     let nodes = h.semantics();
     for id in [RELEASE, PRESS, DISABLED] {
         let f = h.get(id).unwrap().frame();
-        let b = act(&h, id).action.button.layout().unwrap();
+        let b = act(&h, id).button.layout().unwrap();
         assert_eq!(f, b.frame);
         assert_eq!(f.size.height, 10.);
         assert_eq!(nodes.iter().find(|n| n.id == id).unwrap().frame, f);
@@ -87,7 +87,7 @@ fn exact_frame_hit_ax_and_decoration_are_one_nonoverlapping_action() {
     let edge = Point::new(21., 40.);
     assert!(
         !act(&h, RELEASE)
-            .action
+
             .button
             .layout()
             .unwrap()
@@ -95,7 +95,7 @@ fn exact_frame_hit_ax_and_decoration_are_one_nonoverlapping_action() {
     );
     assert!(
         act(&h, PRESS)
-            .action
+
             .button
             .layout()
             .unwrap()
@@ -121,7 +121,7 @@ fn standard_layout_and_constructor_defaults_keep_token_minimum() {
     assert!(b.frame.size.height > 10.);
     assert_eq!(ButtonFramePolicy::default(), ButtonFramePolicy::Minimum);
     assert_eq!(
-        ButtonContent::new("default").pointer_activation_phase,
+        Button::new("default").pointer_activation_phase,
         ButtonActivationPhase::Release
     );
 }
@@ -152,7 +152,7 @@ fn keyboard_and_ax_preserve_once_only_source_and_visible_focus() {
     for id in [RELEASE, PRESS] {
         h.focus(Some(id), true);
         paint(&mut h);
-        assert!(act(&h, id).action.button.state.focus_visible);
+        assert!(act(&h, id).button.state.focus_visible);
         for key in [ControlKey::Space, ControlKey::Enter] {
             let mut actions = event(&mut h, ContentEvent::Key { key, down: true });
             actions.extend(event(&mut h, ContentEvent::Key { key, down: false }));
@@ -185,9 +185,9 @@ fn disabled_loading_unmount_and_pending_mount_identity_are_fenced() {
     assert!(event(&mut h, ContentEvent::PointerUp(point)).is_empty());
     h.get_mut(PRESS)
         .unwrap()
-        .component_mut::<CompoundButton>()
+        .component_mut::<Button>()
         .unwrap()
-        .action
+
         .button
         .state
         .loading = true;

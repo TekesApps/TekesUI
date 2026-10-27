@@ -9,6 +9,7 @@ mod effects;
 mod freshness;
 mod gallery_brands;
 mod proposal;
+pub mod theme_system;
 mod validator;
 pub use freshness::{verify_consumer_inputs, verify_inputs};
 pub use gallery_brands::validate_gallery_brands;

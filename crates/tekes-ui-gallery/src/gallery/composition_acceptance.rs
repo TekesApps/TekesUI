@@ -4,7 +4,7 @@ use super::text::TextEngine;
 use tekes_ui_composition_consumer::{IconImages, compound_button};
 use tekes_ui_controls::{
     ControlKey,
-    composition::{ComponentId, CompoundButton, ContentEvent},
+    composition::{Button, ComponentId, ContentEvent},
 };
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{Rect, Scene, Size};
@@ -165,7 +165,7 @@ fn required_field_metadata_and_real_consumer_keep_markers_at_narrow_widths() {
 #[test]
 fn number_field_existing_states_use_actual_glyphs_and_shared_button_presentation() {
     use tekes_ui_controls::{
-        Button, ButtonSize, NumberField,
+        ButtonModel, ButtonSize, NumberField,
         feedback_view::{NumberFieldEvent, NumberFieldView},
     };
     use tekes_ui_scene::Primitive;
@@ -188,7 +188,7 @@ fn number_field_existing_states_use_actual_glyphs_and_shared_button_presentation
                         text.begin_frame();
                         let model = NumberField::new(2., 0., 4., 1.).unwrap();
                         let mut view = NumberFieldView::default();
-                        let button = Button::measure(
+                        let button = ButtonModel::measure(
                             &mut text,
                             "+",
                             48.,
@@ -550,9 +550,8 @@ fn independent_consumer_compound_button_uses_real_icon_text_and_gpu_in_four_them
                     assert_eq!(
                         host.get(ComponentId(1))
                             .unwrap()
-                            .component::<CompoundButton>()
+                            .component::<Button>()
                             .unwrap()
-                            .action
                             .activations,
                         1
                     );

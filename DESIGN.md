@@ -12,6 +12,14 @@
 
 ## 一套体系的品牌与 token
 
+### 架构关系与已交付边界（2026-10-26）
+
+本地 main 代码基线 `e39bfaa1785dbedd9672081a8877e27047155885` 的机器状态仍是 `theme_system.delivery_status = foundation-api-only`。Design System 统一拥有 Gold7 体验目标、Theme Schema/具体定义、生成校验和组件契约；“组件属于这套体系”不表示组件行为等同于 Theme 数据，也不表示 schema 通过后组件已接线或 Gold7 已验收。
+
+Theme/Palette/Surface 基础 API 已交付；controls 中仍有直接 proposal/Palette 消费，完整组件迁移在 Gallery Root 与私有候选中有另外的源码身份。声明 Surface 解剖/语义用途的绘制必须消费共享完整结果，不能另配状态色表；metric/layout/motion 的 typed API 可以保留，文本颜色须核对实际用途，不能自动豁免 Surface 契约。Root 的 #62/#104/#92 等原接收不自动成为上述 main 的通过证据。
+
+完整职责图、具体差距、原 Issue 去向及已确认架构方向见已有 [架构与平台边界](docs/platform-boundary.md)。#55 统筹视觉体系、#56 统筹组件行为/组合，#136 接收已交付差量，#113 证明受管来源闭包，#12 验实际体验；各自的原 AC 互不替代。本轮只纠正文档与调度，不修改设计 JSON/schema、生成器或原 AC。
+
 消费者提供显式 BrandConfig；基础 token、品牌策略及该配置共同派生四套主题的强调色、主操作色、状态变体和配对前景。中性表面、正文、焦点、选区、业务状态、语法与图表色按包内隔离策略处理，不能把所有颜色统一染成品牌色。默认展示采用包里显式登记的 neutral 参考夹具，不能把示例色当成框架固定品牌。
 
 作者输入统一生成 `design/tokens.json`，正常 Cargo 构建检查输入新鲜度并从该投影生成 Rust token。生成物禁止手改；品牌 seed 改动须重新生成并校验，不能维护一份与品牌策略无关的人工颜色表。参见 [design/README.md](design/README.md) 的实际命令。

@@ -2,7 +2,7 @@
 use crate::content_status::{Feedback, Status};
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
-    Button, ButtonSize, ButtonTextRenderer, ControlKey, TextSurface,
+    ButtonModel, ButtonSize, ButtonTextRenderer, ControlKey, TextSurface,
     composition::*,
     extended::{Axis, ComboBox, CommandPalette, Stack},
     layout::MeasuredChild,
@@ -144,7 +144,7 @@ impl Component for Commands {
         }
     }
     fn measure(&mut self, mut t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
-        let trigger = Button::measure(
+        let trigger = ButtonModel::measure(
             &mut t,
             LABEL,
             a.width,
@@ -159,7 +159,7 @@ impl Component for Commands {
         MeasuredChild::new(Size::new(a.width, h))
     }
     fn arrange(&mut self, mut t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
-        let h = Button::measure(
+        let h = ButtonModel::measure(
             &mut t,
             LABEL,
             f.size.width,
@@ -181,7 +181,7 @@ impl Component for Commands {
         c: Rect,
         theme: ContentTheme,
     ) {
-        let h = Button::measure(
+        let h = ButtonModel::measure(
             &mut t,
             LABEL,
             f.size.width,

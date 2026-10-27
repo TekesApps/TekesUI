@@ -14,7 +14,7 @@ fn actual_layout_and_surface_lookup_scopes_remain_distinct() {
             for scale in [1., 2.] {
                 for panel in [false, true] {
                     for partial in [false, true] {
-                        let palette = Palette { theme, brand };
+                        let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                         let frame = Rect::new(8., 8., 280., 120.);
                         let clip = partial.then_some(Rect::new(20., 8., 90., 100.));
                         let expected = clip.unwrap_or(frame);

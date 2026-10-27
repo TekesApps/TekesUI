@@ -3,7 +3,7 @@
 //! These types own behavior and layout data; a host remains responsible for
 //! text shaping, event translation, clipping, and scheduling presentation.
 use crate::{
-    Button, ControlKey, ControlState,
+    ButtonModel, ControlKey, ControlState,
     layout::{ContainerLayout, Insets},
 };
 use tekes_ui_scene::{Quad, Rect, Scene};
@@ -125,6 +125,39 @@ pub enum Pane {
     Trailing,
 }
 
+/// Shared focus stroke, gap and one backing-pixel coverage guard.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FocusRingMetrics {
+    pub width: f32,
+    pub gap: f32,
+    pub antialias_guard: f32,
+}
+impl FocusRingMetrics {
+    pub fn new(backing_scale: f32) -> Self {
+        let scale = if backing_scale.is_finite() && backing_scale > 0.0 {
+            backing_scale
+        } else {
+            1.0
+        };
+        Self {
+            width: proposal::metric("stroke", "c-focus-width").expect("focus width token"),
+            gap: proposal::metric("spacing", "c-focus-offset").expect("focus offset token"),
+            antialias_guard: proposal::FOCUS_ANTIALIAS_GUARD_PHYSICAL_PIXELS / scale,
+        }
+    }
+    pub fn outset(self) -> f32 {
+        self.width + self.gap
+    }
+
+    pub fn reserved_band(self) -> f32 {
+        self.outset() + self.antialias_guard
+    }
+
+    pub fn bounds(self, frame: Rect) -> Rect {
+        frame.inset(-self.reserved_band())
+    }
+}
+
 /// Geometry shared by an existing control's drawing and pointer hit target.
 /// `frame` remains the normalized component frame; `visible_frame` is the
 /// portion that survives clipping by the owning container.
@@ -151,16 +184,7 @@ impl ControlFrame {
     /// Full document-space bounds needed to display the focus ring without
     /// clipping, including one backing pixel for antialiasing.
     pub fn focus_bounds(self, backing_scale: f32) -> Rect {
-        let ring_width = proposal::metric("stroke", "c-focus-width").expect("focus width token");
-        let ring_gap = proposal::metric("spacing", "c-focus-offset").expect("focus offset token");
-        let scale = if backing_scale.is_finite() && backing_scale > 0.0 {
-            backing_scale
-        } else {
-            1.0
-        };
-        self.frame().inset(
-            -(ring_width + ring_gap + proposal::FOCUS_ANTIALIAS_GUARD_PHYSICAL_PIXELS / scale),
-        )
+        FocusRingMetrics::new(backing_scale).bounds(self.frame())
     }
 
     pub fn contains(self, point: tekes_ui_scene::Point) -> bool {
@@ -531,38 +555,9 @@ impl Disclosure {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct IconButton {
-    pub button: Button,
-    accessible_name: String,
-}
-impl IconButton {
-    pub fn new(accessible_name: impl Into<String>) -> Option<Self> {
-        let accessible_name = accessible_name.into();
-        (!accessible_name.trim().is_empty()).then_some(Self {
-            button: Button::default(),
-            accessible_name,
-        })
-    }
-    pub fn accessible_name(&self) -> &str {
-        &self.accessible_name
-    }
-    pub fn layout(&self, frame: Rect, ancestor_clip: Option<Rect>) -> ControlFrame {
-        ControlFrame::new(frame, ancestor_clip)
-    }
-    pub fn key(&mut self, key: ControlKey, down: bool) -> bool {
-        self.button.key(key, down)
-    }
-    pub fn pointer_down(&mut self) {
-        self.button.pointer_down()
-    }
-    pub fn pointer_up(&mut self, inside: bool) -> bool {
-        self.button.pointer_up(inside)
-    }
-}
 #[derive(Clone, Debug, Default)]
 pub struct Link {
-    pub button: Button,
+    pub button: ButtonModel,
 }
 impl Link {
     pub fn layout(&self, frame: Rect, ancestor_clip: Option<Rect>) -> ControlFrame {
@@ -1844,17 +1839,27 @@ pub fn link_underline(
     ));
     ink
 }
+/// Compatibility entry point using the original canvas context.
 pub fn progress(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, model: Progress) {
-    let theme = theme.into();
+    progress_on_surface(scene, rect, theme.into(), model, "canvas")
+        .expect("generated Progress canvas packet");
+}
+/// Resolve the complete shared packet before writing any scene primitives.
+/// Progress retains its original finite scalar and static unknown geometry.
+pub fn progress_on_surface(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    model: Progress,
+    surface: &str,
+) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    use tekes_ui_tokens::surface_palette::{SurfaceError, resolve_surface};
+    let colors = resolve_surface(palette, surface, "progress-track", "rest")?;
+    let marker = colors.marker.ok_or(SurfaceError::UnknownRole)?;
     let width = rect.size.width.max(0.);
     let height = rect.size.height.max(0.);
-    scene.push_quad(
-        Quad::new(
-            Rect::new(rect.min_x(), rect.min_y(), width, height),
-            paint_color(theme, "surface-2"),
-        )
-        .with_corner_radius(height * 0.5),
-    );
+    let track = Rect::new(rect.min_x(), rect.min_y(), width, height);
+    scene.push_quad(Quad::new(track, colors.background).with_corner_radius(height * 0.5));
     let active = if model.indeterminate {
         width.min(width * 0.3)
     } else {
@@ -1863,27 +1868,74 @@ pub fn progress(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, model:
     scene.push_quad(
         Quad::new(
             Rect::new(rect.min_x(), rect.min_y(), active, height),
-            paint_color(theme, "c-progress-active"),
+            marker,
         )
         .with_corner_radius(height * 0.5),
     );
+    // Keep the shared necessary boundary visible even at 100%. The fill and
+    // rounded geometry remain the original model's full allocation.
+    if let Some(boundary) = colors.boundary {
+        scene.push_quad(
+            Quad::new(track, Rgba::new(0., 0., 0., 0.))
+                .with_corner_radius(height * 0.5)
+                .with_border(
+                    proposal::metric("stroke", "stroke-rule").expect("Progress boundary stroke"),
+                    boundary,
+                ),
+        );
+    }
+    Ok(())
 }
+/// Compatibility entry point; the canonical canvas packet owns all solid ink.
 pub fn status_badge(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, status: StatusBadge) {
-    let theme = theme.into();
-    let role = match status {
-        StatusBadge::Info => "status-info",
-        StatusBadge::Running => "status-running",
-        StatusBadge::Succeeded => "status-succeeded",
-        StatusBadge::Failed => "status-failed",
-    };
-    scene.push_quad(
-        Quad::new(rect, paint_color(theme, role))
-            .with_corner_radius(rect.size.height.max(0.) * 0.5),
-    );
+    status_badge_on_surface(scene, rect, theme, status, "canvas")
+        .expect("valid StatusBadge canvas allocation and packet");
 }
+/// Resolve the complete rest-only packet before writing any Scene primitive.
+/// Invalid/non-finite allocations reject atomically as an unknown combination.
+pub fn status_badge_on_surface(
+    scene: &mut Scene,
+    rect: Rect,
+    theme: impl Into<Palette>,
+    status: StatusBadge,
+    surface: &str,
+) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    let colors = tekes_ui_tokens::surface_palette::resolve_surface(
+        theme.into(),
+        surface,
+        status_badge_usage(status),
+        "rest",
+    )?;
+    if !rect.min_x().is_finite()
+        || !rect.min_y().is_finite()
+        || !rect.max_x().is_finite()
+        || !rect.max_y().is_finite()
+        || !rect.size.width.is_finite()
+        || !rect.size.height.is_finite()
+        || rect.size.width < 0.
+        || rect.size.height < 0.
+    {
+        return Err(tekes_ui_tokens::surface_palette::SurfaceError::UnknownCombination);
+    }
+    scene.push_quad(
+        Quad::new(rect, colors.background).with_corner_radius(rect.size.height.max(0.) * 0.5),
+    );
+    Ok(())
+}
+pub(crate) fn status_badge_usage(status: StatusBadge) -> &'static str {
+    match status {
+        StatusBadge::Info => "status-badge-info",
+        StatusBadge::Running => "status-badge-running",
+        StatusBadge::Succeeded => "status-badge-succeeded",
+        StatusBadge::Failed => "status-badge-failed",
+    }
+}
+
+// Shared semantic token lookup for the existing extended painters.
 fn paint_color(theme: Palette, role: &str) -> Rgba {
     theme.color(role).expect("Design System semantic token")
 }
+
 fn finite_nonnegative(x: f32) -> f32 {
     if x.is_finite() { x.max(0.) } else { 0. }
 }
@@ -2018,18 +2070,43 @@ mod tests {
 
     #[test]
     fn clipped_control_frames_do_not_retain_hit_regions_after_resize_or_disable() {
-        let icon = IconButton::new("Add").unwrap();
-        let original = icon.layout(
-            Rect::new(10., 10., 44., 40.),
-            Some(Rect::new(0., 0., 80., 80.)),
-        );
-        assert!(original.contains(Point::new(20., 20.)));
-        let resized = icon.layout(
-            Rect::new(110., 110., 44., 40.),
-            Some(Rect::new(0., 0., 80., 80.)),
-        );
-        assert_eq!(resized.visible_frame(), None);
-        assert!(!resized.contains(Point::new(20., 20.)));
+        use crate::composition::Component;
+        struct Text;
+        impl crate::ButtonTextRenderer for Text {
+            fn measure(
+                &mut self,
+                _: &str,
+                role: proposal::TextRole,
+                _: f32,
+            ) -> tekes_ui_scene::Size {
+                tekes_ui_scene::Size::new(0., role.style().line_height)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: crate::ButtonTextAlign,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+            }
+        }
+        let mut icon =
+            crate::composition::Button::new(tekes_ui_scene::ImageId(1)).with_accessible_name("Add");
+        let clip = Rect::new(0., 0., 80., 80.);
+        let palette = Palette::from(tekes_ui_tokens::Theme::LIGHT);
+        let frame = Rect::new(10., 10., 44., 40.);
+        icon.arrange(&mut Text, frame, clip);
+        icon.paint(&mut Scene::new(), &mut Text, frame, clip, palette.into());
+        let original = icon.button.layout().unwrap();
+        assert!(original.hit_test(Point::new(20., 20.)));
+        let frame = Rect::new(110., 110., 44., 40.);
+        icon.arrange(&mut Text, frame, clip);
+        icon.paint(&mut Scene::new(), &mut Text, frame, clip, palette.into());
+        let resized = icon.button.layout().unwrap();
+        assert_eq!(resized.visible, None);
+        assert!(!resized.hit_test(Point::new(20., 20.)));
 
         let mut switch_model = Switch {
             checked: false,
@@ -2274,7 +2351,7 @@ mod tests {
     fn stateful_control_painters_use_brand_tokens_for_all_themes() {
         for theme in tekes_ui_tokens::Theme::ALL {
             for brand in [0, 1, 2] {
-                let palette = Palette { theme, brand };
+                let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                 let checked_focus = ControlState {
                     selected: true,
                     focused: true,

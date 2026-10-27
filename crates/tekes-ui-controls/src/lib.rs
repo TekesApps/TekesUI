@@ -2,6 +2,10 @@
 pub mod collections_view;
 mod composite;
 pub mod composition;
+pub use composition::{Button, ButtonActivationPhase, ButtonContents, ButtonImagePosition};
+pub use composition::{
+    ChartContent, ChartContentError, RequiredFocusEvidence, RequiredFocusResult, RequiredFocusSpace,
+};
 mod control_motion;
 mod draft;
 pub mod feedback_view;
@@ -42,7 +46,7 @@ pub use text_surface::{
 pub use toolbar::{ToolbarAction, ToolbarControl, ToolbarIconAction};
 mod widgets;
 pub use widgets::{
-    Button, ButtonFramePolicy, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer,
+    ButtonFramePolicy, ButtonLayout, ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer,
     CheckState, Checkbox, CheckboxLayout, ControlKey, ControlMotionContext, ControlState, Dialog,
     Field, Menu, NumberField, Select, Tabs,
 };
@@ -51,7 +55,7 @@ pub use widgets::Toolbar;
 mod chart;
 pub mod extended;
 pub use chart::{
-    BarChart, BarGeometry, ChartDatum, ChartGeometry, paint_bar_chart,
+    BarChart, BarGeometry, ChartDataUpdateError, ChartDatum, ChartGeometry, paint_bar_chart,
     paint_bar_chart_with_text_scale,
 };
 

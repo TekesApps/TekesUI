@@ -17,9 +17,9 @@ pub fn build() -> Result<ContentHost, CompositionError> {
                 ToolbarGroup::new(
                     ToolbarPlacement::PrimaryAction,
                     vec![
-                        Content::new(SAVE, ButtonContent::new("Save"))
+                        Content::new(SAVE, Button::new("Save"))
                             .with_help("Save this document"),
-                        Content::new(OTHER, ButtonContent::new("Publish")),
+                        Content::new(OTHER, Button::new("Publish")),
                     ],
                 ),
             ),

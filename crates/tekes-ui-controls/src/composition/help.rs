@@ -28,16 +28,18 @@ impl Content {
         }
     }
     pub fn help_text(&self) -> Option<&str> {
-        self.help.as_deref()
+        self.help
+            .as_deref()
+            .or_else(|| self.component.help().map(|(text, _)| text))
     }
     pub(super) fn help_semantics(&self) -> ContentSemantics {
         let mut s = self.component.semantics();
-        if let Some(help) = &self.help {
+        if let Some(help) = self.help_text() {
             s.description = Some(match s.description {
-                Some(existing) if !existing.is_empty() && existing != *help => {
+                Some(existing) if !existing.is_empty() && existing != help => {
                     format!("{existing}\n{help}")
                 }
-                _ => help.clone(),
+                _ => help.to_owned(),
             });
         }
         s
@@ -47,7 +49,7 @@ impl Content {
             .semantic_frame(self.frame)
             .intersection(&self.clip)
     }
-    fn help_details(&self, part: Option<usize>) -> Option<(&str, u64, Rect)> {
+    fn help_details(&self, part: Option<usize>) -> Option<(&str, (u64, u64), Rect)> {
         if let Some(part) = part {
             let (text, revision) = self.component.semantic_part_help(part)?;
             let frame = self
@@ -60,9 +62,20 @@ impl Content {
             if text.trim().is_empty() || frame.is_empty() {
                 return None;
             }
-            Some((text, revision, frame))
+            Some((text, (0, revision), frame))
         } else {
-            Some((self.help_text()?, self.help_revision, self.help_frame()?))
+            Some((
+                self.help_text()?,
+                (
+                    self.help_revision,
+                    if self.help.is_some() {
+                        0
+                    } else {
+                        self.component.help().map_or(0, |(_, revision)| revision)
+                    },
+                ),
+                self.help_frame()?,
+            ))
         }
     }
     fn help_at(&self, p: Point) -> Option<&Content> {
@@ -77,7 +90,7 @@ impl Content {
             }
         }
         (self.visible().is_some_and(|f| f.contains(p))
-            && (self.help.is_some()
+            && (self.help_text().is_some()
                 || self.component.semantic_parts().iter().any(|part| {
                     part.frame.contains(p)
                         && self.component.semantic_part_help(part.index).is_some()
@@ -92,7 +105,7 @@ struct Request {
     id: ComponentId,
     mount: u64,
     part: Option<usize>,
-    revision: u64,
+    revision: (u64, u64),
     keyboard: bool,
     anchor: Option<Rect>,
 }
@@ -154,6 +167,34 @@ impl HelpState {
     }
 }
 impl ContentHost {
+    /// Hosts with separate content/toolbar paint passes can defer only help,
+    /// then paint it once after ordinary content. The original owner/state and
+    /// clock remain unchanged; menus/capture/modal barriers still apply.
+    pub fn set_help_overlay_deferred(&mut self, deferred: bool) {
+        if self.help_overlay_deferred != deferred {
+            self.help_overlay_deferred = deferred;
+            self.dirty = true;
+        }
+    }
+    /// Paint/tick deferred help using the caller's real window viewport. Call
+    /// after rendering this ContentHost, without replaying its content or input.
+    /// This is a no-op unless deferred mode is enabled and layout is current.
+    pub fn paint_help_overlay(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        viewport: Rect,
+        palette: Palette,
+    ) {
+        if self.help_overlay_deferred
+            && self.window_active
+            && !self.reading_transaction
+            && !self.reveal_clock.pending
+            && self.last_layout.is_some()
+        {
+            self.render_help(scene, text, viewport, viewport, palette);
+        }
+    }
     fn help_request(
         &self,
         id: ComponentId,

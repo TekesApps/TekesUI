@@ -168,13 +168,13 @@ fn real_control_motion_changes_gpu_pixels_without_moving_hit_geometry() {
     use std::time::Duration;
     use tekes_ui_controls::extended::{Disclosure, Switch};
     use tekes_ui_controls::layout_view::DisclosureView;
-    use tekes_ui_controls::{Button, ButtonSize, ButtonTextAlign, SwitchView, paint};
+    use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, SwitchView, paint};
     let mut renderer = Renderer::new_headless().expect("actual GPU required for component motion");
     let mut text = TextEngine::new();
     text.set_scale(2.);
     text.set_motion_enabled(true);
     let palette = Palette::from(Theme::LIGHT);
-    let mut button = Button::default();
+    let mut button = ButtonModel::default();
     let button_frame = Rect::new(24., 24., 200., 40.);
     let switch_frame = Rect::new(24., 92., 280., 36.);
     let header = Rect::new(24., 152., 280., 40.);

@@ -165,8 +165,8 @@ impl Workbench {
                 ),
                 ("icon-button", 20) => (
                     R::Button,
-                    s.extended.icon_button.accessible_name(),
-                    s.extended.icon_button.button.state.selected,
+                    s.extended.icon_button_view.name(),
+                    s.extended.icon_button_view.button().button.state.selected,
                 ),
                 ("switch", 20) => (
                     R::Switch,
@@ -1548,10 +1548,7 @@ mod selection_tests {
             if renderer == "icon-button" {
                 assert_eq!(
                     before.label,
-                    g.workbench.states[&i]
-                        .extended
-                        .icon_button
-                        .accessible_name()
+                    g.workbench.states[&i].extended.icon_button_view.name()
                 );
             }
             let log = g.workbench.states[&i].log.len();

@@ -11,6 +11,19 @@ struct Snapshot {
     anchor: usize,
     caret: usize,
 }
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct TextActionInputSnapshot {
+    revision: (u64, u64),
+    binding: (u64, u64),
+    text: String,
+    anchor: usize,
+    caret: usize,
+    marked: Option<Range<usize>>,
+    composition: Option<Snapshot>,
+    disabled: bool,
+    read_only: bool,
+    multiline: bool,
+}
 /// Selection and replacement ranges use UTF-16, matching native text services.
 /// Edits and arrow/delete movement preserve extended grapheme clusters.
 #[derive(Debug)]
@@ -31,6 +44,31 @@ pub struct TextInput {
     external: Option<crate::DraftRevision>,
 }
 impl TextInput {
+    pub(crate) fn action_snapshot(&self) -> TextActionInputSnapshot {
+        TextActionInputSnapshot {
+            revision: self.edit_revision(),
+            binding: self.controlled_binding(),
+            text: self.text.clone(),
+            anchor: self.anchor,
+            caret: self.caret,
+            marked: self.marked.clone(),
+            composition: self.composition.clone(),
+            disabled: self.disabled,
+            read_only: self.read_only,
+            multiline: self.multiline,
+        }
+    }
+
+    pub(crate) fn can_advance_edit_epochs(&self, count: u64) -> bool {
+        self.edit_epoch.checked_add(count).is_some()
+    }
+    pub(crate) fn unmark_epoch_steps(&self) -> u64 {
+        u64::from(self.marked.is_some() || self.composition.is_some())
+    }
+    pub(crate) fn can_unmark(&self) -> bool {
+        self.can_advance_edit_epochs(self.unmark_epoch_steps())
+    }
+
     pub fn new(text: &str, multiline: bool) -> Self {
         Self {
             text: text.into(),
@@ -236,6 +274,9 @@ impl TextInput {
         self.marked = Some(range);
         true
     }
+    pub(crate) fn preflight_unmark(&self, needed: bool) -> bool {
+        !needed || self.can_unmark()
+    }
     pub fn unmark(&mut self) {
         if self.marked.is_some() || self.composition.is_some() {
             self.advance_edit_epoch();
@@ -376,6 +417,13 @@ impl TextInput {
         }
     }
 }
+#[cfg(test)]
+impl TextInput {
+    pub(crate) fn test_edit_epoch(&mut self, epoch: u64) {
+        self.edit_epoch = epoch;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

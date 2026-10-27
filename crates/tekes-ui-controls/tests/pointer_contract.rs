@@ -110,7 +110,7 @@ fn metadata_is_lossless_and_secondary_release_does_not_end_primary_capture() {
 #[test]
 fn ordinary_button_accepts_primary_metadata_and_legacy_but_ignores_secondary() {
     let id = ComponentId(9902);
-    let mut host = ContentHost::new(Content::new(id, ButtonContent::new("Send"))).unwrap();
+    let mut host = ContentHost::new(Content::new(id, Button::new("Send"))).unwrap();
     render(&mut host);
     for phase in [PointerPhase::Down, PointerPhase::Up] {
         host.event(&ContentEvent::Pointer(pointer(
@@ -121,7 +121,7 @@ fn ordinary_button_accepts_primary_metadata_and_legacy_but_ignores_secondary() {
     assert_eq!(
         host.get(id)
             .unwrap()
-            .component::<ButtonContent>()
+            .component::<Button>()
             .unwrap()
             .activations,
         0
@@ -138,7 +138,7 @@ fn ordinary_button_accepts_primary_metadata_and_legacy_but_ignores_secondary() {
     assert_eq!(
         host.get(id)
             .unwrap()
-            .component::<ButtonContent>()
+            .component::<Button>()
             .unwrap()
             .activations,
         2
@@ -275,8 +275,7 @@ fn hover_redraw_does_not_consume_unhandled_event() {
 }
 #[test]
 fn bubbling_button_preserves_capture_and_records_activation_once() {
-    let button =
-        Content::new(ComponentId(2), ButtonContent::new("Send")).bubbling_handled_events(true);
+    let button = Content::new(ComponentId(2), Button::new("Send")).bubbling_handled_events(true);
     let mut host = ContentHost::new(probe(1, vec![button], false, false, false)).unwrap();
     host.set_action_events(true);
     render(&mut host);
@@ -356,9 +355,8 @@ fn opt_in_cannot_bubble_through_modal_boundary() {
                     role: proposal::TextRole::UiHeading,
                 },
             ),
-            Content::new(ComponentId(3), ButtonContent::new("Action"))
-                .bubbling_handled_events(true),
-            Content::new(ComponentId(4), ButtonContent::new("Close")),
+            Content::new(ComponentId(3), Button::new("Action")).bubbling_handled_events(true),
+            Content::new(ComponentId(4), Button::new("Close")),
         ),
     ))
     .unwrap();

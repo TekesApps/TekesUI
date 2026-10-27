@@ -14,6 +14,17 @@ pub enum ContentRevealError {
     InvalidOptions(ScrollRevealError),
     Layout(CompositionError),
     ReadingTransactionInProgress,
+    Plan(HostRevealError),
+}
+impl From<HostRevealError> for ContentRevealError {
+    fn from(error: HostRevealError) -> Self {
+        match error {
+            HostRevealError::InvalidOptions(error) => Self::InvalidOptions(error),
+            HostRevealError::UnlaidOut => Self::UnlaidOut,
+            HostRevealError::NoFeasibleRegion => Self::Clipped,
+            error => Self::Plan(error),
+        }
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ContentRevealStatus {
@@ -34,16 +45,14 @@ pub struct ContentRevealResult {
     pub clamped: bool,
 }
 #[derive(Clone, Debug)]
-struct Step {
-    id: ComponentId,
-    mount: u64,
-    rect: Rect,
-    target: Point,
-    viewport: Size,
-    document: Size,
-    generation: u64,
-    options: ScrollRevealOptions,
-    start_clip_usable: bool,
+pub(super) struct Step {
+    pub(super) id: ComponentId,
+    pub(super) mount: u64,
+    pub(super) rect: Rect,
+    pub(super) target: Point,
+    pub(super) viewport: Size,
+    pub(super) document: Size,
+    pub(super) generation: u64,
 }
 #[derive(Debug)]
 pub(super) struct ItemReveal {
@@ -51,16 +60,6 @@ pub(super) struct ItemReveal {
     owner_mount: u64,
     item_mount: u64,
     steps: Vec<Step>,
-}
-/// Only library-owned scroll/reading metadata is saved for clipping preflight.
-/// Children, editors, actions and application components are never cloned.
-struct ScrollSnapshot {
-    id: ComponentId,
-    mount: u64,
-    scroll: ScrollArea,
-    reading: Option<content_reading::ContentReadingState>,
-    viewport: Rect,
-    last_frame: Option<std::time::Duration>,
 }
 fn path(node: &Content, item: ComponentId, out: &mut Vec<ComponentId>) -> bool {
     if !node.component.active() {
@@ -127,166 +126,49 @@ impl ContentHost {
         }
         Ok((owner_node.mount, target.mount))
     }
-    fn reveal_steps(
+    fn reveal_cancel_routes(
         &self,
-        item: ComponentId,
-        options: ScrollRevealOptions,
-    ) -> Result<Vec<Step>, ContentRevealError> {
-        let mut ids = Vec::new();
-        if !path(self.scope(), item, &mut ids) {
-            return Err(ContentRevealError::MissingItem);
-        }
-        let mut rect = self
-            .root
-            .find(item)
-            .ok_or(ContentRevealError::MissingItem)?
-            .frame;
-        let mut steps = Vec::new();
-        for id in ids.into_iter().rev().skip(1) {
-            let node = self.root.find(id).expect("path node");
-            let Some(scroll) = node.component::<ScrollContent>() else {
-                continue;
-            };
-            let geometry = scroll.scroll.geometry(scroll.viewport, None);
-            let origin = geometry.content_origin();
-            let local = rect.offset(-origin.x, -origin.y);
-            let mut step_options = options;
-            if let crate::ScrollRevealPlacement::Start(axis) = options.placement
-                && let Some(visible) = scroll
-                    .scroll
-                    .geometry(scroll.viewport, Some(node.clip))
-                    .visible_viewport_rect()
-            {
-                // Only the selected axis uses the actual visible viewport.
-                // Entirely offscreen ancestors first use their own viewport;
-                // same-tree endpoint preflight refines once parents reveal it.
-                match axis {
-                    Axis::Vertical => {
-                        step_options.margins.top +=
-                            (visible.min_y() - scroll.viewport.min_y()).max(0.);
-                        step_options.margins.bottom +=
-                            (scroll.viewport.max_y() - visible.max_y()).max(0.);
-                    }
-                    Axis::Horizontal => {
-                        step_options.margins.left +=
-                            (visible.min_x() - scroll.viewport.min_x()).max(0.);
-                        step_options.margins.right +=
-                            (scroll.viewport.max_x() - visible.max_x()).max(0.);
-                    }
-                }
-            }
-            let mut start_clip_usable = true;
-            let (target, _) = match scroll.scroll.reveal_target(local, step_options) {
-                Err(ScrollRevealError::InvalidMargins)
-                    if matches!(options.placement, crate::ScrollRevealPlacement::Start(_)) =>
-                {
-                    // A currently tiny clipped slice may grow when its parent
-                    // moves. Validate original margins against the real viewport,
-                    // provisionally reveal it, then require usable END geometry.
-                    step_options = options;
-                    start_clip_usable = false;
-                    scroll.scroll.reveal_target(local, options)
-                }
-                result => result,
-            }
-            .map_err(ContentRevealError::InvalidOptions)?;
-            let old = scroll.scroll.visual_offset();
-            rect = rect
-                .offset(old.x - target.x, old.y - target.y)
-                .intersection(&scroll.viewport)
-                .ok_or(ContentRevealError::Clipped)?;
-            steps.push(Step {
-                id,
-                mount: node.mount,
-                rect: local,
-                target,
-                viewport: scroll.scroll.viewport_size(),
-                document: scroll.scroll.document_size(),
-                generation: 0,
-                options: step_options,
-                start_clip_usable,
-            });
-        }
-        Ok(steps)
-    }
-    fn scroll_snapshots(&self, steps: &[Step]) -> Vec<ScrollSnapshot> {
+        steps: &[Step],
+    ) -> Vec<Option<content_reveal_plan::ContentRoute>> {
         steps
             .iter()
             .map(|step| {
-                let node = self.root.find(step.id).expect("planned scroll");
-                let scroll = node
-                    .component::<ScrollContent>()
-                    .expect("planned ScrollContent");
-                ScrollSnapshot {
-                    id: step.id,
-                    mount: node.mount,
-                    scroll: scroll.scroll.clone(),
-                    reading: scroll.reading.clone(),
-                    viewport: scroll.viewport,
-                    last_frame: scroll.last_frame,
-                }
+                let route =
+                    content_reveal_plan::ContentRoute::capture(&self.root, step.id, usize::MAX)
+                        .ok()?;
+                route
+                    .node(&self.root, route.depth())
+                    .filter(|node| node.mount == step.mount)?;
+                Some(route)
             })
             .collect()
     }
-    fn restore_scroll_snapshots(&mut self, snapshots: Vec<ScrollSnapshot>) {
-        for snapshot in snapshots {
-            let Some(node) = self
-                .root
-                .find_mut(snapshot.id)
-                .filter(|n| n.mount == snapshot.mount)
-            else {
+    fn cancel_item_reveal_steps_at(
+        &mut self,
+        steps: &[Step],
+        routes: &[Option<content_reveal_plan::ContentRoute>],
+    ) {
+        for (step, route) in steps.iter().zip(routes) {
+            let Some(route) = route else {
                 continue;
             };
-            if let Some(scroll) = node.component_mut::<ScrollContent>() {
-                scroll.scroll = snapshot.scroll;
-                scroll.reading = snapshot.reading;
-                scroll.viewport = snapshot.viewport;
-                scroll.last_frame = snapshot.last_frame;
+            let needed = route
+                .node(&self.root, route.depth())
+                .filter(|node| node.mount == step.mount)
+                .and_then(|node| node.component::<ScrollContent>())
+                .is_some_and(|scroll| {
+                    scroll.scroll.reveal_identity() == step.generation
+                        || scroll
+                            .reading
+                            .as_ref()
+                            .is_some_and(|reading| reading.explicit_reveal == Some(step.generation))
+                });
+            if !needed {
+                continue;
             }
-        }
-    }
-    fn apply_reveal_steps(
-        &mut self,
-        steps: &mut [Step],
-        options: ScrollRevealOptions,
-    ) -> Result<(bool, bool), ContentRevealError> {
-        let (mut changed, mut clamped) = (false, false);
-        for step in steps {
-            let node = self
-                .root
-                .find_mut(step.id)
-                .filter(|n| n.mount == step.mount)
-                .ok_or(ContentRevealError::TargetReplaced)?;
-            let scroll = node
-                .component_mut::<ScrollContent>()
-                .ok_or(ContentRevealError::TargetReplaced)?;
-            let result = scroll
-                .scroll
-                .reveal_with(
-                    step.rect,
-                    ScrollRevealOptions {
-                        animated: options.animated,
-                        ..step.options
-                    },
-                )
-                .map_err(ContentRevealError::InvalidOptions)?;
-            step.generation = scroll.scroll.reveal_identity();
-            changed |= result.changed;
-            clamped |= result.clamped;
-            scroll.stop_following();
-            if let Some(reading) = &mut scroll.reading {
-                reading.explicit_reveal = Some(step.generation);
-                reading.fence_momentum();
-            }
-        }
-        Ok((changed, clamped))
-    }
-    fn cancel_item_reveal_steps(&mut self, steps: &[Step]) {
-        for step in steps {
-            if let Some(node) = self
-                .root
-                .find_mut(step.id)
-                .filter(|n| n.mount == step.mount)
+            if let Some(node) = route
+                .node_mut(&mut self.root, route.depth())
+                .filter(|node| node.mount == step.mount)
                 && let Some(scroll) = node.component_mut::<ScrollContent>()
             {
                 scroll.scroll.cancel_reveal(step.generation);
@@ -298,17 +180,18 @@ impl ContentHost {
             }
         }
     }
+    fn cancel_item_reveal_steps(&mut self, steps: &[Step]) {
+        let routes = self.reveal_cancel_routes(steps);
+        self.cancel_item_reveal_steps_at(steps, &routes);
+    }
     /// Reveal a declared stable item without changing focus, selection, undo or
     /// marked text. Use the existing current text backend, as with event_with_text;
     /// the library owns real layout, ancestor transforms, clipping and scrolling.
     /// Render once first. No callbacks run against a stale token or replaced item.
     ///
-    /// Clipping preflight arranges the SAME tree at the proposed scroll positions,
-    /// saves/restores only library scroll/reading metadata, then applies a valid
-    /// command. Layout must be deterministic for unchanged inputs; arbitrary
-    /// application mutations during layout are retained, as for ordinary render.
-    /// Layout/resource errors require a successful render before trying again.
-    /// Request a normal render before publishing native geometry or scene pixels.
+    /// Planning reads original arrangement and translation constraints only.
+    /// Unsupported layout and stale inputs reject before any mutation. Request
+    /// normal rendering after acceptance before publishing native geometry.
     pub fn reveal_scroll_reading_item(
         &mut self,
         owner: ComponentId,
@@ -321,112 +204,59 @@ impl ContentHost {
         self.root
             .ids(&mut BTreeSet::new())
             .map_err(ContentRevealError::Layout)?;
-        let (frame, clip) = self.last_layout.ok_or(ContentRevealError::UnlaidOut)?;
-        self.layout_frame(text, frame, clip)
-            .map_err(ContentRevealError::Layout)?;
-        if self.validate_reveal_item(owner, expected, item)? != binding {
-            return Err(ContentRevealError::TargetReplaced);
-        }
-        // Without a host motion clock, complete immediately rather than retain
-        // a navigation that this consumer cannot advance.
         options.animated &= text.motion_context().is_some();
-        let mut steps = self.reveal_steps(item, options)?;
-        let snapshots = self.scroll_snapshots(&steps);
-        let trial = (|| {
-            let start_alignment =
-                matches!(options.placement, crate::ScrollRevealPlacement::Start(_));
-            let limit = if start_alignment {
-                steps.len().saturating_add(2)
-            } else {
-                1
-            };
-            for pass in 0..limit {
-                self.apply_reveal_steps(
-                    &mut steps,
-                    ScrollRevealOptions {
-                        animated: false,
-                        ..options
-                    },
-                )?;
-                self.layout_frame(text, frame, clip)
-                    .map_err(ContentRevealError::Layout)?;
-                if self.validate_reveal_item(owner, expected, item)? != binding {
-                    return Err(ContentRevealError::TargetReplaced);
-                }
-                if start_alignment {
-                    let refined = self.reveal_steps(item, options)?;
-                    if refined.len() != steps.len()
-                        || refined
-                            .iter()
-                            .zip(&steps)
-                            .any(|(a, b)| a.id != b.id || a.mount != b.mount)
-                    {
-                        return Err(ContentRevealError::TargetReplaced);
-                    }
-                    let settled = refined
-                        .iter()
-                        .zip(&steps)
-                        .all(|(a, b)| same_offset(a.target, b.target));
-                    steps = refined;
-                    if !settled {
-                        // A parent moving into view can change a nested actual
-                        // clip. Refine on the SAME tree, with a finite bound;
-                        // arbitrary oscillating clipping is not a valid landing.
-                        if pass + 1 == limit {
-                            return Err(ContentRevealError::Clipped);
-                        }
-                        continue;
-                    }
-                    if steps.iter().any(|step| !step.start_clip_usable) {
-                        return Err(ContentRevealError::Clipped);
-                    }
-                }
-                return if self.root.find(item).and_then(Content::visible).is_some() {
-                    Ok(())
-                } else {
-                    Err(ContentRevealError::Clipped)
-                };
-            }
-            Err(ContentRevealError::Clipped)
-        })();
-        self.restore_scroll_snapshots(snapshots);
-        let restored = self
-            .layout_frame(text, frame, clip)
-            .map_err(ContentRevealError::Layout);
-        restored?;
-        trial?;
-        if self.validate_reveal_item(owner, expected, item)? != binding {
-            return Err(ContentRevealError::TargetReplaced);
-        }
-        if let Some(old) = self.item_reveal.take() {
-            self.cancel_item_reveal_steps(&old.steps);
-        }
-        let (changed, clamped) = self.apply_reveal_steps(&mut steps, options)?;
-        self.layout_frame(text, frame, clip)
-            .map_err(ContentRevealError::Layout)?;
-        let result = ContentRevealResult {
-            owner,
-            version: expected.clone(),
-            item,
-            status: ContentRevealStatus::Animating,
-            changed,
-            clamped,
-        };
-        self.item_reveal = Some(ItemReveal {
-            result: result.clone(),
+        let plan = self
+            .plan_host_reveal(item, options, &[], HostRevealBudget::default())
+            .map_err(ContentRevealError::from)?;
+        let steps = plan.item_steps();
+        let mut navigation = ItemReveal {
+            result: ContentRevealResult {
+                owner,
+                version: expected.clone(),
+                item,
+                status: ContentRevealStatus::Animating,
+                changed: false,
+                clamped: false,
+            },
             owner_mount: binding.0,
             item_mount: binding.1,
             steps,
-        });
-        self.observe_item_reveal();
-        self.dirty = true;
-        text.request_animation_frame();
-        Ok(self
+        };
+        let old_routes = self
             .item_reveal
             .as_ref()
-            .expect("accepted navigation")
-            .result
-            .clone())
+            .map(|navigation| self.reveal_cancel_routes(&navigation.steps))
+            .unwrap_or_default();
+        let outcome = self
+            .commit_host_reveal(plan)
+            .map_err(ContentRevealError::from)?;
+        // No fallible callback or live layout after the shared commit gate.
+        if let Some(old) = self.item_reveal.take() {
+            self.cancel_item_reveal_steps_at(&old.steps, &old_routes);
+        }
+        for step in &mut navigation.steps {
+            step.generation = self
+                .root
+                .find(step.id)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .reveal_identity();
+        }
+        navigation.result.changed = outcome.changed;
+        // A tall target may intentionally be only partly visible after Start
+        // alignment. The original reading API reports actual limit/shape clamps,
+        // while the Host result retains its separate partial-visibility signal.
+        navigation.result.clamped = outcome.limit_clamped || outcome.shape_clamped;
+        if !outcome.animated {
+            navigation.result.status = ContentRevealStatus::Completed;
+        }
+        let result = navigation.result.clone();
+        self.item_reveal = Some(navigation);
+        self.dirty = true;
+        text.request_animation_frame();
+        Ok(result)
     }
     /// Latest accepted command only; a new command supersedes its predecessor.
     /// Invalid current document/mount identity is reflected even before redraw.

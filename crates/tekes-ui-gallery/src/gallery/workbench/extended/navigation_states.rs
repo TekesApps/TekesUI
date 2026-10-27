@@ -40,10 +40,7 @@ pub(in crate::gallery::workbench) fn matrix(
     let help_height = caption_size(ctx, HELP, width).height;
     wrapped_caption(ctx, scene, x, y, width, HELP);
     y += help_height.max(18.) + 18.;
-    let palette = Palette {
-        theme: ctx.theme,
-        brand: s.brand,
-    };
+    let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
 
     match e.renderer() {
         "select" => select(ctx, scene, bounds, viewport, &mut y, width, palette),
@@ -264,7 +261,7 @@ fn select(
             model.choose(1);
         }
         let trigger_width = width.min(230.);
-        let height = Button::measure(
+        let height = ButtonModel::measure(
             ctx.text,
             labels.get(model.selected).copied().unwrap_or(""),
             trigger_width,
@@ -450,7 +447,7 @@ fn breadcrumb(
         let mut remaining = width;
         let mut text_height = 0.0_f32;
         for (index, text) in labels.iter().enumerate() {
-            let measured = tekes_ui_controls::Button::measure(
+            let measured = tekes_ui_controls::ButtonModel::measure(
                 ctx.text,
                 text,
                 remaining.max(0.),
@@ -568,7 +565,7 @@ fn command_palette(
         input_view.set_value(query);
         input_view.set_disabled(disabled);
         let trigger_width = width.min(240.);
-        let trigger_height = Button::measure(
+        let trigger_height = ButtonModel::measure(
             ctx.text,
             "Open command palette",
             trigger_width,

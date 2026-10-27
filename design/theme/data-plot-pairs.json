@@ -1,0 +1,69 @@
+{
+  "format": "tekesui.data-plot-pairs/1",
+  "pairs": [
+    {
+      "id": "V:P",
+      "ink": "plot.text",
+      "ground": "parent",
+      "normal": 4.5,
+      "increased": 7.0,
+      "applicability": "owner-band"
+    },
+    {
+      "id": "V:S",
+      "ink": "plot.text",
+      "ground": "selection.background",
+      "normal": 4.5,
+      "increased": 7.0,
+      "applicability": "owner-band"
+    },
+    {
+      "id": "C:P",
+      "ink": "category.text",
+      "ground": "parent",
+      "normal": 4.5,
+      "increased": 7.0,
+      "applicability": "owner-band"
+    },
+    {
+      "id": "M:P",
+      "ink": "plot.marker",
+      "ground": "parent",
+      "normal": 3.0,
+      "increased": 3.0,
+      "applicability": "owner-band"
+    },
+    {
+      "id": "M:S",
+      "ink": "plot.marker",
+      "ground": "selection.background",
+      "normal": 3.0,
+      "increased": 3.0,
+      "applicability": "owner-band"
+    },
+    {
+      "id": "F:P",
+      "ink": "plot.focus",
+      "ground": "parent",
+      "normal": 3.0,
+      "increased": 3.0,
+      "applicability": "owner-band"
+    },
+    {
+      "id": "F:S",
+      "ink": "plot.focus",
+      "ground": "selection.background",
+      "normal": 3.0,
+      "increased": 3.0,
+      "applicability": "actual-contact"
+    },
+    {
+      "id": "F:M",
+      "ink": "plot.focus",
+      "ground": "plot.marker",
+      "normal": 3.0,
+      "increased": 3.0,
+      "applicability": "actual-contact"
+    }
+  ]
+}

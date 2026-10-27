@@ -41,3 +41,12 @@ AgentKit AgentText 移除固定 78pt composer 和专用 transcript arrange/paint
 初版键盘 typeText 未产生中文事件，故其证据仅支持实际收到的英文/Return；最终版用原生粘贴验证中英、emoji 和组合字符，不将自动化输入当物理中文输入法。Gold7 仅核对此 Light 原生组合场景的文本可见性、焦点、滚动与约束一致性。逻辑 semantics 不代表原生 AX/VoiceOver；物理 IME、VoiceOver、AgentKit 原生窗口和完整多主题体验未验收，性能按要求不测。
 
 统一回归与可复现补丁集以本批最终 test-summary 为准。公开不可变 pin 需另行提交/推送授权；本批不暂存、不提交、不推送、不打 tag、不关闭 Issue 或发布。完整 #15–#21 就绪前不提前移交 AgentKit 会话。
+
+
+## Inline original field intake — 2026-10-27
+
+`TextFieldContent::inline(name, value, width_em)` reuses the original single-line TextSurface. Its intrinsic width is capped by the receiving allocation and `resolved_font_size(UiBody) * width_em`; nonfinite/negative em values use zero. It hides visible Field metadata while retaining the accessible field name and original input chrome. Arrange, shaping, editing, composition, focus, selection, reading and disabled rules are unchanged. `new` retains the existing form width/defaults.
+
+Local main reception from c7291d8 passed three real CoreText public consumer scenarios (typography/allocation and semantics; preedit/resize identity/disabled; invalid widths/default form), original editor_keys15 and text_viewport7, Controls and new-consumer strict. Source/program/commands are in SSD `artifacts/issue-136/inline-textfield-mainc7291d8-intake/validation/`. Historical evidence is not resigned; no GPU, physical IME or VoiceOver claim follows from these finite tests.
+
+This accepts a real #69/#70 compact-editor prerequisite, not complete Toolbar or AppHost reception or the whole #122 text family. The original Toolbar image Button and fixed-window scenarios remain unchanged and await complete unified Button API/consumer migration under #136.

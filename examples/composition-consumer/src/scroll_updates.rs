@@ -43,7 +43,7 @@ impl Scenario {
                             PANEL_TEXT,
                             TextContent::new("Nested content panel · 工具详情"),
                         ),
-                        Content::new(ComponentId(9710), ButtonContent::new("Inspect details")),
+                        Content::new(ComponentId(9710), Button::new("Inspect details")),
                         Content::new(ComponentId(9711), SwitchContent::new("Show details", true)),
                         Content::new(
                             INLINE_EDITOR,
@@ -84,7 +84,7 @@ impl Scenario {
                 if h.get(LATEST).is_none() {
                     h.insert(
                         ROOT,
-                        Content::new(LATEST, ButtonContent::new("Return to latest"))
+                        Content::new(LATEST, Button::new("Return to latest"))
                             .preserving_focus(),
                     )
                     .unwrap();
@@ -191,7 +191,7 @@ impl Scenario {
                 },
             ),
             Content::new(TOGGLE, SwitchContent::new("Keep local draft", true)),
-            Content::new(ACTION, ButtonContent::new("Inspect item")),
+            Content::new(ACTION, Button::new("Inspect item")),
         ];
         for index in 0..20 {
             children.push(Content::new(ComponentId(9720 + index), TextContent {

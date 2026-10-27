@@ -3,7 +3,7 @@
 //! The story keeps its deterministic fixture models; these runtimes own their
 //! component geometry, clipping, transient pointer state and presentation.
 use tekes_ui_controls::{
-    Button, ButtonTextRenderer, ControlKey,
+    ButtonModel, ButtonTextRenderer, ControlKey,
     extended::{Banner, EmptyState, Popover, Progress, StatusBadge, Toast, Tooltip},
     feedback_view::{
         BannerView, EmptyStateView, OverlayEvent, OverlayLayout, ProgressView, StatusBadgeView,
@@ -23,12 +23,478 @@ const POPOVER_CONTENT: &str = "Popover content";
 pub(super) struct FeedbackViews {
     pub tooltip: TooltipView,
     pub popover: tekes_ui_controls::feedback_view::PopoverView,
-    pub toast: ToastView,
-    pub banner: BannerView,
+    pub toast: MountedToast,
+    pub banner: MountedBanner,
     pub status_badge: StatusBadgeView,
     pub progress: ProgressView,
-    pub empty_state: EmptyStateView,
+    pub empty_state: MountedEmptyState,
     pub surface: SurfaceView,
+}
+
+#[derive(Debug)]
+pub(super) struct MountedToast {
+    host: Option<tekes_ui_controls::composition::ContentHost>,
+    input: Option<Toast>,
+    active: bool,
+    focus: (bool, bool),
+}
+impl Default for MountedToast {
+    fn default() -> Self {
+        Self {
+            host: None,
+            input: None,
+            active: true,
+            focus: (false, false),
+        }
+    }
+}
+impl MountedToast {
+    const ROOT: tekes_ui_controls::composition::ComponentId =
+        tekes_ui_controls::composition::ComponentId(79001);
+    const ACTION: tekes_ui_controls::composition::ComponentId =
+        tekes_ui_controls::composition::ComponentId(79002);
+    fn model(&self) -> Option<Toast> {
+        Some(
+            self.host
+                .as_ref()?
+                .get(Self::ROOT)?
+                .component::<tekes_ui_controls::composition::ToastContent>()?
+                .model()
+                .clone(),
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &Toast,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        _role: proposal::TextRole,
+    ) -> ViewLayout {
+        use tekes_ui_controls::composition::*;
+        let created = self.host.is_none();
+        let host = self.host.get_or_insert_with(|| {
+            let mut h = ContentHost::new(Content::new(
+                Self::ROOT,
+                ToastContent::new("Toast", model.clone(), Self::ACTION).unwrap(),
+            ))
+            .unwrap();
+            h.set_action_events(true);
+            h.set_window_active(self.active);
+            h
+        });
+        if !created && self.input.as_ref() != Some(model) {
+            host.show_toast(
+                Self::ROOT,
+                model.message.clone(),
+                model.tone,
+                model.remaining_ms(),
+            )
+            .unwrap();
+            host.set_toast_visible(Self::ROOT, model.visible).unwrap();
+            host.set_toast_paused(Self::ROOT, model.paused).unwrap();
+        }
+        self.input = Some(model.clone());
+        host.render(scene, text, frame, clip.unwrap_or(frame), palette)
+            .expect("Gallery Toast Content layout and clock");
+        host.focus(self.focus.0.then_some(Self::ACTION), self.focus.1);
+        self.layout()
+    }
+    fn layout(&self) -> ViewLayout {
+        self.host
+            .as_ref()
+            .and_then(|h| h.get(Self::ROOT))
+            .and_then(|n| n.component::<tekes_ui_controls::composition::ToastContent>())
+            .map_or(ViewLayout::default(), |c| c.layout())
+    }
+    fn logical_focus_target(&self) -> Option<Rect> {
+        Some(
+            self.host
+                .as_ref()?
+                .semantics()
+                .into_iter()
+                .find(|n| n.id == Self::ACTION)?
+                .frame,
+        )
+    }
+    fn focus_target(&self) -> Option<Rect> {
+        self.host
+            .as_ref()?
+            .semantics()
+            .into_iter()
+            .find(|n| n.id == Self::ACTION)?
+            .visible
+    }
+    fn event(
+        &mut self,
+        event: tekes_ui_controls::composition::ContentEvent,
+    ) -> tekes_ui_controls::composition::ContentResponse {
+        let Some(h) = &mut self.host else {
+            return Default::default();
+        };
+        let result = h.event(&event);
+        let activated = h
+            .drain_actions()
+            .into_iter()
+            .any(|a| a.target == Self::ACTION);
+        tekes_ui_controls::composition::ContentResponse {
+            activated,
+            ..result
+        }
+    }
+    fn pointer_move(&mut self, model: &mut Toast, p: Point) {
+        self.event(tekes_ui_controls::composition::ContentEvent::PointerMove(p));
+        if let Some(next) = self.model() {
+            *model = next;
+            self.input = Some(model.clone());
+        }
+    }
+    fn pointer_down(&mut self, p: Point) -> bool {
+        self.event(tekes_ui_controls::composition::ContentEvent::PointerDown(p))
+            .consumed
+    }
+    fn pointer_up(&mut self, model: &mut Toast, p: Point) -> bool {
+        let result = self
+            .event(tekes_ui_controls::composition::ContentEvent::PointerUp(p))
+            .activated;
+        if let Some(next) = self.model() {
+            *model = next;
+            self.input = Some(model.clone());
+        }
+        result
+    }
+    fn key(&mut self, model: &mut Toast, key: ControlKey, down: bool) -> bool {
+        let result = self
+            .event(tekes_ui_controls::composition::ContentEvent::Key { key, down })
+            .activated;
+        if let Some(next) = self.model() {
+            *model = next;
+            self.input = Some(model.clone());
+        }
+        result
+    }
+    fn cancel(&mut self) {
+        if let Some(h) = &mut self.host {
+            h.cancel();
+        }
+    }
+    fn set_window_active(&mut self, active: bool) {
+        self.active = active;
+        if let Some(h) = &mut self.host {
+            h.set_window_active(active);
+        }
+    }
+    fn focus_dismiss(&mut self, focused: bool, visible: bool) {
+        self.focus = (focused, visible);
+        if let Some(h) = &mut self.host {
+            h.focus(focused.then_some(Self::ACTION), visible);
+        }
+    }
+    fn advance(&mut self, model: &mut Toast, ms: u32) -> bool {
+        model.advance(ms)
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct MountedBanner {
+    host: Option<tekes_ui_controls::composition::ContentHost>,
+    input: Option<Banner>,
+    active: bool,
+    focus: (bool, bool),
+}
+impl Default for MountedBanner {
+    fn default() -> Self {
+        Self {
+            host: None,
+            input: None,
+            active: true,
+            focus: (false, false),
+        }
+    }
+}
+impl MountedBanner {
+    const ROOT: tekes_ui_controls::composition::ComponentId =
+        tekes_ui_controls::composition::ComponentId(79003);
+    const ACTION: tekes_ui_controls::composition::ComponentId =
+        tekes_ui_controls::composition::ComponentId(79004);
+    fn model(&self) -> Option<Banner> {
+        Some(
+            self.host
+                .as_ref()?
+                .get(Self::ROOT)?
+                .component::<tekes_ui_controls::composition::BannerContent>()?
+                .model()
+                .clone(),
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &Banner,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        _role: proposal::TextRole,
+    ) -> ViewLayout {
+        use tekes_ui_controls::composition::*;
+        let created = self.host.is_none();
+        let host = self.host.get_or_insert_with(|| {
+            let mut h = ContentHost::new(Content::new(
+                Self::ROOT,
+                BannerContent::new("Banner", model.clone(), Self::ACTION).unwrap(),
+            ))
+            .unwrap();
+            h.set_action_events(true);
+            h.set_window_active(self.active);
+            h
+        });
+        if !created && self.input.as_ref() != Some(model) {
+            host.replace_banner(Self::ROOT, model.clone()).unwrap();
+        }
+        self.input = Some(model.clone());
+        host.render(scene, text, frame, clip.unwrap_or(frame), palette)
+            .expect("Gallery Banner Content layout and clock");
+        host.focus(self.focus.0.then_some(Self::ACTION), self.focus.1);
+        self.layout()
+    }
+    fn layout(&self) -> ViewLayout {
+        self.host
+            .as_ref()
+            .and_then(|h| h.get(Self::ROOT))
+            .and_then(|n| n.component::<tekes_ui_controls::composition::BannerContent>())
+            .map_or(ViewLayout::default(), |c| c.layout())
+    }
+    fn logical_focus_target(&self) -> Option<Rect> {
+        Some(
+            self.host
+                .as_ref()?
+                .semantics()
+                .into_iter()
+                .find(|n| n.id == Self::ACTION)?
+                .frame,
+        )
+    }
+    fn focus_target(&self) -> Option<Rect> {
+        self.host
+            .as_ref()?
+            .semantics()
+            .into_iter()
+            .find(|n| n.id == Self::ACTION)?
+            .visible
+    }
+    fn event(
+        &mut self,
+        event: tekes_ui_controls::composition::ContentEvent,
+    ) -> tekes_ui_controls::composition::ContentResponse {
+        let Some(h) = &mut self.host else {
+            return Default::default();
+        };
+        let result = h.event(&event);
+        let activated = h
+            .drain_actions()
+            .into_iter()
+            .any(|a| a.target == Self::ACTION);
+        tekes_ui_controls::composition::ContentResponse {
+            activated,
+            ..result
+        }
+    }
+    fn pointer_move(&mut self, p: Point) {
+        self.event(tekes_ui_controls::composition::ContentEvent::PointerMove(p));
+    }
+    fn pointer_down(&mut self, p: Point) -> bool {
+        self.event(tekes_ui_controls::composition::ContentEvent::PointerDown(p))
+            .consumed
+    }
+    fn pointer_up(&mut self, model: &mut Banner, p: Point) -> bool {
+        let result = self
+            .event(tekes_ui_controls::composition::ContentEvent::PointerUp(p))
+            .activated;
+        if let Some(next) = self.model() {
+            *model = next;
+            self.input = Some(model.clone());
+        }
+        result
+    }
+    fn key(&mut self, model: &mut Banner, key: ControlKey, down: bool) -> bool {
+        let result = self
+            .event(tekes_ui_controls::composition::ContentEvent::Key { key, down })
+            .activated;
+        if let Some(next) = self.model() {
+            *model = next;
+            self.input = Some(model.clone());
+        }
+        result
+    }
+    fn cancel(&mut self) {
+        if let Some(h) = &mut self.host {
+            h.cancel();
+        }
+    }
+    fn set_window_active(&mut self, active: bool) {
+        self.active = active;
+        if let Some(h) = &mut self.host {
+            h.set_window_active(active);
+        }
+    }
+    fn focus_dismiss(&mut self, focused: bool, visible: bool) {
+        self.focus = (focused, visible);
+        if let Some(h) = &mut self.host {
+            h.focus(focused.then_some(Self::ACTION), visible);
+        }
+    }
+}
+/// Gallery host adapter: layout/theme/copy stay here; SDK owns action routing.
+#[derive(Debug)]
+pub(super) struct MountedEmptyState {
+    host: Option<tekes_ui_controls::composition::ContentHost>,
+    disabled: bool,
+    active: bool,
+    focus: (bool, bool),
+}
+impl Default for MountedEmptyState {
+    fn default() -> Self {
+        Self {
+            host: None,
+            disabled: false,
+            active: true,
+            focus: (false, false),
+        }
+    }
+}
+impl MountedEmptyState {
+    const ROOT: tekes_ui_controls::composition::ComponentId =
+        tekes_ui_controls::composition::ComponentId(78001);
+    const ACTION: tekes_ui_controls::composition::ComponentId =
+        tekes_ui_controls::composition::ComponentId(78002);
+    fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+        if let Some(host) = &mut self.host {
+            host.set_empty_state_disabled(Self::ROOT, disabled)
+                .expect("Gallery valid EmptyState");
+        }
+    }
+    fn set_window_active(&mut self, active: bool) {
+        self.active = active;
+        if let Some(host) = &mut self.host {
+            host.set_window_active(active);
+        }
+    }
+    fn focus_action(&mut self, focused: bool, visible: bool) {
+        self.focus = (focused, visible);
+        if let Some(host) = &mut self.host {
+            host.focus(focused.then_some(Self::ACTION), visible);
+        }
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &EmptyState,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        _role: proposal::TextRole,
+    ) -> ViewLayout {
+        use tekes_ui_controls::composition::*;
+        let host = self.host.get_or_insert_with(|| {
+            let mut host = ContentHost::new(Content::new(
+                Self::ROOT,
+                EmptyStateContent::new("Empty state", model.clone(), Self::ACTION)
+                    .expect("fixture action name"),
+            ))
+            .unwrap();
+            host.set_action_events(true);
+            host.set_window_active(self.active);
+            host
+        });
+        if *host
+            .get(Self::ROOT)
+            .unwrap()
+            .component::<EmptyStateContent>()
+            .unwrap()
+            .model()
+            != *model
+        {
+            host.replace_empty_state(Self::ROOT, model.clone())
+                .expect("valid fixture update");
+        }
+        host.set_empty_state_disabled(Self::ROOT, self.disabled)
+            .expect("valid fixture availability");
+        // The parent already allocated a measured content slot. ContentHost
+        // renders the retained tree and publishes its actual action target.
+        host.render(scene, text, frame, clip.unwrap_or(frame), palette)
+            .expect("Gallery EmptyState layout");
+        host.focus(self.focus.0.then_some(Self::ACTION), self.focus.1);
+        self.layout()
+    }
+    fn layout(&self) -> ViewLayout {
+        self.host
+            .as_ref()
+            .and_then(|h| h.get(Self::ROOT))
+            .and_then(|n| n.component::<tekes_ui_controls::composition::EmptyStateContent>())
+            .map_or(ViewLayout::default(), |c| c.layout())
+    }
+    fn logical_focus_target(&self) -> Option<Rect> {
+        self.host
+            .as_ref()?
+            .semantics()
+            .into_iter()
+            .find(|n| n.id == Self::ACTION)
+            .map(|n| n.frame)
+    }
+    fn focus_target(&self) -> Option<Rect> {
+        self.host
+            .as_ref()?
+            .semantics()
+            .into_iter()
+            .find(|n| n.id == Self::ACTION)?
+            .visible
+    }
+    fn event(
+        &mut self,
+        event: tekes_ui_controls::composition::ContentEvent,
+    ) -> tekes_ui_controls::composition::ContentResponse {
+        let Some(host) = &mut self.host else {
+            return Default::default();
+        };
+        let result = host.event(&event);
+        let activated = host
+            .drain_actions()
+            .into_iter()
+            .any(|a| a.target == Self::ACTION);
+        tekes_ui_controls::composition::ContentResponse {
+            activated,
+            ..result
+        }
+    }
+    fn pointer_down(&mut self, point: Point) -> bool {
+        self.event(tekes_ui_controls::composition::ContentEvent::PointerDown(
+            point,
+        ))
+        .consumed
+    }
+    fn pointer_move(&mut self, point: Point) {
+        self.event(tekes_ui_controls::composition::ContentEvent::PointerMove(
+            point,
+        ));
+    }
+    fn pointer_up(&mut self, point: Point) -> bool {
+        self.event(tekes_ui_controls::composition::ContentEvent::PointerUp(
+            point,
+        ))
+        .activated
+    }
+    fn key(&mut self, key: ControlKey, down: bool) -> bool {
+        self.event(tekes_ui_controls::composition::ContentEvent::Key { key, down })
+            .activated
+    }
 }
 
 pub(super) fn supports(renderer: &str) -> bool {
@@ -77,10 +543,7 @@ pub(super) fn matrix(
     scene.push_clip(viewport);
     let width = bounds.size.width.max(0.0);
     let mut y = bounds.min_y();
-    let palette = Palette {
-        theme: ctx.theme,
-        brand: state.brand,
-    };
+    let palette = Palette::new(ctx.theme, state.brand).expect("registered Gallery brand");
     let description = "Production-view state specimens. Use Playground for real pointer, keyboard, and focus behavior.";
     matrix_caption(ctx, scene, bounds.min_x(), &mut y, width, description);
     y += 12.0;
@@ -116,10 +579,7 @@ pub(super) fn variants(
     scene.push_clip(viewport);
     let width = bounds.size.width.max(0.0);
     let mut y = bounds.min_y();
-    let palette = Palette {
-        theme: ctx.theme,
-        brand: state.brand,
-    };
+    let palette = Palette::new(ctx.theme, state.brand).expect("registered Gallery brand");
     let description =
         "Supported model values and modes, rendered by the production presentation views.";
     matrix_caption(ctx, scene, bounds.min_x(), &mut y, width, description);
@@ -213,7 +673,7 @@ fn matrix_button(
     label: &str,
     focused: bool,
 ) {
-    let mut button = Button::default();
+    let mut button = ButtonModel::default();
     button.state.focused = focused;
     button.state.focus_visible = focused;
     button.render(
@@ -246,7 +706,7 @@ fn matrix_tooltip(
         ("Escape · dismissed until leave", 3),
     ] {
         *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
-        let button_size = Button::measure(
+        let button_size = ButtonModel::measure(
             ctx.text,
             "Hover or focus me",
             width.min(190.0),
@@ -335,7 +795,7 @@ fn matrix_popover(
         ("Open · dismiss action focus-visible", true, true),
     ] {
         *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
-        let button_size = Button::measure(
+        let button_size = ButtonModel::measure(
             ctx.text,
             "More options",
             180.0_f32.min(width),
@@ -436,10 +896,11 @@ fn matrix_toast(
             "Toast dismissed."
         };
         let mut model = Toast::new(message, controls::NoticeTone::Success, 5000);
+        model.paused = true;
         model.visible = visible;
         let size = ToastView::measure(ctx.text, message, width, proposal::TextRole::UiBody);
         let frame = Rect::new(bounds.min_x(), *y, width, size.height);
-        let mut view = ToastView::default();
+        let mut view = MountedToast::default();
         if visible && focused {
             let mut probe = Scene::new();
             view.render(
@@ -496,7 +957,7 @@ fn matrix_banner(
             proposal::TextRole::UiBody,
         );
         let frame = Rect::new(bounds.min_x(), *y, width, size.height);
-        let mut view = BannerView::default();
+        let mut view = MountedBanner::default();
         if focused {
             let mut probe = Scene::new();
             view.render(
@@ -556,7 +1017,7 @@ fn matrix_empty_state(
             true,
             ctx.text.backing_scale(),
         );
-        let mut view = EmptyStateView::default();
+        let mut view = MountedEmptyState::default();
         view.set_disabled(disabled);
         if focused {
             view.render(
@@ -607,10 +1068,11 @@ fn matrix_toast_variants(
         ("Error", controls::NoticeTone::Error),
     ] {
         *y += matrix_heading(ctx, scene, bounds, *y, label) + 6.0;
-        let model = Toast::new("Changes saved", tone, 5000);
+        let mut model = Toast::new("Changes saved", tone, 5000);
+        model.paused = true;
         let size = ToastView::measure(ctx.text, &model.message, width, proposal::TextRole::UiBody);
         let frame = Rect::new(bounds.min_x(), *y, width, size.height);
-        ToastView::default().render(
+        MountedToast::default().render(
             scene,
             ctx.text,
             &model,
@@ -653,7 +1115,7 @@ fn matrix_banner_variants(
             proposal::TextRole::UiBody,
         );
         let frame = Rect::new(bounds.min_x(), *y, width, size.height);
-        BannerView::default().render(
+        MountedBanner::default().render(
             scene,
             ctx.text,
             &model,
@@ -691,8 +1153,19 @@ fn matrix_status_badges(
             cell_width,
             cell_height,
         );
-        StatusBadgeView::default().render(scene, status, frame, Some(clip), palette);
-        draw_status_badge_label(ctx.text, scene, ctx.theme, frame, label, palette);
+        StatusBadgeView::default()
+            .render_labelled_aligned(
+                scene,
+                ctx.text,
+                status,
+                label,
+                frame,
+                frame.inset(5.),
+                Some(clip),
+                palette,
+                tekes_ui_controls::ButtonTextAlign::Leading,
+            )
+            .expect("finite Gallery badge allocation");
     }
     *y += labels.len().div_ceil(columns) as f32 * (cell_height + 8.0);
 }
@@ -751,7 +1224,7 @@ fn matrix_empty_variants(
             true,
             ctx.text.backing_scale(),
         );
-        EmptyStateView::default().render(
+        MountedEmptyState::default().render(
             scene,
             ctx.text,
             &model,
@@ -776,24 +1249,6 @@ fn empty_state_matrix_height(ctx: &mut PageCtx<'_>, model: &EmptyState, width: f
         + 2.0 * inset
 }
 
-fn draw_status_badge_label(
-    text: &mut super::super::super::text::TextEngine,
-    scene: &mut Scene,
-    theme: tekes_ui_tokens::Theme,
-    frame: Rect,
-    label: &str,
-    palette: Palette,
-) {
-    text.proposal_label_in(
-        scene,
-        theme,
-        frame.inset(5.0),
-        label,
-        proposal::TextRole::UiCaption,
-        StatusBadgeView::label_color(palette),
-    );
-}
-
 fn status_badge_grid(ctx: &mut PageCtx<'_>, width: f32) -> (usize, f32, f32, usize) {
     let labels = ["Info", "Running", "Succeeded", "Failed"];
     let columns = if width >= 452.0 {
@@ -807,7 +1262,16 @@ fn status_badge_grid(ctx: &mut PageCtx<'_>, width: f32) -> (usize, f32, f32, usi
     let cell_width = ((width - gap * (columns - 1) as f32) / columns as f32).max(0.0);
     let cell_height = labels
         .iter()
-        .map(|label| measured_caption_size(ctx, label, (cell_width - 10.0).max(0.0)).height + 10.0)
+        .map(|label| {
+            StatusBadgeView::measure_label(
+                ctx.text,
+                label,
+                Size::new((cell_width - 10.).max(0.), f32::MAX),
+            )
+            .expect("finite Gallery allocation")
+            .height
+                + 10.
+        })
         .fold(28.0_f32, f32::max);
     let rows = labels.len().div_ceil(columns);
     (columns, cell_width, cell_height, rows)
@@ -971,7 +1435,7 @@ pub(super) fn build(
                 ext.feedback_views.render_toast(
                     scene,
                     ctx.text,
-                    &ext.toast,
+                    &mut ext.toast,
                     frame,
                     Some(clip),
                     palette,
@@ -990,7 +1454,7 @@ pub(super) fn build(
                     width,
                     toast_bottom,
                     &timer,
-                    "Time advances only when the fixture timer control is activated.",
+                    "Time follows the Host frame clock; hover pauses the original Toast.",
                     state.density,
                 );
                 quiet_action(
@@ -1007,7 +1471,7 @@ pub(super) fn build(
                     ctx,
                     scene,
                     note_frame,
-                    "Time advances only when the fixture timer control is activated.",
+                    "Time follows the Host frame clock; hover pauses the original Toast.",
                     24.0,
                 );
                 natural_bottom = note_frame.max_y();
@@ -1033,7 +1497,7 @@ pub(super) fn build(
                     show_label,
                     (false, false),
                 );
-                let note = "Time advances only when the fixture timer control is activated.";
+                let note = "Time follows the Host frame clock; hover pauses the original Toast.";
                 let note_size = measured_caption_size(ctx, note, width);
                 let note_y = show_y + show_size.height + 8.0;
                 draw_measured_caption(
@@ -1060,7 +1524,7 @@ pub(super) fn build(
                 ext.feedback_views.render_banner(
                     scene,
                     ctx.text,
-                    &ext.banner,
+                    &mut ext.banner,
                     frame,
                     Some(clip),
                     palette,
@@ -1105,8 +1569,19 @@ pub(super) fn build(
                     cell_height,
                 );
                 ext.feedback_views
-                    .render_status_badge(scene, status, frame, Some(clip), palette);
-                draw_status_badge_label(ctx.text, scene, ctx.theme, frame, labels[index], palette);
+                    .status_badge
+                    .render_labelled_aligned(
+                        scene,
+                        ctx.text,
+                        status,
+                        labels[index],
+                        frame,
+                        frame.inset(5.),
+                        Some(clip),
+                        palette,
+                        tekes_ui_controls::ButtonTextAlign::Leading,
+                    )
+                    .expect("finite Gallery badge allocation");
             }
             natural_bottom = y + 20.0 + rows as f32 * (cell_height + 8.0) - 8.0;
         }
@@ -1114,7 +1589,11 @@ pub(super) fn build(
             let frame = Rect::new(x, y + 26.0, width.min(500.0), 12.0);
             ext.feedback_views
                 .render_progress(scene, ext.progress, frame, Some(clip), palette);
-            let percentage = format!("{:.0}%", ext.progress.value() * 100.0);
+            let percentage = if ext.progress.indeterminate {
+                "Indeterminate".to_owned()
+            } else {
+                format!("{:.0}%", ext.progress.value() * 100.0)
+            };
             let (button_frame, percentage_frame) =
                 progress_fixture_layout(ctx, x, y, width, &percentage, state.density);
             action(
@@ -1842,14 +2321,20 @@ impl FeedbackViews {
         &mut self,
         scene: &mut Scene,
         text: &mut impl tekes_ui_controls::ButtonTextRenderer,
-        model: &Toast,
+        model: &mut Toast,
         frame: Rect,
         clip: Option<Rect>,
         palette: Palette,
         role: proposal::TextRole,
     ) -> ViewLayout {
-        self.toast
-            .render(scene, text, model, frame, clip, palette, role)
+        let layout = self
+            .toast
+            .render(scene, text, model, frame, clip, palette, role);
+        if let Some(next) = self.toast.model() {
+            *model = next;
+            self.toast.input = Some(model.clone());
+        }
+        layout
     }
 
     pub fn toast_pointer_move(&mut self, model: &mut Toast, point: Point) {
@@ -1893,14 +2378,20 @@ impl FeedbackViews {
         &mut self,
         scene: &mut Scene,
         text: &mut impl tekes_ui_controls::ButtonTextRenderer,
-        model: &Banner,
+        model: &mut Banner,
         frame: Rect,
         clip: Option<Rect>,
         palette: Palette,
         role: proposal::TextRole,
     ) -> ViewLayout {
-        self.banner
-            .render(scene, text, model, frame, clip, palette, role)
+        let layout = self
+            .banner
+            .render(scene, text, model, frame, clip, palette, role);
+        if let Some(next) = self.banner.model() {
+            *model = next;
+            self.banner.input = Some(model.clone());
+        }
+        layout
     }
 
     pub fn banner_pointer_move(&mut self, point: Point) {
@@ -1933,17 +2424,6 @@ impl FeedbackViews {
 
     pub fn banner_focus_target(&self) -> Option<Rect> {
         self.banner.focus_target()
-    }
-
-    pub fn render_status_badge(
-        &mut self,
-        scene: &mut Scene,
-        model: StatusBadge,
-        frame: Rect,
-        clip: Option<Rect>,
-        palette: Palette,
-    ) -> ViewLayout {
-        self.status_badge.render(scene, model, frame, clip, palette)
     }
 
     pub fn render_progress(
@@ -2019,15 +2499,22 @@ mod layout_tests {
     }
 
     #[test]
+    #[ignore = "explicit GPU acceptance with fresh SSD output"]
     fn empty_state_playground_keeps_the_full_measured_action_visible() {
         let entry = crate::gallery::workbench::entries()
             .iter()
             .find(|entry| entry.renderer() == "empty-state")
             .unwrap();
-        let output = std::env::var_os("TEKESUI_EMPTY_STATE_OUT").map(std::path::PathBuf::from);
-        if let Some(p) = &output {
-            std::fs::create_dir_all(p).unwrap();
-        }
+        let output = Some(std::path::PathBuf::from(
+            std::env::var_os("TEKESUI_EMPTY_STATE_OUT")
+                .expect("fresh SSD output required for explicit EmptyState GPU capture"),
+        ));
+        let path = output.as_ref().unwrap();
+        assert!(
+            path.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts"),
+            "SSD evidence output required"
+        );
+        std::fs::create_dir(path).expect("fresh output directory required");
         let mut renderer = tekes_ui_render::Renderer::new_headless().expect("real GPU required");
         let mut records = Vec::new();
         for (theme_index, theme) in tekes_ui_tokens::Theme::ALL.into_iter().enumerate() {
@@ -2222,6 +2709,7 @@ mod layout_tests {
     }
 
     #[test]
+    #[ignore = "explicit actual GPU capture with fresh SSD output"]
     fn production_notices_align_first_line_with_real_shaping_and_gpu() {
         use tekes_ui_controls::{
             extended::{Banner, NoticeTone, Toast},
@@ -2229,10 +2717,12 @@ mod layout_tests {
         };
         use tekes_ui_scene::Primitive;
         use tekes_ui_tokens::{Palette, Theme, proposal};
-        let output = std::env::var_os("TEKESUI_NOTICE_ALIGNMENT_OUT").map(std::path::PathBuf::from);
-        if let Some(p) = &output {
-            std::fs::create_dir_all(p).unwrap();
-        }
+        let output = Some(std::path::PathBuf::from(
+            std::env::var_os("TEKESUI_NOTICE_ALIGNMENT_OUT").expect("fresh SSD output required"),
+        ));
+        let path = output.as_ref().unwrap();
+        assert!(path.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts"));
+        std::fs::create_dir(path).expect("fresh output required");
         let mut renderer = tekes_ui_render::Renderer::new_headless().expect("real GPU required");
         let mut records = Vec::new();
         for (theme_index, theme) in Theme::ALL.into_iter().enumerate() {
@@ -2337,13 +2827,24 @@ mod layout_tests {
         let frame = Rect::new(0., 0., 112., 30.);
         for theme in Theme::ALL {
             for brand in 0..=2 {
-                let palette = Palette { theme, brand };
+                let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                 for (status, label, fill_role) in cases {
                     let mut scene = Scene::new();
                     let mut badge = StatusBadgeView::default();
                     let mut text = TextEngine::new();
-                    badge.render(&mut scene, status, frame, None, palette);
-                    draw_status_badge_label(&mut text, &mut scene, theme, frame, label, palette);
+                    badge
+                        .render_labelled_aligned(
+                            &mut scene,
+                            &mut text,
+                            status,
+                            label,
+                            frame,
+                            frame.inset(5.),
+                            None,
+                            palette,
+                            tekes_ui_controls::ButtonTextAlign::Leading,
+                        )
+                        .unwrap();
 
                     let fill = scene
                         .primitives()
@@ -2419,7 +2920,7 @@ mod layout_tests {
             180.0,
             toast_bottom,
             "12000 ms remaining",
-            "Time advances only when the fixture timer control is activated.",
+            "Time follows the Host frame clock; hover pauses the original Toast.",
             0,
         );
         assert!(action.min_y() >= toast_bottom + 8.0);
@@ -2545,7 +3046,7 @@ mod layout_tests {
             600.0,
             74.0,
             "5000 ms remaining",
-            "Time advances only when the fixture timer control is activated.",
+            "Time follows the Host frame clock; hover pauses the original Toast.",
             0,
         );
         assert_eq!(action, Rect::new(40.0, 84.0, 156.0, 34.0));
@@ -2709,7 +3210,7 @@ mod layout_tests {
                         let mut scene = Scene::new();
                         let mut y = 8.;
                         let bounds = Rect::new(8., 8., 700., 2000.);
-                        let palette = Palette { theme, brand };
+                        let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                         if variants {
                             matrix_empty_variants(&mut ctx, &mut scene, bounds, &mut y, palette);
                         } else {
@@ -2732,6 +3233,152 @@ mod layout_tests {
             "all EmptyState panel callers must forward existing backing scale"
         );
     }
+    #[test]
+    fn real_tooltip_state_matrix_consumes_theme_palette_roles() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        for theme in Theme::ALL {
+            let mut text = TextEngine::new();
+            text.begin_frame();
+            let mut static_text = StaticText::new(None);
+            let mut ctx = context(&mut text, &mut static_text);
+            ctx.theme = theme;
+            let mut scene = Scene::new();
+            let mut y = 8.;
+            let bounds = Rect::new(8., 8., 360., 1600.);
+            let palette = Palette::from(theme);
+            matrix_tooltip(&mut ctx, &mut scene, bounds, &mut y, palette);
+            let tooltip_frames: Vec<_> = scene
+                .primitives()
+                .iter()
+                .filter_map(|primitive| match primitive {
+                    Primitive::Quad(quad)
+                        if quad.rect.size.width
+                            == bounded_fixture_width(bounds.size.width, 420.).min(240.)
+                            && quad.corner_radii.top_left
+                                == proposal::metric("radius", "radius-floating").unwrap()
+                            && quad.fill
+                                == palette
+                                    .color("surface-3")
+                                    .expect("generated Tooltip surface") =>
+                    {
+                        Some(quad.rect)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(
+                tooltip_frames.len(),
+                2,
+                "hover and focus-visible states in {theme:?}"
+            );
+            let tooltip_text = tooltip_frames.iter().all(|frame| {
+                let content = Rect::new(
+                    frame.min_x() + 12.,
+                    frame.min_y() + 8.,
+                    frame.size.width - 24.,
+                    frame.size.height - 16.,
+                );
+                scene.primitives().iter().any(|primitive| {
+                    let Primitive::Glyphs(run) = primitive else {
+                        return false;
+                    };
+                    run.color == palette.color("primary-text").expect("semantic text role")
+                        && !run.glyphs.is_empty()
+                        && run
+                            .glyphs
+                            .iter()
+                            .all(|glyph| content.contains(glyph.origin))
+                })
+            });
+            assert!(
+                tooltip_text,
+                "real Gallery Tooltip body glyphs consume {theme:?} text palette"
+            );
+            assert!(
+                contrast_ratio(
+                    palette.color("primary-text").unwrap(),
+                    palette.color("surface-3").unwrap(),
+                ) >= if theme.is_increased() { 7. } else { 4.5 },
+                "Tooltip text/background contrast in {theme:?}"
+            );
+            assert!(
+                y > bounds.min_y(),
+                "the real Tooltip matrix lays out in {theme:?}"
+            );
+        }
+    }
+    #[test]
+    fn real_popover_state_matrix_consumes_theme_surface_and_body_text_roles() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        for theme in Theme::ALL {
+            let mut text = TextEngine::new();
+            text.begin_frame();
+            let mut static_text = StaticText::new(None);
+            let mut ctx = context(&mut text, &mut static_text);
+            ctx.theme = theme;
+            let mut scene = Scene::new();
+            let mut y = 8.;
+            let bounds = Rect::new(8., 8., 360., 1600.);
+            let palette = Palette::from(theme);
+            matrix_popover(&mut ctx, &mut scene, bounds, &mut y, palette);
+
+            let popover_frames: Vec<_> = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .filter_map(|(index, primitive)| match primitive {
+                    Primitive::Quad(quad)
+                        if quad.fill == palette.color("surface-popover").unwrap()
+                            && quad.corner_radii.top_left
+                                == proposal::metric("radius", "radius-floating").unwrap() =>
+                    {
+                        Some((index, quad.rect))
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(popover_frames.len(), 2, "open states in {theme:?}");
+
+            let body_text = palette.color("primary-text").unwrap();
+            for (surface_index, frame) in &popover_frames {
+                // The fixture body is above the bottom dismiss action. Inspect
+                // its first glyph run after this surface, regardless of ink.
+                let body = Rect::new(
+                    frame.min_x() + 4.,
+                    frame.min_y() + 4.,
+                    frame.size.width - 8.,
+                    frame.size.height * 0.5 - 4.,
+                );
+                let body_run = scene.primitives()[*surface_index + 1..]
+                    .iter()
+                    .find_map(|primitive| match primitive {
+                        Primitive::Glyphs(run)
+                            if !run.glyphs.is_empty()
+                                && run.glyphs.iter().all(|glyph| body.contains(glyph.origin)) =>
+                        {
+                            Some(run)
+                        }
+                        _ => None,
+                    })
+                    .expect("actual Popover body glyphs above its dismiss action");
+                assert_eq!(body_run.color, body_text, "Popover body text in {theme:?}");
+                assert!(
+                    contrast_ratio(body_text, palette.color("surface-popover").unwrap())
+                        >= if theme.is_increased() { 7. } else { 4.5 },
+                    "Popover body text/background contrast in {theme:?}"
+                );
+            }
+            assert!(
+                y > bounds.min_y(),
+                "real Gallery matrix laid out in {theme:?}"
+            );
+        }
+    }
+
     #[test]
     fn actual_tooltip_forwarder_recovers_each_new_owner_without_reviving_old_requests() {
         use tekes_ui_tokens::{Palette, Theme};
@@ -2757,7 +3404,7 @@ mod layout_tests {
         for theme in Theme::ALL {
             for brand in 0..3 {
                 for focus in [false, true] {
-                    let palette = Palette { theme, brand };
+                    let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                     let mut views = FeedbackViews::default();
                     let mut text = TextEngine::new();
                     paint(&mut views, &mut text, palette);
@@ -2811,7 +3458,8 @@ mod layout_tests {
                         Size::new(240., 64.),
                         Rect::new(0., 0., 400., 240.),
                         None,
-                        tekes_ui_tokens::Palette { theme, brand },
+                        tekes_ui_tokens::Palette::new(theme, brand)
+                            .expect("registered Gallery brand"),
                         proposal::TextRole::UiBody,
                     )
                     .visible
@@ -2831,5 +3479,498 @@ mod layout_tests {
                 assert!(paint(&mut views, &model));
             }
         }
+    }
+    #[test]
+    fn progress_original_page_and_variants_preserve_selected_brand_packet() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::surface_palette::resolve_surface;
+        let entry = crate::gallery::workbench::entries()
+            .iter()
+            .find(|e| e.renderer() == "progress")
+            .unwrap();
+        for theme in tekes_ui_tokens::Theme::ALL {
+            for brand in [0, 1, 2] {
+                for (value, unknown) in [(0., false), (0.45, false), (1., false), (0.45, true)] {
+                    let mut model = Progress::new(value);
+                    model.indeterminate = unknown;
+                    let mut ext = ExtendedStory {
+                        progress: model,
+                        ..Default::default()
+                    };
+                    let mut state = StoryState::for_entry(entry);
+                    state.brand = brand;
+                    let mut text = TextEngine::new();
+                    let mut static_text = StaticText::new(None);
+                    let mut ctx = context(&mut text, &mut static_text);
+                    ctx.theme = theme;
+                    let palette = Palette::new(theme, brand).unwrap();
+                    let packet =
+                        resolve_surface(palette, "canvas", "progress-track", "rest").unwrap();
+                    let mut scene = Scene::new();
+                    let body = Rect::new(24., 100., 220., 32.);
+                    let clip = Rect::new(0., 0., 720., 640.);
+                    assert!(build(
+                        &mut ext, entry, &mut state, &mut ctx, &mut scene, body, clip, palette
+                    ));
+                    let frame = ext.feedback_views.progress.layout().frame;
+                    let q = scene
+                        .primitives()
+                        .iter()
+                        .filter_map(|p| {
+                            if let Primitive::Quad(q) = p {
+                                Some(q)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<_>>();
+                    assert!(
+                        q.iter()
+                            .any(|q| q.rect == frame && q.fill == packet.background)
+                    );
+                    assert!(q.iter().any(|q| q.rect == frame
+                        && q.border_color == packet.boundary.unwrap()
+                        && q.border_width > 0.));
+                    assert!(q.iter().any(|q| q.fill == packet.marker.unwrap()
+                        && q.rect.min_y() == frame.min_y()
+                        && q.rect.size.width
+                            == frame.size.width * if unknown { 0.3 } else { value }));
+                    assert!(state.buttons.contains_key(&20));
+                    let mut scene = Scene::new();
+                    let mut y = 10.;
+                    matrix_progress_variants(
+                        &mut ctx,
+                        &mut scene,
+                        Rect::new(10., 10., 220., 500.),
+                        &mut y,
+                        palette,
+                    );
+                    let fills = scene
+                        .primitives()
+                        .iter()
+                        .filter_map(|p| match p {
+                            Primitive::Quad(q) if q.fill == packet.marker.unwrap() => {
+                                Some(q.rect.size.width)
+                            }
+                            _ => None,
+                        })
+                        .collect::<Vec<_>>();
+                    assert_eq!(fills, vec![0., 220. * 0.45, 220., 220. * 0.3]);
+                }
+            }
+        }
+    }
+
+    #[test]
+    #[ignore = "explicit GPU acceptance under shared lock with fresh SSD output"]
+    fn issue76_original_gallery_page_and_variants_actual_gpu_match_badge_view() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Theme, surface_palette::resolve_surface};
+        let out = std::env::var_os("TEKESUI_BADGE_GALLERY_OUT").map(std::path::PathBuf::from);
+        if let Some(p) = &out {
+            assert!(!p.exists());
+            std::fs::create_dir_all(p).unwrap();
+        }
+        let entry = crate::gallery::workbench::entries()
+            .iter()
+            .find(|e| e.renderer() == "status-badge")
+            .unwrap();
+        let mut gpu = tekes_ui_render::Renderer::new_headless().expect("actual GPU required");
+        let mut receipt = vec![];
+        for (mi, mode) in Theme::ALL.into_iter().enumerate() {
+            for brand in 0..3 {
+                for backing in [1., 2.] {
+                    for width in [180., 320., 500.] {
+                        for variants_page in [false, true] {
+                            let palette = Palette::new(mode, brand).unwrap();
+                            let mut state = StoryState::for_entry(entry);
+                            state.brand = brand;
+                            let mut ext = ExtendedStory::default();
+                            let mut text = TextEngine::new();
+                            text.set_scale(backing);
+                            text.set_type_scale(1.5);
+                            text.begin_frame();
+                            let mut static_text = StaticText::new(None);
+                            let mut ctx = PageCtx {
+                                theme: mode,
+                                text: &mut text,
+                                static_text: &mut static_text,
+                            };
+                            let mut scene = Scene::new();
+                            let body = Rect::new(12.25, 20.5, width, 600.);
+                            let clip = Rect::new(0., 0., width + 30., 640.);
+                            if variants_page {
+                                variants(entry, &mut state, &mut ctx, &mut scene, body);
+                            } else {
+                                assert!(build(
+                                    &mut ext, entry, &mut state, &mut ctx, &mut scene, body, clip,
+                                    palette
+                                ));
+                            }
+                            let size = (
+                                ((width + 30.) * backing).ceil() as u32,
+                                (640. * backing) as u32,
+                            );
+                            let ground = crate::gallery::Gallery::background(mode);
+                            let actual = gpu
+                                .render_to_rgba8(
+                                    &scene,
+                                    ctx.text.atlas_mut(),
+                                    size,
+                                    backing,
+                                    ground,
+                                )
+                                .unwrap();
+                            let mut oracle = Scene::new();
+                            let mut badge_frames = vec![];
+                            for (tone, usage, label) in [
+                                (StatusBadge::Info, "status-badge-info", "Info"),
+                                (StatusBadge::Running, "status-badge-running", "Running"),
+                                (
+                                    StatusBadge::Succeeded,
+                                    "status-badge-succeeded",
+                                    "Succeeded",
+                                ),
+                                (StatusBadge::Failed, "status-badge-failed", "Failed"),
+                            ] {
+                                let packet =
+                                    resolve_surface(palette, "canvas", usage, "rest").unwrap();
+                                let frame = scene
+                                    .primitives()
+                                    .iter()
+                                    .find_map(|v| match v {
+                                        Primitive::Quad(q)
+                                            if q.fill == packet.background
+                                                && q.corner_radii
+                                                    == tekes_ui_scene::CornerRadii::uniform(
+                                                        q.rect.size.height * 0.5,
+                                                    ) =>
+                                        {
+                                            Some(q.rect)
+                                        }
+                                        _ => None,
+                                    })
+                                    .expect("actual original Gallery solid badge");
+                                StatusBadgeView::default()
+                                    .render_labelled_aligned(
+                                        &mut oracle,
+                                        ctx.text,
+                                        tone,
+                                        label,
+                                        frame,
+                                        frame.inset(5.),
+                                        Some(clip),
+                                        palette,
+                                        tekes_ui_controls::ButtonTextAlign::Leading,
+                                    )
+                                    .unwrap();
+                                badge_frames.push(frame);
+                            }
+                            let expected = gpu
+                                .render_to_rgba8(
+                                    &oracle,
+                                    ctx.text.atlas_mut(),
+                                    size,
+                                    backing,
+                                    ground,
+                                )
+                                .unwrap();
+                            let blank = gpu
+                                .render_to_rgba8(
+                                    &Scene::new(),
+                                    ctx.text.atlas_mut(),
+                                    size,
+                                    backing,
+                                    ground,
+                                )
+                                .unwrap();
+                            let mut checked = 0;
+                            let mut positive = 0;
+                            for (i, (a, b)) in actual
+                                .chunks_exact(4)
+                                .zip(expected.chunks_exact(4))
+                                .enumerate()
+                            {
+                                let x = ((i as u32 % size.0) as f32 + 0.5) / backing;
+                                let y = ((i as u32 / size.0) as f32 + 0.5) / backing;
+                                if badge_frames.iter().any(|f| {
+                                    x > f.min_x() + 1.
+                                        && x < f.max_x() - 1.
+                                        && y > f.min_y() + 1.
+                                        && y < f.max_y() - 1.
+                                }) {
+                                    assert_eq!(
+                                        a, b,
+                                        "original Gallery/labelled View m{mi} b{brand} width{width} variants{variants_page} x{x} y{y}"
+                                    );
+                                    checked += 1;
+                                    if a != &blank[i * 4..i * 4 + 4] {
+                                        positive += 1;
+                                    }
+                                }
+                            }
+                            assert!(checked > 0 && positive > 0);
+                            let key = format!(
+                                "m{mi}-brand{brand}-w{width}-variants{variants_page}@{backing}x"
+                            );
+                            if let Some(p) = &out
+                                && width == 320.
+                                && brand == 0
+                            {
+                                let file =
+                                    std::fs::File::create(p.join(format!("{key}.png"))).unwrap();
+                                let mut encoder = png::Encoder::new(file, size.0, size.1);
+                                encoder.set_color(png::ColorType::Rgba);
+                                encoder.set_depth(png::BitDepth::Eight);
+                                encoder
+                                    .write_header()
+                                    .unwrap()
+                                    .write_image_data(&actual)
+                                    .unwrap();
+                            }
+                            receipt.push(serde_json::json!({"case":key,"original_Gallery_build":!variants_page,"original_Gallery_variants":variants_page,"four_original_badge_frames":badge_frames.len(),"checked_pixels":checked,"positive_pixels":positive}));
+                        }
+                    }
+                }
+            }
+        }
+        println!(
+            "actual original Gallery page/variants GPU cases: {}",
+            receipt.len()
+        );
+        if let Some(p) = out {
+            std::fs::write(
+                p.join("receipt.json"),
+                serde_json::to_vec_pretty(&serde_json::json!({"cases":receipt,"GUI_opened":false}))
+                    .unwrap(),
+            )
+            .unwrap();
+        }
+    }
+    #[test]
+    #[ignore = "explicit actual GPU capture with fresh SSD output"]
+    fn issue79_original_gallery_mounted_notices_actual_gpu_and_clock() {
+        use std::time::Duration;
+        let output = Some(std::path::PathBuf::from(
+            std::env::var_os("TEKESUI_EMPTY_STATE_OUT").expect("fresh SSD output required"),
+        ));
+        let path = output.as_ref().unwrap();
+        assert!(path.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts"));
+        std::fs::create_dir(path).expect("fresh output required");
+        let mut gpu = tekes_ui_render::Renderer::new_headless().expect("actual GPU required");
+        let mut cases = vec![];
+        for name in ["toast", "banner"] {
+            let entry = crate::gallery::workbench::entries()
+                .iter()
+                .find(|e| e.renderer() == name)
+                .unwrap();
+            for (mi, theme) in tekes_ui_tokens::Theme::ALL.into_iter().enumerate() {
+                for brand in 0..3 {
+                    for backing in [1., 2.] {
+                        for width in [180., 320., 500.] {
+                            let palette = Palette::new(theme, brand).unwrap();
+                            let mut ext = ExtendedStory::default();
+                            let mut state = StoryState::for_entry(entry);
+                            state.brand = brand;
+                            let mut text = TextEngine::new();
+                            text.set_motion_enabled(true);
+                            text.set_motion_context(Duration::ZERO, true);
+                            text.set_scale(backing);
+                            text.set_type_scale(1.5);
+                            text.begin_frame();
+                            let mut static_text = StaticText::new(None);
+                            let mut ctx = PageCtx {
+                                theme,
+                                text: &mut text,
+                                static_text: &mut static_text,
+                            };
+                            let mut scene = Scene::new();
+                            let body = Rect::new(12.25, 20.5, width, 600.);
+                            let clip = Rect::new(0., 0., width + 30., 640.);
+                            assert!(build(
+                                &mut ext, entry, &mut state, &mut ctx, &mut scene, body, clip,
+                                palette
+                            ));
+                            let (notice, action) = if name == "toast" {
+                                assert!(ext.feedback_views.toast.host.is_some());
+                                (
+                                    ext.feedback_views.toast.layout().frame,
+                                    ext.feedback_views.toast.focus_target().unwrap(),
+                                )
+                            } else {
+                                assert!(ext.feedback_views.banner.host.is_some());
+                                (
+                                    ext.feedback_views.banner.layout().frame,
+                                    ext.feedback_views.banner.focus_target().unwrap(),
+                                )
+                            };
+                            let size = (
+                                ((width + 30.) * backing).ceil() as u32,
+                                (640. * backing) as u32,
+                            );
+                            let ground = crate::gallery::Gallery::background(theme);
+                            let rgba = gpu
+                                .render_to_rgba8(
+                                    &scene,
+                                    ctx.text.atlas_mut(),
+                                    size,
+                                    backing,
+                                    ground,
+                                )
+                                .unwrap();
+                            let blank = gpu
+                                .render_to_rgba8(
+                                    &Scene::new(),
+                                    ctx.text.atlas_mut(),
+                                    size,
+                                    backing,
+                                    ground,
+                                )
+                                .unwrap();
+                            let mut notice_ink = 0;
+                            let mut action_ink = 0;
+                            for (i, (a, b)) in
+                                rgba.chunks_exact(4).zip(blank.chunks_exact(4)).enumerate()
+                            {
+                                if a != b {
+                                    let p = Point::new(
+                                        ((i as u32 % size.0) as f32 + 0.5) / backing,
+                                        ((i as u32 / size.0) as f32 + 0.5) / backing,
+                                    );
+                                    if notice.contains(p) {
+                                        notice_ink += 1;
+                                    }
+                                    if action.contains(p) {
+                                        action_ink += 1;
+                                    }
+                                }
+                            }
+                            assert!(
+                                notice_ink > 0 && action_ink > 0,
+                                "actual Gallery {name} notice/action ink"
+                            );
+                            if name == "toast" {
+                                let before = ext.toast.remaining_ms();
+                                ctx.text
+                                    .set_motion_context(Duration::from_millis(100), true);
+                                ctx.text.begin_frame();
+                                assert!(build(
+                                    &mut ext,
+                                    entry,
+                                    &mut state,
+                                    &mut ctx,
+                                    &mut Scene::new(),
+                                    body,
+                                    clip,
+                                    palette
+                                ));
+                                assert_eq!(ext.toast.remaining_ms(), before - 100);
+                            }
+                            let key = format!("{name}-m{mi}-b{brand}-w{width}@{backing}");
+                            if let Some(out) = &output
+                                && width == 320.
+                                && brand == 0
+                            {
+                                let file =
+                                    std::fs::File::create(out.join(format!("{key}.png"))).unwrap();
+                                let mut encoder = png::Encoder::new(file, size.0, size.1);
+                                encoder.set_color(png::ColorType::Rgba);
+                                encoder.set_depth(png::BitDepth::Eight);
+                                encoder
+                                    .write_header()
+                                    .unwrap()
+                                    .write_image_data(&rgba)
+                                    .unwrap();
+                            }
+                            cases.push(serde_json::json!({"case":key,"notice_ink":notice_ink,"action_ink":action_ink,"actual_mounted_host":true,"automatic_clock":name=="toast"}));
+                        }
+                    }
+                }
+            }
+        }
+        println!("Issue79 actual original Gallery GPU cases: {}", cases.len());
+        if let Some(out) = output {
+            std::fs::write(
+                out.join("notice-receipt.json"),
+                serde_json::to_vec_pretty(&serde_json::json!({"cases":cases,"GUI":false})).unwrap(),
+            )
+            .unwrap();
+        }
+    }
+
+    #[test]
+    #[ignore = "explicit actual GPU capture with fresh SSD output"]
+    fn issue79_static_matrix_and_variants_use_actual_content_without_a_clock() {
+        let output = std::path::PathBuf::from(
+            std::env::var_os("TEKESUI_NOTICE_STATIC_OUT").expect("fresh SSD output required"),
+        );
+        assert!(output.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts"));
+        std::fs::create_dir(&output).expect("fresh output required");
+        let mut gpu = tekes_ui_render::Renderer::new_headless().expect("actual GPU required");
+        let mut count = 0;
+        for name in ["toast", "banner"] {
+            let entry = crate::gallery::workbench::entries()
+                .iter()
+                .find(|e| e.renderer() == name)
+                .unwrap();
+            for theme in tekes_ui_tokens::Theme::ALL {
+                for backing in [1., 2.] {
+                    for width in [180., 320., 500.] {
+                        for variant in [false, true] {
+                            let mut state = StoryState::for_entry(entry);
+                            let mut text = TextEngine::new();
+                            text.set_motion_enabled(false);
+                            text.set_scale(backing);
+                            text.set_type_scale(1.5);
+                            text.begin_frame();
+                            let mut static_text = StaticText::new(None);
+                            let mut ctx = PageCtx {
+                                theme,
+                                text: &mut text,
+                                static_text: &mut static_text,
+                            };
+                            let mut scene = Scene::new();
+                            let frame = Rect::new(10.25, 10.5, width, 900.);
+                            if variant {
+                                variants(entry, &mut state, &mut ctx, &mut scene, frame);
+                            } else {
+                                matrix(entry, &mut state, &mut ctx, &mut scene, frame);
+                            }
+                            let size = (
+                                ((width + 30.) * backing).ceil() as u32,
+                                (940. * backing) as u32,
+                            );
+                            let ground = crate::gallery::Gallery::background(theme);
+                            let image = gpu
+                                .render_to_rgba8(
+                                    &scene,
+                                    ctx.text.atlas_mut(),
+                                    size,
+                                    backing,
+                                    ground,
+                                )
+                                .unwrap();
+                            let blank = gpu
+                                .render_to_rgba8(
+                                    &Scene::new(),
+                                    ctx.text.atlas_mut(),
+                                    size,
+                                    backing,
+                                    ground,
+                                )
+                                .unwrap();
+                            assert_ne!(image, blank);
+                            count += 1;
+                        }
+                    }
+                }
+            }
+        }
+        println!("actual static Gallery matrix/variant GPU cases: {count}");
+        std::fs::write(
+            output.join("receipt.json"),
+            format!("{{\"cases\":{count}}}"),
+        )
+        .unwrap();
     }
 }

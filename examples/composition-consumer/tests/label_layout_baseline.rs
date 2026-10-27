@@ -42,14 +42,10 @@ fn real_text_button_and_compound_consumers_currently_wrap_without_mutating_origi
                     let id = ComponentId(9861);
                     let node = match kind {
                         0 => Content::new(id, TextContent::new(original)),
-                        1 => Content::new(id, ButtonContent::new(original)),
+                        1 => Content::new(id, Button::new(original)),
                         _ => Content::new(
                             id,
-                            CompoundButton::new(
-                                original,
-                                Content::new(ComponentId(9862), TextContent::new(original)),
-                            )
-                            .unwrap(),
+                            Button::new(Content::new(ComponentId(9862), TextContent::new(original))).with_accessible_name(original),
                         ),
                     };
                     let mut host = ContentHost::new(node).unwrap();

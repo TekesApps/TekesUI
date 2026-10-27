@@ -1,0 +1,23 @@
+[package]
+name = "tekes-ui-issue82-panel-consumer"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[features]
+token-audit = ["tekes-ui-controls/token-audit"]
+
+[dependencies]
+tekes-ui-controls = { path = "../../crates/tekes-ui-controls" }
+tekes-ui-scene = { path = "../../crates/tekes-ui-scene" }
+tekes-ui-tokens = { path = "../../crates/tekes-ui-tokens" }
+tekes-ui-icons = { path = "../../crates/tekes-ui-icons" }
+tekes-ui-text = { path = "../../crates/tekes-ui-text" }
+
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+tekes-ui-render = { path = "../../crates/tekes-ui-render" }
+tekes-ui-platform-macos = { path = "../../crates/tekes-ui-platform-macos", features = ["content-accessibility"] }
+serde_json = "1"
+resvg = { version = "0.48.0", default-features = false }

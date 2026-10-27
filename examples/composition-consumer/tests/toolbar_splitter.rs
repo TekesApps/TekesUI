@@ -242,7 +242,7 @@ fn segmented_original_toolbars_reflow_with_two_and_three_container_boundaries() 
                                     },
                                     vec![Content::new(
                                         ComponentId(3),
-                                        ButtonContent::new("Action"),
+                                        Button::new("Action"),
                                     )],
                                 ),
                             )]),

@@ -6,9 +6,49 @@
 //! never reconstructs controls. Removed content is returned to its owner, which
 //! may retain it for virtualization. No implicit serialization or rehydration.
 mod actions;
+mod panel;
+pub use panel::{
+    ContentGeometrySnapshot, CurveSubtreeCapability, HostRevealGeometry, PanelContent,
+    PanelGeometry,
+};
+mod split_view;
+pub use split_view::{
+    Rejected, SplitViewConfig, SplitViewConstruction, SplitViewContent, SplitViewError,
+    SplitViewExpected, SplitViewReplacement, SplitViewSlotIds,
+};
+mod prepared;
+pub use prepared::{
+    PreparedEffects, PreparedEffectsError, PreparedHook, PreparedHookKind,
+    PreparedLifecycleContext, PreparedPhase,
+};
+mod action_proxy;
+mod notice;
+pub use notice::{BannerContent, ToastContent};
+mod empty_state;
+pub use empty_state::EmptyStateContent;
+mod action_preparation;
+pub use action_preparation::{
+    ActionPreparation, ActionTransactionCompatibility, ComponentActionRequest,
+    PreparedActionEffect, PreparedActionFocus, PreparedComponentAction,
+};
+mod content_reveal_plan;
+pub use content_reveal_plan::{
+    HostRevealBudget, HostRevealError, HostRevealOutcome, HostRevealPlan,
+};
 mod adapters;
+mod chart_content;
+pub use chart_content::{ChartContent, ChartContentError};
+mod button;
+pub use button::{Button, ButtonActivationPhase, ButtonContents, ButtonImagePosition};
+use button::{action_child_theme, measure_action_slot, resolve_action_slot};
 mod content_reading;
 mod content_reveal;
+mod status_badge;
+pub use status_badge::StatusBadgeContent;
+mod skeleton;
+pub use skeleton::SkeletonContent;
+mod progress;
+pub use progress::ProgressContent;
 mod help;
 mod key;
 mod label;
@@ -18,14 +58,17 @@ pub use number::{
     DecimalNumberFormat, NumberCommitReason, NumberEditState, NumberFieldContent, NumberFormat,
     NumberParseError, NumberValidation, NumberValueChange, NumberValueError,
 };
+mod overlay_scope;
 mod pointer;
+mod text_query;
+pub use overlay_scope::OverlayScope;
 mod toolbar_content;
+mod toolbar_host;
 use crate::extended::{Axis, Grid, Stack};
 use crate::layout::{AlignmentOverride, MeasuredChild, layout_measured_children};
 use crate::paint::ButtonVariant;
 use crate::{
-    Button, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, ControlMotionContext,
-    ScrollArea,
+    ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, ControlMotionContext, ScrollArea,
 };
 pub use actions::{
     ContentAction, ContentActionKind, ContentActionPayload, ContentActionRecord,
@@ -45,7 +88,13 @@ pub use pointer::{InputModifiers, PointerButton, PointerEvent, PointerModifiers,
 use std::{any::Any, collections::BTreeSet, fmt::Debug, ops::Range};
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Rgba, proposal};
+pub use text_query::{ContentTextInput, ContentTextLayout};
 pub use toolbar_content::{ToolbarContent, ToolbarGroup, ToolbarPlacement};
+pub use toolbar_host::{
+    ToolbarAccessibilityTarget, ToolbarButtonDeclaration, ToolbarCommandBinding,
+    ToolbarGroupOverflow, ToolbarHost, ToolbarInvocation, ToolbarRegion, ToolbarRegionScope,
+    ToolbarRegistration, ToolbarSemanticNode, ToolbarWindowEdge, toolbar_commands,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ComponentId(pub u64);
@@ -211,12 +260,33 @@ pub struct SemanticNode {
 pub struct ContentTheme {
     pub palette: Palette,
     pub foreground: Option<Rgba>,
+    pub icon_foreground: Option<Rgba>,
+    surface: &'static str,
+    surface_declared: bool,
+}
+impl ContentTheme {
+    pub fn surface(self) -> &'static str {
+        self.surface
+    }
+    pub fn with_surface(
+        mut self,
+        name: &str,
+    ) -> Result<Self, tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
+        self.surface_declared = true;
+        self.foreground = None;
+        self.icon_foreground = None;
+        Ok(self)
+    }
 }
 impl From<Palette> for ContentTheme {
     fn from(palette: Palette) -> Self {
         Self {
             palette,
             foreground: None,
+            icon_foreground: None,
+            surface: "canvas",
+            surface_declared: false,
         }
     }
 }
@@ -227,7 +297,105 @@ impl From<Palette> for ContentTheme {
 /// never an implicit clip to a control's own frame (including its focus ring).
 /// `measure` is read-layout work, `arrange` places descendants, `paint` may use
 /// existing render APIs. Hosts call render before input after geometry changes.
+/// Opt-in contract required recursively by typed collection transactions.
+/// StableHooks promises Cancel, focus, lifecycle, activity, mutable child access
+/// (including window_active_changed and presentation_runnable_changed, their
+/// forwarding and actually notified descendants),
+/// and Drop neither allocate Content/mount identities, change the declared tree,
+/// nor reenter component/Host updates. The mutable children getter itself is
+/// accessor-only: it returns the existing vector without other observable state
+/// changes. This matters on ancestor paths accessed before reservation.
+/// Pure queries remain side-effect free. This is a
+/// semantic contract, not protection against arbitrary panics or violations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TableTransactionCompatibility {
+    Unknown,
+    StableHooks,
+}
 pub trait Component: Debug + Any {
+    /// Opt in to the original Host's exact curve-clip geometry. Unknown owners
+    /// remain rejected inside a curved Panel subtree.
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Unsupported
+    }
+    /// Existing controls receive the same event; this adds exact clip-region
+    /// membership to their original reducer without creating another owner.
+    fn set_clip_region(&mut self, _region: Option<tekes_ui_scene::ClipRegion>) {}
+    fn pointer_event_in_region(&mut self, event: &ContentEvent, _inside: bool) -> ContentResponse {
+        match event {
+            ContentEvent::Pointer(pointer) => self.pointer_event(pointer),
+            _ => self.event(event),
+        }
+    }
+
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::Unknown
+    }
+    /// Pure finite preparation for this owner's complete ordered hook sequence.
+    /// Default unavailable: StableHooks alone does not promise eligibility purity.
+    /// A compliant wrapper delegates preparation and lifecycle context to the same
+    /// retained original owner; refusal occurs before notification side effects.
+    fn prepared_effects_work(&self, _max_calls: usize) -> Result<usize, PreparedEffectsError> {
+        Err(PreparedEffectsError::Unavailable)
+    }
+    fn prepare_effects(
+        &self,
+        _hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        Err(PreparedEffectsError::Unavailable)
+    }
+    fn lifecycle_prepared(&mut self, event: Lifecycle, context: &mut PreparedLifecycleContext) {
+        context.original_lifecycle(self, event);
+    }
+    fn participates_in_focus_traversal(&self) -> bool {
+        true
+    }
+    fn semantic_subtree_hidden(&self) -> bool {
+        false
+    }
+    /// Optional component-owned help text and revision; Content declarations override it.
+    fn help(&self) -> Option<(&str, u64)> {
+        None
+    }
+
+    /// The read-only focus/reveal planner consumes this original-owner geometry
+    /// constraint and revalidates its generation before commit.
+    fn requires_focus_reveal(&self) -> bool {
+        false
+    }
+    fn host_reveal_geometry_constraint(&self) -> Option<HostRevealGeometry> {
+        None
+    }
+    fn required_focus_space(&self) -> RequiredFocusSpace {
+        RequiredFocusSpace::Legacy
+    }
+    fn required_focus_result(&self) -> Option<RequiredFocusResult> {
+        None
+    }
+    fn focus_boundary_visible(&self) -> bool {
+        self.focus_decoration_above_siblings()
+    }
+
+    /// Pure positive translation capability for the most recent valid arrange.
+    /// Child identity/order, relative frames and local clip remain invariant under
+    /// ancestor Scroll translation. Return false when unarranged or requiring reflow.
+    /// Indexed mutable child access is accessor-only; this is not a runtime sandbox.
+    fn host_reveal_passthrough(&self) -> bool {
+        false
+    }
+    /// Additional local rectangular clip in Host coordinates. None is no extra
+    /// clip; Some zero area is an empty domain. Finite safe-edge numeric input is
+    /// checked during planning and final validation before any effects.
+    fn host_reveal_local_clip(&self) -> Option<Rect> {
+        None
+    }
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::Unsupported
+    }
+    fn prepare_action(&self, _request: ComponentActionRequest<'_>) -> ActionPreparation {
+        ActionPreparation::Unsupported
+    }
     /// Refresh only the existing arranged text geometry, not a second layout or
     /// painting pipeline. Text-owning wrappers forward this to their public field.
     fn prepare_text_input(
@@ -253,6 +421,11 @@ pub trait Component: Debug + Any {
     fn action_payload(&self, _kind: ContentActionKind) -> Option<ContentActionPayload> {
         None
     }
+    /// Pure filter for an undrained delivery. Defaults preserve existing owners.
+    /// Implementations must not mutate models, consume queues or produce actions.
+    fn action_payload_current(&self, _payload: &ContentActionPayload) -> bool {
+        true
+    }
     fn key_event(&mut self, key: &ContentKeyEvent) -> ContentResponse {
         key.key
             .map(|k| {
@@ -274,6 +447,13 @@ pub trait Component: Debug + Any {
             .unwrap_or_default()
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild;
+    fn measure_intrinsic(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        available: Size,
+    ) -> MeasuredChild {
+        self.measure(text, available)
+    }
     /// Check semantic slot constraints before a host mounts or uses this node.
     fn validate(&self) -> Result<(), CompositionError> {
         Ok(())
@@ -284,6 +464,12 @@ pub trait Component: Debug + Any {
     fn active(&self) -> bool {
         true
     }
+    /// Activity notification, including inactive retained descendants. Notice
+    /// owners receive window + ancestor activity; other owners retain the #78
+    /// effective self/ancestor activity contract. Own notice visibility is runnable state.
+    fn window_active_changed(&mut self, _active: bool) {}
+    /// Effective active ancestry and this node's arranged nonempty visible clip.
+    fn presentation_runnable_changed(&mut self, _runnable: bool) {}
     fn fixed_slots(&self) -> bool {
         false
     }
@@ -309,8 +495,34 @@ pub trait Component: Debug + Any {
     fn text_surface(&self) -> Option<&crate::TextSurface> {
         None
     }
+    /// Whether this original owner accepted a wheel that can update reading intent.
+    fn reading_scroll_source(&self) -> bool {
+        self.text_surface().is_some_and(|surface| {
+            surface.input.read_only && !surface.input.disabled && surface.scroll.limit().y > 0.
+        })
+    }
+    /// Complete current shaper output from this retained text owner, without
+    /// shaping, focus or editor mutation. Decorative parts have no text owner.
+    fn semantic_text_layout(&self) -> Option<ContentTextLayout> {
+        self.text_surface()
+            .and_then(ContentTextLayout::from_surface)
+    }
+    fn semantic_part_text_layout(&self, _part: usize) -> Option<ContentTextLayout> {
+        None
+    }
+    /// Native key provenance from the retained original input owner, independent
+    /// of arranged caret/clip geometry. Host key frames separately validate the
+    /// original owner mount and focus epoch against blur/refocus and remount ABA.
+    fn native_key_binding(&self) -> Option<Vec<u8>> {
+        self.text_surface().map(ContentTextInput::local_binding)
+    }
     fn overlay_open(&self) -> bool {
         false
+    }
+    /// Interactive original Content overlays opt into input/focus/AX scope.
+    /// Paint-only exit presentation never acquires this authority.
+    fn overlay_scope(&self) -> Option<OverlayScope> {
+        None
     }
     fn overlay_presented(&self) -> bool {
         self.overlay_open()
@@ -338,6 +550,12 @@ pub trait Component: Debug + Any {
     fn semantic_part_parent(&self, _part: usize) -> Option<usize> {
         None
     }
+    fn semantic_part_preserves_activation_focus(&self, _part: usize) -> bool {
+        false
+    }
+    fn preserves_activation_focus(&self) -> bool {
+        false
+    }
     fn semantic_parts(&self) -> Vec<SemanticPart> {
         Vec::new()
     }
@@ -360,6 +578,11 @@ pub trait Component: Debug + Any {
         _clip: Rect,
         _theme: ContentTheme,
     ) {
+    }
+    /// Hide this semantic node, promoting visible descendants to its parent.
+    /// Painting, layout and input ownership remain unchanged.
+    fn semantic_hidden(&self) -> bool {
+        false
     }
     /// Declare independent interaction, separately from keyboard focus.
     /// Pointer-only consumer controls must override this; passive decorative
@@ -420,6 +643,10 @@ pub trait Component: Debug + Any {
     fn event(&mut self, _event: &ContentEvent) -> ContentResponse {
         ContentResponse::default()
     }
+    /// Default semantic Surface for this component's own paint and children.
+    fn default_surface(&self) -> Option<&'static str> {
+        None
+    }
     fn child_theme(&self, theme: ContentTheme) -> ContentTheme {
         theme
     }
@@ -434,6 +661,12 @@ pub trait Component: Debug + Any {
         false
     }
     fn set_focus(&mut self, _focused: bool, _visible: bool) {}
+    fn set_focus_from_traversal(&mut self, _reverse: bool) {
+        self.set_focus(true, true);
+    }
+    fn cancel_pointer(&mut self) -> ContentResponse {
+        self.event(&ContentEvent::Cancel)
+    }
     fn composing(&self) -> bool {
         false
     }
@@ -451,6 +684,7 @@ pub struct Content {
     component: Box<dyn Component>,
     frame: Rect,
     clip: Rect,
+    curve_geometry: Option<panel::NodeGeometry>,
     mount: u64,
     preserve_activation_focus: bool,
     bubble_handled_events: Option<bool>,
@@ -458,31 +692,108 @@ pub struct Content {
     label: Option<label::LabelState>,
     help: Option<String>,
     help_revision: u64,
+    surface: Option<&'static str>,
+    // Cached value last notified to this owner; notice and ordinary owner
+    // notification semantics differ. This is not a generic activity fact.
+    activity_effective: bool,
+    activity_parent: bool,
 }
 impl Content {
+    fn active(&self) -> bool {
+        self.component.active()
+            && (self.component.overlay_scope().is_none()
+                || self.component.overlay_open() && !self.component.semantics().disabled)
+    }
     pub fn new(id: ComponentId, component: impl Component) -> Self {
+        Self::new_with_mount(id, component, actions::next_mount())
+    }
+    fn new_with_mount(id: ComponentId, component: impl Component, mount: u64) -> Self {
         Self {
             id,
             component: Box::new(component),
             frame: Rect::default(),
             clip: Rect::default(),
-            mount: actions::next_mount(),
+            curve_geometry: None,
+            mount,
             preserve_activation_focus: false,
             bubble_handled_events: None,
             padding_focus: None,
             label: None,
             help: None,
             help_revision: 0,
+            surface: None,
+            activity_effective: true,
+            activity_parent: true,
         }
     }
-    /// Opt in for this TextContent or ButtonContent label. Original component,
+    pub fn with_surface(
+        mut self,
+        name: &str,
+    ) -> Result<Self, tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.set_surface(Some(name))?;
+        Ok(self)
+    }
+    pub fn set_surface(
+        &mut self,
+        name: Option<&str>,
+    ) -> Result<bool, tekes_ui_tokens::surface_palette::SurfaceError> {
+        let next = name
+            .map(tekes_ui_tokens::surface_palette::canonical_surface)
+            .transpose()?;
+        let changed = self.surface != next;
+        self.surface = next;
+        Ok(changed)
+    }
+    pub fn surface(&self) -> Option<&'static str> {
+        self.surface
+    }
+    fn resolved_theme(&self, theme: ContentTheme) -> ContentTheme {
+        let surface = self
+            .surface
+            .or_else(|| self.component.default_surface())
+            .map(|name| {
+                tekes_ui_tokens::surface_palette::canonical_surface(name)
+                    .expect("component Surface validated before host paint")
+            });
+        surface.map_or(theme, |surface| ContentTheme {
+            surface,
+            surface_declared: true,
+            foreground: None,
+            icon_foreground: None,
+            ..theme
+        })
+    }
+    fn child_theme(&self, theme: ContentTheme) -> ContentTheme {
+        let mut child = self.component.child_theme(theme);
+        if let Some(surface) = self.surface {
+            child.surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)
+                .expect("Content Surface validated before host paint");
+            child.surface_declared = true;
+        }
+        child
+    }
+    fn theme_for(&self, id: ComponentId, theme: ContentTheme) -> Option<ContentTheme> {
+        let theme = self.resolved_theme(theme);
+        if self.id == id {
+            return Some(theme);
+        }
+        let child_theme = self.child_theme(theme);
+        self.component
+            .children()
+            .iter()
+            .find_map(|child| child.theme_for(id, child_theme))
+    }
+    /// Opt in for this TextContent or Button label. Original component,
     /// source, accessible name and interaction state remain owned by this node.
-    /// For CompoundButton, apply this to its decorative TextContent slot.
+    /// For a custom Button, apply this to its decorative TextContent slot.
     pub fn with_label_layout(
         mut self,
         options: tekes_ui_text::LabelOptions,
     ) -> Result<Self, CompositionError> {
-        if self.component::<TextContent>().is_none() && self.component::<ButtonContent>().is_none()
+        if self.component::<TextContent>().is_none()
+            && !self
+                .component::<Button>()
+                .is_some_and(Button::supports_label_layout)
         {
             return Err(CompositionError::UnsupportedLabelLayout(self.id));
         }
@@ -492,7 +803,16 @@ impl Content {
     // Toolbar owns a single-line presentation policy, while every descendant
     // retains its source, semantics, mount identity and interaction state.
     fn toolbar_label_layouts(&mut self) {
-        if self.component::<TextContent>().is_some() || self.component::<ButtonContent>().is_some()
+        if let Some(button) = self.component_mut::<Button>() {
+            button.set_toolbar_presentation(true);
+        }
+        if let Some(toolbar) = self.component_mut::<crate::ToolbarControl>() {
+            toolbar.set_embedded(true);
+        }
+        if self.component::<TextContent>().is_some()
+            || self
+                .component::<Button>()
+                .is_some_and(Button::supports_label_layout)
         {
             let state = self.label.get_or_insert_with(|| {
                 label::LabelState::new(tekes_ui_text::LabelOptions::single_line(
@@ -508,6 +828,12 @@ impl Content {
         }
     }
     fn reset_label_layouts(&mut self) {
+        if let Some(button) = self.component_mut::<Button>() {
+            button.set_toolbar_presentation(false);
+        }
+        if let Some(toolbar) = self.component_mut::<crate::ToolbarControl>() {
+            toolbar.set_embedded(false);
+        }
         // Slot containers may only measure descendants during arrange. A new
         // host frame must not inspect a previous frame's failed capability or
         // replay a paragraph from a replaced font registry before that arrange.
@@ -521,7 +847,7 @@ impl Content {
         }
     }
     fn label_failure(&self) -> Option<ComponentId> {
-        if !(self.component.active()
+        if !(self.active()
             || self.component.paints_children() && self.component.overlay_presented())
         {
             return None;
@@ -542,6 +868,16 @@ impl Content {
     }
     pub fn visible(&self) -> Option<Rect> {
         self.frame.intersection(&self.clip)
+    }
+    fn routes_pointer_children(&self) -> bool {
+        !self.component.semantics().role.is_action_owner()
+    }
+    fn pointer_target_at(&self, point: Point) -> bool {
+        self.component.interactive()
+            && self.curve_contains(point)
+            && self
+                .visible()
+                .is_some_and(|visible| visible.contains(point))
     }
     /// Keep the current keyboard/IME owner on pointer or accessibility Press.
     /// This instance remains eligible for Tab and explicit accessibility Focus.
@@ -564,6 +900,9 @@ impl Content {
                 .bubble_handled_events
                 .unwrap_or_else(|| self.component.bubble_handled_event(event))
     }
+    pub fn mount_identity(&self) -> u64 {
+        self.mount
+    }
     pub fn component<T: Component>(&self) -> Option<&T> {
         (self.component.as_ref() as &dyn Any).downcast_ref()
     }
@@ -571,12 +910,34 @@ impl Content {
         (self.component.as_mut() as &mut dyn Any).downcast_mut()
     }
     pub fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.measure_content(text, available, false)
+    }
+    /// Same label and finite-geometry service as measure, for decorative slots.
+    pub fn measure_intrinsic(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        available: Size,
+    ) -> MeasuredChild {
+        self.measure_content(text, available, true)
+    }
+    fn measure_content(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        available: Size,
+        intrinsic: bool,
+    ) -> MeasuredChild {
         let mut measured = if let Some(label) = &mut self.label {
             label.reset();
-            self.component.measure(
-                &mut label::LabelRenderer::new(text, label, self.clip),
-                clean_size(available),
-            )
+            let mut text = label::LabelRenderer::new(text, label, self.clip);
+            if intrinsic {
+                self.component
+                    .measure_intrinsic(&mut text, clean_size(available))
+            } else {
+                self.component.measure(&mut text, clean_size(available))
+            }
+        } else if intrinsic {
+            self.component
+                .measure_intrinsic(text, clean_size(available))
         } else {
             self.component.measure(text, clean_size(available))
         };
@@ -615,9 +976,11 @@ impl Content {
         if skip == Some(self.id) {
             return;
         }
-        if !self.component.active() {
+        if !self.active() {
             return;
         }
+        let curve_scope = self.push_curve_scope(scene);
+        let theme = self.resolved_theme(theme);
         // Offscreen ancestors may contain visible overflowing children. Walk
         // children even when their parent frame itself is outside the viewport.
         if self.visible().is_some() {
@@ -637,9 +1000,12 @@ impl Content {
             scene.pop_clip();
         }
         if self.component.paints_children() {
+            for _ in 0..curve_scope {
+                scene.pop_clip();
+            }
             return;
         }
-        let child_theme = self.component.child_theme(theme);
+        let child_theme = self.child_theme(theme);
         if let Some(children) = self.component.children_mut() {
             // Exact compact actions can be adjacent with no gap. Keep their
             // existing outsetting keyboard ring above sibling chrome by drawing
@@ -654,9 +1020,32 @@ impl Content {
                 }
             }
         }
+        let descendant_focus = self
+            .component
+            .children()
+            .iter()
+            .any(Content::has_focus_boundary);
+        let panel_clip = self.clip;
+        if let Some(panel) = self.component_mut::<PanelContent>() {
+            scene.push_clip(panel_clip);
+            panel.paint_boundary(scene, theme, descendant_focus);
+            scene.pop_clip();
+        }
+        for _ in 0..curve_scope {
+            scene.pop_clip();
+        }
+    }
+    fn has_focus_boundary(&self) -> bool {
+        self.active()
+            && (self.component.focus_boundary_visible()
+                || self
+                    .component
+                    .children()
+                    .iter()
+                    .any(Content::has_focus_boundary))
     }
     fn has_raised_focus_decoration(&self) -> bool {
-        if !self.component.active() {
+        if !self.active() {
             return false;
         }
         self.component.focus_decoration_above_siblings()
@@ -677,21 +1066,27 @@ impl Content {
         theme: ContentTheme,
     ) {
         let owned = self.component.paints_children();
-        if !(self.component.active() || owned && self.component.overlay_presented()) {
+        if !(self.active() || owned && self.component.overlay_presented()) {
             return;
         }
+        let theme = self.resolved_theme(theme);
+        let child_theme = self.child_theme(theme);
         if !owned && let Some(children) = self.component.children_mut() {
             for child in children {
-                child.paint_overlays(scene, text, theme);
+                child.paint_overlays(scene, text, child_theme);
             }
         }
         if self.component.overlay_presented() {
+            let count = self.push_curve_scope(scene);
             self.component
                 .paint_overlay(scene, text, self.frame, self.clip, theme);
+            for _ in 0..count {
+                scene.pop_clip();
+            }
         }
     }
     fn overlay_id(&self) -> Option<ComponentId> {
-        if !self.component.active() {
+        if !self.active() {
             return None;
         }
         self.component
@@ -702,7 +1097,7 @@ impl Content {
             .or_else(|| self.component.overlay_open().then_some(self.id))
     }
     fn needs_text(&self) -> Option<ComponentId> {
-        if !(self.component.active()
+        if !(self.active()
             || self.component.paints_children() && self.component.overlay_presented())
         {
             return None;
@@ -718,7 +1113,7 @@ impl Content {
     }
     fn find_active(&self, id: ComponentId) -> Option<&Content> {
         self.find_in_active_ancestors(id)
-            .filter(|node| node.component.active())
+            .filter(|node| node.active())
     }
     // Exit presentation may retain an inactive Dialog owner, but never bypass
     // an inactive ancestor such as a collapsed or replaced content panel.
@@ -726,7 +1121,7 @@ impl Content {
         if self.id == id {
             return Some(self);
         }
-        if !self.component.active() {
+        if !self.active() {
             return None;
         }
         self.component
@@ -750,18 +1145,94 @@ impl Content {
             .iter_mut()
             .find_map(|c| c.find_mut(id))
     }
+    fn notify_presentation_runnable(&mut self, ancestor_active: bool) {
+        let active = ancestor_active && self.active();
+        self.component
+            .presentation_runnable_changed(active && self.visible().is_some());
+        if let Some(children) = self.component.children_mut() {
+            for child in children {
+                child.notify_presentation_runnable(active);
+            }
+        }
+    }
+    // Withdraw only. Successful layout is the sole publisher of true.
+    fn reconcile_presentation_runnable(&mut self, ancestor_active: bool) {
+        let active = ancestor_active && self.active();
+        if !active || self.visible().is_none() {
+            self.component.presentation_runnable_changed(false);
+        }
+        if let Some(children) = self.component.children_mut() {
+            for child in children {
+                child.reconcile_presentation_runnable(active);
+            }
+        }
+    }
+    fn refresh_activity(&mut self, parent_active: bool) {
+        self.activity_parent = parent_active;
+        let active = parent_active && self.active();
+        // Notice visibility owns its runnable lifecycle. Its window authority
+        // follows ancestry so a completed Dismiss can still drain once.
+        let notification_active = if self.component::<ToastContent>().is_some()
+            || self.component::<BannerContent>().is_some()
+        {
+            parent_active
+        } else {
+            active
+        };
+        if self.activity_effective != notification_active {
+            self.activity_effective = notification_active;
+            self.component.window_active_changed(notification_active);
+        }
+        // Visit retained descendants even when this owner is inactive.
+        if let Some(children) = self.component.children_mut() {
+            for child in children {
+                child.refresh_activity(active);
+            }
+        }
+    }
+    fn notification_activity(&self, parent: bool) -> bool {
+        if self.component::<ToastContent>().is_some() || self.component::<BannerContent>().is_some()
+        {
+            parent
+        } else {
+            parent && self.active()
+        }
+    }
+    fn window_active_state(&mut self, parent: bool) -> (bool, bool) {
+        self.activity_parent = parent;
+        let effective = self.notification_activity(parent);
+        let changed = self.activity_effective != effective;
+        self.activity_effective = effective;
+        (effective, changed)
+    }
     fn lifecycle(&mut self, event: Lifecycle) {
-        self.mount = actions::next_mount();
+        self.lifecycle_with(event, &mut actions::next_mount);
+    }
+    fn lifecycle_start(&mut self, event: Lifecycle, mount: u64) {
+        self.curve_geometry = None;
+        self.component.set_clip_region(None);
+        self.mount = mount;
         if event == Lifecycle::Unmounted {
             self.set_help(None);
+        }
+    }
+    fn lifecycle_with(&mut self, event: Lifecycle, next: &mut impl FnMut() -> u64) {
+        let split_was_intact = self
+            .component::<SplitViewContent>()
+            .is_some_and(|s| s.validate().is_ok());
+        self.lifecycle_start(event, next());
+        if event == Lifecycle::Unmounted {
             self.component.event(&ContentEvent::Cancel);
             self.component.set_focus(false, false);
         }
         self.component.lifecycle(event);
         if let Some(children) = self.component.children_mut() {
             for c in children {
-                c.lifecycle(event)
+                c.lifecycle_with(event, next)
             }
+        }
+        if split_was_intact {
+            split_view::refresh_local(self);
         }
     }
     fn interactive_id(&self) -> Option<ComponentId> {
@@ -785,6 +1256,13 @@ impl Content {
     }
     fn ids(&self, ids: &mut BTreeSet<ComponentId>) -> Result<(), CompositionError> {
         self.component.validate()?;
+        if self
+            .component
+            .default_surface()
+            .is_some_and(|name| tekes_ui_tokens::surface_palette::canonical_surface(name).is_err())
+        {
+            return Err(CompositionError::InvalidSurface);
+        }
         if !ids.insert(self.id) {
             return Err(CompositionError::DuplicateId(self.id));
         }
@@ -806,7 +1284,7 @@ impl Content {
         Ok(())
     }
     fn focus_ids(&self, ids: &mut Vec<ComponentId>) {
-        if !self.component.active() {
+        if !self.component.participates_in_focus_traversal() || !self.active() {
             return;
         }
         if self.component.focusable()
@@ -827,7 +1305,7 @@ impl Content {
         position: Point,
         actions: &mut Option<Vec<actions::PendingAction>>,
     ) -> Option<(ComponentId, ContentResponse, bool)> {
-        if !self.component.active() {
+        if !self.active() || !self.curve_contains(position) {
             return None;
         }
         let action = self.component.semantics().role.is_action_owner();
@@ -885,7 +1363,7 @@ impl Content {
         event: &ContentEvent,
         actions: &mut Option<Vec<actions::PendingAction>>,
     ) -> Option<(ComponentId, ContentResponse, bool)> {
-        if !self.component.active() {
+        if !self.active() {
             return None;
         }
         if self.id == id {
@@ -907,7 +1385,7 @@ impl Content {
     // or currently unhandled real control shields its bounds from a parent's
     // decorative focus area. No coordinates are forwarded to the editor.
     fn padding_focus_at(&self, position: Point) -> PaddingFocusHit {
-        if !self.component.active() {
+        if !self.active() {
             return PaddingFocusHit::None;
         }
         if !self.component.semantics().disabled {
@@ -940,7 +1418,7 @@ impl Content {
         PaddingFocusHit::None
     }
     fn padding_editor(&self, id: ComponentId) -> Option<&Content> {
-        if !self.component.active() || self.component.semantics().disabled {
+        if !self.active() || self.component.semantics().disabled {
             return None;
         }
         if self.id == id {
@@ -962,7 +1440,7 @@ impl Content {
         position: Point,
         actions: &mut Option<Vec<actions::PendingAction>>,
     ) -> (Option<(ComponentId, ContentResponse, bool)>, bool) {
-        if !self.component.active() {
+        if !self.active() {
             return (None, false);
         }
         let mut hit = None;
@@ -976,12 +1454,16 @@ impl Content {
                 }
             }
         }
-        let inside = self.visible().is_some_and(|r| r.contains(position));
+        let inside =
+            self.visible().is_some_and(|r| r.contains(position)) && self.curve_contains(position);
         if self.component.interactive() || hit.is_some_and(|(_, _, bubbles)| bubbles) {
             // Outside delivery clears old hover but cannot consume another
             // branch's event. Stopped ancestors still receive an exit update.
             let stopped = hit.is_some_and(|(_, _, bubbles)| !bubbles);
             if !stopped || !inside {
+                // Preserve the original captured point. Region-aware owners
+                // receive the Host-derived inside bit through deliver_actions;
+                // ordinary owners keep their existing Move semantics.
                 let response = self.deliver_actions(event, false, actions);
                 changed |= response.changed;
                 if !stopped && (hit.is_some() || inside) {
@@ -1010,32 +1492,46 @@ impl Content {
         focused: Option<ComponentId>,
         out: &mut Vec<SemanticNode>,
     ) {
-        if !self.component.active() {
+        if !self.active() || self.component.semantic_subtree_hidden() {
             return;
         }
-        out.push(SemanticNode {
-            id: self.id,
-            parent,
-            frame: self.component.semantic_frame(self.frame),
-            visible: self
-                .component
-                .semantic_frame(self.frame)
-                .intersection(&self.clip),
-            focused: focused == Some(self.id),
-            semantics: self.help_semantics(),
-            parts: self.component.semantic_parts(),
-        });
+        let hidden = self.component.semantic_hidden();
+        if !hidden {
+            out.push(SemanticNode {
+                id: self.id,
+                parent,
+                frame: self.component.semantic_frame(self.frame),
+                visible: self
+                    .curve_bounds(self.component.semantic_frame(self.frame))
+                    .ok()
+                    .flatten(),
+                focused: focused == Some(self.id),
+                semantics: self.help_semantics(),
+                parts: self.component.semantic_parts(),
+            });
+        }
         // Ordinary action content is decorative to assistive technology;
         // the action supplies one explicit accessible name and one focus.
         if !self.component.semantics().role.is_action_owner() {
             for c in self.component.children() {
-                c.semantic_nodes(Some(self.id), focused, out)
+                c.semantic_nodes(if hidden { parent } else { Some(self.id) }, focused, out)
             }
         }
     }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompositionError {
+    MountExhausted,
+    InvalidEmptyState(ComponentId),
+    InvalidNotice(ComponentId),
+    MissingNoticeClock(ComponentId),
+    NoticeClockWentBackwards(ComponentId),
+    SceneFragment(tekes_ui_scene::FragmentError),
+    CurveGeometry(tekes_ui_scene::ClipError),
+    CurvePointerRegionsUnsupported,
+    UnsupportedCurveChild(ComponentId),
+    InvalidPanelPadding,
+    InvalidSurface,
     DuplicateId(ComponentId),
     MissingId(ComponentId),
     NotContainer(ComponentId),
@@ -1057,6 +1553,47 @@ pub enum CompositionError {
     },
     ReadingTransactionInProgress,
 }
+/// Owner-local identity for the exact arranged focus evidence.
+#[derive(Clone, Debug)]
+pub struct RequiredFocusEvidence(std::sync::Arc<()>);
+impl RequiredFocusEvidence {
+    pub fn new() -> Self {
+        Self(std::sync::Arc::new(()))
+    }
+    pub(crate) fn from_owner(token: std::sync::Arc<()>) -> Self {
+        Self(token)
+    }
+}
+impl Default for RequiredFocusEvidence {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+impl PartialEq for RequiredFocusEvidence {
+    fn eq(&self, other: &Self) -> bool {
+        std::sync::Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+/// Read-only finite evidence for the original required-focus region.
+#[derive(Clone, Debug, PartialEq)]
+pub enum RequiredFocusSpace {
+    Legacy,
+    NotRequired,
+    Unmeasured,
+    Insufficient,
+    Sufficient {
+        witness: Rect,
+        evidence: RequiredFocusEvidence,
+    },
+}
+#[derive(Clone, Debug, PartialEq)]
+pub enum RequiredFocusResult {
+    NotRequired,
+    Unmeasured,
+    Insufficient,
+    Clipped { witness: Rect },
+    Visible { witness: Rect },
+}
 enum PaddingFocusHit {
     None,
     Blocked,
@@ -1065,9 +1602,17 @@ enum PaddingFocusHit {
 #[derive(Debug)]
 pub struct ContentHost {
     root: Content,
+    curve_shapes: Option<tekes_ui_scene::ShapeTable>,
+    reveal_clock: content_reveal_plan::RevealClock,
     focused: Option<ComponentId>,
+    focus_wrap: bool,
+    overlay_scopes: Vec<overlay_scope::ScopedOverlay>,
     captured: Option<ComponentId>,
+    captured_mount: Option<u64>,
+    capture_epoch: u64,
     dirty: bool,
+    inherited_surface: &'static str,
+    inherited_surface_declared: bool,
     modal: Option<(ComponentId, Option<(ComponentId, u64)>)>,
     modal_focus_pending: bool,
     // Paint-only owner after close. It is never used as the event/focus scope.
@@ -1075,40 +1620,76 @@ pub struct ContentHost {
     text_keys: Vec<key::KeyFrame>,
     last_text_key: u64,
     focus_epoch: u64,
+    window_active: bool,
+    animation_frame_requested: bool,
     actions: Option<Vec<actions::PendingAction>>,
     reading_transaction: bool,
     last_layout: Option<(Rect, Rect)>,
     item_reveal: Option<content_reveal::ItemReveal>,
+    reading_scroll_source: Option<(ComponentId, u64)>,
     help: help::HelpState,
+    help_overlay_deferred: bool,
     event_bubbled: Option<bool>,
 }
 impl ContentHost {
     pub fn new(mut root: Content) -> Result<Self, CompositionError> {
+        root.validate_curve_tree(false)?;
         root.ids(&mut BTreeSet::new())?;
         root.lifecycle(Lifecycle::Mounted);
-        Ok(Self {
+        Ok(Self::from_mounted(root))
+    }
+    fn from_mounted(root: Content) -> Self {
+        Self {
             root,
+            curve_shapes: None,
+            reveal_clock: Default::default(),
             focused: None,
+            focus_wrap: true,
+            overlay_scopes: Vec::new(),
             captured: None,
+            captured_mount: None,
+            capture_epoch: 0,
             dirty: true,
+            inherited_surface: "canvas",
+            inherited_surface_declared: false,
             modal: None,
             modal_focus_pending: false,
             presented_dialog: None,
             text_keys: Vec::new(),
             last_text_key: 0,
             focus_epoch: 0,
+            window_active: true,
+            animation_frame_requested: false,
             actions: None,
             reading_transaction: false,
             last_layout: None,
             item_reveal: None,
+            reading_scroll_source: None,
             help: Default::default(),
+            help_overlay_deferred: false,
             event_bubbled: None,
-        })
+        }
+    }
+    pub fn set_inherited_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<bool, tekes_ui_tokens::surface_palette::SurfaceError> {
+        let surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
+        let changed = !self.inherited_surface_declared || self.inherited_surface != surface;
+        self.inherited_surface = surface;
+        self.inherited_surface_declared = true;
+        self.dirty |= changed;
+        Ok(changed)
+    }
+    pub fn inherited_surface(&self) -> &'static str {
+        self.inherited_surface
     }
     pub fn get(&self, id: ComponentId) -> Option<&Content> {
         self.root.find(id)
     }
     pub fn get_mut(&mut self, id: ComponentId) -> Option<&mut Content> {
+        self.reveal_clock.invalidate_input();
+        self.reveal_clock.pending = true;
         self.dirty = true;
         self.root.find_mut(id)
     }
@@ -1133,8 +1714,15 @@ impl ContentHost {
     /// Visible original pointer/hover regions, including disabled controls.
     /// No semantic-frame approximation or second control layout is computed.
     pub fn pointer_regions(&self) -> Vec<Rect> {
+        self.try_pointer_regions().unwrap_or_default()
+    }
+    /// Curved domains cannot be exported as exact rectangle pointer regions.
+    pub fn try_pointer_regions(&self) -> Result<Vec<Rect>, CompositionError> {
+        if self.requires_curve_geometry() {
+            return Err(CompositionError::CurvePointerRegionsUnsupported);
+        }
         fn collect(node: &Content, regions: &mut Vec<Rect>) {
-            if !node.component.active() {
+            if !node.active() {
                 return;
             }
             regions.extend(node.component.pointer_regions(node.frame, node.clip));
@@ -1144,7 +1732,14 @@ impl ContentHost {
         }
         let mut regions = Vec::new();
         collect(self.scope(), &mut regions);
-        regions
+        Ok(regions)
+    }
+    /// Current actual-layout focus result of the retained original owner.
+    pub fn required_focus_result(&self, id: ComponentId) -> Option<RequiredFocusResult> {
+        self.scope()
+            .find_active(id)?
+            .component
+            .required_focus_result()
     }
     pub fn focused(&self) -> Option<ComponentId> {
         self.focused
@@ -1267,6 +1862,12 @@ impl ContentHost {
         }
         Ok(())
     }
+    /// Original frame and clip passed to the last successful render. This is
+    /// remembered application allocation, not current geometry authorization;
+    /// reading it does not refresh layout or validate pending mutations.
+    pub fn last_layout_allocation(&self) -> Option<(Rect, Rect)> {
+        self.last_layout
+    }
     /// Supports activation changes during measure/arrange. Required text
     /// services are checked at entry and after each layout stage, before paint
     /// and modal focus selection. On failure, do not publish native text/AX
@@ -1281,9 +1882,19 @@ impl ContentHost {
         clip: Rect,
         palette: Palette,
     ) -> Result<(), CompositionError> {
-        let result = self.render_frame(scene, text, frame, clip, palette);
+        let mut requested = false;
+        let active = self.window_active;
+        let result = self.render_frame(
+            scene,
+            &mut FrameTextAdapter(text, Some(&mut requested), active),
+            frame,
+            clip,
+            palette,
+        );
+        self.animation_frame_requested = result.is_ok() && requested;
         self.last_layout = result.is_ok().then_some((frame, clip));
         if let Err(error) = &result {
+            notice::clear_samples(&mut self.root);
             self.fail_item_reveal(ContentRevealError::Layout(*error));
         }
         result
@@ -1296,17 +1907,35 @@ impl ContentHost {
         clip: Rect,
         palette: Palette,
     ) -> Result<(), CompositionError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(CompositionError::SceneFragment(error));
+        }
         if self.reading_transaction {
             return Err(CompositionError::ReadingTransactionInProgress);
         }
+        self.preflight_empty_state_structures()?;
+        self.preflight_notice_structures()?;
+        self.root.refresh_activity(self.window_active);
         if let Err(e) = self.root.ids(&mut BTreeSet::new()) {
             self.cancel();
             return Err(e);
         }
+        self.root
+            .reconcile_presentation_runnable(self.window_active);
+        self.root.validate_curve_tree(false)?;
         // Reject a changed attachment/mount before ticking any old navigation.
         self.observe_item_reveal();
-        self.layout_frame(text, frame, clip)?;
+        self.reveal_clock.invalidate_geometry();
+        self.layout_preflighted(text, frame, clip)?;
+        self.freeze_curve_geometry()?;
+        if let Some(table) = &self.curve_shapes {
+            scene
+                .try_import_clip_shapes(table, Default::default())
+                .map_err(CompositionError::SceneFragment)?;
+        }
+        self.reveal_clock.pending = false;
         self.observe_item_reveal();
+        self.advance_notices(text)?;
         self.reconcile_active_inputs();
         if self.modal_focus_pending && self.focused.is_none() {
             self.modal_focus_pending = false;
@@ -1315,25 +1944,35 @@ impl ContentHost {
             self.focus(ids.first().copied(), true);
         }
         let paint_id = self.presented_dialog;
-        self.root
-            .paint_except(scene, text, palette.into(), paint_id);
+        let mut theme = ContentTheme::from(palette);
+        if self.inherited_surface_declared {
+            theme = theme
+                .with_surface(self.inherited_surface)
+                .expect("validated inherited Surface");
+        }
+        self.root.paint_except(scene, text, theme, paint_id);
         if self.modal.is_none() {
-            self.root.paint_overlays(scene, text, palette.into());
+            self.root.paint_overlays(scene, text, theme);
         }
         if let Some(id) = paint_id {
-            if let Some(node) = self.root.find_mut(id) {
+            let dialog_theme = self.root.theme_for(id, theme);
+            if let (Some(node), Some(dialog_theme)) = (self.root.find_mut(id), dialog_theme) {
                 let presented = node
                     .component::<DialogContent>()
                     .is_some_and(DialogContent::is_presented);
                 if presented && node.visible().is_some() {
                     // Rebuild all glyph/image geometry in this host frame, including
                     // exit frames. OverlayPresence must never replay stale atlas slots.
-                    let mut current = Scene::new();
-                    scene_dialog_contents(node, &mut current, text, palette.into());
+                    let mut current = scene.fragment();
+                    scene_dialog_contents(node, &mut current, text, dialog_theme);
                     let (frame, clip) = (node.frame, node.clip);
                     node.component_mut::<DialogContent>()
                         .expect("dialog paint owner")
-                        .present(scene, text, frame, clip, palette, Some(current));
+                        .try_present(scene, text, frame, clip, palette, Some(current))
+                        .map_err(|error| {
+                            scene.record_composition_error(error);
+                            CompositionError::SceneFragment(error)
+                        })?;
                 } else if let Some(dialog) = node.component_mut::<DialogContent>() {
                     dialog.clear_presentation();
                 }
@@ -1351,11 +1990,18 @@ impl ContentHost {
             self.cancel();
             return Err(CompositionError::MissingLabelServices(id));
         }
-        self.render_help(scene, text, frame, clip, palette);
+        if !self.help_overlay_deferred {
+            self.render_help(scene, text, frame, clip, palette);
+        }
+        if let Some(error) = scene.composition_error() {
+            return Err(CompositionError::SceneFragment(error));
+        }
         self.dirty = false;
         Ok(())
     }
-    fn layout_frame(
+    // render_frame already checked the adapter boundary before legacy ID-error
+    // cancellation.
+    fn layout_preflighted(
         &mut self,
         text: &mut dyn ButtonTextRenderer,
         frame: Rect,
@@ -1371,6 +2017,7 @@ impl ContentHost {
         self.last_layout = None;
         self.check_text_services(text)?;
         self.root.reset_label_layouts();
+        self.prepare_split_layout(frame, clip);
         let measured = self.root.measure(text, frame.size);
         self.check_text_services(text)?;
         if let Some(id) = self.root.label_failure() {
@@ -1384,15 +2031,23 @@ impl ContentHost {
             frame.size.height.max(measured.size.height),
         ));
         self.root.arrange(text, frame, clip);
+        self.finish_split_layout();
         self.check_text_services(text)?;
         if let Some(id) = self.root.label_failure() {
             self.cancel();
             return Err(CompositionError::MissingLabelServices(id));
         }
+        self.root.refresh_activity(self.window_active);
+        self.root.notify_presentation_runnable(self.window_active);
+        self.publish_empty_state_exposures()?;
+        self.publish_notice_exposures()?;
         self.last_layout = Some(requested);
         Ok(frame)
     }
     fn reconcile_active_inputs(&mut self) {
+        self.root.refresh_activity(self.window_active);
+        self.root
+            .reconcile_presentation_runnable(self.window_active);
         if self
             .modal
             .is_some_and(|(id, _)| self.root.find_active(id).is_none())
@@ -1406,66 +2061,67 @@ impl ContentHost {
         {
             self.clear_dialog_presentation();
         }
+        self.reconcile_overlay_scopes();
         if self.captured.is_some_and(|id| {
-            self.scope()
-                .find_active(id)
-                .is_none_or(|c| c.visible().is_none() || c.component.semantics().disabled)
+            self.root.find_active(id).is_none_or(|c| {
+                self.captured_mount != Some(c.mount)
+                    || c.visible().is_none()
+                    || c.component.semantics().disabled
+            })
         }) {
             if let Some(c) = self.captured.take().and_then(|id| self.root.find_mut(id)) {
                 c.component.event(&ContentEvent::Cancel);
             }
+            self.captured_mount = None;
             self.dirty = true;
         }
-        if self.focused.is_some_and(|id| {
-            self.scope()
-                .find_active(id)
-                .is_none_or(|c| !c.component.focusable() || c.component.semantics().disabled)
-        }) {
-            if let Some(c) = self.focused.and_then(|id| self.root.find_mut(id)) {
+        if let Some(id) = self.focused.filter(|id| {
+            self.captured != Some(*id)
+                && self
+                    .scope()
+                    .find_active(*id)
+                    .is_none_or(|c| !c.component.focusable() || c.component.semantics().disabled)
+        }) && matches!(
+            self.admit_ordinary_focus(None, false, None, action_preparation::FocusOrigin::Direct),
+            action_preparation::FocusAdmission::Accepted { .. }
+        ) {
+            // Cancel belongs to a committed departure. A refused unmark must
+            // preserve the original editor's pointer/scroll interaction too.
+            if let Some(c) = self.root.find_mut(id) {
                 c.component.event(&ContentEvent::Cancel);
             }
-            self.focus(None, false);
         }
     }
     pub fn focus(&mut self, id: Option<ComponentId>, visible: bool) -> bool {
-        self.dirty = true;
-        if let Some(target) = id
-            && (self.root.find_active(target).is_none()
-                || self
-                    .scope()
-                    .find_active(target)
-                    .is_none_or(|c| !c.component.focusable() || c.component.semantics().disabled))
-        {
+        matches!(
+            self.admit_ordinary_focus(id, visible, None, action_preparation::FocusOrigin::Direct),
+            action_preparation::FocusAdmission::Accepted { changed: true }
+        )
+    }
+    /// Disable ordinary boundary wrapping for an embedded host. Modal and
+    /// interactive overlay scopes still keep traversal inside their owner.
+    pub fn set_focus_wrap(&mut self, wrap: bool) {
+        self.focus_wrap = wrap;
+    }
+    /// Enter the first/last eligible original owner in the current input scope.
+    /// Composing editors retain their existing Tab/IME boundary; accepted entry
+    /// uses the same focus/reveal admission and traversal direction as Tab.
+    pub fn enter_focus(&mut self, reverse: bool) -> bool {
+        if self.is_composing() {
             return false;
         }
-        if self.focused != id {
-            self.focus_epoch = self
-                .focus_epoch
-                .checked_add(1)
-                .expect("focus epoch exhausted");
-        }
-        if self.focused != id
-            && let Some(c) = self.focused.and_then(|old| self.root.find_mut(old))
-        {
-            c.component.set_focus(false, false);
-        }
-        let changed = self.focused != id;
-        self.focused = id;
-        if let Some(id) = id {
-            let frame = {
-                let c = self.root.find_mut(id).unwrap();
-                c.component.set_focus(true, visible);
-                c.component
-                    .text_surface()
-                    .filter(|surface| {
-                        surface.presentation == crate::TextSurfacePresentation::Content
-                    })
-                    .map_or(c.frame, |surface| surface.caret())
-            };
-            self.root.reveal(id, frame);
-        }
-        self.help_focus(id, visible);
-        changed
+        let mut ids = Vec::new();
+        self.scope().focus_ids(&mut ids);
+        let target = if reverse { ids.last() } else { ids.first() }.copied();
+        matches!(
+            self.admit_ordinary_focus(
+                target,
+                true,
+                Some(reverse),
+                action_preparation::FocusOrigin::Traversal
+            ),
+            action_preparation::FocusAdmission::Accepted { changed: true }
+        )
     }
     /// Whether the last event may continue to the enclosing host. A handled
     /// event can bubble, so consumed alone is not a propagation decision.
@@ -1473,8 +2129,47 @@ impl ContentHost {
     pub fn event_bubbled(&self) -> bool {
         self.event_bubbled.unwrap_or(false)
     }
+    /// Result of the most recent accepted reading wheel, not a queued callback.
+    /// A replaced, inactive, disabled or out-of-scope source is no longer current.
+    pub fn reading_scroll_source(&self) -> Option<(ComponentId, u64)> {
+        if !self.window_active {
+            return None;
+        }
+        let (id, mount) = self.reading_scroll_source?;
+        self.scope()
+            .find_active(id)
+            .filter(|node| node.mount == mount && !node.component.semantics().disabled)
+            .map(|_| (id, mount))
+    }
+    fn record_reading_scroll(
+        &mut self,
+        event: &ContentEvent,
+        id: ComponentId,
+        response: &ContentResponse,
+    ) {
+        let ContentEvent::Scroll { position, .. } = event else {
+            return;
+        };
+        if response.consumed
+            && let Some(node) = self.scope().find_active(id)
+            && node
+                .visible()
+                .is_some_and(|frame| frame.contains(*position))
+            && node.curve_contains(*position)
+            && !node.component.semantics().disabled
+            && node.component.reading_scroll_source()
+        {
+            self.reading_scroll_source = Some((id, node.mount));
+        }
+    }
     pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+        self.reading_scroll_source = None;
+        if !self.window_active {
+            return ContentResponse::default();
+        }
+        self.reveal_clock.invalidate_input();
         self.event_bubbled = None;
+        let overlay_barrier = self.overlay_scope_id().is_some();
         let previous_caret = self.focused.and_then(|id| {
             self.focused_text()
                 .filter(|surface| {
@@ -1497,12 +2192,30 @@ impl ContentHost {
             && surface.input.caret != caret
         {
             let frame = surface.caret();
-            self.root.reveal(id, frame);
+            match self.plan_host_reveal_rect(
+                id,
+                frame,
+                crate::ScrollRevealOptions {
+                    animated: false,
+                    ..Default::default()
+                },
+                &[],
+                content_reveal_plan::HostRevealBudget::default(),
+            ) {
+                Ok(plan) => {
+                    let _ = self.commit_host_reveal(plan);
+                }
+                Err(HostRevealError::UnsupportedLayout) if self.original_reveal_admissible(id) => {
+                    self.root.reveal(id, frame);
+                }
+                Err(_) => {}
+            }
         }
         // Preserve the existing modal barrier for hosts which only inspect
         // consumed; explicit bubbling cannot expose background input.
-        if self.modal.is_some() {
+        if self.modal.is_some() || overlay_barrier {
             result.consumed = true;
+            self.event_bubbled = Some(false);
         }
         self.dirty |= result.changed;
         self.event_bubbled =
@@ -1518,6 +2231,7 @@ impl ContentHost {
         event: &ContentEvent,
         text: &mut dyn ButtonTextRenderer,
     ) -> Result<ContentResponse, CompositionError> {
+        self.reading_scroll_source = None;
         if let Some(id) = self.root.needs_text()
             && text.text_surface_host().is_none()
         {
@@ -1540,6 +2254,12 @@ impl ContentHost {
         }
     }
     fn dispatch(&mut self, event: &ContentEvent) -> ContentResponse {
+        if !self.split_structures_intact() {
+            return ContentResponse::default();
+        }
+        if self.split_input_guard(event) {
+            return ContentResponse::consumed(false);
+        }
         if let ContentEvent::TextCommand(command) = event {
             let key = match command.as_str() {
                 "insertTab:" => Some(ControlKey::Tab { reverse: false }),
@@ -1555,17 +2275,36 @@ impl ContentHost {
                 return self.dispatch(&ContentEvent::Key { key, down: true });
             }
         }
+        if !matches!(event, ContentEvent::Cancel) && self.preflight_notice_structures().is_err() {
+            return ContentResponse::default();
+        }
         if self.root.ids(&mut BTreeSet::new()).is_err() {
             self.cancel();
             return ContentResponse::default();
         }
         self.reconcile_active_inputs();
+        if event.is_primary_pointer()
+            && self.requires_curve_geometry()
+            && self
+                .geometry_snapshot()
+                .is_none_or(|snapshot| !snapshot.is_current())
+        {
+            self.event_bubbled = Some(false);
+            return ContentResponse::default();
+        }
         if matches!(event, ContentEvent::Cancel) {
             self.cancel();
             return ContentResponse::consumed(true);
         }
         let routing = event.routing_event();
         let routed = routing.as_ref();
+        if matches!(routed, ContentEvent::PointerDown(_))
+            && event.is_primary_pointer()
+            && self.capture_epoch == u64::MAX
+        {
+            self.event_bubbled = Some(false);
+            return ContentResponse::default();
+        }
         if self.help_event(event) {
             return ContentResponse::consumed(true);
         }
@@ -1616,6 +2355,7 @@ impl ContentHost {
         {
             if matches!(routed, ContentEvent::PointerUp(_)) {
                 self.captured = None;
+                self.captured_mount = None;
             }
             let result = self.root.route_from(id, event, &mut self.actions);
             return result
@@ -1632,6 +2372,7 @@ impl ContentHost {
                     .unwrap()
                     .deliver_actions(event, true, &mut self.actions);
             if response.consumed {
+                self.record_reading_scroll(event, id, &response);
                 return response;
             }
             if let Some(key) = self.overlay_command_key(event) {
@@ -1644,6 +2385,20 @@ impl ContentHost {
                     return response;
                 }
             }
+        }
+        let pointer_down = match event {
+            ContentEvent::PointerDown(point) => Some(*point),
+            ContentEvent::Pointer(pointer)
+                if pointer.phase == PointerPhase::Down && pointer.is_primary() =>
+            {
+                Some(pointer.position)
+            }
+            _ => None,
+        };
+        if let Some(point) = pointer_down
+            && let Some(response) = self.try_prepared_pointer(event, point)
+        {
+            return response;
         }
         if matches!(
             routed,
@@ -1688,12 +2443,28 @@ impl ContentHost {
                 .focused
                 .and_then(|id| ids.iter().position(|v| *v == id))
             {
+                Some(i)
+                    if !self.focus_wrap
+                        && self.modal.is_none()
+                        && self.overlay_scope_id().is_none()
+                        && ((*reverse && i == 0) || (!*reverse && i + 1 == ids.len())) =>
+                {
+                    return ContentResponse::default();
+                }
                 Some(i) if *reverse => (i + ids.len() - 1) % ids.len(),
                 Some(i) => (i + 1) % ids.len(),
                 None if *reverse => ids.len() - 1,
                 None => 0,
             };
-            let changed = self.focus(Some(ids[next]), true);
+            let changed = matches!(
+                self.admit_ordinary_focus(
+                    Some(ids[next]),
+                    true,
+                    Some(*reverse),
+                    action_preparation::FocusOrigin::Traversal,
+                ),
+                action_preparation::FocusAdmission::Accepted { changed: true }
+            );
             return ContentResponse::consumed(changed);
         }
         if let ContentEvent::PointerMove(position) = routed {
@@ -1725,10 +2496,16 @@ impl ContentHost {
             }),
         };
         if let Some((id, r, bubbles)) = result {
+            self.record_reading_scroll(event, id, &r);
             self.event_bubbled = Some(bubbles);
             if matches!(routed, ContentEvent::PointerDown(_)) && event.is_primary_pointer() {
                 if r.capture_pointer {
-                    self.captured = Some(id)
+                    self.capture_epoch = self
+                        .capture_epoch
+                        .checked_add(1)
+                        .expect("pointer capture identity exhausted");
+                    self.captured = Some(id);
+                    self.captured_mount = self.root.find_active(id).map(|node| node.mount)
                 }
                 if r.consumed
                     && self
@@ -1748,22 +2525,111 @@ impl ContentHost {
             }
         }
     }
-    fn scope(&self) -> &Content {
+    fn base_scope(&self) -> &Content {
         self.modal
             .and_then(|(id, _)| self.root.find(id))
             .unwrap_or(&self.root)
     }
+    fn scope(&self) -> &Content {
+        self.overlay_scope_id()
+            .and_then(|id| self.root.find_active(id))
+            .unwrap_or_else(|| self.base_scope())
+    }
     fn scope_with_actions(&mut self) -> (&mut Content, &mut Option<Vec<actions::PendingAction>>) {
-        let scope = if let Some((id, _)) = self.modal {
-            self.root.find_mut(id).expect("mounted modal")
+        let scope = if let Some(id) = self.overlay_scope_id().or(self.modal.map(|(id, _)| id)) {
+            self.root.find_mut(id).expect("mounted input scope")
         } else {
             &mut self.root
         };
         (scope, &mut self.actions)
     }
+    /// Current original interactive overlay/modal authority. A retained exit
+    /// painter has no input authority, and an inactive window publishes none.
+    pub fn input_overlay_owner(&self) -> Option<(ComponentId, u64)> {
+        if !self.window_active {
+            return None;
+        }
+        let id = self
+            .overlay_scope_id()
+            .or(self.modal.map(|(id, _)| id))
+            .or_else(|| self.scope().overlay_id())?;
+        let node = self.root.find_active(id)?;
+        Some((id, node.mount))
+    }
+    /// Original native key owner binding, retained across geometry-only changes
+    /// and zero pane allocation. Focus epoch and mount authenticate key frames;
+    /// editor/document identity remains owned by the original component.
+    pub fn native_key_binding(&self) -> Option<Vec<u8>> {
+        if !self.window_active {
+            return None;
+        }
+        let owner = self.scope().find_active(self.focused?)?;
+        if owner.component.semantics().disabled {
+            return None;
+        }
+        owner.component.native_key_binding()
+    }
     /// Current UTF-16 editing/geometry source for a platform's text query bridge.
     pub fn focused_text(&self) -> Option<&crate::TextSurface> {
         self.focused.and_then(|id| self.text_surface(id))
+    }
+    /// Existing editor/document binding, unchanged by ordinary edits or selection.
+    pub fn focused_text_binding(&self) -> Option<(u64, u64)> {
+        self.focused_text()
+            .map(|surface| surface.input.controlled_binding())
+    }
+    /// Read the original focused text owner without editing or reshaping it.
+    pub fn text_input_snapshot(&self) -> Option<ContentTextInput> {
+        self.semantic_text_input_snapshot(self.focused?)
+    }
+    /// Read the original semantic owner's text and visible caret geometry.
+    pub fn semantic_text_input_snapshot(&self, id: ComponentId) -> Option<ContentTextInput> {
+        if !self.window_active {
+            return None;
+        }
+        let owner = self.scope().find_active(id)?;
+        if owner.component.semantics().disabled {
+            return None;
+        }
+        let mut input = owner
+            .component
+            .text_surface()
+            .map(ContentTextInput::from_surface)?;
+        // Zero panes retain the original logical editor, selection and marked
+        // state. They must not publish retained geometry from an earlier frame.
+        if self.split_text_geometry_hidden(id) {
+            input.caret = None;
+            input.clip = None;
+            input.carets.clear();
+        }
+        Some(input)
+    }
+    /// Complete original text geometry, including off-focus and offscreen text.
+    /// Zero Split panes retain logical editing state but cannot publish old layout.
+    pub fn semantic_text_layout_snapshot(
+        &self,
+        id: ComponentId,
+        part: Option<usize>,
+    ) -> Option<ContentTextLayout> {
+        if !self.window_active || self.split_text_geometry_hidden(id) {
+            return None;
+        }
+        let owner = self.scope().find_active(id)?;
+        // Disabled controls remain readable to accessibility. This query grants
+        // no input authority; accessibility_action retains the disabled guard.
+        if let Some(part) = part {
+            if !owner
+                .component
+                .semantic_parts()
+                .iter()
+                .any(|p| p.index == part)
+            {
+                return None;
+            }
+            owner.component.semantic_part_text_layout(part)
+        } else {
+            owner.component.semantic_text_layout()
+        }
     }
     /// Published text queries for active semantic owners, including unfocused
     /// fields. Closed or background modal subtrees cannot expose editable text.
@@ -1776,7 +2642,102 @@ impl ContentHost {
     /// Reorder retains it; replacement/remount changes it even for the same ID.
     /// This is not a persistent identifier and does not acquire focus or input.
     pub fn semantic_mount(&self, id: ComponentId) -> Option<u64> {
+        if !self.window_active {
+            return None;
+        }
         self.scope().find_active(id).map(|node| node.mount)
+    }
+    /// Read the existing focus lease, including blur/refocus ABA.
+    pub fn animation_frame_requested(&self) -> bool {
+        self.window_active && self.animation_frame_requested
+    }
+    pub fn focus_epoch(&self) -> u64 {
+        self.focus_epoch
+    }
+    /// Current original capture owner and mount; no synthetic gesture identity.
+    pub fn pointer_capture(&self) -> Option<(ComponentId, u64)> {
+        if self.requires_curve_geometry()
+            && self
+                .geometry_snapshot()
+                .is_none_or(|snapshot| !snapshot.is_current())
+        {
+            return None;
+        }
+        self.captured.and_then(|id| {
+            self.root
+                .find_active(id)
+                .filter(|node| {
+                    self.captured_mount == Some(node.mount)
+                        && node.visible().is_some()
+                        && !node.component.semantics().disabled
+                })
+                .map(|node| (id, node.mount))
+        })
+    }
+    /// The existing focused editor/custom component composition barrier.
+    pub fn is_composing(&self) -> bool {
+        self.focused
+            .and_then(|id| self.root.find_active(id))
+            .is_some_and(|node| node.component.composing())
+            || self
+                .focused_text()
+                .is_some_and(|s| s.input.marked.is_some())
+    }
+    /// Original window activity for platform publication admission.
+    pub fn is_window_active(&self) -> bool {
+        self.window_active
+    }
+    /// Revoke adapter authorization recursively, including hidden descendants.
+    pub fn set_window_active(&mut self, active: bool) {
+        if self.window_active == active {
+            return;
+        }
+        // A window-authority change invalidates a prepared input/reveal plan.
+        // Keep the 078 cancellation order: blur/cancel while the old window
+        // authority is still live, then notify every retained descendant.
+        self.reveal_clock.invalidate_input();
+        if !active {
+            self.cancel();
+        }
+        self.window_active = active;
+        self.root.refresh_activity(active);
+        self.dirty = true;
+    }
+    /// Cancel only this original subtree before its typed declaration changes.
+    pub fn cancel_subtree(&mut self, id: ComponentId) -> bool {
+        let Some(node) = self.root.find(id) else {
+            return false;
+        };
+        let focus = self.focused.is_some_and(|id| node.find(id).is_some());
+        let capture = self.captured.is_some_and(|id| node.find(id).is_some());
+        for scope in &mut self.overlay_scopes {
+            if node.find(scope.id).is_some() {
+                scope.restore = None;
+                scope.focus_pending = false;
+            }
+        }
+        fn cancel(node: &mut Content) {
+            node.component.event(&ContentEvent::Cancel);
+            node.component
+                .event(&ContentEvent::PointerMove(Point::new(f32::MIN, f32::MIN)));
+            if let Some(children) = node.component.children_mut() {
+                for child in children {
+                    cancel(child);
+                }
+            }
+        }
+        cancel(self.root.find_mut(id).unwrap());
+        if capture {
+            self.captured = None;
+            self.captured_mount = None;
+        }
+        if focus {
+            self.focus(None, false);
+        }
+        self.help.clear();
+        self.dirty = true;
+        self.reconcile_active_inputs();
+        true
     }
     /// Read the existing original owner's part hierarchy; no focus or input.
     pub fn semantic_part_parent(&self, id: ComponentId, part: usize) -> Option<usize> {
@@ -1784,6 +2745,20 @@ impl ContentHost {
             .find_active(id)?
             .component
             .semantic_part_parent(part)
+    }
+    pub fn semantic_preserves_activation_focus(
+        &self,
+        id: ComponentId,
+        part: Option<usize>,
+    ) -> bool {
+        self.scope().find_active(id).is_some_and(|node| {
+            node.preserve_activation_focus
+                || node.component.preserves_activation_focus()
+                || part.is_some_and(|part| {
+                    node.component
+                        .semantic_part_preserves_activation_focus(part)
+                })
+        })
     }
     /// Actions use the same semantic owner and production state machine as input.
     /// Closed/dismissed/inactive subtrees and stale menu parts reject requests.
@@ -1793,11 +2768,36 @@ impl ContentHost {
         part: Option<usize>,
         action: AccessibilityAction,
     ) -> ContentResponse {
+        if self.split_ax_guard(id) {
+            return ContentResponse::default();
+        }
+        if !self.window_active {
+            return ContentResponse::default();
+        }
+        if let Some(response) = self.try_prepared_ax(id, part, &action) {
+            return response;
+        }
         self.reconcile_active_inputs();
         if self
             .scope()
             .find_active(id)
             .is_none_or(|n| n.component.semantics().disabled)
+        {
+            return ContentResponse::default();
+        }
+        // Preserve the original composing owner unless an auxiliary action
+        // explicitly retains focus. Use the same marked/custom barrier as Tab.
+        if self.is_composing()
+            && self.focused != Some(id)
+            && (matches!(
+                action,
+                AccessibilityAction::Focus | AccessibilityAction::SetSelection(_)
+            ) || (part.is_none()
+                && matches!(action, AccessibilityAction::Press)
+                && self
+                    .scope()
+                    .find_active(id)
+                    .is_some_and(|n| n.component.focusable() && !n.preserve_activation_focus)))
         {
             return ContentResponse::default();
         }
@@ -1905,11 +2905,33 @@ impl ContentHost {
         {
             dialog.model.close();
         }
+        if let Some(node) = self.root.find_mut(id) {
+            empty_state::hide_subtree(node);
+            notice::hide_subtree(node);
+            node.reconcile_presentation_runnable(false);
+        }
         self.modal = None;
         self.restore_focus(restore);
         true
     }
+    pub fn cancel_pointer_capture(&mut self) -> bool {
+        let Some(id) = self.captured.take() else {
+            return false;
+        };
+        self.captured_mount = None;
+        if let Some(owner) = self.root.find_mut(id) {
+            owner.component.cancel_pointer();
+        }
+        self.help.clear();
+        self.dirty = true;
+        true
+    }
     pub fn cancel(&mut self) {
+        for scope in &mut self.overlay_scopes {
+            scope.restore = None;
+            scope.focus_pending = false;
+        }
+        self.reading_scroll_source = None;
         self.help.clear();
         self.dirty = true;
         self.modal_focus_pending = false;
@@ -1923,9 +2945,86 @@ impl ContentHost {
         }
         cancel(&mut self.root);
         self.captured = None;
+        self.captured_mount = None;
         self.focus(None, false);
     }
-    pub fn insert(&mut self, parent: ComponentId, child: Content) -> Result<(), CompositionError> {
+    /// Move the original mounted subtree, preserving its Content identities and
+    /// help declarations. Unlike remove/insert this is not an unmount/remount.
+    pub fn reparent(
+        &mut self,
+        id: ComponentId,
+        parent: ComponentId,
+    ) -> Result<(), CompositionError> {
+        let node = self.root.find(id).ok_or(CompositionError::MissingId(id))?;
+        if id == self.root.id || node.find(parent).is_some() {
+            return Err(CompositionError::InvalidOrder);
+        }
+        if let Some(action) = self.root.action_ancestor(parent)
+            && let Some(child) = node.interactive_id()
+        {
+            return Err(CompositionError::NestedInteractive { action, child });
+        }
+        if self.root.curve_ancestor(parent, false).unwrap_or(false) {
+            node.validate_curve_tree(true)?;
+        }
+        let target = self
+            .root
+            .find(parent)
+            .ok_or(CompositionError::MissingId(parent))?;
+        if target.component.fixed_slots() || target.component.semantics().role.is_action_owner() {
+            return Err(CompositionError::NotContainer(parent));
+        }
+        // Validate both mutable boundaries before touching the source.
+        if self
+            .root
+            .find_mut(parent)
+            .unwrap()
+            .component
+            .children_mut()
+            .is_none()
+        {
+            return Err(CompositionError::NotContainer(parent));
+        }
+        fn mutable_parent(node: &mut Content, id: ComponentId) -> bool {
+            let fixed =
+                node.component.fixed_slots() || node.component.semantics().role.is_action_owner();
+            let Some(children) = node.component.children_mut() else {
+                return false;
+            };
+            if children.iter().any(|c| c.id == id) {
+                return !fixed;
+            }
+            children.iter_mut().any(|c| mutable_parent(c, id))
+        }
+        if !mutable_parent(&mut self.root, id) {
+            return Err(CompositionError::MissingId(id));
+        }
+        self.cancel_subtree(id);
+        fn take(node: &mut Content, id: ComponentId) -> Option<Content> {
+            let children = node.component.children_mut()?;
+            if let Some(i) = children.iter().position(|c| c.id == id) {
+                return Some(children.remove(i));
+            }
+            children.iter_mut().find_map(|c| take(c, id))
+        }
+        let node = take(&mut self.root, id).expect("validated source parent");
+        self.root
+            .find_mut(parent)
+            .unwrap()
+            .component
+            .children_mut()
+            .unwrap()
+            .push(node);
+        self.reveal_clock.invalidate_input();
+        self.reveal_clock.pending = true;
+        self.dirty = true;
+        Ok(())
+    }
+    pub fn insert(
+        &mut self,
+        parent: ComponentId,
+        mut child: Content,
+    ) -> Result<(), CompositionError> {
         if let Some(action) = self.root.action_ancestor(parent)
             && let Some(child) = child.interactive_id()
         {
@@ -1934,6 +3033,10 @@ impl ContentHost {
         let mut ids = BTreeSet::new();
         self.root.ids(&mut ids)?;
         child.ids(&mut ids)?;
+        if self.root.curve_ancestor(parent, false).unwrap_or(false) {
+            child.validate_curve_tree(true)?;
+        }
+        child.refresh_activity(self.window_active);
         let node = self
             .root
             .find_mut(parent)
@@ -1948,6 +3051,8 @@ impl ContentHost {
         let mut child = child;
         child.lifecycle(Lifecycle::Mounted);
         children.push(child);
+        self.reveal_clock.invalidate_input();
+        self.reveal_clock.pending = true;
         self.dirty = true;
         Ok(())
     }
@@ -1990,8 +3095,11 @@ impl ContentHost {
         }
         if self.captured.is_some_and(|id| child.find(id).is_some()) {
             self.captured = None;
+            self.captured_mount = None;
         }
         child.lifecycle(Lifecycle::Unmounted);
+        self.reveal_clock.invalidate_input();
+        self.reveal_clock.pending = true;
         self.dirty = true;
         Ok(child)
     }
@@ -2022,6 +3130,8 @@ impl ContentHost {
             let i = old.iter().position(|c| c.id == *id).unwrap();
             children.push(old.remove(i));
         }
+        self.reveal_clock.invalidate_input();
+        self.reveal_clock.pending = true;
         self.dirty = true;
         Ok(())
     }
@@ -2044,6 +3154,7 @@ impl ContentHost {
 }
 impl Drop for ContentHost {
     fn drop(&mut self) {
+        self.reveal_clock.invalidate_geometry();
         self.root.lifecycle(Lifecycle::Unmounted)
     }
 }
@@ -2064,11 +3175,18 @@ impl StackContent {
         &mut self,
         text: &mut dyn ButtonTextRenderer,
         available: Size,
+        intrinsic: bool,
     ) -> Vec<MeasuredChild> {
         let mut measured: Vec<_> = self
             .children
             .iter_mut()
-            .map(|c| c.measure(text, available))
+            .map(|c| {
+                if intrinsic {
+                    c.measure_intrinsic(text, available)
+                } else {
+                    c.measure(text, available)
+                }
+            })
             .collect();
         if let Some(i) = self
             .flexible_child
@@ -2099,23 +3217,24 @@ impl StackContent {
             } else {
                 Size::new(available.width, left)
             };
-            measured[i] = self.children[i].measure(text, constrained);
+            measured[i] = if intrinsic {
+                self.children[i].measure_intrinsic(text, constrained)
+            } else {
+                self.children[i].measure(text, constrained)
+            };
         }
         measured
     }
-}
-impl Component for StackContent {
-    fn children(&self) -> &[Content] {
-        &self.children
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.children)
-    }
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+    fn measure_content(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        available: Size,
+        intrinsic: bool,
+    ) -> MeasuredChild {
         let horizontal = self.model.axis == Axis::Horizontal;
         let mut main = 0_f32;
         let mut cross = 0_f32;
-        for m in self.measurements(text, available) {
+        for m in self.measurements(text, available, intrinsic) {
             let m = m.size;
             main += (if horizontal { m.width } else { m.height }).min(1e8);
             cross = cross.max(if horizontal { m.height } else { m.width });
@@ -2127,8 +3246,49 @@ impl Component for StackContent {
             Size::new(cross, main)
         })
     }
+}
+impl Component for StackContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
+    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
+        PreparedEffects::local_work(n)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        Ok(PreparedEffects::local(self, hooks))
+    }
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
+    fn children(&self) -> &[Content] {
+        &self.children
+    }
+    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+        Some(&mut self.children)
+    }
+    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.measure_content(text, available, false)
+    }
+    fn measure_intrinsic(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        available: Size,
+    ) -> MeasuredChild {
+        self.measure_content(text, available, true)
+    }
+
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        let measured = self.measurements(text, frame.size);
+        let measured = self.measurements(text, frame.size, false);
         let placements = layout_measured_children(
             frame,
             self.model.axis,
@@ -2152,6 +3312,28 @@ pub struct GridContent {
     pub children: Vec<Content>,
 }
 impl Component for GridContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
+    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
+        PreparedEffects::local_work(n)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        Ok(PreparedEffects::local(self, hooks))
+    }
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn children(&self) -> &[Content] {
         &self.children
     }
@@ -2178,6 +3360,36 @@ impl Component for GridContent {
             rows.iter().sum::<f32>()
                 + finite(self.model.gap_y) * rows.len().saturating_sub(1) as f32,
         ))
+    }
+    fn measure_intrinsic(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        available: Size,
+    ) -> MeasuredChild {
+        let columns = self.model.columns.max(1);
+        let cells = self.model.layout(
+            Rect::new(0., 0., available.width, available.height),
+            self.children.len(),
+            0.,
+        );
+        let width = self
+            .children
+            .iter_mut()
+            .zip(cells)
+            .map(|(child, cell)| {
+                child
+                    .measure_intrinsic(text, Size::new(cell.size.width, available.height))
+                    .size
+                    .width
+            })
+            .fold(0_f32, f32::max);
+        let gap =
+            finite(self.model.gap_x).min(available.width / columns.saturating_sub(1).max(1) as f32);
+        let width =
+            (width * columns as f32 + gap * columns.saturating_sub(1) as f32).min(available.width);
+        // Preserve the original equal-column allocation and remeasure its rows
+        // at the receiving width. No alternative Grid arrangement is introduced.
+        self.measure(text, Size::new(width, available.height))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         let columns = self.model.columns.max(1);
@@ -2212,6 +3424,7 @@ pub struct ScrollContent {
     viewport: Rect,
     last_frame: Option<std::time::Duration>,
     reading: Option<content_reading::ContentReadingState>,
+    reading_mounted: bool,
 }
 impl ScrollContent {
     pub fn new(scroll: ScrollArea, child: Content) -> Self {
@@ -2223,6 +3436,7 @@ impl ScrollContent {
             viewport: Rect::default(),
             last_frame: None,
             reading: None,
+            reading_mounted: false,
         }
     }
     fn arrange_content(
@@ -2246,6 +3460,40 @@ impl ScrollContent {
     }
 }
 impl Component for ScrollContent {
+    fn reading_scroll_source(&self) -> bool {
+        true
+    }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
+    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
+        let base = PreparedEffects::local_work(n)?;
+        base.checked_add(match &self.reading {
+            Some(r) => content_reading::reader_preparation_work(r, n)
+                .ok_or(PreparedEffectsError::CounterCapacity)?,
+            None => 0,
+        })
+        .ok_or(PreparedEffectsError::CounterCapacity)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        self.prepare_scroll_effects(hooks)
+    }
+    fn lifecycle_prepared(&mut self, event: Lifecycle, context: &mut PreparedLifecycleContext) {
+        context.scroll_lifecycle(self, event);
+    }
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn interactive(&self) -> bool {
         true
     }
@@ -2355,6 +3603,7 @@ impl Component for ScrollContent {
         descendant.offset(old.x - new.x, old.y - new.y)
     }
     fn lifecycle(&mut self, event: Lifecycle) {
+        self.reading_mounted = event == Lifecycle::Mounted;
         if event == Lifecycle::Unmounted {
             self.last_frame = None;
             self.reading_unmounted();
@@ -2363,6 +3612,48 @@ impl Component for ScrollContent {
 }
 
 /// The forwarding value keeps existing sized renderer APIs source-compatible.
+struct FrameTextAdapter<'a>(&'a mut dyn ButtonTextRenderer, Option<&'a mut bool>, bool);
+impl ButtonTextRenderer for FrameTextAdapter<'_> {
+    fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+        self.0.resolved_font_size(role)
+    }
+    fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
+        self.0.text_surface_host()
+    }
+    fn measure(&mut self, t: &str, r: proposal::TextRole, w: f32) -> Size {
+        self.0.measure(t, r, w)
+    }
+    fn draw(
+        &mut self,
+        s: &mut Scene,
+        t: &str,
+        r: proposal::TextRole,
+        f: Rect,
+        a: ButtonTextAlign,
+        i: Rgba,
+    ) {
+        self.0.draw(s, t, r, f, a, i)
+    }
+    fn motion_context(&self) -> Option<ControlMotionContext> {
+        self.0.motion_context()
+    }
+    fn request_animation_frame(&mut self) {
+        if !self.2 {
+            return;
+        }
+        if let Some(requested) = &mut self.1 {
+            **requested = true;
+        }
+        self.0.request_animation_frame()
+    }
+    fn backing_scale(&self) -> f32 {
+        self.0.backing_scale()
+    }
+    fn first_line_height(&mut self, t: &str, r: proposal::TextRole, w: f32) -> f32 {
+        self.0.first_line_height(t, r, w)
+    }
+}
+
 struct TextAdapter<'a>(&'a mut dyn ButtonTextRenderer);
 impl ButtonTextRenderer for TextAdapter<'_> {
     fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
@@ -2398,149 +3689,6 @@ impl ButtonTextRenderer for TextAdapter<'_> {
         self.0.first_line_height(t, r, w)
     }
 }
-/// Real Button model/painter; composition does not duplicate press or key logic.
-/// Pointer-only timing. Keyboard and AX remain their normal once-only actions.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum ButtonActivationPhase {
-    #[default]
-    Release,
-    Press,
-}
-#[derive(Debug)]
-pub struct ButtonContent {
-    pub button: Button,
-    pub label: String,
-    pub variant: ButtonVariant,
-    pub activations: usize,
-    pub pointer_activation_phase: ButtonActivationPhase,
-}
-impl ButtonContent {
-    pub fn new(label: impl Into<String>) -> Self {
-        Self {
-            button: Button::default(),
-            label: label.into(),
-            variant: ButtonVariant::Quiet,
-            activations: 0,
-            pointer_activation_phase: ButtonActivationPhase::Release,
-        }
-    }
-}
-impl Component for ButtonContent {
-    fn focus_decoration_above_siblings(&self) -> bool {
-        self.button.frame_policy == crate::ButtonFramePolicy::Exact
-            && self.button.state.focused
-            && self.button.state.focus_visible
-            && !self.button.state.disabled
-            && !self.button.state.loading
-    }
-    fn accessibility_action(
-        &mut self,
-        part: Option<usize>,
-        action: &AccessibilityAction,
-    ) -> ContentResponse {
-        if part.is_some() || !matches!(action, AccessibilityAction::Press) || !self.focusable() {
-            return ContentResponse::default();
-        }
-        self.button.pointer_down();
-        let activated = self.button.pointer_up(true);
-        if activated {
-            self.activations += 1;
-        }
-        ContentResponse {
-            consumed: activated,
-            changed: activated,
-            activated,
-            ..Default::default()
-        }
-    }
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        MeasuredChild::new(Button::measure(
-            &mut TextAdapter(text),
-            &self.label,
-            available.width,
-            ButtonSize::Body,
-            proposal::TextRole::UiBody,
-        ))
-    }
-    fn paint(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        clip: Rect,
-        theme: ContentTheme,
-    ) {
-        self.button.render(
-            scene,
-            &mut TextAdapter(text),
-            &self.label,
-            frame,
-            Some(clip),
-            theme.palette,
-            self.variant,
-            ButtonSize::Body,
-            proposal::TextRole::UiBody,
-            ButtonTextAlign::default(),
-        );
-    }
-    fn focusable(&self) -> bool {
-        !self.button.state.disabled && !self.button.state.loading
-    }
-    fn set_focus(&mut self, focused: bool, visible: bool) {
-        if focused {
-            self.button.state.focused = true;
-            self.button.state.focus_visible = visible
-        } else {
-            self.button.blur()
-        }
-    }
-    fn event(&mut self, event: &ContentEvent) -> ContentResponse {
-        let mut r = ContentResponse::default();
-        match event {
-            ContentEvent::PointerMove(p) => {
-                self.button.pointer_move_at(*p);
-                r.changed = true
-            }
-            ContentEvent::PointerDown(p) => {
-                r.consumed = self.button.pointer_down_at(*p);
-                r.capture_pointer = r.consumed;
-                r.activated = r.consumed
-                    && self.pointer_activation_phase == ButtonActivationPhase::Press
-                    && self.button.activate_pointer_press();
-                r.changed = r.consumed
-            }
-            ContentEvent::PointerUp(p) => {
-                r.activated = self.button.pointer_up_at(*p);
-                r.consumed = true;
-                r.changed = true
-            }
-            ContentEvent::TextCommand(command)
-                if matches!(command.as_str(), "insertNewline:" | "insertLineBreak:") =>
-            {
-                r.activated = self.button.key(ControlKey::Enter, true);
-                r.consumed = true;
-                r.changed = true;
-            }
-            ContentEvent::Key { key, down } => {
-                r.activated = self.button.key(*key, *down);
-                r.consumed = matches!(key, ControlKey::Space | ControlKey::Enter);
-                r.changed = r.consumed
-            }
-            ContentEvent::Cancel => self.button.cancel(),
-            _ => {}
-        }
-        if r.activated {
-            self.activations += 1
-        }
-        r
-    }
-    fn semantics(&self) -> ContentSemantics {
-        let mut s = ContentSemantics::new(ContentRole::Button, &self.label);
-        s.disabled = self.button.state.disabled || self.button.state.loading;
-        s.selected = self.button.state.selected;
-        s
-    }
-}
 #[derive(Debug)]
 pub struct TextContent {
     pub text: String,
@@ -2555,6 +3703,32 @@ impl TextContent {
     }
 }
 impl Component for TextContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
+    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
+        PreparedEffects::local_work(n)?
+            .checked_add(
+                self.text
+                    .len()
+                    .checked_mul(n.max(1))
+                    .ok_or(PreparedEffectsError::CounterCapacity)?,
+            )
+            .ok_or(PreparedEffectsError::CounterCapacity)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        Ok(PreparedEffects::local(self, hooks))
+    }
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         MeasuredChild::new(text.measure(&self.text, self.role, available.width))
     }
@@ -2594,191 +3768,6 @@ fn clean_rect(r: Rect) -> Rect {
     Rect::from_origin_size(r.origin, clean_size(r.size))
 }
 
-/// One production Button action with an arbitrary decorative component subtree.
-/// The accessible name is explicit; child names are not concatenated or exported
-/// as independent accessibility nodes. Interactive descendants are diagnosed by
-/// ContentHost before mounting, painting or dispatching input.
-#[derive(Debug)]
-pub struct CompoundButton {
-    pub action: ButtonContent,
-    content: Vec<Content>,
-    measured: Size,
-}
-impl CompoundButton {
-    pub fn new(
-        accessible_name: impl Into<String>,
-        content: Content,
-    ) -> Result<Self, CompositionError> {
-        let name = accessible_name.into();
-        if name.trim().is_empty() {
-            return Err(CompositionError::EmptyAccessibleName);
-        }
-        Ok(Self {
-            action: ButtonContent::new(name),
-            content: vec![content],
-            measured: Size::default(),
-        })
-    }
-    fn resolve(
-        &self,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        clip: Rect,
-    ) -> crate::ButtonLayout {
-        resolve_action_slot(&self.action, self.measured, frame, clip, text)
-    }
-}
-impl Component for CompoundButton {
-    fn focus_decoration_above_siblings(&self) -> bool {
-        self.action.focus_decoration_above_siblings()
-    }
-    fn accessibility_action(
-        &mut self,
-        part: Option<usize>,
-        action: &AccessibilityAction,
-    ) -> ContentResponse {
-        self.action.accessibility_action(part, action)
-    }
-
-    fn fixed_slots(&self) -> bool {
-        true
-    }
-    fn validate(&self) -> Result<(), CompositionError> {
-        if self.content.len() != 1 {
-            return Err(CompositionError::InvalidSlotCount);
-        }
-        if self.action.label.trim().is_empty() {
-            return Err(CompositionError::EmptyAccessibleName);
-        }
-        Ok(())
-    }
-    fn children(&self) -> &[Content] {
-        &self.content
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.content)
-    }
-    fn child_theme(&self, theme: ContentTheme) -> ContentTheme {
-        action_child_theme(&self.action, theme)
-    }
-    // A Button has one fixed content slot, so arbitrary sibling insertion is
-    // intentionally unavailable. Its subtree can use normal container slots.
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        measure_action_slot(
-            &self.action,
-            &mut self.content[0],
-            &mut self.measured,
-            text,
-            available,
-        )
-    }
-    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        self.measure(text, frame.size);
-        let layout = self.resolve(text, frame, clip);
-        let child_clip = layout.content.intersection(&clip).unwrap_or_default();
-        self.content[0].arrange(text, layout.content, child_clip);
-    }
-    fn paint(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        clip: Rect,
-        theme: ContentTheme,
-    ) {
-        self.action.button.render_content_frame(
-            scene,
-            &mut TextAdapter(text),
-            self.measured,
-            frame,
-            Some(clip),
-            theme.palette,
-            self.action.variant,
-        );
-    }
-    fn focusable(&self) -> bool {
-        self.action.focusable()
-    }
-    fn set_focus(&mut self, f: bool, v: bool) {
-        self.action.set_focus(f, v)
-    }
-    fn event(&mut self, e: &ContentEvent) -> ContentResponse {
-        self.action.event(e)
-    }
-    fn semantics(&self) -> ContentSemantics {
-        self.action.semantics()
-    }
-}
-
-fn resolve_action_slot(
-    action: &ButtonContent,
-    measured: Size,
-    frame: Rect,
-    clip: Rect,
-    text: &mut dyn ButtonTextRenderer,
-) -> crate::ButtonLayout {
-    crate::ButtonLayout::resolve_with_text(
-        text,
-        frame,
-        Some(clip),
-        measured,
-        ButtonSize::Body,
-        proposal::TextRole::UiBody,
-        ButtonTextAlign::Leading,
-        action.button.frame_policy,
-    )
-}
-fn measure_action_slot(
-    action: &ButtonContent,
-    content: &mut Content,
-    measured: &mut Size,
-    text: &mut dyn ButtonTextRenderer,
-    available: Size,
-) -> MeasuredChild {
-    if action.button.frame_policy == crate::ButtonFramePolicy::Exact {
-        *measured = content.measure(text, available).size;
-        return MeasuredChild::new(*measured);
-    }
-    let frame = Rect::from_origin_size(Point::default(), available);
-    let empty = crate::ButtonLayout::resolve_with_text(
-        text,
-        frame,
-        None,
-        Size::default(),
-        ButtonSize::Body,
-        proposal::TextRole::UiBody,
-        ButtonTextAlign::Leading,
-        crate::ButtonFramePolicy::Minimum,
-    );
-    *measured = content
-        .measure(text, Size::new(empty.content.size.width, available.height))
-        .size;
-    let layout = resolve_action_slot(
-        action,
-        *measured,
-        Rect::new(0., 0., available.width, 0.),
-        frame,
-        text,
-    );
-    MeasuredChild::new(Size::new(
-        (measured.width + available.width - empty.content.size.width).min(available.width),
-        layout.frame.size.height,
-    ))
-}
-fn action_child_theme(action: &ButtonContent, theme: ContentTheme) -> ContentTheme {
-    let role = if action.button.state.disabled {
-        "tertiary-text"
-    } else if action.variant == ButtonVariant::Primary {
-        "action-primary-foreground"
-    } else {
-        "primary-text"
-    };
-    ContentTheme {
-        palette: theme.palette,
-        foreground: theme.palette.color(role),
-    }
-}
-
 impl std::fmt::Display for CompositionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "composition contract violation: {self:?}")
@@ -2792,14 +3781,16 @@ fn scene_dialog_contents(
     text: &mut dyn ButtonTextRenderer,
     theme: ContentTheme,
 ) {
+    let theme = node.resolved_theme(theme);
     scene.push_clip(node.clip);
     node.component
         .paint(scene, text, node.frame, node.clip, theme);
     scene.pop_clip();
+    let child_theme = node.child_theme(theme);
     if let Some(children) = node.component.children_mut() {
         for child in children {
-            child.paint(scene, text, theme);
-            child.paint_overlays(scene, text, theme);
+            child.paint(scene, text, child_theme);
+            child.paint_overlays(scene, text, child_theme);
         }
     }
 }

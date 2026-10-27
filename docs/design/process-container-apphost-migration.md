@@ -1,5 +1,14 @@
 # ProcessComponent / ProcessContainer / AppHost migration boundary
 
+## Local main local-column intake — 2026-10-27 (#70/#136)
+
+Owner: root; validation baseline `b7634699b5b7026a28fa26cc2416b55f2235ff8d` plus the frozen 13 AppHost paths. Receives real local Container/Column/AppWindow composition, source-bound runtime declarations, one shared ToolbarHost, existing CoreText services and original platform multi-Host accessibility publication. Logical toolbar return intent is authenticated by the original semantic mount and declaration Source; temporary barriers revoke arms, while replacement sources cannot inherit focus. Oversized native rows preserve nonnegative full-content allocation; exact native center is not promised for oversized content.
+
+Actual acceptance: AppHost all-target compile, all 32 library behavior tests and all-target strict pass. The original Window focus/capture/viewport tests remain, along with actual local columns, shared toolbar and native publication model tests. Strict first rejected only items after a test module; moving that exact module after the production impl fixed the lint, and only strict was rerun. The original behavior run retains its pre-reorder source identity. Evidence: SSD `artifacts/issue-136/apphost-columns-mainb763469-intake/round01` and `round02`.
+
+This is a partial #70 delivery: Settings/save/UndoRedo business, PR #52 independent fixed public dependencies and CI, real native window/physical IME/VoiceOver and remote process acceptance are not certified. No new process engine or shared Theme rules; no unchanged Controls/GPU rerun. Historical migration obligations below remain; this intake does not close #70 or #136.
+
+
 The shared ProcessComponent foundation and optional-View ProcessContainer adapter are owned by the Rust TekesUI task. Rust AppHost owns its consumer migration; do not fork a second process manager. This file records integration requirements against the existing live WIP, not an assertion that the public API is already implemented.
 
 ## Move into the public process foundation / View adapter

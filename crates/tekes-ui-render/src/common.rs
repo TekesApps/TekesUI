@@ -18,71 +18,183 @@ pub(crate) fn premul_blend() -> wgpu::BlendState {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, PartialEq, Pod, Zeroable)]
+#[derive(Clone, Copy, Pod, Zeroable)]
 struct Globals {
-    /// 渲染目标的像素尺寸。
     viewport_px: [f32; 2],
-    /// 逻辑点到设备像素的比例。
     scale: f32,
-    _pad: f32,
+    head: u32,
+    origin: [f32; 2],
+    clip_mode: u32,
+    max_steps: u32,
 }
-
-/// 全局 uniform（bind group 0），所有管线共用同一份布局与数据。
+/// Shared dynamic uniform and immutable clip-record storage, group 0 in every pass.
 pub(crate) struct GlobalsBinding {
-    buffer: wgpu::Buffer,
+    uniform: wgpu::Buffer,
+    records: wgpu::Buffer,
+    uniform_capacity: u64,
+    record_capacity: u64,
+    uniform_uploaded: Vec<u8>,
+    records_uploaded: Vec<u8>,
+    pub alignment: u32,
     pub layout: wgpu::BindGroupLayout,
     pub bind_group: wgpu::BindGroup,
-    last_written: Option<Globals>,
 }
-
 impl GlobalsBinding {
-    pub fn new(device: &wgpu::Device) -> GlobalsBinding {
-        let buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("tekes globals"),
-            size: size_of::<Globals>() as u64,
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    fn buffer(
+        device: &wgpu::Device,
+        label: &str,
+        size: u64,
+        usage: wgpu::BufferUsages,
+    ) -> wgpu::Buffer {
+        device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some(label),
+            size,
+            usage: usage | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
-        });
+        })
+    }
+    fn group(
+        device: &wgpu::Device,
+        layout: &wgpu::BindGroupLayout,
+        uniform: &wgpu::Buffer,
+        records: &wgpu::Buffer,
+    ) -> wgpu::BindGroup {
+        device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("tekes validated clip globals"),
+            layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                        buffer: uniform,
+                        offset: 0,
+                        size: std::num::NonZeroU64::new(size_of::<Globals>() as u64),
+                    }),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: records.as_entire_binding(),
+                },
+            ],
+        })
+    }
+    pub fn new(device: &wgpu::Device) -> Self {
+        let alignment = device.limits().min_uniform_buffer_offset_alignment.max(32);
+        let uniform = Self::buffer(
+            device,
+            "tekes dynamic globals",
+            u64::from(alignment),
+            wgpu::BufferUsages::UNIFORM,
+        );
+        let records = Self::buffer(
+            device,
+            "tekes clip records",
+            48,
+            wgpu::BufferUsages::STORAGE,
+        );
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("tekes globals layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: true,
+                        min_binding_size: std::num::NonZeroU64::new(size_of::<Globals>() as u64),
+                    },
+                    count: None,
                 },
-                count: None,
-            }],
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: std::num::NonZeroU64::new(48),
+                    },
+                    count: None,
+                },
+            ],
         });
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("tekes globals"),
-            layout: &layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: buffer.as_entire_binding(),
-            }],
-        });
-        GlobalsBinding {
-            buffer,
+        let bind_group = Self::group(device, &layout, &uniform, &records);
+        Self {
+            uniform,
+            records,
+            uniform_capacity: u64::from(alignment),
+            record_capacity: 48,
+            uniform_uploaded: Vec::new(),
+            records_uploaded: Vec::new(),
+            alignment,
             layout,
             bind_group,
-            last_written: None,
         }
     }
-
-    pub fn write(&mut self, queue: &wgpu::Queue, size_px: (u32, u32), scale: f32) {
-        let globals = Globals {
-            viewport_px: [size_px.0 as f32, size_px.1 as f32],
-            scale,
-            _pad: 0.0,
-        };
-        if self.last_written == Some(globals) {
-            return;
+    pub fn write(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        size: (u32, u32),
+        scale: f32,
+        frame: &crate::clip::ClipFrame,
+    ) {
+        let mut uniforms = vec![0_u8; frame.uniform_slots() * self.alignment as usize];
+        for slot in 0..frame.uniform_slots() {
+            // Slot zero is the exact legacy path; slot one is an empty analytic
+            // chain. Further slots map one-to-one to nonzero chain heads.
+            let head = slot.saturating_sub(1);
+            let header = Globals {
+                viewport_px: [size.0 as f32, size.1 as f32],
+                scale,
+                head: head as u32,
+                origin: [0., 0.],
+                clip_mode: u32::from(slot != 0),
+                max_steps: frame.records.len() as u32,
+            };
+            let offset = slot * self.alignment as usize;
+            uniforms[offset..offset + size_of::<Globals>()]
+                .copy_from_slice(bytemuck::bytes_of(&header));
         }
-        queue.write_buffer(&self.buffer, 0, bytemuck::bytes_of(&globals));
-        self.last_written = Some(globals);
+        let empty = [crate::clip::ClipRecord::default()];
+        let records = bytemuck::cast_slice(if frame.records.is_empty() {
+            &empty[..]
+        } else {
+            &frame.records[..]
+        });
+        let mut changed = false;
+        if uniforms.len() as u64 > self.uniform_capacity {
+            self.uniform = Self::buffer(
+                device,
+                "tekes dynamic globals",
+                uniforms.len() as u64,
+                wgpu::BufferUsages::UNIFORM,
+            );
+            self.uniform_capacity = uniforms.len() as u64;
+            self.uniform_uploaded.clear();
+            changed = true;
+        }
+        if records.len() as u64 > self.record_capacity {
+            self.records = Self::buffer(
+                device,
+                "tekes clip records",
+                records.len() as u64,
+                wgpu::BufferUsages::STORAGE,
+            );
+            self.record_capacity = records.len() as u64;
+            self.records_uploaded.clear();
+            changed = true;
+        }
+        if changed {
+            self.bind_group = Self::group(device, &self.layout, &self.uniform, &self.records);
+        }
+        if uniforms != self.uniform_uploaded {
+            queue.write_buffer(&self.uniform, 0, &uniforms);
+            self.uniform_uploaded = uniforms;
+        }
+        if records != self.records_uploaded {
+            queue.write_buffer(&self.records, 0, records);
+            self.records_uploaded = records.to_vec();
+        }
     }
 }
 
@@ -186,7 +298,15 @@ impl<T: Pod> GrowBuffer<T> {
             return 0;
         }
         if items.len() > self.capacity {
-            let new_capacity = items.len().max(self.capacity * 2);
+            // Complete-frame preflight checked required bytes. Clamp growth to the
+            // device capacity too, so doubling cannot exceed that valid reservation.
+            let device_capacity =
+                (device.limits().max_buffer_size / size_of::<T>() as u64) as usize;
+            let new_capacity = items
+                .len()
+                .max(self.capacity.saturating_mul(2))
+                .min(device_capacity);
+            assert!(new_capacity >= items.len(), "validated instance capacity");
             self.buffer = Self::alloc(device, self.label, new_capacity);
             self.capacity = new_capacity;
             self.allocations += 1;

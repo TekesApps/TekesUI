@@ -115,10 +115,7 @@ define_class!(
         #[unsafe(method(characterIndexForPoint:))]
         fn characterIndexForPoint(&self,point:objc2_foundation::NSPoint)->usize {
             let p=self.window().map_or(point,|w|w.convertPointFromScreen(point));let p=self.convertPoint_fromView(p,None);
-            self.ivars().shared.text_input.borrow().as_ref().map_or(0,|s|s.carets.iter().min_by(|a,b|{
-                let distance=|v:&(usize,Point,Size)| ((p.y-(v.1.y+v.2.height*0.5)).abs()*1000.0)+(p.x-v.1.x).abs();
-                distance(a).total_cmp(&distance(b))
-            }).map_or(s.caret_index,|v|v.0))
+            self.ivars().shared.text_input.borrow().as_ref().and_then(|s|s.character_index_for_point(Point{x:p.x,y:p.y})).unwrap_or(isize::MAX as usize)
         }
     }
 
@@ -149,6 +146,23 @@ define_class!(
 
     impl TekesView {
 
+        #[unsafe(method_id(accessibilityHitTest:))]
+        fn content_accessibility_hit_test(&self,point:NSPoint)->Option<Retained<objc2::runtime::AnyObject>> {
+            #[cfg(feature="content-accessibility")]
+            { (|| {
+                let shared=&self.ivars().shared;
+                let snapshot=shared.content_geometry.borrow().clone();
+                if let Some(snapshot)=snapshot {
+                    let objects=shared.objects.get()?;
+                    let local=self.convertPoint_fromView(objects.window.convertPointFromScreen(point),None);
+                    let key=snapshot.hit_test(crate::event::Point{x:local.x,y:local.y})?;
+                    return shared.accessibility_elements.borrow().get(&key).cloned().map(Into::into);
+                }
+                unsafe { msg_send![super(self), accessibilityHitTest:point] }
+            })() }
+            #[cfg(not(feature="content-accessibility"))]
+            unsafe { msg_send![super(self), accessibilityHitTest:point] }
+        }
         #[unsafe(method_id(accessibilityChildren))]
         fn accessibility_children(&self) -> Retained<objc2_foundation::NSArray> {
             self.accessibility_children_snapshot()
@@ -157,11 +171,15 @@ define_class!(
         #[unsafe(method_id(accessibilityFocusedUIElement))]
         fn accessibility_focused_ui_element(&self) -> Retained<objc2::runtime::AnyObject> {
             let shared = &self.ivars().shared;
+            #[cfg(feature="content-accessibility")]
+            let authorized=shared.content_geometry.borrow().as_ref().is_none_or(|p|p.is_current());
+            #[cfg(not(feature="content-accessibility"))]
+            let authorized=true;
             let focused_key = shared
                 .accessibility_nodes
                 .borrow()
                 .iter()
-                .find(|node| node.focused)
+                .find(|node| authorized && node.focused)
                 .map(|node| node.key);
             focused_key
                 .and_then(|key| shared.accessibility_elements.borrow().get(&key).cloned())
@@ -694,7 +712,12 @@ impl TekesView {
             });
         }
         drop(elements);
-        let structural = nodes.len() != previous.len()
+        #[cfg(feature = "content-accessibility")]
+        let publication_changed = shared.content_geometry.borrow().is_some();
+        #[cfg(not(feature = "content-accessibility"))]
+        let publication_changed = false;
+        let structural = publication_changed
+            || nodes.len() != previous.len()
             || nodes.iter().zip(previous).any(|(a, b)| {
                 a.key != b.key
                     || a.parent != b.parent

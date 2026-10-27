@@ -1,7 +1,7 @@
 use super::super::{PageCtx, text_demo::TextDemo};
 use std::collections::{HashMap, HashSet};
 use tekes_ui_controls::{
-    Button, ButtonSize, ButtonTextAlign, ControlKey, DialogEvent, DialogView, paint,
+    ButtonModel, ButtonSize, ButtonTextAlign, ControlKey, DialogEvent, DialogView, paint,
 };
 use tekes_ui_platform_macos::{Event, KeyEventKind, MouseButton, MouseEventKind};
 use tekes_ui_scene::{Point, Quad, Rect, Scene};
@@ -28,7 +28,7 @@ pub(super) struct BrandPreview {
     direction: Option<String>,
     candidate: Option<usize>,
     input: TextDemo,
-    buttons: HashMap<usize, Button>,
+    buttons: HashMap<usize, ButtonModel>,
     hits: Vec<(usize, Rect)>,
     focus_frames: Vec<(usize, Rect)>,
     focus: Option<usize>,
@@ -153,10 +153,7 @@ impl BrandPreview {
         let x = frame.min_x();
         let y = frame.min_y();
         let w = frame.size.width.max(0.);
-        let current = Palette {
-            theme: ctx.theme,
-            brand: applied_brand,
-        };
+        let current = Palette::new(ctx.theme, applied_brand).expect("registered Gallery brand");
         let directions = tekes_ui_tokens::palette::gallery_brand_directions();
         let title_h = measure(
             ctx.text,
@@ -240,10 +237,7 @@ impl BrandPreview {
         let applied = tekes_ui_tokens::palette::gallery_brand_preset(applied_brand);
         let preview_index = self.candidate.unwrap_or(applied_brand);
         let preview_preset = tekes_ui_tokens::palette::gallery_brand_preset(preview_index);
-        let preview = Palette {
-            theme: ctx.theme,
-            brand: preview_index,
-        };
+        let preview = Palette::new(ctx.theme, preview_index).expect("registered Gallery brand");
         let card_gap = 12.;
         let stacked = w < 720.;
         let card_w = if stacked {

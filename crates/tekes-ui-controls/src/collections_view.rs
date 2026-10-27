@@ -4,7 +4,7 @@
 //! state. Hosts provide the existing text shaper and forward translated events.
 #![allow(clippy::too_many_arguments)]
 use crate::{
-    Button, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout, ControlKey,
+    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout, ControlKey,
     ControlState, Insets,
     chart::{BarChart, ChartGeometry, paint_bar_chart_with_label_metrics},
     extended::{CodeBlock, DataTable, DiffKind, DiffView, List, Markdown, MarkdownBlock, Tree},
@@ -61,7 +61,7 @@ fn mounted_bounds(frame: Rect, ancestor: Option<Rect>) -> bool {
     positive(frame) && ancestor.is_none_or(positive)
 }
 fn render_quiet_button(
-    button: &mut Button,
+    button: &mut ButtonModel,
     scene: &mut Scene,
     text: &mut impl ButtonTextRenderer,
     label: &str,
@@ -231,7 +231,7 @@ pub struct ListView {
     layout: CollectionLayout,
     state: CollectionInteraction,
     disabled: bool,
-    buttons: Vec<Button>,
+    buttons: Vec<ButtonModel>,
 }
 impl Default for ListView {
     fn default() -> Self {
@@ -325,7 +325,7 @@ impl ListView {
             .iter()
             .take(count)
             .map(|label| {
-                Button::measure(
+                ButtonModel::measure(
                     text,
                     label,
                     frame.size.width,
@@ -368,7 +368,7 @@ impl ListView {
             return self.layout.clone();
         }
         scene.push_clip(own_clip.expect("checked list clip"));
-        self.buttons.resize_with(count, Button::default);
+        self.buttons.resize_with(count, ButtonModel::default);
         if self.buttons.len() > count {
             self.buttons.truncate(count);
         }
@@ -528,7 +528,7 @@ pub struct TreeView {
     layout: CollectionLayout,
     state: CollectionInteraction,
     disabled: bool,
-    buttons: Vec<Button>,
+    buttons: Vec<ButtonModel>,
     icons: Vec<IconView>,
     icon_slots: Vec<TreeIconSlot>,
 }
@@ -650,7 +650,7 @@ impl TreeView {
         }
         scene.push_clip(own_clip.expect("checked tree clip"));
         self.buttons
-            .resize_with(model.nodes().len(), Button::default);
+            .resize_with(model.nodes().len(), ButtonModel::default);
         if self.buttons.len() > model.nodes().len() {
             self.buttons.truncate(model.nodes().len());
         }
@@ -982,8 +982,8 @@ pub struct DataTableView {
     layout: DataTableLayout,
     state: CollectionInteraction,
     disabled: bool,
-    header_buttons: Vec<Button>,
-    row_buttons: Vec<Button>,
+    header_buttons: Vec<ButtonModel>,
+    row_buttons: Vec<ButtonModel>,
     focused_header: Option<usize>,
 }
 impl Default for DataTableView {
@@ -1092,7 +1092,7 @@ impl DataTableView {
         let header_heights = header_labels
             .iter()
             .map(|title| {
-                Button::measure(
+                ButtonModel::measure(
                     text,
                     title,
                     cw,
@@ -1186,8 +1186,9 @@ impl DataTableView {
         }
         scene.push_clip(own_clip.expect("checked table clip"));
         self.header_buttons
-            .resize_with(model.columns, Button::default);
-        self.row_buttons.resize_with(model.rows, Button::default);
+            .resize_with(model.columns, ButtonModel::default);
+        self.row_buttons
+            .resize_with(model.rows, ButtonModel::default);
         for (col, _header_height) in header_heights.iter().copied().enumerate() {
             let r = Rect::new(
                 frame.min_x() + col as f32 * cw,
@@ -1464,6 +1465,9 @@ impl DataTableView {
     }
 }
 
+mod chart_owner;
+pub use chart_owner::{ChartOwnerCapacity, ChartOwnerFocusSpace, ChartOwnerMeasurement};
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ChartViewLayout {
     pub frame: Rect,
@@ -1473,6 +1477,7 @@ pub struct ChartViewLayout {
 #[derive(Clone, Debug)]
 pub struct ChartView {
     layout: ChartViewLayout,
+    owner_band: Option<chart_owner::OwnerBand>,
     hovered: Option<usize>,
     focused: bool,
     focus_visible: bool,
@@ -1482,6 +1487,7 @@ impl Default for ChartView {
     fn default() -> Self {
         Self {
             layout: ChartViewLayout::default(),
+            owner_band: None,
             hovered: None,
             focused: false,
             focus_visible: false,
@@ -1512,6 +1518,7 @@ impl ChartView {
     pub fn set_window_active(&mut self, active: bool, model: &mut BarChart) {
         self.window_active = active;
         if !active {
+            self.clear_hover(model);
             self.blur(model);
         }
     }
@@ -1528,6 +1535,7 @@ impl ChartView {
         palette: Palette,
         text_scale: f32,
     ) -> ChartViewLayout {
+        self.owner_band = None;
         let own_clip = own_clip(frame, clip);
         if own_clip.is_none() && !mounted_bounds(frame, clip) {
             self.focused = false;
@@ -1548,26 +1556,24 @@ impl ChartView {
         model.set_focused(self.focused && self.window_active, self.focus_visible);
         model.set_hovered(self.hovered);
         let mut local = Scene::new();
-        let probe = model.layout_with_text_scale(frame, text_scale);
+        let _ = text_scale; // Label heights come from the active text shaper.
         let mut value_line_height: f32 = 16.0;
         let mut category_line_height: f32 = 16.0;
-        for bar in &probe.bars {
-            value_line_height = value_line_height.max(
-                text.measure(
-                    &bar.value.to_string(),
-                    proposal::TextRole::UiCaption,
-                    bar.value_label.size.width,
-                )
-                .height,
-            );
-            category_line_height = category_line_height.max(
-                text.measure(
-                    &bar.label,
-                    proposal::TextRole::UiCaption,
-                    bar.category_label.size.width,
-                )
-                .height,
-            );
+        if let Some((value_width, category_width)) = model.label_widths(frame) {
+            for datum in model.data().iter().filter(|datum| datum.value.is_finite()) {
+                value_line_height = value_line_height.max(
+                    text.measure(
+                        &datum.value.to_string(),
+                        proposal::TextRole::UiCaption,
+                        value_width,
+                    )
+                    .height,
+                );
+                category_line_height = category_line_height.max(
+                    text.measure(&datum.label, proposal::TextRole::UiCaption, category_width)
+                        .height,
+                );
+            }
         }
         let geometry = if own_clip.is_some() {
             paint_bar_chart_with_label_metrics(
@@ -1581,39 +1587,12 @@ impl ChartView {
         } else {
             model.layout_with_label_metrics(frame, value_line_height, category_line_height)
         };
-        let text_alignment = tekes_ui_tokens::proposal::layout::CHART_LABEL.text_alignment;
         if let Some(clip) = own_clip {
             scene.push_clip(clip);
             for primitive in local.primitives() {
                 scene.push(primitive.clone());
             }
-            for bar in &geometry.bars {
-                let value = bar.value.to_string();
-                let (value_rect, value_align) =
-                    chart_text_frame(text, &value, bar.value_label, text_alignment);
-                text.draw(
-                    scene,
-                    &value,
-                    proposal::TextRole::UiCaption,
-                    value_rect,
-                    value_align,
-                    palette
-                        .color("primary-text")
-                        .expect("DS primary text token"),
-                );
-                let (category_rect, category_align) =
-                    chart_text_frame(text, &bar.label, bar.category_label, text_alignment);
-                text.draw(
-                    scene,
-                    &bar.label,
-                    proposal::TextRole::UiCaption,
-                    category_rect,
-                    category_align,
-                    palette
-                        .color("secondary-text")
-                        .expect("DS secondary text token"),
-                );
-            }
+            draw_chart_labels(scene, text, &geometry, palette);
             scene.pop_clip();
         }
         self.layout = ChartViewLayout {
@@ -1623,7 +1602,30 @@ impl ChartView {
         };
         self.layout.clone()
     }
+    /// Retire the original View's hover together with its model on cancellation.
+    pub(crate) fn clear_hover(&mut self, model: &mut BarChart) -> bool {
+        let changed = self.hovered.take().is_some() || model.hovered().is_some();
+        model.set_hovered(None);
+        changed
+    }
+    pub(crate) fn pointer_move_in_region(
+        &mut self,
+        point: Point,
+        model: &mut BarChart,
+        region_contains: bool,
+    ) -> bool {
+        if region_contains {
+            return self.pointer_move(point, model);
+        }
+        if !self.owner_data_current(model) {
+            return false;
+        }
+        self.clear_hover(model)
+    }
     pub fn pointer_move(&mut self, point: Point, model: &mut BarChart) -> bool {
+        if !self.owner_data_current(model) {
+            return false;
+        }
         if !self.window_active || self.layout.visible.is_none() {
             let changed = self.hovered.take().is_some();
             model.set_hovered(None);
@@ -1644,6 +1646,18 @@ impl ChartView {
         changed
     }
     pub fn pointer_down(&mut self, point: Point, model: &mut BarChart) -> CollectionEvent {
+        if !self.owner_data_current(model) {
+            return CollectionEvent::Ignored;
+        }
+        if self.owner_band.is_some()
+            && !self.focused
+            && !matches!(
+                self.owner_focus_space(model),
+                ChartOwnerFocusSpace::Visible { .. }
+            )
+        {
+            return CollectionEvent::Ignored;
+        }
         if !self.window_active || self.layout.visible.is_none_or(|r| !r.contains(point)) {
             return CollectionEvent::Ignored;
         }
@@ -1680,8 +1694,96 @@ impl ChartView {
     }
 }
 
-fn chart_text_frame(
+fn chart_label_metrics(
+    text: &mut (impl ButtonTextRenderer + ?Sized),
+    model: &BarChart,
+    frame: Rect,
+) -> (f32, f32, bool) {
+    let mut measured = true;
+    let mut value_line_height: f32 = 16.0;
+    let mut category_line_height: f32 = 16.0;
+    if let Some((value_width, category_width)) = model.label_widths(frame) {
+        for datum in model.data().iter().filter(|datum| datum.value.is_finite()) {
+            let value_size = text.measure(
+                &datum.value.to_string(),
+                proposal::TextRole::UiCaption,
+                value_width,
+            );
+            let category_size =
+                text.measure(&datum.label, proposal::TextRole::UiCaption, category_width);
+            measured &= [
+                value_size.width,
+                value_size.height,
+                category_size.width,
+                category_size.height,
+            ]
+            .into_iter()
+            .all(|extent| extent.is_finite() && extent >= 0.0);
+            value_line_height = value_line_height.max(value_size.height);
+            category_line_height = category_line_height.max(category_size.height);
+        }
+    }
+    let widths_available = model.data().is_empty() || model.label_widths(frame).is_some();
+    (
+        value_line_height,
+        category_line_height,
+        measured && widths_available,
+    )
+}
+
+fn draw_chart_labels(
+    scene: &mut Scene,
     text: &mut impl ButtonTextRenderer,
+    geometry: &ChartGeometry,
+    palette: Palette,
+) {
+    draw_chart_labels_with_inks(scene, text, geometry, |category| {
+        if category {
+            palette
+                .color("secondary-text")
+                .expect("DS secondary text token")
+        } else {
+            palette
+                .color("primary-text")
+                .expect("DS primary text token")
+        }
+    });
+}
+
+fn draw_chart_labels_with_inks(
+    scene: &mut Scene,
+    text: &mut (impl ButtonTextRenderer + ?Sized),
+    geometry: &ChartGeometry,
+    mut ink: impl FnMut(bool) -> tekes_ui_tokens::Rgba,
+) {
+    let text_alignment = tekes_ui_tokens::proposal::layout::CHART_LABEL.text_alignment;
+    for bar in &geometry.bars {
+        let value = bar.value.to_string();
+        let (value_rect, value_align) =
+            chart_text_frame(text, &value, bar.value_label, text_alignment);
+        text.draw(
+            scene,
+            &value,
+            proposal::TextRole::UiCaption,
+            value_rect,
+            value_align,
+            ink(false),
+        );
+        let (category_rect, category_align) =
+            chart_text_frame(text, &bar.label, bar.category_label, text_alignment);
+        text.draw(
+            scene,
+            &bar.label,
+            proposal::TextRole::UiCaption,
+            category_rect,
+            category_align,
+            ink(true),
+        );
+    }
+}
+
+fn chart_text_frame(
+    text: &mut (impl ButtonTextRenderer + ?Sized),
     value: &str,
     slot: Rect,
     alignment: tekes_ui_tokens::proposal::layout::TextAlignment,
@@ -1691,8 +1793,6 @@ fn chart_text_frame(
         TextAlignment::Center => (slot, ButtonTextAlign::Center),
         TextAlignment::Leading => (slot, ButtonTextAlign::Leading),
         TextAlignment::Trailing => {
-            // The renderer supports leading/center alignment. Anchor a
-            // measured-width frame at the trailing edge, then draw it leading.
             let width = text
                 .measure(value, proposal::TextRole::UiCaption, slot.size.width)
                 .width

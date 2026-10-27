@@ -2,7 +2,7 @@
 use super::*;
 use std::cell::Cell;
 use std::rc::Rc;
-use tekes_ui_controls::{Button, ControlKey, ScrollArea, extended::Grid};
+use tekes_ui_controls::{ButtonModel, ControlKey, ScrollArea, extended::Grid};
 
 pub mod ids {
     use tekes_ui_controls::composition::ComponentId;
@@ -65,7 +65,7 @@ impl Component for Badge {
 struct ActionRow {
     pub children: Vec<Content>,
     activations: Rc<Cell<usize>>,
-    action: Button,
+    action: ButtonModel,
     frame: Rect,
     clip: Rect,
 }
@@ -201,7 +201,7 @@ pub fn heterogeneous_list() -> Result<ListFixture, CompositionError> {
                 SwitchContent::new("Sync changes", false),
             )],
             activations: row_activations.clone(),
-            action: Button::default(),
+            action: ButtonModel::default(),
             frame: Rect::default(),
             clip: Rect::default(),
         },
@@ -249,8 +249,15 @@ pub fn build_list() -> (ContentHost, ComponentId) {
 #[derive(Debug)]
 struct DialogScreen {
     children: Vec<Content>,
+    arranged: bool,
 }
 impl Component for DialogScreen {
+    // Both original child frames translate with this arranged screen. Child
+    // access is accessor-only, as required by the Scroll body's reveal route.
+    fn host_reveal_passthrough(&self) -> bool {
+        self.arranged
+    }
+
     fn measure(&mut self, _: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
         MeasuredChild::new(a)
     }
@@ -265,6 +272,7 @@ impl Component for DialogScreen {
         if let Some(dialog) = self.children.iter_mut().find(|n| n.id() == ids::DIALOG) {
             dialog.arrange(t, f, c);
         }
+        self.arranged = true;
     }
     fn children(&self) -> &[Content] {
         &self.children
@@ -324,8 +332,8 @@ pub fn rich_dialog() -> Result<ContentHost, CompositionError> {
                 gap: Spacing::Regular.value(),
             },
             children: vec![
-                Content::new(ids::DIALOG_CANCEL, ButtonContent::new("Cancel")),
-                Content::new(ids::DIALOG_SAVE, ButtonContent::new("Save")),
+                Content::new(ids::DIALOG_CANCEL, Button::new("Cancel")),
+                Content::new(ids::DIALOG_SAVE, Button::new("Save")),
             ],
         },
     );
@@ -344,11 +352,12 @@ pub fn rich_dialog() -> Result<ContentHost, CompositionError> {
             footer,
         ),
     );
-    let invoker = Content::new(ids::DIALOG_INVOKER, ButtonContent::new("Edit workspace"));
+    let invoker = Content::new(ids::DIALOG_INVOKER, Button::new("Edit workspace"));
     ContentHost::new(Content::new(
         ids::DIALOG_SCREEN,
         DialogScreen {
             children: vec![invoker, dialog],
+            arranged: false,
         },
     ))
 }

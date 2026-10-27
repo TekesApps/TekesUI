@@ -155,7 +155,7 @@ fn declared_nested_item_reveal_preserves_original_composer_and_only_moves_target
         f.host
             .get(TARGET)
             .unwrap()
-            .component::<ButtonContent>()
+            .component::<Button>()
             .unwrap()
             .activations,
         0
@@ -259,7 +259,7 @@ fn replacing_a_mounted_item_needs_a_new_document_revision_even_after_layout() {
         f.host
             .insert(
                 INNER_ITEMS,
-                Content::new(TARGET, ButtonContent::new("Replacement same numeric key")),
+                Content::new(TARGET, Button::new("Replacement same numeric key")),
             )
             .unwrap();
         paint(&mut f, &mut t);
@@ -670,9 +670,13 @@ fn unmounting_and_remounting_owner_invalidates_original_attachment_and_bad_rende
 #[derive(Debug)]
 struct MovingBox {
     shift: f32,
+    arranged_shift: Option<f32>,
     children: Vec<Content>,
 }
 impl Component for MovingBox {
+    fn host_reveal_passthrough(&self) -> bool {
+        self.children.len() == 1 && self.shift.is_finite() && self.arranged_shift == Some(self.shift)
+    }
     fn children(&self) -> &[Content] {
         &self.children
     }
@@ -687,12 +691,14 @@ impl Component for MovingBox {
         tekes_ui_controls::layout::MeasuredChild::new(Size::new(a.width, 200.))
     }
     fn arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
+        self.arranged_shift = None;
         let height = self.children[0].measure(t, f.size).size.height;
         self.children[0].arrange(
             t,
             Rect::new(f.min_x(), f.min_y() + self.shift, f.size.width, height),
             c,
         );
+        self.arranged_shift = Some(self.shift);
     }
 }
 #[test]
@@ -721,6 +727,7 @@ fn target_position_change_with_identical_document_extent_interrupts_old_coordina
                         PANEL,
                         MovingBox {
                             shift: 0.,
+                            arranged_shift: None,
                             children: vec![original],
                         },
                     ),

@@ -23,7 +23,7 @@ fn public_separator_accepts_real_scale_without_changing_layout_or_color_role() {
         for brand in 0..3 {
             for axis in [Axis::Horizontal, Axis::Vertical] {
                 for scale in [1., 1.5, 2., 0., -1., f32::NAN, f32::INFINITY] {
-                    let palette = Palette { theme, brand };
+                    let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                     let mut view = SeparatorView::default();
                     let mut scene = Scene::new();
                     let layout =

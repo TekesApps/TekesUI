@@ -16,6 +16,28 @@ pub enum SurfaceKind {
 pub fn color(theme: impl Into<Palette>, role: &str) -> Rgba {
     theme.into().color(role).expect("semantic control role")
 }
+/// Flat window-chrome ground, shared by Toolbar consumers and split seams.
+/// Reuse the existing window-base semantic; no panel boundary or elevation.
+/// The allocation, natural row and ancestor clip all bound this paint.
+pub(crate) fn toolbar_background(
+    scene: &mut Scene,
+    allocated: Rect,
+    clip: Option<Rect>,
+    row_height: f32,
+    palette: Palette,
+) {
+    let row = Rect::new(
+        allocated.min_x(),
+        allocated.min_y(),
+        allocated.size.width,
+        allocated.size.height.min(row_height),
+    );
+    let visible = clip.map_or(Some(row), |clip| row.intersection(&clip));
+    if let Some(rect) = visible.filter(|r| r.size.width > 0. && r.size.height > 0.) {
+        scene.push_quad(Quad::new(rect, color(palette, "surface-0")));
+    }
+}
+
 pub fn surface(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, panel: bool) {
     surface_at_scale(scene, rect, theme, panel, 1.0);
 }
@@ -107,6 +129,155 @@ pub(crate) fn surface_kind_with_elevation_at_scale(
     }
     scene.push_quad(q);
 }
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn surface_kind_with_elevation_colors_at_scale(
+    scene: &mut Scene,
+    rect: Rect,
+    theme: Palette,
+    kind: SurfaceKind,
+    backing_scale: f32,
+    elevation_role: &str,
+    colors: tekes_ui_tokens::surface_palette::SurfaceColors,
+) {
+    let (radius, framed) = match kind {
+        SurfaceKind::Canvas => ("radius-panel", false),
+        SurfaceKind::Panel => ("radius-panel", true),
+        SurfaceKind::Floating => ("radius-floating", true),
+        SurfaceKind::Dialog => ("c-dialog-radius", true),
+        SurfaceKind::Code => ("c-code-radius", true),
+    };
+    let radius = proposal::metric("radius", radius).expect("surface radius");
+    // JSON layers are front-to-back; painter order is back-to-front. Shadows
+    // retain the caller's ancestor clip, never the surface's own bounds.
+    for layer in proposal::elevation(elevation_role, theme.theme)
+        .iter()
+        .rev()
+    {
+        let mut ink = color(theme, layer.color);
+        ink.a *= layer.alpha;
+        scene.push_shadow(
+            ShadowQuad::new(rect, ink)
+                .with_corner_radius(radius)
+                .with_offset(Point::new(layer.offset_x, layer.offset_y))
+                .with_blur_radius(layer.blur_radius)
+                .with_outset(layer.spread),
+        );
+    }
+    let mut q = Quad::new(rect, colors.background).with_corner_radius(radius);
+    if framed && let Some(ink) = colors.boundary {
+        q = q.with_border(decorative_border(theme, backing_scale).0, ink);
+    }
+    scene.push_quad(q);
+}
+// Panel's original paint order places children between the semantic Surface
+// fill/elevation and the Surface boundary/focus decoration.
+#[derive(Clone, Copy)]
+enum PanelSurfacePhase {
+    Background,
+    Boundary,
+}
+fn panel_surface_parts(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    surface: &str,
+    canvas: bool,
+    backing_scale: f32,
+    phase: PanelSurfacePhase,
+) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    let (fill, border, shadows) = match phase {
+        PanelSurfacePhase::Background => (true, false, true),
+        PanelSurfacePhase::Boundary => (false, true, false),
+    };
+    let framed = !canvas;
+    let colors = tekes_ui_tokens::surface_palette::resolve_surface(
+        palette,
+        surface,
+        if framed { "surface-frame" } else { "content" },
+        "rest",
+    )?;
+    let radius = proposal::metric("radius", "radius-panel").expect("Surface radius");
+    for layer in proposal::elevation("panel", palette.theme)
+        .iter()
+        .rev()
+        .filter(|_| shadows)
+    {
+        let mut ink = color(palette, layer.color);
+        ink.a *= layer.alpha;
+        scene.push_shadow(
+            ShadowQuad::new(rect, ink)
+                .with_corner_radius(radius)
+                .with_offset(Point::new(layer.offset_x, layer.offset_y))
+                .with_blur_radius(layer.blur_radius)
+                .with_outset(layer.spread),
+        );
+    }
+    let mut quad = Quad::new(
+        rect,
+        if fill {
+            colors.background
+        } else {
+            Rgba::new(0., 0., 0., 0.)
+        },
+    )
+    .with_corner_radius(radius);
+    if border
+        && framed
+        && let Some(ink) = colors.boundary
+    {
+        let (width, _) = decorative_border(palette, backing_scale);
+        quad = quad.with_border(width, ink);
+    }
+    scene.push_quad(quad);
+    Ok(())
+}
+
+pub(crate) fn panel_background(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    surface: &str,
+    canvas: bool,
+    backing_scale: f32,
+) {
+    panel_surface_parts(
+        scene,
+        rect,
+        palette,
+        surface,
+        canvas,
+        backing_scale,
+        PanelSurfacePhase::Background,
+    )
+    .expect("validated Panel Surface");
+}
+
+pub(crate) fn panel_boundary(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    surface: &str,
+    canvas: bool,
+    backing_scale: f32,
+    focused: bool,
+) {
+    if !canvas {
+        panel_surface_parts(
+            scene,
+            rect,
+            palette,
+            surface,
+            canvas,
+            backing_scale,
+            PanelSurfacePhase::Boundary,
+        )
+        .expect("validated Panel Surface");
+    }
+    if focused {
+        let radius = proposal::metric("radius", "radius-panel").expect("Panel radius");
+        focus_ring(scene, rect, palette, radius);
+    }
+}
 /// Decorative frame, following layout.json hairline policy. Never use this
 /// for a necessary control boundary or a focus/selection indicator.
 pub fn decorative_border(theme: impl Into<Palette>, backing_scale: f32) -> (f32, Rgba) {
@@ -126,14 +297,16 @@ pub fn decorative_border(theme: impl Into<Palette>, backing_scale: f32) -> (f32,
 /// inward, so expand by offset + width to retain the full visible gap. Hosts
 /// keep their ancestor viewport clip; this never changes layout or hit targets.
 pub fn focus_ring(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, radius: f32) {
-    let theme = theme.into();
-    let width = proposal::metric("stroke", "c-focus-width").expect("focus width");
-    let gap = proposal::metric("spacing", "c-focus-offset").expect("focus offset");
-    let outset = gap + width;
+    focus_ring_with_color(scene, rect, color(theme, "border-focused"), radius);
+}
+
+pub(crate) fn focus_ring_with_color(scene: &mut Scene, rect: Rect, ink: Rgba, radius: f32) {
+    let metrics = crate::extended::FocusRingMetrics::new(1.0);
+    let outset = metrics.outset();
     scene.push_quad(
         Quad::new(rect.inset(-outset), Rgba::new(0., 0., 0., 0.))
             .with_corner_radius(radius + outset)
-            .with_border(width, color(theme, "border-focused")),
+            .with_border(metrics.width, ink),
     );
 }
 
@@ -263,7 +436,29 @@ pub fn checkbox(
     ink
 }
 pub fn skeleton(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>) {
-    scene.push_quad(Quad::new(rect, color(theme, "surface-2")).with_corner_radius(4.));
+    skeleton_on_surface(scene, rect, theme.into(), "canvas")
+        .expect("generated Skeleton canvas packet");
+}
+/// Resolve the complete shared packet before changing the scene. Geometry and
+/// surface-2 fill are the original Skeleton; its necessary border stays inside
+/// the same frame. No intrinsic extent, animation phase or state is introduced.
+pub fn skeleton_on_surface(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    surface: &str,
+) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    use tekes_ui_tokens::surface_palette::{SurfaceError, resolve_surface};
+    let colors = resolve_surface(palette, surface, "skeleton", "rest")?;
+    let boundary = colors.boundary.ok_or(SurfaceError::UnknownRole)?;
+    let stroke = proposal::metric("stroke", "stroke-rule").expect("Skeleton boundary stroke");
+    scene.push_quad(Quad::new(rect, colors.background).with_corner_radius(4.));
+    scene.push_quad(
+        Quad::new(rect, Rgba::new(0., 0., 0., 0.))
+            .with_corner_radius(4.)
+            .with_border(stroke, boundary),
+    );
+    Ok(())
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ButtonVariant {
@@ -272,6 +467,8 @@ pub enum ButtonVariant {
     Primary,
     /// Quiet action whose resting surface inherits its parent panel.
     Panel,
+    /// Quiet action on the existing window toolbar Surface.
+    Toolbar,
 }
 pub fn button_variant(
     scene: &mut Scene,
@@ -426,6 +623,120 @@ pub fn button_variant_with_interaction(
             "primary-text"
         },
     )
+}
+
+// Surface override for the original EmptyState action; legacy callers retain
+// their existing palette path unless their Button owner supplies a Surface.
+pub(crate) fn button_surface_colors(
+    palette: Palette,
+    surface: &str,
+    state: ControlState,
+    variant: ButtonVariant,
+    hover: f32,
+    pressed: f32,
+) -> tekes_ui_tokens::surface_palette::SurfaceColors {
+    use tekes_ui_tokens::surface_palette::{SurfaceOptions, resolve_surface_with_options};
+    let usage = if variant == ButtonVariant::Primary {
+        "action-primary"
+    } else {
+        "action-quiet"
+    };
+    let options = SurfaceOptions {
+        error: state.error,
+        read_only: false,
+    };
+    let endpoint = |suffix| {
+        let name = match (state.selected, suffix) {
+            (true, "rest") => "selected",
+            (true, "hover") => "selected-hover",
+            (true, "pressed") => "selected-pressed",
+            (true, "disabled") => "selected-disabled",
+            (_, name) => name,
+        };
+        resolve_surface_with_options(palette, surface, usage, name, options)
+            .expect("validated original Button Surface/use/state")
+    };
+    if state.disabled {
+        return endpoint("disabled");
+    }
+    mix_button_colors(
+        mix_button_colors(endpoint("rest"), endpoint("hover"), hover),
+        endpoint("pressed"),
+        pressed,
+    )
+}
+
+fn mix_button_colors(
+    a: tekes_ui_tokens::surface_palette::SurfaceColors,
+    b: tekes_ui_tokens::surface_palette::SurfaceColors,
+    progress: f32,
+) -> tekes_ui_tokens::surface_palette::SurfaceColors {
+    use tekes_ui_tokens::surface_palette::SurfaceColors;
+    let t = if progress.is_finite() {
+        progress.clamp(0., 1.)
+    } else {
+        0.
+    };
+    if t == 0. {
+        return a;
+    }
+    if t == 1. {
+        return b;
+    }
+    let mix = |a: Rgba, b: Rgba| {
+        Rgba::new(
+            a.r + (b.r - a.r) * t,
+            a.g + (b.g - a.g) * t,
+            a.b + (b.b - a.b) * t,
+            a.a + (b.a - a.a) * t,
+        )
+    };
+    let optional = |a: Option<Rgba>, b: Option<Rgba>| match (a, b) {
+        (None, None) => None,
+        (Some(a), Some(b)) => Some(mix(a, b)),
+        (Some(a), None) => Some(mix(a, Rgba::new(a.r, a.g, a.b, 0.))),
+        (None, Some(b)) => Some(mix(Rgba::new(b.r, b.g, b.b, 0.), b)),
+    };
+    SurfaceColors {
+        background: mix(a.background, b.background),
+        text: mix(a.text, b.text),
+        icon: mix(a.icon, b.icon),
+        boundary: optional(a.boundary, b.boundary),
+        focus: optional(a.focus, b.focus),
+        marker: optional(a.marker, b.marker),
+        helper: optional(a.helper, b.helper),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn button_variant_on_surface(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    state: ControlState,
+    variant: ButtonVariant,
+    radius: f32,
+    hover: f32,
+    pressed: f32,
+    surface: &str,
+) -> tekes_ui_tokens::surface_palette::SurfaceColors {
+    let colors = button_surface_colors(palette, surface, state, variant, hover, pressed);
+    let mut quad = Quad::new(rect, colors.background).with_corner_radius(radius);
+    if let Some(boundary) = colors.boundary {
+        quad = quad.with_border(
+            proposal::metric("stroke", "stroke-rule").expect("control stroke"),
+            boundary,
+        );
+    }
+    scene.push_quad(quad);
+    if state.focused
+        && state.focus_visible
+        && !state.disabled
+        && let Some(focus) = colors.focus
+    {
+        focus_ring_with_color(scene, rect, focus, radius);
+    }
+    colors
 }
 
 #[cfg(test)]
@@ -602,7 +913,7 @@ mod focus_tests {
         for theme in Theme::ALL {
             for brand in [0, 1, 2] {
                 for scale in [1.0, 2.0] {
-                    let palette = Palette { theme, brand };
+                    let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                     let frame = Rect::new(20.25, 22.5, 120., 36.);
                     let mut scene = Scene::new();
                     button(

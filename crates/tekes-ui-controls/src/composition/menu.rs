@@ -119,7 +119,7 @@ struct MenuPanel {
 /// Its popup is painted/routed in the host overlay pass, above later siblings.
 #[derive(Debug)]
 pub struct MenuContent {
-    pub trigger: ButtonContent,
+    pub trigger: Button,
     pub menu: MenuView,
     pub labels: Vec<String>,
     pub selected: Option<usize>,
@@ -191,7 +191,7 @@ impl MenuContent {
         let mut menu = MenuView::new(labels.len());
         menu.content_state = Some(MenuContentState::new(&labels));
         Self {
-            trigger: ButtonContent::new(label),
+            trigger: Button::new(label.into()),
             menu,
             labels,
             selected: None,
@@ -1069,6 +1069,16 @@ fn deliver_menu_input(view: &mut MenuView, event: &ContentEvent) -> (MenuEvent, 
 }
 
 impl Component for MenuContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
+
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::ignored_pointer(request)
+    }
     fn fixed_slots(&self) -> bool {
         true
     }

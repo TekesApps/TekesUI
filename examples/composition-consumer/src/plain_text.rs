@@ -23,9 +23,13 @@ pub const FORM: ComponentId = ComponentId(8907);
 #[derive(Debug)]
 struct Card {
     view: SurfaceView,
+    arranged: bool,
     children: Vec<Content>,
 }
 impl Component for Card {
+    fn host_reveal_passthrough(&self) -> bool {
+        self.arranged && self.children.len() == 1
+    }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let frame = Rect::new(0., 0., available.width, available.height);
         let l = self.view.render_at_scale(
@@ -43,6 +47,7 @@ impl Component for Card {
         ))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        self.arranged = false;
         let l = self.view.render_at_scale(
             &mut Scene::new(),
             frame,
@@ -52,6 +57,9 @@ impl Component for Card {
             text.backing_scale(),
         );
         self.children[0].arrange(text, l.content, clip);
+        self.arranged = [frame, clip].into_iter().all(|rect|
+            [rect.min_x(), rect.min_y(), rect.max_x(), rect.max_y(), rect.size.width, rect.size.height].into_iter().all(f32::is_finite)
+                && rect.size.width >= 0. && rect.size.height >= 0.);
     }
     fn paint(
         &mut self,
@@ -114,7 +122,7 @@ impl Scenario {
                 flexible_child: None,
                 children: vec![
                     Content::new(BODY, body),
-                    Content::new(APPEND, ButtonContent::new("Append content")),
+                    Content::new(APPEND, Button::new("Append content")),
                     Content::new(
                         FOOTNOTE,
                         TextContent {
@@ -130,6 +138,7 @@ impl Scenario {
             PANEL,
             Card {
                 view: SurfaceView::default(),
+                arranged: false,
                 children: vec![contents],
             },
         );

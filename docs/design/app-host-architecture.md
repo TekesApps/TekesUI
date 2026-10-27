@@ -4,7 +4,45 @@
 
 状态：设计基线与实验性基础通路原型并行；接口名称为职责示意，未冻结 Rust API 或 IPC 格式。原型验证记录见 `docs/handoffs/app-host-native-prototype-20261021.md`，不表示下列全部契约已实现或验收。
 
+2026-10-26 已交付架构核对：本地 main `e39bfaa1785dbedd9672081a8877e27047155885` 的 app-host/app-protocol/module-runtime 是同仓实验性宿主集成层，基础 controls/text/scene/render 不反向依赖它们。当前 PanelModule/固定进程通路不等于本文完整 ProcessContainer、插件系统或权限沙箱。普通 UI 库消费者不必采用 AppHost；选择该能力的消费者仍须按 #48 原 AC 验收真实 IPC、公开版本、输入/IME/AX、资源和生命周期。现状与目标的共同索引见 [架构与平台边界](../platform-boundary.md)，本次不修改下文既有功能契约或启动新的实现。
+
 本次修订纳入 advisor 对 `503e3ac` 的只读审查结论及后续讨论，并补齐对 `f99bf9e` 复审提出的几何身份、切换终态和文本/几何独立发布规则。整体架构可进入受控原型；公共接口冻结前必须验证这些契约。以下约定是设计要求，不表示技术原型或原生体验已经通过验证。
+
+## 当前 Settings 基础交付（2026-10-27，#70/#136）
+
+本地 main 基线 `a6e9debdbfdaf1142ee5f70720070fdac2dba3f6` 接收现有 `tekes-ui-settings` 的 Schema/Group/Item/Field、typed Draft/Submission 和单写者 FileProvider。仅解析、校验、草稿和本地文件持久化，不依赖 Controls/AppHost/平台；原 TOML 类型及未知键保留，late receipt 只退休原批次，不清除新编辑。临时文件 fsync/rename/目录同步、revision 检查、原 commit 查询/去重沿既有实现。Provider 仅承诺串行本地最近未退休提交，不宣称完整远端崩溃恢复协议。
+
+原10项model/store测试与all-target strict在最终接收差量上通过，锁文件使用原registry版本并经 `--locked --offline` 验证。证据为 SSD `artifacts/issue-136/settings70-foundation-maina6e9deb-intake/round01`；测试临时文件与构建输出均沿原SSD规则。该批不改模型/store原正文，原UI测试保留待后续接收。
+
+共享UI追加接收（基线 `07f69be7750879425696433880d59678ae43c671`）：SettingsForm/Sidebar复用真实Button、TextField、Switch、Menu、NumberField、Scroll和List/ListView；保留编辑mount、无自动保存底栏、错误/Retry、help说明与固定header。原6项form/sidebar、2项number及1项row测试与all-target strict通过，证据SSD `artifacts/issue-136/settings70-ui-main07f69be-intake/round01`。基础model/store输入未变，不重复执行原10测试。这里的有限CPU行为不是完整Theme/GPU/native Settings验收；Sidebar兼容适配不等于全List根已接收。
+
+配置UndoRedo基础追加接收（验证基线95573a7）：原journal/module、真实Worker与完整demo验证入口已接入固定child registry。原3项journal测试、AppHost strict与真实子进程验证通过，覆盖未写prepare、丢confirm后重启、保存后的Undo/Redo及旧registration/window/session拒绝。证据SSD `artifacts/issue-136/settings70-undo-main95573a7-intake/`；两次demo锁文件拒绝保留原身份，最终按原锁内离线metadata修正精确feature依赖，未改变版本或重跑有效journal检查。
+
+SettingsRow 焦点接收补充（本地 main `5992b2dc6c327d8fd96d2fd6adaa40c7db6ca8ed`）：仅在有效 arrange 且原子节点身份/顺序仍匹配时声明现有 reveal 平移能力；measure、lifecycle 和节点替换使该能力失效。Host 对未知布局的拒绝保持。原 Row 平移/失效检查、真实 Form 焦点与未知布局反例、原非法数字/marked 关闭函数回归及相关 strict 已通过；证据 SSD `artifacts/issue-136/settings70-row-reveal-main9a431c2-intake/round01`。真实 Form 检查运行于记录的 Window 候选，不能据此称完整 Settings Window 已交付。
+
+Settings List 本地输入适配已以 `1fd83df7ef73990310a45c74c8a1d76095765487` 接收：原 Scroll Host 内的 pointer 正向、未知 owner 拒绝，以及矩形内但曲线外的捕获 Move/Up 反例通过；原选择与键盘焦点保持，Settings/AppHost strict 通过。该轮暴露的导航 AX publication 失效保留为原失败，后续窗口批次按下述只读准入和先派发后清理修复。证据 SSD `artifacts/issue-136/settings70-navigation-main5992b2d-intake/round03`。
+
+本次本地窗口批次沿原 SettingsSurface、后台 Client 和配置 Undo 协调器装配两列 Settings 窗口。跨 Host 焦点转移前只读检查数值和组字状态，实际侧栏或 Back/Forward 请求发出前才调用原字段提交器；拒绝不替换表单、不写导航历史。原 publication 必须先成功派发，再清理另一 Host 焦点；侧栏 Back 关闭也必须在旧编辑焦点退休前执行输入准入。已收集的合法字段差量仍经原 Draft 自动保存调度，错误提示单独保留。发布阶段只投影已准入的 Item，原 navigation busy 门禁冻结期间输入。List 兼容适配必须兑现原 Host 的几何能力，包括裁剪区域外的捕获事件，不能依靠直接调组件绕过准入。
+
+本次窗口源码已完成有限接收验证：真实侧栏 pointer/key/AX、同份 publication 准入前后有效、成功后的旧焦点退休和原 List 键盘所有权、Back/Forward 拒绝与纠正后可用、原 Back 的 pointer/key/AX Focus/Press 及关闭保存屏障通过；Settings/AppHost strict 通过。证据 SSD `artifacts/issue-136/settings70-navigation-main5992b2d-intake/round04`、`round06`；原 partial autosave、Row/close、List 和 IPC/迁移证据保持其源码身份。Back 测试遗漏原动作消费步骤的失败与修正保留，未改变生产契约或删除断言。
+
+有限原生 Settings 验收追加：仅既有 `--window-acceptance` 加 `TEKESUI_SETTINGS_WINDOW_ACCEPTANCE=1` 启用私有 `settings-window-only` 驱动；正常产品入口和无 env 的旧 Main23 路径保持。真实 Main 模块及原 Settings 命令均保留，子 Host 自己等待导航、有效 AX publication 与启用输入框，再经原输入提交、自动保存、Toolbar Undo IPC 和原关闭路径执行。Exclusive 显示→保存110→Undo回100/实际字段100%→Back关闭/父窗及焦点恢复通过；Independent 同二进制无截图旁路重放也通过，其此前截图已实际检查。证据 SSD `artifacts/issue-70/native-window-main113c0f9/exclusive-round05`、`independent-round06`、`independent-round07-no-capture`。截图只证明实际看到的窗口内容，不替代完整像素验收。
+
+原失败保留：旧 Main23 `exclusive-round03` 50秒超时，无首帧/READY；本 scope 的 Main resize/panel-frame 为 not_run，不转签。scope04 异步字段未就绪的驱动误报已修；Independent 首次在关闭前失活，焦点终态失败，同程序重放成功不抹除该失败，也不推定具体失活来源。该 Main 首帧失败已由后续真实诊断定位，旧失败保留，后续修正及范围见下。
+
+Main 冷启动修正（2026-10-27，验证基线 `477baed` + `window.rs` 精确差量）：首次几何更新早于进程 panel 启动，Layout 被未启动门禁丢弃；启动后几何相同，不会再次派发，工作进程因此一直等待 stdin。可见 panel 现在先启动、再提交首次几何；隐藏 panel、local Container、协议、场景和原门禁不变。AppHost all-target strict 及原 Main23 真实验收通过，实际收到23帧并达到原 READY，截图已人工核对内容；READY 后验证包装器终止自己的进程，不将其视为产品退出生命周期验收。相同最终源码下，Exclusive 与 Independent 均经真实 Main、原 Settings 命令、原输入及 Undo 路径通过显示→保存110→Undo100/实际字段100%→关闭与父窗焦点恢复。仅因启动顺序输入发生变化补验这两条集成链，无关有效回归不重跑。证据 SSD `artifacts/issue-70/main-cold-start-fix/{run02,settings-exclusive-run03,settings-independent-run03}`，诊断失败见 `main-first-frame-diagnostic/run01`；后两条不含新的视觉截图。
+
+#70 原 PR52 样例追加接收（验证基线 `5de0b01` + 冻结差量）：Main 样例以 `AppWindow::from_columns` 装配一/二/三列及 mixed-columns，仍在创建 Settings 或执行 HOME 迁移之前处理固定 worker argv。三列原文档 A/B/C 通过消费者 `NavigationOptions::view_command` 映射到中间列已有命令通道；Host 等对应内容帧与 GPU 提交后才确认导航，Settings 使用 `None` 保持其原表单导航。中性模块新增真实文档切换，同时保留计数 Button、Toolbar、counter revision 和原验证十步/全部断言。demo 锁文件只增加现有 Controls 直接依赖边，版本/校验和未变。
+
+实际验证：Host strict、demo all-feature/all-target strict、原导航/列契约通过；原三模块 IPC/GPU 完整回归及 A/B/C 不同文本正文、计数/Toolbar 不变检查通过。一/二列原 Main23 通过。三列与 mixed 首轮遗漏默认收起左栏的展开前置，进程数量检查失败，记录保留；原生文档路由在该轮已通过。后续有限验收仅在原 `--window-acceptance` 加 `TEKESUI_COLUMNS_WINDOW_ACCEPTANCE=1`、原 Main23 READY 后继续，经真实共享 Toolbar 的键盘路径展开左栏，等待实际内容帧，再验证三进程或两进程+本地 Container。mixed 使用当前窗口 AX publication 的真实 TextField Focus、原输入处理提交文字，重绘后检查文本和焦点保留。两组合通过，真实截图已核对；不宣称物理键盘/IME/VoiceOver 或完整退出生命周期验收。证据 SSD `artifacts/issue-70/pr52-samples-main5de0b01/` 与 `full-columns-run02/`；后续只因 opt-in 验收驱动变化重跑 Host/demo strict 和受影响三列/mixed，原一/二列及模块 IPC/GPU 保持各自源码身份。
+
+#70 仍开放：AC1/2 的 API、Schema、平台设计和兼容依赖已有明确交付，本地所有共享库均为本仓库已提交源码路径；开发路径与公开不可变 Git 交付仍分列，不凭 path 字样推导需要额外发布所有 crate。AC3/5 尚缺最终 PR 独立 checkout 的精确依赖与原范围接收、同源 CI 和公开交付记录，本批主工作树结果不代签独立 checkout。AC4 的 #48/Toolbar 一般进程、多窗口及 VoiceOver 长期目标保留，物理 IME/完整 VoiceOver 未执行且不是本票明文独立全量门禁。唯一负责人 root；下一交付是最终提交的独立源码/依赖接收，随后明确需要授权的 PR/远端更新及同源 CI。
+
+原 #70 AC3 的最终 PR 独立 checkout、精确公开依赖和同源 CI 尚未完成。AC4 要求关联 #48/Toolbar 剩余项并明确本 PR 不承诺的一般远端、多窗口与 VoiceOver 范围；物理 IME/完整 VoiceOver 并非 #70 明文规定的独立全量关闭门禁。本批只证明程序驱动输入与语义 AX，未宣称物理输入/IME/VoiceOver通过；#48 等原能力目标继续保留，不因本次范围说明被删除。完整既有Settings设计和历史原型保留在Gallery Root的 `docs/design/apphost-settings.md` 与 `apphost-settings-prototype-20261022.md`，后续接收沿原契约，不把历史实现转签为当前main完成。
+
+
+平台Settings前置接收（2026-10-27，#70）：真实WindowHandle、普通/Exclusive子窗口、可见窗口恢复、key-window菜单/焦点分发和dirty退出通知已接入；重复present保留首次恢复名单与key，按身份去重。原47平台契约、strict及AppHost接口检查通过；定向真实AppKit回归验证实际激活/key前提、四窗口重复present、关闭恢复两可见窗口且不显示原隐藏者、恢复原焦点。证据SSD `artifacts/issue-136/settings70-window-main3e37ff7-intake/round02` 的exclusive-native及平台各round；早期harness缺正常生命周期而失败，记录保留。此有限原生结果不是完整Settings自动保存/Independent/物理IME/VoiceOver验收。
+
 
 ## 1. 目标与范围
 

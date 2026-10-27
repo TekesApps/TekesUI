@@ -138,7 +138,7 @@ pub fn compound_button(images: IconImages) -> Result<ContentHost, CompositionErr
     );
     ContentHost::new(Content::new(
         ComponentId(1),
-        CompoundButton::new("Open workspace settings", row)?,
+        Button::new(row).with_accessible_name("Open workspace settings"),
     ))
 }
 
@@ -195,9 +195,9 @@ mod tests {
             assert_eq!(
                 host.get(ComponentId(1))
                     .unwrap()
-                    .component::<CompoundButton>()
+                    .component::<Button>()
                     .unwrap()
-                    .action
+
                     .activations,
                 1
             );
@@ -259,3 +259,13 @@ pub mod toolbar_groups;
 pub mod split_toolbar;
 
 pub mod editable_number;
+
+pub mod progress_content;
+
+pub mod status_badge_content;
+
+pub mod skeleton_content;
+
+pub mod empty_state_content;
+
+pub mod toolbar_mount;

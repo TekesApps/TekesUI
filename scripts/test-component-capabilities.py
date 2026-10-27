@@ -71,9 +71,8 @@ class CapabilityTests(unittest.TestCase):
                 self.assertEqual(data['inventory'], capabilities.OUTPUT.as_posix())
                 self.assertIn('coverage_limits', data)
 
-    def test_context_rejects_stale_inventory_binding_and_sources_without_repair(self):
+    def test_context_projects_current_inputs_when_inventory_is_stale_without_rewriting(self):
         for relative, addition in [(capabilities.OUTPUT, '\n '),
-                                   (capabilities.BINDING_OUTPUT, '\n// stale binding\n'),
                                    (Path('crates/tekes-ui-controls/src/lib.rs'), '\n// changed source\n')]:
             with self.subTest(path=str(relative)), self.context_fixture() as root:
                 path = root / relative
@@ -81,10 +80,24 @@ class CapabilityTests(unittest.TestCase):
                 before = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in
                           [path, root / capabilities.OUTPUT, root / capabilities.BINDING_OUTPUT]}
                 result = self.context_command(root)
-                self.assertNotEqual(result.returncode, 0)
-                self.assertEqual(result.stdout, '', 'stale context must not leak successful JSON')
-                self.assertTrue(result.stderr)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                projection = json.loads(result.stdout)['context_projection']
+                self.assertEqual(projection['status'], 'current-input-projection-differs-from-checked-in')
+                self.assertFalse(projection['persisted'])
+                self.assertNotEqual(projection['generated_projection_sha256'], projection['checked_in_projection_sha256'])
                 self.assertEqual({p: (p.read_bytes(), p.stat().st_mtime_ns) for p in before}, before)
+                check = self.context_command(root, '--check')
+                self.assertNotEqual(check.returncode, 0)
+                self.assertEqual(check.stdout, '')
+        with self.context_fixture() as root:
+            path = root / capabilities.BINDING_OUTPUT
+            path.write_text(path.read_text() + '\n// stale binding\n')
+            before = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in
+                      [path, root / capabilities.OUTPUT]}
+            result = self.context_command(root)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, '')
+            self.assertEqual({p: (p.read_bytes(), p.stat().st_mtime_ns) for p in before}, before)
 
     def test_context_unknown_component_does_not_fall_back_to_historical_planned_data(self):
         with self.context_fixture() as root:
@@ -176,14 +189,14 @@ class CapabilityTests(unittest.TestCase):
 
     def test_public_reexports_and_aliases_resolve_to_the_actual_source(self):
         self.assertEqual(capabilities.resolve_api('tekes_ui_controls::Button'),
-                         ('crates/tekes-ui-controls/src/widgets.rs', 'Button'))
+                         ('crates/tekes-ui-controls/src/composition/button.rs', 'Button'))
         self.assertEqual(capabilities.resolve_api('tekes_ui_controls::ScrollArea'),
                          ('crates/tekes-ui-controls/src/scroll_view.rs', 'ScrollView'))
         self.assertEqual(capabilities.resolve_api('tekes_ui_controls::layout_view::IconView'),
                          ('crates/tekes-ui-controls/src/layout_view.rs', 'IconView'))
 
     def test_a_same_named_declaration_does_not_prove_a_public_path(self):
-        for api in ['tekes_ui_controls::widgets::Button',
+        for api in ['tekes_ui_controls::widgets::ButtonModel',
                     'tekes_ui_controls::extended::Button',
                     'tekes_ui_controls::MissingComponent',
                     'tekes_ui_controls::scroll_view::ScrollView']:
@@ -255,16 +268,18 @@ class CapabilityTests(unittest.TestCase):
         self.assertEqual(len({e['api'] for e in surface}), len(surface))
         self.assertEqual({e['category'] for e in surface},
                          {'component', 'component-support', 'component-alias', 'component-adapter', 'composition', 'shared-support'})
-        compound = next(e for e in surface if e['api'].endswith('::CompoundButton'))
-        self.assertEqual(compound['components'], ['tui.button'])
-        self.assertEqual(compound['category'], 'component-adapter')
+        button = next(e for e in surface if e['api'] == 'tekes_ui_controls::composition::Button')
+        self.assertEqual(button['components'], ['tui.button', 'tui.icon-button'])
+        self.assertEqual(button['category'], 'component-adapter')
+        removed = {'ButtonContent', 'CompoundButton', 'IconButton', 'IconButtonView'}
+        self.assertFalse(any(e['api'].split('::')[-1] in removed for e in surface))
         self.assertEqual(self.data['counts']['components'], 45)
 
     def test_new_public_types_and_reexport_aliases_report_the_exact_missing_path(self):
         for file, declaration, missing in [
             ('lib.rs', 'pub struct UnregisteredControl;', 'tekes_ui_controls::UnregisteredControl'),
             ('layout_view.rs', 'pub struct UnregisteredView;', 'tekes_ui_controls::layout_view::UnregisteredView'),
-            ('lib.rs', 'pub use widgets::Button as AlternateButton;', 'tekes_ui_controls::AlternateButton')]:
+            ('lib.rs', 'pub use widgets::ButtonModel as AlternateButton;', 'tekes_ui_controls::AlternateButton')]:
             with self.source_fixture() as root:
                 path = root / 'crates/tekes-ui-controls/src' / file
                 path.write_text(path.read_text() + '\n' + declaration + '\n')
@@ -289,7 +304,7 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
 
     def test_unsupported_export_forms_fail_closed(self):
         for declaration in ['pub mod inline { pub struct Missed; }',
-                            'pub use widgets::*;', 'pub use {widgets::Button};',
+                            'pub use widgets::*;', 'pub use {widgets::ButtonModel};',
                             'expose_types!();', 'macro_rules! expose { () => { pub struct Hidden; } }']:
             with self.source_fixture() as root:
                 path = root / 'crates/tekes-ui-controls/src/lib.rs'
@@ -348,6 +363,9 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
     def contract_fixture(self):
         with self.source_fixture() as root:
             shutil.copytree(ROOT / 'crates/tekes-ui-gallery/src', root / 'crates/tekes-ui-gallery/src')
+            button_test = Path('crates/tekes-ui-controls/tests/composition_button_alignment.rs')
+            (root / button_test).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / button_test, root / button_test)
             for path in [capabilities.COVERAGE, capabilities.STATE_PROFILES,
                          capabilities.COMPONENT_CONTRACTS, capabilities.HISTORICAL_REGISTRY,
                          capabilities.TOKENS]:
@@ -371,7 +389,9 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
             self.assertTrue(all(s['runtime'] in {'unverified', 'public-api-verified'} and s['experience'] == 'unverified' for s in coverage['reviews']))
         text = next(c for c in components if c['id'] == 'tui.text-field')
         self.assertEqual(text['state_coverage']['fixture_unverified'], [])
-        self.assertIn('composing', text['state_coverage']['public_api_verified'])
+        self.assertEqual(text['state_coverage']['runtime_observation_status'], 'historical-stale')
+        self.assertIn('composing', text['state_coverage']['historical_public_api_verified'])
+        self.assertNotIn('composing', text['state_coverage']['public_api_verified'])
         checkbox = next(c for c in components if c['id'] == 'tui.checkbox')
         self.assertIn('mixed', checkbox['state_coverage']['required'])
 
@@ -487,7 +507,10 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
             self.assertGreater(observation['case_count'], 0)
             self.assertIn('color:status-failed', observation['tokens'])
             self.assertIn('stroke:stroke-rule', observation['tokens'])
-            self.assertEqual(set(component['state_coverage']['public_api_verified']), set(component['state_coverage']['required']))
+            self.assertEqual(component['state_coverage']['runtime_observation_status'], 'historical-stale')
+            self.assertEqual(component['state_coverage']['public_api_verified'], [])
+            self.assertEqual(set(component['state_coverage']['historical_public_api_verified']), set(component['state_coverage']['required']))
+            self.assertTrue(all(s['runtime'] == 'unverified' and s.get('historical_runtime') == 'public-api-verified' for s in component['state_coverage']['reviews']))
             self.assertTrue(all(s['experience'] == 'unverified' for s in component['state_coverage']['reviews']))
 
     def test_observed_action_states_are_bounded_and_link_inset_is_canonical(self):
@@ -496,18 +519,107 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
             observation=component['token_dependencies']['runtime_observation']
             self.assertFalse(observation['complete'])
             self.assertGreater(observation['case_count'],0)
-            self.assertEqual(set(component['state_coverage']['public_api_verified']),set(component['state_coverage']['required']))
+            self.assertEqual(component['state_coverage']['runtime_observation_status'], 'historical-stale')
+            self.assertEqual(component['state_coverage']['public_api_verified'], [])
+            self.assertEqual(set(component['state_coverage']['historical_public_api_verified']), set(component['state_coverage']['required']))
+            self.assertTrue(all(s['runtime'] == 'unverified' and s.get('historical_runtime') == 'public-api-verified' for s in component['state_coverage']['reviews']))
             self.assertTrue(all(s['experience']=='unverified' for s in component['state_coverage']['reviews']))
         link=next(c for c in self.data['components'] if c['id']=='tui.link')
         self.assertIn('spacing:space-regular',link['token_dependencies']['runtime_observation']['tokens'])
 
-    def test_changed_production_source_invalidates_the_runtime_observation(self):
+    def test_changed_production_source_downgrades_observation_with_exact_diff(self):
         with self.contract_fixture() as root:
             path = root / 'crates/tekes-ui-controls/src/selection.rs'
             path.write_text(path.read_text() + '\n// modified production implementation\n')
             row = next(c for c in capabilities.read_json(capabilities.COVERAGE)['components'] if c['id'] == 'tui.switch')
-            with self.assertRaisesRegex(ValueError, 'stale runtime token observation.*selection.rs'):
-                capabilities.runtime_observation(row)
+            with patch.object(capabilities, 'ROOT', root):
+                observation = capabilities.runtime_observation(row)
+            self.assertEqual(observation['status'], 'historical-stale')
+            self.assertIn('crates/tekes-ui-controls/src/selection.rs', {item['path'] for item in observation['identity_differences']})
+            self.assertTrue(observation['inputs_sha256'])
+            self.assertFalse(observation['complete'])
+
+    def test_stale_identity_is_not_current_public_api_verified_and_keeps_partial_scope(self):
+        stack = next(c for c in self.data['components'] if c['id'] == 'tui.stack')
+        chart = next(c for c in self.data['components'] if c['id'] == 'tui.chart')
+        for component in [stack, chart]:
+            coverage = component['state_coverage']
+            self.assertEqual(coverage['runtime_observation_status'], 'historical-stale')
+            self.assertEqual(coverage['public_api_verified'], [])
+            self.assertEqual(coverage['historical_public_api_verified'], ['rest'] if component['id'] == 'tui.stack' else ['rest', 'focus', 'selected'])
+            self.assertEqual(component['maturity'], 'experimental')
+        self.assertEqual(len(chart['state_coverage']['required']), 8)
+        self.assertTrue(chart['state_coverage']['fixture_unverified'])
+        self.assertEqual(chart['token_dependencies']['runtime_observation']['status'], 'historical-stale')
+        self.assertIn('crates/tekes-ui-controls/src/chart.rs', {item['path'] for item in chart['token_dependencies']['runtime_observation']['identity_differences']})
+
+    def test_bounded_button_and_chart_receipts_project_without_completing_roots(self):
+        button = next(c for c in self.data['components'] if c['id'] == 'tui.button')
+        chart = next(c for c in self.data['components'] if c['id'] == 'tui.chart')
+        for component in (button, chart):
+            intake = component['state_coverage']['practical_intake']
+            differences = intake['source_identity']['differences']
+            if differences:
+                self.assertEqual(intake['status'], 'accepted-source-subset-stale')
+                for source, difference in differences.items():
+                    self.assertEqual(difference['expected'], intake['source_identity']['sha256'][source])
+                    self.assertEqual(difference['actual'], capabilities.digest((ROOT / source).read_bytes()))
+                    self.assertNotEqual(difference['expected'], difference['actual'])
+            else:
+                self.assertEqual(intake['status'], 'accepted-source-subset-matched')
+            self.assertTrue(intake['claims'])
+            self.assertTrue(intake['exceptions'])
+            self.assertTrue(intake['gaps'])
+            self.assertEqual(intake['consumer_entry']['script'], 'scripts/component-context.py')
+            self.assertEqual(component['maturity'], 'experimental')
+            self.assertEqual(component['state_coverage']['public_api_verified'], [])
+        self.assertEqual(len(button['state_coverage']['practical_intake']['evidence']), 2)
+        self.assertEqual(len(chart['state_coverage']['practical_intake']['evidence']), 5)
+        self.assertEqual({e['issue'] for e in chart['state_coverage']['practical_intake']['evidence']}, {'#104', '#92'})
+        self.assertEqual(len(chart['state_coverage']['required']), 8)
+        self.assertEqual(chart['state_coverage']['runtime_observation_status'], 'historical-stale')
+
+    def test_practical_intake_rejects_cross_identity_missing_path_and_wrong_state(self):
+        cases = [
+            ('cross-identity', lambda intake: intake['evidence'][0].update(component='tui.chart'), 'cross-component'),
+            ('missing-source', lambda intake: intake['source_identity']['sha256'].update({'crates/missing.rs': '0' * 64}), 'missing practical intake source'),
+            ('wrong-status', lambda intake: intake.update(status='complete'), 'invalid practical intake status'),
+        ]
+        for name, mutate, expected in cases:
+            with self.subTest(name=name), self.contract_fixture() as root:
+                data = capabilities.read_json(capabilities.COVERAGE)
+                row = next(item for item in data['components'] if item['id'] == 'tui.button')
+                mutate(row['practical_intake'])
+                (root / capabilities.COVERAGE).write_text(json.dumps(data))
+                with patch.object(capabilities, 'ROOT', root):
+                    with self.assertRaisesRegex(ValueError, expected):
+                        capabilities.component_coverage(capabilities.read_json(capabilities.REGISTRY))
+
+    def test_runtime_observation_rejects_cross_identity_missing_sources_and_malformed_identity(self):
+        with self.contract_fixture() as root:
+            coverage = capabilities.read_json(capabilities.COVERAGE)
+            stack = next(c for c in coverage['components'] if c['id'] == 'tui.stack')
+            wrong_owner = dict(stack, id='tui.button')
+            with patch.object(capabilities, 'ROOT', root):
+                with self.assertRaisesRegex(ValueError, 'missing actual runtime lookup cases for this component identity'):
+                    capabilities.runtime_observation(wrong_owner)
+                artifact = root / stack['runtime_token_observation']
+                original = json.loads(artifact.read_text())
+                bad = copy.deepcopy(original)
+                bad['inputs_sha256']['crates/does-not-exist.rs'] = '0' * 64
+                artifact.write_text(json.dumps(bad))
+                with self.assertRaisesRegex(ValueError, 'missing runtime observation source path'):
+                    capabilities.runtime_observation(stack)
+                bad['inputs_sha256'] = dict(original['inputs_sha256'])
+                bad['inputs_sha256']['crates/tekes-ui-controls/src/chart.rs'] = 'not-a-sha'
+                artifact.write_text(json.dumps(bad))
+                with self.assertRaisesRegex(ValueError, 'malformed runtime observation identity'):
+                    capabilities.runtime_observation(stack)
+                bad['inputs_sha256'] = dict(original['inputs_sha256'])
+                bad['inputs_sha256']['../../outside.rs'] = '0' * 64
+                artifact.write_text(json.dumps(bad))
+                with self.assertRaisesRegex(ValueError, 'invalid runtime observation source path'):
+                    capabilities.runtime_observation(stack)
 
     def test_public_api_state_claim_requires_executed_cases_in_four_themes(self):
         with self.contract_fixture() as root:

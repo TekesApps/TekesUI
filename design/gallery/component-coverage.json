@@ -477,7 +477,49 @@
           "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "63214beacbd3461d7c46cb70a1ca31df645b9bf4",
+        "scope": "Two accepted Button deliveries: actual public text/background contrast in 72 representative combinations, and real Gallery theme/brand switch rendering with representative states. This is scoped implementation evidence, not complete Button root or Design System acceptance.",
+        "claims": [
+          "public Button ink/fill contrast at 72 representative combinations",
+          "real Gallery Button theme/brand switch and representative state regression"
+        ],
+        "source_identity": {
+          "sha256": {
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "0b3758ee22cc28c0ae0504c1e1fe0642d7d3bafa908a89b4b944c0f7ef4cabf1",
+            "crates/tekes-ui-controls/tests/composition_button_alignment.rs": "37c640ce78bd2b1457dce070c1be6604f298335b1d38cde2aec6d03e9e84c723"
+          },
+          "scope": "Both receipt-bound test source files match this frozen repository source snapshot. The receipts separately identify their original commits; unchanged producer inputs were explicitly recorded in each delivery receipt."
+        },
+        "evidence": [
+          {
+            "issue": "#113",
+            "commit": "cef7b7f9a0ab75937de4a63d9f0ecf7067805534",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-113/button-public-contrast-main2a-20261026-01/run-20261026T135103.526780Z/run-receipt.json",
+            "sha256": "22f3d69c19516775c72567c08bc1b4f259d679bcab60947d1880f60d6763c73d",
+            "scope": "72 representative public Button ink/fill contrast combinations; 3 tests and targeted strict passed",
+            "component": "tui.button"
+          },
+          {
+            "issue": "#113",
+            "commit": "33c2d61336c9a1895128c640c8b7a6c7c5f2bf3e",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-113/button-gallery-main-cef-20261026-01/run-20261026T135931.084134Z/run-receipt.json",
+            "sha256": "bfd35999226ed335ae8b106b30b2f2f462448269d19bfb395d97c8ece545d858",
+            "scope": "real Gallery Button theme/brand switch and representative state regression; 3 tests and Gallery strict passed",
+            "component": "tui.button"
+          }
+        ],
+        "exceptions": [
+          "The recorded results cover only the listed bounded public/Gallery tests and their stated source identities."
+        ],
+        "gaps": [
+          "GPU/native/VoiceOver acceptance",
+          "full #60 content/Host delivery",
+          "all 52 component roots"
+        ]
+      }
     },
     {
       "id": "tui.icon-button",
@@ -632,7 +674,45 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "be952dede5716f107801df2523aa5e8a69bb9d20",
+        "scope": "Accepted public Link/LinkView semantic ink and retained Theme-state consumption, plus actual Workbench Link states glyph inks. Tests-only intake; no new production or pixel claim.",
+        "claims": [
+          "Original public LinkView normal/hover/pressed/disabled/focus-visible consumes generated Palette semantic roles",
+          "One retained view and model keep their real interaction state while switching all default Theme values",
+          "Actual Workbench Link states repaint glyph inks under default Theme changes",
+          "Controls/Gallery all-target strict passed; Gallery result reused after the retained-view test-only adjustment"
+        ],
+        "source_identity": {
+          "scope": "Four selected Link producer/View/paint/Gallery files are compared; this is a bounded source subset, not a full dependency certificate. Exact execution source remains the original round01/round02 frozen manifests.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/extended.rs": "c202afc3b711f1b24d44af78f5d5614643c3de63df26cd3727e97fcb8a82080f",
+            "crates/tekes-ui-controls/src/layout_view.rs": "cb807ec1f82f92f3b2cb88127e96b052495838f53536ef0b54c9d7a201f4a9ae",
+            "crates/tekes-ui-controls/src/paint.rs": "4250a0c9ea352ede330fa380b96717a68d99d06c64b40bf3a20c416f9e8996ee",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "99eaae86e832e824a33f584e48fcbd2959074f4bb040df0f8b8bb2e9d7e60ea1"
+          }
+        },
+        "exceptions": [
+          "Original geometry and index values do not require tokenization; shared generator/contrast guards unchanged",
+          "These are semantic production render and actual Gallery wiring assertions, not new GPU/pixel results"
+        ],
+        "gaps": [
+          "Dedicated external Theme Link, GPU/pixel/native/physical input/VoiceOver not rerun or newly certified",
+          "Other #123 family roots and full52 obligations remain open; root maturity unchanged"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.link",
+            "commit": "be952dede5716f107801df2523aa5e8a69bb9d20",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/link-main113c0f9/commit-receipt.json",
+            "sha256": "32dffefe88685d67be4f8d965c0af568ba2184aa3832b7978e7ebee089086fe5",
+            "scope": "Actual public retained-state/Theme and real Gallery results, strict and explicit unverified scope in accepted local-main receipt."
+          }
+        ]
+      }
     },
     {
       "id": "tui.text-field",
@@ -2425,7 +2505,80 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
+        "scope": "Accepted #104 original ChartView and #92 public ChartContent/Host integration. Latest paired GPU/CPU acceptance belongs to main909130a plus frozen intake, committed b763469; earlier V5 evidence retains its own identity.",
+        "claims": [
+          "#104 Chart owner surface and focus behavior within the accepted 4-theme/7-surface/1x-2x bounded matrix",
+          "V5 view-only pixel gate passed for 112 matrix rows, 10 structural rows and 2 clip-negative rows",
+          "#92 public Host and independent owner consumers passed; atomic updates and cancel/inactive hover regression passed",
+          "Default/external real Metal: original four structural cases including tiny refusal, 112 View/Content pairs and 224 focus/blur analyses passed all18 gates"
+        ],
+        "source_identity": {
+          "sha256": {
+            "crates/tekes-ui-controls/src/chart.rs": "d581f9e87c9b1b2b765b1409f96c1af195d5ee64696031ca68b78dfed8b1956c",
+            "crates/tekes-ui-controls/src/collections_view.rs": "de44b875f6f5929d96d5e51623f500a2f2fc4ad44ccd8983ff8b97e8c30b8dd8",
+            "crates/tekes-ui-controls/src/collections_view/chart_owner.rs": "3cfdcb6ac573ac7851e8e38fa436e458b2d40a9ef992c699911a1a6873c55aa1",
+            "crates/tekes-ui-controls/src/composition.rs": "888f63191f8e322eba91eb88ca24715dbb34d26b65578ebd04dac616cfe7853f",
+            "crates/tekes-ui-controls/src/composition/chart_content.rs": "42a86f0cb0ca677e7527d37330ccbd2d01d811381cb91b5cac49eecf5c0ba348",
+            "crates/tekes-ui-controls/src/paint.rs": "4250a0c9ea352ede330fa380b96717a68d99d06c64b40bf3a20c416f9e8996ee",
+            "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80"
+          },
+          "scope": "Seven current Chart producer/integration/harness paths are checked by this projection; full exact build/run identities remain in the linked frozen manifest and locked receipts. No claim that this subset proves the entire runtime."
+        },
+        "evidence": [
+          {
+            "issue": "#104",
+            "commit": "3bd9f00ddb7e1e5c004b18fa44f62d3bc197b322",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart104-main-intake-20261026-01/root-final-acceptance.json",
+            "sha256": "5fc8335fe1669eb6e6e3867bcf0473ec133d945fd698ad301d982e08df681bfe",
+            "scope": "source receipt identity and offline pixel gate passed; exact scope and excluded follow-ups recorded in acceptance receipt",
+            "component": "tui.chart"
+          },
+          {
+            "issue": "#104",
+            "commit": "3bd9f00ddb7e1e5c004b18fa44f62d3bc197b322",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart104-main-intake-20261026-01/gpu21-v5-source-receipt.json",
+            "sha256": "f324eba851d17235b7d7e85ff24bebcf9a1124170c38b9eb1d33ad77134d2d6f",
+            "scope": "exact V5 source identity for bounded default/external GPU capture; 112 matrix + 10 structural + 2 negatives",
+            "component": "tui.chart"
+          },
+          {
+            "issue": "#92",
+            "commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart92-main909130a-intake/commit-receipt.json",
+            "sha256": "e59f3a9ae8a1b383230c4498a64f6fc6a3cc0784ee45bdbaba4f56307d9455b3",
+            "scope": "Local main received14 paths; preserves original runtime identities and unverified scope",
+            "component": "tui.chart"
+          },
+          {
+            "issue": "#92",
+            "commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart92-main909130a-intake/candidate/offline-ready/gate-final.json",
+            "sha256": "a58572b156d9da58013b6458c4e4ca43ea823e06140dd6d28944819fc19b52e5",
+            "scope": "All18 offline gates passed using actual default/external archived programs and captures",
+            "component": "tui.chart"
+          },
+          {
+            "issue": "#92",
+            "commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart92-main909130a-intake/round01/main-source-manifest.json",
+            "sha256": "cff9f17f5f626a92dd73421d51eeced257c7e37b418fa0a77cd40df9352525a5",
+            "scope": "Complete frozen source input map for this intake; later documentation edits are not runtime changes",
+            "component": "tui.chart"
+          }
+        ],
+        "exceptions": [
+          "The recorded results cover only the listed bounded public/Gallery tests and their stated source identities.",
+          "Normal /1 has no #112 /2 sidecar; this is explicit non-coverage, not a remaining prerequisite for practical Theme acceptance."
+        ],
+        "gaps": [
+          "native windows/physical IME/VoiceOver not certified by this bounded intake",
+          "public release not performed"
+        ]
+      }
     },
     {
       "id": "tui.menu",
@@ -2521,7 +2674,44 @@
           "note": "Public TooltipView actual render,12asserted lifecycle scenarios across4themes/3brands; closed rest explicitly has zero dynamic reads. Fixture/native/Gold7 visual acceptance remain unverified."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/tooltip.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/tooltip.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "80e9c7bee554521c6e838665e4aa422d3d5477d0",
+        "scope": "Accepted local-main public Tooltip semantic Palette/Theme consumption and actual Gallery state matrix; test-only change, production unchanged.",
+        "claims": [
+          "One retained TooltipView consumes generated surface-3, primary-text and radius-floating while switching all four default Theme values",
+          "Actual Gallery hidden/hover/focus-visible/Escape matrix paints two real Tooltip backgrounds and matching body glyph inks",
+          "Actual Tooltip text/background pair satisfies 4.5 normal and 7 increased contrast across Theme::ALL",
+          "Controls/Gallery strict passed; Controls pass reused after Gallery-only fixture selection correction"
+        ],
+        "source_identity": {
+          "scope": "Selected public model, real View and Gallery source subset only; full execution identity remains in frozen main manifests and run receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/extended.rs": "c202afc3b711f1b24d44af78f5d5614643c3de63df26cd3727e97fcb8a82080f",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "c23097114cefd23a4e8c226c24b90f07b9e10c0ad75443eab851ee2e8cb7768e",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "d2f73217dcb0c095a74b7f8aa5ecc22958c0aedf4e6092e32570169b219bb794"
+          }
+        },
+        "exceptions": [
+          "Tooltip has no separate pressed/disabled appearance; hover/focus/Escape control visibility",
+          "Existing positioning and inset geometry is retained; shared generator and underlying rendering were unchanged"
+        ],
+        "gaps": [
+          "No new GPU, dedicated external Theme, physical input, IME or VoiceOver certification",
+          "Dynamic row-help native scope remains open in #35; other family roots and full52 remain incomplete"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.tooltip",
+            "commit": "80e9c7bee554521c6e838665e4aa422d3d5477d0",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/tooltip-maincd27d0b/main-intake/commit-receipt.json",
+            "sha256": "3e1941c07cd0afbde4a8c3a1ca648bd456ea9b88c3e9e55eb0cb97334bcf3022",
+            "scope": "Local main source/test acceptance, corrected fixture assertions, retained failures and explicit unverified scope."
+          }
+        ]
+      }
     },
     {
       "id": "tui.popover",
@@ -2548,7 +2738,44 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/popover-content.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/popover-content.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "e25f104675778fe656f0958432f4fff22a6c81e0",
+        "scope": "Accepted local-main retained Popover Theme/scale and actual Gallery popup/body semantic consumption tests; no production changes.",
+        "claims": [
+          "One retained Popover model/View keeps open while switching all four default Theme values and backing scale1/2; actual floating fill, radius and border scale verified",
+          "Actual Gallery closed/open/focus-visible matrix paints two popup surfaces and primary-text body glyphs above their Dismiss actions",
+          "Actual body/background contrast meets4.5 standard and7 increased across default Theme::ALL",
+          "Controls/Gallery all-target strict passed on exact frozen main inputs"
+        ],
+        "source_identity": {
+          "scope": "Selected public model/View/Gallery source subset, not a whole dependency certificate; actual full run identities are in frozen main manifests/receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "632635143cefc7531cba5f88e92e6d2d9939534f5217a3183a7d57ee434b3144"
+          }
+        },
+        "exceptions": [
+          "Ordinary overlay placement/size geometry stays within the existing layout contract",
+          "Caller owns body callback and its semantic text input; Dismiss reuses existing Button behavior and shared results"
+        ],
+        "gaps": [
+          "No new dedicated external Theme, GPU/pixel, native/physical input/IME/VoiceOver certification",
+          "Original lifecycle/focus/outside/Escape results retain original identities; remaining family/full52 obligations stay open"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.popover",
+            "commit": "e25f104675778fe656f0958432f4fff22a6c81e0",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/popover-main1ca-candidate/main-intake/commit-receipt.json",
+            "sha256": "bccdaf54989963014df3c6827ebc2864b861ad12ea6ffb9cd1ee028f54b5c2e6",
+            "scope": "Exact-main public retained state/Theme/scale and real Gallery popup body assertions, strict and explicit unverified scope."
+          }
+        ]
+      }
     },
     {
       "id": "tui.dialog",
@@ -2574,7 +2801,60 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
+        "scope": "#62 accepted Surface inheritance/default/override/clear through the retained Dialog ancestor chain, with restored public retained regressions.",
+        "claims": [
+          "ContentTheme Surface inheritance reaches retained Dialog through actual ancestor resolution.",
+          "Default, explicit override, clear, and invalid default Surface rejection were covered in the accepted batch.",
+          "Original #97 public retained/half-ULP regression tests were restored and passed in the same batch."
+        ],
+        "exceptions": [
+          "This record is limited to the 2026-10-26 retained Dialog Surface batch; older #62 Palette/ContentTheme consumption evidence retains its own identity."
+        ],
+        "gaps": [
+          "Native/VoiceOver acceptance.",
+          "ProgressContent full main acceptance.",
+          "Panel 450/18 integration.",
+          "Whole Design System or all 52 roots."
+        ],
+        "source_identity": {
+          "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "1d1c57425c66e41a70147354ce236bbeef10806b2b76d1bf58a427c10f8d1040",
+            "examples/composition-consumer/tests/scene_fragment.rs": "912c2761b46cd3c32fd7c8779116dc81b0b14ee5fb752ba265edfcdd1b5e1813",
+            "examples/composition-consumer/tests/surface_dialog_inheritance.rs": "ddbc8efcceebfe6c276b01d24d5aa90ea1aa4b7303de5f8e7ce56747445045d9"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#62",
+            "component": "tui.dialog",
+            "commit": "8e4c01de5fae9a429016a039f53034b5737a0a2b",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/commit-receipt.json",
+            "sha256": "835a583d2d2a5f67c2bde38336e3dd1e0d3c5f08ca44f1667fba04a42f2b56c9",
+            "scope": "Accepted local main commit and explicitly bounded Surface/Dialog scope."
+          },
+          {
+            "issue": "#62",
+            "component": "tui.dialog",
+            "commit": "8e4c01de5fae9a429016a039f53034b5737a0a2b",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/final-source-receipt.json",
+            "sha256": "6f510f10398a456b36ebd858cd3b7ae4b6667ef6fab6b7faf9f90ba4301d7b8a",
+            "scope": "Exact source paths and hashes for the accepted candidate."
+          },
+          {
+            "issue": "#62",
+            "component": "tui.dialog",
+            "commit": "8e4c01de5fae9a429016a039f53034b5737a0a2b",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/run-20261026T150112.663305Z/run-receipt.json",
+            "sha256": "b2243e8a88fda39684aae1590c89e32740cd00ec3a385eb79d4d7878faad64f3",
+            "scope": "Controls Surface, public Dialog/fragment regressions, Controls Gallery strict, and public Surface strict all passed."
+          }
+        ]
+      }
     },
     {
       "id": "tui.toast",
@@ -2614,7 +2894,74 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
+        "scope": "Local main baseline plus exact #79 delta: original Notice model/View, shared Surface anatomy, public Content, lifecycle/actions, actual default/external GPU and Gallery AC5. Not native/wire or whole-library acceptance.",
+        "claims": [
+          "Original single action owner and prepared geometry; correct shared content/marker/frame and Quiet/Primary state consumption",
+          "Dismiss delivery and observed inactivity revocation verified with mixed Composer/reading preservation",
+          "All-Toast clock failure/sampling/no-catch-up and AC5 optional-context restoration verified",
+          "Actual default/external Theme GPU, mounted Gallery and static variants/alignment passed"
+        ],
+        "exceptions": [
+          "Original geometry and parent allocations retained; no new ticker, queue or animation engine",
+          "Snapshot ZERO sample is supplied only at the explicit fixture boundary; missing SDK clock still fails"
+        ],
+        "gaps": [
+          "Native window, physical IME, VoiceOver, performance and publication",
+          "New-base module-runtime wire bridge; unchanged shared artifact/generator checks reused, no new external-artifact build claim",
+          "Whole Design System/all52 root acceptance"
+        ],
+        "source_identity": {
+          "scope": "Exact received production inputs; source/config/program identities remain in original runtime receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "87374073f784dd168991f8a12f72a9bf71ec5dd727e7941d98d34957be28a5e7",
+            "crates/tekes-ui-controls/src/composition/notice.rs": "e2976439dca772bb03c9992b8c3771c598eac089a59bc93ced3597232e46b297",
+            "crates/tekes-ui-controls/src/composition/actions.rs": "d9c78614e1b1cbe2cdc406c0c67ca350c93bd2f73fc4cff0307e4e8fa21af39b",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "e17b4b063aa07760df034be2480b016641c4bae0c9ef6f17a6ab3daf8b703f26",
+            "crates/tekes-ui-controls/src/widgets.rs": "d5cd8ee66361fdc3b6b9eec43b199c72057796431637a6216b997c44193ffca2",
+            "crates/tekes-ui-controls/src/paint.rs": "0ad0c749f7da5393ad2e9c4afff5b2710ed3a4f72ff1f6f0741bf3fc3548cee8",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "bf4b431faba91d567b81d85660dea2bf296988ad4139199bebff8b9c95782eb9",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "df1baadc8554e6d62919fe2d31c97cc6b3ba1b5298b0e645e08e5e6a7cde7ccb"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#93",
+            "component": "tui.toast",
+            "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-intake-20261026-01/local-main-commit-receipt.json",
+            "sha256": "ba8fa2718bc1d392c814145cc1134cf4e48afc4cca9441838e98a4525d89e1c2",
+            "scope": "Accepted local main commit 3e989f1; five shared Notice marker purposes only."
+          },
+          {
+            "issue": "#93",
+            "component": "tui.toast",
+            "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-external-20261026-01/root-acceptance-audit.json",
+            "sha256": "17d8c48285d74bc87b897f158258438c33fe67d6b4e5d8fbf1109b13c379bfc4",
+            "scope": "External acceptance audit: 80 bounded commands passed, including rejection and legal-packet runs; component/GPU use excluded."
+          },
+          {
+            "issue": "#93",
+            "component": "tui.toast",
+            "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-rust-20261026-01/root-artifact-audit.json",
+            "sha256": "baaae0958b5a9ae69f797690a6c1f8b83972658888460fe1af1d990174f4ba61",
+            "scope": "Six local Rust/design-export/token/consumer commands passed for shared rules; component/GPU use excluded."
+          },
+          {
+            "issue": "#79",
+            "component": "tui.toast",
+            "commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice79-main08d845f-intake/root-review.json",
+            "sha256": "af6e9894389584e44a51f60546f9a5fa9f9c315b098fc1b12fe759f56240ccd6",
+            "scope": "Baseline 08d845f plus frozen integration delta, actual CPU/strict/AC5/GPU review; historical Root receipts not transferred."
+          }
+        ]
+      }
     },
     {
       "id": "tui.banner",
@@ -2654,7 +3001,75 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
+        "scope": "Local main baseline plus exact #79 delta: original Notice model/View, shared Surface anatomy, public Content, lifecycle/actions, actual default/external GPU and Gallery AC5. Not native/wire or whole-library acceptance.",
+        "claims": [
+          "Original single action owner and prepared geometry; correct shared content/marker/frame and Quiet/Primary state consumption",
+          "Dismiss delivery and observed inactivity revocation verified with mixed Composer/reading preservation",
+          "Banner stays timer-free; original visible/dismissible and keyboard action behavior verified",
+          "Actual default/external Theme GPU, mounted Gallery and static variants/alignment passed"
+        ],
+        "exceptions": [
+          "Original geometry and parent allocations retained; no new ticker, queue or animation engine",
+          "Snapshot ZERO sample is supplied only at the explicit fixture boundary; missing SDK clock still fails"
+        ],
+        "gaps": [
+          "Native window, physical IME, VoiceOver, performance and publication",
+          "New-base module-runtime wire bridge; unchanged shared artifact/generator checks reused, no new external-artifact build claim",
+          "Banner 320pt/type150 action word wrapping and full Gold7/page experience remain #12",
+          "Whole Design System/all52 root acceptance"
+        ],
+        "source_identity": {
+          "scope": "Exact received production inputs; source/config/program identities remain in original runtime receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "87374073f784dd168991f8a12f72a9bf71ec5dd727e7941d98d34957be28a5e7",
+            "crates/tekes-ui-controls/src/composition/notice.rs": "e2976439dca772bb03c9992b8c3771c598eac089a59bc93ced3597232e46b297",
+            "crates/tekes-ui-controls/src/composition/actions.rs": "d9c78614e1b1cbe2cdc406c0c67ca350c93bd2f73fc4cff0307e4e8fa21af39b",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "e17b4b063aa07760df034be2480b016641c4bae0c9ef6f17a6ab3daf8b703f26",
+            "crates/tekes-ui-controls/src/widgets.rs": "d5cd8ee66361fdc3b6b9eec43b199c72057796431637a6216b997c44193ffca2",
+            "crates/tekes-ui-controls/src/paint.rs": "0ad0c749f7da5393ad2e9c4afff5b2710ed3a4f72ff1f6f0741bf3fc3548cee8",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "bf4b431faba91d567b81d85660dea2bf296988ad4139199bebff8b9c95782eb9",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "df1baadc8554e6d62919fe2d31c97cc6b3ba1b5298b0e645e08e5e6a7cde7ccb"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#93",
+            "component": "tui.banner",
+            "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-intake-20261026-01/local-main-commit-receipt.json",
+            "sha256": "ba8fa2718bc1d392c814145cc1134cf4e48afc4cca9441838e98a4525d89e1c2",
+            "scope": "Accepted local main commit 3e989f1; five shared Notice marker purposes only."
+          },
+          {
+            "issue": "#93",
+            "component": "tui.banner",
+            "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-external-20261026-01/root-acceptance-audit.json",
+            "sha256": "17d8c48285d74bc87b897f158258438c33fe67d6b4e5d8fbf1109b13c379bfc4",
+            "scope": "External acceptance audit: 80 bounded commands passed, including rejection and legal-packet runs; component/GPU use excluded."
+          },
+          {
+            "issue": "#93",
+            "component": "tui.banner",
+            "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-rust-20261026-01/root-artifact-audit.json",
+            "sha256": "baaae0958b5a9ae69f797690a6c1f8b83972658888460fe1af1d990174f4ba61",
+            "scope": "Six local Rust/design-export/token/consumer commands passed for shared rules; component/GPU use excluded."
+          },
+          {
+            "issue": "#79",
+            "component": "tui.banner",
+            "commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice79-main08d845f-intake/root-review.json",
+            "sha256": "af6e9894389584e44a51f60546f9a5fa9f9c315b098fc1b12fe759f56240ccd6",
+            "scope": "Baseline 08d845f plus frozen integration delta, actual CPU/strict/AC5/GPU review; historical Root receipts not transferred."
+          }
+        ]
+      }
     },
     {
       "id": "tui.status-badge",
@@ -2702,7 +3117,72 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "437b5b6b41019389368c81f969bedc763875fe6b",
+        "scope": "Local main baseline plus exact received StatusBadge delta: shared solid painter/View/Content, mixed Host and actual Gallery/GPU. Not native or whole-library acceptance.",
+        "claims": [
+          "Four original tones consume seven Surface packets in default brands and external blue/blue-inputs themes",
+          "Passive named/decorative semantics, original Composer/reading preservation and invalid-input rejection passed",
+          "Actual default/external GPU parity, clipping, normal-label readability and real Gallery page/variants passed"
+        ],
+        "exceptions": [
+          "Parent supplies finite allocation; pill radius is original half-height geometry, not a new token",
+          "Normal label readability is distinct from legal narrow clipping; no arbitrary-width full-text readability claim"
+        ],
+        "gaps": [
+          "native window/VoiceOver/physical IME/performance/release",
+          "historical icon_foreground override is unavailable in current ContentTheme; foreground override was tested",
+          "full text readability in arbitrary narrow allocations",
+          "Other registered roots and complete Gold7 acceptance remain separate"
+        ],
+        "source_identity": {
+          "scope": "Exact integrated production inputs for this bounded StatusBadge batch; full runtime manifests remain in SSD receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "f335285b35c4dce31d5a406c37e20ddc757551a546b7e2e32f748981c3b45817",
+            "crates/tekes-ui-controls/src/composition/status_badge.rs": "55160ac8e5f901e644b09dcedb11f5b227e36a6aec7ff91706e6d3b422007f41",
+            "crates/tekes-ui-controls/src/extended.rs": "6025448e349502c3011b90960f67efe990c6fc2eb2aa18c588cdec133c1cfcbf",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "c7a0bc565690e2deeda891459c8de2cf68dd00f9ba9c906b83c081f7d91a8192",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "259a952b1750821fbf7d2832b175845be6a512a86d543ff30e65f885f92dad9c",
+            "examples/composition-consumer/src/status_badge_content.rs": "58006b3eb44e1cb7261c25ebd8bbd8819591a22f5ac53ae48fec6379b62b3a9c"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#83",
+            "component": "tui.status-badge",
+            "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-intake-20261026-01/local-main-commit-receipt.json",
+            "sha256": "6b184f703586fc9a20cd9bc8d1f3098d84cde633b9d4e7056b5d6f1c9342ccb0",
+            "scope": "Accepted local main commit 8fb1909; shared theme purpose only."
+          },
+          {
+            "issue": "#83",
+            "component": "tui.status-badge",
+            "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-external-20261026-01/root-review.json",
+            "sha256": "4ac946581db12471a3d35453853d571624202241aba8f13a616a139bea4fbfba",
+            "scope": "External accepted-source review: 23 semantic negative cases and 25 legal 280-packet runs; component adapter use excluded."
+          },
+          {
+            "issue": "#83",
+            "component": "tui.status-badge",
+            "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-rust-20261026-01/root-artifact-audit.json",
+            "sha256": "3c085fbc3d52f67ba3be9653cbf21e9094809db6943c6531d4aff8d4c2917280",
+            "scope": "Six local Rust/design-export/token/consumer commands passed for shared theme rules; component/GPU use excluded."
+          },
+          {
+            "issue": "#76",
+            "component": "tui.status-badge",
+            "commit": "437b5b6b41019389368c81f969bedc763875fe6b",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status76-main437b5b6-intake/root-review.json",
+            "sha256": "36e90c7bc59a4fc086610bca8be6c44a9218e94a1d77a9de5c2ba59cd74b1e5e",
+            "scope": "Baseline 437b5b6 plus frozen integration delta; review indexes actual final-main consumer/Gallery/strict/GPU rounds, preserving earlier failures."
+          }
+        ]
+      }
     },
     {
       "id": "tui.progress",
@@ -2743,7 +3223,48 @@
           "note": "Actual public passive paint API, asserted geometry and runtime token reads across4themes/3brands/ancestor clip. Existing Progress loading consumer and StatusBadge shaped-label Gallery checks verified separately. Host composition, native, VoiceOver and matched ClientKit/Gold7 remain unverified; no maturity promotion."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "3f13a1e1cccfa0afc82a89b580fdc26d64715311",
+        "scope": "Original Progress painter/View/Content and Gallery consume shared Surface packets; representative public, platform projection and GPU acceptance on local main. Not full native or whole-library acceptance.",
+        "claims": [
+          "Surface inheritance, override/clear and unknown rejection preserve the original model and Composer state",
+          "128 default and 256 external-theme actual GPU readbacks; View/Content parity, boundary and clip assertions",
+          "48 actual Gallery captures; public consumer, platform projection and strict checks passed"
+        ],
+        "source_identity": {
+          "scope": "Accepted production Rust inputs for the Progress and necessary shared query/semantic bridge batch; runtime rounds retain their own complete source manifests. Final GPU test-only cleanup did not change these production files.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "6916505ba36966172bcb1d543c4a2d17acd10fb34a6bc5f0940e3aff1d191270",
+            "crates/tekes-ui-controls/src/extended.rs": "415316c8f6d5fb0b93af0836bb4282975ff754abf334cadcb89d1fed4278b724",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "1f3d85286ce3e6145d959e12719d5316984a5802db8a84a21ef9a2f0ed74ae0c",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "2ac2b8dd44b7d887a66a9259171500a9d3ebb7972a675f6b1312bbf7a5df2558",
+            "crates/tekes-ui-platform-macos/src/lib.rs": "0fec47c5594731eb304781f3781902b658828ef9fe7c9b1693ee658543c93ab7",
+            "crates/tekes-ui-controls/src/composition/progress.rs": "69c0421f93daef763b79794842e16ef55645c8557b8728535e25cfe3a48d7cdb",
+            "crates/tekes-ui-controls/src/composition/text_query.rs": "627c805d16073bdb5f3f9886c00baf6227cdb0a1db32873144ece32520caf763",
+            "crates/tekes-ui-platform-macos/src/content_accessibility.rs": "c1f6c6d8a04918e69eed664f8da03e4b37ebc0c158f797b4cfd8e015e2a4347d"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#72",
+            "component": "tui.progress",
+            "commit": "3f13a1e1cccfa0afc82a89b580fdc26d64715311",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/progress72-main-63214be-intake/commit-receipt.json",
+            "sha256": "a3a94692a5b2e7bf6c7972fe5070a5d6fbe996fcdf11a16e16f1e21a4ff12802",
+            "scope": "Root intake receipt indexes actual public/platform/Gallery/GPU/strict rounds and explicit unverified scope."
+          }
+        ],
+        "exceptions": [
+          "Parent supplies finite bar size; indeterminate remains the original static segment."
+        ],
+        "gaps": [
+          "Dedicated native ProgressIndicator role, native window/VoiceOver/physical IME and performance unverified",
+          "Gallery narrow navigation wrapping and outdated description remain #12",
+          "Full Design System and all52 component acceptance not claimed"
+        ]
+      }
     },
     {
       "id": "tui.empty-state",
@@ -2783,7 +3304,51 @@
           "experience": "unverified",
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
-      ]
+      ],
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "b4fbed121d9cdec87ded2cf6c3cc05825538764a",
+        "scope": "Local main baseline plus exact EmptyState integration delta: original View/action owner, shared Surface, mixed Host and actual GPU/Gallery. Not full native or Tree/Notice delivery.",
+        "claims": [
+          "Original prepared geometry, fixed proxy identity and complete action Surface states verified",
+          "Malformed slots, stale action authorization, inactive recovery and allocation failure preserve required original state",
+          "Public Composer/reading and current external Theme consumption passed",
+          "1176 default/784 external GPU cases plus 24 actual original Gallery frames passed"
+        ],
+        "exceptions": [
+          "Parent supplies finite allocation; no new layout engine or intrinsic product copy",
+          "Ordinary Button without an explicit Surface keeps its existing paint branch"
+        ],
+        "gaps": [
+          "Native window/physical IME/VoiceOver/performance/release",
+          "Absent module-runtime wire bridge and full #74 Tree delivery on local main",
+          "Whole Design System/all52 roots"
+        ],
+        "source_identity": {
+          "scope": "Exact integrated production inputs; full runtime manifests and earlier failures retained on SSD.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "ea76cd13f2025af8da2b2f84628d884b50ab439afcd560d4e6e411a6285090d2",
+            "crates/tekes-ui-controls/src/composition/empty_state.rs": "8154a463e348d22cd8f44355323ccba104567896dffcba8524c82e0c90d6ca11",
+            "crates/tekes-ui-controls/src/composition/action_proxy.rs": "0c5f8496ded8a5a3562442c4f2125e4f8a5bb2be99e3bdb48b9b8508e4a3f9d5",
+            "crates/tekes-ui-controls/src/composition/actions.rs": "47747e5a45540f9832888b2de7ce773a07cd6e63e41ca025cb7b61cfc133e37e",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "e9ece792d6cdce80810e79955dd4e454ce26dbd56ea2a99fa0eb7d740d41f14f",
+            "crates/tekes-ui-controls/src/widgets.rs": "bc13c3b9a6674d946ace922447cd27a3a327e4daffce88ff34e3c172ee30b7d4",
+            "crates/tekes-ui-controls/src/paint.rs": "067d33f31f4d0717d30268b22031fe69e7b1560ce2fe2908a04254c74e5842eb",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "0268883ac590fc7c5f51cd35a8cc0655580b7440a3eda2363f83c319ddf68e65",
+            "examples/composition-consumer/src/empty_state_content.rs": "a73d1bb24db806e91efadedcad79225ca0a4339ff212b8a85a446c6330ca61cb"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#78",
+            "component": "tui.empty-state",
+            "commit": "b4fbed121d9cdec87ded2cf6c3cc05825538764a",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/empty78-mainb4fbed1-intake/root-review.json",
+            "sha256": "bd50cb00c7f310158a77208db4e7bd762f02b0b67ede653ca51df260d6728ae8",
+            "scope": "Baseline b4fbed1 plus frozen integration delta, actual public/anchor/protocol/strict/GPU/Gallery review; not a transfer of old R proof."
+          }
+        ]
+      }
     },
     {
       "id": "tui.skeleton",
@@ -2799,7 +3364,71 @@
           "note": "Actual public passive paint API, asserted geometry and runtime token reads across4themes/3brands/ancestor clip. Existing Progress loading consumer and StatusBadge shaped-label Gallery checks verified separately. Host composition, native, VoiceOver and matched ClientKit/Gold7 remain unverified; no maturity promotion."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "23447d238d4cedafd69986ee3b22106be7631e7e",
+        "scope": "Local main baseline plus exact Skeleton integration delta: original static painter/View, passive Content, mixed Host, default/external GPU and original Gallery route. Not full native acceptance.",
+        "claims": [
+          "Shared skeleton/rest packet preserves original fill/frame/radius and adds its accepted necessary boundary",
+          "Ancestor-only clipping preserves fractional narrow allocations; zero and fully clipped allocations remain separate cases",
+          "Default-decorative/optional named Group, atomic invalid-input rejection and mixed Composer/reading preservation passed",
+          "Actual default/external GPU View/Content parity and 48 original Gallery route captures passed"
+        ],
+        "exceptions": [
+          "Parent owns finite dimensions; original radius4 geometry retained",
+          "No ticker/shimmer or intrinsic extent introduced"
+        ],
+        "gaps": [
+          "Native window/VoiceOver/physical IME/performance/release",
+          "Full Design System/all52 acceptance; no shimmer/ticker added"
+        ],
+        "source_identity": {
+          "scope": "Exact production inputs of the received Skeleton batch; full runtime manifests retained on SSD.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composition.rs": "7ec8de2f5059f633870cc6982fb5e0ea34a331e982fe037b65d179bfba9bdd2d",
+            "crates/tekes-ui-controls/src/composition/skeleton.rs": "09e9ce19503a171b625b2ca963729b3cddf56ad43e3b95984201f1c10184fa0a",
+            "crates/tekes-ui-controls/src/paint.rs": "28292051ab705f5eefb3d4344470456ed2332f05a8161d727e08e9e5763cf41c",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "bb40892004a0b49b09361c4f62db2fafdd304e73fcf4a8cadb2e487c4a7b6df3",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "21256c6bea0449670bd1ad1743a3fd3d2c82bfc6209c0d9d3a225cce5eaa711d",
+            "examples/composition-consumer/src/skeleton_content.rs": "80d44ba5650da213609eeb1a778bed69237550d17e6c5fed2ac91be16eaa6932"
+          }
+        },
+        "evidence": [
+          {
+            "issue": "#83",
+            "component": "tui.skeleton",
+            "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-intake-20261026-01/local-main-commit-receipt.json",
+            "sha256": "6b184f703586fc9a20cd9bc8d1f3098d84cde633b9d4e7056b5d6f1c9342ccb0",
+            "scope": "Accepted local main commit 8fb1909; shared theme purpose only."
+          },
+          {
+            "issue": "#83",
+            "component": "tui.skeleton",
+            "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-external-20261026-01/root-review.json",
+            "sha256": "4ac946581db12471a3d35453853d571624202241aba8f13a616a139bea4fbfba",
+            "scope": "External accepted-source review: 23 semantic negative cases and 25 legal 280-packet runs; component adapter use excluded."
+          },
+          {
+            "issue": "#83",
+            "component": "tui.skeleton",
+            "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-rust-20261026-01/root-artifact-audit.json",
+            "sha256": "3c085fbc3d52f67ba3be9653cbf21e9094809db6943c6531d4aff8d4c2917280",
+            "scope": "Six local Rust/design-export/token/consumer commands passed for shared theme rules; component/GPU use excluded."
+          },
+          {
+            "issue": "#77",
+            "component": "tui.skeleton",
+            "commit": "23447d238d4cedafd69986ee3b22106be7631e7e",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/skeleton77-main23447d2-intake/root-review.json",
+            "sha256": "e77948311d07813d28205cf258f9cff470d7a77a0980daf2a79bbe522a2ccb04",
+            "scope": "Baseline 23447d2 plus frozen delta; actual public/default/external/Gallery/strict/GPU evidence, historical R results not promoted."
+          }
+        ]
+      }
     },
     {
       "id": "tui.markdown",

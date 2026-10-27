@@ -10,6 +10,8 @@
 
 pub mod accessibility;
 pub mod config;
+#[cfg(feature = "content-accessibility")]
+pub mod content_accessibility;
 pub mod event;
 pub mod menu;
 pub mod placement;
@@ -48,7 +50,7 @@ mod shared;
 mod view;
 
 #[cfg(target_os = "macos")]
-pub use app::App;
+pub use app::{App, WindowHandle};
 #[cfg(target_os = "macos")]
 pub use shared::{Window, WindowHandler};
 

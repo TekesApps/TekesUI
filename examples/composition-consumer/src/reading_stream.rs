@@ -70,17 +70,17 @@ pub fn build() -> Result<(ContentHost, StreamState), CompositionError> {
                 row(
                     8810,
                     vec![
-                        Content::new(APPEND, ButtonContent::new("Append one")),
-                        Content::new(STREAM, ButtonContent::new("Stream four")),
-                        Content::new(LATEST, ButtonContent::new("Return to latest"))
+                        Content::new(APPEND, Button::new("Append one")),
+                        Content::new(STREAM, Button::new("Stream four")),
+                        Content::new(LATEST, Button::new("Return to latest"))
                             .preserving_focus(),
                     ],
                 ),
                 row(
                     8811,
                     vec![
-                        Content::new(ZOOM, ButtonContent::new("Toggle text 100/150%")),
-                        Content::new(WIDTH, ButtonContent::new("Toggle width")),
+                        Content::new(ZOOM, Button::new("Toggle text 100/150%")),
+                        Content::new(WIDTH, Button::new("Toggle width")),
                     ],
                 ),
                 Content::new(TRANSCRIPT, transcript),
@@ -92,7 +92,7 @@ pub fn build() -> Result<(ContentHost, StreamState), CompositionError> {
     for id in [APPEND, STREAM, ZOOM, WIDTH] {
         host.get_mut(id)
             .unwrap()
-            .component_mut::<ButtonContent>()
+            .component_mut::<Button>()
             .unwrap()
             .variant = tekes_ui_controls::paint::ButtonVariant::Quiet;
     }

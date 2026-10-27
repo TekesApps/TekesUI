@@ -199,7 +199,7 @@ fn plain_content_token_dependencies_exclude_form_chrome_and_metadata() {
                         &mut Text,
                         f,
                         f,
-                        Palette { theme, brand }.into(),
+                        Palette::new(theme, brand).expect("registered Gallery brand").into(),
                     );
                 });
                 for (family, id) in &reads {

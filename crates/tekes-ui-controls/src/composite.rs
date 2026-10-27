@@ -6,7 +6,7 @@
 //! one external model for its lifetime; do not alternate between them.
 use crate::control_motion::OverlayPresence;
 use crate::{
-    Button, ButtonLayout, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout,
+    ButtonLayout, ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout,
     ControlKey, Dialog, Insets, Menu, ScrollArea, ScrollPolicy, Tabs, paint,
 };
 use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
@@ -45,7 +45,7 @@ fn focus_reveal_outset(backing_scale: f32) -> f32 {
 }
 
 fn set_button_state(
-    button: &mut Button,
+    button: &mut ButtonModel,
     focused: bool,
     focus_visible: bool,
     disabled: bool,
@@ -86,11 +86,11 @@ pub struct TabsLayout {
     pub items: Vec<ButtonLayout>,
 }
 
-/// Button-backed, roving-tabstop presentation for the existing `Tabs` model.
+/// ButtonModel-backed, roving-tabstop presentation for the existing `Tabs` model.
 #[derive(Clone, Debug)]
 pub struct TabsView {
     model: Tabs,
-    buttons: Vec<Button>,
+    buttons: Vec<ButtonModel>,
     placement: TabsLayout,
     focus_visible: bool,
     focus_index: usize,
@@ -105,7 +105,7 @@ impl TabsView {
     pub fn new(count: usize) -> Self {
         Self {
             model: Tabs::new(count),
-            buttons: vec![Button::default(); count],
+            buttons: vec![ButtonModel::default(); count],
             placement: TabsLayout::default(),
             focus_visible: false,
             focus_index: 0,
@@ -189,7 +189,8 @@ impl TabsView {
             return self.placement.clone();
         }
         let frame = safe_rect(frame);
-        self.buttons.resize_with(self.model.count, Button::default);
+        self.buttons
+            .resize_with(self.model.count, ButtonModel::default);
         let lane = if self.model.count == 0 {
             0.0
         } else {
@@ -202,7 +203,7 @@ impl TabsView {
         for index in 0..self.model.count {
             let label = labels.get(index).copied().unwrap_or("");
             let measured =
-                Button::measure(text, label, lane_width, size_role(compact), role).height;
+                ButtonModel::measure(text, label, lane_width, size_role(compact), role).height;
             measured_heights.push(base_height.max(measured));
         }
         let height = measured_heights.iter().copied().fold(base_height, f32::max);
@@ -455,7 +456,7 @@ pub struct MenuView {
 #[derive(Debug)]
 struct MenuRuntime {
     presence: OverlayPresence,
-    buttons: Vec<Button>,
+    buttons: Vec<ButtonModel>,
     scroll: ScrollArea,
     placement: MenuLayout,
     return_focus: Option<usize>,
@@ -485,7 +486,7 @@ pub(crate) struct MenuRowStyle {
     pub submenu: bool,
 }
 
-// Original Button still owns chrome, ink, motion, hit layout and clipping.
+// Original ButtonModel still owns chrome, ink, motion, hit layout and clipping.
 // This label adapter reserves shared icon columns without another painter.
 struct MenuRowText<'a, T> {
     text: &'a mut T,
@@ -616,7 +617,7 @@ impl MenuView {
         let heights: Vec<f32> = labels
             .iter()
             .map(|label| {
-                Button::measure(text, label, inner_width, size_role(compact), role)
+                ButtonModel::measure(text, label, inner_width, size_role(compact), role)
                     .height
                     .max(36.0)
             })
@@ -638,7 +639,7 @@ impl MenuView {
             content_state: None,
             runtime: MenuRuntime {
                 presence: OverlayPresence::default(),
-                buttons: vec![Button::default(); count],
+                buttons: vec![ButtonModel::default(); count],
                 scroll,
                 placement: MenuLayout::default(),
                 return_focus: None,
@@ -1104,7 +1105,7 @@ impl MenuRuntime {
             return None;
         }
         let destination = scene;
-        let mut overlay_scene = Scene::new();
+        let mut overlay_scene = destination.fragment();
         let scene = &mut overlay_scene;
         self.compact = compact;
         self.palette = palette;
@@ -1117,7 +1118,8 @@ impl MenuRuntime {
         self.visible_bounds = visible_bounds;
         self.ancestor_clip = ancestor_clip;
         let count = model.items.count.min(labels.len());
-        self.buttons.resize_with(model.items.count, Button::default);
+        self.buttons
+            .resize_with(model.items.count, ButtonModel::default);
         let has_check = self.row_styles.iter().any(|style| style.checked.is_some());
         let has_submenu = self.row_styles.iter().any(|style| style.submenu);
         let indicator_gap = if has_check || has_submenu {
@@ -1503,6 +1505,7 @@ impl MenuRuntime {
 
     fn deactivate_model(&mut self, model: &mut Menu) -> MenuEvent {
         self.cancel_buttons();
+        self.clear_button_pointer_positions();
         if model.open {
             self.dismiss_model(model)
         } else {
@@ -1597,6 +1600,13 @@ impl MenuRuntime {
         self.placement = MenuLayout::default();
         self.focus_visible = false;
     }
+
+    /// A deactivated menu no longer owns the pointer's previous location.
+    fn clear_button_pointer_positions(&mut self) {
+        for button in &mut self.buttons {
+            button.blur();
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -1640,7 +1650,7 @@ pub enum DialogEvent {
 pub struct DialogView {
     presence: OverlayPresence,
     model: Dialog,
-    buttons: [Button; 2],
+    buttons: [ButtonModel; 2],
     placement: DialogLayout,
     return_focus: Option<usize>,
     window_active: bool,
@@ -1654,7 +1664,7 @@ impl Default for DialogView {
         Self {
             presence: OverlayPresence::default(),
             model: Dialog::default(),
-            buttons: [Button::default(), Button::default()],
+            buttons: [ButtonModel::default(), ButtonModel::default()],
             placement: DialogLayout::default(),
             return_focus: None,
             window_active: true,
@@ -1723,7 +1733,7 @@ impl DialogView {
         changed
     }
 
-    /// Activate the same retained Button and finish path used by pointer/keyboard.
+    /// Activate the same retained ButtonModel and finish path used by pointer/keyboard.
     /// Closing/hidden/disabled actions cannot produce a second dismissal.
     pub fn activate_button(&mut self, index: usize) -> DialogEvent {
         if index >= 2
@@ -1784,6 +1794,9 @@ impl DialogView {
     }
 
     #[allow(clippy::too_many_arguments)]
+    /// Compatible entry; a returned layout does not imply successful paint.
+    /// Renderer rejects a Scene carrying any composition error.
+    #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
         scene: &mut Scene,
@@ -1795,6 +1808,38 @@ impl DialogView {
         role: proposal::TextRole,
         compact: bool,
     ) -> Option<DialogLayout> {
+        match self.try_render(
+            scene,
+            text,
+            title,
+            preview,
+            ancestor_clip,
+            palette,
+            role,
+            compact,
+        ) {
+            Ok(layout) => layout,
+            Err(error) => {
+                scene.record_composition_error(error);
+                None
+            }
+        }
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn try_render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        title: &str,
+        preview: Rect,
+        ancestor_clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+        compact: bool,
+    ) -> Result<Option<DialogLayout>, tekes_ui_scene::FragmentError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(error);
+        }
         if safe_rect(preview) != preview
             || preview.size.width <= 0.0
             || preview.size.height <= 0.0
@@ -1806,7 +1851,7 @@ impl DialogView {
             for button in &mut self.buttons {
                 button.clear_layout();
             }
-            return None;
+            return Ok(None);
         }
         let paint_context = format!(
             "{title}{preview:?}{ancestor_clip:?}{palette:?}{role:?}{compact:?}{}",
@@ -1814,11 +1859,12 @@ impl DialogView {
         );
         if !self.model.open && !self.presence.is_presented() {
             self.placement = DialogLayout::default();
-            self.presence.paint(scene, text, false, paint_context, None);
-            return None;
+            self.presence
+                .try_paint(scene, text, false, paint_context, None)?;
+            return Ok(None);
         }
         let destination = scene;
-        let mut overlay_scene = Scene::new();
+        let mut overlay_scene = destination.fragment();
         let scene = &mut overlay_scene;
         let preview = safe_rect(preview);
         let visible = clip_rect(preview, ancestor_clip);
@@ -1829,7 +1875,7 @@ impl DialogView {
             for button in &mut self.buttons {
                 button.clear_layout();
             }
-            return None;
+            return Ok(None);
         }
         let modal_width = (preview.size.width - 16.0).clamp(0.0, 460.0);
         let modal_height = preview.size.height.clamp(0.0, 200.0);
@@ -1843,14 +1889,14 @@ impl DialogView {
         let margin = 20.0_f32.min((modal.size.width * 0.5).max(0.0));
         let action_width = (modal.size.width - margin * 2.0).max(0.0);
         let focus_gap = focus_reveal_outset(text.backing_scale()) * 2.0;
-        let cancel_natural = Button::measure(
+        let cancel_natural = ButtonModel::measure(
             text,
             Self::button_label(0).unwrap(),
             f32::MAX,
             ButtonSize::Body,
             role,
         );
-        let confirm_natural = Button::measure(
+        let confirm_natural = ButtonModel::measure(
             text,
             Self::button_label(1).unwrap(),
             f32::MAX,
@@ -1860,7 +1906,7 @@ impl DialogView {
         let inline_width = ((action_width - focus_gap).max(0.0)) * 0.5;
         let mut stacked = inline_width < cancel_natural.width.max(confirm_natural.width);
         let vertical_margin = 20.0_f32.min((modal.size.height * 0.5).max(0.0));
-        let stacked_natural_height = Button::measure(
+        let stacked_natural_height = ButtonModel::measure(
             text,
             Self::button_label(0).unwrap(),
             action_width,
@@ -1869,7 +1915,7 @@ impl DialogView {
         )
         .height
         .max(
-            Button::measure(
+            ButtonModel::measure(
                 text,
                 Self::button_label(1).unwrap(),
                 action_width,
@@ -1890,7 +1936,7 @@ impl DialogView {
             0.0
         };
         let button_width = if stacked { action_width } else { inline_width };
-        let measured_button_height = Button::measure(
+        let measured_button_height = ButtonModel::measure(
             text,
             Self::button_label(0).unwrap(),
             button_width,
@@ -1899,7 +1945,7 @@ impl DialogView {
         )
         .height
         .max(
-            Button::measure(
+            ButtonModel::measure(
                 text,
                 Self::button_label(1).unwrap(),
                 button_width,
@@ -2019,24 +2065,24 @@ impl DialogView {
             buttons: button_layouts,
             focus: self.model.focus,
         };
-        if !self.window_active {
-            self.presence.settle(self.model.open);
-        }
-        self.presence.paint(
+        self.presence.try_paint(
             destination,
             text,
             self.model.open,
             paint_context,
             Some(overlay_scene),
-        );
+        )?;
+        if !self.window_active {
+            self.presence.settle(self.model.open);
+        }
         if !self.model.open {
             self.placement = DialogLayout::default();
             for button in &mut self.buttons {
                 button.clear_layout();
             }
-            return None;
+            return Ok(None);
         }
-        Some(self.placement.clone())
+        Ok(Some(self.placement.clone()))
     }
 
     pub fn pointer_move_at(&mut self, point: Point) {
@@ -2586,7 +2632,7 @@ mod tests {
                     .unwrap()
                     .2,
                 ButtonTextAlign::default(),
-                "dialog action {action} follows ButtonContent token alignment"
+                "dialog action {action} follows Button token alignment"
             );
         }
         let focused = layout.buttons[1];
@@ -3646,10 +3692,7 @@ mod overlay_presence_tests {
             &model,
             &mut text,
             &mut scene,
-            Palette {
-                brand: 1,
-                ..palette
-            },
+            Palette::new(palette.theme, 1).expect("registered Gallery brand"),
         );
         assert!(scene.is_empty());
         assert!(!view.is_presented());

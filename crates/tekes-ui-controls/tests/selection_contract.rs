@@ -41,7 +41,7 @@ fn selection_validation_preserves_geometry_value_focus_and_existing_disabled_rol
     let mut cases = Vec::new();
     for theme in Theme::ALL {
         for brand in [0, 1, 2] {
-            let palette = Palette { theme, brand };
+            let palette = Palette::new(theme, brand).expect("registered Gallery brand");
             for component in ["tui.checkbox", "tui.radio-group", "tui.switch"] {
                 for value in 0..if component == "tui.checkbox" { 3 } else { 2 } {
                     for error in [false, true] {

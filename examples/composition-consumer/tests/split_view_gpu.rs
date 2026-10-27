@@ -20,7 +20,7 @@ fn original_split_view_gpu_keeps_layout_and_reduces_only_decorative_divider_ink(
         for brand in 0..3 {
             for scale in [1., 1.5, 2.] {
                 for (ai, axis) in [Axis::Horizontal, Axis::Vertical].into_iter().enumerate() {
-                    let palette = Palette { theme, brand };
+                    let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                     let bounds = Rect::new(8., 8., 80., 80.);
                     let mut before_model = SplitView::new(0.5);
                     let mut after_model = SplitView::new(0.5);

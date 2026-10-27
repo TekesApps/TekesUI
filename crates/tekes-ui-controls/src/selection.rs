@@ -645,7 +645,10 @@ pub struct SwitchView {
     space_armed: bool,
     window_active: bool,
     thumb_transition: ProgressTransition,
-    motion_palette: Option<(tekes_ui_tokens::Theme, usize)>,
+    motion_palette: Option<(
+        tekes_ui_tokens::Theme,
+        tekes_ui_tokens::palette::PaletteSource,
+    )>,
     motion_initialized: bool,
     motion_now: Duration,
     motion_suspended: bool,
@@ -817,7 +820,7 @@ impl SwitchView {
         context: ControlMotionContext,
     ) -> f32 {
         self.motion_now = context.now;
-        let palette_key = (palette.theme, palette.brand);
+        let palette_key = (palette.theme, palette.source());
         let palette_changed = self
             .motion_palette
             .is_some_and(|previous| previous != palette_key);
@@ -1019,7 +1022,10 @@ impl SwitchView {
         }
     }
     pub fn pointer_move(&mut self, point: Point) -> bool {
-        let next = self.window_active && self.placement.contains(point);
+        self.pointer_move_in_region(point, true)
+    }
+    pub(crate) fn pointer_move_in_region(&mut self, point: Point, inside: bool) -> bool {
+        let next = inside && self.window_active && self.placement.contains(point);
         let changed = self.hovered != next;
         self.hovered = next;
         changed
@@ -1044,6 +1050,14 @@ impl SwitchView {
         true
     }
     pub fn pointer_up(&mut self, point: Point, model: &mut Switch) -> SelectionEvent {
+        self.pointer_up_in_region(point, model, true)
+    }
+    pub(crate) fn pointer_up_in_region(
+        &mut self,
+        point: Point,
+        model: &mut Switch,
+        inside: bool,
+    ) -> SelectionEvent {
         if model.disabled {
             return if self.cancel() {
                 SelectionEvent::Handled
@@ -1058,7 +1072,7 @@ impl SwitchView {
         if !self.window_active || model.disabled {
             return SelectionEvent::Handled;
         }
-        if self.placement.contains(point) && model.toggle() {
+        if inside && self.placement.contains(point) && model.toggle() {
             SelectionEvent::Changed
         } else {
             SelectionEvent::Handled
@@ -1141,10 +1155,7 @@ mod tests {
 
     #[test]
     fn hidden_or_invalid_selection_layout_releases_keyboard_focus_and_capture() {
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         for (bounds, clip) in [
             (
                 Rect::new(0., 0., 160., 30.),
@@ -1211,10 +1222,7 @@ mod tests {
             model,
             Rect::new(0., 0., 48., 26.),
             None,
-            Palette {
-                theme: Theme::LIGHT,
-                brand: 0,
-            },
+            Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand"),
         );
         let inside = Point::new(12., 12.);
         assert!(view.pointer_down(inside, &model));
@@ -1245,10 +1253,7 @@ mod tests {
         let mut text = TestText::default();
         let mut model = RadioGroup::new(2);
         let mut view = RadioGroupView::new();
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let bounds = Rect::new(0., 0., 160., 0.);
         let layout = view.render(
             &mut scene,
@@ -1278,10 +1283,7 @@ mod tests {
 
     #[test]
     fn slider_view_keeps_finite_thumb_and_bounded_value_for_extreme_ranges_and_steps() {
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let mut view = SliderView::new();
         let mut scene = Scene::new();
         let frame = Rect::new(0., 0., 160., 30.);
@@ -1331,10 +1333,7 @@ mod tests {
 
     #[test]
     fn selection_labels_use_disabled_semantic_ink_for_group_item_and_switch() {
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let mut scene = Scene::new();
         let mut text = TestText::default();
         let mut model = RadioGroup::new(2);
@@ -1387,10 +1386,7 @@ mod tests {
 
     #[test]
     fn switch_pointer_leaving_clears_pressed_paint_and_returning_restores_it() {
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let mut scene = Scene::new();
         let mut view = SwitchView::new();
         let mut model = Switch::default();
@@ -1432,10 +1428,7 @@ mod tests {
             model,
             Rect::new(10., 10., 100., 30.),
             Some(Rect::new(20., 0., 80., 60.)),
-            Palette {
-                theme: Theme::LIGHT,
-                brand: 0,
-            },
+            Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand"),
         );
         assert_eq!(layout.visible, Some(Rect::new(20., 10., 80., 30.)));
         assert!(view.pointer_down(Point::new(layout.track.center().x, 20.), &mut model));
@@ -1458,10 +1451,7 @@ mod tests {
             &model,
             Rect::new(0., 0., 180., 0.),
             None,
-            Palette {
-                theme: Theme::LIGHT,
-                brand: 0,
-            },
+            Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand"),
             &["One", "Two", "Three"],
         );
         assert_eq!(layout.rows.len(), 3);
@@ -1488,10 +1478,7 @@ mod tests {
             model,
             Rect::new(0., 0., 48., 26.),
             None,
-            Palette {
-                theme: Theme::LIGHT,
-                brand: 0,
-            },
+            Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand"),
         );
         assert!(view.pointer_down(Point::new(5., 5.), &model));
         assert_eq!(
@@ -1526,10 +1513,7 @@ mod tests {
             &model,
             Rect::new(0., 0., 200., 0.),
             None,
-            Palette {
-                theme: Theme::LIGHT,
-                brand: 0,
-            },
+            Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand"),
             &["One", "Two", "Three"],
         );
         view.set_disabled(true);
@@ -1562,10 +1546,7 @@ mod tests {
             &model,
             Rect::new(0., 0., 200., 0.),
             None,
-            Palette {
-                theme: Theme::LIGHT,
-                brand: 0,
-            },
+            Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand"),
             &["One", "Two", "Three"],
         );
         view.focus(&model, Some(0), false);
@@ -1593,10 +1574,7 @@ mod tests {
         let switch = Switch::default();
         let mut switch_view = SwitchView::default();
         let mut scene = Scene::new();
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         assert_eq!(
             slider_view
                 .render(
@@ -1627,10 +1605,7 @@ mod tests {
 
     #[test]
     fn radio_and_labeled_switch_expand_for_wrapped_text_and_align_to_first_line() {
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let mut text = TestText::default();
         let mut scene = Scene::new();
         let radio = RadioGroup::new(1);
@@ -1681,10 +1656,7 @@ mod tests {
 
     #[test]
     fn disabled_or_inactive_changes_cancel_armed_controls_without_mutating_values() {
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let mut scene = Scene::new();
         let mut slider = Slider::new(50., 0., 100., 1.).unwrap();
         let mut slider_view = SliderView::new();
@@ -1748,10 +1720,7 @@ mod tests {
 
     #[test]
     fn completely_hidden_radio_rows_cancel_pointer_arm_and_switch_focus_ring_uses_ancestor_clip() {
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let mut scene = Scene::new();
         let mut text = TestText::default();
         let model = RadioGroup::new(2);
@@ -1807,10 +1776,7 @@ mod tests {
 
     #[test]
     fn narrow_radio_and_switch_label_slots_do_not_call_text_painter_outside_the_frame() {
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let mut scene = Scene::new();
         let mut text = TestText::default();
         let radio = RadioGroup::new(1);
@@ -1885,10 +1851,7 @@ mod tests {
 
     #[test]
     fn switch_thumb_is_component_owned_interruptible_and_model_changes_immediately() {
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let mut model = Switch::default();
         let mut view = SwitchView::new();
         let mut text = TestText {
@@ -1949,10 +1912,7 @@ mod tests {
 
     #[test]
     fn switch_reduced_motion_snaps_and_fully_clipped_render_blurs() {
-        let palette = Palette {
-            theme: Theme::LIGHT,
-            brand: 0,
-        };
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
         let mut view = SwitchView::new();
         let mut text = TestText {
             motion: Some(ControlMotionContext {

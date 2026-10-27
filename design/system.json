@@ -31,7 +31,7 @@
       "$ref": "./source/interaction-contracts.json"
     },
     "themes": {
-      "$ref": "#/themes"
+      "$ref": "#/theme_system"
     },
     "accessibility": {
       "$ref": "#/accessibility"
@@ -258,5 +258,122 @@
     "unit_policy": "Logical pt is retained in this project schema. No CSS px/rem conversion is implied.",
     "format_policy": "Project-owned schema using DTCG-inspired $type/$value spelling; not full DTCG compliance.",
     "single_source_migration": "Design inputs compile into a merged JSON projection; normal Cargo build verifies freshness and generates OUT_DIR Rust tokens. Python tools are development-time tools; native Gallery remains pure Rust."
+  },
+  "theme_system": {
+    "root_concept": "Design System owns Theme Schema, concrete Theme definitions, generation/validation and component contracts.",
+    "theme_schema": {
+      "$ref": "./theme/theme.schema.json"
+    },
+    "definitions": {
+      "$ref": "./theme/themes.json"
+    },
+    "internal_modes": {
+      "$ref": "#/themes"
+    },
+    "surface_rules": {
+      "$ref": "./theme/rules.json"
+    },
+    "surface_rules_schema": {
+      "$ref": "./theme/rules.schema.json"
+    },
+    "generated_instances": {
+      "$ref": "./theme/generated/instances.json"
+    },
+    "generator": {
+      "$ref": "../scripts/generate-theme-system.py"
+    },
+    "normal_build_validator": {
+      "$ref": "../crates/tekes-ui-design-export/src/theme_system.rs"
+    },
+    "public_resolver": {
+      "$ref": "../crates/tekes-ui-tokens/src/surface_palette.rs"
+    },
+    "component_contract": {
+      "$ref": "./reviews/notice-marker-theme-implementation-20261024/api-v1.9.0.md"
+    },
+    "version_policy": {
+      "theme_definition_schema": "2.0.0",
+      "surface_schema": "1.3.0",
+      "generation_rules": "1.10.0",
+      "instance_format": "tekesui.theme-instances/2",
+      "provenance": "Each generated instance retains its definition version, internal modes, rules/schema versions and exact input SHA256. These are not package SemVer or published Git revisions."
+    },
+    "legacy_modes_policy": "The top-level themes array is retained as the legacy appearance/contrast mode list, not four independent concrete Themes.",
+    "semantic_policy": "Theme inputs use existing neutral/base and semantic roles plus BrandConfig. Shared compiler owns derived state colors and constraints. Consumers inherit explicit Surface identities and complete semantic results, never infer Surface from RGB or author state color tables.",
+    "delivery_status": "foundation-api-only; concrete component/Gallery Theme migration and current visual acceptance remain tracked separately in #62/#55/#56",
+    "theme_input_contract": {
+      "contract_version": "1.0.0",
+      "definition_schema_version": "2.0.0",
+      "instance_format": "tekesui.theme-instances/2",
+      "surface_schema_version": "1.3.0",
+      "rules_version": "1.10.0",
+      "supported_modes": [
+        "light",
+        "dark",
+        "light-ic",
+        "dark-ic"
+      ],
+      "pinned_inputs": {
+        "design/brand/policy.json": "8ab0d7c6c9605a72ace5af335cf90ffa8abe3243534ac9c4ca68f3fc39bf488c",
+        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/brand.schema.json": "4bb4dfec082ac9e204c9fbd55136c3b4ad617ee2dba69df58982dda6b73020d9",
+        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/policy.schema.json": "a7fdbb7854d2cd3576839d899db3d143f080b049f516c48309360119829c4f4b",
+        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/quality/contrast-pairs.json": "fdfdf581d0ab0fc83a5d6bceab4dd8bcfe725f5c16b1a4a849d9a9fd26b9fa15",
+        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/tokens/tokens.schema.json": "629e8e76a0a7c1cfddae735c6af6806e846eb32026009a9c20e902b207346429",
+        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
+        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py": "3da13fcc221ed488d383af75dc84f77930306368632b7f48fb38476dc78f6586",
+        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py": "f7395f04cbd8cf0215326345929d76f6d8e263bdff69c6aede1a417bccc82516",
+        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py": "f48e97e00a0f8da9d0b373d4636da251c35cbdc667b33a03b9679e00460e1acc",
+        "design/source/base.tokens.json": "16215625e85017b393a096046c37849315d7c473d87e8c15c52fe8db887abf87",
+        "design/source/token-metadata.json": "53db464280f6d381cf108cb78c1f894a1dd31d780a5045145d31e6bd925e637b",
+        "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
+        "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
+        "design/theme/rules.json": "3e353c9b5cf35e92c79dd64020b195bfd85fb8e41e51b1d5cb1ed4b1dba423f0",
+        "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
+        "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
+        "scripts/generate-theme-system.py": "cabc0172733b41835740c266f5a13d6ffedacc3768ef0dca19e95e0c357f7a69",
+        "scripts/merge-design-system.py": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2",
+        "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7"
+      },
+      "neutral_base_allowed_roles": [
+        "p-border",
+        "p-border-focused",
+        "p-disabled-text",
+        "p-primary-text",
+        "p-row-selection",
+        "p-row-selection-hover",
+        "p-secondary-text",
+        "p-segmented-thumb",
+        "p-segmented-track",
+        "p-selected-text",
+        "p-separator",
+        "p-shadow-ink",
+        "p-surface-0",
+        "p-surface-1",
+        "p-surface-2",
+        "p-surface-3",
+        "p-surface-panel",
+        "p-surface-popover",
+        "p-surface-sidebar",
+        "p-tertiary-text",
+        "p-text-selection"
+      ],
+      "status_base_allowed_roles": [
+        "p-status-failed",
+        "p-status-info",
+        "p-status-running",
+        "p-status-solid-foreground",
+        "p-status-succeeded",
+        "p-warning",
+        "p-warning-foreground",
+        "p-warning-text"
+      ],
+      "constraints_ref": "design/brand/policy.json"
+    },
+    "reviewed_artifact_lock": {
+      "$ref": "./theme/artifact.lock.json"
+    },
+    "artifact_lock_schema": {
+      "$ref": "./theme/artifact-lock.schema.json"
+    }
   }
 }

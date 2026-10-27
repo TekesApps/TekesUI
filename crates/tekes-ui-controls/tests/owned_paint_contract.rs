@@ -162,8 +162,8 @@ fn public_focus_capture_reuses_mount_identity_without_a_modal() {
                 },
                 flexible_child: None,
                 children: vec![
-                    Content::new(ComponentId(11), ButtonContent::new("Caller")),
-                    Content::new(ComponentId(12), ButtonContent::new("Other")),
+                    Content::new(ComponentId(11), Button::new("Caller")),
+                    Content::new(ComponentId(12), Button::new("Other")),
                 ],
             },
         ))
@@ -181,7 +181,7 @@ fn public_focus_capture_reuses_mount_identity_without_a_modal() {
                 host.remove(ComponentId(11)).unwrap();
                 host.insert(
                     ComponentId(10),
-                    Content::new(ComponentId(11), ButtonContent::new("Replacement")),
+                    Content::new(ComponentId(11), Button::new("Replacement")),
                 )
                 .unwrap();
             }
@@ -196,7 +196,7 @@ fn public_focus_capture_reuses_mount_identity_without_a_modal() {
                 let button = &mut host
                     .get_mut(ComponentId(11))
                     .unwrap()
-                    .component_mut::<ButtonContent>()
+                    .component_mut::<Button>()
                     .unwrap()
                     .button;
                 button.state.disabled = mode == "disabled";

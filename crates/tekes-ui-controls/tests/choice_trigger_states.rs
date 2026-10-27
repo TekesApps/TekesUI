@@ -43,7 +43,7 @@ fn command_trigger_states_use_production_roles_without_changing_query_or_geometr
                 let mut view = CommandPaletteView::default();
                 let mut model = CommandPalette::default();
                 model.combo.query = "preserved".into();
-                let palette = Palette { theme, brand };
+                let palette = Palette::new(theme, brand).expect("registered Gallery brand");
                 let mut text = Labels;
                 view.render_trigger(
                     &mut Scene::new(),

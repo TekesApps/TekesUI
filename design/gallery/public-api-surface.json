@@ -23,9 +23,22 @@
       "api": "tekes_ui_controls::Button",
       "category": "component",
       "components": [
-        "tui.button"
+        "tui.button",
+        "tui.icon-button"
       ],
-      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+      "reason": "The single public Button component; image-only is a content form using the same component, not a separate control."
+    },
+    {
+      "api": "tekes_ui_controls::ButtonActivationPhase",
+      "category": "composition",
+      "components": [],
+      "reason": "Pointer activation timing for original content-driven Button state and mount-bound typed actions; no new input state machine."
+    },
+    {
+      "api": "tekes_ui_controls::ButtonContents",
+      "category": "composition",
+      "components": [],
+      "reason": "Input presentation values for the one public Button; does not own interactions or accessibility."
     },
     {
       "api": "tekes_ui_controls::ButtonFramePolicy",
@@ -33,7 +46,13 @@
       "components": [
         "tui.button"
       ],
-      "reason": "Explicit caller-arranged compact geometry policy for existing Button/CompoundButton; default token minimum unchanged,not a new component."
+      "reason": "Explicit caller-arranged geometry policy on shared ButtonModel and the unified Button; no separate control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::ButtonImagePosition",
+      "category": "composition",
+      "components": [],
+      "reason": "Relative image/text arrangement on the same Button, using existing DS measurement."
     },
     {
       "api": "tekes_ui_controls::ButtonLayout",
@@ -42,6 +61,15 @@
         "tui.button"
       ],
       "reason": "Button layout result and presentation configuration; no standalone control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::ButtonModel",
+      "category": "component-support",
+      "components": [
+        "tui.button",
+        "tui.icon-button"
+      ],
+      "reason": "Underlying shared action state/painter for framework controls; not a separate content component."
     },
     {
       "api": "tekes_ui_controls::ButtonSize",
@@ -64,6 +92,30 @@
       "category": "shared-support",
       "components": [],
       "reason": "Shared layout, event/state and host rendering contracts reused by multiple controls; public implementation support, not private and not separate Gallery components."
+    },
+    {
+      "api": "tekes_ui_controls::ChartContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Composition adapter mounts the existing BarChart through ContentHost and preserves the original ChartView owner, identity and route; no separate component or state owner."
+    },
+    {
+      "api": "tekes_ui_controls::ChartContentError",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Construction validation error for ChartContent; supporting API for the existing chart adapter, not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::ChartDataUpdateError",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Atomic BarChart data replacement validation error; it reports a rejected update without introducing a separate component or route."
     },
     {
       "api": "tekes_ui_controls::ChartDatum",
@@ -355,6 +407,24 @@
       "reason": "Shared editor state, reflow anchor and host shaping/painting interfaces; presentation remains TextSurface."
     },
     {
+      "api": "tekes_ui_controls::RequiredFocusEvidence",
+      "category": "composition",
+      "components": [],
+      "reason": "Owner-local identity for arranged required-focus evidence, shared by ContentHost and focus/reveal runtime; not a component API."
+    },
+    {
+      "api": "tekes_ui_controls::RequiredFocusResult",
+      "category": "composition",
+      "components": [],
+      "reason": "Host-visible outcome for the arranged required-focus region, shared by ContentHost and focus/reveal runtime; not a component API."
+    },
+    {
+      "api": "tekes_ui_controls::RequiredFocusSpace",
+      "category": "composition",
+      "components": [],
+      "reason": "Host-visible required-focus space contract used by ContentHost and focus/reveal runtime; not a component API."
+    },
+    {
       "api": "tekes_ui_controls::ScrollArea",
       "category": "component",
       "components": [
@@ -599,6 +669,30 @@
       "reason": "Resolved icon action descriptor for the existing Toolbar route; accessible labels remain authoritative in overflow."
     },
     {
+      "api": "tekes_ui_controls::collections_view::ChartOwnerCapacity",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Measured original Chart owner body capacity; not a separate component or acceptance result."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::ChartOwnerFocusSpace",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Original Chart owner focus-space layout outcome; not native accessibility or GPU acceptance."
+    },
+    {
+      "api": "tekes_ui_controls::collections_view::ChartOwnerMeasurement",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Original Chart owner label measurement and capacity; preserves the existing Chart identity."
+    },
+    {
       "api": "tekes_ui_controls::collections_view::ChartView",
       "category": "component",
       "components": [
@@ -719,24 +813,82 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::ActionPreparation",
+      "category": "composition",
+      "components": [],
+      "reason": "Result of the existing Component preflight protocol: Unsupported retains legacy routing, while Ready carries a prepared original-owner action. It is ContentHost transaction machinery, not a separately mounted UI component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ActionTransactionCompatibility",
+      "category": "composition",
+      "components": [],
+      "reason": "Declares whether an existing Component opts into the atomic action/focus/reveal protocol through stable hooks. This is a composition admission contract, not a control or Workbench route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::BannerContent",
+      "category": "component",
+      "components": [
+        "tui.banner"
+      ],
+      "reason": "Public Content adapter retains the original Notice model/View, action owner and registered identity; no new queue or component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::Button",
+      "category": "component-adapter",
+      "components": [
+        "tui.button",
+        "tui.icon-button"
+      ],
+      "reason": "The same root public Button component, accessible through composition."
+    },
+    {
       "api": "tekes_ui_controls::composition::ButtonActivationPhase",
       "category": "composition",
       "components": [],
-      "reason": "Pointer activation timing for original ButtonContent/CompoundButton state and mount-bound typed actions; no new input state machine."
+      "reason": "Pointer activation timing for original content-driven Button state and mount-bound typed actions; no new input state machine."
     },
     {
-      "api": "tekes_ui_controls::composition::ButtonContent",
+      "api": "tekes_ui_controls::composition::ButtonContents",
+      "category": "composition",
+      "components": [],
+      "reason": "Input presentation values for the one public Button; does not own interactions or accessibility."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ButtonImagePosition",
+      "category": "composition",
+      "components": [],
+      "reason": "Relative image/text arrangement on the same Button, using existing DS measurement."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ChartContent",
       "category": "component-adapter",
       "components": [
-        "tui.button"
+        "tui.chart"
       ],
-      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+      "reason": "Composition adapter mounts the existing BarChart through ContentHost and preserves the original ChartView owner, identity and route; no separate component or state owner."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ChartContentError",
+      "category": "component-support",
+      "components": [
+        "tui.chart"
+      ],
+      "reason": "Construction validation error for ChartContent; supporting API for the existing chart adapter, not an independent component."
     },
     {
       "api": "tekes_ui_controls::composition::Component",
       "category": "composition",
       "components": [],
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ComponentActionRequest",
+      "category": "composition",
+      "components": [],
+      "reason": "Borrowed pointer or accessibility request context passed to the original Component preflight hook. It carries the existing event/action without introducing a second interaction owner.",
+      "type_arguments": [
+        "'_"
+      ]
     },
     {
       "api": "tekes_ui_controls::composition::ComponentId",
@@ -749,14 +901,6 @@
       "category": "composition",
       "components": [],
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
-    },
-    {
-      "api": "tekes_ui_controls::composition::CompoundButton",
-      "category": "component-adapter",
-      "components": [
-        "tui.button"
-      ],
-      "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
     },
     {
       "api": "tekes_ui_controls::composition::Content",
@@ -799,6 +943,12 @@
       "category": "composition",
       "components": [],
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentGeometrySnapshot",
+      "category": "composition",
+      "components": [],
+      "reason": "Immutable original ContentHost geometry/shape identity and generation-bound point/bounds queries; not a new Gallery component or native acceptance."
     },
     {
       "api": "tekes_ui_controls::composition::ContentHost",
@@ -865,10 +1015,28 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::ContentTextInput",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Read-only snapshot of original Content text owner binding, text and visible caret geometry; no independent editor or component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentTextLayout",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Read-only original TextSurface/Paragraph shaped lines and full caret geometry for existing Host semantic queries; no editor, separate component or copied layout model."
+    },
+    {
       "api": "tekes_ui_controls::composition::ContentTheme",
       "category": "composition",
       "components": [],
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::CurveSubtreeCapability",
+      "category": "composition",
+      "components": [],
+      "reason": "Explicit original composition subtree capability for certified Panel curve traversal; unsupported descendants refuse. Classification does not certify B1/B2."
     },
     {
       "api": "tekes_ui_controls::composition::DecimalNumberFormat",
@@ -887,12 +1055,50 @@
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
     },
     {
+      "api": "tekes_ui_controls::composition::EmptyStateContent",
+      "category": "component",
+      "components": [
+        "tui.empty-state"
+      ],
+      "reason": "Public Content adapter mounts the original EmptyState View and sole action owner; retains the existing registered identity."
+    },
+    {
       "api": "tekes_ui_controls::composition::GridContent",
       "category": "component-adapter",
       "components": [
         "tui.grid"
       ],
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::HostRevealBudget",
+      "category": "composition",
+      "components": [],
+      "reason": "Finite host reveal planning traversal budget in current R1 source; not evidence of #98 acceptance."
+    },
+    {
+      "api": "tekes_ui_controls::composition::HostRevealError",
+      "category": "composition",
+      "components": [],
+      "reason": "Current R1 host reveal preparation rejection boundary; #98 acceptance remains pending."
+    },
+    {
+      "api": "tekes_ui_controls::composition::HostRevealGeometry",
+      "category": "composition",
+      "components": [],
+      "reason": "Original Host additional ancestor curve boundary, separate from target RequiredFocus witness; not a new reveal owner or runtime acceptance."
+    },
+    {
+      "api": "tekes_ui_controls::composition::HostRevealOutcome",
+      "category": "composition",
+      "components": [],
+      "reason": "Current R1 host reveal commit result; source-visible composition API, #98 acceptance remains pending."
+    },
+    {
+      "api": "tekes_ui_controls::composition::HostRevealPlan",
+      "category": "composition",
+      "components": [],
+      "reason": "Current source-visible R1 immutable finite reveal preparation; API classification only, #98 execution acceptance remains pending."
     },
     {
       "api": "tekes_ui_controls::composition::InputModifiers",
@@ -1019,6 +1225,26 @@
       "reason": "Numeric format, parsing, editing and committed-value contract for the existing NumberField family; no independent control lifecycle."
     },
     {
+      "api": "tekes_ui_controls::composition::OverlayScope",
+      "category": "composition",
+      "components": [],
+      "reason": "Existing WIP public contract, now explicitly inventoried; classification is not native acceptance or release approval."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PanelContent",
+      "category": "component",
+      "components": [
+        "tui.surface"
+      ],
+      "reason": "Owned Content adapter for the existing registered Surface / Panel family. Added compiler binding proves availability only; no new Gallery identity, maturity, native publication or B2 acceptance."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PanelGeometry",
+      "category": "composition",
+      "components": [],
+      "reason": "Original Panel frozen allocation/outer/shape/generation data for shared paint/hit/reveal/publication; source-visible support, not acceptance."
+    },
+    {
       "api": "tekes_ui_controls::composition::PointerButton",
       "category": "composition",
       "components": [],
@@ -1043,6 +1269,97 @@
       "reason": "Lossless pointer input at the existing Component/ContentHost boundary, with legacy primary-pointer compatibility; data only, not a new component or selection engine."
     },
     {
+      "api": "tekes_ui_controls::composition::PreparedActionEffect",
+      "category": "composition",
+      "components": [],
+      "reason": "Object-safe effect protocol for an original Component decision: pure final validation followed by consuming apply under ContentHost transaction admission. It is not a visual or interactive component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PreparedActionFocus",
+      "category": "composition",
+      "components": [],
+      "reason": "Focus disposition metadata attached to a prepared original-owner action; ContentHost owns focus and reveal application, so this enum adds no component identity."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PreparedComponentAction",
+      "category": "composition",
+      "components": [],
+      "reason": "Prepared response, focus disposition, and owner-bound effect returned to ContentHost for one atomic action transaction. This support value has no standalone lifecycle or Gallery route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PreparedEffects",
+      "category": "composition",
+      "components": [],
+      "reason": "Original Host prepared lifecycle hook/effect admission and consuming application support; no independent component, queue or model."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PreparedEffectsError",
+      "category": "composition",
+      "components": [],
+      "reason": "Original Host prepared lifecycle hook/effect admission and consuming application support; no independent component, queue or model."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PreparedHook",
+      "category": "composition",
+      "components": [],
+      "reason": "Original Host prepared lifecycle hook/effect admission and consuming application support; no independent component, queue or model."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PreparedHookKind",
+      "category": "composition",
+      "components": [],
+      "reason": "Original Host prepared lifecycle hook/effect admission and consuming application support; no independent component, queue or model."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PreparedLifecycleContext",
+      "category": "composition",
+      "components": [],
+      "reason": "Original Host prepared lifecycle hook/effect admission and consuming application support; no independent component, queue or model."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PreparedPhase",
+      "category": "composition",
+      "components": [],
+      "reason": "Original Host prepared lifecycle hook/effect admission and consuming application support; no independent component, queue or model."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ProgressContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.progress"
+      ],
+      "reason": "Ordinary Content adapter consumes the existing Progress model and shared Surface packet; retains the registered Progress identity."
+    },
+    {
+      "api": "tekes_ui_controls::composition::Rejected",
+      "category": "component-support",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Owned-pane Content adapter or checked construction/replacement support for the registered original SplitView model/View; no separate component or split engine.",
+      "type_arguments": [
+        "()"
+      ]
+    },
+    {
+      "api": "tekes_ui_controls::composition::RequiredFocusEvidence",
+      "category": "composition",
+      "components": [],
+      "reason": "Owner-local identity for arranged required-focus evidence, shared by ContentHost and focus/reveal runtime; not a component API."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RequiredFocusResult",
+      "category": "composition",
+      "components": [],
+      "reason": "Host-visible outcome for the arranged required-focus region, shared by ContentHost and focus/reveal runtime; not a component API."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RequiredFocusSpace",
+      "category": "composition",
+      "components": [],
+      "reason": "Host-visible required-focus space contract used by ContentHost and focus/reveal runtime; not a component API."
+    },
+    {
       "api": "tekes_ui_controls::composition::ScrollContent",
       "category": "component-adapter",
       "components": [
@@ -1063,12 +1380,76 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::SkeletonContent",
+      "category": "component",
+      "components": [
+        "tui.skeleton"
+      ],
+      "reason": "Static passive Content adapter for the existing SkeletonView; named/decorative semantics do not create a new registered component."
+    },
+    {
       "api": "tekes_ui_controls::composition::SliderContent",
       "category": "component-adapter",
       "components": [
         "tui.slider"
       ],
       "reason": "Existing Slider model/View adapted to the existing Component protocol; finite range metadata and relative semantic actions; native/experience acceptance remains separate."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SplitViewConfig",
+      "category": "component-support",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Owned-pane Content adapter or checked construction/replacement support for the registered original SplitView model/View; no separate component or split engine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SplitViewConstruction",
+      "category": "component-support",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Owned-pane Content adapter or checked construction/replacement support for the registered original SplitView model/View; no separate component or split engine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SplitViewContent",
+      "category": "component",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Received public rectangular SplitView Content A over the original model/View; Theme/GPU/Splitter projection remains the B delivery."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SplitViewError",
+      "category": "component-support",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Owned-pane Content adapter or checked construction/replacement support for the registered original SplitView model/View; no separate component or split engine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SplitViewExpected",
+      "category": "component-support",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Owned-pane Content adapter or checked construction/replacement support for the registered original SplitView model/View; no separate component or split engine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SplitViewReplacement",
+      "category": "component-support",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Owned-pane Content adapter or checked construction/replacement support for the registered original SplitView model/View; no separate component or split engine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SplitViewSlotIds",
+      "category": "component-support",
+      "components": [
+        "tui.split-view"
+      ],
+      "reason": "Owned-pane Content adapter or checked construction/replacement support for the registered original SplitView model/View; no separate component or split engine."
     },
     {
       "api": "tekes_ui_controls::composition::StackContent",
@@ -1079,12 +1460,28 @@
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
     },
     {
+      "api": "tekes_ui_controls::composition::StatusBadgeContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.status-badge"
+      ],
+      "reason": "Public passive Content adapter for the existing StatusBadge model and View; retains the same registered identity."
+    },
+    {
       "api": "tekes_ui_controls::composition::SwitchContent",
       "category": "component-adapter",
       "components": [
         "tui.switch"
       ],
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TableTransactionCompatibility",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public default-Unknown recursive StableHooks contract for Table atomic staging and mutable access paths; ordinary Host dynamic hooks remain supported."
     },
     {
       "api": "tekes_ui_controls::composition::TextContent",
@@ -1133,6 +1530,41 @@
       "reason": "Viewport constraints on the existing TextFieldContent: legacy Form, Fixed, Fill and bounded intrinsic Grow, excluding Field metadata. Reuses original TextSurface/ReadingController/Stack flexible child; not a new component or layout framework."
     },
     {
+      "api": "tekes_ui_controls::composition::ToastContent",
+      "category": "component",
+      "components": [
+        "tui.toast"
+      ],
+      "reason": "Public Content adapter retains the original Notice model/View, action owner and registered identity; no new queue or component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarAccessibilityTarget",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Opaque mount/layout-revision target for current Toolbar semantic callbacks; stale native actions are rejected."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarButtonDeclaration",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Standard Button content/help/availability declaration for original ToolbarControl commands."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarCommandBinding",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Original module/session/generation command binding retained across region placement.",
+      "type_arguments": [
+        "()"
+      ]
+    },
+    {
       "api": "tekes_ui_controls::composition::ToolbarContent",
       "category": "component",
       "components": [
@@ -1149,12 +1581,85 @@
       "reason": "Stable original Content group declaring toolbar placement while retaining child control and semantic ownership."
     },
     {
+      "api": "tekes_ui_controls::composition::ToolbarGroupOverflow",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Explicit Together or Split policy over the original ToolbarControl More menu."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarHost",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Window declaration and mount adapter over one original ContentHost; owns all registered groups without a parallel interaction state machine.",
+      "type_arguments": [
+        "()"
+      ]
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarInvocation",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Once-drained delivered command carrying original source, window, group and input identity.",
+      "type_arguments": [
+        "()"
+      ]
+    },
+    {
       "api": "tekes_ui_controls::composition::ToolbarPlacement",
       "category": "component-support",
       "components": [
         "tui.toolbar"
       ],
       "reason": "Semantic region policy for original Content groups inside the receiving toolbar; status and secondary actions remain distinct."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarRegion",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Consumer-supplied local allocation and native safety insets; semantic placement is resolved within the region."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarRegionScope",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Explicit container-owned versus window-owned registration scope; stable Toolbar group state stays SDK-owned. This is a helper, not another registered component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarRegistration",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Stable original ToolbarGroup Content and command bindings mounted through the original lifecycle.",
+      "type_arguments": [
+        "()"
+      ]
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarSemanticNode",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Current semantic owner/parts and opaque stamped native targets for ToolbarHost projection."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarWindowEdge",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Window-owned Toolbar edge allocation, independent of a pane's lifecycle; positions stay local to the declared region."
     },
     {
       "api": "tekes_ui_controls::extended::Axis",
@@ -1257,18 +1762,16 @@
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
     },
     {
+      "api": "tekes_ui_controls::extended::FocusRingMetrics",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared token-derived focus stroke, gap and backing-pixel coverage metrics; no independent component lifecycle."
+    },
+    {
       "api": "tekes_ui_controls::extended::Grid",
       "category": "component",
       "components": [
         "tui.grid"
-      ],
-      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
-    },
-    {
-      "api": "tekes_ui_controls::extended::IconButton",
-      "category": "component",
-      "components": [
-        "tui.icon-button"
       ],
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
     },
@@ -1719,14 +2222,6 @@
       "category": "component",
       "components": [
         "tui.grid"
-      ],
-      "reason": "Registered component model or production View; identity and route are owned by workbench.json."
-    },
-    {
-      "api": "tekes_ui_controls::layout_view::IconButtonView",
-      "category": "component",
-      "components": [
-        "tui.icon-button"
       ],
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
     },

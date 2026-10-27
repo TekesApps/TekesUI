@@ -172,7 +172,8 @@
       "api": "tekes_ui_controls::extended::SplitView",
       "api_bindings": [
         "tekes_ui_controls::extended::SplitView",
-        "tekes_ui_controls::layout_view::SplitViewView"
+        "tekes_ui_controls::layout_view::SplitViewView",
+        "tekes_ui_controls::composition::SplitViewContent"
       ]
     },
     {
@@ -218,7 +219,8 @@
       "status": "experimental",
       "api": "tekes_ui_controls::feedback_view::SurfaceView",
       "api_bindings": [
-        "tekes_ui_controls::feedback_view::SurfaceView"
+        "tekes_ui_controls::feedback_view::SurfaceView",
+        "tekes_ui_controls::composition::PanelContent"
       ]
     },
     {
@@ -279,7 +281,7 @@
       "component": "tui.button",
       "renderer": "button",
       "slug": "component-button",
-      "docs": "Triggers one action on release inside or on keyboard activation. Disabled and loading controls cannot activate.",
+      "docs": "One content-driven Button: text, registered image, image/text, or decorative Content. Shared activation, capture, focus, loading, help and one accessible identity.",
       "keywords": "button default variants states keyboard edge-cases",
       "status": "experimental",
       "api": "tekes_ui_controls::Button",
@@ -288,19 +290,18 @@
       ]
     },
     {
-      "title": "IconButton",
+      "title": "Button · Icon content",
       "section": "Components / Actions",
       "kind": "component",
       "component": "tui.icon-button",
       "renderer": "icon-button",
       "slug": "component-icon-button",
-      "docs": "Compact icon action with required accessible name. Enter, Space, and press-release pointer activation share the Button interaction model.",
+      "docs": "Icon presentation of ordinary Button; requires an accessible name. Regular artwork, geometry, hover, capture, keyboard and help use the same shared contract. Historical route retained as a regression specimen, not a separate control.",
       "keywords": "icon-button default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
-      "api": "tekes_ui_controls::extended::IconButton",
+      "api": "tekes_ui_controls::Button",
       "api_bindings": [
-        "tekes_ui_controls::extended::IconButton",
-        "tekes_ui_controls::layout_view::IconButtonView"
+        "tekes_ui_controls::Button"
       ]
     },
     {
@@ -699,7 +700,8 @@
       "api": "tekes_ui_controls::extended::Toast",
       "api_bindings": [
         "tekes_ui_controls::extended::Toast",
-        "tekes_ui_controls::feedback_view::ToastView"
+        "tekes_ui_controls::feedback_view::ToastView",
+        "tekes_ui_controls::composition::ToastContent"
       ]
     },
     {
@@ -715,7 +717,8 @@
       "api": "tekes_ui_controls::extended::Banner",
       "api_bindings": [
         "tekes_ui_controls::extended::Banner",
-        "tekes_ui_controls::feedback_view::BannerView"
+        "tekes_ui_controls::feedback_view::BannerView",
+        "tekes_ui_controls::composition::BannerContent"
       ]
     },
     {
@@ -741,7 +744,7 @@
       "component": "tui.progress",
       "renderer": "progress",
       "slug": "component-progress",
-      "docs": "Displays a bounded 0–100% value and advances by 10% per action. Indeterminate progress is not shown in this story.",
+      "docs": "Displays determinate progress from 0–100% and a static indeterminate segment. The playground advances determinate progress by 10% per action; Variants compares 0%, 45%, 100% and indeterminate.",
       "keywords": "progress default variants states keyboard edge-cases experimental story playground keyboard state matrix",
       "status": "experimental",
       "api": "tekes_ui_controls::extended::Progress",
@@ -763,7 +766,8 @@
       "api": "tekes_ui_controls::extended::EmptyState",
       "api_bindings": [
         "tekes_ui_controls::extended::EmptyState",
-        "tekes_ui_controls::feedback_view::EmptyStateView"
+        "tekes_ui_controls::feedback_view::EmptyStateView",
+        "tekes_ui_controls::composition::EmptyStateContent"
       ]
     },
     {
@@ -773,12 +777,13 @@
       "component": "tui.skeleton",
       "renderer": "skeleton",
       "slug": "component-skeleton",
-      "docs": "A static loading placeholder with semantic surface tokens; no uncontrolled shimmer.",
+      "docs": "A static loading placeholder using shared Surface semantics; public SkeletonContent mounts the original View without adding a ticker or intrinsic size.",
       "keywords": "",
       "status": "experimental",
       "api": "tekes_ui_controls::feedback_view::SkeletonView",
       "api_bindings": [
-        "tekes_ui_controls::feedback_view::SkeletonView"
+        "tekes_ui_controls::feedback_view::SkeletonView",
+        "tekes_ui_controls::composition::SkeletonContent"
       ]
     },
     {

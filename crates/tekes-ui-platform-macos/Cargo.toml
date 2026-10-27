@@ -10,13 +10,22 @@ rust-version.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = []
+# Data-only adapter; the base platform crate remains independent of controls.
+content-accessibility = ["dep:tekes-ui-controls", "dep:tekes-ui-scene"]
+
+[dependencies]
+tekes-ui-controls = { path = "../tekes-ui-controls", optional = true }
+tekes-ui-scene = { workspace = true, optional = true }
+
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2.workspace = true
 objc2-foundation = { workspace = true, features = ["NSObject", "NSString", "NSGeometry", "NSNotification", "NSProcessInfo", "NSArray", "NSEnumerator", "NSThread", "NSRunLoop", "NSDictionary", "NSValue", "NSRange", "NSAttributedString"] }
 objc2-app-kit = { workspace = true, features = [
     "NSCursor", "NSButton", "NSAttributedString", "NSTextInputClient", "NSTextInputContext", "NSPasteboard", "NSApplication", "NSResponder", "NSView", "NSWindow", "NSToolbar", "NSEvent", "NSMenu", "NSMenuItem",
     "NSTrackingArea", "NSWorkspace", "NSAppearance", "NSScreen", "NSAccessibility", "NSAccessibilityElement", "NSAccessibilityProtocols", "NSAccessibilityConstants", "NSControl",
-    "NSGraphics", "NSRunningApplication", "NSCell", "NSGraphicsContext", "objc2-quartz-core", "objc2-core-foundation",
+    "NSAnimationContext", "NSGraphics", "NSRunningApplication", "NSCell", "NSGraphicsContext", "objc2-quartz-core", "objc2-core-foundation",
 ] }
 objc2-quartz-core = { workspace = true, features = ["CALayer", "CAMetalLayer", "CADisplayLink", "CAMetalDisplayLink", "CAFrameRateRange", "CABase", "objc2-core-foundation", "objc2-core-graphics", "objc2-metal"] }
 block2 = "0.6.2"
@@ -33,6 +42,8 @@ objc2-core-graphics = { workspace = true, features = ["CGColor", "CGEvent", "CGE
 
 # Native oracle is an example-only measurement tool, never a Gallery control.
 [dev-dependencies]
+tekes-ui-tokens.workspace = true
+tekes-ui-text.workspace = true
 tekes-ui-controls = { path = "../tekes-ui-controls" }
 tekes-ui-scene.workspace = true
 serde_json.workspace = true
@@ -47,4 +58,8 @@ harness = false
 
 [[test]]
 name = "titlebar_native"
+harness = false
+
+[[test]]
+name = "exclusive_native"
 harness = false

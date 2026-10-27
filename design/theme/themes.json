@@ -1,0 +1,144 @@
+[
+  {
+    "brand_config": "design/brand/config.json",
+    "id": "default",
+    "schema_version": "2.0.0",
+    "version": "1.0.0",
+    "inputs": {
+      "contract_version": "1.0.0",
+      "shared_contract_ref": "design/system.json#/theme_system/theme_input_contract",
+      "overrides": {
+        "neutral_base": {},
+        "status_base": {}
+      }
+    }
+  },
+  {
+    "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
+    "id": "blue",
+    "schema_version": "2.0.0",
+    "version": "1.0.0",
+    "inputs": {
+      "contract_version": "1.0.0",
+      "shared_contract_ref": "design/system.json#/theme_system/theme_input_contract",
+      "overrides": {
+        "neutral_base": {},
+        "status_base": {}
+      }
+    }
+  },
+  {
+    "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json",
+    "id": "clay",
+    "schema_version": "2.0.0",
+    "version": "1.0.0",
+    "inputs": {
+      "contract_version": "1.0.0",
+      "shared_contract_ref": "design/system.json#/theme_system/theme_input_contract",
+      "overrides": {
+        "neutral_base": {},
+        "status_base": {}
+      }
+    }
+  },
+  {
+    "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
+    "id": "blue-inputs",
+    "schema_version": "2.0.0",
+    "version": "1.0.1",
+    "inputs": {
+      "contract_version": "1.0.0",
+      "shared_contract_ref": "design/system.json#/theme_system/theme_input_contract",
+      "overrides": {
+        "neutral_base": {
+          "p-surface-0": {
+            "light": "#B6B6B6",
+            "dark": "#0B0B0A",
+            "light-ic": "#F4F4F1",
+            "dark-ic": "#000000"
+          },
+          "p-primary-text": {
+            "light": "#181818",
+            "dark": "#E7E7E7",
+            "light-ic": "#111111",
+            "dark-ic": "#EEEEEE"
+          },
+          "p-secondary-text": {
+            "light": "#111111",
+            "dark": "#A3A3A3",
+            "light-ic": "#2F2D29",
+            "dark-ic": "#F4EEE2"
+          },
+          "p-tertiary-text": {
+            "light": "#111111",
+            "dark": "#B4B4B0",
+            "light-ic": "#37352F",
+            "dark-ic": "#F4EEE2"
+          },
+          "p-disabled-text": {
+            "light": "#333333",
+            "dark": "#807A70",
+            "light-ic": "#767066",
+            "dark-ic": "#A09A90"
+          },
+          "p-border": {
+            "light": "#444444",
+            "dark": "#A3A39E",
+            "light-ic": "#4E4A41",
+            "dark-ic": "#C8C0B4"
+          }
+        },
+        "status_base": {
+          "p-status-info": {
+            "light": "#111111",
+            "dark": "#A8D1FF",
+            "light-ic": "#143F6B",
+            "dark-ic": "#D1E7FF"
+          },
+          "p-status-failed": {
+            "light": "#111111",
+            "dark": "#FFB1B1",
+            "light-ic": "#7D1421",
+            "dark-ic": "#FFD0D4"
+          },
+          "p-status-running": {
+            "light": "#111111",
+            "dark": "#F5BE74",
+            "light-ic": "#663400",
+            "dark-ic": "#FFE1B8"
+          },
+          "p-status-succeeded": {
+            "light": "#111111",
+            "dark": "#96D9AC",
+            "light-ic": "#124C2B",
+            "dark-ic": "#BDFFD2"
+          },
+          "p-status-solid-foreground": {
+            "light": "#FFFFFF",
+            "dark": "#000000",
+            "light-ic": "#FFFFFF",
+            "dark-ic": "#000000"
+          },
+          "p-warning": {
+            "light": "#FFCC00",
+            "dark": "#E4B751",
+            "light-ic": "#F0C442",
+            "dark-ic": "#FFD65A"
+          },
+          "p-warning-foreground": {
+            "light": "#111111",
+            "dark": "#FFA85C",
+            "light-ic": "#762B00",
+            "dark-ic": "#FFD29B"
+          },
+          "p-warning-text": {
+            "light": "#111111",
+            "dark": "#000000",
+            "light-ic": "#000000",
+            "dark-ic": "#000000"
+          }
+        }
+      }
+    }
+  }
+]

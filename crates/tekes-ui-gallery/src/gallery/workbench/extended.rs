@@ -2,7 +2,9 @@
 //!
 //! The story owns deterministic fixtures and scene placement. Interaction semantics
 //! are delegated to `tekes_ui_controls::extended` models.
+mod button_specimen;
 mod collections_adapter;
+use button_specimen::ButtonSpecimen;
 mod feedback_adapter;
 pub(super) mod navigation_states;
 use super::super::pages::icons::GalleryIconRenderer;
@@ -10,11 +12,11 @@ use super::{Entry, PageCtx, StoryState, event_log, label, quiet_action};
 use collections_adapter::CollectionsViews;
 use feedback_adapter::FeedbackViews;
 use tekes_ui_controls::{
-    BarChart, Button, ButtonSize, ButtonTextRenderer, ChartDatum, ControlKey, ControlState,
+    BarChart, ButtonModel, ButtonSize, ButtonTextRenderer, ChartDatum, ControlKey, ControlState,
     RadioGroupView, SelectionEvent, SliderView, SwitchView, extended as controls,
     layout_view::{
-        BreadcrumbView, ComboBoxView, CommandPaletteView, DisclosureView, GridView, IconButtonView,
-        LinkView, SegmentedControlView, SeparatorView, SplitViewView, StackView,
+        BreadcrumbView, ComboBoxView, CommandPaletteView, DisclosureView, GridView, LinkView,
+        SegmentedControlView, SeparatorView, SplitViewView, StackView,
     },
     paint,
 };
@@ -71,12 +73,12 @@ fn matrix_control_height(renderer: &str, text: &mut impl ButtonTextRenderer, wid
             (label_height + 2. * vertical)
                 .max(proposal::metric("size", "size-action-button").unwrap_or(40.))
         }
-        "icon-button" => IconButtonView::measure(false).height,
+        "icon-button" => ButtonSpecimen::measure(text).height,
         "slider" => 36.0_f32.max(proposal::metric("size", "size-action-button").unwrap_or(40.)),
         "segmented-control" => ["General", "Advanced", "Security"]
             .into_iter()
             .map(|label| {
-                Button::measure(
+                ButtonModel::measure(
                     text,
                     label,
                     width / 3.0,
@@ -260,7 +262,7 @@ pub(super) struct ExtendedStory {
     pub separator_view: SeparatorView,
     pub split_view: SplitViewView,
     pub disclosure_view: DisclosureView,
-    pub icon_button_view: IconButtonView,
+    pub icon_button_view: ButtonSpecimen,
     pub link_view: LinkView,
     pub segmented_view: SegmentedControlView,
     pub breadcrumb_view: BreadcrumbView,
@@ -272,7 +274,6 @@ pub(super) struct ExtendedStory {
     pub split: controls::SplitView,
     pub split_bounds: Rect,
     pub pointer_dragging: Option<usize>,
-    pub icon_button: controls::IconButton,
     pub link: controls::Link,
     pub slider: controls::Slider,
     pub slider_view: SliderView,
@@ -325,7 +326,7 @@ impl Default for ExtendedStory {
             separator_view: SeparatorView::default(),
             split_view: SplitViewView::new(controls::Axis::Horizontal),
             disclosure_view: DisclosureView::default(),
-            icon_button_view: IconButtonView::default(),
+            icon_button_view: ButtonSpecimen::default(),
             link_view: LinkView::default(),
             segmented_view: SegmentedControlView::new(3),
             breadcrumb_view: BreadcrumbView::default(),
@@ -337,7 +338,6 @@ impl Default for ExtendedStory {
             split: controls::SplitView::new(0.5),
             split_bounds: Rect::default(),
             pointer_dragging: None,
-            icon_button: controls::IconButton::new("Create item").expect("accessible name"),
             link: controls::Link::default(),
             slider: controls::Slider::new(50., 0., 100., 5.).unwrap(),
             slider_view: SliderView::new(),
@@ -473,8 +473,8 @@ impl ExtendedStory {
                     20,
                     self.icon_button_view.layout().frame,
                     !self.disabled
-                        && !self.icon_button.button.state.disabled
-                        && !self.icon_button.button.state.loading,
+                        && !self.icon_button_view.button().button.state.disabled
+                        && !self.icon_button_view.button().button.state.loading,
                     None,
                     true,
                 ),
@@ -1133,7 +1133,7 @@ impl ExtendedStory {
         // the component's 220pt preview width, while Radio/Switch rows follow
         // their own comfortable-row and first-line metrics.
         let specimen_width = match e.renderer() {
-            "icon-button" => IconButtonView::measure(false)
+            "icon-button" => ButtonSpecimen::measure(ctx.text)
                 .width
                 .min((cell_w - 12.).max(0.)),
             // A segmented control is one joined group. Keep its production
@@ -1168,10 +1168,7 @@ impl ExtendedStory {
                 specimen_width,
                 control_height,
             );
-            let palette = Palette {
-                theme: ctx.theme,
-                brand: s.brand,
-            };
+            let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
             match e.renderer() {
                 "switch" => {
                     let model = controls::Switch {
@@ -1393,25 +1390,22 @@ impl ExtendedStory {
                     );
                 }
                 "icon-button" => {
-                    let mut model =
-                        controls::IconButton::new("Create item").expect("stable accessible name");
-                    model.button.state = state;
-                    let mut view = IconButtonView::new();
+                    let mut view = ButtonSpecimen::new("Create item");
+                    view.button_mut().button.state = state;
+                    let mut probe = Scene::new();
+                    let layout = view.render(&mut probe, ctx.text, control, Some(c), palette);
                     if state.focused {
                         view.focus(state.focus_visible);
                     }
-                    let mut probe = Scene::new();
-                    let layout =
-                        view.render(&mut probe, ctx.text, &mut model, control, Some(c), palette);
                     if state.hovered {
                         view.pointer_move(layout.frame.center());
                     }
                     if state.pressed {
                         view.pointer_down(layout.frame.center());
                     }
-                    view.render(scene, ctx.text, &mut model, control, Some(c), palette);
-                    let mut icons = GalleryIconRenderer::native(ctx);
-                    view.render_icon(scene, &mut icons, "plus", Some(c), palette, 0.);
+                    view.render(scene, ctx.text, control, Some(c), palette);
+                    view.draw_icon(scene, &mut GalleryIconRenderer::native(ctx))
+                        .expect("Native Gallery IconButton must emit artwork");
                 }
                 _ => {}
             }
@@ -1442,10 +1436,7 @@ impl ExtendedStory {
                     ctx.text,
                     frame,
                     c,
-                    Palette {
-                        theme: ctx.theme,
-                        brand: s.brand,
-                    },
+                    Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
                 )
                 .unwrap();
             s.document_bottom = frame.max_y() + 12.;
@@ -1537,10 +1528,7 @@ impl ExtendedStory {
             feedback_adapter::variants(e, s, ctx, scene, c);
             return;
         }
-        let palette = Palette {
-            theme: ctx.theme,
-            brand: s.brand,
-        };
+        let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         let x = c.min_x();
         let y = c.min_y();
         let w = c.size.width.max(0.);
@@ -1711,12 +1699,9 @@ impl ExtendedStory {
                 true
             }
             ("icon-button", 20) => {
-                let changed = self.icon_button_view.activate(&mut self.icon_button);
+                let changed = self.icon_button_view.activate();
                 if changed {
-                    log(format!(
-                        "icon-button: {}",
-                        self.icon_button.accessible_name()
-                    ));
+                    log(format!("icon-button: {}", self.icon_button_view.name()));
                 }
                 changed
             }
@@ -1815,11 +1800,7 @@ impl ExtendedStory {
                 .is_some_and(|result| result.consumed);
         }
         let component_event = match renderer {
-            "icon-button" => Some(self.icon_button_view.key_event(
-                key,
-                down,
-                &mut self.icon_button,
-            )),
+            "icon-button" => Some(self.icon_button_view.key_event(key, down)),
             "link" => Some(self.link_view.key(key, down, &mut self.link)),
             "disclosure" => Some(
                 self.disclosure_view
@@ -1847,7 +1828,7 @@ impl ExtendedStory {
                     "disclosure" => format!("disclosure: {}", self.disclosure.open),
                     "segmented-control" => format!("segment: {}", self.segmented.selected),
                     "link" => "link: activated".to_owned(),
-                    "icon-button" => format!("icon-button: {}", self.icon_button.accessible_name()),
+                    "icon-button" => format!("icon-button: {}", self.icon_button_view.name()),
                     _ => format!("{renderer}: keyboard state changed"),
                 };
                 log(message);
@@ -1856,7 +1837,7 @@ impl ExtendedStory {
         }
         if !down {
             return match renderer {
-                "icon-button" => self.icon_button_view.key(key, false, &mut self.icon_button),
+                "icon-button" => self.icon_button_view.key(key, false),
                 "link" => self.link_view.key(key, false, &mut self.link).consumed,
                 "disclosure" => self.disclosure_view.key(key, false, &mut self.disclosure),
                 "segmented-control" => self.segmented_view.key(key, false, &mut self.segmented),
@@ -1938,7 +1919,7 @@ impl ExtendedStory {
             "link" if key == ControlKey::Enter => {
                 self.link_view.key(key, true, &mut self.link).consumed
             }
-            "icon-button" => self.icon_button_view.key(key, true, &mut self.icon_button),
+            "icon-button" => self.icon_button_view.key(key, true),
             "disclosure" if matches!(key, ControlKey::Enter | ControlKey::Space) => {
                 self.disclosure_view.key(key, true, &mut self.disclosure)
             }
@@ -2012,10 +1993,7 @@ impl ExtendedStory {
         let bx = body.min_x();
         let by = body.min_y();
         let bw = body.size.width;
-        let palette = Palette {
-            theme: ctx.theme,
-            brand: s.brand,
-        };
+        let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
         if self.disabled && self.pointer_dragging.is_some() {
             self.cancel_pointer();
         }
@@ -2060,7 +2038,7 @@ impl ExtendedStory {
         } else {
             self.radio_view.blur();
         }
-        self.icon_button.button.state.disabled = self.disabled;
+        self.icon_button_view.button_mut().button.state.disabled = self.disabled;
         self.link.button.state.disabled = self.disabled;
         self.segmented_view.set_disabled(self.disabled);
         self.breadcrumb_view.set_disabled(self.disabled);
@@ -2337,9 +2315,9 @@ impl ExtendedStory {
                 }
                 "icon-button" | "link" => {
                     let is_link = e.renderer() == "link";
-                    self.icon_button.button.state.disabled = self.disabled;
+                    self.icon_button_view.button_mut().button.state.disabled = self.disabled;
                     self.link.button.state.disabled = self.disabled;
-                    let natural = IconButtonView::measure(false);
+                    let natural = ButtonSpecimen::measure(ctx.text);
                     let r = Rect::new(
                         bx,
                         by + 18.,
@@ -2359,34 +2337,26 @@ impl ExtendedStory {
                             proposal::TextRole::UiBody,
                         )
                     } else {
-                        self.icon_button_view.render(
+                        let component = self.icon_button_view.render(
                             scene,
                             ctx.text,
-                            &mut self.icon_button,
                             r,
                             Some(control_clip),
                             palette,
-                        )
+                        );
+                        self.icon_button_view
+                            .draw_icon(scene, &mut GalleryIconRenderer::native(ctx))
+                            .expect("Native Gallery IconButton must emit artwork");
+                        component
                     };
                     let r = component.frame;
                     if let Some(hit) = component.visible {
                         s.hits.push((20, hit));
                     }
-                    if !is_link {
-                        let mut renderer = GalleryIconRenderer::native(ctx);
-                        self.icon_button_view.render_icon(
-                            scene,
-                            &mut renderer,
-                            "plus",
-                            Some(control_clip),
-                            palette,
-                            0.,
-                        );
-                    }
                     let help = if is_link {
                         "Activates with Enter. Space is not a link activation key.".to_owned()
                     } else {
-                        format!("Accessible name: {}", self.icon_button.accessible_name())
+                        format!("Accessible name: {}", self.icon_button_view.name())
                     };
                     wrapped_caption(ctx, scene, bx, r.max_y() + 12., bw, &help);
                 }
@@ -2562,7 +2532,7 @@ impl ExtendedStory {
                 "command-palette" => {
                     self.command.combo.disabled = self.disabled;
                     let trigger_width = bw.min(200.);
-                    let trigger_height = Button::measure(
+                    let trigger_height = ButtonModel::measure(
                         ctx.text,
                         "Open command palette",
                         trigger_width,
@@ -2939,15 +2909,9 @@ impl ExtendedStory {
                 true
             }
             ("icon-button", Some(20)) => {
-                let activated = self
-                    .icon_button_view
-                    .pointer_up(point, &mut self.icon_button)
-                    && hit == Some(20);
+                let activated = self.icon_button_view.pointer_up(point) && hit == Some(20);
                 if activated {
-                    log(format!(
-                        "icon-button: {}",
-                        self.icon_button.accessible_name()
-                    ));
+                    log(format!("icon-button: {}", self.icon_button_view.name()));
                 }
                 activated
             }
@@ -3010,6 +2974,53 @@ mod tests {
         workbench.build_clipped(index, &mut ctx, content, clip, &mut Scene::new());
     }
 
+    #[test]
+    fn real_link_state_matrix_repaints_semantic_inks_when_theme_changes() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::Theme;
+
+        let index = index("link");
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut workbench = Workbench::default();
+        workbench.select_route(index, &format!("{}/states", entries()[index].slug()));
+        let mut text = TextEngine::new();
+        let mut static_text = StaticText::new(None);
+        let mut seen_by_theme = Vec::new();
+
+        for theme in Theme::ALL {
+            text.begin_frame();
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            let mut scene = Scene::new();
+            workbench.build_clipped(index, &mut ctx, content, content, &mut scene);
+            let inks: Vec<_> = scene
+                .primitives()
+                .iter()
+                .filter_map(|primitive| match primitive {
+                    Primitive::Glyphs(run) => Some(run.color),
+                    _ => None,
+                })
+                .collect();
+            let palette = Palette::from(theme);
+            for role in [
+                "c-link-foreground",
+                "c-link-hover",
+                "c-link-pressed",
+                "disabled-text",
+            ] {
+                let ink = palette.color(role).expect("generated Link semantic color");
+                assert!(
+                    inks.contains(&ink),
+                    "real Link state matrix must draw {role} under {theme:?}"
+                );
+            }
+            seen_by_theme.push(inks);
+        }
+        assert_eq!(seen_by_theme.len(), Theme::ALL.len());
+    }
     #[test]
     fn navigation_link_space_never_falls_back_to_gallery_button_activation() {
         for renderer in ["link", "breadcrumb"] {
@@ -3076,11 +3087,11 @@ mod tests {
         let story = &workbench.state(index).extended;
         assert_eq!(
             story.icon_button_view.layout().frame.size,
-            IconButtonView::measure(false)
+            ButtonSpecimen::measure(&mut text)
         );
         let side = proposal::metric("size", "size-icon-standard").unwrap();
         assert_eq!(
-            story.icon_button_view.icon_layout().artboard.size,
+            story.icon_button_view.icon_frame().size,
             tekes_ui_scene::Size::new(side, side)
         );
     }
@@ -3229,7 +3240,7 @@ mod tests {
                             "segmented-control" => ["General", "Advanced", "Security"]
                                 .into_iter()
                                 .map(|label| {
-                                    Button::measure(
+                                    ButtonModel::measure(
                                         ctx.text,
                                         label,
                                         specimen_width / 3.,
@@ -3877,7 +3888,7 @@ mod tests {
                         wrong += crate::gallery::quality_effects::record_panel_host_scale(
                             &scene,
                             &mut text,
-                            Palette { theme, brand },
+                            Palette::new(theme, brand).expect("registered Gallery brand"),
                             &name,
                             gpu.as_mut(),
                         );

@@ -40,11 +40,11 @@ cargo run --locked -p tekes-ui-gallery
 - [design/README.md](design/README.md)：24 张基线、来源与更新规则
 
 - [docs/charter.md](docs/charter.md)：定位、原则、crate 分层、平台边界
+- [docs/platform-boundary.md](docs/platform-boundary.md)：本地 main 明确代码基线的实际职责/依赖、目标差距、待确认架构决定及后续 Issue 队列；F0 平台记录单列为历史
 - [docs/roadmap.md](docs/roadmap.md)：F0 到 F7 各阶段的范围、对照对象与通过标准
 - [docs/comparison-method.md](docs/comparison-method.md)：与参照实现对比的方法与容差
 - [docs/known-differences.md](docs/known-differences.md)：与参照实现的已知差异
 - [docs/dependencies.md](docs/dependencies.md)：外部依赖版本与许可证复核
-- [docs/platform-boundary.md](docs/platform-boundary.md)：引擎与 mac 平台层的接口、帧节奏、窗口摆放
 - [docs/gallery.md](docs/gallery.md)：Gallery 的布局、页面、菜单与快照
 - [docs/handoffs/](docs/handoffs/)：各阶段交接与测量记录
 - [docs/design/icons-and-tokens-brief.md](docs/design/icons-and-tokens-brief.md)：图标与设计 token 的调研任务书

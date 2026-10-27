@@ -89,7 +89,7 @@ fn popover_shell_and_owned_subtree_have_separate_actual_token_observations() {
                         reduced: state == "reduced-open",
                     };
                     let frame = Rect::new(0., 0., width, 640.);
-                    let palette = tekes_ui_tokens::Palette { theme, brand };
+                    let palette = tekes_ui_tokens::Palette::new(theme, brand).expect("registered Gallery brand");
                     fixture
                         .host
                         .render(&mut Scene::new(), &mut text, frame, frame, palette)

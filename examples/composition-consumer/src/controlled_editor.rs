@@ -50,11 +50,11 @@ impl ControlledEditorFixture {
         );
         let children = vec![
             Content::new(EDITOR, field),
-            Content::new(CLEAR, ButtonContent::new("清空事务")),
-            Content::new(CAPTURE, ButtonContent::new("捕获清空")),
-            Content::new(APPLY, ButtonContent::new("应用捕获")),
-            Content::new(SWITCH, ButtonContent::new("切换文档")),
-            Content::new(PREFIX, ButtonContent::new("前插并映射选区")),
+            Content::new(CLEAR, Button::new("清空事务")),
+            Content::new(CAPTURE, Button::new("捕获清空")),
+            Content::new(APPLY, Button::new("应用捕获")),
+            Content::new(SWITCH, Button::new("切换文档")),
+            Content::new(PREFIX, Button::new("前插并映射选区")),
             Content::new(STATUS, TextContent::new("")),
         ];
         let host = ContentHost::new(Content::new(
@@ -162,7 +162,7 @@ impl ControlledEditorFixture {
             self.host
                 .get(id)
                 .unwrap()
-                .component::<ButtonContent>()
+                .component::<Button>()
                 .unwrap()
                 .activations
         });

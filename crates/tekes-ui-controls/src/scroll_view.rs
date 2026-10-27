@@ -2,7 +2,7 @@ use crate::ScrollGeometry;
 use tekes_ui_scene::{Point, Rect, Size};
 use tekes_ui_tokens::proposal;
 include!(concat!(env!("OUT_DIR"), "/scroll_tokens.rs"));
-mod reveal;
+pub(crate) mod reveal;
 pub use reveal::{
     ScrollRevealError, ScrollRevealOptions, ScrollRevealPlacement, ScrollRevealResult,
 };

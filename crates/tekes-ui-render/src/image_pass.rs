@@ -77,7 +77,9 @@ impl ImagePass {
     pub fn new(device: &wgpu::Device, globals_layout: &wgpu::BindGroupLayout) -> ImagePass {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("tekes image shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("image.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                concat!(include_str!("clip.wgsl"), "\n", include_str!("image.wgsl")).into(),
+            ),
         });
         let image_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("tekes image layout"),

@@ -73,13 +73,13 @@ pub fn build() -> ContentHost {
         (DISABLED, "Disabled row", ButtonActivationPhase::Press),
     ] {
         let mut action =
-            CompoundButton::new(name, Content::new(ComponentId(id.0 + 100), Tick)).unwrap();
-        action.action.button.frame_policy = ButtonFramePolicy::Exact;
-        action.action.pointer_activation_phase = phase;
-        action.action.button.state.disabled = id == DISABLED;
+            Button::new(Content::new(ComponentId(id.0 + 100), Tick)).with_accessible_name(name);
+        action.button.frame_policy = ButtonFramePolicy::Exact;
+        action.pointer_activation_phase = phase;
+        action.button.state.disabled = id == DISABLED;
         children.push(Content::new(id, action));
     }
-    children.push(Content::new(NORMAL, ButtonContent::new("Ordinary action")));
+    children.push(Content::new(NORMAL, Button::new("Ordinary action")));
     let mut host = ContentHost::new(Content::new(ROOT, Rows { children })).unwrap();
     host.set_action_events(true);
     host

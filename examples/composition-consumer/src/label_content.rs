@@ -13,14 +13,11 @@ pub fn build() -> Result<ContentHost, CompositionError> {
     let options = LabelOptions::single_line(LabelOverflow::TailEllipsis);
     let children = vec![
         Content::new(ComponentId(9901), TextContent::new(SOURCE)).with_label_layout(options)?,
-        Content::new(ACTION, ButtonContent::new(SOURCE)).with_label_layout(options)?,
+        Content::new(ACTION, Button::new(SOURCE)).with_label_layout(options)?,
         Content::new(
             ComponentId(9903),
-            CompoundButton::new(
-                SOURCE,
-                Content::new(ComponentId(9904), TextContent::new(SOURCE))
-                    .with_label_layout(options)?,
-            )?,
+            Button::new(Content::new(ComponentId(9904), TextContent::new(SOURCE))
+                    .with_label_layout(options)?).with_accessible_name(SOURCE),
         ),
     ];
     ContentHost::new(Content::new(
