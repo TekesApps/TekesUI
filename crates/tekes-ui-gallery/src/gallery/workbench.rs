@@ -10361,6 +10361,245 @@ mod interaction_tests {
     }
 
     #[test]
+    fn text_area_gallery_retained_themes_preserve_multiline_selection_scroll_and_actual_ink() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+        fn assert_input(scene: &Scene, frame: Rect, palette: Palette, backing: f32) -> usize {
+            let (index, ground) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == frame => Some((i, *q)),
+                    _ => None,
+                })
+                .expect("actual original TextArea input ground");
+            assert_eq!(ground.fill, palette.color("transcript-input").unwrap());
+            assert_eq!(
+                ground.corner_radii,
+                tekes_ui_scene::CornerRadii::uniform(
+                    proposal::metric("radius", "radius-input").unwrap()
+                )
+            );
+            assert_eq!(
+                ground.border_color,
+                palette
+                    .color(proposal::control_boundary("required-input", palette.theme).unwrap())
+                    .unwrap()
+            );
+            let inks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let a = g.glyph;
+                            frame
+                                .intersection(&Rect::new(
+                                    g.origin.x + a.left as f32 / backing,
+                                    g.origin.y + a.top as f32 / backing,
+                                    a.width as f32 / backing,
+                                    a.height as f32 / backing,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "real CoreText multiline glyphs after own input ground"
+            );
+            let first_glyph = scene.primitives()[index + 1..]
+                .iter()
+                .position(|p| matches!(p, Primitive::Glyphs(run) if !run.glyphs.is_empty()))
+                .unwrap()
+                + index
+                + 1;
+            let overlays: Vec<_> = scene.primitives()[index + 1..first_glyph]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a > 0. && q.rect.intersection(&frame).is_some() =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .collect();
+            for overlay in &overlays {
+                assert_eq!(*overlay, palette.color("text-selection").unwrap());
+            }
+            let primary = palette.color("primary-text").unwrap();
+            let selected = palette.color("selected-text").unwrap();
+            let minimum = if palette.theme.is_increased() {
+                7.
+            } else {
+                4.5
+            };
+            assert!(inks.contains(&primary));
+            for ink in inks {
+                assert!(
+                    ink == primary || ink == selected,
+                    "actual multiline ink uses its declared role"
+                );
+                if ink == primary {
+                    assert!(
+                        contrast(ink, ground.fill) >= minimum,
+                        "actual ordinary text/input ground contrast"
+                    );
+                }
+                if ink == selected {
+                    // Equal role colors do not establish selection visibility. Check both grounds when visible.
+                    assert!(
+                        ink == primary || !overlays.is_empty(),
+                        "distinct selected ink requires visible selection paint"
+                    );
+                    for overlay in &overlays {
+                        let adjacent = Rgba::new(
+                            overlay.r * overlay.a + ground.fill.r * (1. - overlay.a),
+                            overlay.g * overlay.a + ground.fill.g * (1. - overlay.a),
+                            overlay.b * overlay.a + ground.fill.b * (1. - overlay.a),
+                            1.,
+                        );
+                        assert!(
+                            contrast(ink, adjacent) >= minimum,
+                            "actual selected text/composited own ground contrast"
+                        );
+                    }
+                }
+            }
+            overlays.len()
+        }
+        fn has_ring(scene: &Scene, frame: Rect, palette: Palette) -> bool {
+            scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+                && q.rect.center()==frame.center() && q.border_color==palette.color("border-focused").unwrap()))
+        }
+
+        fn assert_thumb(scene: &Scene, frame: Rect, palette: Palette) -> Rect {
+            let ground_index = scene
+                .primitives()
+                .iter()
+                .rposition(|p| matches!(p, Primitive::Quad(q) if q.rect == frame))
+                .expect("own multiline input ground");
+            let thumb = scene.primitives()[ground_index + 1..]
+                .iter()
+                .rev()
+                .find_map(|p| match p {
+                    Primitive::Quad(q)
+                        if (q.rect.size.width - proposal::SCROLLBAR_WIDTH).abs() < 0.001
+                            && (q.rect.min_x()
+                                - (frame.max_x()
+                                    - proposal::SCROLLBAR_WIDTH
+                                    - proposal::SCROLLBAR_INSET))
+                                .abs()
+                                < 0.001
+                            && q.rect.min_y() >= frame.min_y()
+                            && q.rect.max_y() <= frame.max_y() =>
+                    {
+                        Some(*q)
+                    }
+                    _ => None,
+                })
+                .expect("actual multiline viewport scrollbar thumb");
+            assert_eq!(thumb.fill, palette.color("secondary-text").unwrap());
+            assert!(contrast(thumb.fill, palette.color("transcript-input").unwrap()) >= 3.);
+            thumb.rect
+        }
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 1000.);
+        gallery.set_system_theme(Theme::LIGHT);
+        assert!(gallery.open_route("component-text-area/playground"));
+        let i = index("area");
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        let frame = gallery.workbench.state(i).input.frame_at(0).unwrap();
+        assert_input(&scene, frame, Theme::LIGHT.into(), gallery.text.scale());
+        assert!(!has_ring(&scene, frame, Theme::LIGHT.into()));
+        let source = (0..24)
+            .map(|i| format!("Area line {i}: original multiline input 中文 remains editable.\n"))
+            .collect::<String>();
+        gallery.handle_input(&mouse(frame.center(), true));
+        gallery.handle_input(&mouse(frame.center(), false));
+        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommit {
+            text: source.clone(),
+            replacement: None,
+        });
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&Event::TextCommand("moveToBeginningOfDocument:".into()));
+        for _ in 0..4 {
+            gallery.handle_input(&Event::TextCommand("moveRightAndModifySelection:".into()));
+        }
+        gallery.build_scene(&mut Scene::new());
+        assert!(gallery.workbench.state(i).input.scroll_metrics().0 > 96.);
+        gallery.workbench.state(i).input.scroll_to(96.);
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        let native = gallery.text_input_state().unwrap();
+        assert_eq!(native.selection, 0..4);
+        assert_eq!(native.text, source);
+        assert!(!native.read_only);
+        let caret_origin = native.caret_origin;
+        let metrics = gallery.workbench.state(i).input.scroll_metrics();
+        let thumb = assert_thumb(&scene, frame, Theme::LIGHT.into());
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            scene.clear();
+            gallery.build_scene(&mut scene);
+            assert_eq!(gallery.theme(), theme);
+            assert_eq!(gallery.workbench.state(i).input.frame_at(0), Some(frame));
+            assert_eq!(gallery.workbench.state(i).input.query(), source);
+            assert_eq!(gallery.workbench.state(i).input.scroll_metrics(), metrics);
+            let native = gallery.text_input_state().unwrap();
+            assert_eq!(native.text, source);
+            assert_eq!(native.selection, 0..4);
+            assert_eq!(native.caret_origin, caret_origin);
+            assert_input(&scene, frame, theme.into(), gallery.text.scale());
+            assert_eq!(assert_thumb(&scene, frame, theme.into()), thumb);
+            assert!(has_ring(&scene, frame, theme.into()));
+        }
+
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&mouse(frame.center(), true));
+        gallery.handle_input(&mouse(frame.center(), false));
+        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommit {
+            text: "Edited\nnotes".into(),
+            replacement: None,
+        });
+        gallery.handle_input(&Event::TextCommand("insertNewline:".into()));
+        gallery.build_scene(&mut Scene::new());
+        assert_eq!(gallery.workbench.state(i).input.query(), "Edited\nnotes\n");
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_input(
+            &scene,
+            frame,
+            Theme::DARK_INCREASED.into(),
+            gallery.text.scale(),
+        );
+    }
+
+    #[test]
     fn multiline_text_area_reuses_its_wrapped_layout_across_builds() {
         let mut workbench = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
