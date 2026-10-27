@@ -2985,7 +2985,47 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "6de619d5f3cc5730f383ace379dde30384055b30",
+        "scope": "Actual public DataTableView retained themes/order/original row IDs/availability/text and real Gallery sort/readonly-cell semantics; tests only",
+        "claims": [
+          "Same public retained DataTableView/model through Theme::ALL preserves geometry, selection/original row identity and caller-owned order with own header/cell contrast4.5/7",
+          "Necessary hover/header or row focus/disabled/re-enable/navigation/sort/activation differences pass without changing original contracts",
+          "Actual Gallery Table/Column/Header sort/Row display index/readonly Cell value and parent semantics remain coherent after sort while selected original ID stays stable; strict passed"
+        ],
+        "source_identity": {
+          "scope": "Selected actual table/adapter/witness sources, not full dependency proof",
+          "sha256": {
+            "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "ab7fd37894079c213053c7f084a16eab2c515b638659be0da4688bb5597a217b",
+            "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "78618232299c5a7f994e159d5b6f80a90d2cbcb22fa817c8ea1c3e691d4fa231",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "eaeb3d1d0e268401ec77c359305d5bc13f4c727471d5286530ead46e9a5180f4",
+            "examples/composition-consumer/tests/data_table_theme.rs": "4eb65e6676ec52269b1279fec17606320268488fe4724f398beed46a16b2bb2c"
+          }
+        },
+        "exceptions": [
+          "No DataTableContent exists; do not invent one",
+          "Disabled action header uses tertiary-text; readonly data remains readable primary-text",
+          "Caller owns sorted order/ordinary geometry"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+          "Markdown/CodeBlock/DiffView/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#124",
+            "component": "tui.data-table",
+            "commit": "6de619d5f3cc5730f383ace379dde30384055b30",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/data-table-main8253390-candidate/main-intake/commit-receipt.json",
+            "sha256": "e175a198cb9aeb3b4e41cef710342ed504dc8073b8c3864c5f02650e0f94f0cf",
+            "scope": "Actual public/Gallery/strict results; prior generator/Row/List/Text evidence retains original identity"
+          }
+        ]
+      }
     },
     {
       "id": "tui.chart",

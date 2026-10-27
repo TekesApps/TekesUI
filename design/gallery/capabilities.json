@@ -48753,6 +48753,53 @@
           "disabled",
           "selected"
         ],
+        "practical_intake": {
+          "baseline_commit": "6de619d5f3cc5730f383ace379dde30384055b30",
+          "claims": [
+            "Same public retained DataTableView/model through Theme::ALL preserves geometry, selection/original row identity and caller-owned order with own header/cell contrast4.5/7",
+            "Necessary hover/header or row focus/disabled/re-enable/navigation/sort/activation differences pass without changing original contracts",
+            "Actual Gallery Table/Column/Header sort/Row display index/readonly Cell value and parent semantics remain coherent after sort while selected original ID stays stable; strict passed"
+          ],
+          "consumer_entry": {
+            "invocation": "--component tui.data-table",
+            "projection_path": "component.state_coverage.practical_intake",
+            "script": "scripts/component-context.py"
+          },
+          "evidence": [
+            {
+              "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/data-table-main8253390-candidate/main-intake/commit-receipt.json",
+              "commit": "6de619d5f3cc5730f383ace379dde30384055b30",
+              "component": "tui.data-table",
+              "issue": "#124",
+              "scope": "Actual public/Gallery/strict results; prior generator/Row/List/Text evidence retains original identity",
+              "sha256": "e175a198cb9aeb3b4e41cef710342ed504dc8073b8c3864c5f02650e0f94f0cf"
+            }
+          ],
+          "evidence_policy": "Recorded immutable receipt references; projection checks source hashes but does not re-execute or independently authenticate receipt contents.",
+          "exceptions": [
+            "No DataTableContent exists; do not invent one",
+            "Disabled action header uses tertiary-text; readonly data remains readable primary-text",
+            "Caller owns sorted order/ordinary geometry"
+          ],
+          "gaps": [
+            "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver certification",
+            "Markdown/CodeBlock/DiffView/full52"
+          ],
+          "scope": "Actual public DataTableView retained themes/order/original row IDs/availability/text and real Gallery sort/readonly-cell semantics; tests only",
+          "source_identity": {
+            "differences": {},
+            "scope": "Selected actual table/adapter/witness sources, not full dependency proof",
+            "sha256": {
+              "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
+              "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+              "crates/tekes-ui-gallery/src/gallery/workbench.rs": "eaeb3d1d0e268401ec77c359305d5bc13f4c727471d5286530ead46e9a5180f4",
+              "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "78618232299c5a7f994e159d5b6f80a90d2cbcb22fa817c8ea1c3e691d4fa231",
+              "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "ab7fd37894079c213053c7f084a16eab2c515b638659be0da4688bb5597a217b",
+              "examples/composition-consumer/tests/data_table_theme.rs": "4eb65e6676ec52269b1279fec17606320268488fe4724f398beed46a16b2bb2c"
+            }
+          },
+          "status": "accepted-source-subset-matched"
+        },
         "profile": "select",
         "profile_exceptions": {},
         "profile_source": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json",
@@ -58753,7 +58800,7 @@
     "crates/tekes-ui-tokens/src/text.rs": "5b8623327a868631e7316611c9cb11d974cdd49df91f22b27dbdad9d9c4c8fe5",
     "crates/tekes-ui-tokens/src/theme.rs": "dbf19d5d6b85dc0b4abd924ecd5fad5879da85ab8506340b3ddfbd2faef478ae",
     "design/behavior/gold7-alignment.json": "32cd76c6bace342af4db4e4fa0a898694559124bac5e9fd5cf003854846a6dff",
-    "design/gallery/component-coverage.json": "36865f878af9c808b5091ae3da1cdc75ab96125af4dfd85bdf44922b109b0152",
+    "design/gallery/component-coverage.json": "70100f443e5521e84a5fe283cd8e6534b4b28c0a424417f1c19ff4d1a5dce3f1",
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "77c60dfe5f4bc0cd1972d5d0738297d3ad03ed0ae849fdd2c1c31acf24bb276a",
@@ -58788,6 +58835,7 @@
     "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80",
     "examples/composition-consumer/tests/checkbox_theme.rs": "849080ccac69b56bdaa6f751e708f91ed93e8383143414cccbb0baa2dc2969fc",
     "examples/composition-consumer/tests/command_palette_theme.rs": "eadd793e9e828b460bebaae52fa3cd935c88095f8e408536c96617b75f19f7d2",
+    "examples/composition-consumer/tests/data_table_theme.rs": "4eb65e6676ec52269b1279fec17606320268488fe4724f398beed46a16b2bb2c",
     "examples/composition-consumer/tests/dialog_theme.rs": "6cf7b51a1c7393501f89b44551da8031712ca5054d5ada0e91e3fc2234a97953",
     "examples/composition-consumer/tests/icon_button_theme.rs": "0d9bc7273e23df0ca442cc1d9cc76999e487df144576c070f673ac31e48b0a5c",
     "examples/composition-consumer/tests/icon_theme.rs": "49b5adb26de708799a14330a8a2b8d341150ab673cb4e07626187f5f3b8f0814",
