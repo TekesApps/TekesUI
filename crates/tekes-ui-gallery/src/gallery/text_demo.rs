@@ -1379,6 +1379,130 @@ impl TextDemo {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn scroll_area_gallery_retained_themes_preserve_reading_offset_and_actual_thumb() {
+        use crate::gallery::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::Palette;
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let v = c.to_linear();
+                0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        let mut gallery = Gallery::new();
+        assert!(gallery.open_route("component-scroll-area/playground"));
+        assert!(matches!(
+            gallery.content_page(),
+            crate::gallery::Page::ScrollArea
+        ));
+        gallery.set_view_size(1440., 900.);
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        let limit = gallery.scroll_demo.surfaces[0].scroll.limit().y;
+        assert!(limit > 0.);
+        gallery.scroll_demo.scroll_to(713.25_f32.min(limit * 0.5));
+        gallery.build_scene(&mut Scene::new());
+        let offset = gallery.scroll_demo.surfaces[0].scroll.offset;
+        assert!(offset.y > 0. && offset.y < limit);
+        let mut original = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let surface = &gallery.scroll_demo.surfaces[0];
+            assert!(surface.input.read_only && !surface.input.disabled);
+            assert_eq!(surface.scroll.offset, offset);
+            assert!(surface.scroll.scrollbar_visible(true));
+            let visible = surface.visible_frame().unwrap();
+            let thumb = surface
+                .scroll
+                .thumb(
+                    true,
+                    surface.track(true),
+                    proposal::metric("size", "size-row-height").unwrap(),
+                )
+                .intersection(&visible)
+                .unwrap();
+            let geometry = (surface.outer, visible, thumb, surface.scroll.limit());
+            if let Some(original) = original {
+                assert_eq!(geometry, original);
+            } else {
+                original = Some(geometry);
+            }
+            let palette = Palette::from(theme);
+            let (background_index, background) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(index, p)| match p {
+                    Primitive::Quad(q) if q.rect == surface.outer => Some((index, q)),
+                    _ => None,
+                })
+                .expect("actual read-only TextSurface parent background");
+            let (thumb_index, painted_thumb) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(index, p)| match p {
+                    Primitive::Quad(q) if q.rect == thumb => Some((index, q)),
+                    _ => None,
+                })
+                .expect("actual visible ScrollArea fixture thumb");
+            assert_eq!(background.fill, palette.color("surface-1").unwrap());
+            assert_eq!(painted_thumb.fill, palette.color("secondary-text").unwrap());
+            assert!(
+                contrast(painted_thumb.fill, background.fill) >= 3.,
+                "{theme:?}: actual thumb/parent contrast"
+            );
+            assert!(background_index < thumb_index);
+            // Bind only the original TextSurface paint interval, not page-wide headings/buttons.
+            let own_content = &scene.primitives()[background_index + 1..thumb_index];
+            assert!(
+                own_content
+                    .iter()
+                    .any(|p| matches!(p, Primitive::PushClip(r) if *r == visible))
+            );
+            let inks: Vec<_> = own_content
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run) if !run.glyphs.is_empty() => Some(run.color),
+                    _ => None,
+                })
+                .collect();
+            assert!(!inks.is_empty(), "actual visible scrolled document glyphs");
+            for ink in inks {
+                assert_eq!(ink, palette.color("primary-text").unwrap());
+                assert!(
+                    contrast(ink, background.fill) >= if theme.is_increased() { 7. } else { 4.5 },
+                    "{theme:?}: actual reading text/parent contrast"
+                );
+            }
+            observed.push(painted_thumb.fill);
+        }
+        assert!(
+            observed.windows(2).any(|w| w[0] != w[1]),
+            "same real reading fixture switches thumb Theme without resetting offset"
+        );
+    }
+
+    #[test]
     fn scheduled_reading_updates_follow_explicit_intent_and_native_return_action() {
         let mut demo = TextDemo::scroll_only();
         let mut text = TextEngine::new();
