@@ -12183,6 +12183,181 @@ mod interaction_tests {
     }
 
     #[test]
+    fn split_view_gallery_retained_themes_preserve_drag_panes_and_keyboard_alternative() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut gallery = Gallery::new();
+        let i = index("split-view");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 1100.);
+        gallery.text_mut().set_scale(2.);
+        gallery.build_scene(&mut Scene::new());
+        let point = gallery
+            .workbench
+            .state(i)
+            .extended
+            .split_view
+            .layout()
+            .divider_hit
+            .unwrap()
+            .center();
+        gallery.handle_input(&mouse(point, true));
+        let moved = Point::new(point.x + 32., point.y);
+        gallery.handle_input(&Event::Mouse(MouseEvent {
+            position: NativePoint {
+                x: moved.x as f64,
+                y: moved.y as f64,
+            },
+            modifiers: Modifiers::NONE,
+            kind: MouseEventKind::Dragged {
+                button: MouseButton::Left,
+            },
+        }));
+        let ratio = gallery.workbench.state(i).extended.split.ratio();
+        assert!(ratio > 0.5);
+        assert_eq!(
+            gallery.workbench.state(i).extended.pointer_dragging,
+            Some(90)
+        );
+        let mut original_layout = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            assert_eq!(
+                state.extended.pointer_dragging,
+                Some(90),
+                "Theme does not cancel original Gallery drag capture"
+            );
+            assert_eq!(state.extended.split.ratio(), ratio);
+            let layout = state.extended.split_view.layout();
+            if let Some(original) = original_layout {
+                assert_eq!(layout, original);
+            } else {
+                original_layout = Some(layout);
+            }
+            let palette = Palette::new(theme, 0).unwrap();
+            let divider = layout.divider.frame();
+            let width = if theme.is_increased() {
+                proposal::metric("stroke", "stroke-rule").unwrap()
+            } else {
+                1. / gallery.text.scale()
+            };
+            let line = Rect::new(
+                divider.center().x - width * 0.5,
+                divider.min_y(),
+                width,
+                divider.size.height,
+            );
+            let ink = scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Quad(q) if q.rect == line => Some(q.fill),
+                    _ => None,
+                })
+                .expect("real Gallery split divider ink");
+            assert_eq!(ink, palette.color("separator").unwrap());
+            assert!(
+                layout
+                    .divider_hit
+                    .is_some_and(|hit| hit.contains(divider.center()))
+            );
+            // The two production pane labels immediately follow the trailing
+            // surface. Help/event-log glyphs later in the full Scene may overlap
+            // these tall allocations; their roles do not belong to the labels.
+            let pane_paint_end = scene
+                .primitives()
+                .iter()
+                .rposition(|p| matches!(p, Primitive::Quad(q) if q.rect == layout.trailing.frame()))
+                .expect("actual trailing pane paint boundary");
+            let mut pane_runs = scene
+                .primitives()
+                .iter()
+                .skip(pane_paint_end + 1)
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run) => Some(run),
+                    _ => None,
+                });
+            for (pane, title) in [
+                (layout.leading, "Master pane"),
+                (layout.trailing, "Detail pane"),
+            ] {
+                let frame = pane.frame();
+                let panel = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect == frame => Some(q),
+                        _ => None,
+                    })
+                    .expect("actual split pane surface");
+                assert_eq!(panel.fill, palette.color("surface-panel").unwrap());
+                // Fixed Latin titles fit one line in these representative slots.
+                // TextEngine::push_bounded emits one nonempty GlyphRun per line.
+                let run = pane_runs.next().expect("actual own pane label paint");
+                assert!(!run.glyphs.is_empty(), "actual {title} CoreText glyphs");
+                let slot = frame.inset(12.);
+                let scale = gallery.text.scale();
+                for positioned in &run.glyphs {
+                    let glyph = positioned.glyph;
+                    let left = (positioned.origin.x * scale).round() + glyph.left as f32;
+                    let top = (positioned.origin.y * scale).round() + glyph.top as f32;
+                    assert!(
+                        left >= (slot.min_x() * scale).round()
+                            && top >= (slot.min_y() * scale).round()
+                            && left + glyph.width as f32 <= (slot.max_x() * scale).round()
+                            && top + glyph.height as f32 <= (slot.max_y() * scale).round(),
+                        "{theme:?}: own {title} glyph pixels stay in its original label slot"
+                    );
+                }
+                assert_eq!(
+                    run.color,
+                    palette.color("primary-text").unwrap(),
+                    "{theme:?}: own {title} ink"
+                );
+            }
+            assert!(
+                pane_runs.any(|run| !run.glyphs.is_empty()),
+                "help/log glyphs remain in the complete Scene after the two pane labels"
+            );
+            observed.push(ink);
+        }
+        assert!(observed.windows(2).any(|w| w[0] != w[1]));
+        gallery.handle_input(&key(53, true));
+        assert_eq!(gallery.workbench.state(i).extended.pointer_dragging, None);
+        assert_eq!(gallery.workbench.state(i).extended.split.ratio(), 0.5);
+        gallery.handle_input(&key(124, true));
+        assert!(
+            gallery.workbench.state(i).extended.split.ratio() > 0.5,
+            "original keyboard alternative still resizes"
+        );
+        gallery.handle_input(&key(36, true));
+        assert_eq!(
+            gallery.workbench.state(i).extended.split.ratio(),
+            0.5,
+            "Enter resets without a second drag"
+        );
+    }
+
+    #[test]
     fn select_real_feedback_paints_before_its_popup_surface() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
