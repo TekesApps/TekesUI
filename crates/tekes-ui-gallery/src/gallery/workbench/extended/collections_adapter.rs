@@ -1924,6 +1924,159 @@ mod tests {
     }
 
     #[test]
+    fn code_block_gallery_retained_themes_keep_source_own_ground_and_passive_input() {
+        use tekes_ui_scene::{CornerRadii, Primitive};
+        use tekes_ui_tokens::{Theme, proposal};
+        let entry = crate::gallery::workbench::entries()
+            .iter()
+            .find(|entry| entry.renderer() == "code-block")
+            .expect("registered CodeBlock");
+        let mut ext = ExtendedStory::default();
+        let original_source = ext.code.clone();
+        let mut state = StoryState::default();
+        let unrelated_hit = (777, Rect::new(1., 2., 3., 4.));
+        state.hits.push(unrelated_hit);
+        let mut text = TextEngine::new();
+        text.set_scale(1.);
+        text.set_motion_enabled(true);
+        text.set_motion_context(std::time::Duration::ZERO, true);
+        let body = Rect::new(24., 32., 480., 600.);
+        let mut original_layout = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            text.begin_frame();
+            let mut static_text = StaticText::new(None);
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            let palette = Palette::from(theme);
+            let mut scene = Scene::new();
+            assert!(build(
+                &mut ext, entry, &mut state, &mut ctx, &mut scene, body, body, palette
+            ));
+            assert!(scene.composition_error().is_none());
+            let layout = ext.collections_views.code.layout().clone();
+            if let Some(original) = &original_layout {
+                assert_eq!(&layout, original);
+            } else {
+                original_layout = Some(layout.clone());
+            }
+            assert_eq!(layout.blocks.len(), original_source.lines().count());
+            assert!(
+                layout
+                    .blocks
+                    .iter()
+                    .all(|block| block.visible == Some(block.frame))
+            );
+            let ground = scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Quad(q) if q.rect == layout.frame => Some(q),
+                    _ => None,
+                })
+                .expect("production CodeBlock own surface, not the explanatory footer");
+            assert_eq!(ground.fill, palette.color("code-surface").unwrap());
+            assert_eq!(
+                ground.corner_radii,
+                CornerRadii::uniform(proposal::metric("radius", "c-code-radius").unwrap())
+            );
+            assert_eq!(ground.border_color, palette.color("separator").unwrap());
+            assert_eq!(
+                ground.border_width,
+                if theme.is_increased() {
+                    proposal::metric("stroke", "stroke-rule").unwrap()
+                } else {
+                    1. / ctx.text.backing_scale()
+                }
+            );
+            for block in &layout.blocks {
+                let labels: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run)
+                            if !run.glyphs.is_empty()
+                                && run.glyphs.iter().all(|g| block.frame.contains(g.origin)) =>
+                        {
+                            Some(run)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(
+                    !labels.is_empty(),
+                    "each actual source line emits glyphs independently of the footer"
+                );
+                assert!(
+                    labels
+                        .iter()
+                        .all(|run| run.color == palette.color("primary-text").unwrap())
+                );
+                assert_eq!((labels[0].color.a, ground.fill.a), (1., 1.));
+                let luminance = |c: tekes_ui_tokens::Rgba| {
+                    let c = c.to_linear();
+                    0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                };
+                let (a, b) = (luminance(labels[0].color), luminance(ground.fill));
+                assert!(
+                    (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                        >= if theme.is_increased() { 7. } else { 4.5 }
+                );
+            }
+            assert!(state.document_bottom > layout.blocks.last().unwrap().frame.max_y());
+            assert_eq!(state.hits, vec![unrelated_hit]);
+            assert!(logical_focus_targets(&ext, "code-block").is_empty());
+            assert!(!accepts_key("code-block", Some(20)));
+            let mut log = Vec::new();
+            assert!(
+                key(
+                    &mut ext,
+                    "code-block",
+                    Some(20),
+                    ControlKey::Enter,
+                    true,
+                    &mut |s| log.push(s)
+                )
+                .is_none()
+            );
+            assert!(
+                pointer_move(
+                    &mut ext,
+                    "code-block",
+                    layout.frame.center(),
+                    None,
+                    &mut |s| log.push(s)
+                )
+                .is_none()
+            );
+            assert!(
+                pointer_down(
+                    &mut ext,
+                    "code-block",
+                    layout.frame.center(),
+                    None,
+                    &mut |s| log.push(s)
+                )
+                .is_none()
+            );
+            blur(&mut ext, "code-block");
+            window_active(&mut ext, "code-block", false);
+            window_active(&mut ext, "code-block", true);
+            assert!(log.is_empty());
+            assert_eq!(ext.code, original_source);
+            assert_eq!(ext.collections_views.code.layout(), &layout);
+            observed.push((ground.fill, palette.color("primary-text").unwrap()));
+        }
+        assert!(
+            observed.windows(2).any(|w| w[0] != w[1]),
+            "retained production adapter forwards Theme differences"
+        );
+    }
+
+    #[test]
     fn gallery_code_block_height_uses_its_real_narrow_large_text_slot() {
         let entry = crate::gallery::workbench::entries()
             .iter()
