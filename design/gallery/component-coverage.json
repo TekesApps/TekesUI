@@ -2022,7 +2022,45 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "08c3456b764be1589f652655d66f8f5d0dda6901",
+        "scope": "Accepted retained public Tabs and actual Gallery Theme/selection/state/text-contrast tests; no production or shared rule changes.",
+        "claims": [
+          "Same public TabsView retained across Theme::ALL, selected/rest/hover/pressed/focus/disabled and actual glyph role/contrast verified",
+          "Original release-outside cancellation, one selected item, selected Quiet hover/pressed contract and keyboard navigation preserved",
+          "Actual Gallery route retains real selected panel and selection while switching Theme, using real pointer navigation and CoreText text4.5/7 contrast",
+          "Gallery all-target strict passed; unchanged shared Button/Theme and prior Dialog evidence reused at original identity"
+        ],
+        "source_identity": {
+          "scope": "Selected model/View/consumer/Gallery source subset, not a dependency certificate; full actual run identity stays in original frozen manifests/receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/composite.rs": "8931bb75dcfe576efe58ed15021b5b3394ae4b217eed10723693080d1b4db276",
+            "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "2981ebca2d8427000af1fb30f7ea57c9d08e5ba7973c6acbca50b0c3173d6547",
+            "examples/composition-consumer/tests/tabs_theme.rs": "88d4c4178f4caa4da2dea18dea8d62a7a186691e36b07048d9a48e76b88b935e"
+          }
+        },
+        "exceptions": [
+          "Shared Quiet Button semantics and generic geometry retained",
+          "Sidebar has its own pointer scope; rest sample explicitly uses the actual Workbench background rather than claiming sidebar hover-exit behavior"
+        ],
+        "gaps": [
+          "No new dedicated external Theme/GPU/native/physicalIME/VoiceOver certification",
+          "Remaining original family/full52 practical coverage is open"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.tabs",
+            "commit": "08c3456b764be1589f652655d66f8f5d0dda6901",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/tabs-main5634d2a-candidate/main-intake/commit-receipt.json",
+            "sha256": "e5dda0aa8373f0e0f130402f1ce9b23e7dc3165e52542408514f29b983ea6dd7",
+            "scope": "Exact-main public retained Tabs and real Gallery tests, strict, failure and bounded unverified items."
+          }
+        ]
+      }
     },
     {
       "id": "tui.breadcrumb",
@@ -2093,7 +2131,47 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "0608cb64ec7382fcea72e1265ddcd7bcb446e470",
+        "scope": "Accepted retained public Breadcrumb and actual Gallery Theme/state/contrast/navigation tests; no production or shared rule changes.",
+        "claims": [
+          "Same public BreadcrumbView retained across four Theme values with actual rest/hover/pressed/focus/disabled role consumption",
+          "Real CoreText ancestor/current glyphs and actual backgrounds meet4.5 standard and7 increased contrast",
+          "Current page remains noninteractive; disabled input and original mouse/keyboard activation/cancellation contracts retained",
+          "Actual Gallery keeps path and real navigation while Theme changes; Gallery all-target strict and owned-format check passed"
+        ],
+        "source_identity": {
+          "scope": "Selected public model/View/consumer/Gallery source subset, not full dependency proof; actual full source manifests/programs remain in original run receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/layout_view.rs": "9dd10566a81e65244b55ac210fa88bc8e1e100662c4b165387a928e1505aa403",
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "examples/composition-consumer/tests/support/coretext.rs": "ea2e05d8919be042faa26909321db5df1dbc2fb6dddaa7138c28b3cca7500e71",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "7b25bc2f12a3be0d395a1ae06097afd3d93cb2ef9349a39c48114726e278105b",
+            "examples/composition-consumer/tests/breadcrumb_theme.rs": "0da781dd1b0dd19ad1b68bfc1fa399cc69a5949fe15b556202c4b1f17aa9c6b5"
+          }
+        },
+        "exceptions": [
+          "Current page intentionally uses existing disabled/tertiary-text path for nonactivation; real contrast passes, no independent current-color contract invented",
+          "Shared brand/Button results reused rather than full component brand cross product; ordinary geometry remains layout",
+          "Role endpoint test explicitly uses reduced motion and real Workbench pointer input scope; no out-of-window routing claim"
+        ],
+        "gaps": [
+          "No new dedicated external Theme/GPU/native/physicalIME/VoiceOver certification",
+          "Remaining original family/full52 practical coverage stays open"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.breadcrumb",
+            "commit": "0608cb64ec7382fcea72e1265ddcd7bcb446e470",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/breadcrumb-main5634d2a-candidate/main-intake/commit-receipt.json",
+            "sha256": "63266659f54ee1499d6169be5dc214d63f15274e83626a10ec764d19bde8c8a5",
+            "scope": "Exact-main public/Gallery tests and strict, actual glyph contrast, original input protection and bounded unverified scope."
+          }
+        ]
+      }
     },
     {
       "id": "tui.command-palette",
@@ -2804,30 +2882,34 @@
       ],
       "practical_intake": {
         "status": "accepted-bounded-evidence",
-        "baseline_commit": "71c3d219da8581311b1743474acb09c1aaf92faa",
-        "scope": "#62 accepted Surface inheritance/default/override/clear through the retained Dialog ancestor chain, with restored public retained regressions.",
+        "baseline_commit": "4658fe9253abafe5c9e80fd5abd6c38658ac5df3",
+        "scope": "Accepted main retained public Dialog and actual Gallery Theme/state/copy-contrast tests, together with prior explicitly bounded Surface inheritance; no production Theme change.",
         "claims": [
-          "ContentTheme Surface inheritance reaches retained Dialog through actual ancestor resolution.",
-          "Default, explicit override, clear, and invalid default Surface rejection were covered in the accepted batch.",
-          "Original #97 public retained/half-ULP regression tests were restored and passed in the same batch."
-        ],
-        "exceptions": [
-          "This record is limited to the 2026-10-26 retained Dialog Surface batch; older #62 Palette/ContentTheme consumption evidence retains its own identity."
-        ],
-        "gaps": [
-          "Native/VoiceOver acceptance.",
-          "ProgressContent full main acceptance.",
-          "Panel 450/18 integration.",
-          "Whole Design System or all 52 roots."
+          "Same public DialogView retained across Theme::ALL: closed/open, focus, disabled/re-enabled, Cancel and original focus restore verified",
+          "Actual Gallery trigger retains same Dialog across four Theme contexts; actual modal ground and independent title glyphs consume semantic Palette roles",
+          "Actual opaque title/background contrast meets4.5 standard and7 increased; floating radius, scrim, decorative border and focus ring follow existing rules",
+          "Gallery all-target strict passed; earlier ContentTheme Surface inheritance/default/override/clear evidence remains limited to its original accepted source"
         ],
         "source_identity": {
-          "scope": "Exact source paths and hashes from the accepted delivery receipt; generator compares them with its current repository snapshot and reports per-path differences without changing receipt identity.",
+          "scope": "Selected public/View/Gallery/test source subset for the new accepted scope; original full manifests/programs in run receipts. Earlier #62 receipts are not re-signed by this mapping.",
           "sha256": {
-            "crates/tekes-ui-controls/src/composition.rs": "1d1c57425c66e41a70147354ce236bbeef10806b2b76d1bf58a427c10f8d1040",
-            "examples/composition-consumer/tests/scene_fragment.rs": "912c2761b46cd3c32fd7c8779116dc81b0b14ee5fb752ba265edfcdd1b5e1813",
-            "examples/composition-consumer/tests/surface_dialog_inheritance.rs": "ddbc8efcceebfe6c276b01d24d5aa90ea1aa4b7303de5f8e7ce56747445045d9"
+            "crates/tekes-ui-controls/src/composite.rs": "8931bb75dcfe576efe58ed15021b5b3394ae4b217eed10723693080d1b4db276",
+            "crates/tekes-ui-controls/src/control_motion.rs": "e4ea756801ec1684f92ab1e57f5a57ec49c95aacd475a857726f1cb5bd4ad312",
+            "crates/tekes-ui-controls/src/composition.rs": "0e05d348c5a5834515c4b96224fb594fda5c3ad845f11da9dbb2dd0bede2e2f5",
+            "crates/tekes-ui-controls/src/composition/adapters.rs": "6d16b70de8d8002de347abc319892b3066a3fd4041efe6ada0a0c4d4da35af4d",
+            "examples/composition-consumer/tests/dialog_theme.rs": "6cf7b51a1c7393501f89b44551da8031712ca5054d5ada0e91e3fc2234a97953",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "daf8bc496154e379a8b6a87fc8febea24c38f22e426d4bd6f9b68aec3a0f1879"
           }
         },
+        "exceptions": [
+          "Existing Button hover/pressed state and shared generator/Palette results reused; no new distinct branch requires a component-wide cross product",
+          "Ordinary layout/indices remain geometry; default2x decorative hairline follows existing painter",
+          "Original #62 Surface receipts retain their original source/program identity and bounded scope"
+        ],
+        "gaps": [
+          "No new dedicated external Theme, GPU/pixel, native/physicalIME/VoiceOver certification",
+          "Other original product gaps remain on their own Issues; remaining family/full52 practical coverage remains open"
+        ],
         "evidence": [
           {
             "issue": "#62",
@@ -2852,6 +2934,14 @@
             "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/run-20261026T150112.663305Z/run-receipt.json",
             "sha256": "b2243e8a88fda39684aae1590c89e32740cd00ec3a385eb79d4d7878faad64f3",
             "scope": "Controls Surface, public Dialog/fragment regressions, Controls Gallery strict, and public Surface strict all passed."
+          },
+          {
+            "issue": "#123",
+            "component": "tui.dialog",
+            "commit": "4658fe9253abafe5c9e80fd5abd6c38658ac5df3",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/dialog-main45f1cf1-candidate/main-intake/commit-receipt.json",
+            "sha256": "37647330b517ed0b92420dff3df19171aadba070f6822d38bda0ed711e0250f5",
+            "scope": "Exact-main public retained Dialog Theme/state and actual Gallery title contrast; strict and explicit unverified boundary."
           }
         ]
       }

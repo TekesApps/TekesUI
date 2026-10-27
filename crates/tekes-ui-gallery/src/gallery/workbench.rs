@@ -7998,6 +7998,125 @@ mod interaction_tests {
     }
 
     #[test]
+    fn tabs_gallery_theme_switch_preserves_selected_panel_and_repaints_real_tab_text() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        assert!(gallery.open_route("component-tabs/playground"));
+        gallery.set_view_size(1440., 900.);
+        gallery.set_reduced_motion(true);
+        let i = index("tabs");
+        gallery.build_scene(&mut Scene::new());
+        let target = gallery
+            .workbench
+            .state(i)
+            .tabs_layout
+            .as_ref()
+            .unwrap()
+            .items[1]
+            .frame
+            .center();
+        gallery.handle_input(&mouse(target, true));
+        gallery.handle_input(&mouse(target, false));
+        assert_eq!(gallery.workbench.state(i).tabs_view.selected(), 1);
+        gallery.handle_input(&move_pointer(Point::new(0., 0.)));
+        // The sidebar owns (0, 0); request tab rest through the real Workbench
+        // background so the existing Tabs pointer reducer receives the move.
+        let tab_frame = gallery
+            .workbench
+            .state(i)
+            .tabs_layout
+            .as_ref()
+            .unwrap()
+            .frame;
+        gallery.handle_input(&move_pointer(Point::new(
+            tab_frame.center().x,
+            tab_frame.max_y() + 4.,
+        )));
+        gallery.build_scene(&mut Scene::new());
+        let initial = gallery.workbench.state(i).tabs_layout.clone().unwrap();
+        let mut fills = Vec::new();
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            assert_eq!(state.tabs_view.selected(), 1);
+            let layout = state.tabs_layout.as_ref().unwrap();
+            assert_eq!(
+                layout, &initial,
+                "Theme change preserves selected tab layout"
+            );
+            let selected = &layout.items[1];
+            let palette: Palette = theme.into();
+            let fill = scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Quad(q) if q.rect == selected.frame => Some(q.fill),
+                    _ => None,
+                })
+                .expect("actual Gallery selected tab background");
+            assert_eq!(fill, palette.color("row-selection").unwrap());
+            fills.push(fill);
+            let inks: Vec<_> = scene
+                .primitives()
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|positioned| {
+                            let glyph = positioned.glyph;
+                            let scale = gallery.text.scale();
+                            let bounds = Rect::new(
+                                positioned.origin.x + glyph.left as f32 / scale,
+                                positioned.origin.y + glyph.top as f32 / scale,
+                                glyph.width as f32 / scale,
+                                glyph.height as f32 / scale,
+                            );
+                            selected.content.intersection(&bounds).is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "Gallery emits selected tab CoreText glyphs"
+            );
+            for ink in inks {
+                assert_eq!(ink, palette.color("primary-text").unwrap());
+                let luminance = |c: tekes_ui_tokens::Rgba| {
+                    let c = c.to_linear();
+                    0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+                };
+                let (a, b) = (luminance(ink), luminance(fill));
+                let ratio = (a.max(b) + 0.05) / (a.min(b) + 0.05);
+                assert!(ratio >= if theme.is_increased() { 7. } else { 4.5 });
+            }
+            assert!(
+                scene.primitives().iter().any(|p| matches!(p,
+                        Primitive::Glyphs(run) if run.glyphs.iter().any(|g|
+                            g.origin.y > layout.frame.max_y() + 20.
+                            && g.origin.y < layout.frame.max_y() + 100.
+                            && g.origin.x >= layout.frame.min_x()
+                            && g.origin.x < layout.frame.max_x()))),
+                "selected settings panel remains rendered below the tabs"
+            );
+        }
+        assert_ne!(fills[0], fills[1]);
+        assert_ne!(fills[2], fills[3]);
+    }
+
+    #[test]
     fn tabs_use_one_roving_tabstop_and_pointer_release_cancels_selection() {
         let mut w = Workbench::default();
         let mut t = super::super::text::TextEngine::new();
@@ -8120,6 +8239,108 @@ mod interaction_tests {
         w.handle(i, &mouse(outside, false), &mut t);
         assert!(!w.state(i).menu_view.is_open());
         assert!(w.state(i).disabled);
+    }
+
+    #[test]
+    fn gallery_retained_dialog_theme_switch_repaints_modal_and_copy() {
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("dialog");
+        // Open through the actual Gallery trigger and keep this same DialogView.
+        click(&mut w, i, 20, &mut text);
+        assert!(w.state(i).dialog_view.focus_button(1));
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut previous_ground = None;
+        for theme in Theme::ALL {
+            text.begin_frame();
+            let mut static_text = super::super::static_text::StaticText::new(None);
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            let mut scene = Scene::new();
+            w.build_clipped(i, &mut ctx, content, content, &mut scene);
+            assert!(scene.composition_error().is_none());
+            let palette = Palette::new(theme, w.brand).unwrap();
+            let state = w.state(i);
+            assert!(state.dialog_view.is_open());
+            assert_eq!(state.dialog_view.dialog().focus, 1);
+            assert_eq!(state.focus, Some(71));
+            let layout = state.dialog_layout.as_ref().expect("actual Gallery modal");
+            assert!(layout.visible.is_some());
+            let (surface_index, surface) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(index, p)| match p {
+                    Primitive::Quad(q) if q.rect == layout.modal => Some((index, q)),
+                    _ => None,
+                })
+                .expect("actual Gallery Dialog surface");
+            assert_eq!(surface.fill, palette.color("surface-popover").unwrap());
+            assert_eq!(
+                surface.corner_radii.top_left,
+                proposal::metric("radius", "c-dialog-radius").unwrap()
+            );
+            assert!(scene.primitives().iter().any(|p| matches!(p,
+                Primitive::Quad(q) if q.rect == layout.preview && q.fill == palette.color("scrim").unwrap()
+            )));
+            let copy = scene.primitives()[surface_index + 1..]
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if !run.glyphs.is_empty()
+                            && run
+                                .glyphs
+                                .iter()
+                                .all(|glyph| layout.title.contains(glyph.origin)) =>
+                    {
+                        Some(run)
+                    }
+                    _ => None,
+                })
+                .expect("actual Gallery Dialog copy, independently of action labels");
+            assert_eq!(copy.color, palette.color("primary-text").unwrap());
+            assert_eq!((copy.color.a, surface.fill.a), (1., 1.));
+            let luminance = |color: tekes_ui_tokens::Rgba| {
+                let linear = color.to_linear();
+                0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+            };
+            let (a, b) = (luminance(copy.color), luminance(surface.fill));
+            assert!(
+                (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                    >= if theme.is_increased() { 7. } else { 4.5 }
+            );
+            assert!(scene.primitives().iter().any(|p| matches!(p,
+                Primitive::Quad(q) if q.fill.a == 0. && q.border_color == palette.color("border-focused").unwrap()
+                    && q.rect.intersection(&layout.buttons[1].frame).is_some()
+            )));
+            if let Some(previous) = previous_ground
+                && theme.is_dark()
+            {
+                assert_ne!(previous, surface.fill);
+            }
+            previous_ground = Some(surface.fill);
+        }
+        // Existing Gallery availability feeds the same retained Dialog actions.
+        w.state(i).disabled = true;
+        build(&mut w, i, &mut text);
+        assert_eq!(
+            w.state(i).dialog_view.activate_button(1),
+            DialogEvent::Blocked
+        );
+        assert!(w.state(i).dialog_view.is_open());
+        w.state(i).disabled = false;
+        build(&mut w, i, &mut text);
+        w.handle(i, &key(53, true), &mut text);
+        assert!(!w.state(i).dialog_view.is_open());
+        assert_eq!(w.state(i).focus, Some(20));
     }
 
     #[test]
@@ -9096,6 +9317,104 @@ mod interaction_tests {
         w.handle(number, &key(49, true), &mut text);
         w.handle(number, &key(49, false), &mut text);
         assert_eq!(w.state(number).number.value(), before + 2.0);
+    }
+
+    #[test]
+    fn breadcrumb_gallery_theme_switch_preserves_path_and_real_navigation() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut gallery = Gallery::new();
+        let i = index("breadcrumb");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        gallery.set_reduced_motion(true);
+        gallery.build_scene(&mut Scene::new());
+        let trail_frame = gallery
+            .workbench
+            .state(i)
+            .extended
+            .breadcrumb_view
+            .layout()
+            .frame;
+        let rest_point = Point::new(trail_frame.center().x, trail_frame.max_y() + 4.);
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            gallery.handle_input(&move_pointer(Point::new(-100., -100.)));
+            // Theme role endpoints use the real Workbench input scope, not an
+            // out-of-window move which never reaches the Breadcrumb reducer.
+            gallery.handle_input(&move_pointer(rest_point));
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            let layout = state.extended.breadcrumb_view.layout();
+            assert_eq!(layout.items.len(), 3);
+            let ancestor = layout.items[1].frame();
+            let current = layout.items[2].frame();
+            let palette = Palette::new(theme, 0).unwrap();
+            let fills: Vec<_> = scene
+                .primitives()
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q) if q.rect == ancestor || q.rect == current => Some(q.fill),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(fills, vec![palette.color("surface-2").unwrap(); 2]);
+            for (frame, role) in [(ancestor, "primary-text"), (current, "tertiary-text")] {
+                let inks: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run)
+                            if run.glyphs.iter().any(|g| frame.contains(g.origin)) =>
+                        {
+                            Some(run.color)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(!inks.is_empty(), "real Gallery Breadcrumb {role} glyphs");
+                assert!(inks.iter().all(|ink| *ink == palette.color(role).unwrap()));
+            }
+            observed.push(fills[0]);
+            let before = gallery.workbench.state(i).log.len();
+            gallery.handle_input(&mouse(current.center(), true));
+            gallery.handle_input(&mouse(current.center(), false));
+            assert_eq!(
+                gallery.workbench.state(i).log.len(),
+                before,
+                "current page does not navigate"
+            );
+            gallery.handle_input(&mouse(ancestor.center(), true));
+            gallery.handle_input(&mouse(ancestor.center(), false));
+            assert_eq!(gallery.workbench.state(i).extended.selected, 1);
+            assert_eq!(gallery.workbench.state(i).log.len(), before + 1);
+            assert_eq!(
+                gallery.workbench.state(i).log.back().map(String::as_str),
+                Some("breadcrumb: 1")
+            );
+            assert_eq!(
+                gallery.workbench.state(i).extended.breadcrumb.items.len(),
+                3
+            );
+        }
+        assert!(observed.windows(2).any(|w| w[0] != w[1]));
     }
 
     #[test]
