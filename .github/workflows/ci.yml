@@ -46,18 +46,21 @@ jobs:
           cargo run --locked -p tekes-ui-design-export -- --generate design/tokens.json "$RUNNER_TEMP/tokens.rs"
           cargo run --locked -p tekes-ui-design-export -- --check design/tokens.json "$RUNNER_TEMP/tokens.rs"
       - run: cargo fmt --check
-      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - id: workspace_clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Workspace correctness tests (performance deferred)
         run: >-
-          cargo test --workspace --locked --
+          cargo test --workspace --locked --no-fail-fast --
           --skip timing_is_off_by_default_and_costs_nothing_to_drain
           --skip cpu_segments_are_consistent_and_frames_are_numbered
           --skip gpu_time_agrees_with_wall_clock_on_a_heavy_frame
 
       - name: Independent composition consumer (public API)
+        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: cargo test --manifest-path examples/composition-consumer/Cargo.toml --locked
 
       - name: Independent AppWindow and Settings delivery (Issue 70)
+        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: |
           cargo clippy --manifest-path examples/app-host-demo/Cargo.toml --all-targets --all-features --locked --offline -- -D warnings
           cargo test --manifest-path examples/app-host-demo/Cargo.toml --test settings_worker_entry --locked --offline

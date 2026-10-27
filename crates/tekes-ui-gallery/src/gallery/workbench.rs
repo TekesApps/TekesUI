@@ -7404,6 +7404,9 @@ mod interaction_tests {
         let i = index("matrix");
         click_brand_preview(&mut w, i, 700, &mut t);
         click_brand_preview(&mut w, i, 721, &mut t);
+        // Start the real 150ms presence transition, then inspect its stable frame.
+        build(&mut w, i, &mut t);
+        t.set_motion_context(Duration::from_secs(1), false);
         let scene = build(&mut w, i, &mut t);
         let layout = w.brand_preview.dialog_layout().unwrap();
         assert!(layout.visible.is_some());
@@ -8907,6 +8910,8 @@ mod interaction_tests {
         let i = index("select");
         click(&mut w, i, 12, &mut text);
         click(&mut w, i, 20, &mut text);
+        build(&mut w, i, &mut text);
+        text.set_motion_context(Duration::from_secs(1), false);
         let scene = build(&mut w, i, &mut text);
         let trigger = w.state(i).select_view.layout().trigger.frame;
         let popup = w.state(i).select_menu_layout.as_ref().unwrap().popup;
@@ -9724,6 +9729,11 @@ mod interaction_tests {
             let mut text = super::super::text::TextEngine::new();
             text.set_type_scale(scale);
             text.set_motion_enabled(false);
+            // Explicit static feedback sample; the fixture must not enable motion.
+            text.replace_fixture_motion_context(Some(tekes_ui_controls::ControlMotionContext {
+                now: Duration::ZERO,
+                reduced_motion: true,
+            }));
             let i = index("command-palette");
             let rest = build(&mut w, i, &mut text);
             let frame = w
@@ -10073,10 +10083,12 @@ mod interaction_tests {
         }
 
         let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
         let mut workbench = Workbench::default();
         for renderer in ["menu", "select"] {
             let i = index(renderer);
             workbench.apply_reduced_motion(true);
+            text.set_motion_context(Duration::ZERO, true);
             click(&mut workbench, i, 20, &mut text);
             let layout = if renderer == "menu" {
                 assert!(workbench.state(i).menu_view.is_open());
@@ -10106,6 +10118,7 @@ mod interaction_tests {
 
         let combo = index("combo-box");
         workbench.apply_reduced_motion(true);
+        text.set_motion_context(Duration::ZERO, true);
         build(&mut workbench, combo, &mut text);
         workbench.state(combo).extended.combo.items =
             (0..24).map(|n| format!("Com candidate {n:02}")).collect();
@@ -10154,6 +10167,7 @@ mod interaction_tests {
             0.0
         );
         workbench.apply_reduced_motion(false);
+        text.set_motion_context(Duration::ZERO, false);
         assert!(workbench.handle(combo, &wheel(position, 2.02, false), &mut text));
         assert!(workbench.handle(combo, &wheel(position, 2.03, true), &mut text));
         build(&mut workbench, combo, &mut text);
@@ -10179,6 +10193,7 @@ mod interaction_tests {
 
         let command = index("command-palette");
         workbench.apply_reduced_motion(true);
+        text.set_motion_context(Duration::ZERO, true);
         build(&mut workbench, command, &mut text);
         workbench.state(command).extended.command.combo.items = (0..24)
             .map(|n| format!("Command candidate {n:02}"))
@@ -10219,6 +10234,7 @@ mod interaction_tests {
             0.0
         );
         workbench.apply_reduced_motion(false);
+        text.set_motion_context(Duration::ZERO, false);
         assert!(workbench.handle(command, &wheel(position, 3.02, false), &mut text));
         assert!(workbench.handle(command, &wheel(position, 3.03, true), &mut text));
         build(&mut workbench, command, &mut text);
