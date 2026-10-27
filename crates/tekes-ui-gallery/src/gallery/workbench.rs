@@ -6823,6 +6823,116 @@ mod interaction_tests {
     }
 
     #[test]
+    fn list_theme_retains_actual_gallery_selection_hover_focus_and_semantics() {
+        use tekes_ui_platform_macos::AccessibilityRole;
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut w = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, true);
+        let i = index("list");
+        click(&mut w, i, 31, &mut text);
+        w.handle(i, &key(125, true), &mut text);
+        build(&mut w, i, &mut text);
+        assert_eq!(w.state(i).extended.list.selected, Some(2));
+        let selected = w
+            .state(i)
+            .visible_for_id(32)
+            .expect("real visible List row");
+        w.handle(i, &move_pointer(selected.center()), &mut text);
+        let content = Rect::new(312., 70., 1000., 820.);
+        let mut original_frame = None;
+        for theme in Theme::ALL {
+            text.begin_frame();
+            let mut static_text = super::super::static_text::StaticText::new(None);
+            let mut ctx = PageCtx {
+                theme,
+                text: &mut text,
+                static_text: &mut static_text,
+            };
+            let mut scene = Scene::new();
+            w.build_clipped(i, &mut ctx, content, content, &mut scene);
+            assert!(scene.composition_error().is_none());
+            assert_eq!(w.state(i).extended.list.selected, Some(2));
+            assert_eq!(w.state(i).focus, Some(32));
+            let row = w.state(i).visible_for_id(32).unwrap();
+            if let Some(original) = original_frame {
+                assert_eq!(row, original);
+            } else {
+                original_frame = Some(row);
+            }
+            let palette = Palette::new(theme, w.brand).unwrap();
+            let (surface_index, surface) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(index, p)| match p {
+                    Primitive::Quad(q) if q.rect == row => Some((index, q)),
+                    _ => None,
+                })
+                .expect("own actual Gallery selected row ground");
+            assert_eq!(surface.fill, palette.color("row-selection-hover").unwrap());
+            let copies: Vec<_> = scene.primitives()[surface_index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if !run.glyphs.is_empty()
+                            && run.glyphs.iter().all(|g| row.contains(g.origin)) =>
+                    {
+                        Some(run)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !copies.is_empty(),
+                "actual Gallery row glyphs, not a header or caption"
+            );
+            assert!(
+                copies
+                    .iter()
+                    .all(|run| run.color == palette.color("primary-text").unwrap())
+            );
+            assert_eq!((copies[0].color.a, surface.fill.a), (1., 1.));
+            let luminance = |color: tekes_ui_tokens::Rgba| {
+                let c = color.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (luminance(copies[0].color), luminance(surface.fill));
+            assert!(
+                (a.max(b) + 0.05) / (a.min(b) + 0.05)
+                    >= if theme.is_increased() { 7. } else { 4.5 }
+            );
+            assert!(scene.primitives().iter().any(|p| matches!(p,
+                Primitive::Quad(q) if q.fill.a == 0. && q.border_color == palette.color("border-focused").unwrap()
+                    && q.rect.intersection(&row).is_some()
+            )));
+            let nodes = w.accessibility_nodes(i);
+            let list = nodes
+                .iter()
+                .find(|node| node.role == AccessibilityRole::List)
+                .expect("real List semantic group");
+            let rows: Vec<_> = nodes
+                .iter()
+                .filter(|node| {
+                    node.role == AccessibilityRole::ListItem && node.parent == Some(list.key)
+                })
+                .collect();
+            assert_eq!(rows.len(), 5);
+            assert_eq!(rows.iter().filter(|row| row.selected).count(), 1);
+            let selected = rows.iter().find(|row| row.selected).unwrap();
+            assert_eq!(selected.label, "Images");
+            assert!(selected.focused && selected.enabled);
+        }
+        for (code, selected) in [(115, 0), (119, 4)] {
+            w.handle(i, &key(code, true), &mut text);
+            assert_eq!(w.state(i).extended.list.selected, Some(selected));
+            assert_eq!(w.state(i).focus, Some(30 + selected));
+        }
+    }
+
+    #[test]
     fn gallery_wholly_offscreen_collections_reveal_home_and_end_without_pointer_hits() {
         use super::super::Gallery;
         for renderer in ["list", "tree", "data-table", "chart"] {
