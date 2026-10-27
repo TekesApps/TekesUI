@@ -7735,6 +7735,295 @@ mod interaction_tests {
     }
 
     #[test]
+    fn checkbox_gallery_theme_switch_keeps_check_state_and_repaints_actual_mark_and_label() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+        fn assert_checkbox(
+            scene: &Scene,
+            geometry: (Rect, Rect),
+            palette: Palette,
+            checked: CheckState,
+            ground: &str,
+            disabled: bool,
+            backing: f32,
+        ) -> Rect {
+            let (row, label) = geometry;
+            let side = proposal::metric("size", "c-checkbox-size").unwrap();
+            let (index, control) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q)
+                        if q.rect.min_x() == row.min_x()
+                            && q.rect.size == tekes_ui_scene::Size::new(side, side)
+                            && row.intersection(&q.rect) == Some(q.rect) =>
+                    {
+                        Some((i, *q))
+                    }
+                    _ => None,
+                })
+                .expect("actual Checkbox indicator background");
+            assert_eq!(control.fill, palette.color(ground).unwrap());
+            assert_eq!(
+                control.corner_radii,
+                tekes_ui_scene::CornerRadii::uniform(
+                    proposal::metric("radius", "c-checkbox-radius").unwrap()
+                )
+            );
+            assert_eq!(control.border_color, palette.color("border").unwrap());
+            let parent = scene.primitives()[..index]
+                .iter()
+                .rev()
+                .find_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a == 1. && q.rect.intersection(&label) == Some(label) =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .unwrap_or_else(|| {
+                    // This Gallery preview is transparent to the real renderer's clear color.
+                    // No synthetic background quad is inserted into the complete scene.
+                    Gallery::background(palette.theme)
+                });
+            let marks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a > 0. && control.rect.intersection(&q.rect) == Some(q.rect) =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .collect();
+            if checked == CheckState::Unchecked {
+                assert!(marks.is_empty());
+            } else {
+                assert!(!marks.is_empty(), "checked/mixed emits real mark quads");
+                if checked == CheckState::Mixed {
+                    assert_eq!(marks.len(), 1);
+                }
+                let role = if disabled {
+                    "tertiary-text"
+                } else {
+                    "control-checked-mark"
+                };
+                for ink in marks {
+                    assert_eq!(ink, palette.color(role).unwrap());
+                    if !disabled {
+                        assert!(contrast(ink, control.fill) >= 3., "actual mark/own ground");
+                    }
+                }
+            }
+            let inks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let a = g.glyph;
+                            label
+                                .intersection(&Rect::new(
+                                    g.origin.x + a.left as f32 / backing,
+                                    g.origin.y + a.top as f32 / backing,
+                                    a.width as f32 / backing,
+                                    a.height as f32 / backing,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "real CoreText label glyphs after this Checkbox paint"
+            );
+            for ink in inks {
+                assert_eq!(
+                    ink,
+                    palette
+                        .color(if disabled {
+                            "tertiary-text"
+                        } else {
+                            "primary-text"
+                        })
+                        .unwrap()
+                );
+                if !disabled {
+                    assert!(
+                        contrast(ink, parent)
+                            >= if palette.theme.is_increased() {
+                                7.
+                            } else {
+                                4.5
+                            },
+                        "actual label/parent ground"
+                    );
+                }
+            }
+            control.rect
+        }
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 900.);
+        assert!(gallery.open_route("component-checkbox/playground"));
+        let i = index("checkbox");
+        gallery.build_scene(&mut Scene::new());
+        let initial = gallery.workbench.state(i).checkbox.layout().unwrap();
+        let background = Point::new(initial.frame.max_x() + 40., initial.frame.min_y());
+        for checked in [
+            CheckState::Unchecked,
+            CheckState::Checked,
+            CheckState::Mixed,
+        ] {
+            gallery.workbench.state(i).checkbox.checked = checked;
+            for theme in Theme::ALL {
+                gallery.set_system_theme(theme);
+                gallery.handle_input(&move_pointer(background));
+                let mut scene = Scene::new();
+                gallery.build_scene(&mut scene);
+                assert_eq!(gallery.theme(), theme);
+                let checkbox = &gallery.workbench.state(i).checkbox;
+                assert_eq!(checkbox.checked, checked);
+                assert!(!checkbox.button.state.hovered);
+                assert!(!checkbox.button.state.pressed);
+                let layout = checkbox.layout().unwrap();
+                assert_eq!(layout, initial);
+                assert_checkbox(
+                    &scene,
+                    (layout.frame, layout.content),
+                    theme.into(),
+                    checked,
+                    if checked == CheckState::Unchecked {
+                        "surface-2"
+                    } else {
+                        "control-checked-ground"
+                    },
+                    false,
+                    gallery.text.scale(),
+                );
+            }
+        }
+        let palette: Palette = Theme::DARK_INCREASED.into();
+        let point = initial.frame.center();
+        gallery.handle_input(&move_pointer(point));
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        assert!(gallery.workbench.state(i).checkbox.button.state.hovered);
+        assert_checkbox(
+            &scene,
+            (initial.frame, initial.content),
+            palette,
+            CheckState::Mixed,
+            "control-checked-hover",
+            false,
+            gallery.text.scale(),
+        );
+        gallery.handle_input(&mouse(point, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(gallery.workbench.state(i).checkbox.button.state.pressed);
+        assert_checkbox(
+            &scene,
+            (initial.frame, initial.content),
+            palette,
+            CheckState::Mixed,
+            "control-checked-pressed",
+            false,
+            gallery.text.scale(),
+        );
+        gallery.handle_input(&mouse(background, false));
+        gallery.handle_input(&move_pointer(background));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Mixed
+        );
+        gallery.handle_input(&key(36, true));
+        gallery.handle_input(&key(36, false));
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Mixed,
+            "Enter never toggles"
+        );
+        gallery.handle_input(&key(49, true));
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Mixed,
+            "Space activates on release"
+        );
+        gallery.handle_input(&key(49, false));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Checked
+        );
+        let control = assert_checkbox(
+            &scene,
+            (initial.frame, initial.content),
+            palette,
+            CheckState::Checked,
+            "control-checked-ground",
+            false,
+            gallery.text.scale(),
+        );
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && q.rect.center()==control.center() && q.border_color==palette.color("border-focused").unwrap())));
+        gallery.workbench.state(i).disabled = true;
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_checkbox(
+            &scene,
+            (initial.frame, initial.content),
+            palette,
+            CheckState::Checked,
+            "surface-2",
+            true,
+            gallery.text.scale(),
+        );
+        assert!(!scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0. && q.rect.center()==control.center())));
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        gallery.handle_input(&key(49, true));
+        gallery.handle_input(&key(49, false));
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Checked
+        );
+        gallery.workbench.state(i).disabled = false;
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        assert_eq!(
+            gallery.workbench.state(i).checkbox.checked,
+            CheckState::Unchecked,
+            "matching pointer release toggles Checked to Unchecked"
+        );
+    }
+
+    #[test]
     fn checkbox_text_first_line_stays_centered_on_the_mark_at_large_scale_and_wrap() {
         let mut text = super::super::text::TextEngine::new();
         text.set_type_scale(1.5);
