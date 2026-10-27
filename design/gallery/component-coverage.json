@@ -2311,7 +2311,44 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/field.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/field.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "b3478f9d460cc40482d76504ea366a2349c38965",
+        "scope": "Actual Field/FieldView retained required/help/error metadata/semantic text contrast and real emphasized Gallery property-to-metadata/input slot preservation; tests only",
+        "claims": [
+          "Same public Field/View through Theme::ALL preserves required/help/error precedence and original label/input/message geometry with actual CoreText4.5/7 on caller ground",
+          "Actual Gallery emphasized metadata roles and real Error property control change helper/error without replacing input frame/value; sampled original metadata paint interval keeps complete scene",
+          "Strict passed; original required/readonly/disabled/editor/native behavior remains separate with valid evidence reused rather than invented metadata states"
+        ],
+        "source_identity": {
+          "scope": "Selected actual metadata/View/Gallery witnesses, not complete input/editor/native proof",
+          "sha256": {
+            "crates/tekes-ui-controls/src/widgets.rs": "39e9bdce57eacfb93020954e72581a005eaaf2ec86bca69dff5ddd7d64921d86",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+            "crates/tekes-ui-gallery/src/gallery/workbench.rs": "e335c2e33282fb454b9a42cf495c1bab35b49b792ea24bc94cca57c4d3afa924",
+            "examples/composition-consumer/tests/field_theme.rs": "95b1109f11856a612ac4ea9129dba506c9aa6f522bd99c7cf3a859236e5a329b"
+          }
+        },
+        "exceptions": [
+          "Metadata View does not own input editing/focus/disabled reducer; no FieldContent or fake input invented",
+          "Caller/Gallery owns transparent background and optional presentation layout; ordinary slot/frame geometry remains data"
+        ],
+        "gaps": [
+          "new dedicated external Theme/GPU/native-window/physicalIME/VoiceOver Required publication certification",
+          "full editor/remaining controls/full52"
+        ],
+        "evidence": [
+          {
+            "issue": "#122",
+            "component": "tui.field",
+            "commit": "b3478f9d460cc40482d76504ea366a2349c38965",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/field-main2c6d7db-candidate/main-intake/commit-receipt.json",
+            "sha256": "45ee7725860bcb4da723f3d97de26bbf3aaed21ebba826a167c4411d32de5e31",
+            "scope": "Actual public metadata/real Gallery input-slot/strict; original input/native/producer results retain identity"
+          }
+        ]
+      }
     },
     {
       "id": "tui.select",
