@@ -1976,7 +1976,13 @@ impl BannerView {
         let dismiss_w = if stacked {
             (frame.size.width - 46.0).clamp(0.0, 180.0)
         } else {
-            frame.size.width.min(92.)
+            // The original inline anchor leaves this trailing action region.
+            // Measure the standard Button's label and scaled padding within it.
+            let available = (frame.size.width.min(170.) - 12.).max(0.);
+            ButtonModel::measure(text, "Dismiss", available, ButtonSize::Body, role)
+                .width
+                .max(92.)
+                .min(available)
         };
         let dismiss_h = ButtonModel::measure(text, "Dismiss", dismiss_w, ButtonSize::Body, role)
             .height
