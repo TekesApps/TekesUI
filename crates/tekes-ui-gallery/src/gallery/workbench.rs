@@ -10512,6 +10512,18 @@ mod interaction_tests {
         w.handle(i, &mouse(point, false), &mut t);
         assert_eq!(w.state(i).selected, 2);
         assert!(w.state(i).log.back().unwrap().contains("selection: 2"));
+        assert_eq!(
+            w.state(i).detail.query(),
+            format!(
+                "Document 3 — reading notes\n\n{}",
+                include_str!("../../../../fixtures/text/gallery-reading-en.txt")
+            )
+        );
+        build_in(&mut w, i, &mut t, content);
+        let detail = w.state(i).detail.frame_at(0).unwrap().center();
+        w.handle(i, &mouse(detail, true), &mut t);
+        w.handle(i, &mouse(detail, false), &mut t);
+        assert!(w.state(i).detail.state().unwrap().read_only);
 
         let narrow_content = Rect::new(312.0, 70.0, 420.0, 600.0);
         let tiny_clip = Rect::new(312.0, 70.0, 420.0, 90.0);
