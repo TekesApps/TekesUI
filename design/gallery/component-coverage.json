@@ -2738,7 +2738,44 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/popover-content.json"
+      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/popover-content.json",
+      "practical_intake": {
+        "status": "accepted-bounded-evidence",
+        "baseline_commit": "e25f104675778fe656f0958432f4fff22a6c81e0",
+        "scope": "Accepted local-main retained Popover Theme/scale and actual Gallery popup/body semantic consumption tests; no production changes.",
+        "claims": [
+          "One retained Popover model/View keeps open while switching all four default Theme values and backing scale1/2; actual floating fill, radius and border scale verified",
+          "Actual Gallery closed/open/focus-visible matrix paints two popup surfaces and primary-text body glyphs above their Dismiss actions",
+          "Actual body/background contrast meets4.5 standard and7 increased across default Theme::ALL",
+          "Controls/Gallery all-target strict passed on exact frozen main inputs"
+        ],
+        "source_identity": {
+          "scope": "Selected public model/View/Gallery source subset, not a whole dependency certificate; actual full run identities are in frozen main manifests/receipts.",
+          "sha256": {
+            "crates/tekes-ui-controls/src/extended.rs": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47",
+            "crates/tekes-ui-controls/src/feedback_view.rs": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236",
+            "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "632635143cefc7531cba5f88e92e6d2d9939534f5217a3183a7d57ee434b3144"
+          }
+        },
+        "exceptions": [
+          "Ordinary overlay placement/size geometry stays within the existing layout contract",
+          "Caller owns body callback and its semantic text input; Dismiss reuses existing Button behavior and shared results"
+        ],
+        "gaps": [
+          "No new dedicated external Theme, GPU/pixel, native/physical input/IME/VoiceOver certification",
+          "Original lifecycle/focus/outside/Escape results retain original identities; remaining family/full52 obligations stay open"
+        ],
+        "evidence": [
+          {
+            "issue": "#123",
+            "component": "tui.popover",
+            "commit": "e25f104675778fe656f0958432f4fff22a6c81e0",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/popover-main1ca-candidate/main-intake/commit-receipt.json",
+            "sha256": "bccdaf54989963014df3c6827ebc2864b861ad12ea6ffb9cd1ee028f54b5c2e6",
+            "scope": "Exact-main public retained state/Theme/scale and real Gallery popup body assertions, strict and explicit unverified scope."
+          }
+        ]
+      }
     },
     {
       "id": "tui.dialog",
