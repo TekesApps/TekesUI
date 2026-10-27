@@ -9484,6 +9484,361 @@ mod interaction_tests {
     }
 
     #[test]
+    fn slider_gallery_theme_switch_preserves_unfocused_hover_drag_and_actual_value_ink() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_controls::SliderLayout;
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+        fn assert_slider(
+            scene: &Scene,
+            layout: SliderLayout,
+            palette: Palette,
+            state: ControlState,
+        ) {
+            let (index, track) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == layout.track => Some((i, *q)),
+                    _ => None,
+                })
+                .expect("actual Slider own track paint");
+            assert_eq!(
+                track.fill,
+                palette
+                    .color(if state.disabled {
+                        "surface-2"
+                    } else {
+                        "surface-3"
+                    })
+                    .unwrap()
+            );
+            let fill = scene.primitives()[index + 1..]
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.rect.min_x() == layout.track.min_x()
+                            && q.rect.min_y() == layout.track.min_y()
+                            && q.rect.max_x() <= layout.track.max_x()
+                            && q.rect.size.height == layout.track.size.height =>
+                    {
+                        Some(*q)
+                    }
+                    _ => None,
+                })
+                .expect("actual active value track after its own ground");
+            assert_eq!(
+                fill.fill,
+                palette
+                    .color(if state.disabled {
+                        "disabled-text"
+                    } else if state.pressed {
+                        "accent-pressed"
+                    } else if state.hovered {
+                        "accent-hover"
+                    } else {
+                        "accent"
+                    })
+                    .unwrap()
+            );
+            let thumb = scene.primitives()[index + 1..]
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Quad(q) if q.rect == layout.thumb => Some(*q),
+                    _ => None,
+                })
+                .expect("actual thumb after own track paint");
+            assert_eq!(
+                thumb.fill,
+                palette
+                    .color(if state.disabled {
+                        "surface-2"
+                    } else {
+                        "surface-0"
+                    })
+                    .unwrap()
+            );
+            assert_eq!(
+                thumb.border_color,
+                palette
+                    .color(if state.disabled {
+                        "disabled-text"
+                    } else {
+                        "border"
+                    })
+                    .unwrap()
+            );
+            if !state.disabled {
+                assert!(
+                    contrast(fill.fill, track.fill) >= 3.,
+                    "actual active/rest track contrast"
+                );
+                for adjacent in [fill.fill, track.fill] {
+                    assert!(
+                        contrast(thumb.fill, adjacent).max(contrast(thumb.border_color, adjacent))
+                            >= 3.,
+                        "actual thumb fill-or-required-boundary/adjacent track contrast"
+                    );
+                }
+            }
+        }
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+
+        fn assert_value(
+            scene: &Scene,
+            layout: SliderLayout,
+            palette: Palette,
+            backing: f32,
+            clear: Rgba,
+        ) {
+            let index = scene
+                .primitives()
+                .iter()
+                .rposition(|p| matches!(p,Primitive::Quad(q)if q.rect==layout.thumb))
+                .unwrap();
+            // The real Gallery slider branch paints Value immediately after its thumb/focus.
+            let run = scene.primitives()[index + 1..]
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Glyphs(run) if !run.glyphs.is_empty() => Some(run),
+                    _ => None,
+                })
+                .expect("actual Gallery Value readout glyphs after this Slider");
+            let mut bounds: Option<Rect> = None;
+            for g in &run.glyphs {
+                let a = g.glyph;
+                let r = Rect::new(
+                    g.origin.x + a.left as f32 / backing,
+                    g.origin.y + a.top as f32 / backing,
+                    a.width as f32 / backing,
+                    a.height as f32 / backing,
+                );
+                bounds = Some(match bounds {
+                    None => r,
+                    Some(b) => Rect::new(
+                        b.min_x().min(r.min_x()),
+                        b.min_y().min(r.min_y()),
+                        b.max_x().max(r.max_x()) - b.min_x().min(r.min_x()),
+                        b.max_y().max(r.max_y()) - b.min_y().min(r.min_y()),
+                    ),
+                });
+            }
+            let label = bounds.unwrap();
+            let parent = scene.primitives()[..index]
+                .iter()
+                .rev()
+                .find_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a == 1.
+                            && q.rect.min_x() <= label.min_x()
+                            && q.rect.max_x() >= label.max_x()
+                            && q.rect.min_y() <= label.min_y()
+                            && q.rect.max_y() >= label.max_y() =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .unwrap_or(clear);
+            assert_eq!(run.color, palette.color("primary-text").unwrap());
+            assert!(
+                contrast(run.color, parent)
+                    >= if palette.theme.is_increased() {
+                        7.
+                    } else {
+                        4.5
+                    },
+                "actual Value ink/own parent ground contrast"
+            );
+        }
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 900.);
+        assert!(gallery.open_route("component-slider/playground"));
+        let i = index("slider");
+        gallery.build_scene(&mut Scene::new());
+        let initial = gallery.workbench.state(i).extended.slider_view.layout();
+        let background = Point::new(initial.frame.max_x() + 40., initial.frame.center().y);
+        for theme in Theme::ALL {
+            gallery.set_system_theme(theme);
+            gallery.handle_input(&move_pointer(background));
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            assert_eq!(gallery.theme(), theme);
+            let state = &gallery.workbench.state(i).extended;
+            assert_eq!(state.slider.value(), 50.);
+            assert!(!state.slider_view.is_focused());
+            assert!(!state.slider_view.is_captured());
+            let layout = state.slider_view.layout();
+            assert_eq!(layout, initial);
+            assert_slider(&scene, layout, theme.into(), ControlState::default());
+            assert_value(
+                &scene,
+                layout,
+                theme.into(),
+                gallery.text.scale(),
+                Gallery::background(theme),
+            );
+        }
+        let palette: Palette = Theme::DARK_INCREASED.into();
+        let clear = Gallery::background(Theme::DARK_INCREASED);
+        let point = initial.thumb.center();
+        gallery.handle_input(&move_pointer(point));
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        assert!(
+            !gallery.workbench.state(i).extended.slider_view.is_focused(),
+            "hover does not require prior focus"
+        );
+        assert_slider(
+            &scene,
+            initial,
+            palette,
+            ControlState {
+                hovered: true,
+                ..Default::default()
+            },
+        );
+        gallery.handle_input(&mouse(point, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(
+            gallery
+                .workbench
+                .state(i)
+                .extended
+                .slider_view
+                .is_captured()
+        );
+        assert_slider(
+            &scene,
+            initial,
+            palette,
+            ControlState {
+                pressed: true,
+                ..Default::default()
+            },
+        );
+        assert!(!scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0. && q.rect.center()==initial.thumb.center())));
+        let target = Point::new(
+            initial.track.min_x() + initial.track.size.width * 0.75,
+            point.y,
+        );
+        let Event::Mouse(mut drag) = mouse(target, true) else {
+            unreachable!("mouse fixture")
+        };
+        drag.kind = MouseEventKind::Dragged {
+            button: MouseButton::Left,
+        };
+        gallery.handle_input(&Event::Mouse(drag));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(gallery.workbench.state(i).extended.slider.value(), 75.);
+        let layout = gallery.workbench.state(i).extended.slider_view.layout();
+        assert_slider(
+            &scene,
+            layout,
+            palette,
+            ControlState {
+                pressed: true,
+                ..Default::default()
+            },
+        );
+        assert_value(&scene, layout, palette, gallery.text.scale(), clear);
+        gallery.handle_input(&mouse(background, false));
+        assert!(
+            !gallery
+                .workbench
+                .state(i)
+                .extended
+                .slider_view
+                .is_captured()
+        );
+        gallery.handle_input(&move_pointer(Point::new(initial.track.min_x(), point.y)));
+        assert_eq!(
+            gallery.workbench.state(i).extended.slider.value(),
+            75.,
+            "release ends capture without rollback"
+        );
+        gallery.handle_input(&key(115, true));
+        assert_eq!(gallery.workbench.state(i).extended.slider.value(), 0.);
+        gallery.handle_input(&key(124, true));
+        assert_eq!(gallery.workbench.state(i).extended.slider.value(), 5.);
+        gallery.handle_input(&key(119, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_eq!(gallery.workbench.state(i).extended.slider.value(), 100.);
+        let layout = gallery.workbench.state(i).extended.slider_view.layout();
+        assert_slider(
+            &scene,
+            layout,
+            palette,
+            ControlState {
+                hovered: true,
+                ..Default::default()
+            },
+        );
+        assert_value(&scene, layout, palette, gallery.text.scale(), clear);
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0. && q.rect.center()==layout.thumb.center()
+            && q.border_color==palette.color("border-focused").unwrap())));
+        gallery.handle_input(&mouse(initial.track.center(), true));
+        assert_eq!(gallery.workbench.state(i).extended.slider.value(), 50.);
+        gallery.workbench.state(i).extended.disabled = true;
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        let layout = gallery.workbench.state(i).extended.slider_view.layout();
+        assert_slider(
+            &scene,
+            layout,
+            palette,
+            ControlState {
+                disabled: true,
+                ..Default::default()
+            },
+        );
+        assert_value(&scene, layout, palette, gallery.text.scale(), clear);
+        assert!(
+            !gallery
+                .workbench
+                .state(i)
+                .extended
+                .slider_view
+                .is_captured()
+        );
+        assert!(!gallery.workbench.state(i).extended.slider_view.is_focused());
+        assert!(!scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0. && q.rect.center()==layout.thumb.center())));
+        gallery.handle_input(&move_pointer(target));
+        gallery.handle_input(&mouse(target, false));
+        gallery.handle_input(&key(124, true));
+        assert_eq!(gallery.workbench.state(i).extended.slider.value(), 50.);
+        gallery.workbench.state(i).extended.disabled = false;
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&mouse(target, true));
+        assert_eq!(gallery.workbench.state(i).extended.slider.value(), 75.);
+        gallery.handle_input(&mouse(target, false));
+        assert!(
+            !gallery
+                .workbench
+                .state(i)
+                .extended
+                .slider_view
+                .is_captured()
+        );
+    }
+
+    #[test]
     fn checkbox_text_first_line_stays_centered_on_the_mark_at_large_scale_and_wrap() {
         let mut text = super::super::text::TextEngine::new();
         text.set_type_scale(1.5);
@@ -11723,6 +12078,107 @@ mod interaction_tests {
         assert!(
             observed.windows(2).any(|w| w[0] != w[1]),
             "same Gallery layout forwards changed Theme to real child paint"
+        );
+    }
+
+    #[test]
+    fn grid_gallery_retained_themes_keep_nine_cells_clips_and_child_paint() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut gallery = Gallery::new();
+        let i = index("grid");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 1100.);
+        let mut original = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            let grid = &state.extended.grid_view;
+            let layout = grid.layout();
+            assert_eq!(grid.model().columns, 3);
+            assert_eq!((grid.model().gap_x, grid.model().gap_y), (8., 8.));
+            assert_eq!(layout.items.len(), 9);
+            assert!(layout.visible.is_some());
+            let cells: Vec<_> = layout
+                .items
+                .iter()
+                .map(|item| (item.frame(), item.visible_frame()))
+                .collect();
+            if let Some(original) = &original {
+                assert_eq!(&cells, original);
+            } else {
+                original = Some(cells);
+            }
+            let palette = Palette::new(theme, 0).unwrap();
+            for (index, item) in layout.items.iter().enumerate() {
+                let frame = item.frame();
+                assert!(
+                    item.visible_frame().is_some(),
+                    "all nine representative cells are visible"
+                );
+                if index % 3 != 0 {
+                    assert!(layout.items[index - 1].frame().max_x() <= frame.min_x());
+                }
+                if index >= 3 {
+                    assert!(layout.items[index - 3].frame().max_y() <= frame.min_y());
+                }
+                let panel = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect == frame.inset(0.5) => Some(q),
+                        _ => None,
+                    })
+                    .expect("actual Grid Gallery child panel");
+                assert_eq!(panel.fill, palette.color("surface-panel").unwrap());
+                let label = frame.inset(8.);
+                let inks: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run)
+                            if run.glyphs.iter().any(|g| label.contains(g.origin)) =>
+                        {
+                            Some(run.color)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(!inks.is_empty(), "actual Item label glyphs in each cell");
+                assert!(
+                    inks.iter()
+                        .all(|ink| *ink == palette.color("primary-text").unwrap())
+                );
+                if index == 0 {
+                    observed.push(panel.fill);
+                }
+            }
+            assert!(
+                state.logical_tab_ids().into_iter().all(|id| id < 20),
+                "layout-only Grid adds no action/focus target"
+            );
+        }
+        assert!(
+            observed.windows(2).any(|w| w[0] != w[1]),
+            "same real Gallery Grid forwards changed Theme to child surfaces"
         );
     }
 
