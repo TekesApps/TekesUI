@@ -8576,6 +8576,356 @@ mod interaction_tests {
     }
 
     #[test]
+    fn switch_gallery_theme_switch_preserves_unfocused_hover_and_actual_thumb_label_contrast() {
+        use super::super::Gallery;
+        use super::super::commands::Command;
+        use super::super::theme::{AppearanceChoice, ContrastChoice};
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Rgba, Theme};
+        fn assert_switch(
+            scene: &Scene,
+            geometry: (Rect, Rect),
+            palette: Palette,
+            state: ControlState,
+            ground: &str,
+            backing: f32,
+            clear: Rgba,
+        ) -> Rect {
+            let (track, label) = geometry;
+            let (index, outer) = scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .rev()
+                .find_map(|(i, p)| match p {
+                    Primitive::Quad(q) if q.rect == track => Some((i, *q)),
+                    _ => None,
+                })
+                .expect("actual Switch track background");
+            assert_eq!(outer.fill, palette.color(ground).unwrap());
+            let boundary = if state.disabled {
+                "disabled-text"
+            } else {
+                "border"
+            };
+            assert_eq!(outer.border_color, palette.color(boundary).unwrap());
+            let thumbs: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a > 0.
+                            && q.rect.min_x() >= track.min_x()
+                            && q.rect.max_x() <= track.max_x()
+                            && q.rect.min_y() >= track.min_y()
+                            && q.rect.max_y() <= track.max_y() =>
+                    {
+                        Some(*q)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(
+                thumbs.len(),
+                1,
+                "exactly the own thumb after the actual track paint"
+            );
+            let thumb = thumbs[0];
+            assert_eq!(
+                thumb.fill,
+                palette
+                    .color(if state.disabled {
+                        "disabled-text"
+                    } else if state.selected {
+                        "c-switch-on-thumb"
+                    } else {
+                        "surface-0"
+                    })
+                    .unwrap()
+            );
+            assert_eq!(thumb.border_color, palette.color(boundary).unwrap());
+            assert!(
+                if state.selected {
+                    thumb.rect.center().x > track.center().x
+                } else {
+                    thumb.rect.center().x < track.center().x
+                },
+                "reduced-motion on/off endpoint"
+            );
+            if !state.disabled {
+                if state.selected {
+                    assert!(
+                        contrast(thumb.fill, outer.fill) >= 3.,
+                        "actual on thumb/track contrast"
+                    );
+                } else {
+                    assert!(
+                        contrast(thumb.fill, outer.fill)
+                            .max(contrast(thumb.border_color, outer.fill))
+                            >= 3.,
+                        "actual off thumb fill-or-boundary/track contrast"
+                    );
+                }
+            }
+            let parent = scene.primitives()[..index]
+                .iter()
+                .rev()
+                .find_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill.a == 1.
+                            && q.rect.min_x() <= label.min_x()
+                            && q.rect.max_x() >= label.max_x()
+                            && q.rect.min_y() <= label.min_y()
+                            && q.rect.max_y() >= label.max_y() =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .unwrap_or(clear);
+            let inks: Vec<_> = scene.primitives()[index + 1..]
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Glyphs(run)
+                        if run.glyphs.iter().any(|g| {
+                            let a = g.glyph;
+                            label
+                                .intersection(&Rect::new(
+                                    g.origin.x + a.left as f32 / backing,
+                                    g.origin.y + a.top as f32 / backing,
+                                    a.width as f32 / backing,
+                                    a.height as f32 / backing,
+                                ))
+                                .is_some()
+                        }) =>
+                    {
+                        Some(run.color)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !inks.is_empty(),
+                "real CoreText Switch label glyphs after own track paint"
+            );
+            for ink in inks {
+                assert_eq!(
+                    ink,
+                    palette
+                        .color(if state.disabled {
+                            "disabled-text"
+                        } else {
+                            "primary-text"
+                        })
+                        .unwrap()
+                );
+                if !state.disabled {
+                    assert!(
+                        contrast(ink, parent)
+                            >= if palette.theme.is_increased() {
+                                7.
+                            } else {
+                                4.5
+                            },
+                        "actual label/parent ground contrast"
+                    );
+                }
+            }
+            thumb.rect
+        }
+        fn contrast(a: Rgba, b: Rgba) -> f32 {
+            let l = |c: Rgba| {
+                let c = c.to_linear();
+                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            };
+            let (a, b) = (l(a), l(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        }
+
+        fn geometry(scene: &Scene, track: Rect, backing: f32) -> (Rect, Rect) {
+            let index = scene
+                .primitives()
+                .iter()
+                .rposition(|p| matches!(p,Primitive::Quad(q)if q.rect==track))
+                .unwrap();
+            // SwitchView paints its own label immediately after its track/thumb/focus.
+            let run = scene.primitives()[index + 1..]
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Glyphs(run) if !run.glyphs.is_empty() => Some(run),
+                    _ => None,
+                })
+                .expect("actual first Switch label run after its own chrome");
+            let mut bounds: Option<Rect> = None;
+            for g in &run.glyphs {
+                let a = g.glyph;
+                let r = Rect::new(
+                    g.origin.x + a.left as f32 / backing,
+                    g.origin.y + a.top as f32 / backing,
+                    a.width as f32 / backing,
+                    a.height as f32 / backing,
+                );
+                bounds = Some(match bounds {
+                    None => r,
+                    Some(b) => Rect::new(
+                        b.min_x().min(r.min_x()),
+                        b.min_y().min(r.min_y()),
+                        b.max_x().max(r.max_x()) - b.min_x().min(r.min_x()),
+                        b.max_y().max(r.max_y()) - b.min_y().min(r.min_y()),
+                    ),
+                });
+            }
+            let label = bounds.unwrap();
+            assert!(
+                label.min_x() > track.max_x(),
+                "real Switch label lies beside its own track"
+            );
+            (track, label)
+        }
+        let mut gallery = Gallery::new();
+        gallery.apply(Command::Appearance(AppearanceChoice::System));
+        gallery.apply(Command::Contrast(ContrastChoice::System));
+        gallery.set_reduced_motion(true);
+        gallery.set_view_size(1440., 900.);
+        assert!(gallery.open_route("component-switch/playground"));
+        let i = index("switch");
+        gallery.build_scene(&mut Scene::new());
+        let track = gallery
+            .workbench
+            .state(i)
+            .extended
+            .switch_view
+            .layout()
+            .frame();
+        let background = Point::new(track.max_x() + 420., track.min_y());
+        for checked in [false, true] {
+            gallery.workbench.state(i).extended.switch.checked = checked;
+            let mut original = None;
+            for theme in Theme::ALL {
+                gallery.set_system_theme(theme);
+                gallery.handle_input(&move_pointer(background));
+                let mut scene = Scene::new();
+                gallery.build_scene(&mut scene);
+                assert_eq!(gallery.theme(), theme);
+                let state = &gallery.workbench.state(i).extended;
+                assert_eq!(state.switch.checked, checked);
+                assert!(!state.switch_view.is_focused());
+                assert_eq!(state.switch_view.layout().frame(), track);
+                let thumb = assert_switch(
+                    &scene,
+                    geometry(&scene, track, gallery.text.scale()),
+                    theme.into(),
+                    ControlState {
+                        selected: checked,
+                        ..Default::default()
+                    },
+                    if checked {
+                        "c-switch-on-ground"
+                    } else {
+                        "surface-3"
+                    },
+                    gallery.text.scale(),
+                    Gallery::background(theme),
+                );
+                if let Some(before) = original {
+                    assert_eq!(thumb, before);
+                } else {
+                    original = Some(thumb);
+                }
+            }
+        }
+        gallery.workbench.state(i).extended.switch.checked = false;
+        gallery.build_scene(&mut Scene::new());
+        let palette: Palette = Theme::DARK_INCREASED.into();
+        let clear = Gallery::background(Theme::DARK_INCREASED);
+        let point = track.center();
+        gallery.handle_input(&move_pointer(point));
+        assert!(
+            !gallery.workbench.state(i).extended.switch_view.is_focused(),
+            "first hover must not require focus"
+        );
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        assert!(!gallery.workbench.state(i).extended.switch_view.is_focused());
+        assert_switch(
+            &scene,
+            geometry(&scene, track, gallery.text.scale()),
+            palette,
+            ControlState::default(),
+            "button-hover",
+            gallery.text.scale(),
+            clear,
+        );
+        gallery.handle_input(&mouse(point, true));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_switch(
+            &scene,
+            geometry(&scene, track, gallery.text.scale()),
+            palette,
+            ControlState::default(),
+            "button-pressed",
+            gallery.text.scale(),
+            clear,
+        );
+        assert!(!gallery.workbench.state(i).extended.switch.checked);
+        gallery.handle_input(&mouse(background, false));
+        gallery.handle_input(&move_pointer(background));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(!gallery.workbench.state(i).extended.switch.checked);
+        gallery.handle_input(&key(36, true));
+        assert!(!gallery.workbench.state(i).extended.switch.checked);
+        gallery.handle_input(&key(49, true));
+        assert!(!gallery.workbench.state(i).extended.switch.checked);
+        gallery.handle_input(&key(49, false));
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert!(gallery.workbench.state(i).extended.switch.checked);
+        assert_switch(
+            &scene,
+            geometry(&scene, track, gallery.text.scale()),
+            palette,
+            ControlState {
+                selected: true,
+                ..Default::default()
+            },
+            "c-switch-on-ground",
+            gallery.text.scale(),
+            clear,
+        );
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
+            && q.rect.center()==track.center() && q.border_color==palette.color("border-focused").unwrap())));
+        gallery.workbench.state(i).extended.disabled = true;
+        scene.clear();
+        gallery.build_scene(&mut scene);
+        assert_switch(
+            &scene,
+            geometry(&scene, track, gallery.text.scale()),
+            palette,
+            ControlState {
+                selected: true,
+                disabled: true,
+                ..Default::default()
+            },
+            "surface-2",
+            gallery.text.scale(),
+            clear,
+        );
+        assert!(!gallery.workbench.state(i).extended.switch_view.is_focused());
+        assert!(!scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0. && q.rect.center()==track.center())));
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        gallery.handle_input(&key(49, true));
+        gallery.handle_input(&key(49, false));
+        assert!(gallery.workbench.state(i).extended.switch.checked);
+        gallery.workbench.state(i).extended.disabled = false;
+        gallery.build_scene(&mut Scene::new());
+        gallery.handle_input(&mouse(point, true));
+        gallery.handle_input(&mouse(point, false));
+        assert!(!gallery.workbench.state(i).extended.switch.checked);
+    }
+
+    #[test]
     fn checkbox_text_first_line_stays_centered_on_the_mark_at_large_scale_and_wrap() {
         let mut text = super::super::text::TextEngine::new();
         text.set_type_scale(1.5);
@@ -10593,6 +10943,127 @@ mod interaction_tests {
                 .count(),
             before + 1,
             "nested real Button retains its own action"
+        );
+    }
+
+    #[test]
+    fn status_badge_gallery_retained_theme_switch_keeps_four_tones_readable_and_passive() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::{CornerRadii, Primitive};
+        use tekes_ui_tokens::{Palette, Theme, surface_palette::resolve_surface};
+        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
+            let luminance = |c: tekes_ui_tokens::Rgba| {
+                let v = c.to_linear();
+                0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
+            };
+            let (a, b) = (luminance(a), luminance(b));
+            (a.max(b) + 0.05) / (a.min(b) + 0.05)
+        };
+        let mut gallery = Gallery::new();
+        let i = index("status-badge");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 960.);
+        let mut original_frames = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            let palette = Palette::new(theme, 0).unwrap();
+            let ground = Gallery::background(theme);
+            assert_eq!(
+                ground,
+                resolve_surface(palette, "canvas", "content", "rest")
+                    .unwrap()
+                    .background
+            );
+            let mut frames = Vec::new();
+            for usage in [
+                "status-badge-info",
+                "status-badge-running",
+                "status-badge-succeeded",
+                "status-badge-failed",
+            ] {
+                let packet = resolve_surface(palette, "canvas", usage, "rest").unwrap();
+                let badges: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, p)| match p {
+                        Primitive::Quad(q)
+                            if q.fill == packet.background
+                                && q.corner_radii
+                                    == CornerRadii::uniform(q.rect.size.height * 0.5)
+                                && state.preview.contains(q.rect.center()) =>
+                        {
+                            Some((index, q))
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(badges.len(), 1, "one real Gallery {usage} badge");
+                let (badge_index, badge) = badges[0];
+                assert_eq!(badge.border_width, 0.);
+                let label_frame = badge.rect.inset(5.);
+                let inks: Vec<_> = scene.primitives()[badge_index + 1..]
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run)
+                            if run.glyphs.iter().any(|g| label_frame.contains(g.origin)) =>
+                        {
+                            Some(run.color)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(!inks.is_empty(), "actual Gallery {usage} label glyphs");
+                for ink in inks {
+                    assert_eq!(ink, packet.text);
+                    assert_eq!(ink, palette.color("c-status-badge-foreground").unwrap());
+                    assert!(
+                        contrast(ink, badge.fill) >= if theme.is_increased() { 7. } else { 4.5 },
+                        "{theme:?} {usage} label contrast={}",
+                        contrast(ink, badge.fill)
+                    );
+                }
+                assert!(
+                    contrast(badge.fill, ground) >= 3.,
+                    "{theme:?} {usage} status solid/parent contrast={}",
+                    contrast(badge.fill, ground)
+                );
+                frames.push(badge.rect);
+                observed.push(badge.fill);
+            }
+            if let Some(original) = &original_frames {
+                assert_eq!(&frames, original);
+            } else {
+                original_frames = Some(frames);
+            }
+            assert!(
+                state.logical_tab_ids().into_iter().all(|id| id < 20),
+                "badges add no action/focus target"
+            );
+        }
+        assert!(
+            observed
+                .chunks_exact(4)
+                .any(|fills| fills != &observed[..4]),
+            "retained Gallery consumes changed Theme solids"
         );
     }
 

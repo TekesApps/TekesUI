@@ -2023,7 +2023,10 @@ impl ExtendedStory {
             }
         } else {
             self.slider_view.blur();
-            self.switch_view.blur();
+            if self.disabled || self.switch_view.is_focused() {
+                // Preserve unfocused pointer hover; synchronize a real focus loss once.
+                self.switch_view.blur();
+            }
         }
         if self.focused.is_some_and(|id| (30..33).contains(&id)) {
             if self.radio_view.focused() != self.focused.map(|id| id - 30) {
