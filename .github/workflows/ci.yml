@@ -27,6 +27,7 @@ jobs:
           cargo fetch --locked
           cargo fetch --locked --manifest-path examples/composition-consumer/Cargo.toml
           cargo fetch --locked --manifest-path examples/brand-consumer/Cargo.toml
+          cargo fetch --locked --manifest-path examples/app-host-demo/Cargo.toml
       - name: Design package, brand generation and Rust boundaries
         run: |
           python3 -m pip install -r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt
@@ -55,3 +56,11 @@ jobs:
 
       - name: Independent composition consumer (public API)
         run: cargo test --manifest-path examples/composition-consumer/Cargo.toml --locked
+
+      - name: Independent AppWindow and Settings delivery (Issue 70)
+        run: |
+          cargo clippy --manifest-path examples/app-host-demo/Cargo.toml --all-targets --all-features --locked --offline -- -D warnings
+          cargo test --manifest-path examples/app-host-demo/Cargo.toml --test settings_worker_entry --locked --offline
+          for profile in two-panels three-panels mixed-columns independent-settings; do
+            cargo build --manifest-path examples/app-host-demo/Cargo.toml --features "$profile" --locked --offline
+          done
