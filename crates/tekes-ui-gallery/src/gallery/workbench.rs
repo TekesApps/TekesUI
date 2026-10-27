@@ -11727,6 +11727,107 @@ mod interaction_tests {
     }
 
     #[test]
+    fn grid_gallery_retained_themes_keep_nine_cells_clips_and_child_paint() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut gallery = Gallery::new();
+        let i = index("grid");
+        assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
+        gallery.set_view_size(1440., 1100.);
+        let mut original = None;
+        let mut observed = Vec::new();
+        for theme in Theme::ALL {
+            gallery.apply(Command::Appearance(if theme.is_dark() {
+                AppearanceChoice::Dark
+            } else {
+                AppearanceChoice::Light
+            }));
+            gallery.apply(Command::Contrast(if theme.is_increased() {
+                ContrastChoice::On
+            } else {
+                ContrastChoice::Off
+            }));
+            assert_eq!(gallery.theme(), theme);
+            let mut scene = Scene::new();
+            gallery.build_scene(&mut scene);
+            let state = gallery.workbench.state(i);
+            let grid = &state.extended.grid_view;
+            let layout = grid.layout();
+            assert_eq!(grid.model().columns, 3);
+            assert_eq!((grid.model().gap_x, grid.model().gap_y), (8., 8.));
+            assert_eq!(layout.items.len(), 9);
+            assert!(layout.visible.is_some());
+            let cells: Vec<_> = layout
+                .items
+                .iter()
+                .map(|item| (item.frame(), item.visible_frame()))
+                .collect();
+            if let Some(original) = &original {
+                assert_eq!(&cells, original);
+            } else {
+                original = Some(cells);
+            }
+            let palette = Palette::new(theme, 0).unwrap();
+            for (index, item) in layout.items.iter().enumerate() {
+                let frame = item.frame();
+                assert!(
+                    item.visible_frame().is_some(),
+                    "all nine representative cells are visible"
+                );
+                if index % 3 != 0 {
+                    assert!(layout.items[index - 1].frame().max_x() <= frame.min_x());
+                }
+                if index >= 3 {
+                    assert!(layout.items[index - 3].frame().max_y() <= frame.min_y());
+                }
+                let panel = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect == frame.inset(0.5) => Some(q),
+                        _ => None,
+                    })
+                    .expect("actual Grid Gallery child panel");
+                assert_eq!(panel.fill, palette.color("surface-panel").unwrap());
+                let label = frame.inset(8.);
+                let inks: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Glyphs(run)
+                            if run.glyphs.iter().any(|g| label.contains(g.origin)) =>
+                        {
+                            Some(run.color)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert!(!inks.is_empty(), "actual Item label glyphs in each cell");
+                assert!(
+                    inks.iter()
+                        .all(|ink| *ink == palette.color("primary-text").unwrap())
+                );
+                if index == 0 {
+                    observed.push(panel.fill);
+                }
+            }
+            assert!(
+                state.logical_tab_ids().into_iter().all(|id| id < 20),
+                "layout-only Grid adds no action/focus target"
+            );
+        }
+        assert!(
+            observed.windows(2).any(|w| w[0] != w[1]),
+            "same real Gallery Grid forwards changed Theme to child surfaces"
+        );
+    }
+
+    #[test]
     fn select_real_feedback_paints_before_its_popup_surface() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
