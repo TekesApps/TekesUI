@@ -9524,6 +9524,97 @@ mod interaction_tests {
     }
 
     #[test]
+    fn separator_gallery_theme_switch_keeps_both_decorative_directions_and_scale() {
+        use super::super::{
+            Gallery,
+            commands::Command,
+            theme::{AppearanceChoice, ContrastChoice},
+        };
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Palette, Theme};
+        let mut gallery = Gallery::new();
+        let i = index("separator");
+        gallery.set_view_size(1440., 960.);
+        gallery.text_mut().set_scale(2.);
+        // Playground uses SeparatorView; variants use the original at-scale painter.
+        for story in ["playground", "variants"] {
+            assert!(gallery.open_route(&format!("{}/{story}", entry(i).slug())));
+            let mut original_frames = None;
+            let mut colors = Vec::new();
+            for theme in Theme::ALL {
+                gallery.apply(Command::Appearance(if theme.is_dark() {
+                    AppearanceChoice::Dark
+                } else {
+                    AppearanceChoice::Light
+                }));
+                gallery.apply(Command::Contrast(if theme.is_increased() {
+                    ContrastChoice::On
+                } else {
+                    ContrastChoice::Off
+                }));
+                assert_eq!(gallery.theme(), theme);
+                let mut scene = Scene::new();
+                gallery.build_scene(&mut scene);
+                let state = gallery.workbench.state(i);
+                let palette = Palette::new(theme, 0).unwrap();
+                let color = palette.color("separator").unwrap();
+                let width = if theme.is_increased() {
+                    proposal::metric("stroke", "stroke-rule").unwrap()
+                } else {
+                    1. / gallery.text.scale()
+                };
+                let lines: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .filter_map(|p| match p {
+                        Primitive::Quad(q)
+                            if q.fill == color
+                                && q.border_width == 0.
+                                && state.preview.contains(q.rect.center())
+                                && ((q.rect.size.width > 100. && q.rect.size.height <= 1.)
+                                    || (q.rect.size.height > 100. && q.rect.size.width <= 1.)) =>
+                        {
+                            Some(q.rect)
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(
+                    lines.len(),
+                    2,
+                    "{story}: both real standalone separator directions"
+                );
+                assert_eq!(
+                    lines[0].size.height, width,
+                    "{story}: horizontal scale policy"
+                );
+                assert_eq!(lines[1].size.width, width, "{story}: vertical scale policy");
+                // Theme changes may change decorative thickness, but not the allocated span or center.
+                let frames = [
+                    (lines[0].center(), lines[0].size.width),
+                    (lines[1].center(), lines[1].size.height),
+                ];
+                if let Some(original) = original_frames {
+                    assert_eq!(frames, original);
+                } else {
+                    original_frames = Some(frames);
+                }
+                if story == "playground" {
+                    let layout = state.extended.separator_view.layout();
+                    assert_eq!(layout.frame.center(), lines[1].center());
+                    assert_eq!(layout.frame.size.height, lines[1].size.height);
+                    assert!(layout.visible.is_some());
+                }
+                colors.push(color);
+            }
+            assert!(
+                colors.windows(2).any(|w| w[0] != w[1]),
+                "{story}: retained Gallery consumes Theme ink"
+            );
+        }
+    }
+
+    #[test]
     fn select_real_feedback_paints_before_its_popup_surface() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
