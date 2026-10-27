@@ -98,3 +98,7 @@ Public regression `examples/composition-consumer/tests/toolbar_scope.rs` checks 
 samples of leading/trailing collapse/reopen and reversals at three typography sizes:
 one original image per button, stable frame/mount, native exclusion, editor draft
 and focus, disappearing container content, and narrow-window non-overlap.
+
+## Restoring the window's logical focus owner
+
+A window adapter may retain its existing logical toolbar owner while a temporary input barrier cancels the active gesture. After validating that original source/mount and restoring valid geometry, obtain a current owner target from `semantics()` and call `restore_focus(target, visible)`. It delegates to the same ContentHost focus/reveal/IME admission and preserves pointer versus keyboard focus visibility; it does not synthesize a click or replay an armed key. Only registered original owners are accepted. Semantic parts, stale targets, inactive/not-ready windows, replaced mounts and refused focus transfers return false. An accepted already-focused owner returns true. The adapter must not restore an old owner after a newer user focus choice.

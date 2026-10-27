@@ -738,6 +738,23 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         self.collect();
         result
     }
+    /// Restore a window adapter's already authenticated original owner without
+    /// synthesizing input. Callers re-resolve the current opaque owner target;
+    /// stale window/revision/mounts and semantic parts are rejected unchanged.
+    /// The original Host still decides focus/reveal/IME admission. `true` means
+    /// accepted, including an unchanged focused owner, never a refused transfer.
+    pub fn restore_focus(&mut self, target: ToolbarAccessibilityTarget, visible: bool) -> bool {
+        if !self.ready || !self.active || target.part.is_some()
+            || target.revision != self.revision
+            || self.host.semantic_mount(target.id) != Some(target.mount)
+            || !self.registrations.keys().any(|group| self.host.get(*group)
+                .is_some_and(|node| node.find(target.id).is_some()))
+        {
+            return false;
+        }
+        matches!(self.host.admit_ordinary_focus(Some(target.id), visible, None,
+            action_preparation::FocusOrigin::Direct), action_preparation::FocusAdmission::Accepted { .. })
+    }
     pub fn help_tooltip(&self) -> Option<(ComponentId, &str, crate::feedback_view::OverlayLayout)> {
         if self.ready && self.active {
             self.host.help_tooltip()
