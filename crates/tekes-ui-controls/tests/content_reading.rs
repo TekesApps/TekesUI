@@ -107,6 +107,92 @@ fn prepend(host: &mut ContentHost, ids: &[ComponentId], id: ComponentId) {
 }
 
 #[test]
+fn prepended_edge_sliver_does_not_replace_the_stable_anchor_on_reflow() {
+    let (mut host, ids) = fixture();
+    host.get_mut(ITEMS)
+        .unwrap()
+        .component_mut::<ListContent>()
+        .unwrap()
+        .rows
+        .model
+        .gap = 4.;
+    let (v1, ()) = host
+        .set_scroll_reading_document(SCROLL, "sliver", 1, ids.clone(), |_| ())
+        .unwrap();
+    render(&mut host);
+    let item = anchor(&host);
+    let y = host.get(item).unwrap().frame().min_y();
+    let first: Vec<_> = std::iter::once(ComponentId(900))
+        .chain(ids.iter().copied())
+        .collect();
+    let (v2, ()) = host
+        .update_scroll_reading_document(SCROLL, &v1, 2, first.clone(), |h| {
+            prepend(h, &ids, ComponentId(900))
+        })
+        .unwrap();
+    render(&mut host);
+    assert!((host.get(item).unwrap().frame().min_y() - y).abs() < 0.001);
+    let sliver = host.get(ComponentId(900)).unwrap().frame();
+    assert!(sliver.max_y() > host.get(SCROLL).unwrap().frame().min_y() && sliver.max_y() < y);
+    host.get_mut(ComponentId(900))
+        .unwrap()
+        .component_mut::<Row>()
+        .unwrap()
+        .0
+        .set(120.);
+    render(&mut host);
+    assert_eq!(
+        anchor(&host),
+        item,
+        "an arrival's edge sliver replaced the original stable item"
+    );
+    assert!((host.get(item).unwrap().frame().min_y() - y).abs() < 0.001);
+    let next: Vec<_> = first
+        .iter()
+        .copied()
+        .chain(std::iter::once(ComponentId(901)))
+        .collect();
+    host.update_scroll_reading_document(SCROLL, &v2, 3, next, |h| {
+        h.get_mut(ComponentId(900))
+            .unwrap()
+            .component_mut::<Row>()
+            .unwrap()
+            .0
+            .set(180.);
+        h.insert(ITEMS, row(ComponentId(901), 60.)).unwrap();
+    })
+    .unwrap();
+    render(&mut host);
+    assert_eq!(anchor(&host), item);
+    assert!((host.get(item).unwrap().frame().min_y() - y).abs() < 0.001);
+    let at = host.get(SCROLL).unwrap().frame().center();
+    assert!(
+        host.event(&ContentEvent::Scroll {
+            position: at,
+            delta: Point::new(0., 120.),
+            precise: true,
+            begin: true,
+            end: false,
+            momentum: false,
+            time: 1.
+        })
+        .consumed
+    );
+    render(&mut host);
+    assert_ne!(
+        anchor(&host),
+        item,
+        "fresh user scrolling must choose its current visible anchor"
+    );
+    scroll_mut(&mut host).follow_latest();
+    render(&mut host);
+    assert_eq!(
+        scroll(&host).reading_result().unwrap().anchor,
+        ContentReadingAnchorUpdate::FollowingLatest
+    );
+}
+
+#[test]
 fn opt_in_prepend_keeps_item_position_while_ordinary_viewport_keeps_plain_offsets() {
     let (mut legacy, ids) = fixture();
     mid(&mut legacy);

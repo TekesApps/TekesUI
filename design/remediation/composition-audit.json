@@ -1849,7 +1849,7 @@
     "crates/tekes-ui-controls/src/composition.rs": "b096b3c8a871847946b78d9644fb1ede8029e9c0b9dd9d597781609e06eadd19",
     "crates/tekes-ui-controls/src/composition/actions.rs": "6d7a2569853c1b783c3f9c5af5b8df4029a3880311ac47eac12310cd6ebb8e7b",
     "crates/tekes-ui-controls/src/composition/adapters.rs": "6d16b70de8d8002de347abc319892b3066a3fd4041efe6ada0a0c4d4da35af4d",
-    "crates/tekes-ui-controls/src/composition/content_reading.rs": "0414c66f61bfeda2463de72ce7c3b0c66347d8a438d65d5423e1c153dfe1a664",
+    "crates/tekes-ui-controls/src/composition/content_reading.rs": "a7a88124adbd47d2664c1e20251d852ce0d0c18868ea26ea1e8990860644a0fe",
     "crates/tekes-ui-controls/src/composition/content_reveal.rs": "1d2173c778670f825e67257ea54912d04f497d555f293ced0228e19f8a1b2dde",
     "crates/tekes-ui-controls/src/composition/help.rs": "facae75ad05ce80881aedb7a3cc02416a1fa5ff4616435670af2c818139022a7",
     "crates/tekes-ui-controls/src/composition/key.rs": "f7df8a7a60348e2e4178bf44551cdc6d107b90bc078b38dead231473dfd2b0f5",
@@ -1881,7 +1881,7 @@
     "crates/tekes-ui-controls/tests/command_result_states.rs": "f878f949341b2d8108da8f84fa20331fa5d5e563a4a518b8df38d00ee1b16f1c",
     "crates/tekes-ui-controls/tests/component_registry_api.rs": "4e8dc549b9f28e26989672f5c549d40524e65c4d2aea1a27af3846ee2ab4375b",
     "crates/tekes-ui-controls/tests/composition.rs": "ddf5e18703784de33433423ac5da5f8a8149e2b33b14ca4bc9fd7bf4bf9a7096",
-    "crates/tekes-ui-controls/tests/content_reading.rs": "3eee17166afdb4de5e7ecb11ef7c696c3987471d18056e87c69ab5b6a3b09497",
+    "crates/tekes-ui-controls/tests/content_reading.rs": "8180d37ad003cee54fb8a3ca5607e05180e18b623660eb20c08fcf829ac66220",
     "crates/tekes-ui-controls/tests/external_preflight.rs": "e7a3b993e8cef971b50fbb4cff7bc4fd39e1854e5c1f86209c651d9d44f26736",
     "crates/tekes-ui-controls/tests/grid_layout_availability.rs": "46f08b8dc435514a420304723eb3aada2cf7afd240069911a199d5dacb03688a",
     "crates/tekes-ui-controls/tests/layout_surface_tokens.rs": "261258bf77c3bd83650408fb53cbed12852e0af359bc2eea18a18a0f4e27b01e",
@@ -2272,7 +2272,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/tests/content_reading.rs",
-      "line": 404,
+      "line": 490,
       "anchor": "fn document_switch_and_explicit_latest_reject_the_old_momentum_tail() {",
       "purpose": "Document/explicit-follow scope fences; no stale native momentum mutation"
     },
@@ -2853,6 +2853,11 @@
       "batch": "collection-live-input-20261020",
       "conclusion": "Shared existing collection capture lifecycle plus live-model eligibility; no new abstraction/token, Gallery cancel guard migrated. Protocol/content-slot statuses not promoted.",
       "evidence": "design/reviews/collection-live-input-20261020/progress.json"
+    },
+    {
+      "batch": "issue48-stable-anchor-reflow-20261028",
+      "conclusion": "Reviewed only the shared structured-reading implementation: keep the original visible item during automatic reflow, capture pending identity before document advancement, and retain fresh-user-input/explicit-latest authority. Public ContentReadingResult, clamp/fallback and protocol signatures unchanged. No component/native status promotion; original historical receipts unchanged. Also rebind the added public reading regression source and its unique unchanged existing API-test anchor after line shifts; no old assertion removed.",
+      "evidence": "crates/tekes-ui-controls/tests/content_reading.rs::prepended_edge_sliver_does_not_replace_the_stable_anchor_on_reflow; SSD artifacts/issue-48/main33d35b3-reading-anchor-20261028-01/green01/lane-results.json"
     }
   ],
   "text_key_review_20261018": {

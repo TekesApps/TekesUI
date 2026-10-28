@@ -82,4 +82,19 @@ the actual program in SSD `artifacts/issue-48/main44cabb3-native-reading-2026102
 expectation remains a failed acceptance even though its process exited normally.
 This closes only that independent native wheel gap, not the remaining original AC.
 
+Issue 48 AC4 also has an independent `--reading-anchor-only` mode in the same
+public consumer and CI step. Three original IPC Readers use the existing CoreText
+Code/mono backend and reading transaction APIs. Actual append/prepend, narrower
+width, type-scale 1.5, restoration and explicit latest preserve the original item
+mount/local position and composing editor. The first actual run exposed an 864 pt
+width-reflow displacement: a prepended edge sliver replaced the stable anchor.
+The bounded shared capture fix retains the original visible item until new input
+or actual scrolling, and preserves it before document revision advancement. Public
+reading/focus/composition regressions and strict passed; actual three-child anchor
+error is 0 pt while page height changes 1314→2178→3915. Original headless scroll and
+both real native scenarios passed after this relevant shared-source change.
+Receipts: SSD `artifacts/issue-48/main33d35b3-reading-anchor-20261028-01/`.
+This is the original item-local contract, not a new text/scroll/proof engine or a
+claim about physical Pinyin candidates, crash recovery or all Issue 48 acceptance.
+
 Rectangular parent Scroll admission uses the default-false `Component::rectangular_input_geometry` opt-in. ProcessContainer declares it only for ready, negotiated Content input; the original current focus/reveal checks still run. This does not grant prepared-action purity or curved Panel support, and Curve V1 remains reject-only. The public consumer retains its real outer Scroll and Grid, with a valid arranged translation contract for its fixed row.
