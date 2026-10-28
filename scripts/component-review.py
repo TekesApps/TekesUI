@@ -17,7 +17,7 @@ RECEIPTS = ROOT / 'design/reviews/component-runs'
 RUNTIME = ROOT / 'target/component-review'
 MANIFEST = ROOT / 'examples/composition-consumer/Cargo.toml'
 LAYERS = ('api', 'consumer', 'gpu', 'native', 'gold7', 'gallery')
-CASES = ('list', 'dialog', 'slider', 'command', 'reading', 'plain', 'number', 'field', 'label', 'menu-tree')  # Only existing real consumers; never silently build Gallery.
+CASES = ('list', 'dialog', 'slider', 'command', 'reading', 'plain', 'number', 'field', 'label', 'menu-tree', 'content-help')  # Only existing real consumers; never silently build Gallery.
 
 
 def digest(path):
