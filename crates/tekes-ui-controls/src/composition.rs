@@ -12,6 +12,10 @@ pub use bitmap::{
     ImageAlignment, ImageContent, ImageContentError, ImageFit, ImageLoadOutcome, ImageLoadRequest,
     ImageLoadStatus, ImageSemantics,
 };
+mod icon;
+pub use icon::{IconContent, IconImage, IconRenderError, WithIconRenderer};
+#[cfg(feature = "svg-icons")]
+pub use icon::{SvgIconCache, SvgIconRenderer};
 mod actions;
 mod panel;
 pub use panel::{
@@ -520,6 +524,14 @@ pub trait Component: Debug + Any {
     /// Components owning child paint order retain that responsibility.
     fn focus_decoration_above_siblings(&self) -> bool {
         false
+    }
+    /// This owner paints canonical icon resources through the host service.
+    fn requires_icon_services(&self) -> bool {
+        false
+    }
+    /// Latest explicit icon resource/backend failure for this original owner.
+    fn icon_error(&self) -> Option<IconRenderError> {
+        None
     }
     fn requires_text_services(&self) -> bool {
         false
@@ -1157,6 +1169,37 @@ impl Content {
             .find_map(Content::overlay_id)
             .or_else(|| self.component.overlay_open().then_some(self.id))
     }
+    fn needs_icons(&self) -> Option<ComponentId> {
+        if !(self.active()
+            || self.component.paints_children() && self.component.overlay_presented())
+        {
+            return None;
+        }
+        if self.component.requires_icon_services() {
+            Some(self.id)
+        } else {
+            self.component
+                .children()
+                .iter()
+                .find_map(Content::needs_icons)
+        }
+    }
+    fn icon_failure(&self) -> Option<(ComponentId, IconRenderError)> {
+        if !(self.active()
+            || self.component.paints_children() && self.component.overlay_presented())
+        {
+            return None;
+        }
+        self.component
+            .icon_error()
+            .map(|error| (self.id, error))
+            .or_else(|| {
+                self.component
+                    .children()
+                    .iter()
+                    .find_map(Content::icon_failure)
+            })
+    }
     fn needs_text(&self) -> Option<ComponentId> {
         if !(self.active()
             || self.component.paints_children() && self.component.overlay_presented())
@@ -1601,6 +1644,11 @@ pub enum CompositionError {
     EmptyAccessibleName,
     InvalidSlotCount,
     MissingTextServices(ComponentId),
+    MissingIconServices(ComponentId),
+    IconResource {
+        owner: ComponentId,
+        reason: IconRenderError,
+    },
     MissingLabelServices(ComponentId),
     UnsupportedLabelLayout(ComponentId),
     InvalidPaddingFocus {
@@ -1905,6 +1953,21 @@ impl ContentHost {
         &mut self,
         text: &mut dyn ButtonTextRenderer,
     ) -> Result<(), CompositionError> {
+        let paint_icons = self
+            .presented_dialog
+            .and_then(|id| self.root.find(id))
+            .and_then(|node| {
+                node.component
+                    .children()
+                    .iter()
+                    .find_map(Content::needs_icons)
+            });
+        if let Some(id) = self.root.needs_icons().or(paint_icons)
+            && text.icon_renderer().is_none()
+        {
+            self.cancel_pointer_capture();
+            return Err(CompositionError::MissingIconServices(id));
+        }
         let paint_text = self
             .presented_dialog
             .and_then(|id| self.root.find(id))
@@ -2053,6 +2116,19 @@ impl ContentHost {
             } else {
                 self.presented_dialog = None;
             }
+        }
+        if let Some((owner, reason)) = self.root.icon_failure().or_else(|| {
+            self.presented_dialog
+                .and_then(|id| self.root.find(id))
+                .and_then(|node| {
+                    node.component
+                        .children()
+                        .iter()
+                        .find_map(Content::icon_failure)
+                })
+        }) {
+            self.cancel_pointer_capture();
+            return Err(CompositionError::IconResource { owner, reason });
         }
         if let Some(id) = self.root.label_failure() {
             self.cancel();
@@ -3733,6 +3809,9 @@ impl Component for ScrollContent {
 /// The forwarding value keeps existing sized renderer APIs source-compatible.
 struct FrameTextAdapter<'a>(&'a mut dyn ButtonTextRenderer, Option<&'a mut bool>, bool);
 impl ButtonTextRenderer for FrameTextAdapter<'_> {
+    fn icon_renderer(&mut self) -> Option<&mut dyn crate::layout_view::IconRenderer> {
+        self.0.icon_renderer()
+    }
     fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
         self.0.resolved_font_size(role)
     }
@@ -3756,8 +3835,11 @@ impl ButtonTextRenderer for FrameTextAdapter<'_> {
     fn motion_context(&self) -> Option<ControlMotionContext> {
         self.0.motion_context()
     }
+    fn animation_frames_allowed(&self) -> bool {
+        self.2 && self.0.animation_frames_allowed()
+    }
     fn request_animation_frame(&mut self) {
-        if !self.2 {
+        if !self.animation_frames_allowed() {
             return;
         }
         if let Some(requested) = &mut self.1 {
@@ -3775,6 +3857,9 @@ impl ButtonTextRenderer for FrameTextAdapter<'_> {
 
 struct TextAdapter<'a>(&'a mut dyn ButtonTextRenderer);
 impl ButtonTextRenderer for TextAdapter<'_> {
+    fn icon_renderer(&mut self) -> Option<&mut dyn crate::layout_view::IconRenderer> {
+        self.0.icon_renderer()
+    }
     fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
         self.0.resolved_font_size(role)
     }
@@ -3797,6 +3882,9 @@ impl ButtonTextRenderer for TextAdapter<'_> {
     }
     fn motion_context(&self) -> Option<ControlMotionContext> {
         self.0.motion_context()
+    }
+    fn animation_frames_allowed(&self) -> bool {
+        self.0.animation_frames_allowed()
     }
     fn request_animation_frame(&mut self) {
         self.0.request_animation_frame()

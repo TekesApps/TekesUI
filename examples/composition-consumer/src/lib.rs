@@ -269,3 +269,5 @@ pub mod skeleton_content;
 pub mod empty_state_content;
 
 pub mod toolbar_mount;
+
+pub mod icon_content;

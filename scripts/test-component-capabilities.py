@@ -290,6 +290,23 @@ class CapabilityTests(unittest.TestCase):
                 self.assertEqual(entry['owner_api'], owner)
         self.assertEqual(self.data['counts'], {'components': 45, 'patterns': 5, 'examples': 2})
 
+    def test_svg_services_keep_the_existing_icon_root_and_feature_binding(self):
+        entries = [e for e in self.data['public_type_surface']['types'] if e.get('feature') == 'svg-icons']
+        self.assertEqual({e['api'].split('::')[-1] for e in entries}, {'SvgIconCache', 'SvgIconRenderer'})
+        for entry in entries:
+            self.assertEqual(entry['category'], 'component-support')
+            self.assertEqual(entry['components'], ['tui.icon'])
+        registry = capabilities.read_json(capabilities.REGISTRY)
+        good = capabilities.read_json(capabilities.PUBLIC_SURFACE)
+        for change in [('feature', 'unknown-feature'), ('category', 'component')]:
+            bad = copy.deepcopy(good)
+            entry = next(e for e in bad['types'] if e.get('feature') == 'svg-icons')
+            entry[change[0]] = change[1]
+            with self.subTest(change=change), self.source_fixture() as root:
+                (root / capabilities.PUBLIC_SURFACE).write_text(json.dumps(bad))
+                with self.assertRaisesRegex(ValueError, 'feature-gated component support'):
+                    capabilities.reverse_coverage(registry)
+
     def test_optional_feature_owner_and_registered_binding_cannot_be_falsified(self):
         registry = capabilities.read_json(capabilities.REGISTRY)
         good = capabilities.read_json(capabilities.PUBLIC_SURFACE)

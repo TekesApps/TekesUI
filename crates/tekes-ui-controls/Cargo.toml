@@ -9,10 +9,13 @@ rust-version.workspace = true
 workspace = true
 [features]
 default = []
+svg-icons = ["dep:tekes-ui-render", "dep:resvg"]
 bitmap-images = ["dep:tekes-ui-render"]
 token-audit = ["tekes-ui-tokens/token-audit"]
 
 [dependencies]
+tekes-ui-icons = { path = "../tekes-ui-icons" }
+resvg = { version = "0.48.0", default-features = false, optional = true }
 tekes-ui-scene.workspace = true
 tekes-ui-render = { path = "../tekes-ui-render", optional = true }
 tekes-ui-tokens.workspace = true

@@ -99,6 +99,17 @@ pub struct ComponentEvent {
 /// owns fitted size, semantic currentColor tint, and the same clip used by hit
 /// geometry. No Gallery-only icon artwork belongs in this trait.
 pub trait IconRenderer {
+    /// Checked resource seam for ordinary Content. Existing drawing backends
+    /// remain valid for direct View callers; unsupported Content use is explicit.
+    fn prepare_icon(
+        &mut self,
+        _name: &str,
+        _size: f32,
+        _backing_scale: f32,
+        _tint: tekes_ui_tokens::Rgba,
+    ) -> Result<crate::composition::IconImage, crate::composition::IconRenderError> {
+        Err(crate::composition::IconRenderError::UnsupportedRenderer)
+    }
     fn draw_icon(
         &mut self,
         scene: &mut Scene,
@@ -113,11 +124,28 @@ pub struct IconLayout {
     pub artboard: Rect,
     pub visible: Option<Rect>,
 }
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct IconView {
     layout: IconLayout,
+    surface: &'static str,
+}
+impl Default for IconView {
+    fn default() -> Self {
+        Self {
+            layout: IconLayout::default(),
+            surface: "canvas",
+        }
+    }
 }
 impl IconView {
+    /// Select the actual parent Surface; explicit render_tinted stays an override.
+    pub fn set_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
+        Ok(())
+    }
     #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
@@ -129,9 +157,14 @@ impl IconView {
         clip: Option<Rect>,
         palette: Palette,
     ) -> IconLayout {
-        let tint = palette
-            .color("primary-text")
-            .expect("icon semantic ink token");
+        let tint = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            self.surface,
+            "content",
+            "rest",
+        )
+        .expect("validated Icon Surface")
+        .icon;
         self.render_tinted(
             scene,
             renderer,

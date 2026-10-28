@@ -908,7 +908,9 @@ dependencies = [
 name = "tekes-ui-controls"
 version = "0.1.0"
 dependencies = [
+ "resvg",
  "serde_json",
+ "tekes-ui-icons",
  "tekes-ui-motion",
  "tekes-ui-render",
  "tekes-ui-scene",

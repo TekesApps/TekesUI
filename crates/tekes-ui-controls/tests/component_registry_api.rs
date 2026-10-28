@@ -145,6 +145,12 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-icon",
         "tekes_ui_controls::layout_view::IconView",
     );
+    bind::<tekes_ui_controls::composition::IconContent>(
+        &mut actual,
+        "tui.icon",
+        "component-icon",
+        "tekes_ui_controls::composition::IconContent",
+    );
     bind::<tekes_ui_controls::Button>(
         &mut actual,
         "tui.button",
@@ -1057,6 +1063,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::HostRevealPlan",
     );
+    public_type::<tekes_ui_controls::composition::IconContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::IconContent",
+    );
+    public_type::<tekes_ui_controls::composition::IconImage>(
+        &mut actual,
+        "tekes_ui_controls::composition::IconImage",
+    );
+    public_type::<tekes_ui_controls::composition::IconRenderError>(
+        &mut actual,
+        "tekes_ui_controls::composition::IconRenderError",
+    );
     #[cfg(feature = "bitmap-images")]
     {
         public_type::<tekes_ui_controls::composition::ImageAlignment>(
@@ -1158,7 +1176,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_168<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_171<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1205,7 +1223,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::PointerPhase",
     );
     #[allow(dead_code)]
-    fn public_trait_180<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    fn public_trait_183<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::PreparedActionEffect");
     public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
         &mut actual,
@@ -1319,6 +1337,20 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::StatusBadgeContent",
     );
+    #[cfg(feature = "svg-icons")]
+    {
+        public_type::<tekes_ui_controls::composition::SvgIconCache>(
+            &mut actual,
+            "tekes_ui_controls::composition::SvgIconCache",
+        );
+    }
+    #[cfg(feature = "svg-icons")]
+    {
+        public_type::<tekes_ui_controls::composition::SvgIconRenderer<'_>>(
+            &mut actual,
+            "tekes_ui_controls::composition::SvgIconRenderer",
+        );
+    }
     public_type::<tekes_ui_controls::composition::SwitchContent>(
         &mut actual,
         "tekes_ui_controls::composition::SwitchContent",
@@ -1414,6 +1446,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::ToolbarWindowEdge>(
         &mut actual,
         "tekes_ui_controls::composition::ToolbarWindowEdge",
+    );
+    public_type::<tekes_ui_controls::composition::WithIconRenderer<'_>>(
+        &mut actual,
+        "tekes_ui_controls::composition::WithIconRenderer",
     );
     public_type::<tekes_ui_controls::extended::Axis>(
         &mut actual,
@@ -1716,7 +1752,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_308<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_314<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,
@@ -1782,6 +1818,8 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     let enabled_features: &[&str] = &[
         #[cfg(feature = "bitmap-images")]
         "bitmap-images",
+        #[cfg(feature = "svg-icons")]
+        "svg-icons",
     ];
     let expected: Vec<_> = surface["types"]
         .as_array()
