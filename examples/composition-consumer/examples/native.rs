@@ -196,6 +196,7 @@ fn main() {
     struct Host {
         selftest_script: Option<Vec<(u64, tekes_ui_platform_macos::selftest::Action)>>,
         tree: ContentHost,
+        help_removed: Option<tekes_ui_controls::composition::Content>,
         menu_actions: Vec<tekes_ui_controls::composition::ContentActionRecord>,
         reading: Option<tekes_ui_composition_consumer::reading_stream::StreamState>,
         reading_width: bool,
@@ -383,11 +384,58 @@ fn main() {
                     "screen": screen.map(|s| serde_json::json!({"name":s.name,"builtin":s.builtin,"scale":s.scale,"visible_frame":{"x":s.visible_frame.origin.x,"y":s.visible_frame.origin.y,"width":s.visible_frame.size.width,"height":s.visible_frame.size.height}})),
                     "nodes": nodes.iter().map(|n| serde_json::json!({
                         "component":n.key.component,"part":n.key.part,"role":format!("{:?}",n.role),
-                        "label":n.label,"value":n.value,"required":n.required,"enabled":n.enabled,"focused":n.focused,"selected":n.selected,"expanded":n.expanded,
+                        "label":n.label,
+                        "value":n.value,
+                        "description":(self.mode == "content-help").then(||n.description.clone()).flatten(),
+                        "required":n.required,"enabled":n.enabled,"focused":n.focused,"selected":n.selected,"expanded":n.expanded,
                         "parent":n.parent.map(|key|serde_json::json!({"component":key.component,"part":key.part})),
                         "frame":{"x":n.frame.origin.x,"y":n.frame.origin.y,"width":n.frame.size.width,"height":n.frame.size.height}
                     })).collect::<Vec<_>>()
                 });
+                if self.mode == "content-help" {
+                    use tekes_ui_composition_consumer::help_list::FIRST;
+                    let first = self.tree.get(FIRST);
+                    let activations = first.and_then(|node| {
+                        node.component::<tekes_ui_controls::composition::Button>()
+                            .map(|button| button.activations)
+                    });
+                    let help = self.tree.help_tooltip();
+                    let scroll = self
+                        .tree
+                        .get(tekes_ui_composition_consumer::help_list::SCROLL)
+                        .and_then(|node| {
+                            node.component::<tekes_ui_controls::composition::ScrollContent>()
+                        })
+                        .map(|content| content.scroll.offset.y);
+                    let visible_rows = nodes
+                        .iter()
+                        .filter(|node| {
+                            node.key.part.is_none()
+                                && (FIRST.0..FIRST.0 + 8).contains(&node.key.component)
+                        })
+                        .map(|node| {
+                            serde_json::json!({
+                                "id": node.key.component,
+                                "y": node.frame.origin.y,
+                                "height": node.frame.size.height,
+                                "description": node.description
+                            })
+                        })
+                        .collect::<Vec<_>>();
+                    snapshot["content_help"] = serde_json::json!({
+                        "owner": help.as_ref().map(|(id, _, _)| id.0),
+                        "text": help.as_ref().map(|(_, text, _)| *text),
+                        "first_description": nodes
+                            .iter()
+                            .find(|node| node.key.component == FIRST.0 && node.key.part.is_none())
+                            .and_then(|node| node.description.clone()),
+                        "first_mounted": first.is_some(),
+                        "first_activations": activations,
+                        "scroll_offset_y": scroll,
+                        "row_frames": visible_rows,
+                        "instructions": "Hover the first result and wait for help. Control-Option-1 rebinds/updates its long mixed-language query help; Control-Option-2 revokes help; Control-Option-3 removes/restores the original row (remount is unbound until Control-Option-1)."
+                    });
+                }
                 if self.mode == "editable-number" {
                     use tekes_ui_composition_consumer::editable_number::PERCENT;
                     let field = self
@@ -1115,6 +1163,62 @@ fn main() {
                 self.publish(w, false);
                 return;
             }
+            if self.mode == "content-help"
+                && let Event::Key(key) = &e
+                && key.kind == KeyEventKind::Down
+                && key.modifiers.control
+                && key.modifiers.alt
+                && !key.modifiers.command
+                && !key.modifiers.shift
+                && matches!(key.key_code, 18..=20)
+            {
+                use tekes_ui_composition_consumer::help_list::{FIRST, LIST};
+                match key.key_code {
+                    18 => {
+                        if let Some(row) = self.tree.get_mut(FIRST) {
+                            let help = Some("query B · 本次搜索摘要：组合输入、焦点与阅读位置应保持不变；结果覆盖 multilingual résumé, 東京, 搜索😀与/folder/1 中的原始条目。".to_owned());
+                            row.set_help(help.clone());
+                            eprintln!("content-help-query owner={} help={help:?}", FIRST.0);
+                        } else {
+                            eprintln!("content-help-query owner={} result=unmounted", FIRST.0);
+                        }
+                    }
+                    19 => {
+                        if let Some(row) = self.tree.get_mut(FIRST) {
+                            row.set_help(None);
+                            eprintln!("content-help-revoke owner={}", FIRST.0);
+                        } else {
+                            eprintln!("content-help-revoke owner={} result=unmounted", FIRST.0);
+                        }
+                    }
+                    20 => {
+                        if self.tree.get(FIRST).is_some() {
+                            self.help_removed =
+                                Some(self.tree.remove(FIRST).expect("remove original help row"));
+                            eprintln!("content-help-row owner={} mounted=false", FIRST.0);
+                        } else if let Some(row) = self.help_removed.take() {
+                            self.tree
+                                .insert(LIST, row)
+                                .expect("remount original help row");
+                            let order = (0..8)
+                                .map(|index| {
+                                    tekes_ui_controls::composition::ComponentId(FIRST.0 + index)
+                                })
+                                .collect::<Vec<_>>();
+                            self.tree
+                                .reorder(LIST, &order)
+                                .expect("restore original List order");
+                            eprintln!(
+                                "content-help-row owner={} mounted=true help_requires_rebind=true",
+                                FIRST.0
+                            );
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+                self.redraw(w);
+                return;
+            }
             if self.mode == "item"
                 && let Event::Key(key) = &e
                 && key.kind == KeyEventKind::Down
@@ -1463,8 +1567,9 @@ fn main() {
                 | "toolbar"
                 | "toolbar-groups"
                 | "toolbar-split"
+                | "content-help"
         ),
-        "usage: native [list|dialog|slider|command|reading|plain|number|field|label|layout|item|menu-tree|toolbar|toolbar-groups]"
+        "usage: native [list|dialog|slider|command|reading|plain|number|field|label|layout|item|menu-tree|toolbar|toolbar-groups|toolbar-split|content-help]"
     );
     let mut reading = None;
     let mut plain_value = None;
@@ -1569,6 +1674,13 @@ fn main() {
     } else if mode == "dialog" {
         let (tree, invoker) = scenarios::build_dialog();
         (tree, invoker, None)
+    } else if mode == "content-help" {
+        use tekes_ui_composition_consumer::help_list::{self, FIRST};
+        (
+            help_list::build().expect("public help List fixture"),
+            FIRST,
+            None,
+        )
     } else {
         let fixture =
             scenarios::heterogeneous_list().expect("independent heterogeneous List fixture");
@@ -1605,6 +1717,7 @@ fn main() {
     let mut host = Host {
         selftest_script: None,
         tree,
+        help_removed: None,
         menu_actions: Vec::new(),
         reading,
         reading_width: false,
